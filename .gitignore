@@ -1,0 +1,17 @@
+/.idea/
+/*.iml
+*.Identifier
+
+/vendor/
+/vendor-bin/*/vendor/
+
+/.php-cs-fixer.cache
+/tests/.phpunit.cache
+
+/node_modules/
+/js/
+/custom_apps/
+/config/
+
+/coverage/
+/coverage-frontend/

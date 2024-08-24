@@ -1,0 +1,164 @@
+:root {
+  --OC-margin-10: 10px;
+  --OC-margin-20: 20px;
+  --OC-margin-50: 50px;
+}
+
+/* Pages */
+
+.pageHeader {
+  margin-block-start: var(--app-navigation-padding);
+  margin-inline-start: calc(
+    var(--default-clickable-area) + var(--app-navigation-padding) * 2
+  );
+  min-height: var(--default-clickable-area);
+  line-height: var(--default-clickable-area);
+}
+
+/* Lists */
+
+.listHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: var(--color-main-background);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.searchField {
+  padding-inline-start: 65px;
+  padding-inline-end: 20px;
+  margin-block-start: 11px !important;
+  margin-block-end: 11px !important;
+}
+
+.selectedZaakIcon > svg {
+  fill: white;
+}
+
+/* Detail pages */
+
+.detailContainer {
+  margin-block-start: var(--OC-margin-20);
+  margin-inline-start: var(--OC-margin-20);
+  margin-inline-end: var(--OC-margin-20);
+}
+
+.tabContainer > * ul > li {
+  display: flex;
+  flex: 1;
+}
+
+.tabContainer > * ul > li:hover {
+  background-color: var(--color-background-hover);
+}
+
+.tabContainer > * ul > li > a {
+  flex: 1;
+  text-align: center;
+}
+
+.tabContainer > * ul > li > .active {
+  background: transparent !important;
+  color: var(--color-main-text) !important;
+  border-bottom: var(--default-grid-baseline) solid var(--color-primary-element) !important;
+}
+
+.tabContainer > * ul[role="tablist"] {
+  display: flex;
+  margin: 10px 8px 0 8px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabContainer > * ul[role="tablist"] > * a[role="tab"] {
+  padding-inline-start: 10px;
+  padding-inline-end: 10px;
+  padding-block-start: 10px;
+  padding-block-end: 10px;
+}
+
+.tabContainer > * div[role="tabpanel"] {
+  margin-block-start: var(--OC-margin-10);
+}
+
+.tabPanel {
+  padding: 20px 10px;
+  min-height: 100%;
+  max-height: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.tabPanelFileUpload {
+  margin-block-end: 15px !important;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.publishedIcon > svg {
+  fill: var(--color-success);
+}
+.warningIcon > svg {
+  fill: var(--color-warning);
+}
+
+/* Modals */
+.form-group > * {
+  margin-block-end: 10px;
+}
+
+.input-field__label {
+  margin-block: -6px;
+}
+
+.input-field__input:focus + .input-field__label {
+  margin-block: 0px;
+}
+
+.successMessage {
+  color: var(--color-success);
+}
+.errorMessage {
+  color: var(--color-error);
+}
+
+/* File drag and drop */
+
+.filesListDragDropNotice {
+  width: 100%;
+  min-height: 113px;
+  margin: 0;
+  user-select: none;
+  color: var(--color-text-maxcontrast);
+  background-color: var(--color-main-background);
+  border-color: #000;
+}
+
+.filesListDragDropNoticeWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  height: fit-content;
+  max-height: 70%;
+  padding: 0 5vw;
+  border: 2px var(--color-border-dark) dashed;
+  border-radius: var(--border-radius-large);
+}
+
+.filesListDragDropNoticeWrapperIcon {
+  display: flex;
+}
+
+.filesListDragDropNoticeTitle {
+  margin: 12px 0;
+}
+
+.filesListDragDropNoticeTitle {
+  margin-left: 16px;
+  color: inherit;
+}

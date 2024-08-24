@@ -1,0 +1,38 @@
+{
+  "overrides": [
+    {
+      "files": ["*.json"],
+      "options": {
+        "parser": "json",
+        "printWidth": 120,
+        "tabWidth": 2
+      }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "options": {
+        "parser": "typescript",
+        "printWidth": 120,
+        "trailingComma": "all",
+        "tabWidth": 2,
+        "singleQuote": false
+      }
+    },
+    {
+      "files": ["*.css", "*.scss"],
+      "options": {
+        "parser": "css",
+        "tabWidth": 2
+      }
+    },
+    {
+      "files": ["conduction.css"],
+      "options": {
+        "parser": "css",
+        "trailingComma": "all",
+        "tabWidth": 2,
+        "printWidth": 150
+      }
+    }
+  ]
+}
