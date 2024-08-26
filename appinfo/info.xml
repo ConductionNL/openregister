@@ -47,8 +47,6 @@ Create a [feature request](https://github.com/OpenCatalogi/.github/issues/new/ch
 			<id>openregister</id>
 			<name>Register</name>
 			<route>openregister.dashboard.page</route>
-			<icon>app.svg</icon>
-			<type>link</type>
 		</navigation>
 	</navigations>
 </info>

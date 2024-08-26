@@ -7,3 +7,6 @@ We use (material design icons)[https://pictogrammers.com/library/mdi/] in line w
 
 
 APP -> https://pictogrammers.com/library/mdi/icon/database-sync/
+Register -> https://pictogrammers.com/library/mdi/icon/database-outline/
+Schemas -> 
+
