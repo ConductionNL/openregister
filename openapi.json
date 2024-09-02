@@ -1,9 +1,9 @@
 {
     "openapi": "3.0.3",
     "info": {
-        "title": "dsonextcloud",
+        "title": "openregister",
         "version": "0.0.1",
-        "description": "DSO Nextcloud",
+        "description": "Open Register",
         "license": {
             "name": "agpl"
         }
