@@ -6,7 +6,7 @@
     <summary>Quickly build data registers based on schema.json</summary>
     <description><![CDATA[📰 An OpenRegister App for Nextcloud
 
-The OpenRegister Nextcloud app provides a framework for a federated (open)data ecosystem
+The OpenRegister Nextcloud app provides a framework for federated registers to work together in an open data ecosystem
 
 - 📲 Synchronize your sources with multiple registers
 - 🔄 Automatic publications of your open data
@@ -14,23 +14,27 @@ The OpenRegister Nextcloud app provides a framework for a federated (open)data e
 
 **System Cron is currently required for this app to work**
 
+Requirements can be found [here](https://conduction.gitbook.io/openregister-nextcloud/installatie)
+
+The Roadmap is available [here](https://github.com/orgs/OpenRegister/projects/1/views/2)
+
 Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 
 Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
-    <version>0.1.3</version>
-    <license>agpl</license>
+    <version>0.1.2</version>
+    <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-    <namespace>OpenRegister</namespace>
-    <category>organization</category>
-    <website>https://github.com/ConductionNL/OpenRegister</website>
-    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository type="git">https://github.com/ConductionNL/OpenRegister.git</repository>
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
         <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
         <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
     </documentation>
+    <category>organization</category>
+    <category>tools</category>
+    <website>https://github.com/ConductionNL/OpenRegister</website>
+    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
+    <repository>https://github.com/ConductionNL/OpenRegister</repository>
     <dependencies>
         <php min-version="8.0" min-int-size="64"/>
         <database min-version="10">pgsql</database>
