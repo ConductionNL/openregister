@@ -22,19 +22,20 @@ Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 
 Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
-    <version>0.1.3</version>
+    <version>0.1.2</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-    <documentation>
-        <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
-        <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
-        <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
-    </documentation>
+    <namespace>OpenRegister</namespace>
     <category>organization</category>
     <category>tools</category>
     <website>https://github.com/ConductionNL/OpenRegister</website>
     <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenRegister</repository>
+    <documentation>
+        <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
+        <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
+        <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
+    </documentation>
     <dependencies>
         <php min-version="8.0" min-int-size="64"/>
         <database min-version="10">pgsql</database>
