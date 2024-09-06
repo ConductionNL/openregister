@@ -18,7 +18,7 @@ Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 
 Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
-    <version>0.1.2</version>
+    <version>0.1.3</version>
     <license>agpl</license>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
