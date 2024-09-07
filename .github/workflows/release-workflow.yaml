@@ -24,6 +24,7 @@ jobs:
       - name: Set app env
         run: |
           echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
       - name: Get current version and increment
         id: increment_version
         run: |
@@ -33,20 +34,24 @@ jobs:
           new_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
           echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
       - name: Update version in info.xml
         run: |
           sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" appinfo/info.xml
+
       - name: Commit version update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -am "Bump version to ${{ env.NEW_VERSION }}"
           git push
+
       # Step 1: Prepare the signing certificate and key
       - name: Prepare Signing Certificate and Key
         run: |
           echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
           echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+
       # Step 3: Install Node.js dependencies using npm
       - name: Install npm dependencies
         uses: actions/setup-node@v3
@@ -109,14 +114,17 @@ jobs:
             --exclude='.babelrc' \
             --exclude='.nvmrc' \
             ./ package/${{ github.event.repository.name }}/
+
       # Step 9: Create the TAR.GZ archive
       - name: Create Tarball
         run: |
           cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
+
       # Step 10: Sign the TAR.GZ file with OpenSSL
       - name: Sign the TAR.GZ file with OpenSSL
         run: |
           openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
       # Step 11: Generate Git version information
       - name: Git Version
         id: version
@@ -130,6 +138,7 @@ jobs:
         run: |
           description=$(jq -r '.description' <(curl -s https://api.github.com/repos/${{ github.repository }}))
           echo "REPO_DESCRIPTION=$description" >> $GITHUB_ENV
+
       # Step 13: Run Changelog CI
       - name: Run Changelog CI
         if: github.ref == 'refs/heads/main'
@@ -142,11 +151,13 @@ jobs:
       - name: Use the version
         run: |
           echo ${{ steps.version.outputs.version }}
+
       # Step 15: Copy the package files into the package (this step seems redundant, consider removing)
       - name: Copy the package files into the package
         run: |
           mkdir -p package/${{ github.event.repository.name }}
           rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
+
       # Step 18: Create a new release on GitHub
       - name: Upload Release
         uses: ncipollo/release-action@v1.12.0
@@ -182,3 +193,38 @@ jobs:
           tar -tvf nextcloud-release.tar.gz
           echo "info.xml contents:"
           tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
+
+      - name: Update CHANGELOG.md
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "## [Unreleased]" >> CHANGELOG.md
+            echo "### Added" >> CHANGELOG.md
+            echo "- Initial release" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Create a new entry for the current version
+          NEW_ENTRY="## ${{ env.NEW_VERSION }} – $(date +'%Y-%m-%d')"
+          echo "$NEW_ENTRY" > temp_changelog.md
+          echo "### Added" >> temp_changelog.md
+          echo "- New features for this release" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "### Changed" >> temp_changelog.md
+          echo "- Changes in existing functionality for this release" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "### Fixed" >> temp_changelog.md
+          echo "- Bug fixes for this release" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+          
+          # Append the new entry after the Unreleased section
+          sed -i '/## \[Unreleased\]/,/^$/!b;:a;/^$/!{$!{N;ba}};/\n.*/{P;D}' CHANGELOG.md
+          sed -i '/## \[Unreleased\]/r temp_changelog.md' CHANGELOG.md
+          rm temp_changelog.md
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG.md for version ${{ env.NEW_VERSION }}" || echo "No changes to commit"
+          git push
