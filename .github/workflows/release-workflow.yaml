@@ -3,6 +3,7 @@ name: Release Workflow
 on:
   push:
     branches:
+      - master
       - main
   workflow_dispatch:
     inputs:
@@ -86,7 +87,7 @@ jobs:
             --exclude='docker' \
             --exclude='docs' \
             --exclude='node_modules' \
-            --exclude='src' \
+            --exclude='/src' \
             --exclude='test' \
             --exclude='package-lock.json' \
             --exclude='composer.lock' \
@@ -193,38 +194,3 @@ jobs:
           tar -tvf nextcloud-release.tar.gz
           echo "info.xml contents:"
           tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
-
-      - name: Update CHANGELOG.md
-        run: |
-          if [ ! -f CHANGELOG.md ]; then
-            echo "# Changelog" > CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            echo "## [Unreleased]" >> CHANGELOG.md
-            echo "### Added" >> CHANGELOG.md
-            echo "- Initial release" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
-          fi
-          
-          # Create a new entry for the current version
-          NEW_ENTRY="## ${{ env.NEW_VERSION }} – $(date +'%Y-%m-%d')"
-          echo "$NEW_ENTRY" > temp_changelog.md
-          echo "### Added" >> temp_changelog.md
-          echo "- New features for this release" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-          echo "### Changed" >> temp_changelog.md
-          echo "- Changes in existing functionality for this release" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-          echo "### Fixed" >> temp_changelog.md
-          echo "- Bug fixes for this release" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-          
-          # Append the new entry after the Unreleased section
-          sed -i '/## \[Unreleased\]/,/^$/!b;:a;/^$/!{$!{N;ba}};/\n.*/{P;D}' CHANGELOG.md
-          sed -i '/## \[Unreleased\]/r temp_changelog.md' CHANGELOG.md
-          rm temp_changelog.md
-          
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add CHANGELOG.md
-          git commit -m "Update CHANGELOG.md for version ${{ env.NEW_VERSION }}" || echo "No changes to commit"
-          git push
