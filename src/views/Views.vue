@@ -7,7 +7,9 @@ import { navigationStore } from '../store/store.js'
 	<NcAppContent>
 		<template #default>
 			<Dashboard v-if="navigationStore.selected === 'dashboard'" />
-			<RegistersList v-if="navigationStore.selected === 'registers'" />
+			<RegistersIndex v-if="navigationStore.selected === 'registers'" />
+			<SourcesIndex v-if="navigationStore.selected === 'sources'" />
+			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 		</template>
 	</NcAppContent>
 </template>
@@ -15,14 +17,18 @@ import { navigationStore } from '../store/store.js'
 <script>
 import { NcAppContent } from '@nextcloud/vue'
 import Dashboard from './dashboard/DashboardIndex.vue'
-import RegistersList from './register/RegistersList.vue'
+import RegistersIndex from './register/RegistersIndex.vue'
+import SourcesIndex from './source/SourcesIndex.vue'
+import SchemasIndex from './schema/SchemasIndex.vue'
 
 export default {
 	name: 'Views',
 	components: {
 		Dashboard,
 		NcAppContent,
-		RegistersList,
+		RegistersIndex,
+		SourcesIndex,
+		SchemasIndex,
 	},
 }
 </script>

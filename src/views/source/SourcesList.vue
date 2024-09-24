@@ -1,5 +1,5 @@
 <script setup>
-import { registerStore, navigationStore, searchStore } from '../../store/store.js'
+import { sourceStore, navigationStore, searchStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -12,47 +12,47 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 					label="Search"
 					class="searchField"
 					trailing-button-icon="close"
-					@trailing-button-click="registerStore.refreshRegisterList()">
+					@trailing-button-click="sourceStore.refreshSourceList()">
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
-					<NcActionButton @click="registerStore.refreshRegisterList()">
+					<NcActionButton @click="sourceStore.refreshSourceList()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Ververs
 					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem({}); navigationStore.setModal('editRegister')">
+					<NcActionButton @click="sourceStore.setSourceItem({}); navigationStore.setModal('editSource')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Register toevoegen
+						Bron toevoegen
 					</NcActionButton>
 				</NcActions>
 			</div>
-			<div v-if="registerStore.registerList && registerStore.registerList.length > 0">
-				<NcListItem v-for="(register, i) in registerStore.registerList"
-					:key="`${register}${i}`"
-					:name="register.name"
-					:active="registerStore.registerItem?.id === register?.id"
+			<div v-if="sourceStore.sourceList && sourceStore.sourceList.length > 0">
+				<NcListItem v-for="(source, i) in sourceStore.sourceList"
+					:key="`${source}${i}`"
+					:name="source.name"
+					:active="sourceStore.sourceItem?.id === source?.id"
 					:force-display-actions="true"
-					@click="registerStore.setRegisterItem(register)">
+					@click="sourceStore.setSourceItem(source)">
 					<template #icon>
-						<DatabaseOutline :class="registerStore.registerItem?.id === register.id && 'selectedRegisterIcon'"
+						<DatabaseArrowRightOutline :class="sourceStore.sourceItem?.id === source.id && 'selectedSourceIcon'"
 							disable-menu
 							:size="44" />
 					</template>
 					<template #subname>
-						{{ register?.description }}
+						{{ source?.description }}
 					</template>
 					<template #actions>
-						<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('editRegister')">
+						<NcActionButton @click="sourceStore.setSourceItem(source); navigationStore.setModal('editSource')">
 							<template #icon>
 								<Pencil />
 							</template>
 							Bewerken
 						</NcActionButton>
-						<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+						<NcActionButton @click="sourceStore.setSourceItem(source); navigationStore.setDialog('deleteSource')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
@@ -63,14 +63,14 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 			</div>
 		</ul>
 
-		<NcLoadingIcon v-if="!registerStore.registerList"
+		<NcLoadingIcon v-if="!sourceStore.sourceList"
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Registers aan het laden" />
+			name="Bronnen aan het laden" />
 
-		<div v-if="registerStore.registerList.length === 0">
-			Er zijn nog geen registers gedefinieerd.
+		<div v-if="sourceStore.sourceList.length === 0">
+			Er zijn nog geen bronnen gedefinieerd.
 		</div>
 	</NcAppContentList>
 </template>
@@ -78,14 +78,14 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 <script>
 import { NcListItem, NcActionButton, NcAppContentList, NcTextField, NcLoadingIcon, NcActions } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
-	name: 'RegistersList',
+	name: 'SourcesList',
 	components: {
 		NcListItem,
 		NcActions,
@@ -94,14 +94,14 @@ export default {
 		NcTextField,
 		NcLoadingIcon,
 		Magnify,
-		DatabaseOutline,
+		DatabaseArrowRightOutline,
 		Refresh,
 		Plus,
 		Pencil,
 		TrashCanOutline,
 	},
 	mounted() {
-		registerStore.refreshRegisterList()
+		sourceStore.refreshSourceList()
 	},
 }
 </script>

@@ -13,7 +13,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 				name="Geen register"
 				description="Nog geen register geselecteerd">
 				<template #icon>
-					<Update />
+					<DatabaseOutline />
 				</template>
 				<template #action>
 					<NcButton type="primary" @click="registerStore.setRegisterItem({}); navigationStore.setModal('editRegister')">
@@ -30,7 +30,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 import { NcAppContent, NcEmptyContent, NcButton } from '@nextcloud/vue'
 import RegistersList from './RegistersList.vue'
 import RegisterDetails from './RegisterDetails.vue'
-import Update from 'vue-material-design-icons/Update.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 
 export default {
 	name: 'RegistersIndex',
@@ -40,7 +40,7 @@ export default {
 		NcButton,
 		RegistersList,
 		RegisterDetails,
-		Update,
+		DatabaseOutline,
 	},
 }
 </script>

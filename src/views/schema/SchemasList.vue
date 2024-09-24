@@ -1,5 +1,5 @@
 <script setup>
-import { registerStore, navigationStore, searchStore } from '../../store/store.js'
+import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -12,47 +12,47 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 					label="Search"
 					class="searchField"
 					trailing-button-icon="close"
-					@trailing-button-click="registerStore.refreshRegisterList()">
+					@trailing-button-click="schemaStore.refreshSchemaList()">
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
-					<NcActionButton @click="registerStore.refreshRegisterList()">
+					<NcActionButton @click="schemaStore.refreshSchemaList()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Ververs
 					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem({}); navigationStore.setModal('editRegister')">
+					<NcActionButton @click="schemaStore.setSchemaItem({}); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Register toevoegen
+						Schema toevoegen
 					</NcActionButton>
 				</NcActions>
 			</div>
-			<div v-if="registerStore.registerList && registerStore.registerList.length > 0">
-				<NcListItem v-for="(register, i) in registerStore.registerList"
-					:key="`${register}${i}`"
-					:name="register.name"
-					:active="registerStore.registerItem?.id === register?.id"
+			<div v-if="schemaStore.schemaList && schemaStore.schemaList.length > 0">
+				<NcListItem v-for="(schema, i) in schemaStore.schemaList"
+					:key="`${schema}${i}`"
+					:name="schema.name"
+					:active="schemaStore.schemaItem?.id === schema?.id"
 					:force-display-actions="true"
-					@click="registerStore.setRegisterItem(register)">
+					@click="schemaStore.setSchemaItem(schema)">
 					<template #icon>
-						<DatabaseOutline :class="registerStore.registerItem?.id === register.id && 'selectedRegisterIcon'"
+						<FileTreeOutline :class="schemaStore.schemaItem?.id === schema.id && 'selectedSchemaIcon'"
 							disable-menu
 							:size="44" />
 					</template>
 					<template #subname>
-						{{ register?.description }}
+						{{ schema?.description }}
 					</template>
 					<template #actions>
-						<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('editRegister')">
+						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 							<template #icon>
 								<Pencil />
 							</template>
 							Bewerken
 						</NcActionButton>
-						<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
@@ -63,14 +63,14 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 			</div>
 		</ul>
 
-		<NcLoadingIcon v-if="!registerStore.registerList"
+		<NcLoadingIcon v-if="!schemaStore.schemaList"
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Registers aan het laden" />
+			name="Schema's aan het laden" />
 
-		<div v-if="registerStore.registerList.length === 0">
-			Er zijn nog geen registers gedefinieerd.
+		<div v-if="schemaStore.schemaList.length === 0">
+			Er zijn nog geen schema's gedefinieerd.
 		</div>
 	</NcAppContentList>
 </template>
@@ -78,14 +78,14 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 <script>
 import { NcListItem, NcActionButton, NcAppContentList, NcTextField, NcLoadingIcon, NcActions } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
-	name: 'RegistersList',
+	name: 'SchemasList',
 	components: {
 		NcListItem,
 		NcActions,
@@ -94,14 +94,14 @@ export default {
 		NcTextField,
 		NcLoadingIcon,
 		Magnify,
-		DatabaseOutline,
+		FileTreeOutline,
 		Refresh,
 		Plus,
 		Pencil,
 		TrashCanOutline,
 	},
 	mounted() {
-		registerStore.refreshRegisterList()
+		schemaStore.refreshSchemaList()
 	},
 }
 </script>

@@ -22,7 +22,7 @@ export const useRegisterStore = defineStore(
 			/* istanbul ignore next */ // ignore this for Jest until moved into a service
 			async refreshRegisterList(search = null) {
 				// @todo this might belong in a service?
-				let endpoint = '/index.php/apps/openconnector/api/registers'
+				let endpoint = '/index.php/apps/openregister/api/registers'
 				if (search !== null && search !== '') {
 					endpoint = endpoint + '?_search=' + search
 				}
@@ -46,7 +46,7 @@ export const useRegisterStore = defineStore(
 			},
 			// New function to get a single register
 			async getRegister(id) {
-				const endpoint = `/index.php/apps/openconnector/api/registers/${id}`
+				const endpoint = `/index.php/apps/openregister/api/registers/${id}`
 				try {
 					const response = await fetch(endpoint, {
 						method: 'GET',
@@ -67,7 +67,7 @@ export const useRegisterStore = defineStore(
 
 				console.log('Deleting register...')
 
-				const endpoint = `/index.php/apps/openconnector/api/registers/${this.registerItem.id}`
+				const endpoint = `/index.php/apps/openregister/api/registers/${this.registerItem.id}`
 
 				return fetch(endpoint, {
 					method: 'DELETE',
@@ -90,8 +90,8 @@ export const useRegisterStore = defineStore(
 
 				const isNewRegister = !this.registerItem.id
 				const endpoint = isNewRegister
-					? '/index.php/apps/openconnector/api/registers'
-					: `/index.php/apps/openconnector/api/registers/${this.registerItem.id}`
+					? '/index.php/apps/openregister/api/registers'
+					: `/index.php/apps/openregister/api/registers/${this.registerItem.id}`
 				const method = isNewRegister ? 'POST' : 'PUT'
 
 				// Create a copy of the register item and remove empty properties
