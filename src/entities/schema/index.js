@@ -1,3 +1,3 @@
-export * from './ability.ts'
-export * from './ability.types.ts'
-export * from './ability.mock.ts'
+export * from './schema.ts'
+export * from './schema.types.ts'
+export * from './schema.mock.ts'
