@@ -16,7 +16,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<DatabaseArrowRightOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="sourceStore.setSourceItem({}); navigationStore.setModal('editSource')">
+					<NcButton type="primary" @click="sourceStore.setSourceItem(null); navigationStore.setModal('editSource')">
 						Bron toevoegen
 					</NcButton>
 				</template>

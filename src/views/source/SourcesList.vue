@@ -22,7 +22,7 @@ import { sourceStore, navigationStore, searchStore } from '../../store/store.js'
 						</template>
 						Ververs
 					</NcActionButton>
-					<NcActionButton @click="sourceStore.setSourceItem({}); navigationStore.setModal('editSource')">
+					<NcActionButton @click="sourceStore.setSourceItem(null); navigationStore.setModal('editSource')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
