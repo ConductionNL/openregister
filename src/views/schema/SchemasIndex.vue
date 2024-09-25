@@ -16,7 +16,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 					<FileTreeOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="schemaStore.setSchemaItem({}); navigationStore.setModal('editSchema')">
+					<NcButton type="primary" @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
 						Schema toevoegen
 					</NcButton>
 				</template>

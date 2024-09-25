@@ -22,7 +22,7 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 						</template>
 						Ververs
 					</NcActionButton>
-					<NcActionButton @click="schemaStore.setSchemaItem({}); navigationStore.setModal('editSchema')">
+					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
