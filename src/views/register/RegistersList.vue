@@ -22,7 +22,7 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 						</template>
 						Ververs
 					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem({}); navigationStore.setModal('editRegister')">
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
