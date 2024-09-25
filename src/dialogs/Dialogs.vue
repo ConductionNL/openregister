@@ -1,7 +1,6 @@
 <template>
 	<!-- Placeholder div -->
-	<div>
-	</div>
+	<div />
 </template>
 
 <script>
