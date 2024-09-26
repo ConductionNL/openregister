@@ -133,8 +133,6 @@ export default {
 
 			sourceStore.saveSource({
 				...this.sourceItem,
-				created: !this.sourceItem?.id ? new Date().toISOString() : this.sourceItem.created,
-				updated: this.sourceItem?.id ? new Date().toISOString() : null,
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

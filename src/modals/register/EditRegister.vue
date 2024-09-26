@@ -181,8 +181,6 @@ export default {
 			registerStore.saveRegister({
 				...this.registerItem,
 				schemas: this.schemas?.value?.map((schema) => schema.id) || [],
-				created: !this.registerItem?.id ? new Date().toISOString() : this.registerItem.created,
-				updated: this.registerItem?.id ? new Date().toISOString() : null,
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
