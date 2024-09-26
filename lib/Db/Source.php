@@ -8,7 +8,6 @@ use OCP\AppFramework\Db\Entity;
 
 class Source extends Entity implements JsonSerializable
 {
-	protected ?string $id = null;
 	protected ?string $name = null;
 	protected ?string $description = null;
 	protected ?string $databaseUrl = null;
@@ -17,7 +16,6 @@ class Source extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType('id', 'string');
 		$this->addType('title', 'string');
 		$this->addType('description', 'string');
 		$this->addType('databaseUrl', 'string');

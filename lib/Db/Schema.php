@@ -8,7 +8,6 @@ use OCP\AppFramework\Db\Entity;
 
 class Schema extends Entity implements JsonSerializable
 {
-	protected ?string $title 	   = null;
 	protected ?string $version     = null;
 	protected ?string $description = null;
 	protected ?string $summary     = null;

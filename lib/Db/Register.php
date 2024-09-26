@@ -8,7 +8,6 @@ use OCP\AppFramework\Db\Entity;
 
 class Register extends Entity implements JsonSerializable
 {
-	protected ?string $id = null;
 	protected ?string $title = null;
 	protected ?string $description = null;
 	protected ?array $schemas = null;
@@ -18,7 +17,6 @@ class Register extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType('id', 'string');
 		$this->addType('title', 'title');
 		$this->addType('description', 'string');
 		$this->addType('schemas', 'array');
