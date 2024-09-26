@@ -16,7 +16,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 					<DatabaseOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="registerStore.setRegisterItem({}); navigationStore.setModal('editRegister')">
+					<NcButton type="primary" @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						Register toevoegen
 					</NcButton>
 				</template>
