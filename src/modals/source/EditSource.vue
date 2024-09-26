@@ -127,7 +127,6 @@ export default {
 				created: '',
 				updated: '',
 			}
-			this.types.value = null
 		},
 		async editSource() {
 			this.loading = true
