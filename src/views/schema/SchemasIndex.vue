@@ -10,14 +10,14 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<template #default>
 			<NcEmptyContent v-if="!schemaStore.schemaItem || navigationStore.selected != 'schemas'"
 				class="detailContainer"
-				name="Geen schema"
-				description="Nog geen schema geselecteerd">
+				name="No schema"
+				description="No schema selected yet">
 				<template #icon>
 					<FileTreeOutline />
 				</template>
 				<template #action>
 					<NcButton type="primary" @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
-						Schema toevoegen
+						Add schema
 					</NcButton>
 				</template>
 			</NcEmptyContent>

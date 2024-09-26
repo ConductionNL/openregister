@@ -8,7 +8,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Schema succesvol aangepast</p>
+			<p>Schema successfully updated</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -37,7 +37,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
+				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !schemaItem.title"
@@ -48,7 +48,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
 					<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
 				</template>
-				{{ schemaStore.schemaItem?.id ? 'Opslaan' : 'Aanmaken' }}
+				{{ schemaStore.schemaItem?.id ? 'Save' : 'Create' }}
 			</NcButton>
 		</template>
 	</NcDialog>

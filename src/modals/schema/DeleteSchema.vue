@@ -4,15 +4,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'deleteSchema'"
-		name="Schema verwijderen"
+		name="Delete Schema"
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Wil je <b>{{ schemaStore.schemaItem.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Do you want to permanently delete <b>{{ schemaStore.schemaItem.title }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Schema succesvol verwijderd</p>
+			<p>Schema successfully deleted</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -23,7 +23,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
+				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton
 				v-if="!success"
@@ -34,7 +34,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
 				</template>
-				Verwijderen
+				Delete
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -87,7 +87,7 @@ export default {
 				response.ok && setTimeout(this.closeDialog, 2000)
 			}).catch((error) => {
 				this.success = false
-				this.error = error.message || 'Er is een fout opgetreden bij het verwijderen van het schema'
+				this.error = error.message || 'An error occurred while deleting the schema'
 			}).finally(() => {
 				this.loading = false
 			})
