@@ -60,69 +60,75 @@ export const useSourceStore = defineStore(
 				}
 			},
 			// Delete a source
-			deleteSource() {
-				if (!this.sourceItem || !this.sourceItem.id) {
+			async deleteSource(sourceItem) {
+				if (!sourceItem.id) {
 					throw new Error('No source item to delete')
 				}
 
 				console.log('Deleting source...')
 
-				const endpoint = `/index.php/apps/openregister/api/sources/${this.sourceItem.id}`
+				const endpoint = `/index.php/apps/openregister/api/sources/${sourceItem.id}`
 
-				return fetch(endpoint, {
+				const response = await fetch(endpoint, {
 					method: 'DELETE',
 				})
-					.then((response) => {
-						this.refreshSourceList()
-					})
-					.catch((err) => {
-						console.error('Error deleting source:', err)
-						throw err
-					})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				this.refreshSourceList()
+
+				return { response, data: responseData }
+
 			},
 			// Create or save a source from store
-			saveSource() {
-				if (!this.sourceItem) {
+			async saveSource(sourceItem) {
+				if (!sourceItem) {
 					throw new Error('No source item to save')
 				}
 
 				console.log('Saving source...')
 
-				const isNewSource = !this.sourceItem.id
+				const isNewSource = !sourceItem.id
 				const endpoint = isNewSource
 					? '/index.php/apps/openregister/api/sources'
-					: `/index.php/apps/openregister/api/sources/${this.sourceItem.id}`
+					: `/index.php/apps/openregister/api/sources/${sourceItem.id}`
 				const method = isNewSource ? 'POST' : 'PUT'
 
-				// Create a copy of the source item and remove empty properties
-				const sourceToSave = { ...this.sourceItem }
-				Object.keys(sourceToSave).forEach(key => {
-					if (sourceToSave[key] === '' || (Array.isArray(sourceToSave[key]) && sourceToSave[key].length === 0)) {
-						delete sourceToSave[key]
-					}
-				})
-
-				return fetch(
+				const response = await fetch(
 					endpoint,
 					{
 						method,
 						headers: {
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify(sourceToSave),
+						body: JSON.stringify(sourceItem),
 					},
 				)
-					.then((response) => response.json())
-					.then((data) => {
-						this.setSourceItem(data)
-						console.log('Source saved')
-						// Refresh the source list
-						return this.refreshSourceList()
-					})
-					.catch((err) => {
-						console.error('Error saving source:', err)
-						throw err
-					})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				const data = new Source(responseData)
+
+				this.setSourceItem(data)
+				await this.refreshSourceList()
+
+				return { response, data }
 			},
 		},
 	},
