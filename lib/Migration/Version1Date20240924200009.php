@@ -40,7 +40,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 
 		if (!$schema->hasTable('openregister_sources')) {
 			$table = $schema->createTable('openregister_sources');
-			$table->addColumn('id', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('title', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('database_url', Types::STRING, ['notnull' => true, 'length' => 255]);
@@ -74,7 +74,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 
 		if (!$schema->hasTable('openregister_registers')) {
 			$table = $schema->createTable('openregister_registers');
-			$table->addColumn('id', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('title', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('schemas', Types::JSON, ['notnull' => false]);
