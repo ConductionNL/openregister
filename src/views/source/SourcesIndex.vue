@@ -10,14 +10,14 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		<template #default>
 			<NcEmptyContent v-if="!sourceStore.sourceItem || navigationStore.selected != 'sources'"
 				class="detailContainer"
-				name="Geen bron"
-				description="Nog geen bron geselecteerd">
+				name="No source"
+				description="No source selected yet">
 				<template #icon>
 					<DatabaseArrowRightOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="sourceStore.setSourceItem({}); navigationStore.setModal('editSource')">
-						Bron toevoegen
+					<NcButton type="primary" @click="sourceStore.setSourceItem(null); navigationStore.setModal('editSource')">
+						Add source
 					</NcButton>
 				</template>
 			</NcEmptyContent>
