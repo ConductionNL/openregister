@@ -17,7 +17,7 @@ class Register extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType('title', 'title');
+		$this->addType('title', 'string');
 		$this->addType('description', 'string');
 		$this->addType('schemas', 'array');
 		$this->addType('source', 'string');
