@@ -10,14 +10,14 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		<template #default>
 			<NcEmptyContent v-if="!registerStore.registerItem || navigationStore.selected != 'registers'"
 				class="detailContainer"
-				name="Geen register"
-				description="Nog geen register geselecteerd">
+				name="No register"
+				description="No register selected yet">
 				<template #icon>
 					<DatabaseOutline />
 				</template>
 				<template #action>
 					<NcButton type="primary" @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-						Register toevoegen
+						Add Register
 					</NcButton>
 				</template>
 			</NcEmptyContent>
