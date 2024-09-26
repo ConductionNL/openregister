@@ -8,8 +8,7 @@ use OCP\AppFramework\Db\Entity;
 
 class Source extends Entity implements JsonSerializable
 {
-	protected ?string $id = null;
-	protected ?string $name = null;
+	protected ?string $title = null;
 	protected ?string $description = null;
 	protected ?string $databaseUrl = null;
 	protected ?string $type = null;
@@ -17,8 +16,7 @@ class Source extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType('id', 'string');
-		$this->addType('title', 'string');
+		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType('description', 'string');
 		$this->addType('databaseUrl', 'string');
 		$this->addType('type', 'string');
@@ -26,21 +24,38 @@ class Source extends Entity implements JsonSerializable
 		$this->addType('created', 'datetime');
 	}
 
+	public function getJsonFields(): array
+	{
+		return array_keys(
+			array_filter($this->getFieldTypes(), function ($field) {
+				return $field === 'json';
+			})
+		);
+	}
+
 	public function hydrate(array $object): self
 	{
+		$jsonFields = $this->getJsonFields();
+
+		if(isset($object['metadata']) === false) {
+			$object['metadata'] = [];
+		}
+
 		foreach($object as $key => $value) {
+			if (in_array($key, $jsonFields) === true && $value === []) {
+				$value = null;
+			}
+
 			$method = 'set'.ucfirst($key);
 
 			try {
 				$this->$method($value);
 			} catch (\Exception $exception) {
-				// Error handling can be added here
 			}
 		}
 
 		return $this;
 	}
-
 	public function jsonSerialize(): array
 	{
 		return [
