@@ -105,7 +105,6 @@ export const useSchemaStore = defineStore('schema', {
 				: `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
 			const method = isNewSchema ? 'POST' : 'PUT'
 
-			schemaItem.created = schemaItem.created.date
 			schemaItem.updated = new Date().toISOString()
 
 			try {

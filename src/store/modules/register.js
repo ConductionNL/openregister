@@ -105,8 +105,6 @@ export const useRegisterStore = defineStore('register', {
 				: `/index.php/apps/openregister/api/registers/${registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
 
-			// change updated to current date as a singular iso date string and created to the date string
-			registerItem.created = registerItem.created.date
 			registerItem.updated = new Date().toISOString()
 
 			try {
