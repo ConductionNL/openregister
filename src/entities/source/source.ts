@@ -8,17 +8,8 @@ export class Source implements TSource {
 	public description: string
 	public databaseUrl: string
 	public type: string
-	public updated: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    }
-
-	public created: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    }
+	public updated: string
+	public created: string
 
 	constructor(source: TSource) {
 		this.id = source.id || ''
@@ -26,16 +17,8 @@ export class Source implements TSource {
 		this.description = source.description || ''
 		this.databaseUrl = source.databaseUrl || ''
 		this.type = source.type || ''
-		this.updated = source.updated || {
-			date: '',
-			timezone_type: 0,
-			timezone: '',
-		}
-		this.created = source.created || {
-			date: '',
-			timezone_type: 0,
-			timezone: '',
-		}
+		this.updated = source.updated || ''
+		this.created = source.created || ''
 	}
 
 	public validate(): SafeParseReturnType<TSource, unknown> {

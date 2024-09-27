@@ -10,11 +10,8 @@ export const mockRegisterData = (): TRegister[] => [
 		source: '1',
 		databaseId: 'db1-a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 		tablePrefix: 'character_',
-		created: {
-			date: new Date().toISOString(),
-			timezone_type: 3,
-			timezone: 'UTC',
-		},
+		created: new Date().toISOString(),
+		updated: new Date().toISOString(),
 	},
 	{
 		id: '5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
@@ -24,11 +21,8 @@ export const mockRegisterData = (): TRegister[] => [
 		source: '1',
 		databaseId: 'db2-a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 		tablePrefix: 'item_',
-		created: {
-			date: new Date().toISOString(),
-			timezone_type: 3,
-			timezone: 'UTC',
-		},
+		created: new Date().toISOString(),
+		updated: new Date().toISOString(),
 	},
 ]
 
