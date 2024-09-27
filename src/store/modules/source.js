@@ -97,6 +97,9 @@ export const useSourceStore = defineStore(
 					: `/index.php/apps/openregister/api/sources/${sourceItem.id}`
 				const method = isNewSource ? 'POST' : 'PUT'
 
+				sourceItem.created = sourceItem.created.date
+				sourceItem.updated = new Date().toISOString()
+
 				const response = await fetch(
 					endpoint,
 					{

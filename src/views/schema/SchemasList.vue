@@ -33,7 +33,7 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 			<div v-if="schemaStore.schemaList && schemaStore.schemaList.length > 0">
 				<NcListItem v-for="(schema, i) in schemaStore.schemaList"
 					:key="`${schema}${i}`"
-					:name="schema.name"
+					:name="schema.title"
 					:active="schemaStore.schemaItem?.id === schema?.id"
 					:force-display-actions="true"
 					@click="schemaStore.setSchemaItem(schema)">

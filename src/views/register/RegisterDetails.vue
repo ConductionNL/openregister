@@ -1,5 +1,5 @@
 <script setup>
-import { registerStore, navigationStore } from '../../store/store.js'
+import { registerStore, navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -38,25 +38,101 @@ import { registerStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 				<!-- Add more register-specific details here -->
+				<div class="tabContainer">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Schemas" active>
+							<div v-if="filterSchemas.length > 0">
+								<NcListItem v-for="(schema) in filterSchemas"
+									:key="schema.id"
+									:name="schema.title"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<FileTreeOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ schema.description }}
+									</template>
+									<template #actions>
+										<NcActionButton :aria-label="`Go to schema '${schema.title}'`"
+											@click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemas')">
+											<template #icon>
+												<EyeArrowRight :size="20" />
+											</template>
+											View
+										</NcActionButton>
+										<NcActionButton :aria-label="`Edit '${schema.title}'`"
+											@click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="filterSchemas.length === 0">
+								No schemas found
+							</div>
+						</BTab>
+					</BTabs>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
+import {
+	NcActions,
+	NcActionButton,
+	NcListItem,
+} from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import EyeArrowRight from 'vue-material-design-icons/EyeArrowRight.vue'
 
 export default {
 	name: 'RegisterDetails',
 	components: {
 		NcActions,
 		NcActionButton,
+		NcListItem,
+		BTabs,
+		BTab,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
+		FileTreeOutline,
+		EyeArrowRight,
+	},
+	data() {
+		return {
+			schemasLoading: false,
+		}
+	},
+	computed: {
+		filterSchemas() {
+			return schemaStore.schemaList.filter((schema) => {
+				return registerStore.registerItem.schemas.map(String).includes(schema.id.toString())
+			})
+		},
+	},
+	mounted() {
+		this.fetchSchemas()
+	},
+	methods: {
+		fetchSchemas() {
+			this.schemasLoading = true
+			schemaStore.refreshSchemaList()
+				.then(() => {
+					this.schemasLoading = false
+				})
+		},
 	},
 }
 </script>

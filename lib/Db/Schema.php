@@ -8,6 +8,7 @@ use OCP\AppFramework\Db\Entity;
 
 class Schema extends Entity implements JsonSerializable
 {
+	protected ?string $title       = null;
 	protected ?string $version     = null;
 	protected ?string $description = null;
 	protected ?string $summary     = null;
@@ -102,8 +103,8 @@ class Schema extends Entity implements JsonSerializable
 			'properties'  => $properties,
 			'archive'     => $this->archive,
 			'source'	  => $this->source,
-			'updated' => $this->updated,
-			'created' => $this->created
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null,
 		];
 
 		$jsonFields = $this->getJsonFields();
