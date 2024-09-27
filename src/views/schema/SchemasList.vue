@@ -20,13 +20,13 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
-						Ververs
+						Refresh
 					</NcActionButton>
-					<NcActionButton @click="schemaStore.setSchemaItem({}); navigationStore.setModal('editSchema')">
+					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Schema toevoegen
+						Add Schema
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -50,13 +50,13 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 							<template #icon>
 								<Pencil />
 							</template>
-							Bewerken
+							Edit
 						</NcActionButton>
 						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
-							Verwijderen
+							Delete
 						</NcActionButton>
 					</template>
 				</NcListItem>
@@ -67,10 +67,10 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Schema's aan het laden" />
+			name="Loading schemas" />
 
 		<div v-if="schemaStore.schemaList.length === 0">
-			Er zijn nog geen schema's gedefinieerd.
+			No schemas have been defined yet.
 		</div>
 	</NcAppContentList>
 </template>
