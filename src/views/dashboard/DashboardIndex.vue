@@ -16,7 +16,7 @@ export default {
 	name: 'DashboardIndex',
 	components: {
 		NcAppContent,
-	}
+	},
 }
 </script>
 
