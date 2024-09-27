@@ -8,7 +8,6 @@ use OCP\AppFramework\Db\Entity;
 
 class Schema extends Entity implements JsonSerializable
 {
-	protected ?string $title 	   = null;
 	protected ?string $version     = null;
 	protected ?string $description = null;
 	protected ?string $summary     = null;
@@ -20,13 +19,13 @@ class Schema extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType(fieldName: 'archive', type: 'json');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'required', type: 'json');
 		$this->addType(fieldName: 'properties', type: 'json');
+		$this->addType(fieldName: 'archive', type: 'json');
 		$this->addType(fieldName: 'source', type: 'string');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
@@ -45,6 +44,10 @@ class Schema extends Entity implements JsonSerializable
 	{
 		$jsonFields = $this->getJsonFields();
 
+		if(isset($object['metadata']) === false) {
+			$object['metadata'] = [];
+		}
+
 		foreach($object as $key => $value) {
 			if (in_array($key, $jsonFields) === true && $value === []) {
 				$value = null;
@@ -60,6 +63,7 @@ class Schema extends Entity implements JsonSerializable
 
 		return $this;
 	}
+
 
 	public function jsonSerialize(): array
 	{

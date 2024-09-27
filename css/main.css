@@ -1,10 +1,11 @@
 :root {
-  --OC-margin-10: 10px;
-  --OC-margin-20: 20px;
-  --OC-margin-50: 50px;
+  --Larp-margin-10: 10px;
+  --Larp-margin-20: 20px;
+  --Larp-margin-50: 50px;
 }
 
 /* Pages */
+
 .pageHeader {
   margin-block-start: var(--app-navigation-padding);
   margin-inline-start: calc(
@@ -15,13 +16,16 @@
 }
 
 /* Lists */
+
 .listHeader {
+  display: flex;
+
   position: sticky;
   top: 0;
   z-index: 1000;
   background-color: var(--color-main-background);
   border-bottom: 1px solid var(--color-border);
-  display: flex;
+  flex-direction: row;
   align-items: center;
 }
 
@@ -37,15 +41,11 @@
 }
 
 /* Detail pages */
-.detailHeader {
-  display: flex;
-  justify-content: space-between;
-}
 
 .detailContainer {
-  margin-block-start: var(--OC-margin-20);
-  margin-inline-start: var(--OC-margin-20);
-  margin-inline-end: var(--OC-margin-20);
+  margin-block-start: var(--Larp-margin-20);
+  margin-inline-start: var(--Larp-margin-20);
+  margin-inline-end: var(--Larp-margin-20);
 }
 
 .tabContainer > * ul > li {
@@ -83,7 +83,7 @@
 }
 
 .tabContainer > * div[role="tabpanel"] {
-  margin-block-start: var(--OC-margin-10);
+  margin-block-start: var(--Larp-margin-10);
 }
 
 .tabPanel {
@@ -112,7 +112,7 @@
 
 /* Modals */
 .modalContent {
-  margin: var(--OC-margin-50);
+  margin: var(--Larp-margin-50);
   text-align: center;
 }
 
@@ -136,6 +136,7 @@
 }
 
 /* File drag and drop */
+
 .filesListDragDropNotice {
   width: 100%;
   min-height: 113px;

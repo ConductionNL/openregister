@@ -4,8 +4,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -15,7 +15,7 @@ use OCP\IRequest;
 class RegistersController extends Controller
 {
     /**
-     * Constructor for the SourcesController
+     * Constructor for the RegistersController
      *
      * @param string $appName The name of the app
      * @param IRequest $request The request object
@@ -25,7 +25,7 @@ class RegistersController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SourceMapper $sourceMapper
+        private readonly RegisterMapper $registerMapper
     )
     {
         parent::__construct($appName, $request);
@@ -51,56 +51,56 @@ class RegistersController extends Controller
     }
     
     /**
-     * Retrieves a list of all sources
+     * Retrieves a list of all registers
      * 
-     * This method returns a JSON response containing an array of all sources in the system.
+     * This method returns a JSON response containing an array of all registers in the system.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the list of sources
+     * @return JSONResponse A JSON response containing the list of registers
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
+        $fieldsToSearch = ['title', 'description'];
 
         $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->sourceMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        return new JSONResponse(['results' => $this->registerMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
     }
 
     /**
-     * Retrieves a single source by its ID
+     * Retrieves a single register by its ID
      * 
-     * This method returns a JSON response containing the details of a specific source.
+     * This method returns a JSON response containing the details of a specific register.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to retrieve
-     * @return JSONResponse A JSON response containing the source details
+     * @param string $id The ID of the register to retrieve
+     * @return JSONResponse A JSON response containing the register details
      */
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->sourceMapper->find(id: (int) $id));
+            return new JSONResponse($this->registerMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
     }
 
     /**
-     * Creates a new source
+     * Creates a new register
      * 
-     * This method creates a new source based on POST data.
+     * This method creates a new register based on POST data.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the created source
+     * @return JSONResponse A JSON response containing the created register
      */
     public function create(): JSONResponse
     {
@@ -116,19 +116,19 @@ class RegistersController extends Controller
             unset($data['id']);
         }
         
-        return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
+        return new JSONResponse($this->registerMapper->createFromArray(object: $data));
     }
 
     /**
-     * Updates an existing source
+     * Updates an existing register
      * 
-     * This method updates an existing source based on its ID.
+     * This method updates an existing register based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to update
-     * @return JSONResponse A JSON response containing the updated source details
+     * @param string $id The ID of the register to update
+     * @return JSONResponse A JSON response containing the updated register details
      */
     public function update(int $id): JSONResponse
     {
@@ -142,23 +142,23 @@ class RegistersController extends Controller
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->registerMapper->updateFromArray(id: (int) $id, object: $data));
     }
 
     /**
-     * Deletes a source
+     * Deletes a register
      * 
-     * This method deletes a source based on its ID.
+     * This method deletes a register based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to delete
+     * @param string $id The ID of the register to delete
      * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {
-        $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
+        $this->registerMapper->delete($this->registerMapper->find((int) $id));
 
         return new JSONResponse([]);
     }
