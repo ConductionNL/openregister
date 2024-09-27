@@ -134,7 +134,7 @@ export const useRegisterStore = defineStore('register', {
 				const data = new Register(responseData)
 
 				this.setRegisterItem(data)
-				await this.refreshRegisterList()
+				this.refreshRegisterList()
 
 				return { response, data }
 			} catch (error) {
