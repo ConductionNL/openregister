@@ -17,11 +17,11 @@ class Source extends Entity implements JsonSerializable
 
 	public function __construct() {
 		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType('description', 'string');
-		$this->addType('databaseUrl', 'string');
-		$this->addType('type', 'string');
-		$this->addType('updated', 'datetime');
-		$this->addType('created', 'datetime');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'databaseUrl', type: 'string');
+		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
 	public function getJsonFields(): array
