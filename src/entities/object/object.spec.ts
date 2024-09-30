@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Object } from './object'
+import { ObjectEntity } from './object'
 import { mockObjectData } from './object.mock'
 
 describe('Object Entity', () => {
 	it('should create an Object entity with full data', () => {
-		const object = new Object(mockObjectData()[0])
+		const object = new ObjectEntity(mockObjectData()[0])
 
 		expect(object).toBeInstanceOf(Object)
 		expect(object).toEqual(mockObjectData()[0])
@@ -12,7 +12,7 @@ describe('Object Entity', () => {
 	})
 
 	it('should create an Object entity with partial data', () => {
-		const object = new Object(mockObjectData()[0])
+		const object = new ObjectEntity(mockObjectData()[0])
 
 		expect(object).toBeInstanceOf(Object)
 		expect(object.id).toBe('')
@@ -26,7 +26,7 @@ describe('Object Entity', () => {
 	})
 
 	it('should fail validation with invalid data', () => {
-		const object = new Object(mockObjectData()[1])
+		const object = new ObjectEntity(mockObjectData()[1])
 
 		expect(object).toBeInstanceOf(Object)
 		expect(object.validate().success).toBe(false)

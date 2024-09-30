@@ -1,4 +1,4 @@
-import { Object } from './object'
+import { ObjectEntity } from './object'
 import { TObject } from './object.types'
 
 export const mockObjectData = (): TObject[] => [
@@ -22,4 +22,4 @@ export const mockObjectData = (): TObject[] => [
 	},
 ]
 
-export const mockObject = (data: TObject[] = mockObjectData()): TObject[] => data.map(item => new Object(item))
+export const mockObject = (data: TObject[] = mockObjectData()): TObject[] => data.map(item => new ObjectEntity(item))

@@ -1,7 +1,7 @@
 import { SafeParseReturnType, z } from 'zod'
 import { TObject } from './object.types'
 
-export class Object implements TObject {
+export class ObjectEntity implements TObject {
 
 	public id: string
 	public uuid: string
