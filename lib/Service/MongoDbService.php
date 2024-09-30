@@ -2,60 +2,62 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use Adbar\Dot;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
+use Symfony\Component\Uid\Uuid;
 
-class ObjectService
+class MongoDbService
 {
-	private $callLogMapper;
+
+	public const BASE_OBJECT = [
+		'database'   => 'objects',
+		'collection' => 'json',
+	];
 
 	/**
-	 * The constructor sets al needed variables.
+	 * Gets a guzzle client based upon given config.
 	 *
-	 * @param ObjectEntityMapper  $objectEntityMapper The ObjectEntity Mapper
+	 * @param array $config The config to be used for the client.
+	 * @return Client
 	 */
-	public function __construct(ObjectEntityMapper $objectEntityMapper)
+	public function getClient(array $config): Client
 	{
-		$this->objectEntityMapper = $objectEntityMapper;
+		$guzzleConf = $config;
+		unset($guzzleConf['mongodbCluster']);
+
+		return new Client($config);
 	}
 
 	/**
-	 * Save an object 
+	 * Save an object to MongoDB
 	 *
-	 * @param Register $register	The data to be saved.
-	 * @param Schema $schema		The data to be saved.
-	 * @param array $object			The data to be saved.
+	 * @param array $data	The data to be saved.
+	 * @param array $config The configuration that should be used by the call.
 	 *
-	 * @return ObjectEntity The resulting object.
+	 * @return array The resulting object.
+	 * @throws \GuzzleHttp\Exception\GuzzleException
 	 */
-	public function saveObject(Register $register, Schema $schema, array $object): ObjectEntity
+	public function saveObject(array $data, array $config): array
 	{
-		// Lets see if we need to save to an internal source
-		if ($register->getSource() === 'internal') {
-			$objectEntity = new ObjectEntity();
-			$objectEntity->setRegister($register->getId());
-			$objectEntity->setSchema($schema->getId());
-			$objectEntity->setObject($object);
+		$client = $this->getClient(config: $config);
 
-			if (isset($object['id'])) {
-				// Update existing object
-				$objectEntity->setUuidId($object['id']);
-				return $this->objectEntityMapper->update($objectEntity);
-			} else {
-				// Create new object
-				$objectEntity->setUuidId(Uuid::v4());
-				return $this->objectEntityMapper->insert($objectEntity);
-			}
-		}
+		$object 			      = self::BASE_OBJECT;
+		$object['dataSource']     = $config['mongodbCluster'];
+		$object['document']       = $data;
+		$object['document']['id'] = $object['document']['_id'] = Uuid::v4();
 
-		// Handle external source here if needed
-		throw new \Exception('Unsupported source type');
+		$result = $client->post(
+			uri: 'action/insertOne',
+			options: ['json' => $object],
+		);
+		$resultData =  json_decode(
+			json: $result->getBody()->getContents(),
+			associative: true
+		);
+		$id = $resultData['insertedId'];
+
+		return $this->findObject(filters: ['_id' => $id], config: $config);
 	}
 
 	/**
