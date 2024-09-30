@@ -25,23 +25,15 @@ export const useSchemaStore = defineStore('schema', {
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search
 			}
-			return fetch(endpoint, {
+			const response = await fetch(endpoint, {
 				method: 'GET',
 			})
-				.then(
-					(response) => {
-						response.json().then(
-							(data) => {
-								this.setSchemaList(data.results)
-							},
-						)
-					},
-				)
-				.catch(
-					(err) => {
-						console.error(err)
-					},
-				)
+
+			const data = (await response.json()).results
+
+			this.setSchemaList(data)
+
+			return { response, data }
 		},
 		// Function to get a single schema
 		async getSchema(id) {

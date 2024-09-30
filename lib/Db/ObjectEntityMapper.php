@@ -20,9 +20,9 @@ class ObjectEntityMapper extends QBMapper
 	 * Find an object by ID
 	 * 
 	 * @param int $id The ID of the object to find
-	 * @return Object The object
+	 * @return ObjectEntity The ObjectEntity
 	 */
-	public function find(int $id): Object
+	public function find(int $id): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -39,9 +39,9 @@ class ObjectEntityMapper extends QBMapper
 	 * Find an object by UUID
 	 * 
 	 * @param string $uuid The UUID of the object to find
-	 * @return Object The object
+	 * @return ObjectEntity The object
 	 */
-	public function findByUuid(string $uuid): Object
+	public function findByUuid(string $uuid): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -59,9 +59,9 @@ class ObjectEntityMapper extends QBMapper
 	 * 
 	 * @param string $register The register to find objects for
 	 * @param string $schema The schema to find objects for
-	 * @return array An array of objects
+	 * @return array An array of ObjectEntitys
 	 */
-	public function findByRegisterAndSchema(string $register, string $schema): Object
+	public function findByRegisterAndSchema(string $register, string $schema): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -78,14 +78,14 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
-	 * Find all objects
+	 * Find all ObjectEntitys
 	 * 
 	 * @param int $limit The number of objects to return
 	 * @param int $offset The offset of the objects to return
 	 * @param array $filters The filters to apply to the objects
 	 * @param array $searchConditions The search conditions to apply to the objects
 	 * @param array $searchParams The search parameters to apply to the objects
-	 * @return array An array of objects
+	 * @return array An array of ObjectEntitys
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
@@ -116,9 +116,9 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
-	public function createFromArray(array $object): Object
+	public function createFromArray(array $object): ObjectEntity
 	{
-		$obj = new Object();
+		$obj = new ObjectEntity();
 		$obj->hydrate(object: $object);
 		if($obj->getUuid() === null){
 			$obj->setUuid(Uuid::v4());
@@ -126,7 +126,7 @@ class ObjectEntityMapper extends QBMapper
 		return $this->insert(entity: $obj);
 	}
 
-	public function updateFromArray(int $id, array $object): Object
+	public function updateFromArray(int $id, array $object): ObjectEntity
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
