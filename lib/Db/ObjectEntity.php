@@ -66,8 +66,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 			'register' => $this->register,
 			'schema' => $this->schema,
 			'object' => $this->object,
-			'updated' => $this->updated,
-			'created' => $this->created
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
 }
