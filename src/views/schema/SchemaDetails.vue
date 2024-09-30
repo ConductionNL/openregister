@@ -8,7 +8,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<div>
 				<div class="head">
 					<h1 class="h1">
-						{{ schemaStore.schemaItem.name }}
+						{{ schemaStore.schemaItem.title }}
 					</h1>
 
 					<NcActions :primary="true" menu-name="Actions">
@@ -33,8 +33,8 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
-						<b>Status:</b>
-						<p>{{ schemaStore.schemaItem.status }}</p>
+						<b>Version:</b>
+						<p>{{ schemaStore.schemaItem.version }}</p>
 					</div>
 				</div>
 				<!-- Add more schema-specific details here -->
