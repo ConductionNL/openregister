@@ -59,69 +59,84 @@ export const useSchemaStore = defineStore('schema', {
 			}
 		},
 		// Delete a schema
-		deleteSchema() {
-			if (!this.schemaItem || !this.schemaItem.id) {
+		async deleteSchema(schemaItem) {
+			if (!schemaItem.id) {
 				throw new Error('No schema item to delete')
 			}
 
 			console.log('Deleting schema...')
 
-			const endpoint = `/index.php/apps/openregister/api/schemas/${this.schemaItem.id}`
+			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
 
-			return fetch(endpoint, {
-				method: 'DELETE',
-			})
-				.then((response) => {
-					this.refreshSchemaList()
+			try {
+				const response = await fetch(endpoint, {
+					method: 'DELETE',
 				})
-				.catch((err) => {
-					console.error('Error deleting schema:', err)
-					throw err
-				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				await this.refreshSchemaList()
+
+				return { response, data: responseData }
+			} catch (error) {
+				console.error('Error deleting schema:', error)
+				throw new Error(`Failed to delete schema: ${error.message}`)
+			}
 		},
 		// Create or save a schema from store
-		saveSchema() {
-			if (!this.schemaItem) {
+		async saveSchema(schemaItem) {
+			if (!schemaItem) {
 				throw new Error('No schema item to save')
 			}
 
 			console.log('Saving schema...')
 
-			const isNewSchema = !this.schemaItem.id
+			const isNewSchema = !schemaItem?.id
 			const endpoint = isNewSchema
 				? '/index.php/apps/openregister/api/schemas'
-				: `/index.php/apps/openregister/api/schemas/${this.schemaItem.id}`
+				: `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
 			const method = isNewSchema ? 'POST' : 'PUT'
 
-			// Create a copy of the schema item and remove empty properties
-			const schemaToSave = { ...this.schemaItem }
-			Object.keys(schemaToSave).forEach(key => {
-				if (schemaToSave[key] === '' || (Array.isArray(schemaToSave[key]) && schemaToSave[key].length === 0)) {
-					delete schemaToSave[key]
-				}
-			})
-
-			return fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
+			try {
+				const response = await fetch(
+					endpoint,
+					{
+						method,
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(schemaItem),
 					},
-					body: JSON.stringify(schemaToSave),
-				},
-			)
-				.then((response) => response.json())
-				.then((data) => {
-					this.setSchemaItem(data)
-					console.log('Schema saved')
-					// Refresh the schema list
-					return this.refreshSchemaList()
-				})
-				.catch((err) => {
-					console.error('Error saving schema:', err)
-					throw err
-				})
+				)
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				const data = new Schema(responseData)
+
+				this.setSchemaItem(data)
+				this.refreshSchemaList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error saving schema:', error)
+				throw new Error(`Failed to save schema: ${error.message}`)
+			}
 		},
 	},
 })

@@ -114,7 +114,7 @@ export const useRegisterStore = defineStore('register', {
 							'Content-Type': 'application/json',
 						},
 						body: JSON.stringify(registerItem),
-					}
+					},
 				)
 
 				if (!response.ok) {
@@ -130,7 +130,7 @@ export const useRegisterStore = defineStore('register', {
 				const data = new Register(responseData)
 
 				this.setRegisterItem(data)
-				await this.refreshRegisterList()
+				this.refreshRegisterList()
 
 				return { response, data }
 			} catch (error) {

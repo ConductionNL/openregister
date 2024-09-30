@@ -11,7 +11,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 						{{ schemaStore.schemaItem.name }}
 					</h1>
 
-					<NcActions :primary="true" menu-name="Acties">
+					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
@@ -19,13 +19,13 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
-							Bewerken
+							Edit
 						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
-							Verwijderen
+							Delete
 						</NcActionButton>
 					</NcActions>
 				</div>
