@@ -7,6 +7,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Symfony\Component\Uid\Uuid;
 
 class ObjectEntityMapper extends QBMapper
 {
@@ -119,6 +120,9 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = new Object();
 		$obj->hydrate(object: $object);
+		if($obj->getUuid() === null){
+			$obj->setUuid(Uuid::v4());
+		}
 		return $this->insert(entity: $obj);
 	}
 
@@ -126,6 +130,9 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
+		if($obj->getUuid() === null){
+			$obj->setUuid(Uuid::v4());
+		}
 
 		return $this->update($obj);
 	}
