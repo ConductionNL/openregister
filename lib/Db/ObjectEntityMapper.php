@@ -15,6 +15,12 @@ class ObjectEntityMapper extends QBMapper
 		parent::__construct($db, 'openregister_objects');
 	}
 
+	/**
+	 * Find an object by ID
+	 * 
+	 * @param int $id The ID of the object to find
+	 * @return Object The object
+	 */
 	public function find(int $id): Object
 	{
 		$qb = $this->db->getQueryBuilder();
@@ -28,6 +34,58 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntity(query: $qb);
 	}
 
+	/**
+	 * Find an object by UUID
+	 * 
+	 * @param string $uuid The UUID of the object to find
+	 * @return Object The object
+	 */
+	public function findByUuid(string $uuid): Object
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+			);
+
+		return $this->findEntity(query: $qb);
+	}
+
+	/**
+	 * Find objects by register and schema
+	 * 
+	 * @param string $register The register to find objects for
+	 * @param string $schema The schema to find objects for
+	 * @return array An array of objects
+	 */
+	public function findByRegisterAndSchema(string $register, string $schema): Object
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->eq('register', $qb->createNamedParameter($register))
+			)
+			->andWhere(
+				$qb->expr()->eq('schema', $qb->createNamedParameter($schema))
+			);
+
+		return $this->findEntities(query: $qb);
+	}
+
+	/**
+	 * Find all objects
+	 * 
+	 * @param int $limit The number of objects to return
+	 * @param int $offset The offset of the objects to return
+	 * @param array $filters The filters to apply to the objects
+	 * @param array $searchConditions The search conditions to apply to the objects
+	 * @param array $searchParams The search parameters to apply to the objects
+	 * @return array An array of objects
+	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
 		$qb = $this->db->getQueryBuilder();

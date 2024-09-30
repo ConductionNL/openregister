@@ -88,8 +88,8 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addIndex(['source'], 'registers_source_index');
 		}
 
-		if (!$schema->hasTable('openregister_object_entity')) {
-			$table = $schema->createTable('openregister_object_entity');	
+		if (!$schema->hasTable('openregister_objects')) {
+			$table = $schema->createTable('openregister_objects');	
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
@@ -102,7 +102,6 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addIndex(['register'], 'object_entity_register');
 			$table->addIndex(['schema'], 'object_entity_schema');
 		}
-
 
 		return $schema;
 	}
