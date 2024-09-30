@@ -20,7 +20,13 @@ import { navigationStore } from '../store/store.js'
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+            <NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Objects" @click="navigationStore.setSelected('objects')">
+				<template #icon>
+					<DatabaseArrowRightOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		</NcAppNavigationList>
+
 		<NcAppNavigationSettings>
 			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" name="Data sources" @click="navigationStore.setSelected('sources')">
 				<template #icon>
