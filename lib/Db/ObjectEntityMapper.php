@@ -1,0 +1,132 @@
+<?php
+
+namespace OCA\OpenRegister\Db;
+
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
+
+class ObjectEntityMapper extends QBMapper
+{
+	public function __construct(IDBConnection $db)
+	{
+		parent::__construct($db, 'openregister_objects');
+	}
+
+	/**
+	 * Find an object by ID
+	 * 
+	 * @param int $id The ID of the object to find
+	 * @return Object The object
+	 */
+	public function find(int $id): Object
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+			);
+
+		return $this->findEntity(query: $qb);
+	}
+
+	/**
+	 * Find an object by UUID
+	 * 
+	 * @param string $uuid The UUID of the object to find
+	 * @return Object The object
+	 */
+	public function findByUuid(string $uuid): Object
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+			);
+
+		return $this->findEntity(query: $qb);
+	}
+
+	/**
+	 * Find objects by register and schema
+	 * 
+	 * @param string $register The register to find objects for
+	 * @param string $schema The schema to find objects for
+	 * @return array An array of objects
+	 */
+	public function findByRegisterAndSchema(string $register, string $schema): Object
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->eq('register', $qb->createNamedParameter($register))
+			)
+			->andWhere(
+				$qb->expr()->eq('schema', $qb->createNamedParameter($schema))
+			);
+
+		return $this->findEntities(query: $qb);
+	}
+
+	/**
+	 * Find all objects
+	 * 
+	 * @param int $limit The number of objects to return
+	 * @param int $offset The offset of the objects to return
+	 * @param array $filters The filters to apply to the objects
+	 * @param array $searchConditions The search conditions to apply to the objects
+	 * @param array $searchParams The search parameters to apply to the objects
+	 * @return array An array of objects
+	 */
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->setMaxResults($limit)
+			->setFirstResult($offset);
+
+        foreach($filters as $filter => $value) {
+			if ($value === 'IS NOT NULL') {
+				$qb->andWhere($qb->expr()->isNotNull($filter));
+			} elseif ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+			} else {
+				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+			}
+        }
+
+        if (!empty($searchConditions)) {
+            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+            foreach ($searchParams as $param => $value) {
+                $qb->setParameter($param, $value);
+            }
+        }
+
+		return $this->findEntities(query: $qb);
+	}
+
+	public function createFromArray(array $object): Object
+	{
+		$obj = new Object();
+		$obj->hydrate(object: $object);
+		return $this->insert(entity: $obj);
+	}
+
+	public function updateFromArray(int $id, array $object): Object
+	{
+		$obj = $this->find($id);
+		$obj->hydrate($object);
+
+		return $this->update($obj);
+	}
+}

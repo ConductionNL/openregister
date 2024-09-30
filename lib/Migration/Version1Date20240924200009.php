@@ -88,6 +88,21 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addIndex(['source'], 'registers_source_index');
 		}
 
+		if (!$schema->hasTable('openregister_objects')) {
+			$table = $schema->createTable('openregister_objects');	
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('schema', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('object', Types::JSON, ['notnull' => false]);		
+			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['uuid'], 'object_entity_uuid');
+			$table->addIndex(['register'], 'object_entity_register');
+			$table->addIndex(['schema'], 'object_entity_schema');
+		}
+
 		return $schema;
 	}
 
