@@ -63,7 +63,7 @@ class SourcesController extends Controller
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
+        $fieldsToSearch = ['title', 'description'];
 
         $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
