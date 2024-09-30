@@ -45,8 +45,8 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('database_url', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 64]);
-			$table->addColumn('updated', Types::DATETIME, ['notnull' => true]);
-			$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'register_sources_title_index');
@@ -64,8 +64,8 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addColumn('properties', Types::JSON, ['notnull' => false]);
 			$table->addColumn('archive', Types::JSON, ['notnull' => false]);
 			$table->addColumn('source', Types::STRING, ['notnull' => true, 'length' => 64]);
-			$table->addColumn('updated', Types::DATETIME, ['notnull' => true]);
-			$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'register_schemas_title_index');
@@ -79,7 +79,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('schemas', Types::JSON, ['notnull' => false]);
 			$table->addColumn('source', Types::STRING, ['notnull' => true, 'length' => 64]);
-			$table->addColumn('table_prefix', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => 'internal']);
+			$table->addColumn('table_prefix', Types::STRING, ['notnull' => true, 'length' => 64]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
