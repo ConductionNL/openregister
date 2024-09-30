@@ -1,7 +1,7 @@
 :root {
-  --Larp-margin-10: 10px;
-  --Larp-margin-20: 20px;
-  --Larp-margin-50: 50px;
+  --OR-margin-10: 10px;
+  --OR-margin-20: 20px;
+  --OR-margin-50: 50px;
 }
 
 /* Pages */
@@ -43,9 +43,9 @@
 /* Detail pages */
 
 .detailContainer {
-  margin-block-start: var(--Larp-margin-20);
-  margin-inline-start: var(--Larp-margin-20);
-  margin-inline-end: var(--Larp-margin-20);
+  margin-block-start: var(--OR-margin-20);
+  margin-inline-start: var(--OR-margin-20);
+  margin-inline-end: var(--OR-margin-20);
 }
 
 .tabContainer > * ul > li {
@@ -83,7 +83,7 @@
 }
 
 .tabContainer > * div[role="tabpanel"] {
-  margin-block-start: var(--Larp-margin-10);
+  margin-block-start: var(--OR-margin-10);
 }
 
 .tabPanel {
@@ -112,7 +112,7 @@
 
 /* Modals */
 .modalContent {
-  margin: var(--Larp-margin-50);
+  margin: var(--OR-margin-50);
   text-align: center;
 }
 

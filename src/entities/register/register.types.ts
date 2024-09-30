@@ -6,14 +6,6 @@ export type TRegister = {
     source: string // Reference to the Source entity
     databaseId: string // Reference to the Database entity
     tablePrefix?: string
-    updated?: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    }
-	created: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    }
+    updated?: string
+	created: string
 }

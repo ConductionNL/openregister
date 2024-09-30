@@ -12,43 +12,17 @@ describe('Register Entity', () => {
 	})
 
 	it('should create a Register entity with partial data', () => {
-		const partialData = {
-			name: 'Partial Register',
-			description: 'A register with partial data',
-			schemas: [] as any[], // Explicitly typing schemas as any[]
-			databaseId: 'db1-a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
-			title: 'Partial Register Title',
-			source: 'Test Source',
-			created: {
-				date: new Date().toISOString(),
-				timezone_type: 3,
-				timezone: 'UTC',
-			},
-		}
-		const register = new Register(partialData)
+		const register = new Register(mockRegisterData()[0])
 
 		expect(register).toBeInstanceOf(Register)
 		expect(register.id).toBe('')
-		expect(register.title).toBe(partialData.title)
+		expect(register.title).toBe(mockRegisterData()[0].title)
 		expect(register.tablePrefix).toBe('')
 		expect(register.validate().success).toBe(true)
 	})
 
 	it('should fail validation with invalid data', () => {
-		const invalidData = {
-			name: '',
-			description: 'Invalid register',
-			schemas: [] as any[], // Explicitly type the schemas property
-			databaseId: '',
-			title: '',
-			source: '',
-			created: {
-				date: new Date().toISOString(),
-				timezone_type: 3,
-				timezone: 'UTC',
-			},
-		}
-		const register = new Register(invalidData)
+		const register = new Register(mockRegisterData()[1])
 
 		expect(register).toBeInstanceOf(Register)
 		expect(register.validate().success).toBe(false)

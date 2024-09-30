@@ -4,14 +4,6 @@ export type TSource = {
     description: string;
     databaseUrl: string;
     type: string;
-    updated: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    };
-    created: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    };
+    updated: string;
+    created: string;
 }

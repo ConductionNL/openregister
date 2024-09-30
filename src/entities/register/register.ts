@@ -10,17 +10,8 @@ export class Register implements TRegister {
 	public source: string
 	public databaseId: string
 	public tablePrefix: string
-	public updated: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    }
-
-	public created: {
-        date: string;
-        timezone_type: number;
-        timezone: string;
-    }
+	public updated: string
+	public created: string
 
 	constructor(register: TRegister) {
 		this.id = register.id || ''
@@ -30,16 +21,8 @@ export class Register implements TRegister {
 		this.source = register.source || ''
 		this.databaseId = register.databaseId
 		this.tablePrefix = register.tablePrefix || ''
-		this.updated = register.updated || {
-			date: '',
-			timezone_type: 0,
-			timezone: '',
-		}
-		this.created = register.created || {
-			date: '',
-			timezone_type: 0,
-			timezone: '',
-		}
+		this.updated = register.updated || ''
+		this.created = register.created || ''
 	}
 
 	public validate(): SafeParseReturnType<TRegister, unknown> {
