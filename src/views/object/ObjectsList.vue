@@ -33,7 +33,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 			<div v-if="objectStore.objectList && objectStore.objectList.length > 0">
 				<NcListItem v-for="(object, i) in objectStore.objectList"
 					:key="`${object}${i}`"
-					:name="object.title"
+					:name="object.uuid"
 					:active="objectStore.objectItem?.id === object?.id"
 					:force-display-actions="true"
 					@click="objectStore.setObjectItem(object)">
@@ -43,7 +43,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 							:size="44" />
 					</template>
 					<template #subname>
-						{{ object?.description }}
+						{{ JSON.stringify(object?.object) }}
 					</template>
 					<template #actions>
 						<NcActionButton @click="objectStore.setObjectItem(object); navigationStore.setModal('editObject')">
