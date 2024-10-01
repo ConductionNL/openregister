@@ -7,8 +7,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		name="Object verwijderen"
 		size="normal"
 		:can-close="false">
-		<p v-if="!success">
-			Wil je <b>{{ objectStore.objectItem.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+		<p v-if="success === null">
+			Wil je <b>{{ objectStore.objectItem?.uuid }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -23,10 +23,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
+				{{ success === null ? 'Annuleer' : 'Sluiten' }}
 			</NcButton>
 			<NcButton
-				v-if="!success"
+				v-if="success === null"
 				:disabled="loading"
 				type="error"
 				@click="deleteObject()">
@@ -64,7 +64,7 @@ export default {
 	},
 	data() {
 		return {
-			success: false,
+			success: null,
 			loading: false,
 			error: false,
 		}
@@ -72,7 +72,7 @@ export default {
 	methods: {
 		closeDialog() {
 			navigationStore.setDialog(false)
-			this.success = false
+			this.success = null
 			this.loading = false
 			this.error = false
 		},
