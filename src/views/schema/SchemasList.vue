@@ -52,6 +52,12 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 							</template>
 							Edit
 						</NcActionButton>
+						<NcActionButton @click="schemaStore.setSchemaItem(schema); schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
+							<template #icon>
+								<PlusCircleOutline />
+							</template>
+							Add Property
+						</NcActionButton>
 						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline />
@@ -83,6 +89,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 
 export default {
 	name: 'SchemasList',
