@@ -33,7 +33,7 @@ import { sourceStore, navigationStore, searchStore } from '../../store/store.js'
 			<div v-if="sourceStore.sourceList && sourceStore.sourceList.length > 0">
 				<NcListItem v-for="(source, i) in sourceStore.sourceList"
 					:key="`${source}${i}`"
-					:name="source.name"
+					:name="source.title"
 					:active="sourceStore.sourceItem?.id === source?.id"
 					:force-display-actions="true"
 					@click="sourceStore.setSourceItem(source)">

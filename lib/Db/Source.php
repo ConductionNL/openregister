@@ -64,8 +64,8 @@ class Source extends Entity implements JsonSerializable
 			'description' => $this->description,
 			'databaseUrl' => $this->databaseUrl,
 			'type' => $this->type,
-			'updated' => $this->updated,
-			'created' => $this->created
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
 }

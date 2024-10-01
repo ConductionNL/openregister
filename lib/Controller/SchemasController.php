@@ -4,8 +4,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -15,7 +15,7 @@ use OCP\IRequest;
 class SchemasController extends Controller
 {
     /**
-     * Constructor for the SourcesController
+     * Constructor for the SchemasController
      *
      * @param string $appName The name of the app
      * @param IRequest $request The request object
@@ -25,7 +25,7 @@ class SchemasController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SourceMapper $sourceMapper
+        private readonly SchemaMapper $schemaMapper
     )
     {
         parent::__construct($appName, $request);
@@ -51,56 +51,56 @@ class SchemasController extends Controller
     }
     
     /**
-     * Retrieves a list of all sources
+     * Retrieves a list of all schemas
      * 
-     * This method returns a JSON response containing an array of all sources in the system.
+     * This method returns a JSON response containing an array of all schemas in the system.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the list of sources
+     * @return JSONResponse A JSON response containing the list of schemas
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
+        $fieldsToSearch = ['title', 'description'];
 
         $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->sourceMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        return new JSONResponse(['results' => $this->schemaMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
     }
 
     /**
-     * Retrieves a single source by its ID
+     * Retrieves a single schema by its ID
      * 
-     * This method returns a JSON response containing the details of a specific source.
+     * This method returns a JSON response containing the details of a specific schema.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to retrieve
-     * @return JSONResponse A JSON response containing the source details
+     * @param string $id The ID of the schema to retrieve
+     * @return JSONResponse A JSON response containing the schema details
      */
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->sourceMapper->find(id: (int) $id));
+            return new JSONResponse($this->schemaMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
     }
 
     /**
-     * Creates a new source
+     * Creates a new schema
      * 
-     * This method creates a new source based on POST data.
+     * This method creates a new schema based on POST data.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the created source
+     * @return JSONResponse A JSON response containing the created schema
      */
     public function create(): JSONResponse
     {
@@ -116,19 +116,19 @@ class SchemasController extends Controller
             unset($data['id']);
         }
         
-        return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
+        return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
     }
 
     /**
-     * Updates an existing source
+     * Updates an existing schema
      * 
-     * This method updates an existing source based on its ID.
+     * This method updates an existing schema based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to update
-     * @return JSONResponse A JSON response containing the updated source details
+     * @param string $id The ID of the schema to update
+     * @return JSONResponse A JSON response containing the updated schema details
      */
     public function update(int $id): JSONResponse
     {
@@ -142,23 +142,23 @@ class SchemasController extends Controller
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->schemaMapper->updateFromArray(id: (int) $id, object: $data));
     }
 
     /**
-     * Deletes a source
+     * Deletes a schema
      * 
-     * This method deletes a source based on its ID.
+     * This method deletes a schema based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to delete
+     * @param string $id The ID of the schema to delete
      * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {
-        $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
+        $this->schemaMapper->delete($this->schemaMapper->find((int) $id));
 
         return new JSONResponse([]);
     }

@@ -7,6 +7,8 @@
 		<DeleteSchema />
 		<EditSource />
 		<DeleteSource />
+		<EditObject />
+		<DeleteObject />
 	</div>
 </template>
 
@@ -17,6 +19,8 @@ import EditSchema from './schema/EditSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
+import EditObject from './object/EditObject.vue'
+import DeleteObject from './object/DeleteObject.vue'
 
 export default {
 	name: 'Modals',
@@ -27,6 +31,8 @@ export default {
 		DeleteSchema,
 		EditSource,
 		DeleteSource,
+		EditObject,
+		DeleteObject,
 	},
 }
 </script>

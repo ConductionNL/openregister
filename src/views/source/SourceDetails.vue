@@ -1,5 +1,5 @@
 <script setup>
-import { sourceStore, navigationStore } from '../../store/store.js'
+import { sourceStore, navigationStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<div>
 				<div class="head">
 					<h1 class="h1">
-						{{ sourceStore.sourceItem.name }}
+						{{ sourceStore.sourceItem.title }}
 					</h1>
 
 					<NcActions :primary="true" menu-name="Actions">
@@ -33,30 +33,103 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
-						<b>Status:</b>
-						<p>{{ sourceStore.sourceItem.status }}</p>
+						<b>Type:</b>
+						<p>{{ sourceStore.sourceItem.type }}</p>
 					</div>
 				</div>
 				<!-- Add more source-specific details here -->
+
+				<div class="tabContainer">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Registers" active>
+							<div v-if="filterRegisters.length > 0">
+								<NcListItem v-for="(register) in filterRegisters"
+									:key="register.id"
+									:name="register.title"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<DatabaseOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ register.description }}
+									</template>
+									<template #actions>
+										<NcActionButton :aria-label="`Go to register '${register.title}'`"
+											@click="registerStore.setRegisterItem(register); navigationStore.setSelected('registers')">
+											<template #icon>
+												<EyeArrowRight :size="20" />
+											</template>
+											View
+										</NcActionButton>
+										<NcActionButton :aria-label="`Edit '${register.title}'`"
+											@click="registerStore.setRegisterItem(register); navigationStore.setModal('editRegister')">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="filterRegisters.length === 0">
+								Geen registers gevonden
+							</div>
+						</BTab>
+					</BTabs>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
+import {
+	NcActions,
+	NcActionButton,
+	NcListItem,
+} from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
+
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import EyeArrowRight from 'vue-material-design-icons/EyeArrowRight.vue'
 
 export default {
 	name: 'SourceDetails',
 	components: {
 		NcActions,
 		NcActionButton,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
+		NcListItem,
+		BTabs,
+		BTab,
+	},
+	data() {
+		return {
+			registersLoading: false,
+		}
+	},
+	computed: {
+		filterRegisters() {
+			return registerStore.registerList.filter((register) => {
+				return register.source.toString() === sourceStore.sourceItem.id.toString()
+			})
+		},
+	},
+	mounted() {
+		this.fetchRegisters()
+	},
+	methods: {
+		fetchRegisters() {
+			this.registersLoading = true
+			registerStore.refreshRegisterList()
+				.then(() => {
+					this.registersLoading = false
+				})
+		},
 	},
 }
 </script>

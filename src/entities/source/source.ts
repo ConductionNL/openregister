@@ -3,24 +3,31 @@ import { TSource } from './source.types'
 
 export class Source implements TSource {
 
-	public id: string
-	public name: string
+	public id: string | number
+	public title: string
 	public description: string
 	public databaseUrl: string
+	public type: string
+	public updated: string
+	public created: string
 
 	constructor(source: TSource) {
 		this.id = source.id || ''
-		this.name = source.name || ''
+		this.title = source.title || ''
 		this.description = source.description || ''
 		this.databaseUrl = source.databaseUrl || ''
+		this.type = source.type || ''
+		this.updated = source.updated || ''
+		this.created = source.created || ''
 	}
 
 	public validate(): SafeParseReturnType<TSource, unknown> {
 		const schema = z.object({
-			id: z.string().min(1),
-			name: z.string().min(1),
+			id: z.union([z.string(), z.number()]),
+			title: z.string().min(1),
 			description: z.string(),
 			databaseUrl: z.string().url(),
+			type: z.string(),
 		})
 
 		return schema.safeParse(this)

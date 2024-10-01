@@ -1,7 +1,13 @@
 export type TSchema = {
     id?: string
-    name: string
-    description: string
-    jsonSchema: object
+    title: string
     version: string
+    description: string
+    summary: string
+    required: string[]
+    properties: object
+    archive: object
+    source: string
+    updated: string;
+    created: string;
 }

@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,20 +8,20 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<div>
 				<div class="head">
 					<h1 class="h1">
-						{{ schemaStore.schemaItem.title }}
+						{{ objectStore.objectItem.title }}
 					</h1>
 
 					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton @click="navigationStore.setModal('editSchema')">
+						<NcActionButton @click="navigationStore.setModal('editObject')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton @click="navigationStore.setDialog('deleteSchema')">
+						<NcActionButton @click="navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -29,15 +29,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 					</NcActions>
 				</div>
-				<span>{{ schemaStore.schemaItem.description }}</span>
+				<span>{{ objectStore.objectItem.description }}</span>
 
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
-						<b>Version:</b>
-						<p>{{ schemaStore.schemaItem.version }}</p>
+						<b>Table Prefix:</b>
+						<p>{{ objectStore.objectItem.tablePrefix }}</p>
 					</div>
 				</div>
-				<!-- Add more schema-specific details here -->
+				<!-- Add more object-specific details here -->
 			</div>
 		</div>
 	</div>
@@ -50,7 +50,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
-	name: 'SchemaDetails',
+	name: 'ObjectDetails',
 	components: {
 		NcActions,
 		NcActionButton,
@@ -62,5 +62,36 @@ export default {
 </script>
 
 <style>
-/* Styles remain the same */
+.head{
+	display: flex;
+	justify-content: space-between;
+}
+
+h4 {
+  font-weight: bold
+}
+
+.h1 {
+  display: block !important;
+  font-size: 2em !important;
+  margin-block-start: 0.67em !important;
+  margin-block-end: 0.67em !important;
+  margin-inline-start: 0px !important;
+  margin-inline-end: 0px !important;
+  font-weight: bold !important;
+  unicode-bidi: isolate !important;
+}
+
+.grid {
+  display: grid;
+  grid-gap: 24px;
+  grid-template-columns: 1fr 1fr;
+  margin-block-start: var(--OR-margin-50);
+  margin-block-end: var(--OR-margin-50);
+}
+
+.gridContent {
+  display: flex;
+  gap: 25px;
+}
 </style>

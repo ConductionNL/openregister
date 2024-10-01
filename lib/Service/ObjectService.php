@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use Symfony\Component\Uid\Uuid;
 
 class ObjectService
 {
