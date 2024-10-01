@@ -4,8 +4,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -13,10 +12,10 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
 
-class RegistersController extends Controller
+class ObjectsController extends Controller
 {
     /**
-     * Constructor for the RegistersController
+     * Constructor for the ObjectsController
      *
      * @param string $appName The name of the app
      * @param IRequest $request The request object
@@ -26,7 +25,6 @@ class RegistersController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly RegisterMapper $registerMapper,
         private readonly ObjectEntityMapper $objectEntityMapper
     )
     {
@@ -53,56 +51,56 @@ class RegistersController extends Controller
     }
     
     /**
-     * Retrieves a list of all registers
+     * Retrieves a list of all objects
      * 
-     * This method returns a JSON response containing an array of all registers in the system.
+     * This method returns a JSON response containing an array of all objects in the system.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the list of registers
+     * @return JSONResponse A JSON response containing the list of objects
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
+        $fieldsToSearch = ['uuid', 'register', 'schema'];
 
         $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->registerMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        return new JSONResponse(['results' => $this->objectEntityMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
     }
 
     /**
-     * Retrieves a single register by its ID
+     * Retrieves a single object by its ID
      * 
-     * This method returns a JSON response containing the details of a specific register.
+     * This method returns a JSON response containing the details of a specific object.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the register to retrieve
-     * @return JSONResponse A JSON response containing the register details
+     * @param string $id The ID of the object to retrieve
+     * @return JSONResponse A JSON response containing the object details
      */
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->registerMapper->find(id: (int) $id));
+            return new JSONResponse($this->objectEntityMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
     }
 
     /**
-     * Creates a new register
+     * Creates a new object
      * 
-     * This method creates a new register based on POST data.
+     * This method creates a new object based on POST data.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the created register
+     * @return JSONResponse A JSON response containing the created object
      */
     public function create(): JSONResponse
     {
@@ -118,19 +116,19 @@ class RegistersController extends Controller
             unset($data['id']);
         }
         
-        return new JSONResponse($this->registerMapper->createFromArray(object: $data));
+        return new JSONResponse($this->objectEntityMapper->createFromArray(object: $data));
     }
 
     /**
-     * Updates an existing register
+     * Updates an existing object
      * 
-     * This method updates an existing register based on its ID.
+     * This method updates an existing object based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the register to update
-     * @return JSONResponse A JSON response containing the updated register details
+     * @param string $id The ID of the object to update
+     * @return JSONResponse A JSON response containing the updated object details
      */
     public function update(int $id): JSONResponse
     {
@@ -144,42 +142,24 @@ class RegistersController extends Controller
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->registerMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->objectEntityMapper->updateFromArray(id: (int) $id, object: $data));
     }
 
     /**
-     * Deletes a register
+     * Deletes an object
      * 
-     * This method deletes a register based on its ID.
+     * This method deletes an object based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the register to delete
+     * @param string $id The ID of the object to delete
      * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {
-        $this->registerMapper->delete($this->registerMapper->find((int) $id));
+        $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
 
         return new JSONResponse([]);
-    }
-
-    /**
-     * Get objects
-     * 
-     * Get all the objects for a register and schema
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $register The ID of the register 
-     * @param string $schema The ID of the schema
-     * 
-     * @return JSONResponse An empty JSON response
-     */
-    public function objects(int $register, int $schema): JSONResponse
-    {
-        return new JSONResponse($this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema));
     }
 }
