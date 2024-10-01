@@ -21,6 +21,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							</template>
 							Edit
 						</NcActionButton>
+						<NcActionButton @click="schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
+							<template #icon>
+								<PlusCircleOutline />
+							</template>
+							Add Property
+						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -40,24 +46,40 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				<!-- Add more schema-specific details here -->
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
-						<BTab title="Logs">
-							<div v-if="false && logs.length > 0">
-								<NcListItem v-for="(log, key) in logs"
+						<BTab title="Properties" active>
+							<div v-if="Object.keys(schemaStore.schemaItem.properties).length > 0">
+								<NcListItem v-for="(property, key) in schemaStore.schemaItem.properties"
 									:key="key"
-									:name="log.title"
+									:name="property.title"
 									:bold="false"
 									:force-display-actions="true">
 									<template #icon>
-										<PostOutline disable-menu
+										<CircleOutline disable-menu
 											:size="44" />
 									</template>
 									<template #subname>
-										{{ log.description }}
+										{{ property.description }}
+									</template>
+									<template #actions>
+										<NcActionButton :aria-label="`Edit '${property.title}'`"
+											@click="schemaStore.setSchemaPropertyKey(key); navigationStore.setModal('editSchemaProperty')">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+										<NcActionButton :aria-label="`Delete '${property.title}'`"
+											@click="schemaStore.setSchemaPropertyKey(key); navigationStore.setModal('deleteSchemaProperty')">
+											<template #icon>
+												<TrashCanOutline :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="true || logs.length === 0">
-								No logs found
+							<div v-if="Object.keys(schemaStore.schemaItem.properties).length === 0">
+								No properties found
 							</div>
 						</BTab>
 					</BTabs>
@@ -73,7 +95,8 @@ import { BTabs, BTab } from 'bootstrap-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import PostOutline from 'vue-material-design-icons/PostOutline.vue'
+import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
+import CircleOutline from 'vue-material-design-icons/CircleOutline.vue'
 
 export default {
 	name: 'SchemaDetails',
@@ -81,11 +104,11 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcListItem,
-		BTabs,
-		BTab,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
+		BTabs,
+		BTab,
 	},
 }
 </script>

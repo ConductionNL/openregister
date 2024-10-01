@@ -5,6 +5,7 @@ import { Schema } from '../../entities/index.js'
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
 		schemaItem: false,
+		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
 	}),
 	actions: {
@@ -99,38 +100,38 @@ export const useSchemaStore = defineStore('schema', {
 
 			schemaItem.updated = new Date().toISOString()
 
-			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(schemaItem),
+			const response = await fetch(
+				endpoint,
+				{
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(schemaItem),
+				},
+			)
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				const data = new Schema(responseData)
-
-				this.setSchemaItem(data)
-				this.refreshSchemaList()
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error saving schema:', error)
-				throw new Error(`Failed to save schema: ${error.message}`)
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
 			}
+
+			const responseData = await response.json()
+
+			if (!responseData || typeof responseData !== 'object') {
+				throw new Error('Invalid response data')
+			}
+
+			const data = new Schema(responseData)
+
+			this.setSchemaItem(data)
+			this.refreshSchemaList()
+
+			return { response, data }
+
+		},
+		// schema properties
+		setSchemaPropertyKey(schemaPropertyKey) {
+			this.schemaPropertyKey = schemaPropertyKey
 		},
 	},
 })
