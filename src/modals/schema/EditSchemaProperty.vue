@@ -6,7 +6,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'editSchemaProperty'"
 		ref="modalRef"
 		label-id="addSchemaPropertyModal"
-		@close="navigationStore.setModal(false)">
+		@close="closeModal">
 		<div class="modal__content">
 			<h2 v-if="!schemaStore.schemaPropertyKey">
 				Add Property to <b>{{ schemaStore.schemaItem?.title }}</b>
@@ -373,8 +373,6 @@ export default {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
 
-				console.log(schemaProperty)
-
 				this.properties = {
 					...schemaProperty,
 					minLength: schemaProperty.minLength ?? 0,
@@ -385,8 +383,6 @@ export default {
 					minItems: schemaProperty.minItems ?? 0,
 					maxItems: schemaProperty.maxItems ?? 0,
 				}
-
-				console.log(this.properties)
 			}
 		},
 		closeModal() {
@@ -439,7 +435,7 @@ export default {
 
 			if (!newSchemaItem?.id) {
 				this.success = false
-				this.error = 'Schema item could not be created'
+				this.error = 'Schema item could not be created, missing schema id'
 				this.loading = false
 				return
 			}
