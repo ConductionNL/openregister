@@ -24,7 +24,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</p>
 
 		<template #actions>
-			<NcButton :disabled="loading" icon="" @click="navigationStore.setDialog(false)">
+			<NcButton :disabled="loading" icon="" @click="navigationStore.setModal(null)">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>

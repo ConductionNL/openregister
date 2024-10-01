@@ -2,267 +2,265 @@
 import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 <template>
-	<NcModal
-		v-if="navigationStore.modal === 'editSchemaProperty'"
-		ref="modalRef"
-		label-id="addSchemaPropertyModal"
-		@close="closeModal">
-		<div class="modal__content">
-			<h2 v-if="!schemaStore.schemaPropertyKey">
-				Add Property to <b>{{ schemaStore.schemaItem?.title }}</b>
-			</h2>
-			<h2 v-else>
-				Edit Property <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey].title }}</b> of <b>{{ schemaStore.schemaItem.title }}</b>
-			</h2>
+	<NcDialog v-if="navigationStore.modal === 'editSchemaProperty'"
+		:name="schemaStore.schemaPropertyKey
+			? `Edit Property '${schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey].title}' of '${schemaStore.schemaItem.title}'`
+			: `Add Property to '${schemaStore.schemaItem?.title}'`"
+		size="normal"
+		:can-close="false">
+		<div v-if="success !== null" class="form-group">
+			<NcNoteCard v-if="success" type="success">
+				<p>Property successfully {{ schemaStore.schemaPropertyKey ? 'updated' : 'added' }}</p>
+			</NcNoteCard>
+			<NcNoteCard v-if="!success" type="error">
+				<p>Property could not be {{ schemaStore.schemaPropertyKey ? 'updated' : 'added' }}</p>
+			</NcNoteCard>
+			<NcNoteCard v-if="error" type="error">
+				<p>{{ error }}</p>
+			</NcNoteCard>
+		</div>
 
-			<div v-if="success !== null" class="form-group">
-				<NcNoteCard v-if="success" type="success">
-					<p>Property successfully {{ schemaStore.schemaPropertyKey ? 'updated' : 'added' }}</p>
-				</NcNoteCard>
-				<NcNoteCard v-if="!success" type="error">
-					<p>Property could not be {{ schemaStore.schemaPropertyKey ? 'updated' : 'added' }}</p>
-				</NcNoteCard>
-				<NcNoteCard v-if="error" type="error">
-					<p>{{ error }}</p>
-				</NcNoteCard>
-			</div>
+		<div v-if="success === null" class="form-group">
+			<NcTextField :disabled="loading"
+				label="Title*"
+				:value.sync="properties.title" />
 
-			<div v-if="success === null" class="form-group">
-				<NcTextField :disabled="loading"
-					label="Title*"
-					:value.sync="properties.title" />
+			<NcTextField :disabled="loading"
+				label="Description"
+				:value.sync="properties.description" />
 
-				<NcTextField :disabled="loading"
-					label="Description"
-					:value.sync="properties.description" />
-
+			<div class="ASP-selectContainer">
 				<NcSelect v-bind="typeOptions"
 					v-model="properties.type" />
 
 				<NcSelect v-bind="formatOptions"
 					v-model="properties.format"
 					:disabled="properties.type !== 'string'" />
-
-				<NcTextField :disabled="loading"
-					label="Pattern (regex)"
-					:value.sync="properties.pattern" />
-
-				<!-- TYPE : STRING -->
-				<div v-if="properties.type === 'string'">
-					<NcDateTimePicker v-if="properties.format === 'date'"
-						v-model="properties.default"
-						type="date"
-						label="Default value"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcDateTimePicker v-else-if="properties.format === 'time'"
-						v-model="properties.default"
-						type="time"
-						label="Default value"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcDateTimePicker v-else-if="properties.format === 'date-time'"
-						v-model="properties.default"
-						type="datetime"
-						label="Default value"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcInputField v-else-if="properties.format === 'email'"
-						:value.sync="properties.default"
-						type="email"
-						label="Default value (Email)"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcInputField v-else-if="properties.format === 'idn-email'"
-						:value.sync="properties.default"
-						type="email"
-						label="Default value (Email)"
-						helper-text="email"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcTextField v-else-if="properties.format === 'regex'"
-						:value.sync="properties.default"
-						label="Default value (Regex)"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcInputField v-else-if="properties.format === 'password'"
-						:value.sync="properties.default"
-						type="password"
-						label="Default value (Password)"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcInputField v-else-if="properties.format === 'telephone'"
-						:value.sync="properties.default"
-						type="tel"
-						label="Default value (Phone number)"
-						:disabled="loading"
-						:loading="loading" />
-
-					<NcTextField v-else
-						:value.sync="properties.default"
-						label="Default value"
-						:disabled="loading"
-						:loading="loading" />
-				</div>
-
-				<!-- TYPE : NUMBER -->
-				<NcInputField v-else-if="properties.type === 'number'"
-					:disabled="loading"
-					type="number"
-					step="any"
-					label="Default value"
-					:value.sync="properties.default"
-					:loading="loading" />
-				<!-- TYPE : INTEGER -->
-				<NcInputField v-else-if="properties.type === 'integer'"
-					:disabled="loading"
-					type="number"
-					step="1"
-					label="Default value"
-					:value.sync="properties.default"
-					:loading="loading" />
-				<!-- TYPE : OBJECT -->
-				<NcTextArea v-else-if="properties.type === 'object'"
-					:disabled="loading"
-					label="Default value"
-					:value.sync="properties.default"
-					:loading="loading"
-					:error="!verifyJsonValidity(properties.default)"
-					:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
-				<!-- TYPE : ARRAY -->
-				<NcTextArea v-else-if="properties.type === 'array'"
-					:disabled="loading"
-					label="Value list (split on ,)"
-					:value.sync="properties.default"
-					:loading="loading" />
-				<!-- TYPE : BOOLEAN -->
-				<NcCheckboxRadioSwitch v-else-if="properties.type === 'boolean'"
-					:disabled="loading"
-					:checked.sync="properties.default"
-					:loading="loading">
-					Default value
-				</NcCheckboxRadioSwitch>
-				<!-- TYPE : dictionary -->
-				<NcTextField v-else-if="properties.type === 'dictionary'"
-					:disabled="loading"
-					label="Default value"
-					:value.sync="properties.default" />
-
-				<NcTextField :disabled="loading"
-					label="Behavior"
-					:value.sync="properties.behavior" />
-
-				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.required">
-					Required
-				</NcCheckboxRadioSwitch>
-
-				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.deprecated">
-					Deprecated
-				</NcCheckboxRadioSwitch>
-
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Minimum length"
-					:value.sync="properties.minLength" />
-
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Maximum length"
-					:value.sync="properties.maxLength" />
-
-				<NcTextField :disabled="loading"
-					label="Example"
-					:value.sync="properties.example" />
-
-				<!-- type integer and number only -->
-				<div v-if="properties.type === 'integer' || properties.type === 'number'">
-					<h5 class="weightNormal">
-						type: number
-					</h5>
-
-					<NcInputField :disabled="loading"
-						type="number"
-						label="Minimum value"
-						:value.sync="properties.minimum" />
-
-					<NcInputField :disabled="loading"
-						type="number"
-						label="Maximum value"
-						:value.sync="properties.maximum" />
-
-					<NcInputField :disabled="loading"
-						type="number"
-						label="Multiple of"
-						:value.sync="properties.multipleOf" />
-
-					<NcCheckboxRadioSwitch
-						:disabled="loading"
-						:checked.sync="properties.exclusiveMin">
-						Exclusive minimum
-					</NcCheckboxRadioSwitch>
-
-					<NcCheckboxRadioSwitch
-						:disabled="loading"
-						:checked.sync="properties.exclusiveMax">
-						Exclusive maximum
-					</NcCheckboxRadioSwitch>
-				</div>
-
-				<!-- type array only -->
-				<div v-if="properties.type === 'array'">
-					<h5 class="weightNormal">
-						type: array
-					</h5>
-
-					<NcInputField :disabled="loading"
-						type="number"
-						label="Minimum number of items"
-						:value.sync="properties.minItems" />
-
-					<NcInputField :disabled="loading"
-						type="number"
-						label="Maximum number of items"
-						:value.sync="properties.maxItems" />
-				</div>
 			</div>
 
-			<NcButton v-if="!success"
+			<NcTextField :disabled="loading"
+				label="Pattern (regex)"
+				:value.sync="properties.pattern" />
+
+			<!-- TYPE : STRING -->
+			<div v-if="properties.type === 'string'">
+				<NcDateTimePicker v-if="properties.format === 'date'"
+					v-model="properties.default"
+					type="date"
+					label="Default value"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcDateTimePicker v-else-if="properties.format === 'time'"
+					v-model="properties.default"
+					type="time"
+					label="Default value"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcDateTimePicker v-else-if="properties.format === 'date-time'"
+					v-model="properties.default"
+					type="datetime"
+					label="Default value"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcInputField v-else-if="properties.format === 'email'"
+					:value.sync="properties.default"
+					type="email"
+					label="Default value (Email)"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcInputField v-else-if="properties.format === 'idn-email'"
+					:value.sync="properties.default"
+					type="email"
+					label="Default value (Email)"
+					helper-text="email"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcTextField v-else-if="properties.format === 'regex'"
+					:value.sync="properties.default"
+					label="Default value (Regex)"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcInputField v-else-if="properties.format === 'password'"
+					:value.sync="properties.default"
+					type="password"
+					label="Default value (Password)"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcInputField v-else-if="properties.format === 'telephone'"
+					:value.sync="properties.default"
+					type="tel"
+					label="Default value (Phone number)"
+					:disabled="loading"
+					:loading="loading" />
+
+				<NcTextField v-else
+					:value.sync="properties.default"
+					label="Default value"
+					:disabled="loading"
+					:loading="loading" />
+			</div>
+
+			<!-- TYPE : NUMBER -->
+			<NcInputField v-else-if="properties.type === 'number'"
+				:disabled="loading"
+				type="number"
+				step="any"
+				label="Default value"
+				:value.sync="properties.default"
+				:loading="loading" />
+			<!-- TYPE : INTEGER -->
+			<NcInputField v-else-if="properties.type === 'integer'"
+				:disabled="loading"
+				type="number"
+				step="1"
+				label="Default value"
+				:value.sync="properties.default"
+				:loading="loading" />
+			<!-- TYPE : OBJECT -->
+			<NcTextArea v-else-if="properties.type === 'object'"
+				:disabled="loading"
+				label="Default value"
+				:value.sync="properties.default"
+				:loading="loading"
+				:error="!verifyJsonValidity(properties.default)"
+				:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
+			<!-- TYPE : ARRAY -->
+			<NcTextArea v-else-if="properties.type === 'array'"
+				:disabled="loading"
+				label="Value list (split on ,)"
+				:value.sync="properties.default"
+				:loading="loading" />
+			<!-- TYPE : BOOLEAN -->
+			<NcCheckboxRadioSwitch v-else-if="properties.type === 'boolean'"
+				:disabled="loading"
+				:checked.sync="properties.default"
+				:loading="loading">
+				Default value
+			</NcCheckboxRadioSwitch>
+			<!-- TYPE : dictionary -->
+			<NcTextField v-else-if="properties.type === 'dictionary'"
+				:disabled="loading"
+				label="Default value"
+				:value.sync="properties.default" />
+
+			<NcTextField :disabled="loading"
+				label="Behavior"
+				:value.sync="properties.behavior" />
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.required">
+				Required
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.deprecated">
+				Deprecated
+			</NcCheckboxRadioSwitch>
+
+			<NcInputField :disabled="loading"
+				type="number"
+				label="Minimum length"
+				:value.sync="properties.minLength" />
+
+			<NcInputField :disabled="loading"
+				type="number"
+				label="Maximum length"
+				:value.sync="properties.maxLength" />
+
+			<NcTextField :disabled="loading"
+				label="Example"
+				:value.sync="properties.example" />
+
+			<!-- type integer and number only -->
+			<div v-if="properties.type === 'integer' || properties.type === 'number'">
+				<h5 class="weightNormal">
+					type: number
+				</h5>
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Minimum value"
+					:value.sync="properties.minimum" />
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Maximum value"
+					:value.sync="properties.maximum" />
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Multiple of"
+					:value.sync="properties.multipleOf" />
+
+				<NcCheckboxRadioSwitch
+					:disabled="loading"
+					:checked.sync="properties.exclusiveMin">
+					Exclusive minimum
+				</NcCheckboxRadioSwitch>
+
+				<NcCheckboxRadioSwitch
+					:disabled="loading"
+					:checked.sync="properties.exclusiveMax">
+					Exclusive maximum
+				</NcCheckboxRadioSwitch>
+			</div>
+
+			<!-- type array only -->
+			<div v-if="properties.type === 'array'">
+				<h5 class="weightNormal">
+					type: array
+				</h5>
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Minimum number of items"
+					:value.sync="properties.minItems" />
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Maximum number of items"
+					:value.sync="properties.maxItems" />
+			</div>
+		</div>
+
+		<template #actions>
+			<NcButton @click="closeModal">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				{{ success !== null ? 'Close' : 'Cancel' }}
+			</NcButton>
+
+			<NcButton v-if="success === null"
 				:disabled="!properties.title || !properties.type || loading"
 				type="primary"
-				@click="addSchema()">
+				@click="addSchemaProperty()">
 				<template #icon>
 					<span>
 						<NcLoadingIcon v-if="loading" :size="20" />
-						<Plus v-if="!loading" :size="20" />
+						<ContentSaveOutline v-if="!loading && schemaStore.schemaPropertyKey" :size="20" />
+						<Plus v-if="!loading && !schemaStore.schemaPropertyKey" :size="20" />
 					</span>
 				</template>
-				Add
+				{{ schemaStore.schemaPropertyKey ? 'Save' : 'Add' }}
 			</NcButton>
-
-			<NcButton v-if="success"
-				type="primary"
-				@click="navigationStore.setModal(false)">
-				Close
-			</NcButton>
-		</div>
-	</NcModal>
+		</template>
+	</NcDialog>
 </template>
 
 <script>
 import {
+	NcDialog,
 	NcButton,
-	NcModal,
 	NcTextField,
 	NcSelect,
 	NcCheckboxRadioSwitch,
@@ -274,14 +272,16 @@ import {
 } from '@nextcloud/vue'
 
 // icons
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 
 import { v4 as uuidv4 } from 'uuid'
 
 export default {
 	name: 'EditSchemaProperty',
 	components: {
-		NcModal,
+		NcDialog,
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
@@ -412,7 +412,7 @@ export default {
 				maxItems: 0,
 			}
 		},
-		addSchema() {
+		addSchemaProperty() {
 			this.loading = true
 
 			const newSchemaItem = {
@@ -487,5 +487,11 @@ export default {
 
 .weightNormal {
     font-weight: normal;
+}
+
+.ASP-selectContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 </style>
