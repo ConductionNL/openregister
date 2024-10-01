@@ -8,7 +8,7 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Object succesvol aangepast</p>
+			<p>Object successfully modified</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -90,7 +90,7 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 					placeholder="{ &quot;key&quot;: &quot;value&quot; }"
 					:value.sync="objectItem.object"
 					:error="!verifyJsonValidity(objectItem.object)"
-					:helper-text="!verifyJsonValidity(objectItem.object) && 'This is not valid JSON (optional)'" />
+					:helper-text="!verifyJsonValidity(objectItem.object) ? 'This is not valid JSON (optional)' : ''" />
 			</div>
 		</div>
 	</NcDialog>
@@ -160,7 +160,7 @@ export default {
 					...objectStore.objectItem,
 					schemas: objectStore.objectItem.schemas || '',
 					register: objectStore.objectItem.register || '',
-					object: objectStore.objectItem.object || '',
+					object: JSON.stringify(objectStore.objectItem.object) || '',
 				}
 			}
 		},
@@ -235,7 +235,7 @@ export default {
 
 			objectStore.saveObject({
 				...this.objectItem,
-				schemas: this.schemas?.value?.id || '',
+				schema: this.schemas?.value?.id || '',
 				register: this.registers?.value?.id || '',
 			}).then(({ response }) => {
 				this.success = response.ok

@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div>
 				<div class="head">
 					<h1 class="h1">
-						{{ objectStore.objectItem.title }}
+						{{ objectStore.objectItem.uuid }}
 					</h1>
 
 					<NcActions :primary="true" menu-name="Actions">
@@ -29,15 +29,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 					</NcActions>
 				</div>
-				<span>{{ objectStore.objectItem.description }}</span>
 
-				<div class="detailGrid">
-					<div class="gridContent gridFullWidth">
-						<b>Table Prefix:</b>
-						<p>{{ objectStore.objectItem.tablePrefix }}</p>
-					</div>
-				</div>
-				<!-- Add more object-specific details here -->
+				<p>
+					{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
+				</p>
 			</div>
 		</div>
 	</div>

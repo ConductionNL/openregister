@@ -84,6 +84,7 @@ export const useObjectStore = defineStore('object', {
 				}
 
 				this.refreshObjectList()
+				this.setObjectItem(null)
 
 				return { response, data: responseData }
 			} catch (error) {
