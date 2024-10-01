@@ -69,8 +69,8 @@ class Register extends Entity implements JsonSerializable
 			'schemas' => $this->schemas,
 			'source' => $this->source,
 			'tablePrefix' => $this->tablePrefix,
-			'updated' => $this->updated,
-			'created' => $this->created
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
 }

@@ -25,23 +25,15 @@ export const useRegisterStore = defineStore('register', {
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search
 			}
-			return fetch(endpoint, {
+			const response = await fetch(endpoint, {
 				method: 'GET',
 			})
-				.then(
-					(response) => {
-						response.json().then(
-							(data) => {
-								this.setRegisterList(data.results)
-							},
-						)
-					},
-				)
-				.catch(
-					(err) => {
-						console.error(err)
-					},
-				)
+
+			const data = (await response.json()).results
+
+			this.setRegisterList(data)
+
+			return { response, data }
 		},
 		// New function to get a single register
 		async getRegister(id) {
@@ -104,6 +96,9 @@ export const useRegisterStore = defineStore('register', {
 				? '/index.php/apps/openregister/api/registers'
 				: `/index.php/apps/openregister/api/registers/${registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
+
+			// change updated to current date as a singular iso date string
+			registerItem.updated = new Date().toISOString()
 
 			try {
 				const response = await fetch(

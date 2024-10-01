@@ -29,20 +29,15 @@ export const useSourceStore = defineStore(
 				return fetch(endpoint, {
 					method: 'GET',
 				})
-					.then(
-						(response) => {
-							response.json().then(
-								(data) => {
-									this.setSourceList(data.results)
-								},
-							)
-						},
-					)
-					.catch(
-						(err) => {
-							console.error(err)
-						},
-					)
+					.then(response => response.json())
+					.then(data => {
+						this.setSourceList(data.results)
+						return this.sourceList // Return the updated source list
+					})
+					.catch(err => {
+						console.error(err)
+						throw err // Re-throw the error to be caught by the caller
+					})
 			},
 			// New function to get a single source
 			async getSource(id) {
@@ -101,6 +96,8 @@ export const useSourceStore = defineStore(
 					? '/index.php/apps/openregister/api/sources'
 					: `/index.php/apps/openregister/api/sources/${sourceItem.id}`
 				const method = isNewSource ? 'POST' : 'PUT'
+
+				sourceItem.updated = new Date().toISOString()
 
 				const response = await fetch(
 					endpoint,

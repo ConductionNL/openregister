@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { schemaStore, navigationStore, sourceStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -27,9 +27,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextArea :disabled="loading"
 				label="Summary"
 				:value.sync="schemaItem.summary" />
-			<NcTextField :disabled="loading"
-				label="Source"
-				:value.sync="schemaItem.source" />
+			<NcSelect v-bind="sources"
+				v-model="sources.value"
+				input-label="Source"
+				:loading="sourcesLoading"
+				:disabled="loading" />
 		</div>
 
 		<template #actions>
@@ -62,6 +64,7 @@ import {
 	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
 } from '@nextcloud/vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -77,6 +80,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
+		NcSelect,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -93,6 +97,8 @@ export default {
 				created: '',
 				updated: '',
 			},
+			sourcesLoading: false,
+			sources: {},
 			success: false,
 			loading: false,
 			error: false,
@@ -105,6 +111,7 @@ export default {
 	updated() {
 		if (navigationStore.modal === 'editSchema' && !this.hasUpdated) {
 			this.initializeSchemaItem()
+			this.initializeSources()
 			this.hasUpdated = true
 		}
 	},
@@ -120,6 +127,33 @@ export default {
 					source: schemaStore.schemaItem.source || '',
 				}
 			}
+		},
+		initializeSources() {
+			this.sourcesLoading = true
+
+			sourceStore.refreshSourceList()
+				.then(() => {
+					const activeSource = schemaStore.schemaItem?.id
+						? sourceStore.sourceList.find((source) => source.id.toString() === schemaStore.schemaItem.source)
+						: null
+
+					this.sources = {
+						multiple: false,
+						closeOnSelect: true,
+						options: sourceStore.sourceList.map((source) => ({
+							id: source.id,
+							label: source.title,
+						})),
+						value: activeSource
+							? {
+								id: activeSource.id,
+								label: activeSource.title,
+							}
+							: null,
+					}
+
+					this.sourcesLoading = false
+				})
 		},
 		closeModal() {
 			navigationStore.setModal(false)
@@ -142,8 +176,7 @@ export default {
 
 			schemaStore.saveSchema({
 				...this.schemaItem,
-				created: !this.schemaItem?.id ? new Date().toISOString() : this.schemaItem.created,
-				updated: this.schemaItem?.id ? new Date().toISOString() : null,
+				source: this.sources?.value?.id || '',
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

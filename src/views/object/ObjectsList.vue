@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
+import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -12,53 +12,47 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 					label="Search"
 					class="searchField"
 					trailing-button-icon="close"
-					@trailing-button-click="schemaStore.refreshSchemaList()">
+					@trailing-button-click="objectStore.refreshObjectList()">
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
-					<NcActionButton @click="schemaStore.refreshSchemaList()">
+					<NcActionButton @click="objectStore.refreshObjectList()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
+					<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Add Schema
+						Add Object
 					</NcActionButton>
 				</NcActions>
 			</div>
-			<div v-if="schemaStore.schemaList && schemaStore.schemaList.length > 0">
-				<NcListItem v-for="(schema, i) in schemaStore.schemaList"
-					:key="`${schema}${i}`"
-					:name="schema.title"
-					:active="schemaStore.schemaItem?.id === schema?.id"
+			<div v-if="objectStore.objectList && objectStore.objectList.length > 0">
+				<NcListItem v-for="(object, i) in objectStore.objectList"
+					:key="`${object}${i}`"
+					:name="object.uuid"
+					:active="objectStore.objectItem?.id === object?.id"
 					:force-display-actions="true"
-					@click="schemaStore.setSchemaItem(schema)">
+					@click="objectStore.setObjectItem(object)">
 					<template #icon>
-						<FileTreeOutline :class="schemaStore.schemaItem?.id === schema.id && 'selectedSchemaIcon'"
+						<DatabaseOutline :class="objectStore.objectItem?.id === object.id && 'selectedObjectIcon'"
 							disable-menu
 							:size="44" />
 					</template>
 					<template #subname>
-						{{ schema?.description }}
+						{{ JSON.stringify(object?.object) }}
 					</template>
 					<template #actions>
-						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+						<NcActionButton @click="objectStore.setObjectItem(object); navigationStore.setModal('editObject')">
 							<template #icon>
 								<Pencil />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton @click="schemaStore.setSchemaItem(schema); schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
-							<template #icon>
-								<PlusCircleOutline />
-							</template>
-							Add Property
-						</NcActionButton>
-						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+						<NcActionButton @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
@@ -69,14 +63,14 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 			</div>
 		</ul>
 
-		<NcLoadingIcon v-if="!schemaStore.schemaList"
+		<NcLoadingIcon v-if="!objectStore.objectList"
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Loading schemas" />
+			name="Loading Objects" />
 
-		<div v-if="schemaStore.schemaList.length === 0">
-			No schemas have been defined yet.
+		<div v-if="objectStore.objectList.length === 0">
+			No objects have been defined yet.
 		</div>
 	</NcAppContentList>
 </template>
@@ -84,15 +78,14 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 <script>
 import { NcListItem, NcActionButton, NcAppContentList, NcTextField, NcLoadingIcon, NcActions } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 
 export default {
-	name: 'SchemasList',
+	name: 'ObjectsList',
 	components: {
 		NcListItem,
 		NcActions,
@@ -101,14 +94,14 @@ export default {
 		NcTextField,
 		NcLoadingIcon,
 		Magnify,
-		FileTreeOutline,
+		DatabaseOutline,
 		Refresh,
 		Plus,
 		Pencil,
 		TrashCanOutline,
 	},
 	mounted() {
-		schemaStore.refreshSchemaList()
+		objectStore.refreshObjectList()
 	},
 }
 </script>

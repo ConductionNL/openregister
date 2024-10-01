@@ -20,20 +20,20 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
-						Ververs
+						Refresh
 					</NcActionButton>
 					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Register toevoegen
+						Add Register
 					</NcActionButton>
 				</NcActions>
 			</div>
 			<div v-if="registerStore.registerList && registerStore.registerList.length > 0">
 				<NcListItem v-for="(register, i) in registerStore.registerList"
 					:key="`${register}${i}`"
-					:name="register.name"
+					:name="register.title"
 					:active="registerStore.registerItem?.id === register?.id"
 					:force-display-actions="true"
 					@click="registerStore.setRegisterItem(register)">
@@ -50,13 +50,13 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 							<template #icon>
 								<Pencil />
 							</template>
-							Bewerken
+							Edit
 						</NcActionButton>
 						<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
-							Verwijderen
+							Delete
 						</NcActionButton>
 					</template>
 				</NcListItem>
@@ -67,10 +67,10 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Registers aan het laden" />
+			name="Loading Registers" />
 
 		<div v-if="registerStore.registerList.length === 0">
-			Er zijn nog geen registers gedefinieerd.
+			No registers have been defined yet.
 		</div>
 	</NcAppContentList>
 </template>
