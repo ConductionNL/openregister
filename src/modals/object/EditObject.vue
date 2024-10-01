@@ -8,7 +8,7 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Object succesvol aangepast</p>
+			<p>Object successfully modified</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -160,7 +160,7 @@ export default {
 					...objectStore.objectItem,
 					schemas: objectStore.objectItem.schemas || '',
 					register: objectStore.objectItem.register || '',
-					object: objectStore.objectItem.object || '',
+					object: JSON.stringify(objectStore.objectItem.object) || '',
 				}
 			}
 		},

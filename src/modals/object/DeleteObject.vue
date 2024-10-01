@@ -4,15 +4,15 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'deleteObject'"
-		name="Object verwijderen"
+		name="Delete Object"
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			Wil je <b>{{ objectStore.objectItem?.uuid }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Do you want to permanently delete <b>{{ objectStore.objectItem?.uuid }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Object succesvol verwijderd</p>
+			<p>Object successfully deleted</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -23,7 +23,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? 'Annuleer' : 'Sluiten' }}
+				{{ success === null ? 'Cancel' : 'Close' }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -34,7 +34,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
 				</template>
-				Verwijderen
+				Delete
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -87,7 +87,7 @@ export default {
 				response.ok && setTimeout(this.closeDialog, 2000)
 			}).catch((error) => {
 				this.success = false
-				this.error = error.message || 'Er is een fout opgetreden bij het verwijderen van het object'
+				this.error = error.message || 'An error occurred while deleting the object'
 			}).finally(() => {
 				this.loading = false
 			})
