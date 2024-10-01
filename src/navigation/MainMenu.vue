@@ -20,9 +20,9 @@ import { navigationStore } from '../store/store.js'
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-            <NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Objects" @click="navigationStore.setSelected('objects')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Objects" @click="navigationStore.setSelected('objects')">
 				<template #icon>
-					<DatabaseArrowRightOutline :size="20" />
+					<CubeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationList>
@@ -50,6 +50,7 @@ import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 
 export default {
 	name: 'MainMenu',
