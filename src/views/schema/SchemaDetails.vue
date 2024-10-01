@@ -38,22 +38,51 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 				<!-- Add more schema-specific details here -->
+				<div class="tabContainer">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Logs">
+							<div v-if="false && logs.length > 0">
+								<NcListItem v-for="(log, key) in logs"
+									:key="key"
+									:name="log.title"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<PostOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ log.description }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="true || logs.length === 0">
+								No logs found
+							</div>
+						</BTab>
+					</BTabs>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcListItem } from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 
 export default {
 	name: 'SchemaDetails',
 	components: {
 		NcActions,
 		NcActionButton,
+		NcListItem,
+		BTabs,
+		BTab,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,

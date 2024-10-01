@@ -76,6 +76,26 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 								No schemas found
 							</div>
 						</BTab>
+						<BTab title="Logs">
+							<div v-if="false && logs.length > 0">
+								<NcListItem v-for="(log, key) in logs"
+									:key="key"
+									:name="log.title"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<PostOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ log.description }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="true || logs.length === 0">
+								No logs found
+							</div>
+						</BTab>
 					</BTabs>
 				</div>
 			</div>
@@ -95,6 +115,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import EyeArrowRight from 'vue-material-design-icons/EyeArrowRight.vue'
+import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 
 export default {
 	name: 'RegisterDetails',
