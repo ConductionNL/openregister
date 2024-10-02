@@ -47,23 +47,30 @@ class ObjectService
 			$schema = $this->schemaMapper->find($schema);
 		}
 
-		// Lets see if we need to save to an internal source
-		//if ($register->getSource() === 'internal') {
-			$objectEntity = new ObjectEntity();
-			$objectEntity->setRegister($register->getId());
-			$objectEntity->setSchema($schema->getId());
-			$objectEntity->setObject($object);
+		// Does the object already exist?
+		$objectEntity = $this->objectEntityMapper->findByUuid($register, $schema, $object['id']);
+		
+		if($object['id'] and $objectEntity){
 
-			if (isset($object['id'])) {
-				// Update existing object
-				$objectEntity->setUuid($object['id']);
-				return $this->objectEntityMapper->update($objectEntity);
-			} else {
-				// Create new object
-				$objectEntity->setUuid(Uuid::v4());
-				return $this->objectEntityMapper->insert($objectEntity);
-			}
-		//}
+			return $this->objectEntityMapper->update($objectEntity);
+		}
+		
+		$objectEntity = new ObjectEntity();
+		$objectEntity->setRegister($register->getId());
+		$objectEntity->setSchema($schema->getId());
+
+		// Does the object have an if?
+		if (isset($object['id'])) {
+			// Update existing object
+			$objectEntity->setUuid($object['id']);
+		} else {
+			// Create new object
+			$objectEntity->setUuid(Uuid::v4());
+			$object['id'] = $objectEntity->getUuid();
+		}
+
+		$objectEntity->setObject($object);
+		return $this->objectEntityMapper->insert($objectEntity);
 
 		//@todo mongodb support
 
@@ -84,7 +91,7 @@ class ObjectService
 	{
 		// Lets see if we need to save to an internal source
 		if ($register->getSource() === 'internal') {
-			return $this->objectEntityMapper->findByUuid($uuid);	
+			return $this->objectEntityMapper->findByUuid($register,$uuid);	
 		}
 
 		//@todo mongodb support

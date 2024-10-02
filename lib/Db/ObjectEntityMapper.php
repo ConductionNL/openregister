@@ -3,6 +3,8 @@
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -41,7 +43,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param string $uuid The UUID of the object to find
 	 * @return ObjectEntity The object
 	 */
-	public function findByUuid(string $uuid): ObjectEntity
+	public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -49,9 +51,19 @@ class ObjectEntityMapper extends QBMapper
 			->from('openregister_objects')
 			->where(
 				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+			)
+			->andWhere(
+				$qb->expr()->eq('register', $qb->createNamedParameter($register->getId()))
+			)
+			->andWhere(
+				$qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId()))
 			);
 
-		return $this->findEntity(query: $qb);
+		try {
+			return $this->findEntity($qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
 	}
 
 	/**
