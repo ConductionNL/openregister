@@ -4,7 +4,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editSource'"
-		name="Source"
+		:name="sourceStore.sourceItem?.id ? 'Edit Source' : 'Add Source'"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">

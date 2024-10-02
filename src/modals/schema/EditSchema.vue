@@ -4,7 +4,7 @@ import { schemaStore, navigationStore, sourceStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editSchema'"
-		name="Schema"
+		:name="schemaStore.schemaItem?.id ? 'Edit Schema' : 'Add Schema'"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
