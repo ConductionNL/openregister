@@ -17,9 +17,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 	public function __construct() {
 		$this->addType(fieldName:'uuid', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
-		$this->addType(fieldName: 'object', type: 'json');
+		$this->addType(fieldName:'register', type: 'string');
+		$this->addType(fieldName:'schema', type: 'string');
+		$this->addType(fieldName:'object', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
 	}
