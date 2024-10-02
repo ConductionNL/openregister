@@ -39,6 +39,7 @@ class ObjectService
 	 */
 	public function saveObject($register, $schema, array $object): ObjectEntity
 	{
+
 		// Convert register and schema to their respective objects if they are strings
 		if (is_string($register)) {
 			$register = $this->registerMapper->find($register);
@@ -50,14 +51,13 @@ class ObjectService
 		// Does the object already exist?
 		$objectEntity = $this->objectEntityMapper->findByUuid($register, $schema, $object['id']);
 		
-		if($object['id'] and $objectEntity){
-
-			return $this->objectEntityMapper->update($objectEntity);
+		if($objectEntity === null){
+			$objectEntity = new ObjectEntity();
+			$objectEntity->setRegister($register->getId());
+			$objectEntity->setSchema($schema->getId());
+			///return $this->objectEntityMapper->update($objectEntity);
 		}
 		
-		$objectEntity = new ObjectEntity();
-		$objectEntity->setRegister($register->getId());
-		$objectEntity->setSchema($schema->getId());
 
 		// Does the object have an if?
 		if (isset($object['id'])) {
@@ -70,6 +70,10 @@ class ObjectService
 		}
 
 		$objectEntity->setObject($object);
+
+		if($objectEntity->getId()){
+			return $this->objectEntityMapper->update($objectEntity);
+		}
 		return $this->objectEntityMapper->insert($objectEntity);
 
 		//@todo mongodb support

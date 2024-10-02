@@ -43,7 +43,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param string $uuid The UUID of the object to find
 	 * @return ObjectEntity The object
 	 */
-	public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity
+	public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity|null
 	{
 		$qb = $this->db->getQueryBuilder();
 
