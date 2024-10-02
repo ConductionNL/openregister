@@ -4,7 +4,7 @@ import { registerStore, schemaStore, sourceStore, navigationStore } from '../../
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editRegister'"
-		name="Register"
+		:name="registerStore.registerItem?.id ? 'Edit Register' : 'Add Register'"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
