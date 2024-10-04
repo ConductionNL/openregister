@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div>
 				<div class="head">
 					<h1 class="h1">
-						{{ objectStore.objectItem.uuid }}
+						{{ objectStore.objectItem.id }}
 					</h1>
 
 					<NcActions :primary="true" menu-name="Actions">
@@ -29,17 +29,68 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 					</NcActions>
 				</div>
+				<span>{{ objectStore.objectItem.uuid }}</span>
+				<div class="detailGrid">
+					<div class="gridContent gridFullWidth">
+						<b>Register:</b>
+						<p>{{ objectStore.objectItem.register }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Schema:</b>
+						<p>{{ objectStore.objectItem.schema }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Updated:</b>
+						<p>{{ objectStore.objectItem.updated }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Created:</b>
+						<p>{{ objectStore.objectItem.created }}</p>
+					</div>
+				</div>
 
-				<p>
-					{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
-				</p>
+				<div class="tabContainer">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Data">
+							<p>
+								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
+							</p>
+						</BTab>
+						<BTab title="Syncs">
+							<p>
+								@todo
+							</p>
+						</BTab>
+						<BTab title="Logs">
+							<div v-if="false && logs.length > 0">
+								<NcListItem v-for="(log, key) in logs"
+									:key="key"
+									:name="log.title"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<PostOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ log.description }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="true || logs.length === 0">
+								No logs found
+							</div>
+						</BTab>
+					</BTabs>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcListItem } from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -49,6 +100,9 @@ export default {
 	components: {
 		NcActions,
 		NcActionButton,
+		NcListItem,
+		BTabs,
+		BTab,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,

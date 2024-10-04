@@ -40,6 +40,7 @@
     "remark-preset-lint-consistent": "^6.0.0",
     "remark-preset-lint-recommended": "^7.0.0",
     "style-loader": "^3.3.3",
+    "uuid": "^10.0.0",
     "vue": "^2.7.14",
     "vue-apexcharts": "^1.6.2",
     "vue-loader": "^15.11.1 <16.0.0",
