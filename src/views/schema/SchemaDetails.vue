@@ -47,7 +47,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
 						<BTab title="Properties" active>
-							<div v-if="Object.keys(schemaStore.schemaItem.properties).length > 0">
+							<div v-if="Object.keys(schemaStore.schemaItem.properties).length">
 								<NcListItem v-for="(property, key) in schemaStore.schemaItem.properties"
 									:key="key"
 									:name="property.title"
@@ -78,7 +78,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="Object.keys(schemaStore.schemaItem.properties).length === 0">
+							<div v-if="!Object.keys(schemaStore.schemaItem.properties).length">
 								No properties found
 							</div>
 						</BTab>
