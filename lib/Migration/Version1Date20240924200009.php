@@ -67,7 +67,6 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'register_schemas_title_index');
-			$table->addIndex(['source'], 'register_schemas_source_index');
 		}
 
 		if (!$schema->hasTable('openregister_registers')) {
