@@ -9,7 +9,7 @@ export class Schema implements TSchema {
 	public description: string
 	public summary: string
 	public required: string[]
-	public properties: object
+	public properties: Record<string, any>
 	public archive: Record<string, any>
 	public source: string
 	public updated: string
