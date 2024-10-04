@@ -45,11 +45,11 @@ class Schema extends Entity implements JsonSerializable
 	{
 		$jsonFields = $this->getJsonFields();
 
-		if(isset($object['metadata']) === false) {
+		if (isset($object['metadata']) === false) {
 			$object['metadata'] = [];
 		}
 
-		foreach($object as $key => $value) {
+		foreach ($object as $key => $value) {
 			if (in_array($key, $jsonFields) === true && $value === []) {
 				$value = null;
 			}
@@ -77,7 +77,7 @@ class Schema extends Entity implements JsonSerializable
             }
             switch ($property['format']) {
                 case 'string':
-                // For now array as string    
+                // For now array as string
                 case 'array':
                     $properties[$key]['default'] = (string) $property;
                     break;

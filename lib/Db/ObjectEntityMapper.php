@@ -18,7 +18,7 @@ class ObjectEntityMapper extends QBMapper
 
 	/**
 	 * Find an object by ID
-	 * 
+	 *
 	 * @param int $id The ID of the object to find
 	 * @return ObjectEntity The ObjectEntity
 	 */
@@ -37,7 +37,7 @@ class ObjectEntityMapper extends QBMapper
 
 	/**
 	 * Find an object by UUID
-	 * 
+	 *
 	 * @param string $uuid The UUID of the object to find
 	 * @return ObjectEntity The object
 	 */
@@ -56,7 +56,7 @@ class ObjectEntityMapper extends QBMapper
 
 	/**
 	 * Find objects by register and schema
-	 * 
+	 *
 	 * @param string $register The register to find objects for
 	 * @param string $schema The schema to find objects for
 	 * @return array An array of ObjectEntitys
@@ -79,7 +79,7 @@ class ObjectEntityMapper extends QBMapper
 
 	/**
 	 * Find all ObjectEntitys
-	 * 
+	 *
 	 * @param int $limit The number of objects to return
 	 * @param int $offset The offset of the objects to return
 	 * @param array $filters The filters to apply to the objects
@@ -96,7 +96,7 @@ class ObjectEntityMapper extends QBMapper
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-        foreach($filters as $filter => $value) {
+        foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
 			} elseif ($value === 'IS NULL') {
@@ -120,7 +120,7 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = new ObjectEntity();
 		$obj->hydrate(object: $object);
-		if($obj->getUuid() === null){
+		if ($obj->getUuid() === null){
 			$obj->setUuid(Uuid::v4());
 		}
 		return $this->insert(entity: $obj);
@@ -130,7 +130,7 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
-		if($obj->getUuid() === null){
+		if ($obj->getUuid() === null){
 			$obj->setUuid(Uuid::v4());
 		}
 
