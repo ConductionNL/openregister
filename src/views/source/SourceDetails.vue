@@ -73,8 +73,28 @@ import { sourceStore, navigationStore, registerStore } from '../../store/store.j
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="filterRegisters.length === 0">
+							<div v-if="!filterRegisters.length" class="tabPanel">
 								Geen registers gevonden
+							</div>
+						</BTab>
+						<BTab title="Logs">
+							<div v-if="false && logs.length">
+								<NcListItem v-for="(log, key) in logs"
+									:key="key"
+									:name="log.title"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<PostOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ log.description }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="true || !logs.length" class="tabPanel">
+								No logs found
 							</div>
 						</BTab>
 					</BTabs>
@@ -97,6 +117,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import EyeArrowRight from 'vue-material-design-icons/EyeArrowRight.vue'
+import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 
 export default {
 	name: 'SourceDetails',
