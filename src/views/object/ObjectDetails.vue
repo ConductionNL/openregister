@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div>
 				<div class="head">
 					<h1 class="h1">
-						{{ objectStore.objectItem.uuid }}
+						{{ objectStore.objectItem.id }}
 					</h1>
 
 					<NcActions :primary="true" menu-name="Actions">
@@ -29,13 +29,38 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 					</NcActions>
 				</div>
-
-				<p>
-					{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
-				</p>
+				<span>{{ objectStore.objectItem.uuid }}</span>
+				<div class="detailGrid">
+					<div class="gridContent gridFullWidth">
+						<b>Register:</b>
+						<p>{{ objectStore.objectItem.register }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Schema:</b>
+						<p>{{ objectStore.objectItem.schema }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Updated:</b>
+						<p>{{ objectStore.objectItem.updated }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Created:</b>
+						<p>{{ objectStore.objectItem.created }}</p>
+					</div>
+				</div>
 
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
+						<BTab title="Data" active>
+							<p>
+								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
+							</p>
+						</BTab>
+						<BTab title="Syncs">
+							<div v-if="true || !syncs.length" class="tabPanel">
+								No synchronizations found
+							</div>
+						</BTab>
 						<BTab title="Logs">
 							<div v-if="false && logs.length">
 								<NcListItem v-for="(log, key) in logs"

@@ -62,14 +62,11 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addColumn('summary', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('required', Types::JSON, ['notnull' => false]);
 			$table->addColumn('properties', Types::JSON, ['notnull' => false]);
-			$table->addColumn('archive', Types::JSON, ['notnull' => false]);
-			$table->addColumn('source', Types::STRING, ['notnull' => true, 'length' => 64]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'register_schemas_title_index');
-			$table->addIndex(['source'], 'register_schemas_source_index');
 		}
 
 		if (!$schema->hasTable('openregister_registers')) {

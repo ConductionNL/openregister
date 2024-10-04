@@ -26,8 +26,6 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'required', type: 'json');
 		$this->addType(fieldName: 'properties', type: 'json');
-		$this->addType(fieldName: 'archive', type: 'json');
-		$this->addType(fieldName: 'source', type: 'string');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
 	}
@@ -101,8 +99,6 @@ class Schema extends Entity implements JsonSerializable
 			'summary'     => $this->summary,
 			'required'    => $this->required,
 			'properties'  => $properties,
-			'archive'     => $this->archive,
-			'source'	  => $this->source,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
 		];
