@@ -51,15 +51,15 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
-						<BTab title="Data">
+						<BTab title="Data" active>
 							<p>
 								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
 							</p>
 						</BTab>
 						<BTab title="Syncs">
-							<p>
-								@todo
-							</p>
+							<div v-if="true || !syncs.length" class="tabPanel">
+								No synchronizations found
+							</div>
 						</BTab>
 						<BTab title="Logs">
 							<div v-if="false && logs.length">
