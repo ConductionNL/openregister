@@ -78,11 +78,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="!Object.keys(schemaStore.schemaItem.properties).length">
+							<div v-if="!Object.keys(schemaStore.schemaItem.properties).length" class="tabPanel">
 								No properties found
 							</div>
 						</BTab>
-            <BTab title="Logs">
+						<BTab title="Logs">
 							<div v-if="false && logs.length > 0">
 								<NcListItem v-for="(log, key) in logs"
 									:key="key"
@@ -98,9 +98,9 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="true || logs.length === 0">
+							<div v-if="true || logs.length === 0" class="tabPanel">
 								No logs found
-              </div>
+							</div>
 						</BTab>
 					</BTabs>
 				</div>
@@ -130,8 +130,6 @@ export default {
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
-		BTabs,
-		BTab,
 	},
 }
 </script>
