@@ -72,12 +72,12 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="filterSchemas.length === 0">
+							<div v-if="!filterSchemas.length" class="tabPanel">
 								No schemas found
 							</div>
 						</BTab>
 						<BTab title="Logs">
-							<div v-if="false && logs.length > 0">
+							<div v-if="false && logs.length">
 								<NcListItem v-for="(log, key) in logs"
 									:key="key"
 									:name="log.title"
@@ -92,7 +92,7 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="true || logs.length === 0">
+							<div v-if="true || !logs.length" class="tabPanel">
 								No logs found
 							</div>
 						</BTab>
