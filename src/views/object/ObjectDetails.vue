@@ -51,18 +51,18 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
-						<BTab title="Data">
+						<BTab title="Data" active>
 							<p>
 								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
 							</p>
 						</BTab>
-						<BTab title="Contracts">
-							<p>
-								@todo
-							</p>
+						<BTab title="Syncs">
+							<div v-if="true || !syncs.length" class="tabPanel">
+								No synchronizations found
+							</div>
 						</BTab>
 						<BTab title="Logs">
-							<div v-if="false && logs.length > 0">
+							<div v-if="false && logs.length">
 								<NcListItem v-for="(log, key) in logs"
 									:key="key"
 									:name="log.title"
@@ -77,7 +77,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="true || logs.length === 0">
+							<div v-if="true || !logs.length" class="tabPanel">
 								No logs found
 							</div>
 						</BTab>

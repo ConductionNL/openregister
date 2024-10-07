@@ -18,9 +18,17 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
 
+  init-ubuntu:
+    image: ubuntu
+    command: sh /home/ubuntu/docker/init-ubuntu.sh
+    volumes:
+      - ./docker:/home/ubuntu/docker
+      - .:/home/ubuntu/app
+
   nextcloud:
     user: root
     container_name: nextcloud
+#    entrypoint: occ app:enable openregister
     image: nextcloud
     restart: always
     ports:
@@ -29,14 +37,13 @@ services:
       - db
     volumes:
       - nextcloud:/var/www/html:rw
-      - ./custom-apps:/var/www/html/custom_apps
+      - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
-      
     environment:
       - MYSQL_PASSWORD='!ChangeMe!'
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_HOST=db
+      - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
-      - TZ=Europe/Amsterdam
