@@ -179,13 +179,11 @@ class SchemasController extends Controller
 		$schemaObject = $this->uploadService->mapJsonSchema($jsonArray);
 
 		// @todo Should we do custom mappings here or in the 'abstract' function in UploadService?
-		$schemaObject = array_merge($schemaObject, [
+		return array_merge($schemaObject, [
 			'summary' => $jsonArray['description'],
 			'required' => $jsonArray['required'],
 			'properties' => $jsonArray['properties']
 		]);
-
-		return $schemaObject;
 	}
 
 	/**
