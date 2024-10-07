@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
@@ -32,6 +33,7 @@ class SchemasController extends Controller
 		private readonly UploadService $uploadService
     )
     {
+		$this->client = new Client([]);
         parent::__construct($appName, $request);
     }
 
@@ -227,8 +229,20 @@ class SchemasController extends Controller
 		}
 
 		if (empty($data['url']) === false) {
-			// @todo get .json file using CallService and use that as $json
-			$data['json'] = [];
+			// @todo move to function (cleanup)
+			try {
+				$response = $this->client->request('GET', $data['url']);
+			} catch (GuzzleHttp\Exception\BadResponseException $e) {
+				$response = $e->getResponse();
+				return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$data['url']], statusCode: 400);
+			}
+
+			$responseBody = $response->getBody()->getContents();
+			// @todo use Conten-Type header in response instead?
+			if (is_string($responseBody) === true) {
+				$responseBody = json_decode(json: $responseBody, associative: true);
+			}
+			$data['json'] = $responseBody;
 		}
 
 		$jsonArray = $data['json'];
