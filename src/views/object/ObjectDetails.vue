@@ -56,7 +56,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
 							</p>
 						</BTab>
-						<BTab title="Syncs">
+						<BTab title="Contracts">
 							<p>
 								@todo
 							</p>

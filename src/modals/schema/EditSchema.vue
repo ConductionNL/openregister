@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore, sourceStore } from '../../store/store.js'
+import { schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -27,11 +27,6 @@ import { schemaStore, navigationStore, sourceStore } from '../../store/store.js'
 			<NcTextArea :disabled="loading"
 				label="Summary"
 				:value.sync="schemaItem.summary" />
-			<NcSelect v-bind="sources"
-				v-model="sources.value"
-				input-label="Source"
-				:loading="sourcesLoading"
-				:disabled="loading" />
 		</div>
 
 		<template #actions>
@@ -93,12 +88,9 @@ export default {
 				version: '',
 				description: '',
 				summary: '',
-				source: '',
 				created: '',
 				updated: '',
 			},
-			sourcesLoading: false,
-			sources: {},
 			success: false,
 			loading: false,
 			error: false,
@@ -111,7 +103,6 @@ export default {
 	updated() {
 		if (navigationStore.modal === 'editSchema' && !this.hasUpdated) {
 			this.initializeSchemaItem()
-			this.initializeSources()
 			this.hasUpdated = true
 		}
 	},
@@ -124,36 +115,8 @@ export default {
 					version: schemaStore.schemaItem.version || '',
 					description: schemaStore.schemaItem.description || '',
 					summary: schemaStore.schemaItem.summary || '',
-					source: schemaStore.schemaItem.source || '',
 				}
 			}
-		},
-		initializeSources() {
-			this.sourcesLoading = true
-
-			sourceStore.refreshSourceList()
-				.then(() => {
-					const activeSource = schemaStore.schemaItem?.id
-						? sourceStore.sourceList.find((source) => source.id.toString() === schemaStore.schemaItem.source)
-						: null
-
-					this.sources = {
-						multiple: false,
-						closeOnSelect: true,
-						options: sourceStore.sourceList.map((source) => ({
-							id: source.id,
-							label: source.title,
-						})),
-						value: activeSource
-							? {
-								id: activeSource.id,
-								label: activeSource.title,
-							}
-							: null,
-					}
-
-					this.sourcesLoading = false
-				})
 		},
 		closeModal() {
 			navigationStore.setModal(false)
@@ -166,7 +129,6 @@ export default {
 				version: '',
 				description: '',
 				summary: '',
-				source: '',
 				created: '',
 				updated: '',
 			}
@@ -176,7 +138,6 @@ export default {
 
 			schemaStore.saveSchema({
 				...this.schemaItem,
-				source: this.sources?.value?.id || '',
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

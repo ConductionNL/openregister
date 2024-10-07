@@ -5,6 +5,7 @@
 		<DeleteRegister />
 		<EditSchema />
 		<DeleteSchema />
+		<UploadSchema />
 		<EditSchemaProperty />
 		<DeleteSchemaProperty />
 		<EditSource />
@@ -19,6 +20,7 @@ import EditRegister from './register/EditRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
 import EditSchema from './schema/EditSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
+import UploadSchema from './schema/UploadSchema.vue'
 import EditSchemaProperty from './schema/EditSchemaProperty.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
 import EditSource from './source/EditSource.vue'
@@ -33,6 +35,7 @@ export default {
 		DeleteRegister,
 		EditSchema,
 		DeleteSchema,
+		UploadSchema,
 		EditSchemaProperty,
 		DeleteSchemaProperty,
 		EditSource,

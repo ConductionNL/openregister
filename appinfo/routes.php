@@ -10,5 +10,6 @@ return [
 	'routes' => [
 		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],	
 		['name' => 'registers#objects', 'url' => '/api/registers-objects/{register}/{schema}', 'verb' => 'GET'],
+		['name' => 'objects#logs', 'url' => '/api/objects-logs/{id}', 'verb' => 'GET'],
 	],
 ];
