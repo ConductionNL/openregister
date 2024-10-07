@@ -140,7 +140,7 @@ export const useSchemaStore = defineStore('schema', {
 
 			console.log('Uploading schema...')
 			const response = await fetch(
-				'/index.php/apps/openregister/api/schemas',
+				'/index.php/apps/openregister/api/schemas/upload',
 				{
 					method: 'POST',
 					headers: {
