@@ -17,7 +17,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextArea :disabled="loading"
 				label="Schema"
-				:value.sync="schema" />
+				:value.sync="schema.json" />
 		</div>
 
 		<template #actions>
@@ -73,7 +73,9 @@ export default {
 	},
 	data() {
 		return {
-			schema: '{}',
+			schema: {
+				json: '{}'
+			},
 			success: false,
 			loading: false,
 			error: false,
@@ -87,7 +89,9 @@ export default {
 			this.loading = false
 			this.error = false
 			this.hasUpdated = false
-			this.schema = '{}'
+			this.schema = {
+				json: '{}'
+			}
 		},
 		async uploadSchema() {
 			this.loading = true

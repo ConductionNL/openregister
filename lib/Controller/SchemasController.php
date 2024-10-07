@@ -199,8 +199,15 @@ class SchemasController extends Controller
 	 *
 	 * @return JSONResponse
 	 */
-	public function upload(): JSONResponse
+	public function upload(?int $id = null): JSONResponse
 	{
+        if($id !== null){
+            $schema = $this->schemaMapper->find($id);
+		}
+        else{
+            $schema = new Schema();
+        }
+
 		$data = $this->request->getParams();
 
 		foreach ($data as $key => $value) {
@@ -245,11 +252,22 @@ class SchemasController extends Controller
 			$data['json'] = $responseBody;
 		}
 
-		$jsonArray = $data['json'];
+		$jsonArray = json_decode($data['json'], associative: true);
 
-		$schemaObject = $this->JsonToSchema(jsonArray: $jsonArray);
+		//$schemaObject = $this->JsonToSchema(jsonArray: $jsonArray);
 
-		$schema = $this->schemaMapper->createFromArray(object: $schemaObject);
+		// Set default title if not provided or empty
+		if (!isset($jsonArray['title']) || empty($jsonArray['title'])) {
+			$jsonArray['title'] = 'new object';
+		}
+
+		$schema->hydrate($jsonArray);
+        if($schema->getId() === null){
+            $schema = $this->schemaMapper->create($schema);
+        }
+        else{
+            $schema = $this->schemaMapper->update($schema);
+        }
 
 		return new JSONResponse($schema);
 	}

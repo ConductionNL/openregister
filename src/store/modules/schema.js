@@ -131,22 +131,26 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		// Create or save a schema from store
 		async uploadSchema(schema) {
-			if (!this.schemaItem) {
-				throw new Error('No schema item to save')
-			}
 			if (!schema) {
 				throw new Error('No schema item to upload')
 			}
 
 			console.log('Uploading schema...')
+			
+			const isNewSchema = !this.schemaItem
+			const endpoint = isNewSchema
+				? '/index.php/apps/openregister/api/schemas/upload'
+				: `/index.php/apps/openregister/api/schemas/upload/${this.schemaItem.id}`
+			const method = isNewSchema ? 'POST' : 'PUT'
+
 			const response = await fetch(
-				'/index.php/apps/openregister/api/schemas/upload',
+				endpoint,
 				{
-					method: 'POST',
+					method,
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify(schemaItem),
+					body: JSON.stringify(schema),
 				},
 			)
 

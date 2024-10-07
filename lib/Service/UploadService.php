@@ -23,7 +23,7 @@ class UploadService
 	 *
 	 * @return array
 	 */
-	public function mapJsonSchema(array $input): array
+	public function mapJsonSchema(array $json): array
 	{
 		// @todo maybe do a switch for $input['$schema'] here? Or just do custom mappings in the Controllers?
 
