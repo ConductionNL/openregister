@@ -2,10 +2,12 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -25,7 +27,9 @@ class SchemasController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+		private readonly DownloadService $downloadService,
+		private readonly UploadService $uploadService
     )
     {
         parent::__construct($appName, $request);
@@ -33,7 +37,7 @@ class SchemasController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -42,17 +46,17 @@ class SchemasController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all schemas
-     * 
+     *
      * This method returns a JSON response containing an array of all schemas in the system.
      *
      * @NoAdminRequired
@@ -69,12 +73,12 @@ class SchemasController extends Controller
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->schemaMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        return new JSONResponse(['results' => $this->schemaMapper->findAll(filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
     }
 
     /**
      * Retrieves a single schema by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific schema.
      *
      * @NoAdminRequired
@@ -94,7 +98,7 @@ class SchemasController extends Controller
 
     /**
      * Creates a new schema
-     * 
+     *
      * This method creates a new schema based on POST data.
      *
      * @NoAdminRequired
@@ -111,23 +115,23 @@ class SchemasController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
+
         return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
     }
 
     /**
      * Updates an existing schema
-     * 
+     *
      * This method updates an existing schema based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the schema to update
+     * @param int $id The ID of the schema to update
      * @return JSONResponse A JSON response containing the updated schema details
      */
     public function update(int $id): JSONResponse
@@ -142,24 +146,141 @@ class SchemasController extends Controller
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->schemaMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
     }
 
     /**
      * Deletes a schema
-     * 
+     *
      * This method deletes a schema based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the schema to delete
+     * @param int $id The ID of the schema to delete
      * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {
-        $this->schemaMapper->delete($this->schemaMapper->find((int) $id));
+        $this->schemaMapper->delete($this->schemaMapper->find(id: $id));
 
         return new JSONResponse([]);
     }
+
+	/**
+	 * Transforms a php array (decoded json input) to a php array that can be used to create a new Schema object.
+	 *
+	 * @param array $jsonArray A php array (decoded json input) to translate/map.
+	 *
+	 * @return array The transformed array.
+	 */
+	private function jsonToSchema(array $jsonArray): array
+	{
+		$schemaObject = $this->uploadService->mapJsonSchema($jsonArray);
+
+		// @todo Should we do custom mappings here or in the 'abstract' function in UploadService?
+		$schemaObject = array_merge($schemaObject, [
+			'summary' => $jsonArray['description'],
+			'required' => $jsonArray['required'],
+			'properties' => $jsonArray['properties']
+		]);
+
+		return $schemaObject;
+	}
+
+	/**
+	 * Creates a new Schema object using a json text/string as input. Uses 'json' from POST body.
+	 * @todo Optionally a 'url' can be used instead to get a json file from somewhere else and use that instead.
+	 * @todo Or a .json file can be uploaded using key 'file'.
+	 * @todo move most of this code to a (new?) UploadService and make it even more abstract and reusable?
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse
+	 */
+	public function upload(): JSONResponse
+	{
+		$data = $this->request->getParams();
+
+		foreach ($data as $key => $value) {
+			if (str_starts_with($key, '_')) {
+				unset($data[$key]);
+			}
+		}
+
+		// Define the allowed keys
+		$allowedKeys = ['file', 'url', 'json'];
+
+		// Find which of the allowed keys are in the array
+		$matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
+
+		// Check if there is exactly one matching key
+		if (count($matchingKeys) === 0) {
+			return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
+		}
+		if (count($matchingKeys) > 1) {
+			return new JSONResponse(data: ['error' => 'Please use one of these keys: file, url or json, not multiple.'], statusCode: 400);
+		}
+
+		if (empty($data['file']) === false) {
+			// @todo use .json file content from POST as $json
+			$data['json'] = [];
+		}
+
+		if (empty($data['url']) === false) {
+			// @todo get .json file using CallService and use that as $json
+			$data['json'] = [];
+		}
+
+		$jsonArray = $data['json'];
+
+		$schemaObject = $this->JsonToSchema(jsonArray: $jsonArray);
+
+		$schema = $this->schemaMapper->createFromArray(object: $schemaObject);
+
+		return new JSONResponse($schema);
+	}
+
+	/**
+	 * Creates and return a json file for a Schema.
+	 * @todo move most of this code to DownloadService and make it even more Abstract using Entity->jsonSerialize instead of Schema->jsonSerialize, etc.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the schema to return json file for
+	 * @return JSONResponse A json Response containing the json
+	 */
+	public function download(int $id): JSONResponse
+	{
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $exception) {
+			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		}
+
+		$contentType = $this->request->getHeader('Content-Type');
+
+		if (empty($contentType) === true) {
+			return new JSONResponse(data: ['error' => 'Request is missing header Content-Type'], statusCode: 400);
+		}
+
+		switch ($contentType) {
+			case 'application/json':
+				$type = 'json';
+				$responseData = [
+					'jsonArray' => $schema->jsonSerialize(),
+					'jsonString' => json_encode($schema->jsonSerialize())
+				];
+				break;
+			default:
+				return new JSONResponse(data: ['error' => "The Content-Type $contentType is not supported."], statusCode: 400);
+		}
+
+		// @todo Create a downloadable json file and return it.
+		$file = $this->downloadService->download(type: $type);
+
+		return new JSONResponse($responseData);
+	}
 }
