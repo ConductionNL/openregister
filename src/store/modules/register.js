@@ -133,5 +133,48 @@ export const useRegisterStore = defineStore('register', {
 				throw new Error(`Failed to save register: ${error.message}`)
 			}
 		},
+		// Create or save a register from store
+		async uploadRegister(register) {
+			if (!register) {
+				throw new Error('No register item to upload')
+			}
+
+			console.log('Uploading register...')
+			
+			const isNewRegister = !this.registerItem
+			const endpoint = isNewRegister
+				? '/index.php/apps/openregister/api/registers/upload'
+				: `/index.php/apps/openregister/api/registers/upload/${this.registerItem.id}`
+			const method = isNewRegister ? 'POST' : 'PUT'
+
+			const response = await fetch(
+				endpoint,
+				{
+					method,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(register),
+				},
+			)
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const responseData = await response.json()
+
+			if (!responseData || typeof responseData !== 'object') {
+				throw new Error('Invalid response data')
+			}
+
+			const data = new Register(responseData)
+
+			this.setRegisterItem(data)
+			this.refreshRegisterList()
+
+			return { response, data }
+
+		},
 	},
 })

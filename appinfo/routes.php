@@ -14,5 +14,8 @@ return [
 		['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
 		['name' => 'schemas#upload', 'url' => '/api/schemas/upload/{id}', 'verb' => 'PUT'],
 		['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET'],
+		['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
+		['name' => 'registers#upload', 'url' => '/api/registers/upload/{id}', 'verb' => 'PUT'],
+		['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET'],
 	],
 ];

@@ -1,14 +1,14 @@
 <script setup>
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { registerStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'uploadSchema'"
-		name="Upload Schema"
+	<NcDialog v-if="navigationStore.modal === 'uploadRegister'"
+		name="Upload Register"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Schema successfully uploaded</p>
+			<p>Register successfully uploaded</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -17,10 +17,10 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
 				label="Url"
-				:value.sync="schema.url" />
+				:value.sync="register.url" />
 			<NcTextArea :disabled="loading"
 				label="Schema"
-				:value.sync="schema.json" />
+				:value.sync="register.json" />
 		</div>
 
 		<template #actions>
@@ -31,9 +31,9 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="!success"
-				:disabled="loading || !schema"
+				:disabled="loading"
 				type="primary"
-				@click="uploadSchema()">
+				@click="uploadRegister()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Upload :size="20" />
@@ -60,7 +60,7 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
-	name: 'UploadSchema',
+	name: 'UploadRegister',
 	components: {
 		NcDialog,
 		NcTextField,
@@ -76,9 +76,9 @@ export default {
 	},
 	data() {
 		return {
-			schema: {
+			register: {
 				json: '{}',
-				url: null
+				url: ''
 			},
 			success: false,
 			loading: false,
@@ -93,21 +93,21 @@ export default {
 			this.loading = false
 			this.error = false
 			this.hasUpdated = false
-			this.schema = {
+			this.register = {
 				json: '{}',
-				url: null
+				url: ''
 			}
 		},
-		async uploadSchema() {
+		async uploadRegister() {
 			this.loading = true
 
-			schemaStore.uploadSchema(this.schema).then(({ response }) => {
+			registerStore.uploadRegister(this.register).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
 				response.ok && setTimeout(this.closeModal, 2000)
 			}).catch((error) => {
 				this.success = false
-				this.error = error.message || 'An error occurred while uploading the schema'
+				this.error = error.message || 'An error occurred while uploading the register'
 			}).finally(() => {
 				this.loading = false
 			})

@@ -23,6 +23,10 @@ class SchemasController extends Controller
      * @param string $appName The name of the app
      * @param IRequest $request The request object
      * @param IAppConfig $config The app configuration object
+     * @param SchemaMapper $schemaMapper The schema mapper
+     * @param DownloadService $downloadService The download service
+     * @param UploadService $uploadService The upload service
+     * @param Client $client The client
      */
     public function __construct(
         $appName,
@@ -30,11 +34,12 @@ class SchemasController extends Controller
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
 		private readonly DownloadService $downloadService,
-		private readonly UploadService $uploadService
+		private readonly UploadService $uploadService,
+		private Client $client
     )
     {
-		$this->client = new Client([]);
         parent::__construct($appName, $request);
+		$this->client = new Client([]);
     }
 
     /**
@@ -226,13 +231,11 @@ class SchemasController extends Controller
 		if (count($matchingKeys) === 0) {
 			return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
 		}
-		if (count($matchingKeys) > 1) {
-			return new JSONResponse(data: ['error' => 'Please use one of these keys: file, url or json, not multiple.'], statusCode: 400);
-		}
+
 
 		if (empty($data['file']) === false) {
 			// @todo use .json file content from POST as $json
-			$data['json'] = [];
+			//$data['json'] = [];
 		}
 
 		if (empty($data['url']) === false) {
