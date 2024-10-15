@@ -15,7 +15,6 @@ class Schema extends Entity implements JsonSerializable
 	protected ?array  $required    = [];
 	protected ?array  $properties  = [];
 	protected ?array  $archive     = [];
-	protected ?string $source      = null;
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
