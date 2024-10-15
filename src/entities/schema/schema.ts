@@ -11,7 +11,6 @@ export class Schema implements TSchema {
 	public required: string[]
 	public properties: Record<string, any>
 	public archive: Record<string, any>
-	public source: string
 	public updated: string
 	public created: string
 
@@ -24,7 +23,6 @@ export class Schema implements TSchema {
 		this.required = schema.required || []
 		this.properties = schema.properties || {}
 		this.archive = schema.archive || {}
-		this.source = schema.source || ''
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
 	}
@@ -39,7 +37,6 @@ export class Schema implements TSchema {
 			required: z.array(z.string()),
 			properties: z.object({}),
 			archive: z.object({}),
-			source: z.string(),
 			updated: z.string(),
 			created: z.string(),
 		})
