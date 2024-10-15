@@ -198,7 +198,11 @@ class ObjectService
 	public function extendEntity(array $entity, array $extend): array
 	{
 		// Convert the entity to an array if it's not already one
-		$result = is_array($entity) ? $entity : $entity->jsonSerialize();
+		if(is_array($entity)) {
+			$result = $entity;
+		} else {
+			$result = $entity->jsonSerialize();
+		}
 
 		// Iterate through each property to be extended
 		foreach ($extend as $property) {
@@ -206,12 +210,12 @@ class ObjectService
 			$singularProperty = rtrim($property, 's');
 
 			// Check if property or singular property are keys in the array
-			if (array_key_exists($property, $result)) {
+			if (array_key_exists(key: $property, array: $result) === true) {
 				$value = $result[$property];
 				if (empty($value)) {
 					continue;
 				}
-			} elseif (array_key_exists($singularProperty, $result)) {
+			} elseif (array_key_exists(key: $singularProperty, array: $result)) {
 				$value = $result[$singularProperty];
 			} else {
 				throw new \Exception("Property '$property' or '$singularProperty' is not present in the entity.");
@@ -220,25 +224,25 @@ class ObjectService
 			// Get a mapper for the property
 			$propertyObject = $property;
 			try {
-				$mapper = $this->getMapper($property);
+				$mapper = $this->getMapper(objectType: $property);
 				$propertyObject = $singularProperty;
 			} catch (\Exception $e) {
 				try {
-					$mapper = $this->getMapper($singularProperty);
+					$mapper = $this->getMapper(objectType: $singularProperty);
 					$propertyObject = $singularProperty;
 				} catch (\Exception $e) {
 					// If still no mapper, throw a no mapper available error
-					throw new \Exception("No mapper available for property '$property'.");
+					throw new \Exception(message: "No mapper available for property '$property'.");
 				}
 			}
 
 			// Update the values
-			if (is_array($value)) {
+			if (is_array($value) === true) {
 				// If the value is an array, get multiple related objects
-				$result[$property] = $this->getMultipleObjects($propertyObject, $value);
+				$result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
 			} else {
 				// If the value is not an array, get a single related object
-				$objectId = is_object($value) ? $value->getId() : $value;
+				$objectId = is_object(value: $value) ? $value->getId() : $value;
 				$result[$property] = $mapper->find($objectId);
 			}
 		}
@@ -247,6 +251,12 @@ class ObjectService
 		return $result;
 	}
 
+	/**
+	 * Get the registers extended with schemas for this instance of OpenRegisters
+	 *
+	 * @return array The registers of this OpenRegisters instance extended with schemas
+	 * @throws \Exception
+	 */
    public function getRegisters(): array
    {
 	   $registers = $this->registerMapper->findAll();
@@ -259,9 +269,9 @@ class ObjectService
 
 	   $extend = ['schemas'];
 	   // Extend the objects if the extend array is not empty
-	   if(!empty($extend)) {
+	   if(empty($extend) === false) {
 		   $registers = array_map(function($object) use ($extend) {
-			   return $this->extendEntity($object, $extend);
+			   return $this->extendEntity(entity: $object, extend: $extend);
 		   }, $registers);
 	   }
 
