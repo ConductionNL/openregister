@@ -3,6 +3,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
@@ -12,6 +13,7 @@ use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
 
@@ -156,17 +158,18 @@ class SchemasController extends Controller
         return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
     }
 
-    /**
-     * Deletes a schema
-     *
-     * This method deletes a schema based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param int $id The ID of the schema to delete
-     * @return JSONResponse An empty JSON response
-     */
+	/**
+	 * Deletes a schema
+	 *
+	 * This method deletes a schema based on its ID.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the schema to delete
+	 * @return JSONResponse An empty JSON response
+	 * @throws Exception
+	 */
     public function destroy(int $id): JSONResponse
     {
         $this->schemaMapper->delete($this->schemaMapper->find(id: $id));
@@ -195,14 +198,14 @@ class SchemasController extends Controller
 
 	/**
 	 * Creates a new Schema object using a json text/string as input. Uses 'json' from POST body.
-	 * @todo Optionally a 'url' can be used instead to get a json file from somewhere else and use that instead.
-	 * @todo Or a .json file can be uploaded using key 'file'.
+	 * @todo Optionally a .json file can be uploaded using key 'file'.
 	 * @todo move most of this code to a (new?) UploadService and make it even more abstract and reusable?
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse
+	 * @throws GuzzleException
 	 */
 	public function upload(?int $id = null): JSONResponse
 	{

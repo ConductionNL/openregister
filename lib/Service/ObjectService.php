@@ -30,7 +30,7 @@ class ObjectService
 	}
 
 	/**
-	 * Save an object 
+	 * Save an object
 	 *
 	 * @param Register|string $register	The register to save the object to.
 	 * @param Schema|string $schema		The schema to save the object to.
@@ -51,14 +51,14 @@ class ObjectService
 
 		// Does the object already exist?
 		$objectEntity = $this->objectEntityMapper->findByUuid($register, $schema, $object['id']);
-		
+
 		if($objectEntity === null){
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register->getId());
 			$objectEntity->setSchema($schema->getId());
 			///return $this->objectEntityMapper->update($objectEntity);
 		}
-		
+
 
 		// Does the object have an if?
 		if (isset($object['id'])) {
@@ -83,30 +83,30 @@ class ObjectService
 		throw new \Exception('Unsupported source type');
 	}
 
-	
+
 	/**
-	 * Get an object 
+	 * Get an object
 	 *
 	 * @param Register $register	The register to save the object to.
 	 * @param string $uuid	The uuid of the object to get
-	 * 
+	 *
 	 * @return ObjectEntity The resulting object.
 	 */
 	public function getObject(Register $register, string $uuid): ObjectEntity
 	{
 		// Lets see if we need to save to an internal source
-		if ($register->getSource() === 'internal') {
-			return $this->objectEntityMapper->findByUuid($register,$uuid);	
+		if ($register->getSource() === 'Internal') {
+			return $this->objectEntityMapper->findByUuid($register,$uuid);
 		}
 
 		//@todo mongodb support
 
 		// Handle external source here if needed
 		throw new \Exception('Unsupported source type');
-	}	
-	
+	}
+
 	/**
-	* Delete an object 
+	* Delete an object
 	*
 	* @param Register $register	The register to delete the object from.
 	* @param string $uuid	The uuid of the object to delete
@@ -116,8 +116,8 @@ class ObjectService
    public function deleteObject(Register $register, string $uuid)
    {
 	// Lets see if we need to save to an internal source
-	if ($register->getSource() === 'internal') {
-	   $object = $this->objectEntityMapper->findByUuid($uuid);	
+	if ($register->getSource() === 'Internal') {
+	   $object = $this->objectEntityMapper->findByUuid($uuid);
 	   $this->objectEntityMapper->delete($object);
 	}
 
