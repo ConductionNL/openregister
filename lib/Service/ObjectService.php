@@ -10,77 +10,100 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\MongoDbService;
+use Exception;
 
+/**
+ * ObjectService
+ *
+ * This service class handles operations related to objects in the OpenRegister system.
+ */
 class ObjectService
 {
-	private $callLogMapper;
 
 	/**
 	 * The constructor sets al needed variables.
 	 *
-	 * @param ObjectEntityMapper  $objectEntityMapper The ObjectEntity Mapper
+	 * @param ObjectEntityMapper $objectEntityMapper The ObjectEntity Mapper
+	 * @param RegisterMapper 	 $registerMapper 	 The Register Mapper
+	 * @param SchemaMapper 		 $schemaMapper 		 The Schema Mapper
+	 * @param SourceMapper 		 $sourceMapper 		 The Source Mapper
+	 * @param MongoDbService 	 $mongoDbService 	 The MongoDB Service
 	 */
-	public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, SchemaMapper $schemaMapper)
+	public function __construct (
+		private readonly ObjectEntityMapper $objectEntityMapper,
+		private readonly RegisterMapper 	$registerMapper,
+		private readonly SchemaMapper 		$schemaMapper,
+		private readonly SourceMapper 		$sourceMapper,
+		private readonly MongoDbService 	$mongoDbService
+	)
 	{
-		$this->objectEntityMapper = $objectEntityMapper;
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-	}
+	}//end __construct()
 
 	/**
-	 * Save an object
+	 * Save an object to internal database or external source.
 	 *
-	 * @param Register|string $register	The register to save the object to.
-	 * @param Schema|string $schema		The schema to save the object to.
-	 * @param array $object			The data to be saved.
+	 * An external source could be mongodb or other databases.
+	 *
+	 * @param array    $object	The data to be saved.
+	 * @param int|null $id  	The id of the object to be saved, might be null when creating a new object.
 	 *
 	 * @return ObjectEntity The resulting object.
 	 */
-	public function saveObject($register, $schema, array $object): ObjectEntity
+	public function saveObject(array $object, ?int $id = null): ObjectEntity
 	{
 
 		// Convert register and schema to their respective objects if they are strings
-		if (is_string($register)) {
-			$register = $this->registerMapper->find($register);
+		if (is_string($object['register']) === true) {
+			$register = $this->registerMapper->find(id: (int) $object['register']);
 		}
-		if (is_string($schema)) {
-			$schema = $this->schemaMapper->find($schema);
+		if (is_string($object['schema']) === true) {
+			$schema = $this->schemaMapper->find(id: (int) $object['schema']);
+		}
+
+		// What rules do we need to check before we are allowed to save a ObjectEntity?
+		// - Object->register must be set?
+		// - Object->register->source must be set?
+		// - Object->schema must be set?
+		// - Validate if the given schema is in the given register->schemas array?
+		// - Validate object against schema?
+
+		// Check the source of the register.
+		if ($register->getSource() !== null) {
+			$source = $this->sourceMapper->find(id: (int) $register->getSource());
+
+			// Check if we need to use the mongodb service.
+			if (isset($source) === true && $source->getType() === 'mongodb' && $source->getDatabaseUrl() !== null) {
+				if (isset($id) === true) {
+					// Update the object in mongodb.
+					unset($object['id']);
+					$object = $this->mongoDbService->updateObject(filters: ['_id' => $id], update: $object, config: ['mongodbCluster' => $source->getDatabaseUrl()]);
+				} else {
+					// Create the object in mongodb.
+					$object = $this->mongoDbService->saveObject(data: $object, config: ['mongodbCluster' => $source->getDatabaseUrl()]);
+				}
+			}
+
+			// Throw exception if source is set and the database url is null.
+			if (isset($source) === true && $source->getDatabaseUrl() === null) {
+				// Handle external source here if needed
+				throw new Exception('Source database url is not set, cannot save object.');
+			}
+
+			// Throw exception if we do not support the source type.
+			throw new Exception('Unsupported source type, cannot save object.');
 		}
 
 		// Does the object already exist?
-		$objectEntity = $this->objectEntityMapper->findByUuid($register, $schema, $object['id']);
-
-		if($objectEntity === null){
-			$objectEntity = new ObjectEntity();
-			$objectEntity->setRegister($register->getId());
-			$objectEntity->setSchema($schema->getId());
-			///return $this->objectEntityMapper->update($objectEntity);
+		if (isset($id) === true) {
+			// Default to internal database.
+			unset($object['id']);
+			return $this->objectEntityMapper->updateFromArray(id: $id, object: $object);
 		}
 
-
-		// Does the object have an if?
-		if (isset($object['id'])) {
-			// Update existing object
-			$objectEntity->setUuid($object['id']);
-		} else {
-			// Create new object
-			$objectEntity->setUuid(Uuid::v4());
-			$object['id'] = $objectEntity->getUuid();
-		}
-
-		$objectEntity->setObject($object);
-
-		if($objectEntity->getId()){
-			return $this->objectEntityMapper->update($objectEntity);
-		}
-		return $this->objectEntityMapper->insert($objectEntity);
-
-		//@todo mongodb support
-
-		// Handle external source here if needed
-		throw new \Exception('Unsupported source type');
-	}
+		// If we don't have an object, create a new one.
+		return $this->objectEntityMapper->createFromArray($object);
+	}//end saveObject()
 
 
 	/**
@@ -102,7 +125,7 @@ class ObjectService
 
 		// Handle external source here if needed
 		throw new \Exception('Unsupported source type');
-	}
+	}//end getObject()
 
 	/**
 	* Delete an object
@@ -114,17 +137,17 @@ class ObjectService
 	*/
    public function deleteObject(Register $register, string $uuid)
    {
-	// Lets see if we need to save to an internal source
-	if ($register->getSource() === 'internal') {
-	   $object = $this->objectEntityMapper->findByUuid($uuid);
-	   $this->objectEntityMapper->delete($object);
-	}
+		// Lets see if we need to save to an internal source
+		if ($register->getSource() === 'internal') {
+		$object = $this->objectEntityMapper->findByUuid($uuid);
+		$this->objectEntityMapper->delete($object);
+		}
 
-	//@todo mongodb support
+		//@todo mongodb support
 
-	// Handle external source here if needed
-	throw new \Exception('Unsupported source type');
-   }
+		// Handle external source here if needed
+		throw new \Exception('Unsupported source type');
+	}//end deleteObject()
 
 	/**
 	 * Gets the appropriate mapper based on the object type.
@@ -147,7 +170,7 @@ class ObjectService
 			default:
 				throw new \InvalidArgumentException("Unknown object type: $objectType");
 		}
-	}
+	}//end getMapper()
 
 	/**
 	 * Gets multiple objects based on the object type and ids.
@@ -185,7 +208,7 @@ class ObjectService
 
 		// Use the mapper to find and return multiple objects based on the provided cleaned ids
 		return $mapper->findMultiple($cleanedIds);
-	}
+	}//end getMultipleObjects()
 
 	/**
 	 * Extends an entity with related objects based on the extend array.
@@ -198,7 +221,7 @@ class ObjectService
 	public function extendEntity(array $entity, array $extend): array
 	{
 		// Convert the entity to an array if it's not already one
-		if(is_array($entity)) {
+		if (is_array($entity) === true) {
 			$result = $entity;
 		} else {
 			$result = $entity->jsonSerialize();
@@ -249,7 +272,7 @@ class ObjectService
 
 		// Return the extended entity as an array
 		return $result;
-	}
+	}//end extendEntity()
 
 	/**
 	 * Get the registers extended with schemas for this instance of OpenRegisters
@@ -276,5 +299,5 @@ class ObjectService
 	   }
 
 	   return $registers;
-   }
+	}//end getRegisters()
 }
