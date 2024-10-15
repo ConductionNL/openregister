@@ -2,26 +2,44 @@
 
 namespace OCA\OpenRegister\Db;
 
+use Exception;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
 class ObjectEntity extends Entity implements JsonSerializable
 {
-	protected ?string $uuid = null;
-	protected ?string $register = null;
-	protected ?string $schema = null;
-	protected ?array $object = [];
+
+	/**
+	 * Internal id
+	 *
+	 * @var string|null
+	 */
+	protected ?string $id      = null;
+
+	/**
+	 * External id
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid      = null;
+
+	protected ?string $register  = null;
+	protected ?string $schema    = null;
+	protected ?array $object     = [];
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType(fieldName:'uuid', type: 'string');
-		$this->addType(fieldName:'register', type: 'string');
-		$this->addType(fieldName:'schema', type: 'string');
-		$this->addType(fieldName:'object', type: 'json');
-		$this->addType(fieldName:'updated', type: 'datetime');
-		$this->addType(fieldName:'created', type: 'datetime');
+		// Internal id
+		$this->addType(fieldName: 'id',       type: 'string');
+		// External id
+		$this->addType(fieldName: 'uuid',     type: 'string');
+		$this->addType(fieldName: 'register', type: 'string');
+		$this->addType(fieldName: 'schema',   type: 'string');
+		$this->addType(fieldName: 'object',   type: 'json');
+		$this->addType(fieldName: 'updated',  type: 'datetime');
+		$this->addType(fieldName: 'created',  type: 'datetime');
 	}
 
 	public function getJsonFields(): array
@@ -50,7 +68,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 			try {
 				$this->$method($value);
-			} catch (\Exception $exception) {
+			} catch (Exception $exception) {
 			}
 		}
 
@@ -70,4 +88,49 @@ class ObjectEntity extends Entity implements JsonSerializable
 			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
+
+	/**
+	 * Get the internal id
+	 *
+	 * @return string|null
+	 */
+	public function getId(): ?string
+	{
+		return $this->id;
+	}
+
+	/**
+	 * Set the internal id
+	 *
+	 * @param string $id
+	 * @return self
+	 */
+	public function setId(string $id): self
+	{
+		$this->id = $id;
+		return $this;
+	}
+
+	/**
+	 * Get the external id
+	 *
+	 * @return string|null
+	 */
+	public function getUuid(): ?string
+	{
+		return $this->uuid;
+	}
+
+	/**
+	 * Set the external id
+	 *
+	 * @param string $uuid
+	 * @return self
+	 */
+	public function setUuid(string $uuid): self
+	{
+		$this->uuid = $uuid;
+		return $this;
+	}
+
 }

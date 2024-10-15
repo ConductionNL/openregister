@@ -25,7 +25,8 @@ class ObjectsController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly ObjectService $objectService
     )
     {
         parent::__construct($appName, $request);
@@ -33,7 +34,7 @@ class ObjectsController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -42,17 +43,17 @@ class ObjectsController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all objects
-     * 
+     *
      * This method returns a JSON response containing an array of all objects in the system.
      *
      * @NoAdminRequired
@@ -74,7 +75,7 @@ class ObjectsController extends Controller
 
     /**
      * Retrieves a single object by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific object.
      *
      * @NoAdminRequired
@@ -94,7 +95,7 @@ class ObjectsController extends Controller
 
     /**
      * Creates a new object
-     * 
+     *
      * This method creates a new object based on POST data.
      *
      * @NoAdminRequired
@@ -111,17 +112,17 @@ class ObjectsController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
-        return new JSONResponse($this->objectEntityMapper->createFromArray(object: $data));
+
+        return new JSONResponse($this->objectService->saveObject(object: $data));
     }
 
     /**
      * Updates an existing object
-     * 
+     *
      * This method updates an existing object based on its ID.
      *
      * @NoAdminRequired
@@ -139,15 +140,17 @@ class ObjectsController extends Controller
                 unset($data[$key]);
             }
         }
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->objectEntityMapper->updateFromArray(id: (int) $id, object: $data));
+
+        return new JSONResponse($this->objectService->saveObject(object: $data, id: $id));
     }
 
     /**
      * Deletes an object
-     * 
+     *
      * This method deletes an object based on its ID.
      *
      * @NoAdminRequired
