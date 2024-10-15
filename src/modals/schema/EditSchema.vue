@@ -127,7 +127,6 @@ export default {
 				version: '',
 				description: '',
 				summary: '',
-				source: '',
 				created: '',
 				updated: '',
 			}
