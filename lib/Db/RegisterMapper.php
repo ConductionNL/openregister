@@ -102,7 +102,7 @@ class RegisterMapper extends QBMapper
 		$obj = new Register();
 		$obj->hydrate($object);
 		// Set uuid if not provided
-		if($obj->getUuid() === null){
+		if ($obj->getUuid() === null){
 			$obj->setUuid(Uuid::v4());
 		}
 
@@ -121,7 +121,7 @@ class RegisterMapper extends QBMapper
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
-		
+
 		// Update the version
 		$version = explode('.', $obj->getVersion());
 		$version[2] = (int)$version[2] + 1;
@@ -141,14 +141,14 @@ class RegisterMapper extends QBMapper
 	{
 		$register = $this->find($registerId);
 		$schemaIds = $register->getSchemas();
-		
+
 		$schemas = [];
-		
+
 		// Fetch each schema by its ID
 		foreach ($schemaIds as $schemaId) {
 			$schemas[] = $this->schemaMapper->find((int) $schemaId);
 		}
-		
+
 		return $schemas;
 	}
 
@@ -162,14 +162,14 @@ class RegisterMapper extends QBMapper
 	public function hasSchemaWithTitle(int $registerId, string $schemaTitle): Schema|bool
 	{
 		$schemas = $this->getSchemasByRegisterId($registerId);
-		
+
 		// Check each schema for a matching title
 		foreach ($schemas as $schema) {
 			if ($schema->getTitle() === $schemaTitle) {
 				return $schema;
 			}
 		}
-		
+
 		return false;
 	}
 }

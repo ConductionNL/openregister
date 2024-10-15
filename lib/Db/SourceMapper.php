@@ -63,7 +63,7 @@ class SourceMapper extends QBMapper
 		$obj = new Source();
 		$obj->hydrate($object);
 		// Set uuid
-		if($obj->getUuid() === null){
+		if ($obj->getUuid() === null){
 			$obj->setUuid(Uuid::v4());
 		}
 		return $this->insert(entity: $obj);
@@ -73,7 +73,7 @@ class SourceMapper extends QBMapper
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
-		
+
 		// Set or update the version
 		$version = explode('.', $obj->getVersion());
 		$version[2] = (int)$version[2] + 1;

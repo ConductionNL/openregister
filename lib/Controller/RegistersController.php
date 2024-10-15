@@ -3,6 +3,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\Register;
@@ -13,6 +14,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Yaml\Yaml;
@@ -47,7 +49,7 @@ class RegistersController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -56,17 +58,17 @@ class RegistersController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all registers
-     * 
+     *
      * This method returns a JSON response containing an array of all registers in the system.
      *
      * @NoAdminRequired
@@ -88,7 +90,7 @@ class RegistersController extends Controller
 
     /**
      * Retrieves a single register by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific register.
      *
      * @NoAdminRequired
@@ -108,7 +110,7 @@ class RegistersController extends Controller
 
     /**
      * Creates a new register
-     * 
+     *
      * This method creates a new register based on POST data.
      *
      * @NoAdminRequired
@@ -125,17 +127,17 @@ class RegistersController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
+
         return new JSONResponse($this->registerMapper->createFromArray(object: $data));
     }
 
     /**
      * Updates an existing register
-     * 
+     *
      * This method updates an existing register based on its ID.
      *
      * @NoAdminRequired
@@ -161,7 +163,7 @@ class RegistersController extends Controller
 
     /**
      * Deletes a register
-     * 
+     *
      * This method deletes a register based on its ID.
      *
      * @NoAdminRequired
@@ -179,15 +181,15 @@ class RegistersController extends Controller
 
     /**
      * Get objects
-     * 
+     *
      * Get all the objects for a register and schema
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $register The ID of the register 
+     * @param string $register The ID of the register
      * @param string $schema The ID of the schema
-     * 
+     *
      * @return JSONResponse An empty JSON response
      */
     public function objects(int $register, int $schema): JSONResponse
@@ -197,21 +199,25 @@ class RegistersController extends Controller
 
 	/**
 	 * Creates a new Register object using a json text/string as input. Uses 'json' from POST body.
-	 * @todo Optionally a 'url' can be used instead to get a json file from somewhere else and use that instead.
 	 * @todo Or a .json file can be uploaded using key 'file'.
 	 * @todo move most of this code to a (new?) UploadService and make it even more abstract and reusable?
+	 *
+	 * @param int|null $id
+	 *
+	 * @return JSONResponse
+	 * @throws GuzzleException
+	 * @throws Exception
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @return JSONResponse
 	 */
 	public function upload(?int $id = null): JSONResponse
 	{
-        if($id !== null){
+        if ($id !== null){
             $register = $this->registerMapper->find($id);
 		}
-        else{
+        else {
             $register = new Register();
         }
 
@@ -244,48 +250,48 @@ class RegistersController extends Controller
 			try {
 				$response = $this->client->request('GET', $data['url']);
 			} catch (GuzzleHttp\Exception\BadResponseException $e) {
-				$response = $e->getResponse();
 				return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$data['url']], statusCode: 400);
 			}
 
 			$responseBody = $response->getBody()->getContents();
+
 			// Use Content-Type header to determine the format
 			$contentType = $response->getHeaderLine('Content-Type');
-			
-			if (strpos($contentType, 'application/json') !== false) {
-				$array = json_decode($responseBody, true);
-			} elseif (strpos($contentType, 'application/yaml') !== false || strpos($contentType, 'text/yaml') !== false) {
-				$array = Yaml::parse($responseBody);
-			} else {
-				// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
-				$array = json_decode($responseBody, true);
-				if ($array === null) {
-					$array = Yaml::parse($responseBody);
-				}
+			switch ($contentType) {
+				case 'application/json':
+					$phpArray = json_decode(json: $responseBody, associative: true);
+					break;
+				case 'application/yaml':
+					$phpArray = Yaml::parse(input: $responseBody);
+					break;
+				default:
+					// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
+					$phpArray = json_decode(json: $responseBody, associative: true);
+					if ($phpArray === null) {
+						$phpArray = Yaml::parse(input: $responseBody);
+					}
+					break;
 			}
 
-			if ($array === null || $array === false) {
+			if ($phpArray === null || $phpArray === false) {
 				return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML'], statusCode: 400);
 			}
-
-		}
-        else{
+		} else {
             $array = json_decode($data['json'], associative: true);
-        }       
-
+        }
 
 		// Validate that the jsonArray is a valid OAS3 object containing schemas
-		if (!isset($array['openapi']) || !isset($array['components']['schemas'])) {
+		if (isset($array['openapi']) === false || isset($array['components']['schemas']) === false) {
 			return new JSONResponse(data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'], statusCode: 400);
 		}
 
 		// Set default title if not provided or empty
-		if (!isset($array['info']['title']) || empty($array['info']['title'])) {
+		if (empty($array['info']['title']) === true) {
 			$jsonArray['info']['title'] = 'New Register';
 		}
 
 		$register->hydrate($array);
-        if($register->getId() === null){
+        if ($register->getId() === null){
             $register = $this->registerMapper->insert($register);
         }
         else{
@@ -300,7 +306,7 @@ class RegistersController extends Controller
                 // Check if a schema with this title already exists for this register
                 try{
                     $schemas = $this->schemaMapper->findAll(null, null, ['title' => $schemaName]);
-                    if(count($schemas) > 0){
+                    if (count($schemas) > 0){
                         $schema = $schemas[0];
                     }
                     else{
@@ -319,11 +325,11 @@ class RegistersController extends Controller
                     $this->schemaMapper->insert($schema);
                 }
             }
-            
+
 			$schema->hydrate($schemaData);
 			$this->schemaMapper->update($schema);
             // Add the schema to the register
-            $schemas = $register->getSchemas(); 
+            $schemas = $register->getSchemas();
             $schemas[] = $schema->getId();
             $register->setSchemas($schemas);
             // Lets save the updated register

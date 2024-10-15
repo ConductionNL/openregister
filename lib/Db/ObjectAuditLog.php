@@ -11,7 +11,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * This class represents an audit log entry for changes made to an ObjectEntity.
  * It keeps track of modifications, including the object's UUID, objectId, changes,
- * expiration date, and the user who made the changes. This allows for a comprehensive 
+ * expiration date, and the user who made the changes. This allows for a comprehensive
  * history of changes and supports auditing and versioning capabilities for ObjectEntity instances.
  *
  * @package OCA\OpenRegister\Db
@@ -47,7 +47,7 @@ class ObjectAuditLog extends Entity implements JsonSerializable
 	{
 		$jsonFields = $this->getJsonFields();
 
-		foreach($object as $key => $value) {
+		foreach ($object as $key => $value) {
 			if (in_array($key, $jsonFields) === true && $value === []) {
 				$value = null;
 			}

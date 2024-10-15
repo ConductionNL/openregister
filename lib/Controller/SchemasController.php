@@ -16,6 +16,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use Symfony\Component\Yaml\Yaml;
 
 class SchemasController extends Controller
 {
@@ -201,23 +202,25 @@ class SchemasController extends Controller
 	 * @todo Optionally a .json file can be uploaded using key 'file'.
 	 * @todo move most of this code to a (new?) UploadService and make it even more abstract and reusable?
 	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
+	 * @param int|null $id
 	 *
 	 * @return JSONResponse
+	 * @throws Exception
 	 * @throws GuzzleException
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
 	public function upload(?int $id = null): JSONResponse
 	{
-        if($id !== null){
+        if ($id !== null){
             $schema = $this->schemaMapper->find($id);
 		}
-        else{
+        else {
             $schema = new Schema();
         }
 
 		$data = $this->request->getParams();
-
 		foreach ($data as $key => $value) {
 			if (str_starts_with($key, '_')) {
 				unset($data[$key]);
@@ -235,43 +238,57 @@ class SchemasController extends Controller
 			return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
 		}
 
-
 		if (empty($data['file']) === false) {
 			// @todo use .json file content from POST as $json
 			//$data['json'] = [];
 		}
+
+		$phpArray = [];
 
 		if (empty($data['url']) === false) {
 			// @todo move to function (cleanup)
 			try {
 				$response = $this->client->request('GET', $data['url']);
 			} catch (GuzzleHttp\Exception\BadResponseException $e) {
-				$response = $e->getResponse();
-				return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$data['url']], statusCode: 400);
+				return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$data['url'].' '.$e->getMessage()], statusCode: 400);
 			}
 
 			$responseBody = $response->getBody()->getContents();
-			// @todo use Conten-Type header in response instead?
-			if (is_string($responseBody) === true) {
-				$responseBody = json_decode(json: $responseBody, associative: true);
+
+			// Use Content-Type header to determine the format
+			$contentType = $response->getHeaderLine('Content-Type');
+			switch ($contentType) {
+				case 'application/json':
+					$phpArray = json_decode(json: $responseBody, associative: true);
+					break;
+				case 'application/yaml':
+					$phpArray = Yaml::parse(input: $responseBody);
+					break;
+				default:
+					// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
+					$phpArray = json_decode(json: $responseBody, associative: true);
+					if ($phpArray === null) {
+						$phpArray = Yaml::parse(input: $responseBody);
+					}
+					break;
 			}
-			$data['json'] = $responseBody;
+
+			if ($phpArray === null || $phpArray === false) {
+				return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML'], statusCode: 400);
+			}
+		} else {
+			$phpArray = json_decode($data['json'], associative: true);
 		}
-
-		$jsonArray = json_decode($data['json'], associative: true);
-
-		//$schemaObject = $this->JsonToSchema(jsonArray: $jsonArray);
 
 		// Set default title if not provided or empty
-		if (!isset($jsonArray['title']) || empty($jsonArray['title'])) {
-			$jsonArray['title'] = 'new object';
+		if (empty($phpArray['title']) === true) {
+			$phpArray['title'] = 'new object';
 		}
 
-		$schema->hydrate($jsonArray);
-        if($schema->getId() === null){
-            $schema = $this->schemaMapper->create($schema);
-        }
-        else{
+		$schema->hydrate($phpArray);
+        if ($schema->getId() === null) {
+            $schema = $this->schemaMapper->insert($schema);
+        } else {
             $schema = $this->schemaMapper->update($schema);
         }
 

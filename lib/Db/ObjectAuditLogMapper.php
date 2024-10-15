@@ -38,7 +38,7 @@ class ObjectAuditLogMapper extends QBMapper
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-        foreach($filters as $filter => $value) {
+        foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
 			} elseif ($value === 'IS NULL') {
@@ -63,7 +63,7 @@ class ObjectAuditLogMapper extends QBMapper
 		$obj = new ObjectAuditLog();
 		$obj->hydrate($object);
 		// Set uuid
-		if($obj->getUuid() === null){
+		if ($obj->getUuid() === null){
 			$obj->setUuid(Uuid::v4());
 		}
 
@@ -74,7 +74,7 @@ class ObjectAuditLogMapper extends QBMapper
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
-		
+
 		// Set or update the version
 		$version = explode('.', $obj->getVersion());
 		$version[2] = (int)$version[2] + 1;
