@@ -27,6 +27,15 @@ class SchemaMapper extends QBMapper
 
 		return $this->findEntity(query: $qb);
 	}
+	public function findMultiple(array $ids): array
+	{
+		$result = [];
+		foreach($ids as $id) {
+			$result[] = $this->find($id);
+		}
+
+		return $result;
+	}
 
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
