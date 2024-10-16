@@ -3,7 +3,7 @@ export type TSource = {
     title: string;
     description: string;
     databaseUrl: string;
-    type: string;
+    type: 'internal' | 'mongodb';
     updated: string;
     created: string;
 }

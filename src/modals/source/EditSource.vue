@@ -24,9 +24,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<NcTextField :disabled="loading"
 				label="Database URL"
 				:value.sync="sourceItem.databaseUrl" />
-			<NcTextField :disabled="loading"
-				label="Type"
-				:value.sync="sourceItem.type" />
+			<NcSelect v-bind="typeOptions"
+				v-model="typeOptions.value"
+				input-label="Type"
+				:disabled="loading" />
 		</div>
 
 		<template #actions>
@@ -57,6 +58,7 @@ import {
 	NcDialog,
 	NcTextField,
 	NcTextArea,
+	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
@@ -71,6 +73,7 @@ export default {
 		NcDialog,
 		NcTextField,
 		NcTextArea,
+		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -85,9 +88,14 @@ export default {
 				title: '',
 				description: '',
 				databaseUrl: '',
-				type: '',
-				created: '',
-				updated: '',
+			},
+			typeOptions: {
+				clearable: false,
+				options: [
+					{ label: 'Internal', id: 'internal' },
+					{ label: 'MongoDB', id: 'mongodb' },
+				],
+				value: { label: 'Internal', id: 'internal' },
 			},
 			success: false,
 			loading: false,
@@ -110,6 +118,9 @@ export default {
 				this.sourceItem = {
 					...sourceStore.sourceItem,
 				}
+
+				// set typeOptions to the sourceItem type
+				this.typeOptions.value = this.typeOptions.options.find(option => option.id === this.sourceItem.type)
 			}
 		},
 		closeModal() {
@@ -123,16 +134,16 @@ export default {
 				title: '',
 				description: '',
 				databaseUrl: '',
-				type: '',
-				created: '',
-				updated: '',
 			}
+			// reset typeOptions to the internal option
+			this.typeOptions.value = this.typeOptions.options.find(option => option.id === 'internal')
 		},
 		async editSource() {
 			this.loading = true
 
 			sourceStore.saveSource({
 				...this.sourceItem,
+				type: this.typeOptions.value.id,
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
