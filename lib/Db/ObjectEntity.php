@@ -89,48 +89,4 @@ class ObjectEntity extends Entity implements JsonSerializable
 		];
 	}
 
-	/**
-	 * Get the internal id
-	 *
-	 * @return string|null
-	 */
-	public function getId(): ?string
-	{
-		return $this->id;
-	}
-
-	/**
-	 * Set the internal id
-	 *
-	 * @param string $id
-	 * @return self
-	 */
-	public function setId(string $id): self
-	{
-		$this->id = $id;
-		return $this;
-	}
-
-	/**
-	 * Get the external id
-	 *
-	 * @return string|null
-	 */
-	public function getUuid(): ?string
-	{
-		return $this->uuid;
-	}
-
-	/**
-	 * Set the external id
-	 *
-	 * @param string $uuid
-	 * @return self
-	 */
-	public function setUuid(string $uuid): self
-	{
-		$this->uuid = $uuid;
-		return $this;
-	}
-
 }
