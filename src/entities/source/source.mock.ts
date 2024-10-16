@@ -4,10 +4,10 @@ import { TSource } from './source.types'
 export const mockSourceData = (): TSource[] => [
 	{
 		id: 1,
-		title: 'Main PostgreSQL Database',
+		title: 'Main MongoDB Database',
 		description: 'Primary database for user data',
-		databaseUrl: 'postgresql://user:password@localhost:5432/maindb',
-		type: 'postgresql',
+		databaseUrl: 'mongodb://user:password@localhost:27017/maindb',
+		type: 'mongodb',
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
 	},
