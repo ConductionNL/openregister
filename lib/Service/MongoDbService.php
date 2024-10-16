@@ -43,13 +43,15 @@ class MongoDbService
 		$client = $this->getClient(config: $config);
 
 		$object 			      = self::BASE_OBJECT;
-		$object['dataSource']     = $config['mongodbCluster'];
+		$object['dataSource']     = $config['dataSource'];
 		$object['document']       = $data;
 		$object['document']['id'] = $object['document']['_id'] = Uuid::v4();
 
 		$result = $client->post(
 			uri: 'action/insertOne',
-			options: ['json' => $object],
+			options: [
+				'json' => $object
+			],
 		);
 		$resultData =  json_decode(
 			json: $result->getBody()->getContents(),
@@ -75,7 +77,7 @@ class MongoDbService
 		$client = $this->getClient(config: $config);
 
 		$object               = self::BASE_OBJECT;
-		$object['dataSource'] = $config['mongodbCluster'];
+		$object['dataSource'] = $config['dataSource'];
 		$object['filter']     = $filters;
 
 		// @todo Fix mongodb sort
@@ -110,7 +112,7 @@ class MongoDbService
 
 		$object               = self::BASE_OBJECT;
 		$object['filter']     = $filters;
-		$object['dataSource'] = $config['mongodbCluster'];
+		$object['dataSource'] = $config['dataSource'];
 
 		$returnData = $client->post(
 			uri: 'action/findOne',
@@ -142,20 +144,18 @@ class MongoDbService
 	{
 		$client = $this->getClient(config: $config);
 
-		$dotUpdate = new Dot($update);
+		// $dotUpdate = new Dot($update);
 
 		$object                   = self::BASE_OBJECT;
 		$object['filter']         = $filters;
 		$object['update']['$set'] = $update;
 		$object['upsert']		  = true;
-		$object['dataSource']     = $config['mongodbCluster'];
+		$object['dataSource']     = $config['dataSource'];
 
-
-
-			$returnData = $client->post(
-				uri: 'action/updateOne',
-				options: ['json' => $object]
-			);
+		$returnData = $client->post(
+			uri: 'action/updateOne',
+			options: ['json' => $object]
+		);
 
 		return $this->findObject($filters, $config);
 	}
@@ -176,7 +176,7 @@ class MongoDbService
 
 		$object                   = self::BASE_OBJECT;
 		$object['filter']         = $filters;
-		$object['dataSource']     = $config['mongodbCluster'];
+		$object['dataSource']     = $config['dataSource'];
 
 		$returnData = $client->post(
 			uri: 'action/deleteOne',
