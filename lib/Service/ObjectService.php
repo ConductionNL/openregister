@@ -14,6 +14,10 @@ use Symfony\Component\Uid\Uuid;
 
 class ObjectService
 {
+
+	private int $register;
+	private int $schema;
+
 	private $callLogMapper;
 
 	/**
@@ -28,6 +32,100 @@ class ObjectService
 		$this->schemaMapper = $schemaMapper;
 	}
 
+	public function find(int|string $id) {
+		return $this->getObject(
+			register: $this->registerMapper->find($this->getRegister()),
+			schema: $this->schemaMapper->find($this->getSchema()),
+			uuid: $id
+		);
+	}
+
+	public function createFromArray(array $object) {
+		return $this->saveObject(
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			object: $object
+		);
+	}
+
+	public function updateFromArray(string $id, array $object, bool $updatedObject) {
+		$object['id'] = $id;
+		return $this->saveObject(
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			object: $object
+		);
+	}
+
+	public function delete(array|\JsonSerializable $object): bool
+	{
+		if($object instanceof \JsonSerializable === true) {
+			$object = $object->jsonSerialize();
+		}
+
+		return $this->deleteObject(
+			register: $this->registerMapper->find($this->getRegister()),
+			schema: $this->schemaMapper->find($this->getSchema()),
+			uuid: $object['id']
+		);
+	}
+
+	public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array
+	{
+		$objects = $this->getObjects(
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			limit: $limit,
+			offset: $offset,
+			filters: $filters
+		);
+//		$data = array_map([$this, 'getDataFromObject'], $objects);
+
+		return $objects;
+	}
+
+	public function findMultiple(array $ids): array
+	{
+		$result = [];
+		foreach($ids as $id) {
+			$result = $this->find($id);
+		}
+
+		return $result;
+	}
+
+	private function getDataFromObject(mixed $object) {
+
+		return $object->getObject();
+	}
+
+	/**
+	 * Gets all objects of a specific type.
+	 *
+	 * @param string|null $objectType The type of objects to retrieve.
+	 * @param int|null $register
+	 * @param int|null $schema
+	 * @param int|null $limit The maximum number of objects to retrieve.
+	 * @param int|null $offset The offset from which to start retrieving objects.
+	 * @param array $filters
+	 * @return array The retrieved objects.
+	 * @throws \Exception
+	 */
+	public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = []): array
+	{
+		if($objectType === null && $register !== null && $schema !== null) {
+			$objectType 		 = 'objectEntity';
+			$filters['register'] = $register;
+			$filters['schema']   = $schema;
+		}
+
+		// Get the appropriate mapper for the object type
+		$mapper = $this->getMapper($objectType);
+
+		// Use the mapper to find and return all objects of the specified type
+		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters);
+	}
+
 	/**
 	 * Save an object
 	 *
@@ -37,7 +135,7 @@ class ObjectService
 	 *
 	 * @return ObjectEntity The resulting object.
 	 */
-	public function saveObject($register, $schema, array $object): ObjectEntity
+	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
 
 		// Convert register and schema to their respective objects if they are strings
@@ -48,13 +146,15 @@ class ObjectService
 			$schema = $this->schemaMapper->find($schema);
 		}
 
-		// Does the object already exist?
-		$objectEntity = $this->objectEntityMapper->findByUuid($register, $schema, $object['id']);
+		if(isset($object['id']) === true) {
+			// Does the object already exist?
+			$objectEntity = $this->objectEntityMapper->findByUuid($this->registerMapper->find($register), $this->schemaMapper->find($schema), $object['id']);
+		}
 
 		if($objectEntity === null){
 			$objectEntity = new ObjectEntity();
-			$objectEntity->setRegister($register->getId());
-			$objectEntity->setSchema($schema->getId());
+			$objectEntity->setRegister($register);
+			$objectEntity->setSchema($schema);
 			///return $this->objectEntityMapper->update($objectEntity);
 		}
 
@@ -91,11 +191,11 @@ class ObjectService
 	 *
 	 * @return ObjectEntity The resulting object.
 	 */
-	public function getObject(Register $register, string $uuid): ObjectEntity
+	public function getObject(Register $register, Schema $schema, string $uuid): ObjectEntity
 	{
 		// Lets see if we need to save to an internal source
-		if ($register->getSource() === 'internal') {
-			return $this->objectEntityMapper->findByUuid($register,$uuid);
+		if ($register->getSource() === 'internal' || $register->getSource() === '') {
+			return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
 		}
 
 		//@todo mongodb support
@@ -112,12 +212,14 @@ class ObjectService
 
 	* @return ObjectEntity The resulting object.
 	*/
-   public function deleteObject(Register $register, string $uuid)
+   public function deleteObject(Register $register, Schema $schema, string $uuid): bool
    {
 	// Lets see if we need to save to an internal source
-	if ($register->getSource() === 'internal') {
-	   $object = $this->objectEntityMapper->findByUuid($uuid);
+	if ($register->getSource() === 'internal' || $register->getSource() === '') {
+	   $object = $this->objectEntityMapper->findByUuid(register: $register, schema: $schema, uuid: $uuid);
 	   $this->objectEntityMapper->delete($object);
+
+	   return true;
 	}
 
 	//@todo mongodb support
@@ -134,8 +236,15 @@ class ObjectService
 	 * @throws \InvalidArgumentException If an unknown object type is provided.
 	 * @throws \Exception If OpenRegister service is not available or if register/schema is not configured.
 	 */
-	public function getMapper(string $objectType)
+	public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null)
 	{
+		if($register !== null && $schema !== null) {
+			$this->setSchema($schema);
+			$this->setRegister($register);
+
+			return $this;
+		}
+
 		// If the source is internal, return the appropriate mapper based on the object type
 		switch ($objectType) {
 			case 'register':
@@ -148,6 +257,8 @@ class ObjectService
 				throw new \InvalidArgumentException("Unknown object type: $objectType");
 		}
 	}
+
+
 
 	/**
 	 * Gets multiple objects based on the object type and ids.
@@ -277,4 +388,24 @@ class ObjectService
 
 	   return $registers;
    }
+
+	public function getRegister(): int
+	{
+		return $this->register;
+	}
+
+	public function setRegister(int $register): void
+	{
+		$this->register = $register;
+	}
+
+	public function getSchema(): int
+	{
+		return $this->schema;
+	}
+
+	public function setSchema(int $schema): void
+	{
+		$this->schema = $schema;
+	}
 }
