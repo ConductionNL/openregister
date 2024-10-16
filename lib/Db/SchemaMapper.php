@@ -27,6 +27,15 @@ class SchemaMapper extends QBMapper
 
 		return $this->findEntity(query: $qb);
 	}
+	public function findMultiple(array $ids): array
+	{
+		$result = [];
+		foreach($ids as $id) {
+			$result[] = $this->find($id);
+		}
+
+		return $result;
+	}
 
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
@@ -37,7 +46,7 @@ class SchemaMapper extends QBMapper
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-        foreach($filters as $filter => $value) {
+        foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
 			} elseif ($value === 'IS NULL') {

@@ -8,40 +8,57 @@ use OCP\AppFramework\Db\Entity;
 
 class Register extends Entity implements JsonSerializable
 {
-	protected ?string $id = null;
 	protected ?string $title = null;
 	protected ?string $description = null;
-	protected ?array $schemas = null;
+	protected ?array $schemas = [];
 	protected ?string $source = null;
 	protected ?string $tablePrefix = null;
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType('id', 'string');
-		$this->addType('title', 'title');
-		$this->addType('description', 'string');
-		$this->addType('schemas', 'array');
-		$this->addType('source', 'string');
-		$this->addType('tablePrefix', 'string');
-		$this->addType('updated', 'datetime');
-		$this->addType('created', 'datetime');
+		$this->addType(fieldName: 'title', type: 'string');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'schemas', type: 'json');
+		$this->addType(fieldName: 'source', type: 'string');
+		$this->addType(fieldName: 'tablePrefix', type: 'string');
+		$this->addType(fieldName:'updated', type: 'datetime');
+		$this->addType(fieldName:'created', type: 'datetime');
+	}
+
+	public function getJsonFields(): array
+	{
+		return array_keys(
+			array_filter($this->getFieldTypes(), function ($field) {
+				return $field === 'json';
+			})
+		);
 	}
 
 	public function hydrate(array $object): self
 	{
-		foreach($object as $key => $value) {
+		$jsonFields = $this->getJsonFields();
+
+		if (isset($object['metadata']) === false) {
+			$object['metadata'] = [];
+		}
+
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields) === true && $value === []) {
+				$value = null;
+			}
+
 			$method = 'set'.ucfirst($key);
 
 			try {
 				$this->$method($value);
 			} catch (\Exception $exception) {
-				// Error handling can be added here
 			}
 		}
 
 		return $this;
 	}
+
 
 	public function jsonSerialize(): array
 	{
@@ -52,8 +69,8 @@ class Register extends Entity implements JsonSerializable
 			'schemas' => $this->schemas,
 			'source' => $this->source,
 			'tablePrefix' => $this->tablePrefix,
-			'updated' => $this->updated,
-			'created' => $this->created
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
 }

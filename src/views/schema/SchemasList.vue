@@ -20,20 +20,20 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
-						Ververs
+						Refresh
 					</NcActionButton>
-					<NcActionButton @click="schemaStore.setSchemaItem({}); navigationStore.setModal('editSchema')">
+					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Schema toevoegen
+						Add Schema
 					</NcActionButton>
 				</NcActions>
 			</div>
 			<div v-if="schemaStore.schemaList && schemaStore.schemaList.length > 0">
 				<NcListItem v-for="(schema, i) in schemaStore.schemaList"
 					:key="`${schema}${i}`"
-					:name="schema.name"
+					:name="schema.title"
 					:active="schemaStore.schemaItem?.id === schema?.id"
 					:force-display-actions="true"
 					@click="schemaStore.setSchemaItem(schema)">
@@ -50,13 +50,19 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 							<template #icon>
 								<Pencil />
 							</template>
-							Bewerken
+							Edit
+						</NcActionButton>
+						<NcActionButton @click="schemaStore.setSchemaItem(schema); schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
+							<template #icon>
+								<PlusCircleOutline />
+							</template>
+							Add Property
 						</NcActionButton>
 						<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
-							Verwijderen
+							Delete
 						</NcActionButton>
 					</template>
 				</NcListItem>
@@ -67,10 +73,10 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Schema's aan het laden" />
+			name="Loading schemas" />
 
 		<div v-if="schemaStore.schemaList.length === 0">
-			Er zijn nog geen schema's gedefinieerd.
+			No schemas have been defined yet.
 		</div>
 	</NcAppContentList>
 </template>
@@ -83,6 +89,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 
 export default {
 	name: 'SchemasList',

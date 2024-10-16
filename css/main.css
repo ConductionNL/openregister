@@ -1,7 +1,7 @@
 :root {
-  --OC-margin-10: 10px;
-  --OC-margin-20: 20px;
-  --OC-margin-50: 50px;
+  --OR-margin-10: 10px;
+  --OR-margin-20: 20px;
+  --OR-margin-50: 50px;
 }
 
 /* Pages */
@@ -18,11 +18,15 @@
 /* Lists */
 
 .listHeader {
+  display: flex;
+
   position: sticky;
   top: 0;
   z-index: 1000;
   background-color: var(--color-main-background);
   border-bottom: 1px solid var(--color-border);
+  flex-direction: row;
+  align-items: center;
 }
 
 .searchField {
@@ -39,9 +43,9 @@
 /* Detail pages */
 
 .detailContainer {
-  margin-block-start: var(--OC-margin-20);
-  margin-inline-start: var(--OC-margin-20);
-  margin-inline-end: var(--OC-margin-20);
+  margin-block-start: var(--OR-margin-20);
+  margin-inline-start: var(--OR-margin-20);
+  margin-inline-end: var(--OR-margin-20);
 }
 
 .tabContainer > * ul > li {
@@ -79,7 +83,7 @@
 }
 
 .tabContainer > * div[role="tabpanel"] {
-  margin-block-start: var(--OC-margin-10);
+  margin-block-start: var(--OR-margin-10);
 }
 
 .tabPanel {
@@ -107,6 +111,11 @@
 }
 
 /* Modals */
+.modalContent {
+  margin: var(--OR-margin-50);
+  text-align: center;
+}
+
 .form-group > * {
   margin-block-end: 10px;
 }
