@@ -4,13 +4,13 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use Exception;
 
 class ObjectsController extends Controller
 {
@@ -30,7 +30,7 @@ class ObjectsController extends Controller
     )
     {
         parent::__construct($appName, $request);
-    }
+    }//end __construct()
 
     /**
      * Returns the template of the main app's page
@@ -49,7 +49,7 @@ class ObjectsController extends Controller
             'index',
             []
         );
-    }
+    }//end page()
 
     /**
      * Retrieves a list of all objects
@@ -71,7 +71,7 @@ class ObjectsController extends Controller
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         return new JSONResponse(['results' => $this->objectEntityMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }
+    }//end index()
 
     /**
      * Retrieves a single object by its ID
@@ -91,7 +91,7 @@ class ObjectsController extends Controller
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
-    }
+    }//end show()
 
     /**
      * Creates a new object
@@ -117,8 +117,12 @@ class ObjectsController extends Controller
             unset($data['id']);
         }
 
-        return new JSONResponse($this->objectService->saveObject(object: $data));
-    }
+        try {
+            return new JSONResponse($this->objectService->saveObject(object: $data));
+        } catch (Exception $exception) {
+            return new JSONResponse(data: ['error' => ['message' => 	$exception->getMessage()]], statusCode: 400);
+        }
+    }//end create()
 
     /**
      * Updates an existing object
@@ -131,7 +135,7 @@ class ObjectsController extends Controller
      * @param string $id The ID of the object to update
      * @return JSONResponse A JSON response containing the updated object details
      */
-    public function update(int $id): JSONResponse
+    public function update(string $id): JSONResponse
     {
         $data = $this->request->getParams();
 
@@ -145,8 +149,12 @@ class ObjectsController extends Controller
             unset($data['id']);
         }
 
-        return new JSONResponse($this->objectService->saveObject(object: $data, id: $id));
-    }
+        try {
+            return new JSONResponse($this->objectService->saveObject(object: $data, id: $id));
+        } catch (Exception $exception) {
+            return new JSONResponse(data: ['error' => ['message' => 	$exception->getMessage()]], statusCode: 400);
+        }
+    }//end update()
 
     /**
      * Deletes an object
@@ -159,10 +167,10 @@ class ObjectsController extends Controller
      * @param string $id The ID of the object to delete
      * @return JSONResponse An empty JSON response
      */
-    public function destroy(int $id): JSONResponse
+    public function destroy(string $id): JSONResponse
     {
         $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
 
-        return new JSONResponse([]);
-    }
+        return new JSONResponse($this->objectService->deleteObject(filters: ['id' => $id]));
+    }//end update()
 }
