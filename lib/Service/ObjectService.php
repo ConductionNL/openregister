@@ -40,25 +40,68 @@ class ObjectService
 	{
 	}//end __construct()
 
+
+	/**
+	 * Validates the mongodb source.
+	 *
+	 * @param Source $source The source to validate.
+	 *
+	 * @throws Exception
+	 */
+	private function validateMongoDBSource(Source $source): void
+	{
+		if ($source->getDatabaseUrl() === null) {
+			throw new Exception('Source database url is not set, cannot save object.');
+		}
+		if ($source->getDatabaseAuth() === null) {
+			throw new Exception('Source database authorization is not set, cannot save object.');
+		}
+	}//end validateMongoDBSource()
+
+	/**
+	 * Get the MongoDB config.
+	 *
+	 * @param Source $source The source to get the config for.
+	 *
+	 * @return array The MongoDB config.
+	 */
+	private function getMongoDBConfig(Source $source): array
+	{
+		$headers = ['apiKey' => $source->getDatabaseAuth()];
+		$config = ['base_uri' => $source->getDatabaseUrl(), 'headers' => $headers, 'dataSource' => $source->getTitle()];
+
+		return $config;
+	}//end getMongoDBConfig()
+
 	/**
 	 * Save an object to internal database or external source.
 	 *
 	 * An external source could be mongodb or other databases.
 	 *
 	 * @param array    $object	The data to be saved.
-	 * @param int|null $id  	The id of the object to be saved, might be null when creating a new object.
+	 * @param string|null $id  	The id of the object to be saved, might be null when creating a new object.
 	 *
-	 * @return ObjectEntity The resulting object.
+	 * @throws Exception
+	 *
+	 * @return ObjectEntity|array The resulting object.
 	 */
-	public function saveObject(array $object, ?int $id = null): ObjectEntity
+	public function saveObject(array $object, string $id = null)
 	{
 
 		// Convert register and schema to their respective objects if they are strings
-		if (is_string($object['register']) === true) {
+		if (isset($object['register']) === true) {
 			$register = $this->registerMapper->find(id: (int) $object['register']);
 		}
-		if (is_string($object['schema']) === true) {
+
+		if (isset($object['schema']) === true) {
 			$schema = $this->schemaMapper->find(id: (int) $object['schema']);
+		}
+
+		if ($register === null) {
+			throw new Exception('Register not given or found');
+		}
+		if ($schema === null) {
+			throw new Exception('Schema not given or found');
 		}
 
 		// What rules do we need to check before we are allowed to save a ObjectEntity?
@@ -71,23 +114,33 @@ class ObjectService
 		// Check the source of the register.
 		if ($register->getSource() !== null) {
 			$source = $this->sourceMapper->find(id: (int) $register->getSource());
-
-			// Check if we need to use the mongodb service.
-			if (isset($source) === true && $source->getType() === 'mongodb' && $source->getDatabaseUrl() !== null) {
-				if (isset($id) === true) {
-					// Update the object in mongodb.
-					unset($object['id']);
-					$object = $this->mongoDbService->updateObject(filters: ['_id' => $id], update: $object, config: ['mongodbCluster' => $source->getDatabaseUrl()]);
-				} else {
-					// Create the object in mongodb.
-					$object = $this->mongoDbService->saveObject(data: $object, config: ['mongodbCluster' => $source->getDatabaseUrl()]);
-				}
+			if ($source === null) {
+				throw new Exception("Source not found with id: {$register->getSource()}");
 			}
 
-			// Throw exception if source is set and the database url is null.
-			if (isset($source) === true && $source->getDatabaseUrl() === null) {
-				// Handle external source here if needed
-				throw new Exception('Source database url is not set, cannot save object.');
+
+			// Check if we need to use the mongodb service.
+			if ($source->getType() === 'mongodb') {
+				$this->validateMongoDBSource(source: $source);
+				$config = $this->getMongoDBConfig(source: $source);
+
+				if (isset($id) === true) {
+					// Update the object in mongodb.
+					$object['id'] = $id;
+					$object['_id'] = $id;
+					$object = $this->mongoDbService->updateObject(filters: ['_id' => $id], update: $object, config: $config);
+					$object['uuid'] = $object['_id'];
+					unset($object['_id']);
+
+					return $object;
+				} else {
+					// Create the object in mongodb.
+					$object = $this->mongoDbService->saveObject(data: $object, config: $config);
+					$object['uuid'] = $object['_id'];
+					unset($object['_id']);
+
+					return $object;
+				}
 			}
 
 			// Throw exception if we do not support the source type.
@@ -109,44 +162,159 @@ class ObjectService
 	/**
 	 * Get an object
 	 *
-	 * @param Register $register	The register to save the object to.
-	 * @param string $uuid	The uuid of the object to get
+	 * @param int   $register The register to get the object from.
+	 * @param string $id      The id of the object to get
 	 *
-	 * @return ObjectEntity The resulting object.
+	 * @throws Exception
+	 *
+	 * @return ObjectEntity|array The resulting object.
 	 */
-	public function getObject(Register $register, string $uuid): ObjectEntity
+	public function getObject(int $register, string $id): ObjectEntity|array
 	{
-		// Lets see if we need to save to an internal source
-		if ($register->getSource() === 'internal') {
-			return $this->objectEntityMapper->findByUuid($register,$uuid);
+		$register = $this->registerMapper->find($register);
+		if ($register === null) {
+			throw new Exception("Register not found with id: $register");
 		}
 
-		//@todo mongodb support
+		$source = $this->sourceMapper->find($register->getSource());
+		if ($source === null) {
+			throw new Exception("Source not found with id: $register->getSource()");
+		}
+
+		// Fetch from internal database.
+		if ($register->getSource() === 'internal') {
+			$schemas = $register->getSchemas();
+			if (empty($schemas) === true) {
+				throw new Exception("No schemas found for register with id: $register");
+			}
+
+			$schema = $this->schemaMapper->find($schemas[0]);
+
+			return $this->objectEntityMapper->findByUuid(register: $register, schema: $schema, uuid: $id);
+		}
+
+		// Fetch from mongodb.
+		if ($source->getType() === 'mongodb') {
+			$this->validateMongoDBSource(source: $source);
+			$config = $this->getMongoDBConfig(source: $source);
+
+			$result = $this->mongoDbService->findObject(filters: ['_id' => $id], config: $config);
+			$result['uuid'] = $result['_id'];
+			unset($result['_id']);
+
+			return $result;
+		}
 
 		// Handle external source here if needed
-		throw new \Exception('Unsupported source type');
+		throw new Exception('Unsupported source type');
+	}//end getObject()
+
+
+	/**
+	 * Get objects
+	 *
+	 * @param int   $register The register to get the object from.
+	 *
+	 * @throws Exception
+	 *
+	 * @return ObjectEntity|array The resulting object.
+	 */
+	public function getObjects(int $register): ObjectEntity|array
+	{
+		$register = $this->registerMapper->find($register);
+		if ($register === null) {
+			throw new Exception("Register not found with id: $register");
+		}
+
+		$source = $this->sourceMapper->find($register->getSource());
+		if ($source === null) {
+			throw new Exception("Source not found with id: $register->getSource()");
+		}
+
+		// Fetch from internal database.
+		if ($register->getSource() === 'internal') {
+			$schemas = $register->getSchemas();
+			if (empty($schemas) === true) {
+				throw new Exception("No schemas found for register with id: $register");
+			}
+
+			$schema = $this->schemaMapper->find($schemas[0]);
+
+			$objects = $this->objectEntityMapper->findByRegisterAndSchema(register: $register->getId(), schema: $schema->getId());
+
+			return ['results' => $objects, 'total' => count($objects)];
+		}//endif
+
+		// Fetch from mongodb.
+		if ($source->getType() === 'mongodb') {
+			$this->validateMongoDBSource(source: $source);
+			$config = $this->getMongoDBConfig(source: $source);
+
+			$documents = $this->mongoDbService->findObjects(filters: ['register' => $register->getId()], config: $config);
+			if (isset($documents['documents']) === false) {
+				throw new Exception("No objects found for register with id: $register, and source with id: $source");
+			}
+
+			$results = [];
+			foreach ($documents['documents'] as $key => $document) {
+				$results[$key] = $document;
+				$results[$key]['uuid'] = $document['_id'];
+				unset($results[$key]['_id']);
+			}
+
+			return ['results' => $results, 'total' => count($documents['documents'])];
+		}//endif
+
+		// Handle external source here if needed
+		throw new Exception('Unsupported source type');
 	}//end getObject()
 
 	/**
 	* Delete an object
 	*
-	* @param Register $register	The register to delete the object from.
-	* @param string $uuid	The uuid of the object to delete
-
-	* @return ObjectEntity The resulting object.
+	* @param int $register	The register to delete the object from.
+	* @param int|string $id	The uuid of the object to delete
+	*
+	* @throws Exception
+	*
+	* @return void
 	*/
-   public function deleteObject(Register $register, string $uuid)
+   public function deleteObject(int $register, $id): void
    {
-		// Lets see if we need to save to an internal source
-		if ($register->getSource() === 'internal') {
-		$object = $this->objectEntityMapper->findByUuid($uuid);
-		$this->objectEntityMapper->delete($object);
+		$register = $this->registerMapper->find($register);
+		if ($register === null) {
+			throw new Exception("Register not found with id: $register");
 		}
 
-		//@todo mongodb support
+		$source = $this->sourceMapper->find($register->getSource());
+		if ($source === null) {
+			throw new Exception("Source not found with id: $register->getSource()");
+		}
+
+
+		// Lets see if we need to save to an internal source
+		if ($source->getType() === 'internal') {
+			// do we need to fetch before we can delete?
+			// $object = $this->objectEntityMapper->findByUuid((int) $id);
+
+			// @todo objectEntityMapper needs a delete method
+			// $this->objectEntityMapper->delete($object);
+
+			throw new Exception("Deleting objects from internal source is not supported yet.");
+		}//endif
+
+
+		// Delete from mongodb.
+		if ($source->getType() === 'mongodb') {
+			$this->validateMongoDBSource(source: $source);
+			$config = $this->getMongoDBConfig(source: $source);
+			$this->mongoDbService->deleteObject(filters: ['_id' => $id], config: $config);
+
+			return;
+		}//endif
 
 		// Handle external source here if needed
-		throw new \Exception('Unsupported source type');
+		throw new Exception('Unsupported source type');
 	}//end deleteObject()
 
 	/**
@@ -169,7 +337,7 @@ class ObjectService
 				return $this->objectEntityMapper;
 			default:
 				throw new \InvalidArgumentException("Unknown object type: $objectType");
-		}
+		}//endswitch
 	}//end getMapper()
 
 	/**
