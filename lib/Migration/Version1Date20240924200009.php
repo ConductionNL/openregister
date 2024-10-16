@@ -44,6 +44,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addColumn('title', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('database_url', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('database_auth', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 64]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
@@ -86,12 +87,12 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 		}
 
 		if (!$schema->hasTable('openregister_objects')) {
-			$table = $schema->createTable('openregister_objects');	
+			$table = $schema->createTable('openregister_objects');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('schema', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('object', Types::JSON, ['notnull' => false]);		
+			$table->addColumn('object', Types::JSON, ['notnull' => false]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->setPrimaryKey(['id']);

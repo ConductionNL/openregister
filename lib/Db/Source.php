@@ -11,6 +11,7 @@ class Source extends Entity implements JsonSerializable
 	protected ?string $title = null;
 	protected ?string $description = null;
 	protected ?string $databaseUrl = null;
+	protected ?string $databaseAuth = null;
 	protected ?string $type = null;
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
@@ -19,6 +20,7 @@ class Source extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'databaseUrl', type: 'string');
+		$this->addType(fieldName: 'databaseAuth', type: 'string');
 		$this->addType(fieldName: 'type', type: 'string');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
@@ -63,6 +65,7 @@ class Source extends Entity implements JsonSerializable
 			'title' => $this->title,
 			'description' => $this->description,
 			'databaseUrl' => $this->databaseUrl,
+			'databaseAuth' => $this->databaseAuth,
 			'type' => $this->type,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null

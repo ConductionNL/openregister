@@ -27,7 +27,8 @@ class RegistersController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly RegisterMapper $registerMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly ObjectService $objectService
     )
     {
         parent::__construct($appName, $request);
@@ -35,7 +36,7 @@ class RegistersController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -44,17 +45,17 @@ class RegistersController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all registers
-     * 
+     *
      * This method returns a JSON response containing an array of all registers in the system.
      *
      * @NoAdminRequired
@@ -76,7 +77,7 @@ class RegistersController extends Controller
 
     /**
      * Retrieves a single register by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific register.
      *
      * @NoAdminRequired
@@ -96,7 +97,7 @@ class RegistersController extends Controller
 
     /**
      * Creates a new register
-     * 
+     *
      * This method creates a new register based on POST data.
      *
      * @NoAdminRequired
@@ -113,17 +114,17 @@ class RegistersController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
+
         return new JSONResponse($this->registerMapper->createFromArray(object: $data));
     }
 
     /**
      * Updates an existing register
-     * 
+     *
      * This method updates an existing register based on its ID.
      *
      * @NoAdminRequired
@@ -149,7 +150,7 @@ class RegistersController extends Controller
 
     /**
      * Deletes a register
-     * 
+     *
      * This method deletes a register based on its ID.
      *
      * @NoAdminRequired
@@ -167,19 +168,81 @@ class RegistersController extends Controller
 
     /**
      * Get objects
-     * 
+     *
      * Get all the objects for a register and schema
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $register The ID of the register 
+     * @param string $register The ID of the register
      * @param string $schema The ID of the schema
-     * 
-     * @return JSONResponse An empty JSON response
+     *
+     * @return JSONResponse
      */
     public function objects(int $register, int $schema): JSONResponse
     {
         return new JSONResponse($this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema));
+    }
+
+    /**
+     * View multiple objects from an register.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The ID of the register
+     *
+     * @return JSONResponse Objecst from the register
+     */
+    public function viewObjectsFromRegister(int $register): JSONResponse
+    {
+        try {
+            $objects = $this->objectService->getObjects(register: $register);
+            return new JSONResponse($objects, 200);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => ['message' => $e->getMessage()]], statusCode: 500);
+        }
+    }
+
+    /**
+     * View a single object from an register.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The ID of the register
+     * @param string $id The ID of the object
+     *
+     * @return JSONResponse An empty 204 JSON response
+     */
+    public function viewObjectFromRegister(int $register, string $id): JSONResponse
+    {
+        try {
+            $object = $this->objectService->getObject(register: $register, id: $id);
+            return new JSONResponse($object, 200);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => ['message' => $e->getMessage()]], statusCode: 500);
+        }
+    }
+
+    /**
+     * Deletes object from an register.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The ID of the register
+     * @param string $id The ID of the object
+     *
+     * @return JSONResponse An empty 204 JSON response
+     */
+    public function deleteObjectFromRegister(int $register, string $id): JSONResponse
+    {
+        try {
+            $this->objectService->deleteObject(register: $register, id: $id);
+            return new JSONResponse([], 204);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => ['message' => $e->getMessage()]], statusCode: 500);
+        }
     }
 }
