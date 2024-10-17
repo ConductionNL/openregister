@@ -6,6 +6,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -25,7 +26,8 @@ class ObjectsController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly ObjectAuditLogMapper $objectAuditLogMapper
     )
     {
         parent::__construct($appName, $request);
@@ -161,5 +163,42 @@ class ObjectsController extends Controller
         $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
 
         return new JSONResponse([]);
+    }
+    
+    /**
+     * Retrieves call logs for a object
+     *
+     * This method returns all the call logs associated with a object based on its ID.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the object to retrieve logs for
+     * @return JSONResponse A JSON response containing the call logs
+     */
+    public function contracts(int $id): JSONResponse
+    {
+       // @todo
+    }
+
+    /**
+     * Retrieves call logs for a object
+     *
+     * This method returns all the call logs associated with a object based on its ID.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the object to retrieve logs for
+     * @return JSONResponse A JSON response containing the call logs
+     */
+    public function logs(int $id): JSONResponse
+    {
+        try {
+            $jobLogs = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => $id]);
+            return new JSONResponse($jobLogs);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Logs not found'], 404);
+        }
     }
 }

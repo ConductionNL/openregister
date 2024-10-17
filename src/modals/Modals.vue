@@ -2,9 +2,11 @@
 	<!-- Placeholder Div -->
 	<div>
 		<EditRegister />
+		<UploadRegister />
 		<DeleteRegister />
 		<EditSchema />
 		<DeleteSchema />
+		<UploadSchema />
 		<EditSchemaProperty />
 		<DeleteSchemaProperty />
 		<EditSource />
@@ -17,8 +19,10 @@
 <script>
 import EditRegister from './register/EditRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
+import UploadRegister from './register/UploadRegister.vue'
 import EditSchema from './schema/EditSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
+import UploadSchema from './schema/UploadSchema.vue'
 import EditSchemaProperty from './schema/EditSchemaProperty.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
 import EditSource from './source/EditSource.vue'
@@ -31,8 +35,10 @@ export default {
 	components: {
 		EditRegister,
 		DeleteRegister,
+		UploadRegister,
 		EditSchema,
 		DeleteSchema,
+		UploadSchema,
 		EditSchemaProperty,
 		DeleteSchemaProperty,
 		EditSource,

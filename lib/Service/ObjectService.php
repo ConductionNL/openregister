@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use Symfony\Component\Uid\Uuid;
+use GuzzleHttp\Client;
 
 class ObjectService
 {
@@ -51,7 +52,7 @@ class ObjectService
 		// Does the object already exist?
 		$objectEntity = $this->objectEntityMapper->findByUuid($register, $schema, $object['id']);
 
-		if($objectEntity === null){
+		if ($objectEntity === null){
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register->getId());
 			$objectEntity->setSchema($schema->getId());
@@ -71,7 +72,7 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-		if($objectEntity->getId()){
+		if ($objectEntity->getId()){
 			return $this->objectEntityMapper->update($objectEntity);
 		}
 		return $this->objectEntityMapper->insert($objectEntity);

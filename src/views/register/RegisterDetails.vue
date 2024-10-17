@@ -21,6 +21,12 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 							</template>
 							Edit
 						</NcActionButton>
+						<NcActionButton @click="navigationStore.setModal('uploadRegister')">
+							<template #icon>
+								<Upload :size="20" />
+							</template>
+							Upload
+						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteRegister')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -115,7 +121,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import EyeArrowRight from 'vue-material-design-icons/EyeArrowRight.vue'
-import PostOutline from 'vue-material-design-icons/PostOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'RegisterDetails',
@@ -130,6 +136,7 @@ export default {
 		TrashCanOutline,
 		FileTreeOutline,
 		EyeArrowRight,
+		Upload,
 	},
 	data() {
 		return {
