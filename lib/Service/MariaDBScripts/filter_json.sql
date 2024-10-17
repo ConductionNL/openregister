@@ -1,0 +1,1 @@
+SELECT * FROM nextcloud.oc_openregister_objects where register = 1 and json_extract(object, '$.tooi') = 0935;

@@ -94,6 +94,20 @@ class ObjectService
 		return $result;
 	}
 
+	public function getAggregations(array $filters): array
+	{
+		$mapper = $this->getMapper(objectType: 'objectEntity');
+
+		$filters['register'] = $this->getRegister();
+		$filters['schema']   = $this->getSchema();
+
+		if ($mapper instanceof ObjectEntityMapper === true) {
+			return $this->objectEntityMapper->getFacets($filters);
+		}
+
+		return [];
+	}
+
 	private function getDataFromObject(mixed $object) {
 
 		return $object->getObject();
