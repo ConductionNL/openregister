@@ -95,7 +95,7 @@ class ObjectService
 	public function getObject(Register $register, string $uuid): ObjectEntity
 	{
 		// Lets see if we need to save to an internal source
-		if ($register->getSource() === 'Internal') {
+		if ($register->getSource() === 'internal') {
 			return $this->objectEntityMapper->findByUuid($register,$uuid);
 		}
 
@@ -116,7 +116,7 @@ class ObjectService
    public function deleteObject(Register $register, string $uuid)
    {
 	// Lets see if we need to save to an internal source
-	if ($register->getSource() === 'Internal') {
+	if ($register->getSource() === 'internal') {
 	   $object = $this->objectEntityMapper->findByUuid($uuid);
 	   $this->objectEntityMapper->delete($object);
 	}
