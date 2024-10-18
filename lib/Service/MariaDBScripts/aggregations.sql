@@ -1,0 +1,1 @@
+(SELECT json_extract(object, '$.tooi') as gemeentecode, count(*) as count FROM nextcloud.oc_openregister_objects group by gemeentecode);

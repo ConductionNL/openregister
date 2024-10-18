@@ -2,9 +2,12 @@
 
 namespace OCA\OpenRegister\Db;
 
+use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\IDatabaseJsonService;
+use OCA\OpenRegister\Service\MySQLJsonService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -13,9 +16,17 @@ use Symfony\Component\Uid\Uuid;
 
 class ObjectEntityMapper extends QBMapper
 {
-	public function __construct(IDBConnection $db)
+	private IDatabaseJsonService $databaseJsonService;
+
+	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
+
+	public function __construct(IDBConnection $db, MySQLJsonService $mySQLJsonService)
 	{
 		parent::__construct($db, 'openregister_objects');
+
+		if($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
+			$this->databaseJsonService = $mySQLJsonService;
+		}
 	}
 
 	/**
@@ -89,6 +100,37 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+	public function countAll(?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): int
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
+			->from(from: 'openregister_objects');
+		foreach ($filters as $filter => $value) {
+			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+				$qb->andWhere($qb->expr()->isNotNull($filter));
+			} elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+				$qb->andWhere($qb->expr()->isNull($filter));
+			} else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+			}
+		}
+
+		if (!empty($searchConditions)) {
+			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+			foreach ($searchParams as $param => $value) {
+				$qb->setParameter($param, $value);
+			}
+		}
+		$qb = $this->databaseJsonService->filterJson($qb, $filters);
+
+		$result = $qb->executeQuery();
+
+		$count = $result->fetchAll()[0]['count'];
+
+		return $count;
+	}
+
 	/**
 	 * Find all ObjectEntitys
 	 *
@@ -109,11 +151,11 @@ class ObjectEntityMapper extends QBMapper
 			->setFirstResult($offset);
 
         foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
+			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
+			} elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
 				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
+			} else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
 				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 			}
         }
@@ -124,6 +166,8 @@ class ObjectEntityMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
+		$qb = $this->databaseJsonService->filterJson($qb, $filters);
+
 
 		return $this->findEntities(query: $qb);
 	}
@@ -147,5 +191,37 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		return $this->update($obj);
+	}
+
+	public function getFacets(array $filters = [])
+	{
+		if(key_exists(key: 'register', array: $filters) === true) {
+			$register = $filters['register'];
+		}
+		if(key_exists(key: 'schema', array: $filters) === true) {
+			$schema = $filters['schema'];
+		}
+
+		$fields = [];
+		if(isset($filters['_queries'])) {
+			$fields = $filters['_queries'];
+		}
+
+		unset(
+			$filters['_fields'],
+			$filters['register'],
+			$filters['schema'],
+			$filters['created'],
+			$filters['updated'],
+			$filters['uuid']
+		);
+
+		return $this->databaseJsonService->getAggregations(
+			builder: $this->db->getQueryBuilder(),
+			fields: $fields,
+			register: $register,
+			schema: $schema,
+			filters: $filters
+		);
 	}
 }
