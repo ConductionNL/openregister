@@ -141,7 +141,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param array $searchParams The search parameters to apply to the objects
 	 * @return array An array of ObjectEntitys
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], array $sort = []): array
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -166,8 +166,9 @@ class ObjectEntityMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
-		$qb = $this->databaseJsonService->filterJson($qb, $filters);
 
+		$qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
+		$qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
 
 		return $this->findEntities(query: $qb);
 	}

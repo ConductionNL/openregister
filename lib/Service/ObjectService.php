@@ -70,14 +70,15 @@ class ObjectService
 		);
 	}
 
-	public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array
+	public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = []): array
 	{
 		$objects = $this->getObjects(
 			register: $this->getRegister(),
 			schema: $this->getSchema(),
 			limit: $limit,
 			offset: $offset,
-			filters: $filters
+			filters: $filters,
+			sort: $sort
 		);
 //		$data = array_map([$this, 'getDataFromObject'], $objects);
 
@@ -138,7 +139,7 @@ class ObjectService
 	 * @return array The retrieved objects.
 	 * @throws \Exception
 	 */
-	public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = []): array
+	public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = []): array
 	{
 		if($objectType === null && $register !== null && $schema !== null) {
 			$objectType 		 = 'objectEntity';
@@ -150,7 +151,7 @@ class ObjectService
 		$mapper = $this->getMapper($objectType);
 
 		// Use the mapper to find and return all objects of the specified type
-		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters);
+		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort);
 	}
 
 	/**
