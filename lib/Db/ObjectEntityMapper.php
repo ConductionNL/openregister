@@ -100,6 +100,37 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+	public function countAll(?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): int
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
+			->from(from: 'openregister_objects');
+		foreach ($filters as $filter => $value) {
+			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+				$qb->andWhere($qb->expr()->isNotNull($filter));
+			} elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+				$qb->andWhere($qb->expr()->isNull($filter));
+			} else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+			}
+		}
+
+		if (!empty($searchConditions)) {
+			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+			foreach ($searchParams as $param => $value) {
+				$qb->setParameter($param, $value);
+			}
+		}
+		$qb = $this->databaseJsonService->filterJson($qb, $filters);
+
+		$result = $qb->executeQuery();
+
+		$count = $result->fetchAll()[0]['count'];
+
+		return $count;
+	}
+
 	/**
 	 * Find all ObjectEntitys
 	 *
@@ -172,8 +203,8 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		$fields = [];
-		if(isset($filters['_fields'])) {
-			$fields = $filters['_fields'];
+		if(isset($filters['_queries'])) {
+			$fields = $filters['_queries'];
 		}
 
 		unset(

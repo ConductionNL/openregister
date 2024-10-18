@@ -84,6 +84,18 @@ class ObjectService
 		return $objects;
 	}
 
+	public function count(array $filters = []): int
+	{
+		if($this->getSchema() !== null && $this->getRegister() !== null) {
+			$filters['register'] = $this->getRegister();
+			$filters['schema']   = $this->getSchema();
+		}
+		$count = $this->objectEntityMapper
+			->countAll(filters: $filters);
+
+		return $count;
+	}
+
 	public function findMultiple(array $ids): array
 	{
 		$result = [];
@@ -102,7 +114,8 @@ class ObjectService
 		$filters['schema']   = $this->getSchema();
 
 		if ($mapper instanceof ObjectEntityMapper === true) {
-			return $this->objectEntityMapper->getFacets($filters);
+			$facets = $this->objectEntityMapper->getFacets($filters);
+			return $facets;
 		}
 
 		return [];
