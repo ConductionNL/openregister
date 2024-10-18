@@ -7,7 +7,7 @@ export class Source implements TSource {
 	public title: string
 	public description: string
 	public databaseUrl: string
-	public type: string
+	public type: 'internal' | 'mongodb'
 	public updated: string
 	public created: string
 
@@ -16,7 +16,7 @@ export class Source implements TSource {
 		this.title = source.title || ''
 		this.description = source.description || ''
 		this.databaseUrl = source.databaseUrl || ''
-		this.type = source.type || ''
+		this.type = source.type || 'internal'
 		this.updated = source.updated || ''
 		this.created = source.created || ''
 	}
@@ -27,7 +27,7 @@ export class Source implements TSource {
 			title: z.string().min(1),
 			description: z.string(),
 			databaseUrl: z.string().url(),
-			type: z.string(),
+			type: z.enum(['internal', 'mongodb']),
 		})
 
 		return schema.safeParse(this)

@@ -33,7 +33,7 @@ class ObjectsController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -42,17 +42,17 @@ class ObjectsController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all objects
-     * 
+     *
      * This method returns a JSON response containing an array of all objects in the system.
      *
      * @NoAdminRequired
@@ -69,12 +69,12 @@ class ObjectsController extends Controller
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->objectEntityMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        return new JSONResponse(['results' => $this->objectEntityMapper->findAll(filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
     }
 
     /**
      * Retrieves a single object by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific object.
      *
      * @NoAdminRequired
@@ -94,7 +94,7 @@ class ObjectsController extends Controller
 
     /**
      * Creates a new object
-     * 
+     *
      * This method creates a new object based on POST data.
      *
      * @NoAdminRequired
@@ -111,17 +111,17 @@ class ObjectsController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
+
         return new JSONResponse($this->objectEntityMapper->createFromArray(object: $data));
     }
 
     /**
      * Updates an existing object
-     * 
+     *
      * This method updates an existing object based on its ID.
      *
      * @NoAdminRequired
@@ -147,7 +147,7 @@ class ObjectsController extends Controller
 
     /**
      * Deletes an object
-     * 
+     *
      * This method deletes an object based on its ID.
      *
      * @NoAdminRequired
