@@ -7,12 +7,24 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 class MySQLJsonService implements IDatabaseJsonService
 {
+	function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
+	{
+
+		foreach($order as $item=>$direction) {
+			$builder->createNamedParameter(value: "$.$item", placeHolder: ":path$item");
+			$builder->createNamedParameter(value: $direction, placeHolder: ":direction$item");
+
+			$builder->orderBy($builder->createFunction("json_unquote(json_extract(object, :path$item))"),$direction);
+		}
+
+		return $builder;
+	}
+
 	function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder
 	{
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
 		foreach($filters as $filter=>$value) {
-//			var_dump($value);
 
 			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
 
@@ -27,9 +39,6 @@ class MySQLJsonService implements IDatabaseJsonService
 			$builder
 				->andWhere("json_extract(object, :path$filter) = :value$filter");
 		}
-//
-//		var_dump($builder->getSQL());
-//		var_Dump($builder->getParameters());
 		return $builder;
 	}
 
