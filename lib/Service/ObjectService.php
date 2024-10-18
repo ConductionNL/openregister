@@ -100,7 +100,7 @@ class ObjectService
 	{
 		$result = [];
 		foreach($ids as $id) {
-			$result = $this->find($id);
+			$result[] = $this->find($id);
 		}
 
 		return $result;
@@ -220,6 +220,7 @@ class ObjectService
 	 */
 	public function getObject(Register $register, Schema $schema, string $uuid): ObjectEntity
 	{
+
 		// Lets see if we need to save to an internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
 			return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
