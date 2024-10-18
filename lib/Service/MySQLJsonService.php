@@ -7,18 +7,52 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 class MySQLJsonService implements IDatabaseJsonService
 {
+	function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
+	{
+
+		foreach($order as $item=>$direction) {
+			$builder->createNamedParameter(value: "$.$item", placeHolder: ":path$item");
+			$builder->createNamedParameter(value: $direction, placeHolder: ":direction$item");
+
+			$builder->orderBy($builder->createFunction("json_unquote(json_extract(object, :path$item))"),$direction);
+		}
+
+		return $builder;
+	}
+
 	function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder
 	{
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
 		foreach($filters as $filter=>$value) {
-			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
+
 			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
 
+			if(is_array($value) === true) {
+				switch(array_keys($value)[0]) {
+					case 'after':
+						$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+						$builder
+							->andWhere("json_unquote(json_extract(object, :path$filter)) >= (:value$filter)");
+						break;
+					case 'before':
+						$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+						$builder
+							->andWhere("json_unquote(json_extract(object, :path$filter)) <= (:value$filter)");
+						break;
+					default:
+						$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+						$builder
+							->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
+						break;
+				}
+				continue;
+			}
+
+			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
 			$builder
 				->andWhere("json_extract(object, :path$filter) = :value$filter");
 		}
-
 		return $builder;
 	}
 
