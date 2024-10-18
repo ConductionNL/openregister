@@ -12,13 +12,24 @@ class MySQLJsonService implements IDatabaseJsonService
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
 		foreach($filters as $filter=>$value) {
-			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
+//			var_dump($value);
+
 			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
 
+			if(is_array($value) === true) {
+				$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+				$builder
+					->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
+				continue;
+			}
+
+			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
 			$builder
 				->andWhere("json_extract(object, :path$filter) = :value$filter");
 		}
-
+//
+//		var_dump($builder->getSQL());
+//		var_Dump($builder->getParameters());
 		return $builder;
 	}
 
