@@ -7,6 +7,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Symfony\Component\Uid\Uuid;
 
 class SchemaMapper extends QBMapper
 {
@@ -70,6 +71,12 @@ class SchemaMapper extends QBMapper
 	{
 		$schema = new Schema();
 		$schema->hydrate(object: $object);
+
+		// Set uuid if not provided
+		if ($schema->getUuid() === null) {
+			$schema->setUuid(Uuid::v4());
+		}
+		
 		return $this->insert(entity: $schema);
 	}
 
