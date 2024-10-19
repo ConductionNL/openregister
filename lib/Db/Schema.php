@@ -8,6 +8,7 @@ use OCP\AppFramework\Db\Entity;
 
 class Schema extends Entity implements JsonSerializable
 {
+	protected ?string $uuid = null;
 	protected ?string $title       = null;
 	protected ?string $version     = null;
 	protected ?string $description = null;
@@ -20,6 +21,7 @@ class Schema extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
@@ -93,6 +95,7 @@ class Schema extends Entity implements JsonSerializable
 
 		$array = [
 			'id'          => $this->id,
+			'uuid' => $this->uuid,
 			'title'       => $this->title,
 			'version'     => $this->version,
 			'description' => $this->description,

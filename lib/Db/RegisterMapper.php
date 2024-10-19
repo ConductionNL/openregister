@@ -7,6 +7,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Symfony\Component\Uid\Uuid;
 
 class RegisterMapper extends QBMapper
 {
@@ -61,6 +62,12 @@ class RegisterMapper extends QBMapper
 	{
 		$register = new Register();
 		$register->hydrate(object: $object);
+
+		// Set uuid if not provided
+		if ($register->getUuid() === null) {
+			$register->setUuid(Uuid::v4());
+		}
+
 		return $this->insert(entity: $register);
 	}
 

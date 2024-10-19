@@ -11,6 +11,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?string $uuid = null;
 	protected ?string $register = null;
 	protected ?string $schema = null;
+	protected ?string $version = null;
 	protected ?array $object = [];
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
@@ -19,6 +20,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'uuid', type: 'string');
 		$this->addType(fieldName:'register', type: 'string');
 		$this->addType(fieldName:'schema', type: 'string');
+		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName:'object', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
@@ -63,6 +65,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 //		return [
 //			'id' => $this->id,
 //			'uuid' => $this->uuid,
+//			'version'     => $this->version,
 //			'register' => $this->register,
 //			'schema' => $this->schema,
 //			'object' => $this->object,
