@@ -64,12 +64,21 @@ class ObjectsController extends Controller
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['uuid', 'register', 'schema'];
+        $extend = ['schema', 'register'];
 
         $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->objectEntityMapper->findAll(filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        // @todo: figure out how to use extend here
+        $results = $this->objectEntityMapper->findAll(filters: $filters);
+
+        // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
+        foreach ($results as $key => $result) {
+            $results[$key] = $result->getObject();
+        }
+        
+        return new JSONResponse(['results' => $results]);
     }
 
     /**

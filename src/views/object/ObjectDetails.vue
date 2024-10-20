@@ -52,9 +52,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
 						<BTab title="Data" active>
-							<p>
+							<pre class="json-display">
 								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
-							</p>
+							</pre>
 						</BTab>
 						<BTab title="Syncs">
 							<div v-if="true || !syncs.length" class="tabPanel">

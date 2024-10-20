@@ -62,17 +62,23 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 	public function jsonSerialize(): array
 	{
-//		return [
-//			'id' => $this->id,
-//			'uuid' => $this->uuid,
-//			'version'     => $this->version,
-//			'register' => $this->register,
-//			'schema' => $this->schema,
-//			'object' => $this->object,
-//			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-//			'created' => isset($this->created) ? $this->created->format('c') : null
-//		];
+//		
 
 		return $this->object;
 	}
+
+	public function getObject(): array
+	{
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'version'     => $this->version,
+			'register' => $this->register,
+			'schema' => $this->schema,
+			'object' => $this->object,
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null
+		];
+	}
+
 }
