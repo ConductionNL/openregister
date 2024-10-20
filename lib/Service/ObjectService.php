@@ -10,6 +10,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\Log;
+use OCA\OpenRegister\Db\LogMapper;
 use Symfony\Component\Uid\Uuid;
 
 class ObjectService
@@ -25,11 +27,12 @@ class ObjectService
 	 *
 	 * @param ObjectEntityMapper  $objectEntityMapper The ObjectEntity Mapper
 	 */
-	public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, SchemaMapper $schemaMapper)
+	public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, SchemaMapper $schemaMapper, LogMapper $logMapper)
 	{
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
+		$this->logMapper = $logMapper;
 	}
 
 	public function find(int|string $id) {
@@ -50,6 +53,7 @@ class ObjectService
 
 	public function updateFromArray(string $id, array $object, bool $updatedObject) {
 		$object['id'] = $id;
+		
 		return $this->saveObject(
 			register: $this->getRegister(),
 			schema: $this->getSchema(),
@@ -165,7 +169,6 @@ class ObjectService
 	 */
 	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
-
 		// Convert register and schema to their respective objects if they are strings
 		if (is_string($register)) {
 			$register = $this->registerMapper->find($register);
@@ -185,10 +188,8 @@ class ObjectService
 			$objectEntity->setSchema($schema);
 			///return $this->objectEntityMapper->update($objectEntity);
 		}
-
-
 		// Does the object have an if?
-		if (isset($object['id'])) {
+		if (isset($object['id']) && !empty($object['id'])) {
 			// Update existing object
 			$objectEntity->setUuid($object['id']);
 		} else {
@@ -197,17 +198,59 @@ class ObjectService
 			$object['id'] = $objectEntity->getUuid();
 		}
 
+		$oldObject = $objectEntity->getObject();
 		$objectEntity->setObject($object);
+		$changed = [];
 
-		if($objectEntity->getId()){
-			return $this->objectEntityMapper->update($objectEntity);
+		foreach ($object as $key => $value) {
+			if (!isset($oldObject[$key]) || $oldObject[$key] !== $value) {
+				$changed[$key] = [
+					'old' => $oldObject[$key] ?? null,
+					'new' => $value
+				];
+			}
 		}
-		return $this->objectEntityMapper->insert($objectEntity);
 
-		//@todo mongodb support
+		// Check for removed properties
+		foreach ($oldObject as $key => $value) {
+			if (!isset($object[$key])) {
+				$changed[$key] = [
+					'old' => $value,
+					'new' => null
+				];
+			}
+		}
 
-		// Handle external source here if needed
-		throw new \Exception('Unsupported source type');
+		// Normal loging
+		//$changed = $objectEntity->getUpdatedFields();
+
+		
+		// If the object has no uuid, create a new one
+		if (empty($objectEntity->getUuid())) {
+			$objectEntity->setUuid(Uuid::v4());
+		}
+		
+		if($objectEntity->getId()){
+			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+		}
+		else {
+			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
+		}
+
+		// Create a log entry
+		$user = \OC::$server->getUserSession()->getUser();
+
+		$log = new Log();
+		$log->setUuid(Uuid::v4());
+		$log->setObject($objectEntity->getId());
+		$log->setChanged($changed);
+		$log->setUser($user->getUID());
+		$log->setUserName($user->getDisplayName());
+		$log->setSession(session_id());
+		$log->setCreated(new \DateTime());
+		$this->logMapper->insert($log);
+
+		return $objectEntity;
 	}
 
 

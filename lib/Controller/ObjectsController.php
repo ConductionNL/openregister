@@ -75,7 +75,7 @@ class ObjectsController extends Controller
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($results as $key => $result) {
-            $results[$key] = $result->getObject();
+            $results[$key] = $result->getObjectArray();
         }
         
         return new JSONResponse(['results' => $results]);
