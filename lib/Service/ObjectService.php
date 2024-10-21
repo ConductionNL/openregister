@@ -58,7 +58,7 @@ class ObjectService
 
 	public function updateFromArray(string $id, array $object, bool $updatedObject) {
 		$object['id'] = $id;
-		
+
 		return $this->saveObject(
 			register: $this->getRegister(),
 			schema: $this->getSchema(),
@@ -117,7 +117,7 @@ class ObjectService
 		return $result;
 	}
 
-	public function getAggregations(array $filters): array
+	public function getAggregations(array $filters, ?string $search = null): array
 	{
 		$mapper = $this->getMapper(objectType: 'objectEntity');
 
@@ -125,7 +125,7 @@ class ObjectService
 		$filters['schema']   = $this->getSchema();
 
 		if ($mapper instanceof ObjectEntityMapper === true) {
-			$facets = $this->objectEntityMapper->getFacets($filters);
+			$facets = $this->objectEntityMapper->getFacets($filters, $search);
 			return $facets;
 		}
 
@@ -230,12 +230,12 @@ class ObjectService
 		// Normal loging
 		//$changed = $objectEntity->getUpdatedFields();
 
-		
+
 		// If the object has no uuid, create a new one
 		if (empty($objectEntity->getUuid())) {
 			$objectEntity->setUuid(Uuid::v4());
 		}
-		
+
 		if($objectEntity->getId()){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$action = 'update';
