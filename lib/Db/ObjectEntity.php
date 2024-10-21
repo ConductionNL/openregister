@@ -13,6 +13,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?string $schema = null;
 	protected ?string $version = null;
 	protected ?array $object = [];
+	protected ?string $textRepresentation = null;
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
@@ -22,6 +23,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'schema', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName:'object', type: 'json');
+		$this->addType(fieldName:'textRepresentation', type: 'text');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
 	}
@@ -62,17 +64,22 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 	public function jsonSerialize(): array
 	{
-//		return [
-//			'id' => $this->id,
-//			'uuid' => $this->uuid,
-//			'version'     => $this->version,
-//			'register' => $this->register,
-//			'schema' => $this->schema,
-//			'object' => $this->object,
-//			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-//			'created' => isset($this->created) ? $this->created->format('c') : null
-//		];
-
 		return $this->object;
 	}
+
+	public function getObjectArray(): array
+	{
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'version'     => $this->version,
+			'register' => $this->register,
+			'schema' => $this->schema,
+			'object' => $this->object,
+			'textRepresentation' => $this->textRepresentation,
+			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) ? $this->created->format('c') : null
+		];
+	}
+
 }

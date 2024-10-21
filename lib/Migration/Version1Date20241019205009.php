@@ -15,9 +15,6 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-/**
- * FIXME Auto-generated migration step: Please modify to your needs!
- */
 class Version1Date20241019205009 extends SimpleMigrationStep {
 
 	/**
@@ -38,26 +35,38 @@ class Version1Date20241019205009 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		// Update the abilities table to add the base column
+		// Update the openregister_sources table
 		$table = $schema->getTable('openregister_sources');
-		$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-		$table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
-		$table->addIndex(['uuid'], 'openregister_sources_uuid_index');
+		if (!$table->hasColumn('uuid')) {
+			$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addIndex(['uuid'], 'openregister_sources_uuid_index');
+		}
+		if (!$table->hasColumn('version')) {
+			$table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+		}
 
-		// Update the abilities table to add the base column
+		// Update the openregister_schemas table
 		$table = $schema->getTable('openregister_schemas');
-		$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-		$table->addIndex(['uuid'], 'openregister_sources_uuid_index');
+		if (!$table->hasColumn('uuid')) {
+			$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addIndex(['uuid'], 'openregister_schemas_uuid_index');
+		}
 			
-		// Update the abilities table to add the base column
+		// Update the openregister_registers table
 		$table = $schema->getTable('openregister_registers');
-		$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-		$table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
-		$table->addIndex(['uuid'], 'openregister_sources_uuid_index');
+		if (!$table->hasColumn('uuid')) {
+			$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addIndex(['uuid'], 'openregister_registers_uuid_index');
+		}
+		if (!$table->hasColumn('version')) {
+			$table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+		}
 
-		// Update the abilities table to add the base column
+		// Update the openregister_objects table
 		$table = $schema->getTable('openregister_objects');
-		$table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+		if (!$table->hasColumn('version')) {
+			$table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
+		}
 
 		return $schema;
 	}

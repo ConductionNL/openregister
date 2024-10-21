@@ -10,5 +10,7 @@ return [
 	'routes' => [
 		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],	
 		['name' => 'registers#objects', 'url' => '/api/registers-objects/{register}/{schema}', 'verb' => 'GET'],
+		['name' => 'objects#auditTrails', 'url' => '/api/audit-trails/{id}', 'verb' => 'GET'],
+		
 	],
 ];

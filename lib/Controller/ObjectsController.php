@@ -6,6 +6,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -25,7 +26,8 @@ class ObjectsController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly AuditTrailMapper $auditTrailMapper
     )
     {
         parent::__construct($appName, $request);
@@ -64,12 +66,21 @@ class ObjectsController extends Controller
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['uuid', 'register', 'schema'];
+        $extend = ['schema', 'register'];
 
         $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->objectEntityMapper->findAll(filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        // @todo: figure out how to use extend here
+        $results = $this->objectEntityMapper->findAll(filters: $filters);
+
+        // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
+        foreach ($results as $key => $result) {
+            $results[$key] = $result->getObjectArray();
+        }
+        
+        return new JSONResponse(['results' => $results]);
     }
 
     /**
@@ -161,5 +172,21 @@ class ObjectsController extends Controller
         $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
 
         return new JSONResponse([]);
+    }
+
+    /**
+     * Retrieves a list of logs for an object
+     *
+     * This method returns a JSON response containing the logs for a specific object.
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $id The ID of the object to delete
+     * @return JSONResponse An empty JSON response
+     */
+    public function auditTrails(int $id): JSONResponse
+    {
+        return new JSONResponse($this->auditTrailMapper->findAll(filters: ['object' => $id]));
     }
 }
