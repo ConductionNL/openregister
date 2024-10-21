@@ -61,8 +61,10 @@ class MySQLJsonService implements IDatabaseJsonService
 
 			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
 			$builder
-				->andWhere("json_extract(object, :path$filter) = :value$filter");
+				->andWhere("json_extract(object, :path$filter) = :value$filter OR json_contains(object, json_quote(:value$filter), :path$filter)");
 		}
+//		var_dump($builder->getSQL());
+
 		return $builder;
 	}
 
