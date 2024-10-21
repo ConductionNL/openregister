@@ -79,7 +79,7 @@ class ObjectService
 		);
 	}
 
-	public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = []): array
+	public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null): array
 	{
 		$objects = $this->getObjects(
 			register: $this->getRegister(),
@@ -87,21 +87,22 @@ class ObjectService
 			limit: $limit,
 			offset: $offset,
 			filters: $filters,
-			sort: $sort
+			sort: $sort,
+			search: $search
 		);
 //		$data = array_map([$this, 'getDataFromObject'], $objects);
 
 		return $objects;
 	}
 
-	public function count(array $filters = []): int
+	public function count(array $filters = [], ?string $search = null): int
 	{
 		if($this->getSchema() !== null && $this->getRegister() !== null) {
 			$filters['register'] = $this->getRegister();
 			$filters['schema']   = $this->getSchema();
 		}
 		$count = $this->objectEntityMapper
-			->countAll(filters: $filters);
+			->countAll(filters: $filters, search: $search);
 
 		return $count;
 	}
@@ -148,7 +149,7 @@ class ObjectService
 	 * @return array The retrieved objects.
 	 * @throws \Exception
 	 */
-	public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = []): array
+	public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null): array
 	{
 		if($objectType === null && $register !== null && $schema !== null) {
 			$objectType 		 = 'objectEntity';
@@ -160,7 +161,7 @@ class ObjectService
 		$mapper = $this->getMapper($objectType);
 
 		// Use the mapper to find and return all objects of the specified type
-		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort);
+		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
 	}
 
 	/**

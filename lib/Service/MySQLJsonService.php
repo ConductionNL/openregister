@@ -20,6 +20,16 @@ class MySQLJsonService implements IDatabaseJsonService
 		return $builder;
 	}
 
+	function searchJson(IQueryBuilder $builder, ?string $search = null): IQueryBuilder
+	{
+		if($search !== null) {
+			$builder->createNamedParameter(value: "%$search%", placeHolder: ':search');
+			$builder->andWhere("JSON_SEARCH(object, 'one', :search) IS NOT NULL");
+		}
+
+		return $builder;
+	}
+
 	function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder
 	{
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
@@ -51,8 +61,10 @@ class MySQLJsonService implements IDatabaseJsonService
 
 			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
 			$builder
-				->andWhere("json_extract(object, :path$filter) = :value$filter");
+				->andWhere("json_extract(object, :path$filter) = :value$filter OR json_contains(object, json_quote(:value$filter), :path$filter)");
 		}
+//		var_dump($builder->getSQL());
+
 		return $builder;
 	}
 
