@@ -9,6 +9,8 @@ use OCP\AppFramework\Db\Entity;
 class AuditTrail extends Entity implements JsonSerializable
 {
 	protected ?string $uuid = null;
+	protected ?int $schema = null;
+	protected ?int $register = null;
 	protected ?int $object = null;
 	protected ?string $action = null;
 	protected ?array $changed = null;
@@ -17,10 +19,13 @@ class AuditTrail extends Entity implements JsonSerializable
 	protected ?string $session = null;
 	protected ?string $request = null;
 	protected ?string $ipAddress = null;
+	protected ?string $version = null;
 	protected ?DateTime $created = null;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'schema', type: 'integer');
+		$this->addType(fieldName: 'register', type: 'integer');
 		$this->addType(fieldName: 'object', type: 'integer');
 		$this->addType(fieldName: 'action', type: 'string');
 		$this->addType(fieldName: 'changed', type: 'json');
@@ -29,6 +34,7 @@ class AuditTrail extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'session', type: 'string');
 		$this->addType(fieldName: 'request', type: 'string');
 		$this->addType(fieldName: 'ipAddress', type: 'string');
+		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
@@ -66,6 +72,8 @@ class AuditTrail extends Entity implements JsonSerializable
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
+			'schema' => $this->schema,
+			'register' => $this->register,
 			'object' => $this->object,
 			'action' => $this->action,
 			'changed' => $this->changed,
@@ -74,6 +82,7 @@ class AuditTrail extends Entity implements JsonSerializable
 			'session' => $this->session,
 			'request' => $this->request,
 			'ipAddress' => $this->ipAddress,
+			'version' => $this->version,
 			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
