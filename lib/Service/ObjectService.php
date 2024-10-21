@@ -10,6 +10,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use Symfony\Component\Uid\Uuid;
 
 class ObjectService
@@ -18,18 +20,24 @@ class ObjectService
 	private int $register;
 	private int $schema;
 
-	private $callLogMapper;
+	private AuditTrailMapper $auditTrailMapper;
 
 	/**
 	 * The constructor sets al needed variables.
 	 *
 	 * @param ObjectEntityMapper  $objectEntityMapper The ObjectEntity Mapper
 	 */
-	public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper, SchemaMapper $schemaMapper)
+	public function __construct(
+		ObjectEntityMapper $objectEntityMapper,
+		RegisterMapper $registerMapper,
+		SchemaMapper $schemaMapper,
+		AuditTrailMapper $auditTrailMapper
+	)
 	{
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
+		$this->auditTrailMapper = $auditTrailMapper;
 	}
 
 	public function find(int|string $id) {
@@ -50,6 +58,7 @@ class ObjectService
 
 	public function updateFromArray(string $id, array $object, bool $updatedObject) {
 		$object['id'] = $id;
+		
 		return $this->saveObject(
 			register: $this->getRegister(),
 			schema: $this->getSchema(),
@@ -165,7 +174,6 @@ class ObjectService
 	 */
 	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
-
 		// Convert register and schema to their respective objects if they are strings
 		if (is_string($register)) {
 			$register = $this->registerMapper->find($register);
@@ -185,10 +193,8 @@ class ObjectService
 			$objectEntity->setSchema($schema);
 			///return $this->objectEntityMapper->update($objectEntity);
 		}
-
-
 		// Does the object have an if?
-		if (isset($object['id'])) {
+		if (isset($object['id']) && !empty($object['id'])) {
 			// Update existing object
 			$objectEntity->setUuid($object['id']);
 		} else {
@@ -197,17 +203,64 @@ class ObjectService
 			$object['id'] = $objectEntity->getUuid();
 		}
 
+		$oldObject = $objectEntity->getObject();
 		$objectEntity->setObject($object);
+		$changed = [];
 
-		if($objectEntity->getId()){
-			return $this->objectEntityMapper->update($objectEntity);
+		foreach ($object as $key => $value) {
+			if (!isset($oldObject[$key]) || $oldObject[$key] !== $value) {
+				$changed[$key] = [
+					'old' => $oldObject[$key] ?? null,
+					'new' => $value
+				];
+			}
 		}
-		return $this->objectEntityMapper->insert($objectEntity);
 
-		//@todo mongodb support
+		// Check for removed properties
+		foreach ($oldObject as $key => $value) {
+			if (!isset($object[$key])) {
+				$changed[$key] = [
+					'old' => $value,
+					'new' => null
+				];
+			}
+		}
 
-		// Handle external source here if needed
-		throw new \Exception('Unsupported source type');
+		// Normal loging
+		//$changed = $objectEntity->getUpdatedFields();
+
+		
+		// If the object has no uuid, create a new one
+		if (empty($objectEntity->getUuid())) {
+			$objectEntity->setUuid(Uuid::v4());
+		}
+		
+		if($objectEntity->getId()){
+			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+			$action = 'update';
+		}
+		else {
+			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
+			$action = 'create';
+		}
+
+		// Create a log entry
+		$user = \OC::$server->getUserSession()->getUser();
+
+		$log = new AuditTrail();
+		$log->setUuid(Uuid::v4());
+		$log->setObject($objectEntity->getId());
+		$log->setAction($action);
+		$log->setChanged($changed);
+		$log->setUser($user->getUID());
+		$log->setUserName($user->getDisplayName());
+		$log->setSession(session_id());
+		$log->setRequest(\OC::$server->getRequest()->getId());
+		$log->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
+		$log->setCreated(new \DateTime());
+		$this->auditTrailMapper->insert($log);
+
+		return $objectEntity;
 	}
 
 
