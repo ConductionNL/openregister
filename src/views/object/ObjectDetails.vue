@@ -78,7 +78,28 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								</NcListItem>
 							</div>
 							<div v-if="true || !logs.length" class="tabPanel">
-								No logs found
+								
+								<table width="100%">							
+									<tr>
+										<th><b>Tijdstip</b></th>
+										<th><b>Gebruiker</b></th>
+										<th><b>Actie</b></th>
+										<th><b>Details</b></th>
+									</tr>
+									<tr v-for="(auditTrail, index) in auditTrails" :key="index">
+										<td>{{ new Date(auditTrail.created).toLocaleString() }}</td>
+										<td>{{ auditTrail.userName }}</td>
+										<td>{{ auditTrail.action }}</td>
+										<td>
+											<NcButton @click="() => { navigationStore.setDialog('viewLog'); objectStore.setAuditTrailItem(auditTrail); }">
+												<template #icon>
+													<TimelineQuestionOutline :size="20" />
+												</template>
+												Bekijk details
+											</NcButton>
+										</td>
+									</tr>
+								</table>
 							</div>
 						</BTab>
 					</BTabs>
@@ -94,7 +115,7 @@ import { BTabs, BTab } from 'bootstrap-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-
+import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 export default {
 	name: 'ObjectDetails',
 	components: {
@@ -106,7 +127,43 @@ export default {
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
+		TimelineQuestionOutline,
 	},
+	data() {
+		return {
+			auditTrailLoading: false,
+			auditTrails: [],
+		}
+	},
+	mounted() {
+		this.getAuditTrails();
+	},
+	methods: {		
+		getAuditTrails() {
+			this.syncLoading = true
+			fetch(
+				`/index.php/apps/openregister/api/audit-trails/${objectStore.objectItem.id}`,
+				{
+					method: 'GET',
+				},
+			)
+				.then(
+					(response) => {
+						response.json().then(
+							(data) => {
+								this.auditTrails = data
+								console.log(this.auditTrails)
+								this.auditTrailLoading = false
+							},
+						)
+					},
+				)
+				.catch((err) => {
+					this.error = err
+					this.auditTrailLoading = false
+				})
+		},
+	}
 }
 </script>
 

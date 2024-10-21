@@ -9,11 +9,11 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
-class LogMapper extends QBMapper
+class AuditTrailMapper extends QBMapper
 {
 	public function __construct(IDBConnection $db)
 	{
-		parent::__construct($db, 'openregister_logs');
+		parent::__construct($db, 'openregister_audit_trails');
 	}
 
 	public function find(int $id): Log
@@ -21,7 +21,7 @@ class LogMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_logs')
+			->from('openregister_audit_trails')
 			->where(
 				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
@@ -34,7 +34,7 @@ class LogMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_logs')
+			->from('openregister_audit_trails')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 

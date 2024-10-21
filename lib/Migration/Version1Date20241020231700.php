@@ -36,16 +36,18 @@ class Version1Date20241020231700 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		// create the openregister_logs table		
-		if (!$schema->hasTable('openregister_logs')) {
-			$table = $schema->createTable('openregister_logs');
+		if (!$schema->hasTable('openregister_audit_trails')) {
+			$table = $schema->createTable('openregister_audit_trails');
 			$table->addColumn('id', Types::INTEGER, ['autoincrement' => true, 'notnull' => true]);	
 			$table->addColumn('uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
 			$table->addColumn('object', Types::INTEGER, ['notnull' => true]);
+			$table->addColumn('action', Types::STRING, ['notnull' => true, 'default' => 'update']);
 			$table->addColumn('changed', Types::JSON, ['notnull' => true]);
 			$table->addColumn('user', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('user_name', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('session', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('request', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('ip_address', Types::STRING, ['notnull' => false, 'length' => 255]);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 			
 			$table->setPrimaryKey(['id']);

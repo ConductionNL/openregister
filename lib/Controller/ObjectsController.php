@@ -6,6 +6,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -25,7 +26,8 @@ class ObjectsController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly AuditTrailMapper $auditTrailMapper
     )
     {
         parent::__construct($appName, $request);
@@ -170,5 +172,21 @@ class ObjectsController extends Controller
         $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
 
         return new JSONResponse([]);
+    }
+
+    /**
+     * Retrieves a list of logs for an object
+     *
+     * This method returns a JSON response containing the logs for a specific object.
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $id The ID of the object to delete
+     * @return JSONResponse An empty JSON response
+     */
+    public function auditTrails(int $id): JSONResponse
+    {
+        return new JSONResponse($this->auditTrailMapper->findAll(filters: ['object' => $id]));
     }
 }

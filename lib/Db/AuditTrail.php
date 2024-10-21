@@ -6,23 +6,29 @@ use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
-class Log extends Entity implements JsonSerializable
+class AuditTrail extends Entity implements JsonSerializable
 {
 	protected ?string $uuid = null;
 	protected ?int $object = null;
+	protected ?string $action = null;
 	protected ?array $changed = null;
 	protected ?string $user = null;
 	protected ?string $userName = null;
 	protected ?string $session = null;
+	protected ?string $request = null;
+	protected ?string $ipAddress = null;
 	protected ?DateTime $created = null;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'object', type: 'integer');
+		$this->addType(fieldName: 'action', type: 'string');
 		$this->addType(fieldName: 'changed', type: 'json');
 		$this->addType(fieldName: 'user', type: 'string');
 		$this->addType(fieldName: 'userName', type: 'string');
 		$this->addType(fieldName: 'session', type: 'string');
+		$this->addType(fieldName: 'request', type: 'string');
+		$this->addType(fieldName: 'ipAddress', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
@@ -61,10 +67,13 @@ class Log extends Entity implements JsonSerializable
 			'id' => $this->id,
 			'uuid' => $this->uuid,
 			'object' => $this->object,
+			'action' => $this->action,
 			'changed' => $this->changed,
 			'user' => $this->user,
 			'userName' => $this->userName,
 			'session' => $this->session,
+			'request' => $this->request,
+			'ipAddress' => $this->ipAddress,
 			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
