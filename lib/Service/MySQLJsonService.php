@@ -7,7 +7,10 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 class MySQLJsonService implements IDatabaseJsonService
 {
-	function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
+	/**
+	 * @inheritDoc
+	 */
+	public function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
 	{
 
 		foreach($order as $item=>$direction) {
@@ -20,17 +23,52 @@ class MySQLJsonService implements IDatabaseJsonService
 		return $builder;
 	}
 
-	function searchJson(IQueryBuilder $builder, ?string $search = null): IQueryBuilder
+	/**
+	 * @inheritDoc
+	 */
+	public function searchJson(IQueryBuilder $builder, ?string $search = null): IQueryBuilder
 	{
-		if($search !== null) {
+		if ($search !== null) {
 			$builder->createNamedParameter(value: "%$search%", placeHolder: ':search');
-			$builder->andWhere("JSON_SEARCH(object, 'one', :search) IS NOT NULL");
+			$builder->andWhere("JSON_SEARCH(LOWER(object), 'one', LOWER(:search)) IS NOT NULL");
 		}
 
 		return $builder;
 	}
 
-	function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder
+	/**
+	 * @inheritDoc
+	 */
+	private function jsonFilterArray(IQueryBuilder $builder, string $filter, array $values): IQueryBuilder
+	{
+		foreach ($values as $key=>$value) {
+			switch ($key) {
+				case 'after':
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}after");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) >= (:value{$filter}after)");
+					break;
+				case 'before':
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value${filter}before");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) <= (:value{$filter}before)");
+					break;
+				default:
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
+					break;
+
+			}
+		}
+
+		return $builder;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder
 	{
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
@@ -38,24 +76,13 @@ class MySQLJsonService implements IDatabaseJsonService
 
 			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
 
-			if(is_array($value) === true) {
-				switch(array_keys($value)[0]) {
-					case 'after':
-						$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
-						$builder
-							->andWhere("json_unquote(json_extract(object, :path$filter)) >= (:value$filter)");
-						break;
-					case 'before':
-						$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
-						$builder
-							->andWhere("json_unquote(json_extract(object, :path$filter)) <= (:value$filter)");
-						break;
-					default:
-						$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
-						$builder
-							->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
-						break;
-				}
+			if(is_array($value) === true && array_is_list($value) === false) {
+				$builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
+				continue;
+			} else if (is_array($value) === true) {
+				$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+				$builder
+					->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
 				continue;
 			}
 
@@ -63,12 +90,14 @@ class MySQLJsonService implements IDatabaseJsonService
 			$builder
 				->andWhere("json_extract(object, :path$filter) = :value$filter OR json_contains(object, json_quote(:value$filter), :path$filter)");
 		}
-//		var_dump($builder->getSQL());
 
 		return $builder;
 	}
 
-	public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters = []): array
+	/**
+	 * @inheritDoc
+	 */
+	public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters = [], ?string $search = null): array
 	{
 		$facets = [];
 
@@ -87,6 +116,7 @@ class MySQLJsonService implements IDatabaseJsonService
 				->groupBy('_id');
 
 			$builder = $this->filterJson($builder, $filters);
+			$builder = $this->searchJson($builder, $search);
 
 			$result = $builder->executeQuery();
 			$facets[$field] = $result->fetchAll();

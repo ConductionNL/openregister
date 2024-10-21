@@ -193,7 +193,7 @@ class ObjectEntityMapper extends QBMapper
 		return $this->update($obj);
 	}
 
-	public function getFacets(array $filters = [])
+	public function getFacets(array $filters = [], ?string $search = null)
 	{
 		if(key_exists(key: 'register', array: $filters) === true) {
 			$register = $filters['register'];
@@ -221,7 +221,8 @@ class ObjectEntityMapper extends QBMapper
 			fields: $fields,
 			register: $register,
 			schema: $schema,
-			filters: $filters
+			filters: $filters,
+			search: $search
 		);
 	}
 }
