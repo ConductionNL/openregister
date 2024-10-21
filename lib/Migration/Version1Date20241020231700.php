@@ -40,6 +40,8 @@ class Version1Date20241020231700 extends SimpleMigrationStep {
 			$table = $schema->createTable('openregister_audit_trails');
 			$table->addColumn('id', Types::INTEGER, ['autoincrement' => true, 'notnull' => true]);	
 			$table->addColumn('uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('schema', Types::INTEGER, ['notnull' => false]);
+			$table->addColumn('regsiter', Types::INTEGER, ['notnull' => false]);
 			$table->addColumn('object', Types::INTEGER, ['notnull' => true]);
 			$table->addColumn('action', Types::STRING, ['notnull' => true, 'default' => 'update']);
 			$table->addColumn('changed', Types::JSON, ['notnull' => true]);
@@ -48,6 +50,7 @@ class Version1Date20241020231700 extends SimpleMigrationStep {
 			$table->addColumn('session', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('request', Types::STRING, ['notnull' => false, 'length' => 255]);
 			$table->addColumn('ip_address', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('version', Types::STRING, ['notnull' => false, 'length' => 255]);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 			
 			$table->setPrimaryKey(['id']);
