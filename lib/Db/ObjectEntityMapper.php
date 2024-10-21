@@ -100,7 +100,7 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
-	public function countAll(?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): int
+	public function countAll(?array $filters = [], ?string $search = null): int
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -116,19 +116,12 @@ class ObjectEntityMapper extends QBMapper
 			}
 		}
 
-		if (!empty($searchConditions)) {
-			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
 		$qb = $this->databaseJsonService->filterJson($qb, $filters);
+		$qb = $this->databaseJsonService->searchJson($qb, $search);
 
 		$result = $qb->executeQuery();
 
-		$count = $result->fetchAll()[0]['count'];
-
-		return $count;
+		return $result->fetchAll()[0]['count'];
 	}
 
 	/**
@@ -141,7 +134,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param array $searchParams The search parameters to apply to the objects
 	 * @return array An array of ObjectEntitys
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], array $sort = []): array
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], array $sort = [], ?string $search = null): array
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -168,7 +161,10 @@ class ObjectEntityMapper extends QBMapper
         }
 
 		$qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
+		$qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
 		$qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+
+//		var_dump($qb->getSQL());
 
 		return $this->findEntities(query: $qb);
 	}
