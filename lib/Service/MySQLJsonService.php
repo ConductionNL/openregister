@@ -37,7 +37,13 @@ class MySQLJsonService implements IDatabaseJsonService
 	}
 
 	/**
-	 * @inheritDoc
+	 * Add complex filters to the filter set.
+	 *
+	 * @param IQueryBuilder $builder The query builder
+	 * @param string $filter The filtered field.
+	 * @param array $values The values to filter on.
+	 *
+	 * @return IQueryBuilder The updated query builder.
 	 */
 	private function jsonFilterArray(IQueryBuilder $builder, string $filter, array $values): IQueryBuilder
 	{
@@ -66,6 +72,27 @@ class MySQLJsonService implements IDatabaseJsonService
 	}
 
 	/**
+	 * Build a string to search multiple values in an array.
+	 *
+	 * @param array $values The values to search for.
+	 * @param string $filter The field to filter on.
+	 * @param IQueryBuilder $builder The query builder.
+	 *
+	 * @return string The resulting query string.
+	 */
+	private function getMultipleContains (array $values, string $filter, IQueryBuilder $builder): string
+	{
+		$orString = '';
+		foreach($values as $key=>$value)
+		{
+			$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value$filter$key");
+			$orString .= " OR json_contains(object, json_quote(:value$filter$key), :path$filter)";
+		}
+
+		return $orString;
+	}
+
+	/**
 	 * @inheritDoc
 	 */
 	public function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder
@@ -80,9 +107,10 @@ class MySQLJsonService implements IDatabaseJsonService
 				$builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
 				continue;
 			} else if (is_array($value) === true) {
+
 				$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
 				$builder
-					->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
+					->andWhere("(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))". $this->getMultipleContains($value, $filter, $builder));
 				continue;
 			}
 
