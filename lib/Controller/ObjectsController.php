@@ -138,7 +138,7 @@ class ObjectsController extends Controller
 		
        	$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 
-        return new JSONResponse($objectEntity);
+        return new JSONResponse($objectEntity->getObjectArray());
     }
 
     /**
@@ -172,7 +172,7 @@ class ObjectsController extends Controller
 
         $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 
-        return new JSONResponse($objectEntity);
+        return new JSONResponse($objectEntity->getOBjectArray());
     }
 
     /**
