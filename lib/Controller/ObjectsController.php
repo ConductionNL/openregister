@@ -6,15 +6,19 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use Symfony\Component\Uid\Uuid;
 
 class ObjectsController extends Controller
 {
+   
+
     /**
      * Constructor for the ObjectsController
      *
@@ -116,6 +120,7 @@ class ObjectsController extends Controller
     public function create(): JSONResponse
     {
         $data = $this->request->getParams();
+        $object = $data['object'];
 
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
@@ -125,13 +130,19 @@ class ObjectsController extends Controller
 
         if (isset($data['id'])) {
             unset($data['id']);
-        }
 
-        return new JSONResponse($this->objectEntityMapper->createFromArray(object: $data)->getObjectArray());
+        }
+        
+        // save it
+        $objectEntity = $this->objectEntityMapper->createFromArray(object: $data);
+		
+       	$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+
+        return new JSONResponse($objectEntity->getObjectArray());
     }
 
     /**
-     * Updates an existing object
+     * Updates an existing object 
      *
      * This method updates an existing object based on its ID.
      *
@@ -144,6 +155,7 @@ class ObjectsController extends Controller
     public function update(int $id): JSONResponse
     {
         $data = $this->request->getParams();
+        $object = $data['object'];
 
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
@@ -153,7 +165,14 @@ class ObjectsController extends Controller
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->objectEntityMapper->updateFromArray(id: (int) $id, object: $data)->getObjectArray());
+
+        // save it
+        $oldObject = $this->objectEntityMapper->find($id);
+        $objectEntity = $this->objectEntityMapper->updateFromArray(id: $id, object: $data);
+
+        $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
+
+        return new JSONResponse($objectEntity->getOBjectArray());
     }
 
     /**
@@ -169,6 +188,10 @@ class ObjectsController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        // Create a log entry		
+        $oldObject = $this->objectEntityMapper->find($id);
+        $this->auditTrailMapper->createAuditTrail(old: $oldObject);
+
         $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
 
         return new JSONResponse([]);
