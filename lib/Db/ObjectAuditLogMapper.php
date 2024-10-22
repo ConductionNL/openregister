@@ -63,7 +63,7 @@ class ObjectAuditLogMapper extends QBMapper
 		$obj = new ObjectAuditLog();
 		$obj->hydrate($object);
 		// Set uuid
-		if ($obj->getUuid() === null){
+		if ($obj->getUuid() === null) {
 			$obj->setUuid(Uuid::v4());
 		}
 

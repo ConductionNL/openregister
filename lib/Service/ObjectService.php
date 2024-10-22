@@ -189,7 +189,7 @@ class ObjectService
 			$objectEntity = $this->objectEntityMapper->findByUuid($this->registerMapper->find($register), $this->schemaMapper->find($schema), $object['id']);
 		}
 
-		if ($objectEntity === null){
+		if ($objectEntity === null) {
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register);
 			$objectEntity->setSchema($schema);
