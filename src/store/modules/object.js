@@ -119,56 +119,46 @@ export const useObjectStore = defineStore('object', {
 			// change updated to current date as a singular iso date string
 			objectItem.updated = new Date().toISOString()
 
-			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(objectItem),
+			const response = await fetch(
+				endpoint,
+				{
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(objectItem),
+				},
+			)
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				console.log(responseData)
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				const data = new ObjectEntity(responseData)
-
-				this.refreshObjectList()
-				this.setObjectItem(data)
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error saving object:', error)
-				throw new Error(`Failed to save object: ${error.message}`)
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
 			}
+
+			const data = new ObjectEntity(await response.json())
+
+			this.refreshObjectList()
+			this.setObjectItem(data)
+
+			return { response, data }
 		},
 		// AUDIT TRAILS
-		// New function to get a single object
 		async getAuditTrails(id) {
-			const endpoint = `/index.php/apps/openregister/api/audit-trails/${id}`
-			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
-				this.setAuditTrails(data)
-				return data
-			} catch (err) {
-				console.error(err)
-				throw err
+			if (!id) {
+				throw new Error('No object id to get audit trails for')
 			}
+
+			const endpoint = `/index.php/apps/openregister/api/audit-trails/${id}`
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+			})
+
+			const responseData = await response.json()
+			const data = responseData.map((auditTrail) => new AuditTrail(auditTrail))
+
+			this.setAuditTrails(data)
+
+			return { response, data }
 		},
 	},
 })
