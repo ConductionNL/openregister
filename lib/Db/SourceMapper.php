@@ -60,13 +60,14 @@ class SourceMapper extends QBMapper
 
 	public function createFromArray(array $object): Source
 	{
-		$obj = new Source();
-		$obj->hydrate($object);
-		// Set uuid
-		if ($obj->getUuid() === null){
-			$obj->setUuid(Uuid::v4());
+		$source = new Source();
+		$source->hydrate(object: $object);
+
+		// Set uuid if not provided
+		if ($source->getUuid() === null) {
+			$source->setUuid(Uuid::v4());
 		}
-		return $this->insert(entity: $obj);
+		return $this->insert(entity: $source);
 	}
 
 	public function updateFromArray(int $id, array $object): Source

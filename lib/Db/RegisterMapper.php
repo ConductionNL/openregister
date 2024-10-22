@@ -99,15 +99,15 @@ class RegisterMapper extends QBMapper
 	 */
 	public function createFromArray(array $object): Register
 	{
-		$obj = new Register();
-		$obj->hydrate($object);
+		$register = new Register();
+		$register->hydrate(object: $object);
+
 		// Set uuid if not provided
-		if ($obj->getUuid() === null){
-			$obj->setUuid(Uuid::v4());
+		if ($register->getUuid() === null) {
+			$register->setUuid(Uuid::v4());
 		}
 
-		// Insert the new register and return it
-		return $this->insert(entity: $obj);
+		return $this->insert(entity: $register);
 	}
 
 	/**

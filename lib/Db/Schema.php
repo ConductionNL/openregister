@@ -19,7 +19,7 @@ class Schema extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-        $this->addType('uuid', 'string');
+		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');

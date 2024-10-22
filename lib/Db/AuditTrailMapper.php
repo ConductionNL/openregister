@@ -2,40 +2,31 @@
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Log;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
-class SchemaMapper extends QBMapper
+class AuditTrailMapper extends QBMapper
 {
 	public function __construct(IDBConnection $db)
 	{
-		parent::__construct($db, 'openregister_schemas');
+		parent::__construct($db, 'openregister_audit_trails');
 	}
 
-	public function find(int $id): Schema
+	public function find(int $id): Log
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_schemas')
+			->from('openregister_audit_trails')
 			->where(
 				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
 
 		return $this->findEntity(query: $qb);
-	}
-	public function findMultiple(array $ids): array
-	{
-		$result = [];
-		foreach($ids as $id) {
-			$result[] = $this->find($id);
-		}
-
-		return $result;
 	}
 
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
@@ -43,7 +34,7 @@ class SchemaMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_schemas')
+			->from('openregister_audit_trails')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
@@ -67,29 +58,18 @@ class SchemaMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
-	public function createFromArray(array $object): Schema
+	public function createFromArray(array $object): Log
 	{
-		$schema = new Schema();
-		$schema->hydrate(object: $object);
+		$log = new Log();
+		$log->hydrate(object: $object);
 
 		// Set uuid if not provided
-		if ($schema->getUuid() === null) {
-			$schema->setUuid(Uuid::v4());
+		if ($log->getUuid() === null) {
+			$log->setUuid(Uuid::v4());
 		}
-		
-		return $this->insert(entity: $schema);
+
+		return $this->insert(entity: $log);
 	}
 
-	public function updateFromArray(int $id, array $object): Schema
-	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
-
-		// Set or update the version
-		$version = explode('.', $obj->getVersion());
-		$version[2] = (int)$version[2] + 1;
-		$obj->setVersion(implode('.', $version));
-
-		return $this->update($obj);
-	}
+	// We dont need update as we dont change the log
 }

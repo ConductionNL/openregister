@@ -6,6 +6,8 @@ export const useObjectStore = defineStore('object', {
 	state: () => ({
 		objectItem: false,
 		objectList: [],
+		auditTrailItem: false,
+		auditTrails: [],	
 	}),
 	actions: {
 		setObjectItem(objectItem) {
@@ -17,6 +19,14 @@ export const useObjectStore = defineStore('object', {
 				(objectItem) => new ObjectEntity(objectItem),
 			)
 			console.log('Object list set to ' + objectList.length + ' items')
+		},
+		setAuditTrailItem(auditTrailItem) {
+			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
+		},
+		setAuditTrails(auditTrails) {
+			this.auditTrails = auditTrails.map(
+				(auditTrail) => new AuditTrail(auditTrail),
+			)
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshObjectList(search = null) {
