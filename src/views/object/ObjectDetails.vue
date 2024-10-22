@@ -52,9 +52,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
 						<BTab title="Data" active>
-							<pre class="json-display">
-								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
-							</pre>
+							<pre class="json-display"><!-- do not remove this comment
+                                -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
+                            </pre>
 						</BTab>
 						<BTab title="Syncs">
 							<div v-if="true || !syncs.length" class="tabPanel">
@@ -78,8 +78,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								</NcListItem>
 							</div>
 							<div v-if="true || !logs.length" class="tabPanel">
-								
-								<table width="100%">							
+								<table width="100%">
 									<tr>
 										<th><b>Tijdstip</b></th>
 										<th><b>Gebruiker</b></th>
@@ -136,9 +135,9 @@ export default {
 		}
 	},
 	mounted() {
-		this.getAuditTrails();
+		this.getAuditTrails()
 	},
-	methods: {		
+	methods: {
 		getAuditTrails() {
 			this.syncLoading = true
 			fetch(
@@ -163,7 +162,7 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
-	}
+	},
 }
 </script>
 

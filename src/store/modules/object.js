@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 import { defineStore } from 'pinia'
-import { ObjectEntity } from '../../entities/index.js'
+import { AuditTrail, ObjectEntity } from '../../entities/index.js'
 
 export const useObjectStore = defineStore('object', {
 	state: () => ({
 		objectItem: false,
 		objectList: [],
 		auditTrailItem: false,
-		auditTrails: [],	
+		auditTrails: [],
 	}),
 	actions: {
 		setObjectItem(objectItem) {
@@ -137,19 +137,37 @@ export const useObjectStore = defineStore('object', {
 
 				const responseData = await response.json()
 
+				console.log(responseData)
+
 				if (!responseData || typeof responseData !== 'object') {
 					throw new Error('Invalid response data')
 				}
 
 				const data = new ObjectEntity(responseData)
 
-				this.setObjectItem(data)
 				this.refreshObjectList()
+				this.setObjectItem(data)
 
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving object:', error)
 				throw new Error(`Failed to save object: ${error.message}`)
+			}
+		},
+		// AUDIT TRAILS
+		// New function to get a single object
+		async getAuditTrails(id) {
+			const endpoint = `/index.php/apps/openregister/api/audit-trails/${id}`
+			try {
+				const response = await fetch(endpoint, {
+					method: 'GET',
+				})
+				const data = await response.json()
+				this.setAuditTrails(data)
+				return data
+			} catch (err) {
+				console.error(err)
+				throw err
 			}
 		},
 	},
