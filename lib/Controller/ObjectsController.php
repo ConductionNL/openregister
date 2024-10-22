@@ -79,7 +79,7 @@ class ObjectsController extends Controller
         foreach ($results as $key => $result) {
             $results[$key] = $result->getObjectArray();
         }
-        
+
         return new JSONResponse(['results' => $results]);
     }
 
@@ -97,7 +97,7 @@ class ObjectsController extends Controller
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->objectEntityMapper->find(id: (int) $id));
+            return new JSONResponse($this->objectEntityMapper->find(idOrUuid: (int) $id)->getObjectArray());
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
@@ -127,7 +127,7 @@ class ObjectsController extends Controller
             unset($data['id']);
         }
 
-        return new JSONResponse($this->objectEntityMapper->createFromArray(object: $data));
+        return new JSONResponse($this->objectEntityMapper->createFromArray(object: $data)->getObjectArray());
     }
 
     /**
@@ -153,7 +153,7 @@ class ObjectsController extends Controller
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->objectEntityMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->objectEntityMapper->updateFromArray(id: (int) $id, object: $data)->getObjectArray());
     }
 
     /**
@@ -178,7 +178,7 @@ class ObjectsController extends Controller
      * Retrieves a list of logs for an object
      *
      * This method returns a JSON response containing the logs for a specific object.
-     * 
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
