@@ -80,6 +80,7 @@ class AuditTrailMapper extends QBMapper
      */
     public function createAuditTrail(?ObjectEntity $old = null, ?ObjectEntity $new = null): AuditTrail
     {
+        // Determine the action based on the presence of old and new objects
         $action = 'update';
         if ($new === null) {
             $action = 'delete';
@@ -91,10 +92,13 @@ class AuditTrailMapper extends QBMapper
             $objectEntity = $new;
         }
 
+        // Initialize an array to store changed fields
         $changed = [];
         if ($action !== 'delete') {
             $oldArray = $old ? $old->jsonSerialize() : [];
             $newArray = $new->jsonSerialize();
+            
+            // Compare old and new values to detect changes
             foreach ($newArray as $key => $value) {
                 if (!isset($oldArray[$key]) || $oldArray[$key] !== $value) {
                     $changed[$key] = [
@@ -103,6 +107,8 @@ class AuditTrailMapper extends QBMapper
                     ];
                 }
             }
+            
+            // For updates, check for removed fields
             if ($action === 'update') {
                 foreach ($oldArray as $key => $value) {
                     if (!isset($newArray[$key])) {
@@ -115,8 +121,10 @@ class AuditTrailMapper extends QBMapper
             }
         }
 
+        // Get the current user
         $user = \OC::$server->getUserSession()->getUser();
 
+        // Create and populate a new AuditTrail object
         $auditTrail	= new AuditTrail();
         $auditTrail->setUuid(Uuid::v4());
         $auditTrail->setObject($objectEntity->getId());
@@ -131,6 +139,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
 
+        // Insert the new AuditTrail into the database and return it
 		return $this->insert(entity: $auditTrail);
     }
 

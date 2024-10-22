@@ -210,7 +210,6 @@ class ObjectsController extends Controller
      */
     public function auditTrails(int $id): JSONResponse
     {
-        //return new JSONResponse($this->auditTrailMapper->findAll());
         return new JSONResponse($this->auditTrailMapper->findAll(filters: ['object' => $id]));
     }
 }
