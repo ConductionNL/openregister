@@ -33,7 +33,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 			<div v-if="objectStore.objectList && objectStore.objectList.length > 0">
 				<NcListItem v-for="(object, i) in objectStore.objectList"
 					:key="`${object}${i}`"
-					:name="object.id"
+					:name="object.id?.toString()"
 					:active="objectStore.objectItem?.id === object?.id"
 					:force-display-actions="true"
 					@click="objectStore.setObjectItem(object)">

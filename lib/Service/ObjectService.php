@@ -204,33 +204,9 @@ class ObjectService
 			$object['id'] = $objectEntity->getUuid();
 		}
 
-		$oldObject = $objectEntity->getObject();
+		$oldObject = clone $objectEntity;
 		$objectEntity->setObject($object);
-		$changed = [];
-
-		foreach ($object as $key => $value) {
-			if (!isset($oldObject[$key]) || $oldObject[$key] !== $value) {
-				$changed[$key] = [
-					'old' => $oldObject[$key] ?? null,
-					'new' => $value
-				];
-			}
-		}
-
-		// Check for removed properties
-		foreach ($oldObject as $key => $value) {
-			if (!isset($object[$key])) {
-				$changed[$key] = [
-					'old' => $value,
-					'new' => null
-				];
-			}
-		}
-
-		// Normal loging
-		//$changed = $objectEntity->getUpdatedFields();
-
-
+		
 		// If the object has no uuid, create a new one
 		if (empty($objectEntity->getUuid())) {
 			$objectEntity->setUuid(Uuid::v4());
@@ -238,28 +214,12 @@ class ObjectService
 
 		if($objectEntity->getId()){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
-			$action = 'update';
+			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		}
 		else {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
-			$action = 'create';
+			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
-
-		// Create a log entry
-		$user = \OC::$server->getUserSession()->getUser();
-
-		$log = new AuditTrail();
-		$log->setUuid(Uuid::v4());
-		$log->setObject($objectEntity->getId());
-		$log->setAction($action);
-		$log->setChanged($changed);
-		$log->setUser($user->getUID());
-		$log->setUserName($user->getDisplayName());
-		$log->setSession(session_id());
-		$log->setRequest(\OC::$server->getRequest()->getId());
-		$log->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
-		$log->setCreated(new \DateTime());
-		$this->auditTrailMapper->insert($log);
 
 		return $objectEntity;
 	}
@@ -490,5 +450,24 @@ class ObjectService
 	public function setSchema(int $schema): void
 	{
 		$this->schema = $schema;
+	}
+
+	/**
+	 * Get the audit trail for a specific object
+	 *
+	 * @param int $register The register ID
+	 * @param int $schema The schema ID
+	 * @param string $id The object ID
+	 * @return array The audit trail for the object
+	 */
+	public function getAuditTrail(int $register, int $schema, string $id): array
+	{
+		$filters = [
+			//'register' => $register,
+			//'schema' => $schema,
+			'object' => $id
+		];
+
+		return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
 	}
 }
