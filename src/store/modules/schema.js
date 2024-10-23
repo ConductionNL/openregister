@@ -37,14 +37,14 @@ export const useSchemaStore = defineStore('schema', {
 			return { response, data }
 		},
 		// Function to get a single schema
-		async getSchema(id) {
+		async getSchema(id, options = { setItem: false }) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
 				const data = await response.json()
-				this.setSchemaItem(data)
+				options.setItem && this.setSchemaItem(data)
 				return data
 			} catch (err) {
 				console.error(err)
