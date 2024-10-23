@@ -62,6 +62,8 @@ export const useObjectStore = defineStore('object', {
 				})
 				const data = await response.json()
 				this.setObjectItem(data)
+				this.getAuditTrails(data.id)
+
 				return data
 			} catch (err) {
 				console.error(err)
@@ -138,6 +140,7 @@ export const useObjectStore = defineStore('object', {
 
 			this.refreshObjectList()
 			this.setObjectItem(data)
+			this.getAuditTrails(data.id)
 
 			return { response, data }
 		},

@@ -19,22 +19,22 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<h4>Changes:</h4>
 					<ul>
 						<li v-for="(change, key) in auditTrail.changed" :key="key">
-							<strong>{{ key }}:</strong>
-							<span>Old: {{ change.old }}</span>
-							<span>New: {{ change.new }}</span>
+							<strong>{{ key }}:</strong><br>
+							<span>Old: {{ change.old ?? 'N/A' }}</span><br>
+							<span>New: {{ change.new ?? 'N/A' }}</span>
 						</li>
 					</ul>
 				</div>
 
 				<div class="navigation-buttons">
-					<NcButton @click="navigateTo('schema', auditTrail.schema)">
-						Go to Schema {{ auditTrail.schema }}
+					<NcButton>
+						Go to linked Schema
 					</NcButton>
-					<NcButton @click="navigateTo('register', auditTrail.register)">
-						Go to Register {{ auditTrail.register }}
+					<NcButton>
+						Go to linked Register
 					</NcButton>
-					<NcButton @click="navigateTo('object', auditTrail.object)">
-						Go to Object {{ auditTrail.object }}
+					<NcButton>
+						Go to linked Object
 					</NcButton>
 				</div>
 			</div>
@@ -89,10 +89,14 @@ export default {
 
 .audit-item {
 	border-bottom: 1px solid #ccc;
-	padding: 10px 0;
+	padding: 0 0 10px 0;
+	margin: 0 0 10px 0;
 }
 
 .navigation-buttons {
 	margin-top: 10px;
+	display: flex;
+	gap: 10px;
+	justify-content: center;
 }
 </style>
