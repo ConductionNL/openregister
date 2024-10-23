@@ -52,54 +52,43 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
 						<BTab title="Data" active>
-							<pre class="json-display">
-								{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
-							</pre>
+							<pre class="json-display"><!-- do not remove this comment
+                                -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
+                            </pre>
 						</BTab>
 						<BTab title="Syncs">
 							<div v-if="true || !syncs.length" class="tabPanel">
 								No synchronizations found
 							</div>
 						</BTab>
-						<BTab title="Logs">
-							<div v-if="false && logs.length">
-								<NcListItem v-for="(log, key) in logs"
+						<BTab title="Audit Trails">
+							<div v-if="auditTrails.length">
+								<NcListItem v-for="(auditTrail, key) in auditTrails"
 									:key="key"
-									:name="log.title"
+									:name="new Date(auditTrail.created).toLocaleString()"
 									:bold="false"
+									:details="auditTrail.action"
+									:counter-number="Object.keys(auditTrail.changed).length"
 									:force-display-actions="true">
 									<template #icon>
-										<PostOutline disable-menu
+										<TimelineQuestionOutline disable-menu
 											:size="44" />
 									</template>
 									<template #subname>
-										{{ log.description }}
+										{{ auditTrail.userName }}
+									</template>
+									<template #actions>
+										<NcActionButton @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
+											<template #icon>
+												<Eye :size="20" />
+											</template>
+											View details
+										</NcActionButton>
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="true || !logs.length" class="tabPanel">
-								
-								<table width="100%">							
-									<tr>
-										<th><b>Tijdstip</b></th>
-										<th><b>Gebruiker</b></th>
-										<th><b>Actie</b></th>
-										<th><b>Details</b></th>
-									</tr>
-									<tr v-for="(auditTrail, index) in auditTrails" :key="index">
-										<td>{{ new Date(auditTrail.created).toLocaleString() }}</td>
-										<td>{{ auditTrail.userName }}</td>
-										<td>{{ auditTrail.action }}</td>
-										<td>
-											<NcButton @click="() => { navigationStore.setDialog('viewLog'); objectStore.setAuditTrailItem(auditTrail); }">
-												<template #icon>
-													<TimelineQuestionOutline :size="20" />
-												</template>
-												Bekijk details
-											</NcButton>
-										</td>
-									</tr>
-								</table>
+							<div v-if="!auditTrails.length">
+								No audit trails found
 							</div>
 						</BTab>
 					</BTabs>
@@ -110,12 +99,19 @@ import { objectStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcListItem } from '@nextcloud/vue'
+import {
+	NcActions,
+	NcActionButton,
+	NcListItem,
+} from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
+
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+
 export default {
 	name: 'ObjectDetails',
 	components: {
@@ -131,39 +127,34 @@ export default {
 	},
 	data() {
 		return {
+			currentActiveObject: undefined,
 			auditTrailLoading: false,
 			auditTrails: [],
 		}
 	},
 	mounted() {
-		this.getAuditTrails();
+		if (objectStore.objectItem?.id) {
+			this.currentActiveObject = objectStore.objectItem?.id
+			this.getAuditTrails()
+		}
 	},
-	methods: {		
+	updated() {
+		if (this.currentActiveObject !== objectStore.objectItem?.id) {
+			this.currentActiveObject = objectStore.objectItem?.id
+			this.getAuditTrails()
+		}
+	},
+	methods: {
 		getAuditTrails() {
-			this.syncLoading = true
-			fetch(
-				`/index.php/apps/openregister/api/audit-trails/${objectStore.objectItem.id}`,
-				{
-					method: 'GET',
-				},
-			)
-				.then(
-					(response) => {
-						response.json().then(
-							(data) => {
-								this.auditTrails = data
-								console.log(this.auditTrails)
-								this.auditTrailLoading = false
-							},
-						)
-					},
-				)
-				.catch((err) => {
-					this.error = err
+			this.auditTrailLoading = true
+
+			objectStore.getAuditTrails(objectStore.objectItem.id)
+				.then(({ data }) => {
+					this.auditTrails = data
 					this.auditTrailLoading = false
 				})
 		},
-	}
+	},
 }
 </script>
 
