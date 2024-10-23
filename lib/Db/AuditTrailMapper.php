@@ -8,12 +8,16 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 class AuditTrailMapper extends QBMapper
 {
-	public function __construct(IDBConnection $db)
+	private $objectEntityMapper;
+
+	public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
 	{
 		parent::__construct($db, 'openregister_audit_trails');
+		$this->objectEntityMapper = $objectEntityMapper;
 	}
 
 	public function find(int $id): Log
@@ -56,6 +60,18 @@ class AuditTrailMapper extends QBMapper
         }
 
 		return $this->findEntities(query: $qb);
+	}
+
+	public function findAllUuid(string $idOrUuid, ?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+	{
+		try {
+			$object = $this->objectEntityMapper->find(idOrUuid: $idOrUuid);
+			$objectId = $object->getId();
+			$filters['object'] = $objectId;
+			return $this->findAll($limit, $offset, $filters, $searchConditions, $searchParams);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return [];
+		}
 	}
 
 	public function createFromArray(array $object): Log

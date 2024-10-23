@@ -204,7 +204,7 @@ class ObjectService
 			$object['id'] = $objectEntity->getUuid();
 		}
 
-		$oldObject = $objectEntity->getObject();
+		$oldObject = clone $objectEntity;
 		$objectEntity->setObject($object);
 		
 		// If the object has no uuid, create a new one
@@ -450,5 +450,24 @@ class ObjectService
 	public function setSchema(int $schema): void
 	{
 		$this->schema = $schema;
+	}
+
+	/**
+	 * Get the audit trail for a specific object
+	 *
+	 * @param int $register The register ID
+	 * @param int $schema The schema ID
+	 * @param string $id The object ID
+	 * @return array The audit trail for the object
+	 */
+	public function getAuditTrail(int $register, int $schema, string $id): array
+	{
+		$filters = [
+			//'register' => $register,
+			//'schema' => $schema,
+			'object' => $id
+		];
+
+		return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
 	}
 }
