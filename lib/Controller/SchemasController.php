@@ -2,7 +2,6 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -16,7 +15,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
-use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Uid\Uuid;
 
 class SchemasController extends Controller
 {
@@ -29,7 +28,6 @@ class SchemasController extends Controller
      * @param SchemaMapper $schemaMapper The schema mapper
      * @param DownloadService $downloadService The download service
      * @param UploadService $uploadService The upload service
-     * @param Client $client The client
      */
     public function __construct(
         $appName,
@@ -37,12 +35,10 @@ class SchemasController extends Controller
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
 		private readonly DownloadService $downloadService,
-		private readonly UploadService $uploadService,
-		private Client $client
+		private readonly UploadService $uploadService
     )
     {
         parent::__construct($appName, $request);
-		$this->client = new Client([]);
     }
 
     /**
@@ -179,28 +175,24 @@ class SchemasController extends Controller
     }
 
 	/**
-	 * Transforms a php array (decoded json input) to a php array that can be used to create a new Schema object.
+	 * Updates an existing Schema object using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
 	 *
-	 * @param array $jsonArray A php array (decoded json input) to translate/map.
+	 * @param int|null $id
 	 *
-	 * @return array The transformed array.
+	 * @return JSONResponse
+	 * @throws Exception
+	 * @throws GuzzleException
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 */
-	private function jsonToSchema(array $jsonArray): array
+	public function uploadUpdate(?int $id = null): JSONResponse
 	{
-		$schemaObject = $this->uploadService->mapJsonSchema($jsonArray);
-
-		// @todo Should we do custom mappings here or in the 'abstract' function in UploadService?
-		return array_merge($schemaObject, [
-			'summary' => $jsonArray['description'],
-			'required' => $jsonArray['required'],
-			'properties' => $jsonArray['properties']
-		]);
+		return $this->upload($id);
 	}
 
 	/**
-	 * Creates a new Schema object using a json text/string as input. Uses 'json' from POST body.
-	 * @todo Optionally a .json file can be uploaded using key 'file'.
-	 * @todo move most of this code to a (new?) UploadService and make it even more abstract and reusable?
+	 * Creates a new Schema object or updates an existing one using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
 	 *
 	 * @param int|null $id
 	 *
@@ -218,64 +210,12 @@ class SchemasController extends Controller
 		}
         else {
             $schema = new Schema();
+			$schema->setUuid(Uuid::v4());
         }
 
-		$data = $this->request->getParams();
-		foreach ($data as $key => $value) {
-			if (str_starts_with($key, '_')) {
-				unset($data[$key]);
-			}
-		}
-
-		// Define the allowed keys
-		$allowedKeys = ['file', 'url', 'json'];
-
-		// Find which of the allowed keys are in the array
-		$matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
-
-		// Check if there is exactly one matching key
-		if (count($matchingKeys) === 0) {
-			return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
-		}
-
-		if (empty($data['file']) === false) {
-			// @todo use .json file content from POST as $json
-			//$data['json'] = [];
-		}
-
-		if (empty($data['url']) === false) {
-			// @todo move to function (cleanup)
-			try {
-				$response = $this->client->request('GET', $data['url']);
-			} catch (GuzzleHttp\Exception\BadResponseException $e) {
-				return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$data['url'].' '.$e->getMessage()], statusCode: 400);
-			}
-
-			$responseBody = $response->getBody()->getContents();
-
-			// Use Content-Type header to determine the format
-			$contentType = $response->getHeaderLine('Content-Type');
-			switch ($contentType) {
-				case 'application/json':
-					$phpArray = json_decode(json: $responseBody, associative: true);
-					break;
-				case 'application/yaml':
-					$phpArray = Yaml::parse(input: $responseBody);
-					break;
-				default:
-					// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
-					$phpArray = json_decode(json: $responseBody, associative: true);
-					if ($phpArray === null) {
-						$phpArray = Yaml::parse(input: $responseBody);
-					}
-					break;
-			}
-
-			if ($phpArray === null || $phpArray === false) {
-				return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML'], statusCode: 400);
-			}
-		} else {
-			$phpArray = json_decode($data['json'], associative: true);
+		$phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
 		}
 
 		// Set default title if not provided or empty

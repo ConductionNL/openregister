@@ -12,7 +12,6 @@ class Register extends Entity implements JsonSerializable
 	protected ?string $title = null;
 	protected ?string $version = null;
 	protected ?string $description = null;
-	protected ?string $version = null;
 	protected ?array $schemas = [];
 	protected ?string $source = null;
 	protected ?string $tablePrefix = null;
@@ -74,7 +73,6 @@ class Register extends Entity implements JsonSerializable
 			'title' => $this->title,
 			'version'     => $this->version,
 			'description' => $this->description,
-			'version' => $this->version,
 			'schemas' => $this->schemas,
 			'source' => $this->source,
 			'tablePrefix' => $this->tablePrefix,
