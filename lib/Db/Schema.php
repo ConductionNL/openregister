@@ -8,28 +8,26 @@ use OCP\AppFramework\Db\Entity;
 
 class Schema extends Entity implements JsonSerializable
 {
-	protected ?string $uuid = null;
+	protected ?string $uuid 	   = null;
 	protected ?string $title       = null;
-	protected ?string $version     = null;
 	protected ?string $description = null;
+	protected ?string $version     = null;
 	protected ?string $summary     = null;
 	protected ?array  $required    = [];
 	protected ?array  $properties  = [];
-	protected ?array  $archive     = [];
-	protected ?string $source      = null;
-	protected ?DateTime $updated = null;
-	protected ?DateTime $created = null;
+	protected ?DateTime $updated   = null;
+	protected ?DateTime $created   = null;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'required', type: 'json');
 		$this->addType(fieldName: 'properties', type: 'json');
-		$this->addType(fieldName:'updated', type: 'datetime');
-		$this->addType(fieldName:'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
 	public function getJsonFields(): array
@@ -95,10 +93,10 @@ class Schema extends Entity implements JsonSerializable
 
 		$array = [
 			'id'          => $this->id,
-			'uuid' => $this->uuid,
+			'uuid' 		  => $this->uuid,
 			'title'       => $this->title,
-			'version'     => $this->version,
 			'description' => $this->description,
+			'version'     => $this->version,
 			'summary'     => $this->summary,
 			'required'    => $this->required,
 			'properties'  => $properties,

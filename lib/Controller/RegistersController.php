@@ -2,16 +2,20 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
+use OCP\DB\Exception;
 use OCP\IRequest;
+use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Yaml\Yaml;
 
 class RegistersController extends Controller
 {
@@ -20,14 +24,15 @@ class RegistersController extends Controller
      *
      * @param string $appName The name of the app
      * @param IRequest $request The request object
-     * @param IAppConfig $config The app configuration object
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param RegisterMapper $registerMapper The register mapper
      */
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config,
         private readonly RegisterMapper $registerMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+		private readonly UploadService $uploadService
     )
     {
         parent::__construct($appName, $request);
@@ -35,7 +40,7 @@ class RegistersController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -44,17 +49,17 @@ class RegistersController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all registers
-     * 
+     *
      * This method returns a JSON response containing an array of all registers in the system.
      *
      * @NoAdminRequired
@@ -76,7 +81,7 @@ class RegistersController extends Controller
 
     /**
      * Retrieves a single register by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific register.
      *
      * @NoAdminRequired
@@ -96,7 +101,7 @@ class RegistersController extends Controller
 
     /**
      * Creates a new register
-     * 
+     *
      * This method creates a new register based on POST data.
      *
      * @NoAdminRequired
@@ -113,23 +118,23 @@ class RegistersController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
+
         return new JSONResponse($this->registerMapper->createFromArray(object: $data));
     }
 
     /**
      * Updates an existing register
-     * 
+     *
      * This method updates an existing register based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the register to update
+     * @param int $id The ID of the register to update
      * @return JSONResponse A JSON response containing the updated register details
      */
     public function update(int $id): JSONResponse
@@ -147,17 +152,18 @@ class RegistersController extends Controller
         return new JSONResponse($this->registerMapper->updateFromArray(id: (int) $id, object: $data));
     }
 
-    /**
-     * Deletes a register
-     * 
-     * This method deletes a register based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $id The ID of the register to delete
-     * @return JSONResponse An empty JSON response
-     */
+	/**
+	 * Deletes a register
+	 *
+	 * This method deletes a register based on its ID.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the register to delete
+	 * @return JSONResponse An empty JSON response
+	 * @throws Exception
+	 */
     public function destroy(int $id): JSONResponse
     {
         $this->registerMapper->delete($this->registerMapper->find((int) $id));
@@ -165,21 +171,89 @@ class RegistersController extends Controller
         return new JSONResponse([]);
     }
 
-    /**
-     * Get objects
-     * 
-     * Get all the objects for a register and schema
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $register The ID of the register 
-     * @param string $schema The ID of the schema
-     * 
-     * @return JSONResponse An empty JSON response
-     */
+	/**
+	 * Get objects
+	 *
+	 * Get all the objects for a register and schema
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $register The ID of the register
+	 * @param int $schema The ID of the schema
+	 *
+	 * @return JSONResponse An empty JSON response
+	 */
     public function objects(int $register, int $schema): JSONResponse
     {
         return new JSONResponse($this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema));
     }
+
+	/**
+	 * Updates an existing Register object using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
+	 *
+	 * @param int|null $id
+	 *
+	 * @return JSONResponse
+	 * @throws Exception
+	 * @throws GuzzleException
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function uploadUpdate(?int $id = null): JSONResponse
+	{
+		return $this->upload($id);
+	}
+
+	/**
+	 * Creates a new Register object or updates an existing one using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
+	 *
+	 * @param int|null $id
+	 *
+	 * @return JSONResponse
+	 * @throws GuzzleException
+	 * @throws Exception
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 */
+	public function upload(?int $id = null): JSONResponse
+	{
+        if ($id !== null){
+            $register = $this->registerMapper->find($id);
+		}
+        else {
+            $register = new Register();
+			$register->setUuid(Uuid::v4());
+        }
+
+		$phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		// Validate that the jsonArray is a valid OAS3 object containing schemas
+		if (isset($phpArray['openapi']) === false || isset($phpArray['components']['schemas']) === false) {
+			return new JSONResponse(data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'], statusCode: 400);
+		}
+
+		// Set default title if not provided or empty
+		if (empty($phpArray['info']['title']) === true) {
+			$phpArray['info']['title'] = 'New Register';
+		}
+
+		$register->hydrate($phpArray);
+        if ($register->getId() === null) {
+            $register = $this->registerMapper->insert($register);
+        } else {
+            $register = $this->registerMapper->update($register);
+        }
+
+		// Process and save schemas
+		$register = $this->uploadService->handleRegisterSchemas(register: $register, phpArray: $phpArray);
+
+		return new JSONResponse($register);
+	}
 }

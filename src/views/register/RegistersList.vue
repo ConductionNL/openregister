@@ -22,6 +22,12 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 						</template>
 						Refresh
 					</NcActionButton>
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('uploadRegister')">
+						<template #icon>
+							<Upload :size="20" />
+						</template>
+						Upload Register
+					</NcActionButton>
 					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						<template #icon>
 							<Plus :size="20" />
@@ -83,6 +89,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'RegistersList',
@@ -99,6 +106,7 @@ export default {
 		Plus,
 		Pencil,
 		TrashCanOutline,
+		Upload,
 	},
 	mounted() {
 		registerStore.refreshRegisterList()

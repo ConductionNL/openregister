@@ -27,6 +27,18 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							</template>
 							Add Property
 						</NcActionButton>
+						<NcActionButton @click="navigationStore.setModal('uploadSchema')">
+							<template #icon>
+								<Upload :size="20" />
+							</template>
+							Upload
+						</NcActionButton>
+						<NcActionButton>
+							<template #icon>
+								<Download :size="20" />
+							</template>
+							Download
+						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -114,6 +126,8 @@ import { NcActions, NcActionButton, NcListItem } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
@@ -130,6 +144,12 @@ export default {
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
+		PlusCircleOutline,
+		CircleOutline,
+		Download,
+		Upload,
+		BTabs,
+		BTab,
 	},
 }
 </script>

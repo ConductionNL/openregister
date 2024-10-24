@@ -23,11 +23,12 @@ class Register extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'schemas', type: 'json');
 		$this->addType(fieldName: 'source', type: 'string');
 		$this->addType(fieldName: 'tablePrefix', type: 'string');
-		$this->addType(fieldName:'updated', type: 'datetime');
-		$this->addType(fieldName:'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
 	public function getJsonFields(): array
