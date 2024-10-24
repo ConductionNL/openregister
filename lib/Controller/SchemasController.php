@@ -243,8 +243,6 @@ class SchemasController extends Controller
 			//$data['json'] = [];
 		}
 
-		$phpArray = [];
-
 		if (empty($data['url']) === false) {
 			// @todo move to function (cleanup)
 			try {
@@ -282,7 +280,7 @@ class SchemasController extends Controller
 
 		// Set default title if not provided or empty
 		if (empty($phpArray['title']) === true) {
-			$phpArray['title'] = 'new object';
+			$phpArray['title'] = 'New Schema';
 		}
 
 		$schema->hydrate($phpArray);

@@ -222,7 +222,6 @@ class RegistersController extends Controller
         }
 
 		$data = $this->request->getParams();
-
 		foreach ($data as $key => $value) {
 			if (str_starts_with($key, '_')) {
 				unset($data[$key]);
@@ -277,47 +276,44 @@ class RegistersController extends Controller
 				return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML'], statusCode: 400);
 			}
 		} else {
-            $array = json_decode($data['json'], associative: true);
+			$phpArray = json_decode($data['json'], associative: true);
         }
 
 		// Validate that the jsonArray is a valid OAS3 object containing schemas
-		if (isset($array['openapi']) === false || isset($array['components']['schemas']) === false) {
+		if (isset($phpArray['openapi']) === false || isset($phpArray['components']['schemas']) === false) {
 			return new JSONResponse(data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'], statusCode: 400);
 		}
 
 		// Set default title if not provided or empty
-		if (empty($array['info']['title']) === true) {
-			$jsonArray['info']['title'] = 'New Register';
+		if (empty($phpArray['info']['title']) === true) {
+			$phpArray['info']['title'] = 'New Register';
 		}
 
-		$register->hydrate($array);
-        if ($register->getId() === null){
+		$register->hydrate($phpArray);
+        if ($register->getId() === null) {
             $register = $this->registerMapper->insert($register);
-        }
-        else{
+        } else {
             $register = $this->registerMapper->update($register);
         }
 
 		// Process and save schemas
-		foreach ($array['components']['schemas'] as $schemaName => $schemaData) {
+		foreach ($phpArray['components']['schemas'] as $schemaName => $schemaData) {
             // Check if a schema with this title already exists
             $schema = $this->registerMapper->hasSchemaWithTitle($register->getId(), $schemaName);
             if ($schema === false) {
                 // Check if a schema with this title already exists for this register
-                try{
+                try {
                     $schemas = $this->schemaMapper->findAll(null, null, ['title' => $schemaName]);
-                    if (count($schemas) > 0){
+                    if (count($schemas) > 0) {
                         $schema = $schemas[0];
-                    }
-                    else{
+                    } else {
                         // None found so, Create a new schema
                         $schema = new Schema();
                         $schema->setTitle($schemaName);
                         $schema->setUuid(Uuid::v4());
                         $this->schemaMapper->insert($schema);
                     }
-                }
-                catch(DoesNotExistException $e){
+                } catch (DoesNotExistException $e) {
                     // None found so, Create a new schema
                     $schema = new Schema();
                     $schema->setTitle($schemaName);
@@ -335,7 +331,6 @@ class RegistersController extends Controller
             // Lets save the updated register
             $register = $this->registerMapper->update($register);
         }
-
 
 		return new JSONResponse($register);
 	}

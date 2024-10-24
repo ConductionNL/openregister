@@ -4,20 +4,19 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
-use Symfony\Component\Uid\Uuid;
 
 class ObjectsController extends Controller
 {
-   
+
 
     /**
      * Constructor for the ObjectsController
@@ -31,6 +30,7 @@ class ObjectsController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly ObjectEntityMapper $objectEntityMapper,
+		private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectAuditLogMapper $objectAuditLogMapper
     )
     {
@@ -96,6 +96,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @param string $id The ID of the object to retrieve
+	 *
      * @return JSONResponse A JSON response containing the object details
      */
     public function show(string $id): JSONResponse
@@ -132,24 +133,25 @@ class ObjectsController extends Controller
             unset($data['id']);
 
         }
-        
+
         // save it
         $objectEntity = $this->objectEntityMapper->createFromArray(object: $data);
-		
+
        	$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 
         return new JSONResponse($objectEntity->getObjectArray());
     }
 
     /**
-     * Updates an existing object 
+     * Updates an existing object
      *
      * This method updates an existing object based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the object to update
+     * @param int  $id The ID of the object to update
+	 *
      * @return JSONResponse A JSON response containing the updated object details
      */
     public function update(int $id): JSONResponse
@@ -175,20 +177,22 @@ class ObjectsController extends Controller
         return new JSONResponse($objectEntity->getOBjectArray());
     }
 
-    /**
-     * Deletes an object
-     *
-     * This method deletes an object based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $id The ID of the object to delete
-     * @return JSONResponse An empty JSON response
-     */
+	/**
+	 * Deletes an object
+	 *
+	 * This method deletes an object based on its ID.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the object to delete
+	 *
+	 * @return JSONResponse An empty JSON response
+	 * @throws Exception
+	 */
     public function destroy(int $id): JSONResponse
     {
-        // Create a log entry		
+        // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
         $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
@@ -196,7 +200,24 @@ class ObjectsController extends Controller
 
         return new JSONResponse([]);
     }
-    
+
+	/**
+	 * Retrieves a list of logs for an object
+	 *
+	 * This method returns a JSON response containing the logs for a specific object.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the object to get AuditTrails for
+	 *
+	 * @return JSONResponse An empty JSON response
+	 */
+	public function auditTrails(int $id): JSONResponse
+	{
+		return new JSONResponse($this->auditTrailMapper->findAll(filters: ['object' => $id]));
+	}
+
     /**
      * Retrieves call logs for a object
      *
@@ -206,15 +227,18 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @param int $id The ID of the object to retrieve logs for
+	 *
      * @return JSONResponse A JSON response containing the call logs
      */
     public function contracts(int $id): JSONResponse
     {
        // @todo
+
+		return new JSONResponse(['error' => 'Not yet implemented'], 501);
     }
 
     /**
-     * Retrieves call logs for a object
+     * Retrieves call logs for an object
      *
      * This method returns a JSON response containing the logs for a specific object.
      *
@@ -222,6 +246,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @param int $id The ID of the object to retrieve logs for
+	 *
      * @return JSONResponse A JSON response containing the call logs
      */
     public function logs(int $id): JSONResponse
