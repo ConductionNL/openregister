@@ -1,3 +1,7 @@
+<script setup>
+import { navigationStore } from '../store/store.js'
+</script>
+
 <template>
 	<!-- Placeholder Div -->
 	<div>
@@ -13,6 +17,7 @@
 		<DeleteSource />
 		<EditObject />
 		<DeleteObject />
+		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 	</div>
 </template>
 
@@ -29,6 +34,7 @@ import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditObject from './object/EditObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
+import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 
 export default {
 	name: 'Modals',
@@ -45,6 +51,7 @@ export default {
 		DeleteSource,
 		EditObject,
 		DeleteObject,
+		ViewObjectAuditTrail,
 	},
 }
 </script>
