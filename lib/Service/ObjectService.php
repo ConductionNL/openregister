@@ -12,6 +12,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Exception\ValidationException;
+use Opis\JsonSchema\Validator;
 use Symfony\Component\Uid\Uuid;
 
 class ObjectService
@@ -176,10 +178,10 @@ class ObjectService
 	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
 		// Convert register and schema to their respective objects if they are strings
-		if (is_string($register)) {
+		if (is_string($register) === true || is_int($register) === true) {
 			$register = $this->registerMapper->find($register);
 		}
-		if (is_string($schema)) {
+		if (is_string($schema) === true || is_int($schema) === true) {
 			$schema = $this->schemaMapper->find($schema);
 		}
 
@@ -187,6 +189,11 @@ class ObjectService
 			// Does the object already exist?
 			$objectEntity = $this->objectEntityMapper->findByUuid($this->registerMapper->find($register), $this->schemaMapper->find($schema), $object['id']);
 		}
+
+		$validator = new Validator();
+		$validator->setMaxErrors(100);
+
+		$validationResult = $validator->validate(data: json_decode(json_encode($object)), schema: $schema->getSchemaObject());
 
 		if($objectEntity === null){
 			$objectEntity = new ObjectEntity();
@@ -206,19 +213,23 @@ class ObjectService
 
 		$oldObject = $objectEntity->getObject();
 		$objectEntity->setObject($object);
-		
+
 		// If the object has no uuid, create a new one
 		if (empty($objectEntity->getUuid())) {
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
-		if($objectEntity->getId()){
+		if($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		}
-		else {
+		else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+		}
+
+		if($validationResult->isValid() === false) {
+			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
 		}
 
 		return $objectEntity;

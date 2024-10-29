@@ -5,6 +5,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use stdClass;
 
 class Schema extends Entity implements JsonSerializable
 {
@@ -115,5 +116,31 @@ class Schema extends Entity implements JsonSerializable
 		}
 
 		return $array;
+	}
+
+	public function getSchemaObject(): object
+	{
+		$data = $this->jsonSerialize();
+		$properties = $data['properties'];
+		unset($data['properties'], $data['id'], $data['uuid'], $data['summary'], $data['updated'], $data['created']);
+
+		$data['required'] = [];
+
+		$data['type'] = 'object';
+
+		foreach($properties as $property) {
+			$title = $property['title'];
+			if($property['required'] === true) {
+				$data['required'][] = $title;
+			}
+			unset($property['title'], $property['required']);
+			$data['properties'][$title] = array_filter($property);
+		}
+
+		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
+		$data['$id'] = 'https://example.com/'.$this->getUuid();
+
+
+		return json_decode(json_encode($data));
 	}
 }
