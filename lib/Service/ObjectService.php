@@ -13,7 +13,10 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Formats\BsnFormat;
+use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
+use stdClass;
 use Symfony\Component\Uid\Uuid;
 
 class ObjectService
@@ -166,6 +169,20 @@ class ObjectService
 		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
 	}
 
+	public function validateObject(array $object, ?int $schema = null, object $schemaObject = new stdClass()): ValidationResult
+	{
+		if ($schemaObject === new stdClass() || $schema !== null) {
+			$schemaObject = $this->schemaMapper->find($schema)->getSchemaObject();
+		}
+
+		$validator = new Validator();
+		$validator->setMaxErrors(100);
+		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
+
+		return $validator->validate(data: json_decode(json_encode($object)), schema: $schemaObject);
+
+	}
+
 	/**
 	 * Save an object
 	 *
@@ -177,23 +194,13 @@ class ObjectService
 	 */
 	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
-		// Convert register and schema to their respective objects if they are strings
-		if (is_string($register) === true || is_int($register) === true) {
-			$register = $this->registerMapper->find($register);
-		}
-		if (is_string($schema) === true || is_int($schema) === true) {
-			$schema = $this->schemaMapper->find($schema);
-		}
 
 		if(isset($object['id']) === true) {
 			// Does the object already exist?
 			$objectEntity = $this->objectEntityMapper->findByUuid($this->registerMapper->find($register), $this->schemaMapper->find($schema), $object['id']);
 		}
 
-		$validator = new Validator();
-		$validator->setMaxErrors(100);
-
-		$validationResult = $validator->validate(data: json_decode(json_encode($object)), schema: $schema->getSchemaObject());
+		$validationResult = $this->validateObject(object: $object, schema: $schema);
 
 		if($objectEntity === null){
 			$objectEntity = new ObjectEntity();
@@ -219,11 +226,13 @@ class ObjectService
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
-		if($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)){
+		$schemaObject = $this->schemaMapper->find($schema);
+
+		if($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		}
-		else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
+		else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}

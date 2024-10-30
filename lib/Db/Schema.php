@@ -5,6 +5,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use OCP\DB\Types;
 use stdClass;
 
 class Schema extends Entity implements JsonSerializable
@@ -20,6 +21,7 @@ class Schema extends Entity implements JsonSerializable
 	protected ?string $source      = null;
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
+	protected bool $hardValidation = false;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
@@ -31,6 +33,7 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'properties', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
+		$this->addType(fieldName:'hardValidation', type: Types::BOOLEAN);
 	}
 
 	public function getJsonFields(): array
@@ -103,6 +106,7 @@ class Schema extends Entity implements JsonSerializable
 			'summary'     => $this->summary,
 			'required'    => $this->required,
 			'properties'  => $properties,
+			'hardValidation' => $this->hardValidation,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
 		];
