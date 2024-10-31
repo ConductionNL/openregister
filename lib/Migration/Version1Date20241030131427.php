@@ -40,7 +40,7 @@ class Version1Date20241030131427 extends SimpleMigrationStep {
 
 		// Update the openregister_schemas table
 		$table = $schema->getTable('openregister_schemas');
-		if (!$table->hasColumn('hard_validation')) {
+		if ($table->hasColumn('hard_validation') === false) {
 			$table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: ['notnull' => true])->setDefault(default: false);
 		}
 

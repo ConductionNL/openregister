@@ -134,18 +134,13 @@ class ObjectsController extends Controller
             unset($data['id']);
         }
 
-
+		// Save the object
 		try {
 			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
 		} catch (ValidationException $exception) {
 			$formatter = new ErrorFormatter();
 			return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
 		}
-
-        // save it
-//        $objectEntity = $this->objectEntityMapper->createFromArray(object: $data);
-//
-//       	$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 
         return new JSONResponse($objectEntity->getObjectArray());
     }

@@ -208,14 +208,14 @@ class ObjectService
 	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
 
-		if(isset($object['id']) === true) {
+		if (isset($object['id']) === true) {
 			// Does the object already exist?
 			$objectEntity = $this->objectEntityMapper->findByUuid($this->registerMapper->find($register), $this->schemaMapper->find($schema), $object['id']);
 		}
 
 		$validationResult = $this->validateObject(object: $object, schema: $schema);
 
-		if($objectEntity === null){
+		if ($objectEntity === null){
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register);
 			$objectEntity->setSchema($schema);
@@ -241,7 +241,7 @@ class ObjectService
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
-		if($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		}
@@ -250,7 +250,7 @@ class ObjectService
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
-		if($validationResult->isValid() === false) {
+		if ($validationResult->isValid() === false) {
 			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
 		}
 

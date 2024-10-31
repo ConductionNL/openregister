@@ -138,9 +138,9 @@ class Schema extends Entity implements JsonSerializable
 
 		$data['type'] = 'object';
 
-		foreach($properties as $property) {
+		foreach ($properties as $property) {
 			$title = $property['title'];
-			if($property['required'] === true) {
+			if ($property['required'] === true) {
 				$data['required'][] = $title;
 			}
 			unset($property['title'], $property['required']);

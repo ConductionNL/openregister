@@ -19,13 +19,13 @@ class BsnFormat implements Format
 			pad_type: STR_PAD_LEFT,
 		);
 
-		if(ctype_digit($data) === false) {
+		if (ctype_digit($data) === false) {
 			return false;
 		}
 
 		$control = 0;
 		$reversedIterator = 9;
-		foreach(str_split($data) as $character)
+		foreach (str_split($data) as $character)
 		{
 			$control += $character * (($reversedIterator > 1) ? $reversedIterator : -1);
 			$reversedIterator--;
