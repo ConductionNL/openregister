@@ -56,7 +56,9 @@ class UploadService
 		}
 
 		if (empty($data['url']) === false) {
-			return $this->getJSONfromURL($data['url']);
+			$phpArray = $this->getJSONfromURL($data['url']);
+			$phpArray['source'] = $data['url'];
+			return $phpArray;
 		}
 
 		$phpArray = $data['json'];
