@@ -149,9 +149,11 @@ class SchemasController extends Controller
                 unset($data[$key]);
             }
         }
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
+
         return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
     }
 
@@ -207,8 +209,7 @@ class SchemasController extends Controller
 	{
         if ($id !== null){
             $schema = $this->schemaMapper->find($id);
-		}
-        else {
+		} else {
             $schema = new Schema();
 			$schema->setUuid(Uuid::v4());
         }
