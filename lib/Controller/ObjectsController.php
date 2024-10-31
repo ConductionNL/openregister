@@ -201,7 +201,7 @@ class ObjectsController extends Controller
         $oldObject = $this->objectEntityMapper->find($id);
         $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
-        $this->objectEntityMapper->delete($this->objectEntityMapper->find((int) $id));
+        $this->objectEntityMapper->delete($this->objectEntityMapper->find($id));
 
         return new JSONResponse([]);
     }
