@@ -2,40 +2,31 @@
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\ObjectAuditLog;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
-class SchemaMapper extends QBMapper
+class ObjectAuditLogMapper extends QBMapper
 {
 	public function __construct(IDBConnection $db)
 	{
-		parent::__construct($db, 'openregister_schemas');
+		parent::__construct($db, 'openregister_object_audit_logs');
 	}
 
-	public function find(int $id): Schema
+	public function find(int $id): ObjectAuditLog
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_schemas')
+			->from('openregister_object_audit_logs')
 			->where(
 				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
 
 		return $this->findEntity(query: $qb);
-	}
-	public function findMultiple(array $ids): array
-	{
-		$result = [];
-		foreach($ids as $id) {
-			$result[] = $this->find($id);
-		}
-
-		return $result;
 	}
 
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
@@ -43,7 +34,7 @@ class SchemaMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_schemas')
+			->from('openregister_object_audit_logs')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
@@ -67,20 +58,19 @@ class SchemaMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
-	public function createFromArray(array $object): Schema
+	public function createFromArray(array $object): ObjectAuditLog
 	{
-		$schema = new Schema();
-		$schema->hydrate(object: $object);
-
-		// Set uuid if not provided
-		if ($schema->getUuid() === null) {
-			$schema->setUuid(Uuid::v4());
+		$obj = new ObjectAuditLog();
+		$obj->hydrate($object);
+		// Set uuid
+		if ($obj->getUuid() === null) {
+			$obj->setUuid(Uuid::v4());
 		}
-		
-		return $this->insert(entity: $schema);
+
+		return $this->insert(entity: $obj);
 	}
 
-	public function updateFromArray(int $id, array $object): Schema
+	public function updateFromArray(int $id, array $object): ObjectAuditLog
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
