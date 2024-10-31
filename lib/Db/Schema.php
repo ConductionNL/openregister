@@ -6,6 +6,7 @@ use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
+use OCP\IURLGenerator;
 use stdClass;
 
 class Schema extends Entity implements JsonSerializable
@@ -122,7 +123,12 @@ class Schema extends Entity implements JsonSerializable
 		return $array;
 	}
 
-	public function getSchemaObject(): object
+	/**
+	 * Creates a decoded JSON Schema object from the information in the schema
+	 *
+	 * @return object Decoded JSON Schema object.
+	 */
+	public function getSchemaObject(IURLGenerator $urlGenerator): object
 	{
 		$data = $this->jsonSerialize();
 		$properties = $data['properties'];
@@ -138,11 +144,13 @@ class Schema extends Entity implements JsonSerializable
 				$data['required'][] = $title;
 			}
 			unset($property['title'], $property['required']);
+
+			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
 		}
 
 		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
-		$data['$id'] = 'https://example.com/'.$this->getUuid();
+		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
 
 
 		return json_decode(json_encode($data));

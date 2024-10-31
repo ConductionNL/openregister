@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OC\URLGenerator;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -14,6 +15,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
+use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use stdClass;
@@ -36,7 +38,8 @@ class ObjectService
 		ObjectEntityMapper $objectEntityMapper,
 		RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
-		AuditTrailMapper $auditTrailMapper
+		AuditTrailMapper $auditTrailMapper,
+		private readonly IURLGenerator $urlGenerator,
 	)
 	{
 		$this->objectEntityMapper = $objectEntityMapper;
@@ -169,10 +172,20 @@ class ObjectService
 		return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
 	}
 
+	/**
+	 * Validate an object with a schema.
+	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
+	 *
+	 * @param array    $object		 The object to validate.
+	 * @param int|null $schema		 The id of the schema to validate to.
+	 * @param object   $schemaObject A schema object to validate to.
+	 *
+	 * @return ValidationResult The validation result from opis/json-schema.
+	 */
 	public function validateObject(array $object, ?int $schema = null, object $schemaObject = new stdClass()): ValidationResult
 	{
 		if ($schemaObject === new stdClass() || $schema !== null) {
-			$schemaObject = $this->schemaMapper->find($schema)->getSchemaObject();
+			$schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
 		}
 
 		$validator = new Validator();
