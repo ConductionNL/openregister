@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -13,11 +14,12 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use Opis\JsonSchema\Errors\ErrorFormatter;
 use Symfony\Component\Uid\Uuid;
 
 class ObjectsController extends Controller
 {
-   
+
 
     /**
      * Constructor for the ObjectsController
@@ -117,7 +119,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the created object
      */
-    public function create(): JSONResponse
+    public function create(ObjectService $objectService): JSONResponse
     {
         $data = $this->request->getParams();
         $object = $data['object'];
@@ -130,19 +132,21 @@ class ObjectsController extends Controller
 
         if (isset($data['id'])) {
             unset($data['id']);
-
         }
-        
-        // save it
-        $objectEntity = $this->objectEntityMapper->createFromArray(object: $data);
-		
-       	$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+
+		// Save the object
+		try {
+			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
+		} catch (ValidationException $exception) {
+			$formatter = new ErrorFormatter();
+			return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
+		}
 
         return new JSONResponse($objectEntity->getObjectArray());
     }
 
     /**
-     * Updates an existing object 
+     * Updates an existing object
      *
      * This method updates an existing object based on its ID.
      *
@@ -188,7 +192,7 @@ class ObjectsController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // Create a log entry		
+        // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
         $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
