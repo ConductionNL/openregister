@@ -38,7 +38,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		if (!$schema->hasTable('openregister_sources')) {
+		if ($schema->hasTable('openregister_sources') === false) {
 			$table = $schema->createTable('openregister_sources');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
@@ -56,7 +56,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addIndex(['uuid'], 'register_sources_uuid_index');
 		}
 
-		if (!$schema->hasTable('openregister_schemas')) {
+		if ($schema->hasTable('openregister_schemas') === false) {
 			$table = $schema->createTable('openregister_schemas');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
@@ -74,7 +74,7 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addIndex(['uuid'], 'register_schemas_uuid_index');
 		}
 
-		if (!$schema->hasTable('openregister_registers')) {
+		if ($schema->hasTable('openregister_registers') === false) {
 			$table = $schema->createTable('openregister_registers');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
@@ -93,39 +93,20 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->addIndex(['uuid'], 'registers_uuid_index');
 		}
 
-		if (!$schema->hasTable('openregister_objects')) {
-			$table = $schema->createTable('openregister_objects');	
+		if ($schema->hasTable('openregister_objects') === false) {
+			$table = $schema->createTable('openregister_objects');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
 			$table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('schema', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('object', Types::JSON, ['notnull' => false]);		
+			$table->addColumn('object', Types::JSON, ['notnull' => false]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['uuid'], 'object_entity_uuid');
 			$table->addIndex(['register'], 'object_entity_register');
 			$table->addIndex(['schema'], 'object_entity_schema');
-		}
-
-		if (!$schema->hasTable('openregister_object_audit_logs')) {
-			$table = $schema->createTable('openregister_object_audit_logs');
-			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('schema_id', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('object_id', Types::STRING, ['notnull' => true, 'length' => 255]);
-            $table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-			$table->addColumn('changes', Types::JSON, ['notnull' => false]);
-			$table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
-			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
-
-			$table->setPrimaryKey(['id']);
-			$table->addIndex(['uuid'], 'object_audit_log_uuid');
-			$table->addIndex(['schema_id'], 'object_audit_log_schema_id');
-			$table->addIndex(['object_id'], 'object_audit_log_object_id');
-			$table->addIndex(['user_id'], 'object_audit_log_user_id');
 		}
 
 		return $schema;
