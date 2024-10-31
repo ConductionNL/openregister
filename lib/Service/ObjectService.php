@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OC\URLGenerator;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -12,6 +13,12 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Formats\BsnFormat;
+use OCP\IURLGenerator;
+use Opis\JsonSchema\ValidationResult;
+use Opis\JsonSchema\Validator;
+use stdClass;
 use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
 
@@ -32,7 +39,8 @@ class ObjectService
 		ObjectEntityMapper $objectEntityMapper,
 		RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
-		AuditTrailMapper $auditTrailMapper
+		AuditTrailMapper $auditTrailMapper,
+		private readonly IURLGenerator $urlGenerator,
 	)
 	{
 		$this->objectEntityMapper = $objectEntityMapper;
@@ -166,6 +174,30 @@ class ObjectService
 	}
 
 	/**
+	 * Validate an object with a schema.
+	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
+	 *
+	 * @param array    $object		 The object to validate.
+	 * @param int|null $schema		 The id of the schema to validate to.
+	 * @param object   $schemaObject A schema object to validate to.
+	 *
+	 * @return ValidationResult The validation result from opis/json-schema.
+	 */
+	public function validateObject(array $object, ?int $schema = null, object $schemaObject = new stdClass()): ValidationResult
+	{
+		if ($schemaObject === new stdClass() || $schema !== null) {
+			$schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+		}
+
+		$validator = new Validator();
+		$validator->setMaxErrors(100);
+		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
+
+		return $validator->validate(data: json_decode(json_encode($object)), schema: $schemaObject);
+
+	}
+
+	/**
 	 * Save an object
 	 *
 	 * @param Register|string $register	The register to save the object to.
@@ -176,20 +208,15 @@ class ObjectService
 	 */
 	public function saveObject(int $register, int $schema, array $object): ObjectEntity
 	{
-		// Convert register and schema to their respective objects if they are strings
-		if (is_string($register)) {
-			$register = $this->registerMapper->find($register);
-		}
-		if (is_string($schema)) {
-			$schema = $this->schemaMapper->find($schema);
-		}
 
-		if(isset($object['id']) === true) {
+		if (isset($object['id']) === true) {
 			// Does the object already exist?
 			$objectEntity = $this->objectEntityMapper->findByUuid($this->registerMapper->find($register), $this->schemaMapper->find($schema), $object['id']);
 		}
 
-		if ($objectEntity === null) {
+		$validationResult = $this->validateObject(object: $object, schema: $schema);
+
+		if ($objectEntity === null){
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register);
 			$objectEntity->setSchema($schema);
@@ -207,19 +234,25 @@ class ObjectService
 
 		$oldObject = $objectEntity->getObject();
 		$objectEntity->setObject($object);
-		
+
 		// If the object has no uuid, create a new one
 		if (empty($objectEntity->getUuid())) {
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
-		if($objectEntity->getId()){
+		$schemaObject = $this->schemaMapper->find($schema);
+
+		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		}
-		else {
+		else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+		}
+
+		if ($validationResult->isValid() === false) {
+			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
 		}
 
 		return $objectEntity;
