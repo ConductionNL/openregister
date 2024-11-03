@@ -55,12 +55,12 @@ class MySQLJsonService implements IDatabaseJsonService
 						->andWhere("json_unquote(json_extract(object, :path$filter)) >= (:value{$filter}after)");
 					break;
 				case 'before':
-					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value${filter}before");
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}before");
 					$builder
 						->andWhere("json_unquote(json_extract(object, :path$filter)) <= (:value{$filter}before)");
 					break;
 				default:
-					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value{$filter}");
 					$builder
 						->andWhere("json_unquote(json_extract(object, :path$filter)) IN (:value$filter)");
 					break;

@@ -69,29 +69,30 @@ class Schema extends Entity implements JsonSerializable
 	public function jsonSerialize(): array
 	{
         $properties = [];
-        foreach ($this->properties as $key => $property) {
-            $properties[$key] = $property;
-            if (isset($property['type']) === false) {
-                $properties[$key] = $property;
-                continue;
-            }
-            switch ($property['format']) {
-                case 'string':
-                // For now array as string
-                case 'array':
-                    $properties[$key]['default'] = (string) $property;
-                    break;
-                case 'int':
-                case 'integer':
-                case 'number':
-                    $properties[$key]['default'] = (int) $property;
-                    break;
-                case 'bool':
-                    $properties[$key]['default'] = (bool) $property;
-                    break;
-
-            }
-        }
+		if (isset($this->properties) && $this->properties !== null) {
+			foreach ($this->properties as $key => $property) {
+				$properties[$key] = $property;
+				if (isset($property['type']) === false) {
+					$properties[$key] = $property;
+					continue;
+				}
+				switch ($property['format']) {
+					case 'string':
+					// For now array as string
+					case 'array':
+						$properties[$key]['default'] = (string) $property;
+						break;
+					case 'int':
+					case 'integer':
+					case 'number':
+						$properties[$key]['default'] = (int) $property;
+						break;
+					case 'bool':
+						$properties[$key]['default'] = (bool) $property;
+						break;
+				}
+			}
+		}
 
 		$array = [
 			'id'          => $this->id,
