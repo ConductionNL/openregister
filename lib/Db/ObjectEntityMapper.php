@@ -176,19 +176,21 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = new ObjectEntity();
 		$obj->hydrate(object: $object);
-		if ($obj->getUuid() === null){
+		if ($obj->getUuid() === null) {
 			$obj->setUuid(Uuid::v4());
 		}
-		return $this->insert(entity: $obj);
+		return $this->insert($obj);
 	}
 
 	public function updateFromArray(int $id, array $object): ObjectEntity
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);
-		if ($obj->getUuid() === null){
-			$obj->setUuid(Uuid::v4());
-		}
+
+		// Set or update the version
+		$version = explode('.', $obj->getVersion());
+		$version[2] = (int)$version[2] + 1;
+		$obj->setVersion(implode('.', $version));
 
 		return $this->update($obj);
 	}
