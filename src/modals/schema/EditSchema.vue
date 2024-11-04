@@ -4,17 +4,17 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editSchema'"
-		:name="schemaStore.schemaItem?.id ? 'Edit Schema' : 'Add Schema'"
+		:name="schemaStore.schemaItem?.id && !createAnother ? 'Edit Schema' : 'Add Schema'"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Schema successfully updated</p>
+			<p>Schema successfully {{ schemaStore.schemaItem?.id && !createAnother ? 'updated' : 'created' }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div v-if="!success" class="formContainer">
+		<div v-if="createAnother || !success" class="formContainer">
 			<NcTextField :disabled="loading"
 				label="Title *"
 				:value.sync="schemaItem.title" />
@@ -27,6 +27,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextArea :disabled="loading"
 				label="Summary"
 				:value.sync="schemaItem.summary" />
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="createAnother">
+				Create another
+			</NcCheckboxRadioSwitch>
 		</div>
 
 		<template #actions>
@@ -42,10 +47,10 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				@click="editSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
+					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id && !createAnother" :size="20" />
 					<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
 				</template>
-				{{ schemaStore.schemaItem?.id ? 'Save' : 'Create' }}
+				{{ schemaStore.schemaItem?.id && !createAnother ? 'Save' : 'Create' }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -59,6 +64,7 @@ import {
 	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -74,6 +80,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
+		NcCheckboxRadioSwitch,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -89,6 +96,7 @@ export default {
 				created: '',
 				updated: '',
 			},
+			createAnother: false,
 			success: false,
 			loading: false,
 			error: false,
@@ -137,9 +145,34 @@ export default {
 			schemaStore.saveSchema({
 				...this.schemaItem,
 			}).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && setTimeout(this.closeModal, 2000)
+				if (this.createAnother) {
+					setTimeout(() => {
+						this.initializeSchemaItem()
+						this.schemaItem = {
+							title: '',
+							version: '0.0.1',
+							description: '',
+							summary: '',
+							created: '',
+							updated: '',
+						}
+						this.loading = false
+						schemaStore.setSchemaItem(null)
+
+					}, 500)
+					setTimeout(() => {
+						this.success = null
+					}, 2000)
+					this.success = response.ok
+					this.hasUpdated = false
+					this.error = false
+
+				} else {
+					this.success = response.ok
+					this.error = false
+					response.ok && setTimeout(this.closeModal, 2000)
+				}
+
 			}).catch((error) => {
 				this.success = false
 				this.error = error.message || 'An error occurred while saving the schema'
