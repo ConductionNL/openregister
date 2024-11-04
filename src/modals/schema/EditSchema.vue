@@ -42,13 +42,13 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="!success"
+			<NcButton v-if="createAnother ||!success"
 				:disabled="loading || !schemaItem.title"
 				type="primary"
 				@click="editSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id && !createAnother" :size="20" />
+					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
 					<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
 				</template>
 				{{ schemaStore.schemaItem?.id && !createAnother ? 'Save' : 'Create' }}
