@@ -43,6 +43,9 @@ class Version1Date20241030131427 extends SimpleMigrationStep {
 		if ($table->hasColumn('hard_validation') === false) {
 			$table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: ['notnull' => true])->setDefault(default: false);
 		}
+		if ($table->hasColumn('archive') === false) {
+			$table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
+		}
 
 		if ($schema->hasTable('openregister_object_audit_logs') === false) {
 			$table = $schema->createTable('openregister_object_audit_logs');
