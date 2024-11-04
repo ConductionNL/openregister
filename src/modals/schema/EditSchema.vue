@@ -28,6 +28,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				label="Summary"
 				:value.sync="schemaItem.summary" />
 			<NcCheckboxRadioSwitch
+				v-if="!schemaStore.schemaItem?.id"
 				:disabled="loading"
 				:checked.sync="createAnother">
 				Create another
@@ -146,6 +147,7 @@ export default {
 				...this.schemaItem,
 			}).then(({ response }) => {
 				if (this.createAnother) {
+					schemaStore.setSchemaItem(null)
 					setTimeout(() => {
 						this.initializeSchemaItem()
 						this.schemaItem = {
@@ -157,8 +159,6 @@ export default {
 							updated: '',
 						}
 						this.loading = false
-						schemaStore.setSchemaItem(null)
-
 					}, 500)
 					setTimeout(() => {
 						this.success = null
