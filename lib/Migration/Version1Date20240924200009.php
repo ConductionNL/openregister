@@ -38,11 +38,13 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		if (!$schema->hasTable('openregister_sources')) {
+		if ($schema->hasTable('openregister_sources') === false) {
 			$table = $schema->createTable('openregister_sources');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('title', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
+			$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
 			$table->addColumn('database_url', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 64]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
@@ -51,13 +53,15 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'register_sources_title_index');
 			$table->addIndex(['type'], 'register_sources_type_index');
+			$table->addIndex(['uuid'], 'register_sources_uuid_index');
 		}
 
-		if (!$schema->hasTable('openregister_schemas')) {
+		if ($schema->hasTable('openregister_schemas') === false) {
 			$table = $schema->createTable('openregister_schemas');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
 			$table->addColumn('title', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 64]);
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('summary', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('required', Types::JSON, ['notnull' => false]);
@@ -67,11 +71,14 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'register_schemas_title_index');
+			$table->addIndex(['uuid'], 'register_schemas_uuid_index');
 		}
 
-		if (!$schema->hasTable('openregister_registers')) {
+		if ($schema->hasTable('openregister_registers') === false) {
 			$table = $schema->createTable('openregister_registers');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
 			$table->addColumn('title', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('description', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('schemas', Types::JSON, ['notnull' => false]);
@@ -83,15 +90,17 @@ class Version1Date20240924200009 extends SimpleMigrationStep {
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['title'], 'registers_title_index');
 			$table->addIndex(['source'], 'registers_source_index');
+			$table->addIndex(['uuid'], 'registers_uuid_index');
 		}
 
-		if (!$schema->hasTable('openregister_objects')) {
-			$table = $schema->createTable('openregister_objects');	
+		if ($schema->hasTable('openregister_objects') === false) {
+			$table = $schema->createTable('openregister_objects');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
 			$table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
 			$table->addColumn('schema', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('object', Types::JSON, ['notnull' => false]);		
+			$table->addColumn('object', Types::JSON, ['notnull' => false]);
 			$table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 			$table->setPrimaryKey(['id']);

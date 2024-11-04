@@ -22,6 +22,12 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 						</template>
 						Refresh
 					</NcActionButton>
+						<NcActionButton @click="navigationStore.setModal('uploadSchema')">
+							<template #icon>
+								<Upload :size="20" />
+							</template>
+							Upload
+						</NcActionButton>
 					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<Plus :size="20" />
@@ -90,6 +96,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'SchemasList',
@@ -106,6 +113,8 @@ export default {
 		Plus,
 		Pencil,
 		TrashCanOutline,
+		PlusCircleOutline,
+		Upload,
 	},
 	mounted() {
 		schemaStore.refreshSchemaList()

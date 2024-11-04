@@ -47,6 +47,25 @@ class Version1Date20241030131427 extends SimpleMigrationStep {
 			$table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
 		}
 
+		if ($schema->hasTable('openregister_object_audit_logs') === false) {
+			$table = $schema->createTable('openregister_object_audit_logs');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('schema_id', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('object_id', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('changes', Types::JSON, ['notnull' => false]);
+			$table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
+			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['uuid'], 'object_audit_log_uuid');
+			$table->addIndex(['schema_id'], 'object_audit_log_schema_id');
+			$table->addIndex(['object_id'], 'object_audit_log_object_id');
+			$table->addIndex(['user_id'], 'object_audit_log_user_id');
+		}
+
 		return $schema;
 	}
 

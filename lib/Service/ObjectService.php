@@ -20,6 +20,7 @@ use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
+use GuzzleHttp\Client;
 
 class ObjectService
 {
