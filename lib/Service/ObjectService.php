@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OC\URLGenerator;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -12,7 +13,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Formats\BsnFormat;
+use OCP\IURLGenerator;
+use Opis\JsonSchema\ValidationResult;
+use Opis\JsonSchema\Validator;
+use stdClass;
 use Symfony\Component\Uid\Uuid;
+use GuzzleHttp\Client;
 
 /**
  * Service class for handling object operations

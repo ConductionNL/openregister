@@ -129,9 +129,14 @@ class SchemaMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Schema
 	{
-		$schema = $this->find($id);
-		$schema->hydrate($object);
+		$obj = $this->find($id);
+		$obj->hydrate($object);
 
-		return $this->update($schema);
+		// Set or update the version
+		$version = explode('.', $obj->getVersion());
+		$version[2] = (int)$version[2] + 1;
+		$obj->setVersion(implode('.', $version));
+
+		return $this->update($obj);
 	}
 }

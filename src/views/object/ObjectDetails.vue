@@ -62,8 +62,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab title="Audit Trails">
-							<div v-if="auditTrails.length">
-								<NcListItem v-for="(auditTrail, key) in auditTrails"
+							<div v-if="objectStore.auditTrails.length">
+								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails"
 									:key="key"
 									:name="new Date(auditTrail.created).toLocaleString()"
 									:bold="false"
@@ -87,7 +87,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 							</div>
-							<div v-if="!auditTrails.length">
+							<div v-if="!objectStore.auditTrails.length">
 								No audit trails found
 							</div>
 						</BTab>

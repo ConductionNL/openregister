@@ -33,9 +33,10 @@
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"elasticsearch/elasticsearch": "^v8.14.0",
-		"adbario/php-dot-notation": "^3.3.0",
 		"guzzlehttp/guzzle": "^7.0",
-		"symfony/uid": "^6.4"
+		"opis/json-schema": "^2.3",
+		"symfony/uid": "^6.4",
+		"symfony/yaml": "^6.4"
 	},
 	"require-dev": {
 		"nextcloud/ocp": "dev-stable29",

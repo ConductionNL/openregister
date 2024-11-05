@@ -2,15 +2,20 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use Symfony\Component\Uid\Uuid;
 
 class SchemasController extends Controller
 {
@@ -20,12 +25,17 @@ class SchemasController extends Controller
      * @param string $appName The name of the app
      * @param IRequest $request The request object
      * @param IAppConfig $config The app configuration object
+     * @param SchemaMapper $schemaMapper The schema mapper
+     * @param DownloadService $downloadService The download service
+     * @param UploadService $uploadService The upload service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+		private readonly DownloadService $downloadService,
+		private readonly UploadService $uploadService
     )
     {
         parent::__construct($appName, $request);
@@ -33,7 +43,7 @@ class SchemasController extends Controller
 
     /**
      * Returns the template of the main app's page
-     * 
+     *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
@@ -42,17 +52,17 @@ class SchemasController extends Controller
      * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
-    {           
+    {
         return new TemplateResponse(
             'openconnector',
             'index',
             []
         );
     }
-    
+
     /**
      * Retrieves a list of all schemas
-     * 
+     *
      * This method returns a JSON response containing an array of all schemas in the system.
      *
      * @NoAdminRequired
@@ -69,12 +79,12 @@ class SchemasController extends Controller
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->schemaMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
+        return new JSONResponse(['results' => $this->schemaMapper->findAll(filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
     }
 
     /**
      * Retrieves a single schema by its ID
-     * 
+     *
      * This method returns a JSON response containing the details of a specific schema.
      *
      * @NoAdminRequired
@@ -94,7 +104,7 @@ class SchemasController extends Controller
 
     /**
      * Creates a new schema
-     * 
+     *
      * This method creates a new schema based on POST data.
      *
      * @NoAdminRequired
@@ -111,23 +121,23 @@ class SchemasController extends Controller
                 unset($data[$key]);
             }
         }
-        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        
+
         return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
     }
 
     /**
      * Updates an existing schema
-     * 
+     *
      * This method updates an existing schema based on its ID.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the schema to update
+     * @param int $id The ID of the schema to update
      * @return JSONResponse A JSON response containing the updated schema details
      */
     public function update(int $id): JSONResponse
@@ -139,27 +149,130 @@ class SchemasController extends Controller
                 unset($data[$key]);
             }
         }
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
-        return new JSONResponse($this->schemaMapper->updateFromArray(id: (int) $id, object: $data));
+
+        return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
     }
 
-    /**
-     * Deletes a schema
-     * 
-     * This method deletes a schema based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param string $id The ID of the schema to delete
-     * @return JSONResponse An empty JSON response
-     */
+	/**
+	 * Deletes a schema
+	 *
+	 * This method deletes a schema based on its ID.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the schema to delete
+	 * @return JSONResponse An empty JSON response
+	 * @throws Exception
+	 */
     public function destroy(int $id): JSONResponse
     {
-        $this->schemaMapper->delete($this->schemaMapper->find((int) $id));
+        $this->schemaMapper->delete($this->schemaMapper->find(id: $id));
 
         return new JSONResponse([]);
     }
+
+	/**
+	 * Updates an existing Schema object using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
+	 *
+	 * @param int|null $id
+	 *
+	 * @return JSONResponse
+	 * @throws Exception
+	 * @throws GuzzleException
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function uploadUpdate(?int $id = null): JSONResponse
+	{
+		return $this->upload($id);
+	}
+
+	/**
+	 * Creates a new Schema object or updates an existing one using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
+	 *
+	 * @param int|null $id
+	 *
+	 * @return JSONResponse
+	 * @throws Exception
+	 * @throws GuzzleException
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 */
+	public function upload(?int $id = null): JSONResponse
+	{
+        if ($id !== null){
+            $schema = $this->schemaMapper->find($id);
+		} else {
+            $schema = new Schema();
+			$schema->setUuid(Uuid::v4());
+        }
+
+		$phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		// Set default title if not provided or empty
+		if (empty($phpArray['title']) === true) {
+			$phpArray['title'] = 'New Schema';
+		}
+
+		$schema->hydrate($phpArray);
+        if ($schema->getId() === null) {
+            $schema = $this->schemaMapper->insert($schema);
+        } else {
+            $schema = $this->schemaMapper->update($schema);
+        }
+
+		return new JSONResponse($schema);
+	}
+
+	/**
+	 * Creates and return a json file for a Schema.
+	 * @todo move most of this code to DownloadService and make it even more Abstract using Entity->jsonSerialize instead of Schema->jsonSerialize, etc.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the schema to return json file for
+	 * @return JSONResponse A json Response containing the json
+	 */
+	public function download(int $id): JSONResponse
+	{
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $exception) {
+			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		}
+
+		$contentType = $this->request->getHeader('Content-Type');
+
+		if (empty($contentType) === true) {
+			return new JSONResponse(data: ['error' => 'Request is missing header Content-Type'], statusCode: 400);
+		}
+
+		switch ($contentType) {
+			case 'application/json':
+				$type = 'json';
+				$responseData = [
+					'jsonArray' => $schema->jsonSerialize(),
+					'jsonString' => json_encode($schema->jsonSerialize())
+				];
+				break;
+			default:
+				return new JSONResponse(data: ['error' => "The Content-Type $contentType is not supported."], statusCode: 400);
+		}
+
+		// @todo Create a downloadable json file and return it.
+		$file = $this->downloadService->download(type: $type);
+
+		return new JSONResponse($responseData);
+	}
 }
