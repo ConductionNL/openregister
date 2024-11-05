@@ -18,9 +18,16 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextField :disabled="loading"
 				label="Url"
 				:value.sync="schema.url" />
-			<NcTextArea :disabled="loading"
-				label="Schema"
-				:value.sync="schema.json" />
+
+			<div :class="`codeMirrorContainer ${getTheme()}`">
+				<p>Schema</p>
+				<CodeMirror v-model="schema.json"
+					:basic="true"
+					:dark="getTheme() === 'dark'"
+					:lang="json()"
+					:linter="jsonParseLinter()"
+					placeholder="Enter your schema here..." />
+			</div>
 		</div>
 
 		<template #actions>
@@ -31,7 +38,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="!success"
-				:disabled="loading || !schema"
+				:disabled="loading || !schema || !validateJson(schema.json)"
 				type="primary"
 				@click="uploadSchema()">
 				<template #icon>
@@ -49,13 +56,14 @@ import {
 	NcButton,
 	NcDialog,
 	NcTextField,
-	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 } from '@nextcloud/vue'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import { getTheme } from '../../services/getTheme.js'
+import CodeMirror from 'vue-codemirror6'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 
@@ -64,13 +72,11 @@ export default {
 	components: {
 		NcDialog,
 		NcTextField,
-		NcTextArea,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcSelect,
+		CodeMirror,
 		// Icons
-		ContentSaveOutline,
 		Cancel,
 		Upload,
 	},
@@ -78,7 +84,7 @@ export default {
 		return {
 			schema: {
 				json: '{}',
-				url: null
+				url: '',
 			},
 			success: false,
 			loading: false,
@@ -95,7 +101,7 @@ export default {
 			this.hasUpdated = false
 			this.schema = {
 				json: '{}',
-				url: null
+				url: '',
 			}
 		},
 		async uploadSchema() {
@@ -112,6 +118,39 @@ export default {
 				this.loading = false
 			})
 		},
+		validateJson(json) {
+			try {
+				JSON.parse(json)
+				return true
+			} catch (error) {
+				return false
+			}
+		},
 	},
 }
 </script>
+
+<style scoped>
+.codeMirrorContainer {
+	margin-block-start: 6px;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+</style>
