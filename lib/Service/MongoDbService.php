@@ -7,22 +7,34 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Service class for handling MongoDB operations
+ * 
+ * This class provides methods for interacting with MongoDB through a REST API,
+ * including CRUD operations, aggregations, and search functionality.
+ * It handles configuration, connection management and data transformation.
+ */
 class MongoDbService
 {
-
+    /**
+     * Default base configuration for MongoDB operations
+     * 
+     * @var array
+     */
 	public const BASE_OBJECT = [
-		'database'   => 'objects',
-		'collection' => 'json',
+		'database'   => 'objects', // The default database name
+		'collection' => 'json',    // The default collection name
 	];
 
 	/**
-	 * Gets a guzzle client based upon given config.
+	 * Gets a configured Guzzle HTTP client
 	 *
-	 * @param array $config The config to be used for the client.
-	 * @return Client
+	 * @param array $config Configuration array containing connection details
+	 * @return Client Configured Guzzle client instance
 	 */
 	public function getClient(array $config): Client
 	{
+		// Remove MongoDB specific config before creating Guzzle client
 		$guzzleConf = $config;
 		unset($guzzleConf['mongodbCluster']);
 
@@ -32,21 +44,24 @@ class MongoDbService
 	/**
 	 * Save an object to MongoDB
 	 *
-	 * @param array $data	The data to be saved.
-	 * @param array $config The configuration that should be used by the call.
-	 *
-	 * @return array The resulting object.
-	 * @throws \GuzzleHttp\Exception\GuzzleException
+	 * @param array $data The data object to be saved
+	 * @param array $config MongoDB connection configuration
+	 * @return array The saved object with generated ID
+	 * @throws \GuzzleHttp\Exception\GuzzleException When API request fails
 	 */
 	public function saveObject(array $data, array $config): array
 	{
+		// Initialize HTTP client
 		$client = $this->getClient(config: $config);
 
+		// Prepare object with base configuration and data
 		$object 			      = self::BASE_OBJECT;
 		$object['dataSource']     = $config['mongodbCluster'];
 		$object['document']       = $data;
+		// Generate and set UUID for new document
 		$object['document']['id'] = $object['document']['_id'] = Uuid::v4();
 
+		// Insert document via API
 		$result = $client->post(
 			uri: 'action/insertOne',
 			options: ['json' => $object],
@@ -57,23 +72,23 @@ class MongoDbService
 		);
 		$id = $resultData['insertedId'];
 
+		// Return complete object by finding it with new ID
 		return $this->findObject(filters: ['_id' => $id], config: $config);
 	}
 
 	/**
-	 * Finds objects based upon a set of filters.
+	 * Find multiple objects matching given filters
 	 *
-	 * @param array $filters The filters to compare the object to.
-	 * @param array $config  The configuration that should be used by the call.
-	 *
-	 * @return array The objects found for given filters.
-	 *
-	 * @throws \GuzzleHttp\Exception\GuzzleException
+	 * @param array $filters Query filters to match documents
+	 * @param array $config MongoDB connection configuration
+	 * @return array Array of matching documents
+	 * @throws \GuzzleHttp\Exception\GuzzleException When API request fails
 	 */
 	public function findObjects(array $filters, array $config): array
 	{
 		$client = $this->getClient(config: $config);
 
+		// Prepare query object
 		$object               = self::BASE_OBJECT;
 		$object['dataSource'] = $config['mongodbCluster'];
 		$object['filter']     = $filters;
@@ -83,6 +98,7 @@ class MongoDbService
 		// 	$object['filter'][] = ['$sort' => $sort];
 		// }
 
+		// Execute find query via API
 		$returnData = $client->post(
 			uri: 'action/find',
 			options: ['json' => $object]
@@ -95,23 +111,23 @@ class MongoDbService
 	}
 
 	/**
-	 * Finds an object based upon a set of filters (usually the id)
+	 * Find a single object matching given filters
 	 *
-	 * @param array $filters The filters to compare the objects to.
-	 * @param array $config  The config to be used by the call.
-	 *
-	 * @return array The resulting object.
-	 *
-	 * @throws \GuzzleHttp\Exception\GuzzleException
+	 * @param array $filters Query filters to match document
+	 * @param array $config MongoDB connection configuration
+	 * @return array The matched document
+	 * @throws \GuzzleHttp\Exception\GuzzleException When API request fails
 	 */
 	public function findObject(array $filters, array $config): array
 	{
 		$client = $this->getClient(config: $config);
 
+		// Prepare query object
 		$object               = self::BASE_OBJECT;
 		$object['filter']     = $filters;
 		$object['dataSource'] = $config['mongodbCluster'];
 
+		// Execute findOne query via API
 		$returnData = $client->post(
 			uri: 'action/findOne',
 			options: ['json' => $object]
@@ -125,59 +141,57 @@ class MongoDbService
 		return $result['document'];
 	}
 
-
-
 	/**
-	 * Updates an object in MongoDB
+	 * Update an existing object in MongoDB
 	 *
-	 * @param array $filters The filter to search the object with (id)
-	 * @param array $update  The fields that should be updated.
-	 * @param array $config  The configuration to be used by the call.
-	 *
-	 * @return array The updated object.
-	 *
-	 * @throws \GuzzleHttp\Exception\GuzzleException
+	 * @param array $filters Query filters to match document for update
+	 * @param array $update Update operations to apply
+	 * @param array $config MongoDB connection configuration
+	 * @return array The updated document
+	 * @throws \GuzzleHttp\Exception\GuzzleException When API request fails
 	 */
 	public function updateObject(array $filters, array $update, array $config): array
 	{
 		$client = $this->getClient(config: $config);
 
+		// Convert update data to dot notation for nested updates
 		$dotUpdate = new Dot($update);
 
+		// Prepare update query
 		$object                   = self::BASE_OBJECT;
 		$object['filter']         = $filters;
 		$object['update']['$set'] = $update;
 		$object['upsert']		  = true;
 		$object['dataSource']     = $config['mongodbCluster'];
 
+		// Execute update via API
+		$returnData = $client->post(
+			uri: 'action/updateOne',
+			options: ['json' => $object]
+		);
 
-
-			$returnData = $client->post(
-				uri: 'action/updateOne',
-				options: ['json' => $object]
-			);
-
+		// Return updated document
 		return $this->findObject($filters, $config);
 	}
 
 	/**
-	 * Delete an object according to a filter (id specifically)
+	 * Delete an object from MongoDB
 	 *
-	 * @param array $filters The filters to use.
-	 * @param array $config  The config to be used by the call.
-	 *
-	 * @return array An empty array.
-	 *
-	 * @throws \GuzzleHttp\Exception\GuzzleException
+	 * @param array $filters Query filters to match document for deletion
+	 * @param array $config MongoDB connection configuration
+	 * @return array Empty array on successful deletion
+	 * @throws \GuzzleHttp\Exception\GuzzleException When API request fails
 	 */
 	public function deleteObject(array $filters, array $config): array
 	{
 		$client = $this->getClient(config: $config);
 
+		// Prepare delete query
 		$object                   = self::BASE_OBJECT;
 		$object['filter']         = $filters;
 		$object['dataSource']     = $config['mongodbCluster'];
 
+		// Execute deletion via API
 		$returnData = $client->post(
 			uri: 'action/deleteOne',
 			options: ['json' => $object]
@@ -187,23 +201,25 @@ class MongoDbService
 	}
 
 	/**
-	 * Aggregates objects for search facets.
+	 * Perform aggregation operations on MongoDB collection
 	 *
-	 * @param array $filters  The filters apply to the search request.
-	 * @param array $pipeline The pipeline to use.
-	 * @param array $config   The configuration to use in the call.
-	 * @return array
-	 * @throws \GuzzleHttp\Exception\GuzzleException
+	 * @param array $filters Initial query filters
+	 * @param array $pipeline Aggregation pipeline stages
+	 * @param array $config MongoDB connection configuration
+	 * @return array Aggregation results
+	 * @throws \GuzzleHttp\Exception\GuzzleException When API request fails
 	 */
 	public function aggregateObjects(array $filters, array $pipeline, array $config):array
 	{
 		$client = $this->getClient(config: $config);
 
+		// Prepare aggregation query
 		$object               = self::BASE_OBJECT;
 		$object['filter']     = $filters;
 		$object['pipeline']   = $pipeline;
 		$object['dataSource'] = $config['mongodbCluster'];
 
+		// Execute aggregation via API
 		$returnData = $client->post(
 			uri: 'action/aggregate',
 			options: ['json' => $object]
@@ -213,7 +229,5 @@ class MongoDbService
 			json: $returnData->getBody()->getContents(),
 			associative: true
 		);
-
 	}
-
 }
