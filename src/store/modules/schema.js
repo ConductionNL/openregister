@@ -135,22 +135,22 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error('No schema item to upload')
 			}
 
+			// filter out unwanted properties by mapping it to a new object
+			const newSchemaData = {
+				url: schema?.url || '',
+				json: schema?.json || '',
+			}
+
 			console.log('Uploading schema...')
-			
-			const isNewSchema = !this.schemaItem
-			const endpoint = isNewSchema
-				? '/index.php/apps/openregister/api/schemas/upload'
-				: `/index.php/apps/openregister/api/schemas/upload/${this.schemaItem.id}`
-			const method = isNewSchema ? 'POST' : 'PUT'
 
 			const response = await fetch(
-				endpoint,
+				'/index.php/apps/openregister/api/schemas/upload',
 				{
-					method,
+					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify(schema),
+					body: JSON.stringify(newSchemaData),
 				},
 			)
 
@@ -158,18 +158,14 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error(`HTTP error! status: ${response.status}`)
 			}
 
-			const responseData = await response.json()
+			const data = await response.json()
 
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const entity = new Schema(data)
 
-			const data = new Schema(responseData)
-
-			this.setSchemaItem(data)
+			this.setSchemaItem(entity)
 			this.refreshSchemaList()
 
-			return { response, data }
+			return { response, data, entity }
 
 		},
 		// schema properties
