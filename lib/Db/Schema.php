@@ -72,11 +72,15 @@ class Schema extends Entity implements JsonSerializable
 		return $this;
 	}
 
-
+	/**
+	 * Serializes the schema to an array
+	 *
+	 * @return array
+	 */
 	public function jsonSerialize(): array
 	{
         $properties = [];
-		if (isset($this->properties) && $this->properties !== null) {
+		if (isset($this->properties) === true) {
 			foreach ($this->properties as $key => $property) {
 				$properties[$key] = $property;
 				if (isset($property['type']) === false) {
