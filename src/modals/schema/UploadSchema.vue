@@ -107,7 +107,12 @@ export default {
 		async uploadSchema() {
 			this.loading = true
 
-			schemaStore.uploadSchema(this.schema).then(({ response }) => {
+			const newSchema = {
+				...this.schema,
+				json: JSON.stringify(JSON.parse(this.schema.json)), // create a clean json string
+			}
+
+			schemaStore.uploadSchema(newSchema).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
 				response.ok && setTimeout(this.closeModal, 2000)
@@ -139,6 +144,9 @@ export default {
 	border-radius: 0 !important;
 	border: none !important;
 }
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
 .codeMirrorContainer.light > .vue-codemirror {
 	border: 1px dotted silver;
 }
@@ -152,5 +160,10 @@ export default {
 }
 .codeMirrorContainer.dark :deep(.ͼe) {
 	color: #88c379;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
 }
 </style>
