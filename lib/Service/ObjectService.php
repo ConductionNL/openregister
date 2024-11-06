@@ -232,7 +232,7 @@ class ObjectService
 			$object['id'] = $objectEntity->getUuid();
 		}
 
-		$oldObject = $objectEntity->getObject();
+		$oldObject = $objectEntity;
 		$objectEntity->setObject($object);
 
 		// If the object has no uuid, create a new one
@@ -242,11 +242,10 @@ class ObjectService
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
-		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		if ($objectEntity->getId() !== null && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		}
-		else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+		} elseif ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
