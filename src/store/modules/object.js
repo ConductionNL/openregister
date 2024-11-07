@@ -207,9 +207,7 @@ export const useObjectStore = defineStore('object', {
 				method: 'GET',
 			})
 
-			const data = await response.json()
-
-			this.setAuditTrails(data)
+			const data = (await response.json()).results
 
 			return { response, data }
 		},

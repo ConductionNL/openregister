@@ -156,14 +156,7 @@ export default {
 			registersLoading: false,
 			registers: {},
 			mappingsLoading: false,
-			mappings: {
-				// TODO: remove test data
-				options: [
-					{ label: 'test mapping 1', id: 1 },
-					{ label: 'test mapping 2', id: 2 },
-					{ label: 'test mapping 3', id: 3 },
-				],
-			},
+			mappings: {},
 			success: null,
 			loading: false,
 			error: false,
@@ -184,9 +177,9 @@ export default {
 					this.mappings = {
 						multiple: false,
 						closeOnSelect: true,
-						options: data.map((schema) => ({
-							id: schema.id,
-							label: schema.title,
+						options: data.map((mapping) => ({
+							id: mapping.id,
+							label: mapping.name,
 						})),
 						value: null,
 					}
