@@ -11,6 +11,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * The RegisterMapper class
+ * 
+ * @package OCA\OpenRegister\Db
+ */
 class RegisterMapper extends QBMapper
 {
 	private $schemaMapper;

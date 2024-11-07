@@ -7,42 +7,62 @@ use GuzzleHttp\Promise\Utils;
 use OCP\IURLGenerator;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Service class for handling search functionality
+ * 
+ * This class provides methods for searching objects across multiple sources,
+ * merging results, handling facets/aggregations, and processing search parameters
+ */
 class SearchService
 {
+    /** @var Client HTTP client for making requests */
     public $client;
 
+    /** @var array Default base object configuration */
 	public const BASE_OBJECT = [
 		'database'   => 'objects',
 		'collection' => 'json',
 	];
 
+    /**
+     * Constructor
+     *
+     * @param IURLGenerator $urlGenerator URL generator service
+     */
 	public function __construct(
 		private readonly IURLGenerator $urlGenerator,
 	) {
 		$this->client = new Client();
 	}
 
+    /**
+     * Merges facet counts from two aggregations
+     *
+     * @param array $existingAggregation Original aggregation array
+     * @param array $newAggregation New aggregation array to merge
+     * @return array Merged facet counts
+     */
 	public function mergeFacets(array $existingAggregation, array $newAggregation): array
 	{
 		$results = [];
 		$existingAggregationMapped = [];
 		$newAggregationMapped = [];
 
+        // Map existing aggregation counts by ID
 		foreach ($existingAggregation as $value) {
 			$existingAggregationMapped[$value['_id']] = $value['count'];
 		}
 
-
+        // Merge new aggregation counts, adding to existing where present
 		foreach ($newAggregation as $value) {
 			if (isset ($existingAggregationMapped[$value['_id']]) === true) {
 				$newAggregationMapped[$value['_id']] = $existingAggregationMapped[$value['_id']] + $value['count'];
 			} else {
 				$newAggregationMapped[$value['_id']] = $value['count'];
 			}
-
 		}
 
-
+        // Format results array with merged counts
 		foreach (array_merge(array_diff($existingAggregationMapped, $newAggregationMapped), array_diff($newAggregationMapped, $existingAggregationMapped)) as $key => $value) {
 			$results[] = ['_id' => $key, 'count' => $value];
 		}
@@ -50,13 +70,20 @@ class SearchService
 		return $results;
 	}
 
+    /**
+     * Merges multiple aggregation arrays
+     *
+     * @param array|null $existingAggregations Original aggregations
+     * @param array|null $newAggregations New aggregations to merge
+     * @return array Merged aggregations
+     */
 	private function mergeAggregations(?array $existingAggregations, ?array $newAggregations): array
 	{
 		if ($newAggregations === null) {
 			return [];
 		}
 
-
+        // Merge each aggregation key
 		foreach ($newAggregations as $key => $aggregation) {
 			if (isset($existingAggregations[$key]) === false) {
 				$existingAggregations[$key] = $aggregation;
@@ -67,18 +94,30 @@ class SearchService
 		return $existingAggregations;
 	}
 
+    /**
+     * Comparison function for sorting results by score
+     *
+     * @param array $a First result array
+     * @param array $b Second result array
+     * @return int Comparison result (-1, 0, 1)
+     */
 	public function sortResultArray(array $a, array $b): int
 	{
 		return $a['_score'] <=> $b['_score'];
 	}
 
-
-	/**
-	 *
-	 */
+    /**
+     * Main search function that queries multiple sources and merges results
+     *
+     * @param array $parameters Search parameters and filters
+     * @param array $elasticConfig Elasticsearch configuration
+     * @param array $dbConfig Database configuration
+     * @param array $catalogi List of catalogs to search
+     * @return array Combined search results with facets and pagination info
+     */
 	public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi = []): array
 	{
-
+        // Initialize results arrays
 		$localResults['results'] = [];
 		$localResults['facets'] = [];
 
@@ -86,14 +125,14 @@ class SearchService
 		$limit = isset($parameters['.limit']) === true ? $parameters['.limit'] : 30;
 		$page = isset($parameters['.page']) === true ? $parameters['.page'] : 1;
 
+        // Query elastic if configured
 		if ($elasticConfig['location'] !== '') {
 			$localResults = $this->elasticService->searchObject(filters: $parameters, config: $elasticConfig, totalResults: $totalResults,);
 		}
 
 		$directory = $this->directoryService->listDirectory(limit: 1000);
 
-//		$directory = $this->objectService->findObjects(filters: ['_schema' => 'directory'], config: $dbConfig);
-
+        // Return early if no directory entries
 		if (count($directory) === 0) {
 			$pages   = (int) ceil($totalResults / $limit);
 			return [
@@ -112,7 +151,7 @@ class SearchService
 
 		$searchEndpoints = [];
 
-
+        // Build search requests for each endpoint
 		$promises = [];
 		foreach ($directory as $instance) {
 			if (
@@ -128,15 +167,16 @@ class SearchService
 
 		unset($parameters['.catalogi']);
 
+        // Create async requests for each endpoint
 		foreach ($searchEndpoints as $searchEndpoint => $catalogi) {
 			$parameters['_catalogi'] = $catalogi;
-
-
 			$promises[] = $this->client->getAsync($searchEndpoint, ['query' => $parameters]);
 		}
 
+        // Wait for all requests to complete
 		$responses = Utils::settle($promises)->wait();
 
+        // Process responses and merge results
 		foreach ($responses as $response) {
 			if ($response['state'] === 'fulfilled') {
 				$responseData = json_decode(
@@ -157,6 +197,7 @@ class SearchService
 
 		$pages   = (int) ceil($totalResults / $limit);
 
+        // Return combined results with pagination info
 		return [
 			'results' => $results,
 			'facets' => $aggregations,
@@ -378,7 +419,6 @@ class SearchService
 				value: $value
 			);
 		}
-
 
 		return $vars;
 	}
