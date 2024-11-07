@@ -163,5 +163,19 @@ export const useObjectStore = defineStore('object', {
 
 			return { response, data }
 		},
+		// mappings
+		async getMappings() {
+			const endpoint = '/index.php/apps/openregister/api/objects/mappings'
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+			})
+
+			const data = await response.json()
+
+			this.setAuditTrails(data)
+
+			return { response, data }
+		},
 	},
 })

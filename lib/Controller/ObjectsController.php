@@ -14,11 +14,12 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;           
-use OCP\IAppManager;
+use OCP\App\IAppManager;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Symfony\Component\Uid\Uuid;
+use Psr\Container\ContainerInterface;
 
 class ObjectsController extends Controller
 {
