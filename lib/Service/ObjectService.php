@@ -561,6 +561,8 @@ class ObjectService
     /**
      * Get the audit trail for a specific object
      *
+     * @todo: register and schema parameters are not needed anymore
+     *
      * @param int $register The register ID
      * @param int $schema The schema ID
      * @param string $id The object ID
