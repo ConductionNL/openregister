@@ -8,14 +8,35 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 
+/**
+ * The AuditTrailMapper class
+ * 
+ * @package OCA\OpenRegister\Db
+ */
 class AuditTrailMapper extends QBMapper
 {
-	public function __construct(IDBConnection $db)
+	private $objectEntityMapper;
+
+    /**
+     * Constructor for the AuditTrailMapper
+     *
+     * @param IDBConnection $db The database connection
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     */
+	public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
 	{
 		parent::__construct($db, 'openregister_audit_trails');
+		$this->objectEntityMapper = $objectEntityMapper;
 	}
 
+    /**
+     * Finds an audit trail by id
+     *
+     * @param int $id The id of the audit trail
+     * @return Log The audit trail
+     */
 	public function find(int $id): Log
 	{
 		$qb = $this->db->getQueryBuilder();
@@ -29,6 +50,16 @@ class AuditTrailMapper extends QBMapper
 		return $this->findEntity(query: $qb);
 	}
 
+    /**
+     * Finds all audit trails
+     *
+     * @param int|null $limit The limit of the results
+     * @param int|null $offset The offset of the results
+     * @param array|null $filters The filters to apply
+     * @param array|null $searchConditions The search conditions to apply
+     * @param array|null $searchParams The search parameters to apply
+     * @return array The audit trails
+     */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
 		$qb = $this->db->getQueryBuilder();
@@ -58,6 +89,30 @@ class AuditTrailMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+    /**
+     * Finds all audit trails for a given object
+     *
+     * @param string $idOrUuid The id or uuid of the object
+     * @return array The audit trails
+     */
+	public function findAllUuid(string $idOrUuid, ?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+	{
+		try {
+			$object = $this->objectEntityMapper->find(idOrUuid: $idOrUuid);
+			$objectId = $object->getId();
+			$filters['object'] = $objectId;
+			return $this->findAll($limit, $offset, $filters, $searchConditions, $searchParams);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return [];
+		}
+	}
+
+    /**
+     * Creates an audit trail from an array
+     *
+     * @param array $object The object to create the audit trail from
+     * @return Log The created audit trail
+     */
 	public function createFromArray(array $object): Log
 	{
 		$log = new Log();

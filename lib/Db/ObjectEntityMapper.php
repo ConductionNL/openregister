@@ -14,12 +14,23 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * The ObjectEntityMapper class
+ * 
+ * @package OCA\OpenRegister\Db
+ */
 class ObjectEntityMapper extends QBMapper
 {
 	private IDatabaseJsonService $databaseJsonService;
 
 	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
+	/**
+	 * Constructor for the ObjectEntityMapper
+	 *
+	 * @param IDBConnection $db The database connection
+	 * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
+	 */
 	public function __construct(IDBConnection $db, MySQLJsonService $mySQLJsonService)
 	{
 		parent::__construct($db, 'openregister_objects');
@@ -103,6 +114,13 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+	/**
+	 * Counts all objects
+	 *
+	 * @param array|null $filters The filters to apply
+	 * @param string|null $search The search string to apply
+	 * @return int The number of objects
+	 */
 	public function countAll(?array $filters = [], ?string $search = null): int
 	{
 		$qb = $this->db->getQueryBuilder();
@@ -172,6 +190,12 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+	/**
+	 * Creates an object from an array
+	 *
+	 * @param array $object The object to create
+	 * @return ObjectEntity The created object
+	 */
 	public function createFromArray(array $object): ObjectEntity
 	{
 		$obj = new ObjectEntity();
@@ -182,6 +206,13 @@ class ObjectEntityMapper extends QBMapper
 		return $this->insert($obj);
 	}
 
+	/**
+	 * Updates an object from an array
+	 *
+	 * @param int $id The id of the object to update
+	 * @param array $object The object to update
+	 * @return ObjectEntity The updated object
+	 */
 	public function updateFromArray(int $id, array $object): ObjectEntity
 	{
 		$obj = $this->find($id);
@@ -195,6 +226,13 @@ class ObjectEntityMapper extends QBMapper
 		return $this->update($obj);
 	}
 
+	/**
+	 * Gets the facets for the objects
+	 *
+	 * @param array $filters The filters to apply
+	 * @param string|null $search The search string to apply
+	 * @return array The facets
+	 */
 	public function getFacets(array $filters = [], ?string $search = null)
 	{
 		if(key_exists(key: 'register', array: $filters) === true) {
