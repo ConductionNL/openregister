@@ -4,7 +4,7 @@ import { Schema } from '../../entities/index.js'
 
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
-		schemaItem: false,
+		schemaItem: null,
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
 	}),
@@ -136,7 +136,7 @@ export const useSchemaStore = defineStore('schema', {
 			}
 
 			console.log('Uploading schema...')
-			
+
 			const isNewSchema = !this.schemaItem
 			const endpoint = isNewSchema
 				? '/index.php/apps/openregister/api/schemas/upload'
@@ -171,6 +171,60 @@ export const useSchemaStore = defineStore('schema', {
 
 			return { response, data }
 
+		},
+		async downloadSchema(schema) {
+			if (!schema) {
+				throw new Error('No schema item to download')
+			}
+			if (!(schema instanceof Schema)) {
+				throw new Error('Invalid schema item to download')
+			}
+			if (!schema?.id) {
+				throw new Error('No schema item ID to download')
+			}
+
+			console.log('Downloading schema...')
+
+			const response = await fetch(
+				`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
+				{
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			)
+
+			if (!response.ok) {
+				console.error(response)
+				throw new Error(response.statusText)
+			}
+
+			const data = await response.json()
+
+			// Convert JSON to a prettified string
+			const jsonString = JSON.stringify(data, null, 2)
+
+			// Create a Blob from the JSON string
+			const blob = new Blob([jsonString], { type: 'application/json' })
+
+			// Create a URL for the Blob
+			const url = URL.createObjectURL(blob)
+
+			// Create a temporary anchor element
+			const a = document.createElement('a')
+			a.href = url
+			a.download = `${schema.title}.json`
+
+			// Temporarily add the anchor to the DOM and trigger the download
+			document.body.appendChild(a)
+			a.click()
+
+			// Clean up
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
+
+			return { response }
 		},
 		// schema properties
 		setSchemaPropertyKey(schemaPropertyKey) {

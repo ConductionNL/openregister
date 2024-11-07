@@ -33,7 +33,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton>
+						<NcActionButton @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
 							<template #icon>
 								<Download :size="20" />
 							</template>
@@ -148,8 +148,6 @@ export default {
 		CircleOutline,
 		Download,
 		Upload,
-		BTabs,
-		BTab,
 	},
 }
 </script>
