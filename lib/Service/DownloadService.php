@@ -7,10 +7,12 @@ use InvalidArgumentException;
 use JetBrains\PhpStorm\NoReturn;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IURLGenerator;
 
 class DownloadService
 {
 	public function __construct(
+		private IURLGenerator $urlGenerator,
 		private SchemaMapper $schemaMapper,
 		private RegisterMapper $registerMapper
 	) {}
@@ -39,9 +41,22 @@ class DownloadService
 		$objectArray = $object->jsonSerialize();
 		$filename = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
 
-		if ($accept === 'application/json') {
+		if (str_contains(haystack: $accept, needle: 'application/json') === true) {
+			$url = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()]));
+
+			// @todo: json+ld? str_contains($accept,'json+ld') === true, else:
+			// Json...
+			$objArray['title'] = $objectArray['title'];
+			$objArray['$id'] = $url;
+//			$objArray['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
+			$objArray['$schema'] = 'https://docs.commongateway.nl/schemas/'.ucfirst($objectType).'.schema.json';
+			$objArray['version'] = $objectArray['version'];
+			$objArray['type'] = $objectType;
+			unset($objectArray['title'], $objectArray['version'], $objectArray['id'], $objectArray['uuid']);
+			$objArray = array_merge($objArray, $objectArray);
+
 			// Convert the object data to JSON
-			$jsonData = json_encode($objectArray, JSON_PRETTY_PRINT);
+			$jsonData = json_encode($objArray, JSON_PRETTY_PRINT);
 
 			$this->downloadJson($jsonData, $filename);
 		}

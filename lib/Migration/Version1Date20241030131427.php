@@ -47,12 +47,22 @@ class Version1Date20241030131427 extends SimpleMigrationStep {
 			$table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
 		}
 
-		if ($table->hasColumn('archive') === false) {
-			$table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: null);
-		}
-
 		if ($table->hasColumn('source') === false) {
 			$table->addColumn(name: 'source', typeName: Types::STRING, options: ['notnull' => false])->setDefault(default: '');
+		}
+
+		// Update the openregister_registers table
+		$table = $schema->getTable('openregister_registers');
+		if ($table->hasColumn('source') === true) {
+			$column = $table->getColumn('source');
+			$column->setNotnull(false);
+			$column->setDefault('');
+		}
+
+		if ($table->hasColumn('table_prefix') === true) {
+			$column = $table->getColumn('table_prefix');
+			$column->setNotnull(false);
+			$column->setDefault('');
 		}
 
 		if ($schema->hasTable('openregister_object_audit_logs') === false) {
