@@ -144,42 +144,6 @@ export const useObjectStore = defineStore('object', {
 
 			return { response, data }
 		},
-		// Create or save an object from store
-		async uploadObject(objectItem) {
-			if (!objectItem) {
-				throw new Error('No object item to upload')
-			}
-
-			console.log('Uploading object...')
-
-			const response = await fetch(
-				'/index.php/apps/openregister/api/objects/upload',
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(objectItem),
-				},
-			)
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
-
-			const data = new ObjectEntity(responseData)
-
-			this.setObjectItem(data)
-			this.refreshObjectList()
-
-			return { response, data }
-		},
 		// AUDIT TRAILS
 		async getAuditTrails(id) {
 			if (!id) {

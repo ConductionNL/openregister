@@ -38,7 +38,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object.json)"
+				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object)"
 				type="primary"
 				@click="uploadObject()">
 				<template #icon>
@@ -89,13 +89,9 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 					:loading="mappingsLoading"
 					:disabled="loading || !mappings.options?.length" />
 
-				<NcTextField :disabled="loading"
-					label="Url"
-					:value.sync="object.url" />
-
 				<div :class="`codeMirrorContainer ${getTheme()}`">
 					<p>Object</p>
-					<CodeMirror v-model="object.json"
+					<CodeMirror v-model="object"
 						:basic="true"
 						:dark="getTheme() === 'dark'"
 						:lang="json()"
@@ -147,10 +143,7 @@ export default {
 	},
 	data() {
 		return {
-			object: {
-				json: '{}',
-				url: '',
-			},
+			object: '{}',
 			schemasLoading: false,
 			schemas: {},
 			registersLoading: false,
@@ -241,21 +234,24 @@ export default {
 			this.loading = true
 
 			const newObject = {
-				...this.object,
-				json: JSON.stringify(JSON.parse(this.object.json)), // create a clean json string
+				object: JSON.parse(this.object) || '',
+				register: this.registers.value.id || '',
+				schema: this.schemas.value.id || '',
 				mapping: this.mappings?.value?.id || null,
+				schemas: '',
 			}
 
-			objectStore.uploadObject(newObject).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && setTimeout(this.closeModal, 2000)
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while uploading the object'
-			}).finally(() => {
-				this.loading = false
-			})
+			objectStore.saveObject(newObject)
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok && setTimeout(this.closeModal, 2000)
+				}).catch((error) => {
+					this.success = false
+					this.error = error.message || 'An error occurred while uploading the object'
+				}).finally(() => {
+					this.loading = false
+				})
 		},
 		prettifyJson() {
 			this.object.json = JSON.stringify(JSON.parse(this.object.json), null, 2)

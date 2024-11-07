@@ -132,6 +132,8 @@ class ObjectsController extends Controller
         $data = $this->request->getParams();
         $object = $data['object'];
         $mapping = $data['mapping'] ?? null;
+        $register = $data['register'];
+        $schema = $data['schema'];
 
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
@@ -148,7 +150,10 @@ class ObjectsController extends Controller
 
         if ($mapping !== null && $mappingService !== null) {
             $mapping = $mappingService->getMapping($mapping);
+
             $data = $mappingService->executeMapping($mapping, $object);
+            $data['register'] = $register;
+            $data['schema'] = $schema;
         }
 
 		// Save the object
