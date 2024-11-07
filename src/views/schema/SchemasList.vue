@@ -95,6 +95,7 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 
 <script>
 import { NcListItem, NcActionButton, NcAppContentList, NcTextField, NcLoadingIcon, NcActions } from '@nextcloud/vue'
+import { Schema } from '../../entities/index.js'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -105,7 +106,6 @@ import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 
-import { Schema } from '../../entities/index.js'
 
 export default {
 	name: 'SchemasList',
