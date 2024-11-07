@@ -38,9 +38,9 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !verifyJsonValidity(objectItem.object)"
+				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object.json)"
 				type="primary"
-				@click="editObject()">
+				@click="uploadObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Upload v-if="!loading" :size="20" />
@@ -83,16 +83,32 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 			<!-- STAGE 3 -->
 			<div v-if="registers.value?.id && schemas.value?.id">
+				<NcSelect v-bind="mappings"
+					v-model="mappings.value"
+					input-label="Mappings"
+					:loading="mappingsLoading"
+					:disabled="loading || !mappings.options?.length" />
+
 				<NcTextField :disabled="loading"
 					label="Url"
 					:value.sync="object.url" />
 
-				<NcTextArea :disabled="loading"
-					label="Object"
-					placeholder="{ &quot;key&quot;: &quot;value&quot; }"
-					:value.sync="object.json"
-					:error="!verifyJsonValidity(object.json)"
-					:helper-text="!verifyJsonValidity(object.json) ? 'This is not valid JSON (optional)' : ''" />
+				<div :class="`codeMirrorContainer ${getTheme()}`">
+					<p>Object</p>
+					<CodeMirror v-model="object.json"
+						:basic="true"
+						:dark="getTheme() === 'dark'"
+						:lang="json()"
+						:linter="jsonParseLinter()"
+						placeholder="Enter your object here..." />
+
+					<NcButton class="prettifyButton" @click="prettifyJson">
+						<template #icon>
+							<AutoFix :size="20" />
+						</template>
+						Prettify
+					</NcButton>
+				</div>
 			</div>
 		</div>
 	</NcDialog>
@@ -103,21 +119,24 @@ import {
 	NcButton,
 	NcDialog,
 	NcTextField,
-	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
+import { getTheme } from '../../services/getTheme.js'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 
 export default {
 	name: 'UploadObject',
 	components: {
 		NcDialog,
 		NcTextField,
-		NcTextArea,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -145,7 +164,7 @@ export default {
 					{ label: 'test mapping 3', id: 3 },
 				],
 			},
-			success: false,
+			success: null,
 			loading: false,
 			error: false,
 			hasUpdated: false,
@@ -228,7 +247,13 @@ export default {
 		async uploadObject() {
 			this.loading = true
 
-			objectStore.uploadObject(this.object).then(({ response }) => {
+			const newObject = {
+				...this.object,
+				json: JSON.stringify(JSON.parse(this.object.json)), // create a clean json string
+				mapping: this.mappings?.value?.id || null,
+			}
+
+			objectStore.uploadObject(newObject).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
 				response.ok && setTimeout(this.closeModal, 2000)
@@ -239,6 +264,54 @@ export default {
 				this.loading = false
 			})
 		},
+		prettifyJson() {
+			this.object.json = JSON.stringify(JSON.parse(this.object.json), null, 2)
+		},
+		validateJson(json) {
+			try {
+				JSON.parse(json)
+				return true
+			} catch (error) {
+				return false
+			}
+		},
 	},
 }
 </script>
+
+<style scoped>
+.codeMirrorContainer {
+	margin-block-start: 6px;
+}
+
+.prettifyButton {
+	margin-block-start: 10px;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
+}
+</style>
