@@ -28,6 +28,12 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 					:linter="jsonParseLinter()"
 					placeholder="Enter your schema here..." />
 			</div>
+			<NcButton class="prettifyButton" @click="prettifyJson">
+				<template #icon>
+					<AutoFix :size="20" />
+				</template>
+				Prettify
+			</NcButton>
 		</div>
 
 		<template #actions>
@@ -59,13 +65,13 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-
 import { getTheme } from '../../services/getTheme.js'
-import CodeMirror from 'vue-codemirror6'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 
 export default {
 	name: 'UploadSchema',
@@ -104,6 +110,9 @@ export default {
 				url: '',
 			}
 		},
+		prettifyJson() {
+			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
+		},
 		async uploadSchema() {
 			this.loading = true
 
@@ -138,6 +147,10 @@ export default {
 <style scoped>
 .codeMirrorContainer {
 	margin-block-start: 6px;
+}
+
+.prettifyButton {
+	margin-block-start: 10px;
 }
 
 .codeMirrorContainer :deep(.cm-content) {
