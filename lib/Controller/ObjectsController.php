@@ -13,7 +13,10 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
-use OCP\IRequest;
+use OCP\IRequest;           
+use OCP\IAppManager;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Symfony\Component\Uid\Uuid;
 
@@ -32,6 +35,8 @@ class ObjectsController extends Controller
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
+        private readonly IAppManager $appManager,
+        private readonly ContainerInterface $container,
         private readonly ObjectEntityMapper $objectEntityMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectAuditLogMapper $objectAuditLogMapper
@@ -125,6 +130,7 @@ class ObjectsController extends Controller
     {
         $data = $this->request->getParams();
         $object = $data['object'];
+        $mapping = $data['mapping'] ?? null;
 
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
@@ -134,6 +140,14 @@ class ObjectsController extends Controller
 
         if (isset($data['id'])) {
             unset($data['id']);
+        }
+
+        // If mapping ID is provided, transform the object using the mapping        
+        $mappingService = $this->getOpenConnectorMappingService();
+
+        if ($mapping !== null && $mappingService !== null) {
+            $mapping = $mappingService->getMapping($mapping);
+            $data = $mappingService->executeMapping($mapping, $object);
         }
 
 		// Save the object
@@ -163,6 +177,7 @@ class ObjectsController extends Controller
     {
         $data = $this->request->getParams();
         $object = $data['object'];
+        $mapping = $data['mapping'] ?? null;
 
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
@@ -171,6 +186,14 @@ class ObjectsController extends Controller
         }
         if (isset($data['id'])) {
             unset($data['id']);
+        }
+
+        // If mapping ID is provided, transform the object using the mapping        
+        $mappingService = $this->getOpenConnectorMappingService();
+
+        if ($mapping !== null && $mappingService !== null) {
+            $mapping = $mappingService->getMapping($mapping);
+            $data = $mappingService->executeMapping($mapping, $object);
         }
 
         // save it
@@ -265,4 +288,57 @@ class ObjectsController extends Controller
             return new JSONResponse(['error' => 'Logs not found'], 404);
         }
     }
+
+    
+
+    /**
+     * Retrieves all available mappings
+     * 
+     * This method returns a JSON response containing all available mappings in the system.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse A JSON response containing the list of mappings
+     */
+    public function mappings(): JSONResponse
+    {
+        // Get mapping service, which will return null based on implementation
+        $mappingService = $this->getOpenConnectorMappingService();
+        
+        // Initialize results array
+        $results = [];
+        
+        // If mapping service exists, get all mappings using find() method
+        if ($mappingService !== null) {
+            $results = $mappingService->getMappings();
+        }
+        
+        // Return response with results array and total count
+        return new JSONResponse([
+            'results' => $results,
+            'total' => count($results)
+        ]);
+    }
+
+    	/**
+	 * Attempts to retrieve the OpenRegister service from the container.
+	 *
+	 * @return mixed|null The OpenRegister service if available, null otherwise.
+	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+	 */
+	public function getOpenConnectorMappingService(): ?\OCA\OpenConnector\Service\MappingService
+	{
+		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
+			try {
+				// Attempt to get the OpenRegister service from the container
+				return $this->container->get('OCA\OpenConnector\Service\MappingService');
+			} catch (Exception $e) {
+				// If the service is not available, return null
+				return null;
+			}
+		}
+
+		return null;
+	}
 }
