@@ -311,7 +311,7 @@ class ObjectsController extends Controller
         
         // If mapping service exists, get all mappings using find() method
         if ($mappingService !== null) {
-            $results = $mappingService->find();
+            $results = $mappingService->getMappings();
         }
         
         // Return response with results array and total count
