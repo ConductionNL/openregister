@@ -74,29 +74,32 @@ class AuditTrailMapper extends QBMapper
     /**
      * Creates an audit trail for object changes
      *
-     * @param ObjectEntity|null $old The old state of the object
-     * @param ObjectEntity|null $new The new state of the object
+     * @param ObjectEntity|array|null $old The old state of the object
+     * @param ObjectEntity|array|null $new The new state of the object
      * @return AuditTrail The created audit trail
      */
-    public function createAuditTrail(?ObjectEntity $old = null, ?ObjectEntity $new = null): AuditTrail
+    public function createAuditTrail(ObjectEntity|array|null $old = null, ObjectEntity|array|null $new = null): AuditTrail
     {
+
+        // Initialize arrays for old and new states
+        $oldArray = $old instanceof ObjectEntity ? $old->jsonSerialize() : ($old ?? []);
+        $newArray = $new instanceof ObjectEntity ? $new->jsonSerialize() : ($new ?? []);
+        
         // Determine the action based on the presence of old and new objects
         $action = 'update';
         if ($new === null) {
             $action = 'delete';
-            $objectEntity = $old;
+            $objectEntity = $oldArray;
         } elseif ($old === null) {
             $action = 'create';
-            $objectEntity = $new;
+            $objectEntity = $newArray;
         } else {
-            $objectEntity = $new;
+            $objectEntity = $newArray;
         }
 
         // Initialize an array to store changed fields
         $changed = [];
         if ($action !== 'delete') {
-            $oldArray = $old ? $old->jsonSerialize() : [];
-            $newArray = $new->jsonSerialize();
             
             // Compare old and new values to detect changes
             foreach ($newArray as $key => $value) {
@@ -127,7 +130,7 @@ class AuditTrailMapper extends QBMapper
         // Create and populate a new AuditTrail object
         $auditTrail	= new AuditTrail();
         $auditTrail->setUuid(Uuid::v4());
-        $auditTrail->setObject($objectEntity->getId());
+        $auditTrail->setObject($objectEntity['id']);
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);
         $auditTrail->setUser($user->getUID());
@@ -136,8 +139,8 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setRequest(\OC::$server->getRequest()->getId());
         $auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
         $auditTrail->setCreated(new \DateTime());
-        $auditTrail->setRegister($objectEntity->getRegister());
-        $auditTrail->setSchema($objectEntity->getSchema());
+        $auditTrail->setRegister($objectEntity['register']);
+        $auditTrail->setSchema($objectEntity['schema']);
 
         // Insert the new AuditTrail into the database and return it
 		return $this->insert(entity: $auditTrail);
