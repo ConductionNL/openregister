@@ -4,7 +4,7 @@ import { Schema } from '../../entities/index.js'
 
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
-		schemaItem: false,
+		schemaItem: null,
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
 	}),
@@ -37,14 +37,14 @@ export const useSchemaStore = defineStore('schema', {
 			return { response, data }
 		},
 		// Function to get a single schema
-		async getSchema(id) {
+		async getSchema(id, options = { setItem: false }) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
 				const data = await response.json()
-				this.setSchemaItem(data)
+				options.setItem && this.setSchemaItem(data)
 				return data
 			} catch (err) {
 				console.error(err)
@@ -128,6 +128,103 @@ export const useSchemaStore = defineStore('schema', {
 
 			return { response, data }
 
+		},
+		// Create or save a schema from store
+		async uploadSchema(schema) {
+			if (!schema) {
+				throw new Error('No schema item to upload')
+			}
+
+			console.log('Uploading schema...')
+
+			const isNewSchema = !this.schemaItem
+			const endpoint = isNewSchema
+				? '/index.php/apps/openregister/api/schemas/upload'
+				: `/index.php/apps/openregister/api/schemas/upload/${this.schemaItem.id}`
+			const method = isNewSchema ? 'POST' : 'PUT'
+
+			const response = await fetch(
+				endpoint,
+				{
+					method,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(schema),
+				},
+			)
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+
+			const responseData = await response.json()
+
+			if (!responseData || typeof responseData !== 'object') {
+				throw new Error('Invalid response data')
+			}
+
+			const data = new Schema(responseData)
+
+			this.setSchemaItem(data)
+			this.refreshSchemaList()
+
+			return { response, data }
+
+		},
+		async downloadSchema(schema) {
+			if (!schema) {
+				throw new Error('No schema item to download')
+			}
+			if (!(schema instanceof Schema)) {
+				throw new Error('Invalid schema item to download')
+			}
+			if (!schema?.id) {
+				throw new Error('No schema item ID to download')
+			}
+
+			console.log('Downloading schema...')
+
+			const response = await fetch(
+				`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
+				{
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			)
+
+			if (!response.ok) {
+				console.error(response)
+				throw new Error(response.statusText)
+			}
+
+			const data = await response.json()
+
+			// Convert JSON to a prettified string
+			const jsonString = JSON.stringify(data, null, 2)
+
+			// Create a Blob from the JSON string
+			const blob = new Blob([jsonString], { type: 'application/json' })
+
+			// Create a URL for the Blob
+			const url = URL.createObjectURL(blob)
+
+			// Create a temporary anchor element
+			const a = document.createElement('a')
+			a.href = url
+			a.download = `${schema.title}.json`
+
+			// Temporarily add the anchor to the DOM and trigger the download
+			document.body.appendChild(a)
+			a.click()
+
+			// Clean up
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
+
+			return { response }
 		},
 		// schema properties
 		setSchemaPropertyKey(schemaPropertyKey) {

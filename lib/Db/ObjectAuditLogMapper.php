@@ -2,43 +2,26 @@
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Db\ObjectAuditLog;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * The SourceMapper class
- * 
- * @package OCA\OpenRegister\Db
- */
-class SourceMapper extends QBMapper
+class ObjectAuditLogMapper extends QBMapper
 {
-	/**
-	 * Constructor for the SourceMapper
-	 *
-	 * @param IDBConnection $db The database connection
-	 */
 	public function __construct(IDBConnection $db)
 	{
-		parent::__construct($db, 'openregister_sources');
+		parent::__construct($db, 'openregister_object_audit_logs');
 	}
 
-
-	/**
-	 * Finds a source by id
-	 *
-	 * @param int $id The id of the source
-	 * @return Source The source
-	 */
-	public function find(int $id): Source
+	public function find(int $id): ObjectAuditLog
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_sources')
+			->from('openregister_object_audit_logs')
 			->where(
 				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
@@ -46,22 +29,12 @@ class SourceMapper extends QBMapper
 		return $this->findEntity(query: $qb);
 	}
 
-	/**
-	 * Finds all sources
-	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
-	 * @param array|null $filters The filters to apply
-	 * @param array|null $searchConditions The search conditions to apply
-	 * @param array|null $searchParams The search parameters to apply
-	 * @return array The sources
-	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openregister_sources')
+			->from('openregister_object_audit_logs')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
@@ -85,32 +58,19 @@ class SourceMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
-	/**
-	 * Creates a source from an array
-	 *
-	 * @param array $object The object to create
-	 * @return Source The created source
-	 */
-	public function createFromArray(array $object): Source
+	public function createFromArray(array $object): ObjectAuditLog
 	{
-		$source = new Source();
-		$source->hydrate(object: $object);
-
-		// Set uuid if not provided
-		if ($source->getUuid() === null) {
-			$source->setUuid(Uuid::v4());
+		$obj = new ObjectAuditLog();
+		$obj->hydrate($object);
+		// Set uuid
+		if ($obj->getUuid() === null) {
+			$obj->setUuid(Uuid::v4());
 		}
-		return $this->insert(entity: $source);
+
+		return $this->insert(entity: $obj);
 	}
 
-	/**
-	 * Updates a source from an array
-	 *
-	 * @param int $id The id of the source to update
-	 * @param array $object The object to update
-	 * @return Source The updated source
-	 */
-	public function updateFromArray(int $id, array $object): Source
+	public function updateFromArray(int $id, array $object): ObjectAuditLog
 	{
 		$obj = $this->find($id);
 		$obj->hydrate($object);

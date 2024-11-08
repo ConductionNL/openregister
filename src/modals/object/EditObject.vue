@@ -235,6 +235,7 @@ export default {
 
 			objectStore.saveObject({
 				...this.objectItem,
+				object: JSON.parse(this.objectItem.object),
 				schema: this.schemas?.value?.id || '',
 				register: this.registers?.value?.id || '',
 			}).then(({ response }) => {
