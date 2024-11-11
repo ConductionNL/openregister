@@ -18,9 +18,22 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextField :disabled="loading"
 				label="Url"
 				:value.sync="schema.url" />
-			<NcTextArea :disabled="loading"
-				label="Schema"
-				:value.sync="schema.json" />
+
+			<div :class="`codeMirrorContainer ${getTheme()}`">
+				<p>Schema</p>
+				<CodeMirror v-model="schema.json"
+					:basic="true"
+					:dark="getTheme() === 'dark'"
+					:lang="json()"
+					:linter="jsonParseLinter()"
+					placeholder="Enter your schema here..." />
+			</div>
+			<NcButton class="prettifyButton" @click="prettifyJson">
+				<template #icon>
+					<AutoFix :size="20" />
+				</template>
+				Prettify
+			</NcButton>
 		</div>
 
 		<template #actions>
@@ -31,7 +44,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="!success"
-				:disabled="loading || !schema"
+				:disabled="loading || !schema || !validateJson(schema.json)"
 				type="primary"
 				@click="uploadSchema()">
 				<template #icon>
@@ -49,28 +62,27 @@ import {
 	NcButton,
 	NcDialog,
 	NcTextField,
-	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 } from '@nextcloud/vue'
+import { getTheme } from '../../services/getTheme.js'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 
 export default {
 	name: 'UploadSchema',
 	components: {
 		NcDialog,
 		NcTextField,
-		NcTextArea,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcSelect,
+		CodeMirror,
 		// Icons
-		ContentSaveOutline,
 		Cancel,
 		Upload,
 	},
@@ -78,7 +90,7 @@ export default {
 		return {
 			schema: {
 				json: '{}',
-				url: null
+				url: '',
 			},
 			success: false,
 			loading: false,
@@ -95,13 +107,21 @@ export default {
 			this.hasUpdated = false
 			this.schema = {
 				json: '{}',
-				url: null
+				url: '',
 			}
+		},
+		prettifyJson() {
+			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
 		async uploadSchema() {
 			this.loading = true
 
-			schemaStore.uploadSchema(this.schema).then(({ response }) => {
+			const newSchema = {
+				...this.schema,
+				json: JSON.stringify(JSON.parse(this.schema.json)), // create a clean json string
+			}
+
+			schemaStore.uploadSchema(newSchema).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
 				response.ok && setTimeout(this.closeModal, 2000)
@@ -112,6 +132,51 @@ export default {
 				this.loading = false
 			})
 		},
+		validateJson(json) {
+			try {
+				JSON.parse(json)
+				return true
+			} catch (error) {
+				return false
+			}
+		},
 	},
 }
 </script>
+
+<style scoped>
+.codeMirrorContainer {
+	margin-block-start: 6px;
+}
+
+.prettifyButton {
+	margin-block-start: 10px;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
+}
+</style>

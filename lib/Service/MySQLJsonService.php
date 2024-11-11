@@ -7,7 +7,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
  * Service class for handling MySQL JSON operations
- * 
+ *
  * This class provides methods for querying and filtering JSON data stored in MySQL,
  * including complex filtering, searching, ordering and aggregation functionality.
  */
@@ -23,7 +23,7 @@ class MySQLJsonService implements IDatabaseJsonService
 	public function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
 	{
 		// Loop through each ordering field and direction
-		foreach($order as $item=>$direction) {
+		foreach ($order as $item=>$direction) {
 			// Create parameters for the JSON path and sort direction
 			$builder->createNamedParameter(value: "$.$item", placeHolder: ":path$item");
 			$builder->createNamedParameter(value: $direction, placeHolder: ":direction$item");
@@ -108,7 +108,7 @@ class MySQLJsonService implements IDatabaseJsonService
 	private function getMultipleContains (array $values, string $filter, IQueryBuilder $builder): string
 	{
 		$orString = '';
-		foreach($values as $key=>$value)
+		foreach ($values as $key=>$value)
 		{
 			// Create parameter for each value
 			$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value$filter$key");
@@ -126,7 +126,7 @@ class MySQLJsonService implements IDatabaseJsonService
 	 * - Complex filters (after/before)
 	 * - Array filters
 	 * - Simple equality filters
-	 * 
+	 *
 	 * @param IQueryBuilder $builder The query builder instance
 	 * @param array $filters Array of filters to apply
 	 * @return IQueryBuilder The modified query builder
@@ -136,7 +136,7 @@ class MySQLJsonService implements IDatabaseJsonService
 		// Remove special system fields from filters
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
-		foreach($filters as $filter=>$value) {
+		foreach ($filters as $filter=>$value) {
 			// Create parameter for JSON path
 			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
 
@@ -179,7 +179,7 @@ class MySQLJsonService implements IDatabaseJsonService
 	{
 		$facets = [];
 
-		foreach($fields as $field) {
+		foreach ($fields as $field) {
 			// Create parameter for JSON path
 			$builder->createNamedParameter(value: "$.$field", placeHolder: ":$field");
 
