@@ -8,7 +8,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Wil je <b>{{ registerStore.registerItem.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">

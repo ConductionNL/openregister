@@ -76,6 +76,7 @@ export const useRegisterStore = defineStore('register', {
 				}
 
 				this.refreshRegisterList()
+				this.setRegisterItem(null)
 
 				return { response, data: responseData }
 			} catch (error) {
