@@ -74,15 +74,15 @@ class ObjectService
 	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
 	 *
 	 * @param array    $object		 The object to validate.
-	 * @param int|null $schema		 The id of the schema to validate to.
+	 * @param int|null $schemaId		 The id of the schema to validate to.
 	 * @param object   $schemaObject A schema object to validate to.
 	 *
 	 * @return ValidationResult The validation result from opis/json-schema.
 	 */
-	public function validateObject(array $object, ?int $schema = null, object $schemaObject = new stdClass()): ValidationResult
+	public function validateObject(array $object, ?int $schemaId = null, object $schemaObject = new stdClass()): ValidationResult
 	{
-		if ($schemaObject === new stdClass() || $schema !== null) {
-			$schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+		if ($schemaObject === new stdClass() || $schemaId !== null) {
+			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
 		}
 
 		$validator = new Validator();
@@ -311,7 +311,7 @@ class ObjectService
             );
         }
 
-		$validationResult = $this->validateObject(object: $object, schema: $schema);
+		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if ($objectEntity === null) {
