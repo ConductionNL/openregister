@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
+use OCP\DB\Exception;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
@@ -24,20 +25,20 @@ use GuzzleHttp\Client;
 
 /**
  * Service class for handling object operations
- * 
+ *
  * This service provides methods for CRUD operations on objects, including:
  * - Creating, reading, updating and deleting objects
  * - Finding objects by ID/UUID
  * - Getting audit trails
  * - Extending objects with related data
- * 
+ *
  * @package OCA\OpenRegister\Service
  */
 class ObjectService
 {
     /** @var int The current register ID */
     private int $register;
-    
+
     /** @var int The current schema ID */
     private int $schema;
 
@@ -58,7 +59,8 @@ class ObjectService
         ObjectEntityMapper $objectEntityMapper,
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
-        AuditTrailMapper $auditTrailMapper
+        AuditTrailMapper $auditTrailMapper,
+		private readonly IURLGenerator $urlGenerator
     )
     {
         $this->objectEntityMapper = $objectEntityMapper;
@@ -67,7 +69,31 @@ class ObjectService
         $this->auditTrailMapper = $auditTrailMapper;
     }
 
-    /**
+	/**
+	 * Validate an object with a schema.
+	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
+	 *
+	 * @param array    $object		 The object to validate.
+	 * @param int|null $schemaId		 The id of the schema to validate to.
+	 * @param object   $schemaObject A schema object to validate to.
+	 *
+	 * @return ValidationResult The validation result from opis/json-schema.
+	 */
+	public function validateObject(array $object, ?int $schemaId = null, object $schemaObject = new stdClass()): ValidationResult
+	{
+		if ($schemaObject === new stdClass() || $schemaId !== null) {
+			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
+		}
+
+		$validator = new Validator();
+		$validator->setMaxErrors(100);
+		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
+
+		return $validator->validate(data: json_decode(json_encode($object)), schema: $schemaObject);
+
+	}
+
+	/**
      * Find an object by ID or UUID
      *
      * @param int|string $id The ID or UUID to search for
@@ -123,7 +149,7 @@ class ObjectService
     public function delete(array|\JsonSerializable $object): bool
     {
         // Convert JsonSerializable objects to array
-        if($object instanceof \JsonSerializable === true) {
+        if ($object instanceof \JsonSerializable === true) {
             $object = $object->jsonSerialize();
         }
 
@@ -169,11 +195,11 @@ class ObjectService
     public function count(array $filters = [], ?string $search = null): int
     {
         // Add register and schema filters if set
-        if($this->getSchema() !== null && $this->getRegister() !== null) {
+        if ($this->getSchema() !== null && $this->getRegister() !== null) {
             $filters['register'] = $this->getRegister();
             $filters['schema']   = $this->getSchema();
         }
-        
+
         return $this->objectEntityMapper
             ->countAll(filters: $filters, search: $search);
     }
@@ -187,7 +213,7 @@ class ObjectService
     public function findMultiple(array $ids): array
     {
         $result = [];
-        foreach($ids as $id) {
+        foreach ($ids as $id) {
             $result[] = $this->find($id);
         }
 
@@ -242,7 +268,7 @@ class ObjectService
     public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null): array
     {
         // Set object type and filters if register and schema are provided
-        if($objectType === null && $register !== null && $schema !== null) {
+        if ($objectType === null && $register !== null && $schema !== null) {
             $objectType          = 'objectEntity';
             $filters['register'] = $register;
             $filters['schema']   = $schema;
@@ -255,15 +281,17 @@ class ObjectService
         return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
     }
 
-    /**
-     * Save an object
-     *
-     * @param Register|string $register The register to save the object to.
-     * @param Schema|string $schema The schema to save the object to.
-     * @param array $object The data to be saved.
-     *
-     * @return ObjectEntity The resulting object.
-     */
+	/**
+	 * Save an object
+	 *
+	 * @param int $register The register to save the object to.
+	 * @param int $schema The schema to save the object to.
+	 * @param array $object The data to be saved.
+	 *
+	 * @return ObjectEntity The resulting object.
+	 * @throws ValidationException When the validation fails and returns an error.
+	 * @throws Exception
+	 */
     public function saveObject(int $register, int $schema, array $object): ObjectEntity
     {
         // Convert register and schema to their respective objects if they are strings
@@ -275,16 +303,18 @@ class ObjectService
         }
 
         // Check if object already exists
-        if(isset($object['id']) === true) {
+        if (isset($object['id']) === true) {
             $objectEntity = $this->objectEntityMapper->findByUuid(
-                $this->registerMapper->find($register), 
-                $this->schemaMapper->find($schema), 
+                $this->registerMapper->find($register),
+                $this->schemaMapper->find($schema),
                 $object['id']
             );
         }
 
+		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+
         // Create new entity if none exists
-        if($objectEntity === null){
+        if ($objectEntity === null) {
             $objectEntity = new ObjectEntity();
             $objectEntity->setRegister($register);
             $objectEntity->setSchema($schema);
@@ -301,21 +331,26 @@ class ObjectService
         // Store old version for audit trail
         $oldObject = clone $objectEntity;
         $objectEntity->setObject($object);
-        
+
         // Ensure UUID exists
         if (empty($objectEntity->getUuid())) {
             $objectEntity->setUuid(Uuid::v4());
         }
 
-        // Update or insert based on whether ID exists
-        if($objectEntity->getId()){
-            $objectEntity = $this->objectEntityMapper->update($objectEntity);
-            $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-        }
-        else {
-            $objectEntity = $this->objectEntityMapper->insert($objectEntity);
-            $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
-        }
+		$schemaObject = $this->schemaMapper->find($schema);
+
+		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
+		}
+		else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
+			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+		}
+
+		if ($validationResult->isValid() === false) {
+			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
+		}
 
         return $objectEntity;
     }
@@ -378,7 +413,7 @@ class ObjectService
     public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null)
     {
         // Return self if register and schema provided
-        if($register !== null && $schema !== null) {
+        if ($register !== null && $schema !== null) {
             $this->setSchema($schema);
             $this->setRegister($register);
             return $this;
@@ -443,7 +478,7 @@ class ObjectService
     public function extendEntity(array $entity, array $extend): array
     {
         // Convert entity to array if needed
-        if(is_array($entity)) {
+        if (is_array($entity)) {
             $result = $entity;
         } else {
             $result = $entity->jsonSerialize();
@@ -509,7 +544,7 @@ class ObjectService
 
         // Extend with schemas
         $extend = ['schemas'];
-        if(empty($extend) === false) {
+        if (empty($extend) === false) {
             $registers = array_map(function($object) use ($extend) {
                 return $this->extendEntity(entity: $object, extend: $extend);
             }, $registers);
