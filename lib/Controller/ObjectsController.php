@@ -111,16 +111,17 @@ class ObjectsController extends Controller
         }
     }
 
-    /**
-     * Creates a new object
-     *
-     * This method creates a new object based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created object
-     */
+	/**
+	 * Creates a new object
+	 *
+	 * This method creates a new object based on POST data.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse A JSON response containing the created object
+	 * @throws Exception
+	 */
     public function create(ObjectService $objectService): JSONResponse
     {
         $data = $this->request->getParams();
