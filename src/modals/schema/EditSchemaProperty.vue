@@ -329,6 +329,7 @@ export default {
 			success: null,
 			error: false,
 			hasUpdated: false,
+			closeModalTimeout: null,
 		}
 	},
 	computed: {
@@ -388,6 +389,7 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 			schemaStore.setSchemaPropertyKey(null)
+			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.hasUpdated = false
 			this.properties = {
@@ -444,7 +446,7 @@ export default {
 				.then(({ response }) => {
 					this.success = response.ok
 
-					setTimeout(this.closeModal, 2000)
+					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				}).catch((err) => {
 					this.success = false
 					this.error = err

@@ -101,6 +101,7 @@ export default {
 			loading: false,
 			error: false,
 			hasUpdated: false,
+			closeModalTimeout: null,
 		}
 	},
 	mounted() {
@@ -125,6 +126,7 @@ export default {
 		},
 		closeModal() {
 			navigationStore.setModal(false)
+			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.loading = false
 			this.error = false
@@ -147,7 +149,7 @@ export default {
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
-				response.ok && setTimeout(this.closeModal, 2000)
+				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
 			}).catch((error) => {
 				this.success = false
 				this.error = error.message || 'An error occurred while saving the source'
