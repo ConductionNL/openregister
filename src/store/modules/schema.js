@@ -77,6 +77,7 @@ export const useSchemaStore = defineStore('schema', {
 				}
 
 				await this.refreshSchemaList()
+				this.setSchemaItem(null)
 
 				return { response, data: responseData }
 			} catch (error) {
