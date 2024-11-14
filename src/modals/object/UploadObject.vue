@@ -114,7 +114,6 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
@@ -132,7 +131,6 @@ export default {
 	name: 'UploadObject',
 	components: {
 		NcDialog,
-		NcTextField,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -254,7 +252,7 @@ export default {
 				})
 		},
 		prettifyJson() {
-			this.object.json = JSON.stringify(JSON.parse(this.object.json), null, 2)
+			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
 		validateJson(json) {
 			try {
