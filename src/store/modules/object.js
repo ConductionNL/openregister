@@ -150,7 +150,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get audit trails for')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/audit-trails/${id}`
+			const endpoint = `/index.php/apps/openregister/api/objects/audit-trails/${id}`
 
 			const response = await fetch(endpoint, {
 				method: 'GET',
