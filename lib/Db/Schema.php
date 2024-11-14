@@ -79,27 +79,36 @@ class Schema extends Entity implements JsonSerializable
 	 */
 	public function jsonSerialize(): array
 	{
+		$required = $this->required ?? [];
         $properties = [];
 		if (isset($this->properties) === true) {
 			foreach ($this->properties as $key => $property) {
-				$properties[$key] = $property;
+				$title = $property['title'] ?? $key;
+				if ($property['required'] === true && in_array($title, $required) === false) {
+					$required[] = $title;
+				}
+				unset($property['required']);
+//				unset($property['title'], $property['required']);
+
+				// Remove empty fields with array_filter().
+				$properties[$title] = array_filter($property);
+
 				if (isset($property['type']) === false) {
-					$properties[$key] = $property;
 					continue;
 				}
 				switch ($property['format']) {
 					case 'string':
 					// For now array as string
 					case 'array':
-						$properties[$key]['default'] = (string) $property;
+						$properties[$title]['default'] = (string) $property;
 						break;
 					case 'int':
 					case 'integer':
 					case 'number':
-						$properties[$key]['default'] = (int) $property;
+						$properties[$title]['default'] = (int) $property;
 						break;
 					case 'bool':
-						$properties[$key]['default'] = (bool) $property;
+						$properties[$title]['default'] = (bool) $property;
 						break;
 				}
 			}
@@ -112,7 +121,7 @@ class Schema extends Entity implements JsonSerializable
 			'description' => $this->description,
 			'version'     => $this->version,
 			'summary'     => $this->summary,
-			'required'    => $this->required,
+			'required'    => $required,
 			'properties'  => $properties,
 			'archive'	  => $this->archive,
 			'source'	  => $this->source,
@@ -144,16 +153,11 @@ class Schema extends Entity implements JsonSerializable
 		unset($data['properties'], $data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
 			$data['updated'], $data['created']);
 
-		$data['required'] = [];
-
 		$data['type'] = 'object';
 
-		foreach ($properties as $property) {
-			$title = $property['title'];
-			if ($property['required'] === true) {
-				$data['required'][] = $title;
-			}
-			unset($property['title'], $property['required']);
+		foreach ($properties as $key => $property) {
+			$title = $property['title'] ?? $key;
+			unset($property['title']);
 
 			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
@@ -161,7 +165,6 @@ class Schema extends Entity implements JsonSerializable
 
 		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
 		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
-
 
 		return json_decode(json_encode($data));
 	}

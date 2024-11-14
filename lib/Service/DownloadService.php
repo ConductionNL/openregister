@@ -44,11 +44,8 @@ class DownloadService
 		if (str_contains(haystack: $accept, needle: 'application/json') === true) {
 			$url = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()]));
 
-			// @todo: json+ld? str_contains($accept,'json+ld') === true, else:
-			// Json...
 			$objArray['title'] = $objectArray['title'];
 			$objArray['$id'] = $url;
-//			$objArray['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
 			$objArray['$schema'] = 'https://docs.commongateway.nl/schemas/'.ucfirst($objectType).'.schema.json';
 			$objArray['version'] = $objectArray['version'];
 			$objArray['type'] = $objectType;

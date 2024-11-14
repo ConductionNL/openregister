@@ -13,7 +13,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * The RegisterMapper class
- * 
+ *
  * @package OCA\OpenRegister\Db
  */
 class RegisterMapper extends QBMapper
@@ -128,9 +128,11 @@ class RegisterMapper extends QBMapper
 		$obj->hydrate($object);
 
 		// Update the version
-		$version = explode('.', $obj->getVersion());
-		$version[2] = (int)$version[2] + 1;
-		$obj->setVersion(implode('.', $version));
+		if (isset($object['version']) === false) {
+			$version = explode('.', $obj->getVersion());
+			$version[2] = (int)$version[2] + 1;
+			$obj->setVersion(implode('.', $version));
+		}
 
 		// Update the register and return it
 		return $this->update($obj);
