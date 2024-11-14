@@ -11,7 +11,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * The SchemaMapper class
- * 
+ *
  * @package OCA\OpenRegister\Db
  */
 class SchemaMapper extends QBMapper
@@ -54,7 +54,7 @@ class SchemaMapper extends QBMapper
 	public function findMultiple(array $ids): array
 	{
 		$result = [];
-		foreach($ids as $id) {
+		foreach ($ids as $id) {
 			$result[] = $this->find($id);
 		}
 
@@ -116,7 +116,7 @@ class SchemaMapper extends QBMapper
 		if ($schema->getUuid() === null) {
 			$schema->setUuid(Uuid::v4());
 		}
-		
+
 		return $this->insert(entity: $schema);
 	}
 

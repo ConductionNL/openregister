@@ -79,6 +79,7 @@ export const useSourceStore = defineStore(
 				}
 
 				this.refreshSourceList()
+				this.setSourceItem(null)
 
 				return { response, data: responseData }
 

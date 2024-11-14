@@ -8,7 +8,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Do you want to permanently delete <b>{{ sourceStore.sourceItem.title }}</b>? This action cannot be undone.
+			Do you want to permanently delete <b>{{ sourceStore.sourceItem?.title }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -67,11 +67,13 @@ export default {
 			success: false,
 			loading: false,
 			error: false,
+			closeModalTimeout: null,
 		}
 	},
 	methods: {
 		closeDialog() {
 			navigationStore.setDialog(false)
+			clearTimeout(this.closeModalTimeout)
 			this.success = false
 			this.loading = false
 			this.error = false
@@ -84,7 +86,7 @@ export default {
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
-				response.ok && setTimeout(this.closeDialog, 2000)
+				response.ok && (this.closeModalTimeout = setTimeout(this.closeDialog, 2000))
 			}).catch((error) => {
 				this.success = false
 				this.error = error.message || 'An error occurred while deleting the source'

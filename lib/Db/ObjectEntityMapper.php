@@ -16,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * The ObjectEntityMapper class
- * 
+ *
  * @package OCA\OpenRegister\Db
  */
 class ObjectEntityMapper extends QBMapper
@@ -35,7 +35,7 @@ class ObjectEntityMapper extends QBMapper
 	{
 		parent::__construct($db, 'openregister_objects');
 
-		if($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
+		if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
 			$this->databaseJsonService = $mySQLJsonService;
 		}
 	}
@@ -235,15 +235,15 @@ class ObjectEntityMapper extends QBMapper
 	 */
 	public function getFacets(array $filters = [], ?string $search = null)
 	{
-		if(key_exists(key: 'register', array: $filters) === true) {
+		if (key_exists(key: 'register', array: $filters) === true) {
 			$register = $filters['register'];
 		}
-		if(key_exists(key: 'schema', array: $filters) === true) {
+		if (key_exists(key: 'schema', array: $filters) === true) {
 			$schema = $filters['schema'];
 		}
 
 		$fields = [];
-		if(isset($filters['_queries'])) {
+		if (isset($filters['_queries'])) {
 			$fields = $filters['_queries'];
 		}
 

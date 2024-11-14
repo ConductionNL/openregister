@@ -24,7 +24,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</p>
 
 		<template #actions>
-			<NcButton :disabled="loading" icon="" @click="navigationStore.setModal(null)">
+			<NcButton :disabled="loading" icon="" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -68,9 +68,17 @@ export default {
 			loading: false,
 			success: null,
 			error: false,
+			closeModalTimeout: null,
 		}
 	},
 	methods: {
+		closeModal() {
+			navigationStore.setModal(null)
+			schemaStore.setSchemaPropertyKey(null)
+			clearTimeout(this.closeModalTimeout)
+			this.success = null
+			this.error = false
+		},
 		DeleteProperty() {
 			this.loading = true
 
@@ -88,12 +96,7 @@ export default {
 					this.success = response.ok
 
 					// Wait for the user to read the feedback then close the modal
-					const self = this
-					setTimeout(function() {
-						self.success = null
-						navigationStore.setModal(null)
-						schemaStore.setSchemaPropertyKey(null)
-					}, 2000)
+					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				})
 				.catch((err) => {
 					this.error = err
