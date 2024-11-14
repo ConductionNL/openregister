@@ -152,7 +152,7 @@ class ObjectsController extends Controller
         if ($mapping !== null && $mappingService !== null) {
             $mapping = $mappingService->getMapping($mapping);
 
-            $data = $mappingService->executeMapping($mapping, $object);
+            $object = $mappingService->executeMapping($mapping, $object);
             $data['register'] = $register;
             $data['schema'] = $schema;
         }
