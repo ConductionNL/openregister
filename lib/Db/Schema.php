@@ -87,8 +87,7 @@ class Schema extends Entity implements JsonSerializable
 				if ($property['required'] === true && in_array($title, $required) === false) {
 					$required[] = $title;
 				}
-				unset($property['required']);
-//				unset($property['title'], $property['required']);
+				unset($property['title'], $property['required']);
 
 				// Remove empty fields with array_filter().
 				$properties[$title] = array_filter($property);
@@ -149,20 +148,12 @@ class Schema extends Entity implements JsonSerializable
 	public function getSchemaObject(IURLGenerator $urlGenerator): object
 	{
 		$data = $this->jsonSerialize();
-		$properties = $data['properties'];
-		unset($data['properties'], $data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
+		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
 			$data['updated'], $data['created']);
 
 		$data['type'] = 'object';
 
-		foreach ($properties as $key => $property) {
-			$title = $property['title'] ?? $key;
-			unset($property['title']);
-
-			// Remove empty fields with array_filter().
-			$data['properties'][$title] = array_filter($property);
-		}
-
+		// Validator needs this specific $schema
 		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
 		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
 
