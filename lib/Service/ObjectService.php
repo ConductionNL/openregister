@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use InvalidArgumentException;
 use OC\URLGenerator;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
@@ -408,10 +409,10 @@ class ObjectService
      * @param int|null $register Optional register ID
      * @param int|null $schema Optional schema ID
      * @return mixed The appropriate mapper
-     * @throws \InvalidArgumentException If unknown object type
+     * @throws InvalidArgumentException If unknown object type
      */
-    public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null)
-    {
+    public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null): mixed
+	{
         // Return self if register and schema provided
         if ($register !== null && $schema !== null) {
             $this->setSchema($schema);
@@ -428,7 +429,7 @@ class ObjectService
             case 'objectEntity':
                 return $this->objectEntityMapper;
             default:
-                throw new \InvalidArgumentException("Unknown object type: $objectType");
+                throw new InvalidArgumentException("Unknown object type: $objectType");
         }
     }
 
@@ -438,7 +439,7 @@ class ObjectService
      * @param string $objectType The type of objects to retrieve
      * @param array $ids The ids of the objects to retrieve
      * @return array The retrieved objects
-     * @throws \InvalidArgumentException If unknown object type
+     * @throws InvalidArgumentException If unknown object type
      */
     public function getMultipleObjects(string $objectType, array $ids)
     {
