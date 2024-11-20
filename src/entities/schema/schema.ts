@@ -17,7 +17,7 @@ export class Schema implements TSchema {
 	constructor(schema: TSchema) {
 		this.id = schema.id || ''
 		this.title = schema.title || ''
-		this.version = schema.version || ''
+		this.version = schema.version || '0.0.0'
 		this.description = schema.description || ''
 		this.summary = schema.summary || ''
 		this.required = schema.required || []
@@ -31,7 +31,7 @@ export class Schema implements TSchema {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),
-			version: z.string(),
+			version: z.string().regex(/^(?:\d+\.){2}\d+$/g, 'Invalid version format'),
 			description: z.string(),
 			summary: z.string(),
 			required: z.array(z.string()),

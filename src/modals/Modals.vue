@@ -8,10 +8,10 @@ import { navigationStore } from '../store/store.js'
 		<EditRegister />
 		<UploadRegister />
 		<DeleteRegister />
-		<EditSchema />
+		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<DeleteSchema />
 		<UploadSchema />
-		<EditSchemaProperty />
+		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />
 		<EditSource />
 		<DeleteSource />

@@ -62,7 +62,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							<div v-if="Object.keys(schemaStore.schemaItem.properties).length">
 								<NcListItem v-for="(property, key) in schemaStore.schemaItem.properties"
 									:key="key"
-									:name="property.title"
+									:name="key"
 									:bold="false"
 									:force-display-actions="true">
 									<template #icon>
@@ -73,14 +73,14 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										{{ property.description }}
 									</template>
 									<template #actions>
-										<NcActionButton :aria-label="`Edit '${property.title}'`"
+										<NcActionButton :aria-label="`Edit '${key}'`"
 											@click="schemaStore.setSchemaPropertyKey(key); navigationStore.setModal('editSchemaProperty')">
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
 											Edit
 										</NcActionButton>
-										<NcActionButton :aria-label="`Delete '${property.title}'`"
+										<NcActionButton :aria-label="`Delete '${key}'`"
 											@click="schemaStore.setSchemaPropertyKey(key); navigationStore.setModal('deleteSchemaProperty')">
 											<template #icon>
 												<TrashCanOutline :size="20" />
