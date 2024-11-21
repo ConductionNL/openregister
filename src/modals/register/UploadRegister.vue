@@ -52,10 +52,8 @@ import {
 	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 } from '@nextcloud/vue'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 
@@ -68,9 +66,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcSelect,
 		// Icons
-		ContentSaveOutline,
 		Cancel,
 		Upload,
 	},
@@ -78,24 +74,26 @@ export default {
 		return {
 			register: {
 				json: '{}',
-				url: ''
+				url: '',
 			},
 			success: false,
 			loading: false,
 			error: false,
 			hasUpdated: false,
+			closeModalTimeout: null,
 		}
 	},
 	methods: {
 		closeModal() {
 			navigationStore.setModal(false)
+			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.loading = false
 			this.error = false
 			this.hasUpdated = false
 			this.register = {
 				json: '{}',
-				url: ''
+				url: '',
 			}
 		},
 		async uploadRegister() {
@@ -104,7 +102,7 @@ export default {
 			registerStore.uploadRegister(this.register).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
-				response.ok && setTimeout(this.closeModal, 2000)
+				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
 			}).catch((error) => {
 				this.success = false
 				this.error = error.message || 'An error occurred while uploading the register'

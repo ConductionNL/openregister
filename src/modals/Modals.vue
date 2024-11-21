@@ -8,15 +8,16 @@ import { navigationStore } from '../store/store.js'
 		<EditRegister />
 		<UploadRegister />
 		<DeleteRegister />
-		<EditSchema />
+		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<DeleteSchema />
 		<UploadSchema />
-		<EditSchemaProperty />
+		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />
 		<EditSource />
 		<DeleteSource />
 		<EditObject />
 		<DeleteObject />
+		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 	</div>
 </template>
@@ -34,6 +35,7 @@ import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditObject from './object/EditObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
+import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 
 export default {
@@ -51,6 +53,7 @@ export default {
 		DeleteSource,
 		EditObject,
 		DeleteObject,
+		UploadObject,
 		ViewObjectAuditTrail,
 	},
 }

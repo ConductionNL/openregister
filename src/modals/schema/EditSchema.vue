@@ -3,8 +3,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'editSchema'"
-		:name="schemaStore.schemaItem?.id && !createAnother ? 'Edit Schema' : 'Add Schema'"
+	<NcDialog :name="schemaStore.schemaItem?.id && !createAnother ? 'Edit Schema' : 'Add Schema'"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
@@ -18,9 +17,6 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextField :disabled="loading"
 				label="Title *"
 				:value.sync="schemaItem.title" />
-			<NcTextField :disabled="loading"
-				label="Version"
-				:value.sync="schemaItem.version" />
 			<NcTextArea :disabled="loading"
 				label="Description"
 				:value.sync="schemaItem.description" />
@@ -91,27 +87,19 @@ export default {
 		return {
 			schemaItem: {
 				title: '',
-				version: '',
+				version: '0.0.0',
 				description: '',
 				summary: '',
-				created: '',
-				updated: '',
 			},
 			createAnother: false,
 			success: false,
 			loading: false,
 			error: false,
-			hasUpdated: false,
+			closeModalTimeout: null,
 		}
 	},
 	mounted() {
 		this.initializeSchemaItem()
-	},
-	updated() {
-		if (navigationStore.modal === 'editSchema' && !this.hasUpdated) {
-			this.initializeSchemaItem()
-			this.hasUpdated = true
-		}
 	},
 	methods: {
 		initializeSchemaItem() {
@@ -119,7 +107,6 @@ export default {
 				this.schemaItem = {
 					...schemaStore.schemaItem,
 					title: schemaStore.schemaItem.title || '',
-					version: schemaStore.schemaItem.version || '',
 					description: schemaStore.schemaItem.description || '',
 					summary: schemaStore.schemaItem.summary || '',
 				}
@@ -127,18 +114,7 @@ export default {
 		},
 		closeModal() {
 			navigationStore.setModal(false)
-			this.success = null
-			this.loading = false
-			this.error = false
-			this.hasUpdated = false
-			this.schemaItem = {
-				title: '',
-				version: '',
-				description: '',
-				summary: '',
-				created: '',
-				updated: '',
-			}
+			clearTimeout(this.closeModalTimeout)
 		},
 		async editSchema() {
 			this.loading = true
@@ -146,31 +122,32 @@ export default {
 			schemaStore.saveSchema({
 				...this.schemaItem,
 			}).then(({ response }) => {
+
 				if (this.createAnother) {
+					// since saveSchema populates the schema item, we need to clear it
 					schemaStore.setSchemaItem(null)
+
+					// clear the form after 0.5s
 					setTimeout(() => {
-						this.initializeSchemaItem()
 						this.schemaItem = {
 							title: '',
-							version: '0.0.1',
+							version: '0.0.0',
 							description: '',
 							summary: '',
-							created: '',
-							updated: '',
 						}
-						this.loading = false
 					}, 500)
+
+					this.success = response.ok
+					this.error = false
+
+					// clear the success message after 2s
 					setTimeout(() => {
 						this.success = null
 					}, 2000)
-					this.success = response.ok
-					this.hasUpdated = false
-					this.error = false
-
 				} else {
 					this.success = response.ok
 					this.error = false
-					response.ok && setTimeout(this.closeModal, 2000)
+					response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
 				}
 
 			}).catch((error) => {

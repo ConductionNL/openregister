@@ -22,6 +22,12 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 						</template>
 						Refresh
 					</NcActionButton>
+					<NcActionButton @click="navigationStore.setModal('uploadObject')">
+						<template #icon>
+							<Upload :size="20" />
+						</template>
+						Upload
+					</NcActionButton>
 					<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
 						<template #icon>
 							<Plus :size="20" />
@@ -83,6 +89,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'ObjectsList',

@@ -2,9 +2,8 @@
 import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 <template>
-	<NcDialog v-if="navigationStore.modal === 'editSchemaProperty'"
-		:name="schemaStore.schemaPropertyKey
-			? `Edit Property '${schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey].title}' of '${schemaStore.schemaItem.title}'`
+	<NcDialog :name="schemaStore.schemaPropertyKey
+			? `Edit Property '${schemaStore.schemaPropertyKey}' of '${schemaStore.schemaItem.title}'`
 			: `Add Property to '${schemaStore.schemaItem?.title}'`"
 		size="normal"
 		:can-close="false">
@@ -23,7 +22,9 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		<div v-if="success === null" class="form-group">
 			<NcTextField :disabled="loading"
 				label="Title*"
-				:value.sync="properties.title" />
+				:error="keyExists()"
+				:helper-text="keyExists() ? 'This key already exists on this schema' : ''"
+				:value.sync="propertyTitle" />
 
 			<NcTextField :disabled="loading"
 				label="Description"
@@ -241,7 +242,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 			</NcButton>
 
 			<NcButton v-if="success === null"
-				:disabled="!properties.title || !properties.type || loading"
+				:disabled="!propertyTitle || !properties.type || loading || keyExists()"
 				type="primary"
 				@click="addSchemaProperty()">
 				<template #icon>
@@ -276,8 +277,6 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 
-import { v4 as uuidv4 } from 'uuid'
-
 export default {
 	name: 'EditSchemaProperty',
 	components: {
@@ -294,8 +293,8 @@ export default {
 	},
 	data() {
 		return {
+			propertyTitle: '',
 			properties: {
-				title: '',
 				description: '',
 				type: 'string',
 				format: '',
@@ -328,7 +327,7 @@ export default {
 			loading: false,
 			success: null,
 			error: false,
-			hasUpdated: false,
+			closeModalTimeout: null,
 		}
 	},
 	computed: {
@@ -362,17 +361,12 @@ export default {
 	mounted() {
 		this.initializeSchemaItem()
 	},
-	updated() {
-		if (navigationStore.modal === 'editSchemaProperty' && !this.hasUpdated) {
-			this.initializeSchemaItem()
-			this.hasUpdated = true
-		}
-	},
 	methods: {
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
 
+				this.propertyTitle = schemaStore.schemaPropertyKey
 				this.properties = {
 					...schemaProperty,
 					minLength: schemaProperty.minLength ?? 0,
@@ -385,41 +379,35 @@ export default {
 				}
 			}
 		},
+		/**
+		 * check if the title already exists on properties as a key.
+		 * returns true if it exists, false if it doesn't.
+		 *
+		 * When dealing with a key which is the same key as you are editing return false
+		 */
+		keyExists() {
+			if (this.propertyTitle === schemaStore.schemaPropertyKey) return false
+			return Object.keys(schemaStore.schemaItem.properties).includes(this.propertyTitle)
+		},
 		closeModal() {
-			navigationStore.setModal(false)
+			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
-			this.success = null
-			this.hasUpdated = false
-			this.properties = {
-				title: '',
-				description: '',
-				type: '',
-				format: '',
-				pattern: '',
-				default: '',
-				behavior: '',
-				required: false,
-				deprecated: false,
-				minLength: 0,
-				maxLength: 0,
-				example: '',
-				minimum: 0,
-				maximum: 0,
-				multipleOf: 0,
-				exclusiveMin: false,
-				exclusiveMax: false,
-				minItems: 0,
-				maxItems: 0,
-			}
+			clearTimeout(this.closeModalTimeout)
 		},
 		addSchemaProperty() {
 			this.loading = true
+
+			// delete the key when its an edit modal (the item will be re-created later, so don't worry about it)
+			// this is done incase you are also editing the title which acts as a key
+			if (schemaStore.schemaPropertyKey) {
+				delete schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+			}
 
 			const newSchemaItem = {
 				...schemaStore.schemaItem,
 				properties: {
 					...schemaStore.schemaItem.properties,
-					[schemaStore.schemaPropertyKey || uuidv4()]: { // if no key is set, generate a new uuid
+					[this.propertyTitle]: { // create the new property with title as key
 						...this.properties,
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
 						minLength: parseFloat(this.properties.minLength) || null,
@@ -444,7 +432,7 @@ export default {
 				.then(({ response }) => {
 					this.success = response.ok
 
-					setTimeout(this.closeModal, 2000)
+					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				}).catch((err) => {
 					this.success = false
 					this.error = err

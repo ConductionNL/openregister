@@ -1,5 +1,5 @@
 <script setup>
-import { searchStore, metadataStore, catalogiStore } from '../../store/store.js'
+import { searchStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -96,10 +96,6 @@ export default {
 			},
 			deep: true,
 		},
-	},
-	mounted() {
-		metadataStore.refreshMetaDataList()
-		catalogiStore.refreshCatalogiList()
 	},
 	methods: {
 		debouncedSearch: debounce(function() {

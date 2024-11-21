@@ -1,14 +1,13 @@
 <script setup>
-import { objectStore, schemaStore, registerStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'editObject'"
-		:name="objectStore.objectItem?.id ? 'Edit Object' : 'Add Object'"
+	<NcDialog name="Upload Object"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
-			<p>Object successfully modified</p>
+			<p>Object successfully uploaded</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -39,15 +38,14 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !verifyJsonValidity(objectItem.object)"
+				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object)"
 				type="primary"
-				@click="editObject()">
+				@click="uploadObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && objectStore.objectItem?.id" :size="20" />
-					<Plus v-if="!loading && !objectStore.objectItem?.id" :size="20" />
+					<Upload v-if="!loading" :size="20" />
 				</template>
-				{{ objectStore.objectItem?.id ? 'Save' : 'Add' }}
+				Upload
 			</NcButton>
 		</template>
 
@@ -85,12 +83,28 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 
 			<!-- STAGE 3 -->
 			<div v-if="registers.value?.id && schemas.value?.id">
-				<NcTextArea :disabled="loading"
-					label="Object"
-					placeholder="{ &quot;key&quot;: &quot;value&quot; }"
-					:value.sync="objectItem.object"
-					:error="!verifyJsonValidity(objectItem.object)"
-					:helper-text="!verifyJsonValidity(objectItem.object) ? 'This is not valid JSON (optional)' : ''" />
+				<NcSelect v-bind="mappings"
+					v-model="mappings.value"
+					input-label="Mappings"
+					:loading="mappingsLoading"
+					:disabled="loading || !mappings.options?.length" />
+
+				<div :class="`codeMirrorContainer ${getTheme()}`">
+					<p>Object</p>
+					<CodeMirror v-model="object"
+						:basic="true"
+						:dark="getTheme() === 'dark'"
+						:lang="json()"
+						:linter="jsonParseLinter()"
+						placeholder="Enter your object here..." />
+
+					<NcButton class="prettifyButton" @click="prettifyJson">
+						<template #icon>
+							<AutoFix :size="20" />
+						</template>
+						Prettify
+					</NcButton>
+				</div>
 			</div>
 		</div>
 	</NcDialog>
@@ -100,80 +114,76 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 import {
 	NcButton,
 	NcDialog,
-	NcTextArea,
-	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
 } from '@nextcloud/vue'
+import { getTheme } from '../../services/getTheme.js'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 
 export default {
-	name: 'EditObject',
+	name: 'UploadObject',
 	components: {
 		NcDialog,
-		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
+		NcSelect,
 		// Icons
-		ContentSaveOutline,
 		Cancel,
-		Plus,
+		Upload,
 	},
 	data() {
 		return {
-			objectItem: {
-				schemas: '',
-				register: '',
-				object: '',
-			},
+			object: '{}',
 			schemasLoading: false,
 			schemas: {},
 			registersLoading: false,
 			registers: {},
+			mappingsLoading: false,
+			mappings: {},
 			success: null,
 			loading: false,
 			error: false,
 			hasUpdated: false,
-			closeModalTimeout: null,
 		}
 	},
 	mounted() {
-		this.initializeObjectItem()
-	},
-	updated() {
-		if (navigationStore.modal === 'editObject' && !this.hasUpdated) {
-			this.initializeObjectItem()
-			this.initializeSchemas()
-			this.initializeRegisters()
-			this.hasUpdated = true
-		}
+		this.initializeMappings()
+		this.initializeSchemas()
+		this.initializeRegisters()
 	},
 	methods: {
-		initializeObjectItem() {
-			if (objectStore.objectItem?.id) {
-				this.objectItem = {
-					...objectStore.objectItem,
-					schemas: objectStore.objectItem.schemas || '',
-					register: objectStore.objectItem.register || '',
-					object: JSON.stringify(objectStore.objectItem.object) || '',
-				}
-			}
+		initializeMappings() {
+			this.mappingsLoading = true
+
+			objectStore.getMappings()
+				.then(({ data }) => {
+					this.mappings = {
+						multiple: false,
+						closeOnSelect: true,
+						options: data.map((mapping) => ({
+							id: mapping.id,
+							label: mapping.name,
+						})),
+						value: null,
+					}
+				})
+				.finally(() => {
+					this.mappingsLoading = false
+				})
 		},
 		initializeSchemas() {
 			this.schemasLoading = true
 
 			schemaStore.refreshSchemaList()
 				.then(() => {
-					const activeSchemas = objectStore.objectItem?.id
-						? schemaStore.schemaList.find((schema) => schema.id.toString() === objectStore.objectItem.schema)
-						: null
-
 					this.schemas = {
 						multiple: false,
 						closeOnSelect: true,
@@ -181,14 +191,10 @@ export default {
 							id: schema.id,
 							label: schema.title,
 						})),
-						value: activeSchemas
-							? {
-								id: activeSchemas.id,
-								label: activeSchemas.title,
-							}
-							: null,
+						value: null,
 					}
-
+				})
+				.finally(() => {
 					this.schemasLoading = false
 				})
 		},
@@ -197,10 +203,6 @@ export default {
 
 			registerStore.refreshRegisterList()
 				.then(() => {
-					const activeRegister = objectStore.objectItem?.id
-						? registerStore.registerList.find((register) => register.id.toString() === objectStore.objectItem.register)
-						: null
-
 					this.registers = {
 						multiple: false,
 						closeOnSelect: true,
@@ -208,58 +210,95 @@ export default {
 							id: register.id,
 							label: register.title,
 						})),
-						value: activeRegister
-							? {
-								id: activeRegister.id,
-								label: activeRegister.title,
-							}
-							: null,
+						value: null,
 					}
-
+				})
+				.finally(() => {
 					this.registersLoading = false
 				})
 		},
 		closeModal() {
 			navigationStore.setModal(false)
-			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.loading = false
 			this.error = false
 			this.hasUpdated = false
-			this.objectItem = {
-				schemas: '',
-				register: '',
-				object: '',
+			this.object = {
+				json: '{}',
+				url: '',
 			}
 		},
-		async editObject() {
+		async uploadObject() {
 			this.loading = true
 
-			objectStore.saveObject({
-				...this.objectItem,
-				object: JSON.parse(this.objectItem.object),
-				schema: this.schemas?.value?.id || '',
-				register: this.registers?.value?.id || '',
-			}).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while saving the object'
-			}).finally(() => {
-				this.loading = false
-			})
+			const newObject = {
+				object: JSON.parse(this.object) || '',
+				register: this.registers.value.id || '',
+				schema: this.schemas.value.id || '',
+				mapping: this.mappings?.value?.id || null,
+				schemas: '',
+			}
+
+			objectStore.saveObject(newObject)
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok && setTimeout(this.closeModal, 2000)
+				}).catch((error) => {
+					this.success = false
+					this.error = error.message || 'An error occurred while uploading the object'
+				}).finally(() => {
+					this.loading = false
+				})
 		},
-		verifyJsonValidity(jsonInput) {
-			if (jsonInput === '') return true
+		prettifyJson() {
+			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
+		},
+		validateJson(json) {
 			try {
-				JSON.parse(jsonInput)
+				JSON.parse(json)
 				return true
-			} catch (e) {
+			} catch (error) {
 				return false
 			}
 		},
 	},
 }
 </script>
+
+<style scoped>
+.codeMirrorContainer {
+	margin-block-start: 6px;
+}
+
+.prettifyButton {
+	margin-block-start: 10px;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
+}
+</style>

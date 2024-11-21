@@ -31,7 +31,7 @@ export class Schema implements TSchema {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),
-			version: z.string(),
+			version: z.string().regex(/^(?:\d+\.){2}\d+$/g, 'Invalid version format'),
 			description: z.string(),
 			summary: z.string(),
 			required: z.array(z.string()),
