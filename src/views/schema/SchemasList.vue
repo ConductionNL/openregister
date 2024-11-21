@@ -106,7 +106,6 @@ import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 
-
 export default {
 	name: 'SchemasList',
 	components: {
