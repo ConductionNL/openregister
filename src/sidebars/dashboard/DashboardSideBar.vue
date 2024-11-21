@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, searchStore, publicationStore } from '../../store/store.js'
+import { navigationStore, searchStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -149,10 +149,6 @@ export default {
 			publications: false,
 			attachments: false,
 		}
-	},
-	mounted() {
-		publicationStore.getConceptPublications()
-		publicationStore.getConceptAttachments()
 	},
 }
 </script>
