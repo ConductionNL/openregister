@@ -100,6 +100,7 @@ export const useSchemaStore = defineStore('schema', {
 			const method = isNewSchema ? 'POST' : 'PUT'
 
 			schemaItem.updated = new Date().toISOString()
+			delete schemaItem.version
 
 			const response = await fetch(
 				endpoint,

@@ -62,9 +62,11 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 							<div v-if="Object.keys(schemaStore.schemaItem.properties).length">
 								<NcListItem v-for="(property, key) in schemaStore.schemaItem.properties"
 									:key="key"
-									:name="property.title"
+									:name="key"
+									:active="schemaStore.schemaPropertyKey === key"
 									:bold="false"
-									:force-display-actions="true">
+									:force-display-actions="true"
+									@click="setActiveProperty(key)">
 									<template #icon>
 										<CircleOutline disable-menu
 											:size="44" />
@@ -73,14 +75,14 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 										{{ property.description }}
 									</template>
 									<template #actions>
-										<NcActionButton :aria-label="`Edit '${property.title}'`"
+										<NcActionButton :aria-label="`Edit '${key}'`"
 											@click="schemaStore.setSchemaPropertyKey(key); navigationStore.setModal('editSchemaProperty')">
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
 											Edit
 										</NcActionButton>
-										<NcActionButton :aria-label="`Delete '${property.title}'`"
+										<NcActionButton :aria-label="`Delete '${key}'`"
 											@click="schemaStore.setSchemaPropertyKey(key); navigationStore.setModal('deleteSchemaProperty')">
 											<template #icon>
 												<TrashCanOutline :size="20" />
@@ -148,6 +150,13 @@ export default {
 		CircleOutline,
 		Download,
 		Upload,
+	},
+	methods: {
+		setActiveProperty(key) {
+			if (JSON.stringify(schemaStore.schemaPropertyKey) === JSON.stringify(key)) {
+				schemaStore.setSchemaPropertyKey(null)
+			} else { schemaStore.setSchemaPropertyKey(key) }
+		},
 	},
 }
 </script>
