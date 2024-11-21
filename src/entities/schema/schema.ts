@@ -17,7 +17,7 @@ export class Schema implements TSchema {
 	constructor(schema: TSchema) {
 		this.id = schema.id || ''
 		this.title = schema.title || ''
-		this.version = schema.version || '0.0.0'
+		this.version = schema.version || ''
 		this.description = schema.description || ''
 		this.summary = schema.summary || ''
 		this.required = schema.required || []
