@@ -63,8 +63,10 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 								<NcListItem v-for="(property, key) in schemaStore.schemaItem.properties"
 									:key="key"
 									:name="key"
+									:active="schemaStore.schemaPropertyKey === key"
 									:bold="false"
-									:force-display-actions="true">
+									:force-display-actions="true"
+									@click="setActiveProperty(key)">
 									<template #icon>
 										<CircleOutline disable-menu
 											:size="44" />
@@ -148,6 +150,13 @@ export default {
 		CircleOutline,
 		Download,
 		Upload,
+	},
+	methods: {
+		setActiveProperty(key) {
+			if (JSON.stringify(schemaStore.schemaPropertyKey) === JSON.stringify(key)) {
+				schemaStore.setSchemaPropertyKey(null)
+			} else { schemaStore.setSchemaPropertyKey(key) }
+		},
 	},
 }
 </script>
