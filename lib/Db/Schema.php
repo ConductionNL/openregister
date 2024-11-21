@@ -91,25 +91,6 @@ class Schema extends Entity implements JsonSerializable
 
 				// Remove empty fields with array_filter().
 				$properties[$title] = array_filter($property);
-
-				if (isset($property['type']) === false) {
-					continue;
-				}
-				switch ($property['format']) {
-					case 'string':
-					// For now array as string
-					case 'array':
-						$properties[$title]['default'] = (string) $property;
-						break;
-					case 'int':
-					case 'integer':
-					case 'number':
-						$properties[$title]['default'] = (int) $property;
-						break;
-					case 'bool':
-						$properties[$title]['default'] = (bool) $property;
-						break;
-				}
 			}
 		}
 
