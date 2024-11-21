@@ -141,7 +141,7 @@ export const useRegisterStore = defineStore('register', {
 			}
 
 			console.log('Uploading register...')
-			
+
 			const isNewRegister = !this.registerItem
 			const endpoint = isNewRegister
 				? '/index.php/apps/openregister/api/registers/upload'

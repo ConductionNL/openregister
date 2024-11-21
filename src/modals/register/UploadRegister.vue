@@ -52,10 +52,8 @@ import {
 	NcTextArea,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 } from '@nextcloud/vue'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 
@@ -68,9 +66,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcSelect,
 		// Icons
-		ContentSaveOutline,
 		Cancel,
 		Upload,
 	},
