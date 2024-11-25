@@ -90,14 +90,16 @@ class ObjectAuditLogMapper extends QBMapper
 	public function count(): int
 	{
 		$qb = $this->db->getQueryBuilder();
+
+		// Count total number of audit logs
 		$qb->select($qb->createFunction('COUNT(*) as count'))
 		   ->from('openregister_object_audit_logs');
 
-		$result = $qb->executeQuery();
-		$count = $result->fetch();
-		$result->closeCursor();
+		$result = $qb->execute();
+		$row = $result->fetch();
 
-		return (int)$count['count'];
+		// Return the total count
+		return (int)$row['count'];
 	}
 
 	/**
