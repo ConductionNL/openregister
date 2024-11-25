@@ -22,6 +22,8 @@ use Symfony\Component\Uid\Uuid;
 class ObjectEntityMapper extends QBMapper
 {
 	private IDatabaseJsonService $databaseJsonService;
+	private SchemaMapper $schemaMapper;
+	private RegisterMapper $registerMapper;
 
 	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
@@ -30,14 +32,18 @@ class ObjectEntityMapper extends QBMapper
 	 *
 	 * @param IDBConnection $db The database connection
 	 * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
+	 * @param SchemaMapper $schemaMapper The schema mapper
+	 * @param RegisterMapper $registerMapper The register mapper
 	 */
-	public function __construct(IDBConnection $db, MySQLJsonService $mySQLJsonService)
+	public function __construct(IDBConnection $db, MySQLJsonService $mySQLJsonService, SchemaMapper $schemaMapper, RegisterMapper $registerMapper)
 	{
 		parent::__construct($db, 'openregister_objects');
 
 		if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
 			$this->databaseJsonService = $mySQLJsonService;
 		}
+		$this->schemaMapper = $schemaMapper;
+		$this->registerMapper = $registerMapper;
 	}
 
 	/**
@@ -264,5 +270,139 @@ class ObjectEntityMapper extends QBMapper
 			filters: $filters,
 			search: $search
 		);
+	}
+
+	/**
+	 * Get register growth over time (objects per register)
+	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @return array Daily object counts per register
+	 */
+	public function getRegisterGrowth(\DateTime $from, \DateTime $to): array {
+		$qb = $this->db->getQueryBuilder();
+		
+		// First, get all registers that have objects
+		$registers = $this->registerMapper->findAll();
+		$registerData = [];
+		
+		// Initialize data structure for all registers
+		foreach ($registers as $register) {
+			$registerData[$register->getId()] = [
+				'name' => $register->getTitle() ?? 'Unknown Register',
+				'data' => [],
+			];
+			
+			// Initialize all dates with zero
+			$period = new \DatePeriod(
+				$from,
+				new \DateInterval('P1D'),
+				$to->modify('+1 day')
+			);
+			
+			foreach ($period as $date) {
+				$dateStr = $date->format('Y-m-d');
+				$registerData[$register->getId()]['data'][$dateStr] = 0;
+			}
+		}
+
+		// Get actual data
+		$qb->select(
+				'register',
+				$qb->createFunction('DATE(created) as date'),
+				$qb->createFunction('COUNT(*) as count')
+			)
+			->from('openregister_objects')
+			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
+			->groupBy('date', 'register')
+			->orderBy('date', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		// Fill in actual counts and maintain running totals
+		foreach ($registerData as $registerId => &$register) {
+			$runningTotal = 0;
+			foreach ($register['data'] as $date => &$count) {
+				// Find count for this date and register
+				foreach ($rows as $row) {
+					if ($row['register'] == $registerId && $row['date'] == $date) {
+						$runningTotal += (int)$row['count'];
+					}
+				}
+				$count = $runningTotal;
+			}
+		}
+
+		return array_values($registerData);
+	}
+
+	/**
+	 * Get schema distribution over time (objects per schema)
+	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @return array Schema distribution data with running totals
+	 */
+	public function getSchemaDistribution(\DateTime $from, \DateTime $to): array {
+		$qb = $this->db->getQueryBuilder();
+		
+		// First, get all schemas that have objects
+		$schemas = $this->schemaMapper->findAll();
+		$schemaData = [];
+		
+		// Initialize data structure for all schemas
+		foreach ($schemas as $schema) {
+			$schemaData[$schema->getId()] = [
+				'name' => $schema->getTitle() ?? 'Unknown Schema',
+				'data' => [],
+			];
+			
+			// Initialize all dates with zero
+			$period = new \DatePeriod(
+				$from,
+				new \DateInterval('P1D'),
+				$to->modify('+1 day')
+			);
+			
+			foreach ($period as $date) {
+				$dateStr = $date->format('Y-m-d');
+				$schemaData[$schema->getId()]['data'][$dateStr] = 0;
+			}
+		}
+
+		// Get actual data
+		$qb->select(
+				'schema',
+				$qb->createFunction('DATE(created) as date'),
+				$qb->createFunction('COUNT(*) as count')
+			)
+			->from('openregister_objects')
+			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
+			->groupBy('date', 'schema')
+			->orderBy('date', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		// Fill in actual counts and maintain running totals
+		foreach ($schemaData as $schemaId => &$schema) {
+			$runningTotal = 0;
+			foreach ($schema['data'] as $date => &$count) {
+				// Find count for this date and schema
+				foreach ($rows as $row) {
+					if ($row['schema'] == $schemaId && $row['date'] == $date) {
+						$runningTotal += (int)$row['count'];
+					}
+				}
+				$count = $runningTotal;
+			}
+		}
+
+		return array_values($schemaData);
 	}
 }

@@ -48,23 +48,50 @@
 			<div class="graph-section">
 				<h3>Object Mutations</h3>
 				<div class="graphs">
-					<div>
+					<div class="graph-container">
 						<h5>Daily Object Changes</h5>
 						<div class="content">
 							<apexchart
-								width="500"
+								width="100%"
 								:options="objectChanges.options"
 								:series="objectChanges.series"
 							/>
 						</div>
 					</div>
-					<div>
+					<div class="graph-container">
 						<h5>Mutations by Operation Type</h5>
 						<div class="content">
 							<apexchart
-								width="500"
+								width="100%"
 								:options="operationTypes.options"
 								:series="operationTypes.series"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- New Growth Analysis Section -->
+			<div class="graph-section">
+				<h3>Growth Analysis</h3>
+				<div class="graphs">
+					<div>
+						<h5>Register Size Over Time</h5>
+						<div class="content">
+							<apexchart
+								width="500"
+								:options="registerGrowth.options"
+								:series="registerGrowth.series"
+							/>
+						</div>
+					</div>
+					<div>
+						<h5>Schema Distribution Over Time</h5>
+						<div class="content">
+							<apexchart
+								width="500"
+								:options="schemaDistribution.options"
+								:series="schemaDistribution.series"
 							/>
 						</div>
 					</div>
@@ -124,6 +151,7 @@ export default {
 					chart: {
 						type: 'area',
 						stacked: true,
+						height: 350,
 					},
 					stroke: {
 						curve: 'smooth',
@@ -159,6 +187,7 @@ export default {
 					},
 					chart: {
 						type: 'pie',
+						height: 350,
 					},
 					labels: ['Created', 'Updated', 'Deleted'],
 					colors: ['#46ba61', '#0082c9', '#e9322d'],
@@ -168,6 +197,70 @@ export default {
 					},
 				},
 				series: [0, 0, 0],
+			},
+			registerGrowth: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'line',
+						height: 350,
+					},
+					stroke: {
+						curve: 'smooth',
+						width: 2,
+					},
+					xaxis: {
+						type: 'datetime',
+						labels: {
+							format: 'dd MMM',
+						},
+					},
+					yaxis: {
+						title: {
+							text: 'Number of Objects',
+						},
+						min: 0,
+					},
+					colors: ['#0082c9'], // Nextcloud blue
+					title: {
+						text: 'Register Growth',
+							align: 'left',
+					},
+					legend: {
+						position: 'top',
+					},
+				},
+				series: [], // Will be populated with data per register
+			},
+			schemaDistribution: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'area',
+						stacked: true,
+					},
+					stroke: {
+						curve: 'smooth',
+						width: 1,
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					yaxis: {
+						title: {
+							text: 'Objects per Schema',
+						},
+					},
+					title: {
+						text: 'Schema Distribution',
+						align: 'left',
+					},
+				},
+				series: [], // Will be populated with data per schema
 			},
 		}
 	},
@@ -185,6 +278,7 @@ export default {
 				await Promise.all([
 					this.fetchStats(),
 					this.fetchAuditStats(),
+					this.fetchGrowthStats(),
 				])
 			} finally {
 				this.isLoading = false
@@ -279,6 +373,44 @@ export default {
 		navigateTo(section) {
 			// Implementation depends on your routing setup
 			console.log('Navigate to:', section)
+		},
+
+		/**
+		 * Fetches growth statistics
+		 * @returns {Promise<void>}
+		 */
+		async fetchGrowthStats() {
+			try {
+				const params = {
+					from: this.dateRange.from.toISOString(),
+					to: this.dateRange.to.toISOString(),
+				}
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/dashboard/growth-stats'),
+					{ params }
+				)
+				this.updateGrowthGraphs(response.data)
+			} catch (error) {
+				console.error('Error fetching growth stats:', error)
+			}
+		},
+
+		/**
+		 * Updates the growth graphs with new data
+		 * @param {Object} data - The growth statistics data
+		 */
+		updateGrowthGraphs(data) {
+			// Update register growth graph - handle multiple registers
+			this.registerGrowth.series = data.registerGrowth.map(register => ({
+				name: register.name,
+				data: this.formatTimeseriesData(register.data),
+			}))
+
+			// Update schema distribution graph
+			this.schemaDistribution.series = data.schemaDistribution.map(schema => ({
+				name: schema.name,
+				data: this.formatTimeseriesData(schema.data),
+				}))
 		},
 	},
 }
@@ -408,12 +540,23 @@ body[data-theme-dark] .dashboard-content > .stats > div {
     gap: 2rem;
     width: 100%;
     justify-content: center;
+    align-items: stretch;
 }
 
 .dashboard-content > .graph-section > .graphs > div {
     flex: 1;
-    min-width: 300px; /* Minimum width for readable graphs */
-    max-width: calc(50% - 1rem); /* Maximum width of 50% minus half the gap */
+    min-width: 300px;
+    max-width: calc(50% - 1rem);
+}
+
+.graph-container {
+    flex: 1;
+    min-width: 300px;
+    max-width: calc(50% - 1rem);
+}
+
+.graph-container .content {
+    height: 350px;
 }
 
 /* On smaller screens (mobile) */

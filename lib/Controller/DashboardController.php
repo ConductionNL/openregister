@@ -128,4 +128,30 @@ class DashboardController extends Controller {
             );
         }
     }
+
+    /**
+     * Get growth statistics for registers and schemas
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @param string|null $from Start date (defaults to 7 days ago)
+     * @param string|null $to End date (defaults to today)
+     * @return JSONResponse Growth statistics or error message
+     */
+    public function growthStats(?string $from = null, ?string $to = null): JSONResponse {
+        try {
+            $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
+            $toDate = $to ? new \DateTime($to) : new \DateTime();
+
+            $registerGrowth = $this->objectMapper->getRegisterGrowth($fromDate, $toDate);
+            $schemaDistribution = $this->objectMapper->getSchemaDistribution($fromDate, $toDate);
+
+            return new JSONResponse([
+                'registerGrowth' => $registerGrowth,
+                'schemaDistribution' => $schemaDistribution,
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
 }
