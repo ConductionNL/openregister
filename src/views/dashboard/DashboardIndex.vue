@@ -97,6 +97,69 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Add after the Growth Analysis section -->
+			<div class="graph-section">
+				<h3>Data Quality Analysis</h3>
+				<div class="graphs">
+					<div class="graph-container">
+						<h5>Validation Errors Over Time</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="validationErrors.options"
+								:series="validationErrors.series"
+							/>
+						</div>
+					</div>
+					<div class="graph-container">
+						<h5>Field Completeness by Schema</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="fieldCompleteness.options"
+								:series="fieldCompleteness.series"
+							/>
+						</div>
+					</div>
+					<div class="graph-container">
+						<h5>Object Revisions Over Time</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="objectRevisions.options"
+								:series="objectRevisions.series"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="graph-section">
+				<h3>Schema Analysis</h3>
+				<div class="graphs">
+					<div class="graph-container">
+						<h5>Field Types Distribution</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="fieldTypes.options"
+								:series="fieldTypes.series"
+							/>
+						</div>
+					</div>
+					<div class="graph-container">
+						<h5>Schema Complexity</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="schemaComplexity.options"
+								:series="schemaComplexity.series"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</NcAppContent>
 </template>
@@ -262,6 +325,140 @@ export default {
 				},
 				series: [], // Will be populated with data per schema
 			},
+			validationErrors: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'area',
+						stacked: true,
+					},
+					stroke: {
+						curve: 'smooth',
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					colors: ['#46ba61'],
+					title: {
+						text: 'Validation Errors Over Time',
+						align: 'left',
+					},
+				},
+				series: [],
+			},
+			fieldCompleteness: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'area',
+						stacked: true,
+					},
+					stroke: {
+						curve: 'smooth',
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					colors: ['#0082c9'],
+					title: {
+						text: 'Field Completeness by Schema',
+						align: 'left',
+					},
+				},
+				series: [],
+			},
+			fieldTypes: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'pie',
+						height: 350,
+					},
+					labels: ['String', 'Number', 'Boolean', 'Date', 'Object'],
+					colors: ['#46ba61', '#0082c9', '#e9322d', '#f39c12', '#d35400'],
+					title: {
+						text: 'Field Types Distribution',
+						align: 'left',
+					},
+				},
+				series: [],
+			},
+			schemaComplexity: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'area',
+						stacked: true,
+					},
+					stroke: {
+						curve: 'smooth',
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					colors: ['#0082c9'],
+					title: {
+						text: 'Schema Complexity',
+						align: 'left',
+					},
+				},
+				series: [],
+			},
+			objectRevisions: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'line',
+						height: 350,
+					},
+					stroke: {
+						curve: 'smooth',
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					yaxis: [
+						{
+							title: {
+								text: 'Number of Objects',
+							},
+						},
+						{
+							opposite: true,
+							title: {
+								text: 'Average Revisions',
+							},
+						},
+					],
+					colors: ['#46ba61', '#0082c9'], // Green for objects, Blue for revisions
+					title: {
+						text: 'Object Revisions Over Time',
+						align: 'left',
+					},
+				},
+				series: [
+					{
+						name: 'Objects',
+						type: 'column',
+						data: [],
+					},
+					{
+						name: 'Average Revisions',
+						type: 'line',
+						data: [],
+					},
+				],
+			},
 		}
 	},
 	async mounted() {
@@ -279,6 +476,8 @@ export default {
 					this.fetchStats(),
 					this.fetchAuditStats(),
 					this.fetchGrowthStats(),
+					this.fetchQualityStats(),
+					this.fetchSchemaAnalysis(),
 				])
 			} finally {
 				this.isLoading = false
@@ -353,10 +552,14 @@ export default {
 		 * @returns {Array} Formatted data for ApexCharts
 		 */
 		formatTimeseriesData(data) {
-			return Object.entries(data).map(([date, count]) => ({
+			if (!data || typeof data !== 'object') {
+				return [];
+			}
+
+			return Object.entries(data).map(([date, value]) => ({
 				x: new Date(date).getTime(),
-				y: count,
-			}))
+				y: value || 0,
+			})).filter(point => !isNaN(point.x));
 		},
 
 		/**
@@ -412,6 +615,141 @@ export default {
 				data: this.formatTimeseriesData(schema.data),
 				}))
 		},
+
+		async fetchQualityStats() {
+			try {
+				const params = {
+					from: this.dateRange.from.toISOString(),
+					to: this.dateRange.to.toISOString(),
+				}
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/dashboard/quality-stats'),
+					{ params }
+				)
+				this.updateQualityGraphs(response.data)
+			} catch (error) {
+				console.error('Error fetching quality stats:', error)
+			}
+		},
+
+		updateQualityGraphs(data) {
+			console.log('Quality Stats Data:', data); // Debug log
+
+			// Update validation errors graph
+			if (data.validationErrors && data.validationErrors.daily) {
+				this.validationErrors.series = [
+					{
+						name: 'Total Objects',
+						data: this.formatTimeseriesData(data.validationErrors.daily.total),
+					},
+					{
+						name: 'Error Rate',
+						data: this.formatTimeseriesData(data.validationErrors.daily.error_rate),
+					},
+				];
+			}
+
+			// Update field completeness graph
+			if (data.completeness && data.completeness.schemas) {
+				const completenessData = Object.entries(data.completeness.schemas).map(([name, stats]) => ({
+					x: name,
+					y: stats.average_completeness || 0,
+				}));
+
+				this.fieldCompleteness.series = [{
+					name: 'Completeness Rate',
+					data: completenessData,
+				}];
+			}
+
+			// Update object revisions graph
+			if (data.revisions && data.revisions.daily) {
+				const { objects, avg_revisions } = data.revisions.daily;
+				
+				this.objectRevisions.series = [
+					{
+						name: 'Objects',
+						type: 'column',
+						data: objects ? this.formatTimeseriesData(objects) : [],
+					},
+					{
+						name: 'Average Revisions',
+						type: 'line',
+						data: avg_revisions ? this.formatTimeseriesData(avg_revisions) : [],
+					},
+				];
+			}
+		},
+
+		async fetchSchemaAnalysis() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/dashboard/schema-analysis')
+				)
+				this.updateSchemaGraphs(response.data)
+			} catch (error) {
+				console.error('Error fetching schema analysis:', error)
+			}
+		},
+
+		updateSchemaGraphs(data) {
+			// Safely update field types pie chart
+			if (data && data.fieldTypes && Array.isArray(data.fieldTypes)) {
+				this.fieldTypes.series = data.fieldTypes.map(type => type.value || 0);
+				this.fieldTypes.options.labels = data.fieldTypes.map(type => type.name || 'Unknown');
+			} else {
+				// Set default values if no data
+				this.fieldTypes.series = [0, 0, 0, 0, 0];
+				this.fieldTypes.options.labels = ['String', 'Number', 'Boolean', 'Date', 'Object'];
+			}
+
+			// Safely update schema complexity chart
+			if (data && Array.isArray(data.complexity)) {
+				const complexityData = data.complexity.map(schema => ({
+					x: schema.name || 'Unknown Schema',
+					y: schema.value || 0,
+				}));
+
+				this.schemaComplexity.series = [{
+					name: 'Complexity Score',
+					data: complexityData,
+				}];
+
+				// Update categories
+				this.schemaComplexity.options.xaxis = {
+					categories: data.complexity.map(schema => schema.name || 'Unknown Schema'),
+				};
+			} else {
+				// Set empty state
+				this.schemaComplexity.series = [{
+					name: 'Complexity Score',
+					data: [],
+				}];
+				this.schemaComplexity.options.xaxis = {
+					categories: [],
+				};
+			}
+
+			// Add tooltips for complexity chart
+			if (data && Array.isArray(data.complexity)) {
+				this.schemaComplexity.options.tooltip = {
+					custom: function({ seriesIndex, dataPointIndex, w }) {
+						const schema = data.complexity[dataPointIndex];
+						if (!schema) return '';
+						
+						return `
+							<div class="custom-tooltip">
+								<strong>${schema.name || 'Unknown Schema'}</strong><br/>
+								Complexity Score: ${schema.value || 0}<br/>
+								Total Fields: ${schema.fields || 0}<br/>
+								Required Fields: ${schema.required || 0}<br/>
+								Max Depth: ${schema.depth || 0}
+							</div>
+						`;
+					}
+				};
+			}
+		}
 	},
 }
 </script>

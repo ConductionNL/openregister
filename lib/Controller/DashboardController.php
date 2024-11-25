@@ -154,4 +154,69 @@ class DashboardController extends Controller {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Get data quality statistics
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @param string|null $from Start date
+     * @param string|null $to End date
+     * @return JSONResponse Data quality statistics
+     */
+    public function qualityStats(?string $from = null, ?string $to = null): JSONResponse {
+        try {
+            $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
+            $toDate = $to ? new \DateTime($to) : new \DateTime();
+
+            $validationErrors = $this->objectMapper->getValidationStats($fromDate, $toDate);
+            $completeness = $this->objectMapper->getCompletenessStats($fromDate, $toDate);
+            $revisions = $this->objectMapper->getRevisionStats($fromDate, $toDate);
+
+            $response = [
+                'validationErrors' => $validationErrors,
+                'completeness' => $completeness,
+                'revisions' => $revisions,
+            ];
+
+            // Debug log
+            error_log('Quality Stats Response: ' . json_encode($response));
+
+            return new JSONResponse($response);
+        } catch (\Exception $e) {
+            error_log('Quality Stats Error: ' . $e->getMessage());
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get schema analysis statistics
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @return JSONResponse Schema analysis statistics
+     */
+    public function schemaAnalysis(): JSONResponse {
+        try {
+            $fieldTypes = $this->schemaMapper->getFieldTypeStats();
+            $fieldUsage = $this->schemaMapper->getFieldUsageStats();
+            $schemaComplexity = $this->schemaMapper->getComplexityStats();
+            $versionDistribution = $this->schemaMapper->getVersionDistribution();
+
+            $response = [
+                'fieldTypes' => $fieldTypes,
+                'fieldUsage' => $fieldUsage,
+                'complexity' => $schemaComplexity,
+                'versions' => $versionDistribution,
+            ];
+
+            // Debug log
+            error_log('Schema Analysis Response: ' . json_encode($response));
+
+            return new JSONResponse($response);
+        } catch (\Exception $e) {
+            error_log('Schema Analysis Error: ' . $e->getMessage());
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
 }

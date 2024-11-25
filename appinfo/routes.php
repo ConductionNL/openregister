@@ -22,5 +22,7 @@ return [
 		['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
 		['name' => 'registers#uploadUpdate', 'url' => '/api/registers/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'dashboard#qualityStats', 'url' => '/api/dashboard/quality-stats', 'verb' => 'GET'],
+		['name' => 'dashboard#schemaAnalysis', 'url' => '/api/dashboard/schema-analysis', 'verb' => 'GET'],
 	],
 ];
