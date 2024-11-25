@@ -89,8 +89,7 @@ class Schema extends Entity implements JsonSerializable
 				}
 				unset($property['title'], $property['required']);
 
-				// Remove empty fields with array_filter().
-				$properties[$title] = array_filter($property);
+				$properties[$title] = $property;
 			}
 		}
 
@@ -129,6 +128,12 @@ class Schema extends Entity implements JsonSerializable
 	public function getSchemaObject(IURLGenerator $urlGenerator): object
 	{
 		$data = $this->jsonSerialize();
+
+		foreach ($data['properties'] as $key => $property) {
+			// Remove empty fields with array_filter().
+			$data['properties'][$key] = array_filter($property);
+		}
+
 		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
 			$data['updated'], $data['created']);
 
