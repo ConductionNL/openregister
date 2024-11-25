@@ -199,4 +199,94 @@ class AuditTrailMapper extends QBMapper
     }
 
 	// We dont need update as we dont change the log
+
+	/**
+	 * Count total number of audit trails
+	 * 
+	 * @return int Total number of audit trails
+	 */
+	public function count(): int {
+		$qb = $this->db->getQueryBuilder();
+		
+		$qb->select($qb->createFunction('COUNT(*) as count'))
+		   ->from('openregister_audit_trails');
+
+		$result = $qb->executeQuery();
+		$count = $result->fetch();
+		$result->closeCursor();
+
+		return (int)$count['count'];
+	}
+
+	/**
+	 * Get daily statistics for audit trails between two dates
+	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @return array Daily statistics grouped by operation type
+	 */
+	public function getDailyStats(\DateTime $from, \DateTime $to): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		
+		$qb->select(
+				$qb->createFunction('DATE(created) as date'),
+				$qb->createFunction('SUM(CASE WHEN action = \'create\' THEN 1 ELSE 0 END) as created'),
+				$qb->createFunction('SUM(CASE WHEN action = \'update\' THEN 1 ELSE 0 END) as updated'),
+				$qb->createFunction('SUM(CASE WHEN action = \'delete\' THEN 1 ELSE 0 END) as deleted')
+			)
+			->from('openregister_audit_trails')
+			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
+			->groupBy('date')
+			->orderBy('date', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		// Initialize stats array
+		$stats = [
+			'daily' => [
+				'created' => [],
+				'updated' => [],
+				'deleted' => [],
+			],
+			'totals' => [
+				'created' => 0,
+				'updated' => 0,
+				'deleted' => 0,
+			],
+		];
+
+		// Fill in the actual counts
+		foreach ($rows as $row) {
+			$date = $row['date'];
+			$stats['daily']['created'][$date] = (int)$row['created'];
+			$stats['daily']['updated'][$date] = (int)$row['updated'];
+			$stats['daily']['deleted'][$date] = (int)$row['deleted'];
+			
+			$stats['totals']['created'] += (int)$row['created'];
+			$stats['totals']['updated'] += (int)$row['updated'];
+			$stats['totals']['deleted'] += (int)$row['deleted'];
+		}
+
+		// Fill gaps with zeros
+		$period = new \DatePeriod(
+			$from,
+			new \DateInterval('P1D'),
+			$to->modify('+1 day')
+		);
+
+		foreach ($period as $date) {
+			$dateStr = $date->format('Y-m-d');
+			foreach (['created', 'updated', 'deleted'] as $operation) {
+				if (!isset($stats['daily'][$operation][$dateStr])) {
+					$stats['daily'][$operation][$dateStr] = 0;
+				}
+			}
+		}
+
+		return $stats;
+	}
 }

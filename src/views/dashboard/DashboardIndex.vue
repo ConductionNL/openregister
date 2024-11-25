@@ -59,7 +59,7 @@
 						</div>
 					</div>
 					<div>
-						<h5>Changes by Operation Type</h5>
+						<h5>Mutations by Operation Type</h5>
 						<div class="content">
 							<apexchart
 								width="500"
@@ -131,7 +131,7 @@ export default {
 					xaxis: {
 						type: 'datetime',
 					},
-					colors: ['#28a745', '#dc3545', '#ffc107', '#17a2b8'],
+					colors: ['#46ba61', '#0082c9', '#e9322d'],
 					title: {
 						text: 'Daily Object Changes',
 						align: 'left',
@@ -161,9 +161,13 @@ export default {
 						type: 'pie',
 					},
 					labels: ['Created', 'Updated', 'Deleted'],
-					colors: ['#28a745', '#ffc107', '#dc3545'],
+					colors: ['#46ba61', '#0082c9', '#e9322d'],
+					title: {
+						text: 'Mutations by Operation Type',
+						align: 'left',
+					},
 				},
-				series: [0, 0, 0], // Create, Update, Delete counts
+				series: [0, 0, 0],
 			},
 		}
 	},

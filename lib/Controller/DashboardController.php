@@ -10,7 +10,7 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\ObjectAuditLogMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * Controller for dashboard related operations
@@ -27,8 +27,8 @@ class DashboardController extends Controller {
     /** @var ObjectEntityMapper */
     private $objectMapper;
     
-    /** @var ObjectAuditLogMapper */
-    private $auditLogMapper;
+    /** @var AuditTrailMapper */
+    private $auditTrailMapper;
 
     /**
      * Constructor for DashboardController
@@ -38,7 +38,7 @@ class DashboardController extends Controller {
      * @param RegisterMapper $registerMapper Mapper for register operations
      * @param SchemaMapper $schemaMapper Mapper for schema operations
      * @param ObjectEntityMapper $objectMapper Mapper for object operations
-     * @param ObjectAuditLogMapper $auditLogMapper Mapper for audit log operations
+     * @param AuditTrailMapper $auditTrailMapper Mapper for audit trail operations
      */
     public function __construct(
         $appName,
@@ -46,13 +46,13 @@ class DashboardController extends Controller {
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         ObjectEntityMapper $objectMapper,
-        ObjectAuditLogMapper $auditLogMapper
+        AuditTrailMapper $auditTrailMapper
     ) {
         parent::__construct($appName, $request);
         $this->registerMapper = $registerMapper;
         $this->schemaMapper = $schemaMapper;
         $this->objectMapper = $objectMapper;
-        $this->auditLogMapper = $auditLogMapper;
+        $this->auditTrailMapper = $auditTrailMapper;
     }
 
     /**
@@ -68,7 +68,7 @@ class DashboardController extends Controller {
                 'registers' => $this->registerMapper->count(),
                 'schemas' => $this->schemaMapper->count(),
                 'objects' => $this->objectMapper->countAll(),
-                'auditLogs' => $this->auditLogMapper->count(),
+                'auditLogs' => $this->auditTrailMapper->count(),
             ];
             return new JSONResponse($stats);
         } catch (\Exception $e) {
@@ -90,7 +90,7 @@ class DashboardController extends Controller {
             $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
             $toDate = $to ? new \DateTime($to) : new \DateTime();
 
-            $stats = $this->auditLogMapper->getDailyStats($fromDate, $toDate);
+            $stats = $this->auditTrailMapper->getDailyStats($fromDate, $toDate);
             return new JSONResponse($stats);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
