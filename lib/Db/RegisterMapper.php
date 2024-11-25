@@ -177,4 +177,20 @@ class RegisterMapper extends QBMapper
 
 		return false;
 	}
+
+	/**
+	 * Count total number of registers
+	 * @return int Total number of registers
+	 */
+	public function count(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) as count'))
+		   ->from('openregister_registers');
+
+		$result = $qb->executeQuery();
+		$count = $result->fetch();
+		$result->closeCursor();
+
+		return (int)$count['count'];
+	}
 }

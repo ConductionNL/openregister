@@ -139,4 +139,20 @@ class SchemaMapper extends QBMapper
 
 		return $this->update($obj);
 	}
+
+	/**
+	 * Count total number of schemas
+	 * @return int Total number of schemas
+	 */
+	public function count(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) as count'))
+		   ->from('openregister_schemas');
+
+		$result = $qb->executeQuery();
+		$count = $result->fetch();
+		$result->closeCursor();
+
+		return (int)$count['count'];
+	}
 }

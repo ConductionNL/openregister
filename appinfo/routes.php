@@ -9,6 +9,8 @@ return [
 	],
 	'routes' => [
 		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+		['name' => 'dashboard#stats', 'url' => '/api/dashboard/stats', 'verb' => 'GET'],
+		['name' => 'dashboard#auditStats', 'url' => '/api/dashboard/audit-stats', 'verb' => 'GET'],
 		['name' => 'registers#objects', 'url' => '/api/registers-objects/{register}/{schema}', 'verb' => 'GET'],
 		['name' => 'objects#logs', 'url' => '/api/objects-logs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'objects#mappings', 'url' => '/api/objects/mappings', 'verb' => 'GET'],

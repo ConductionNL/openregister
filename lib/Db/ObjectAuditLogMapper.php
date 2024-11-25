@@ -82,4 +82,94 @@ class ObjectAuditLogMapper extends QBMapper
 
 		return $this->update($obj);
 	}
+
+	/**
+	 * Count total number of audit logs
+	 * @return int Total number of audit logs
+	 */
+	public function count(): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*) as count'))
+		   ->from('openregister_object_audit_logs');
+
+		$result = $qb->executeQuery();
+		$count = $result->fetch();
+		$result->closeCursor();
+
+		return (int)$count['count'];
+	}
+
+	/**
+	 * Get daily statistics for audit logs between two dates
+	 * Temporarily treats all operations as updates until operation column is added
+	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @return array Daily statistics grouped by operation type
+	 */
+	public function getDailyStats(\DateTime $from, \DateTime $to): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		
+		$qb->select(
+				$qb->createFunction('DATE(created) as date'),
+				$qb->createFunction('COUNT(*) as total')
+			)
+			->from('openregister_object_audit_logs')
+			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
+			->groupBy('date')
+			->orderBy('date', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		// Initialize the return array with all dates and operations
+		$stats = [
+			'daily' => [
+				'created' => [],
+				'updated' => [],
+				'deleted' => [],
+			],
+			'totals' => [
+				'created' => 0,
+				'updated' => 0,
+				'deleted' => 0,
+			],
+		];
+
+		// Fill in the actual counts - temporarily treating all as updates
+		foreach ($rows as $row) {
+			$date = $row['date'];
+			$count = (int)$row['total'];
+
+			// Set all counts as updates for now
+			$stats['daily']['updated'][$date] = $count;
+			$stats['totals']['updated'] += $count;
+			
+			// Set other operations to 0
+			$stats['daily']['created'][$date] = 0;
+			$stats['daily']['deleted'][$date] = 0;
+		}
+
+		// Ensure all dates have values (fill gaps with 0)
+		$period = new \DatePeriod(
+			$from,
+			new \DateInterval('P1D'),
+			$to->modify('+1 day')
+		);
+
+		foreach ($period as $date) {
+			$dateStr = $date->format('Y-m-d');
+			foreach (['created', 'updated', 'deleted'] as $operation) {
+				if (!isset($stats['daily'][$operation][$dateStr])) {
+					$stats['daily'][$operation][$dateStr] = 0;
+				}
+			}
+		}
+
+		return $stats;
+	}
 }
