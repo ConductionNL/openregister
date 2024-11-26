@@ -362,13 +362,13 @@ class ObjectService
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
-		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		if ($objectEntity->getId() && ($schemaObject->isHardValidationEnabled() === false || $validationResult->isValid() === true)){
 			// Unlock the object after update
 			$objectEntity->removeLock();
 			
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+		} else if ($schemaObject->isHardValidationEnabled() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}

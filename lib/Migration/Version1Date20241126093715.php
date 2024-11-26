@@ -43,6 +43,9 @@ class Version1Date20241126093715 extends SimpleMigrationStep {
 		if ($table->hasColumn('configuration') === false) {
 			$table->addColumn(name: 'configuration', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
 		}
+		if ($table->hasColumn('hard_validation') === true) {
+			$table->dropColumn('hard_validation', 'hard_validation');
+		}
 
 		// Update the openregister_objects table to add locked column
 		$table = $schema->getTable('openregister_objects');
