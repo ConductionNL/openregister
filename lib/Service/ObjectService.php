@@ -49,7 +49,7 @@ class ObjectService
 
     /** @var SearchLogMapper For logging searches */
     private SearchLogMapper $searchLogMapper;
-
+    
     /**
      * Constructor for ObjectService
      *
@@ -327,6 +327,11 @@ class ObjectService
                 $this->schemaMapper->find($schema),
                 $object['id']
             );
+
+            // Check if existing object is locked
+            if ($objectEntity && objectEntity->isLocked()) {
+                throw new ValidationException('Cannot modify locked object', ['locked' => 'Object is locked for editing']);
+            }
         }
 
 		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
@@ -358,6 +363,9 @@ class ObjectService
 		$schemaObject = $this->schemaMapper->find($schema);
 
 		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+			// Unlock the object after update
+			$objectEntity->removeLock();
+			
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
@@ -415,6 +423,12 @@ class ObjectService
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
             $object = $this->objectEntityMapper->findByUuid(register: $register, schema: $schema, uuid: $uuid);
+            
+            // Check if object is locked
+            if ($object->isLocked()) {
+                throw new ValidationException('Cannot delete locked object', ['locked' => 'Object is locked for deletion']);
+            }
+            
             $this->objectEntityMapper->delete($object);
             return true;
         }
@@ -634,4 +648,6 @@ class ObjectService
 
         return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
     }
+
+   
 }
