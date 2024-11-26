@@ -13,6 +13,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\SearchLog;
+use OCA\OpenRegister\Db\SearchLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\DB\Exception;
@@ -45,6 +47,9 @@ class ObjectService
     /** @var AuditTrailMapper For tracking object changes */
     private AuditTrailMapper $auditTrailMapper;
 
+    /** @var SearchLogMapper For logging searches */
+    private SearchLogMapper $searchLogMapper;
+
     /**
      * Constructor for ObjectService
      *
@@ -54,12 +59,14 @@ class ObjectService
      * @param RegisterMapper $registerMapper Mapper for registers
      * @param SchemaMapper $schemaMapper Mapper for schemas
      * @param AuditTrailMapper $auditTrailMapper Mapper for audit trails
+     * @param SearchLogMapper $searchLogMapper Mapper for search logs
      */
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         AuditTrailMapper $auditTrailMapper,
+        SearchLogMapper $searchLogMapper,
 		private readonly IURLGenerator $urlGenerator
     )
     {
@@ -67,6 +74,7 @@ class ObjectService
         $this->registerMapper = $registerMapper;
         $this->schemaMapper = $schemaMapper;
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->searchLogMapper = $searchLogMapper;
     }
 
 	/**
@@ -172,6 +180,7 @@ class ObjectService
      */
     public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null): array
     {
+        // Get the search results
         $objects = $this->getObjects(
             register: $this->getRegister(),
             schema: $this->getSchema(),
@@ -180,6 +189,15 @@ class ObjectService
             filters: $filters,
             sort: $sort,
             search: $search
+        );
+
+        // Log the search
+        $this->searchLogMapper->createSearchLog(
+            schema: $this->getSchema(),
+            register: $this->getRegister(),
+            filters: $filters,
+            search: $search,
+            resultCount: count($objects)
         );
 
         return $objects;
