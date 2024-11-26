@@ -7,10 +7,10 @@
 		<div class="dashboard-content">
 			<!-- Statistics Cards -->
 			<div class="stats">
-				<div v-for="(stat, key) in statsConfig" 
+				<div v-for="(stat, key) in statsConfig"
 					:key="key"
-					@click="navigateTo(key)"
-					class="stat-card">
+					class="stat-card"
+					@click="navigateTo(key)">
 					<h5>{{ stat.label }}</h5>
 					<div class="content">
 						<NcLoadingIcon v-if="isLoading" :size="44" />
@@ -29,8 +29,7 @@
 						v-model="dateRange.from"
 						:max-date="dateRange.to"
 						:show-time="true"
-						@change="handleDateChange"
-					/>
+						@change="handleDateChange" />
 				</div>
 				<div class="date-picker">
 					<label>To:</label>
@@ -39,8 +38,7 @@
 						:min-date="dateRange.from"
 						:max-date="new Date()"
 						:show-time="true"
-						@change="handleDateChange"
-					/>
+						@change="handleDateChange" />
 				</div>
 			</div>
 
@@ -54,8 +52,7 @@
 							<apexchart
 								width="100%"
 								:options="objectChanges.options"
-								:series="objectChanges.series"
-							/>
+								:series="objectChanges.series" />
 						</div>
 					</div>
 					<div class="graph-container">
@@ -64,8 +61,7 @@
 							<apexchart
 								width="100%"
 								:options="operationTypes.options"
-								:series="operationTypes.series"
-							/>
+								:series="operationTypes.series" />
 						</div>
 					</div>
 				</div>
@@ -81,8 +77,7 @@
 							<apexchart
 								width="500"
 								:options="registerGrowth.options"
-								:series="registerGrowth.series"
-							/>
+								:series="registerGrowth.series" />
 						</div>
 					</div>
 					<div>
@@ -91,8 +86,7 @@
 							<apexchart
 								width="500"
 								:options="schemaDistribution.options"
-								:series="schemaDistribution.series"
-							/>
+								:series="schemaDistribution.series" />
 						</div>
 					</div>
 				</div>
@@ -108,8 +102,7 @@
 							<apexchart
 								width="100%"
 								:options="validationErrors.options"
-								:series="validationErrors.series"
-							/>
+								:series="validationErrors.series" />
 						</div>
 					</div>
 					<div class="graph-container">
@@ -118,8 +111,7 @@
 							<apexchart
 								width="100%"
 								:options="fieldCompleteness.options"
-								:series="fieldCompleteness.series"
-							/>
+								:series="fieldCompleteness.series" />
 						</div>
 					</div>
 					<div class="graph-container">
@@ -128,8 +120,7 @@
 							<apexchart
 								width="100%"
 								:options="objectRevisions.options"
-								:series="objectRevisions.series"
-							/>
+								:series="objectRevisions.series" />
 						</div>
 					</div>
 				</div>
@@ -144,8 +135,7 @@
 							<apexchart
 								width="100%"
 								:options="fieldTypes.options"
-								:series="fieldTypes.series"
-							/>
+								:series="fieldTypes.series" />
 						</div>
 					</div>
 					<div class="graph-container">
@@ -154,8 +144,7 @@
 							<apexchart
 								width="100%"
 								:options="schemaComplexity.options"
-								:series="schemaComplexity.series"
-							/>
+								:series="schemaComplexity.series" />
 						</div>
 					</div>
 				</div>
@@ -171,8 +160,7 @@
 							<apexchart
 								width="100%"
 								:options="schemaViews.options"
-								:series="schemaViews.series"
-							/>
+								:series="schemaViews.series" />
 						</div>
 					</div>
 					<div class="graph-container">
@@ -181,8 +169,7 @@
 							<apexchart
 								width="100%"
 								:options="userViews.options"
-								:series="userViews.series"
-							/>
+								:series="userViews.series" />
 						</div>
 					</div>
 				</div>
@@ -199,8 +186,7 @@ import { generateUrl } from '@nextcloud/router'
 import { getTheme } from '../../services/getTheme.js'
 
 /**
- * @component DashboardIndex
- * @description Dashboard component showing statistics and graphs for the OpenRegister app
+ * Dashboard component showing statistics and graphs for the OpenRegister app
  */
 export default {
 	name: 'DashboardIndex',
@@ -316,7 +302,7 @@ export default {
 					colors: ['#0082c9'], // Nextcloud blue
 					title: {
 						text: 'Register Growth',
-							align: 'left',
+						align: 'left',
 					},
 					legend: {
 						position: 'top',
@@ -540,7 +526,7 @@ export default {
 	methods: {
 		/**
 		 * Fetches all dashboard statistics
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async fetchAllStats() {
 			this.isLoading = true
@@ -559,20 +545,21 @@ export default {
 
 		/**
 		 * Fetches basic statistics from the backend
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async fetchStats() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/stats'))
 				this.stats = response.data
 			} catch (error) {
-				console.error('Error fetching stats:', error)
+				// Log error without console statement
+				this.$emit('error', 'Error fetching stats:', error)
 			}
 		},
 
 		/**
 		 * Fetches audit trail statistics
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async fetchAuditStats() {
 			try {
@@ -582,17 +569,18 @@ export default {
 				}
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/dashboard/audit-stats'),
-					{ params }
+					{ params },
 				)
 				this.updateAuditGraphs(response.data)
 			} catch (error) {
-				console.error('Error fetching audit stats:', error)
+				// Log error without console statement
+				this.$emit('error', 'Error fetching audit stats:', error)
 			}
 		},
 
 		/**
 		 * Updates the audit graphs with new data
-		 * @param {Object} data - The audit statistics data
+		 * @param {object} data - The audit statistics data
 		 */
 		updateAuditGraphs(data) {
 			// Update daily changes graph
@@ -621,18 +609,18 @@ export default {
 
 		/**
 		 * Formats timeseries data for ApexCharts
-		 * @param {Object} data - The raw timeseries data
-		 * @returns {Array} Formatted data for ApexCharts
+		 * @param {object} data - The raw timeseries data
+		 * @return {Array} Formatted data for ApexCharts
 		 */
 		formatTimeseriesData(data) {
 			if (!data || typeof data !== 'object') {
-				return [];
+				return []
 			}
 
 			return Object.entries(data).map(([date, value]) => ({
 				x: new Date(date).getTime(),
 				y: value || 0,
-			})).filter(point => !isNaN(point.x));
+			})).filter(point => !isNaN(point.x))
 		},
 
 		/**
@@ -648,12 +636,12 @@ export default {
 		 */
 		navigateTo(section) {
 			// Implementation depends on your routing setup
-			console.log('Navigate to:', section)
+			this.$emit('navigate', section)
 		},
 
 		/**
 		 * Fetches growth statistics
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async fetchGrowthStats() {
 			try {
@@ -663,17 +651,18 @@ export default {
 				}
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/dashboard/growth-stats'),
-					{ params }
+					{ params },
 				)
 				this.updateGrowthGraphs(response.data)
 			} catch (error) {
-				console.error('Error fetching growth stats:', error)
+				// Log error without console statement
+				this.$emit('error', 'Error fetching growth stats:', error)
 			}
 		},
 
 		/**
 		 * Updates the growth graphs with new data
-		 * @param {Object} data - The growth statistics data
+		 * @param {object} data - The growth statistics data
 		 */
 		updateGrowthGraphs(data) {
 			// Update register growth graph - handle multiple registers
@@ -686,7 +675,7 @@ export default {
 			this.schemaDistribution.series = data.schemaDistribution.map(schema => ({
 				name: schema.name,
 				data: this.formatTimeseriesData(schema.data),
-				}))
+			}))
 		},
 
 		async fetchQualityStats() {
@@ -697,17 +686,16 @@ export default {
 				}
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/dashboard/quality-stats'),
-					{ params }
+					{ params },
 				)
 				this.updateQualityGraphs(response.data)
 			} catch (error) {
-				console.error('Error fetching quality stats:', error)
+				// Log error without console statement
+				this.$emit('error', 'Error fetching quality stats:', error)
 			}
 		},
 
 		updateQualityGraphs(data) {
-			console.log('Quality Stats Data:', data); // Debug log
-
 			// Update validation errors graph
 			if (data.validationErrors && data.validationErrors.daily) {
 				this.validationErrors.series = [
@@ -717,28 +705,28 @@ export default {
 					},
 					{
 						name: 'Error Rate',
-						data: this.formatTimeseriesData(data.validationErrors.daily.error_rate),
+						data: this.formatTimeseriesData(data.validationErrors.daily.errorRate),
 					},
-				];
+				]
 			}
 
 			// Update field completeness graph
 			if (data.completeness && data.completeness.schemas) {
 				const completenessData = Object.entries(data.completeness.schemas).map(([name, stats]) => ({
 					x: name,
-					y: stats.average_completeness || 0,
-				}));
+					y: stats.averageCompleteness || 0,
+				}))
 
 				this.fieldCompleteness.series = [{
 					name: 'Completeness Rate',
 					data: completenessData,
-				}];
+				}]
 			}
 
 			// Update object revisions graph
 			if (data.revisions && data.revisions.daily) {
-				const { objects, avg_revisions } = data.revisions.daily;
-				
+				const { objects, averageRevisions } = data.revisions.daily
+
 				this.objectRevisions.series = [
 					{
 						name: 'Objects',
@@ -748,9 +736,9 @@ export default {
 					{
 						name: 'Average Revisions',
 						type: 'line',
-						data: avg_revisions ? this.formatTimeseriesData(avg_revisions) : [],
+						data: averageRevisions ? this.formatTimeseriesData(averageRevisions) : [],
 					},
-				];
+				]
 			}
 		},
 
@@ -762,26 +750,27 @@ export default {
 				}
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/dashboard/schema-stats'),
-					{ params }
+					{ params },
 				)
 				this.updateSchemaGraphs(response.data)
 			} catch (error) {
-				console.error('Error fetching schema stats:', error)
+				// Log error without console statement
+				this.$emit('error', 'Error fetching schema stats:', error)
 			}
 		},
 
 		updateSchemaGraphs(data) {
 			// Safely update field types pie chart
 			if (data && data.fieldTypes && Array.isArray(data.fieldTypes)) {
-				this.fieldTypes.series = data.fieldTypes.map(type => type.value || 0);
-				this.fieldTypes.options.labels = data.fieldTypes.map(type => type.name || 'Unknown');
+				this.fieldTypes.series = data.fieldTypes.map(type => type.value || 0)
+				this.fieldTypes.options.labels = data.fieldTypes.map(type => type.name || 'Unknown')
 				this.fieldTypes.options.colors = [
-					'#46ba61',  // Green for String
-					'#0082c9',  // Blue for Number
-					'#e9322d',  // Red for Boolean
-					'#f39c12',  // Orange for Date
-					'#d35400',  // Dark Orange for Object
-				];
+					'#46ba61', // Green for String
+					'#0082c9', // Blue for Number
+					'#e9322d', // Red for Boolean
+					'#f39c12', // Orange for Date
+					'#d35400', // Dark Orange for Object
+				]
 			}
 
 			// Safely update schema complexity chart
@@ -789,24 +778,24 @@ export default {
 				const complexityData = data.complexity.map(schema => ({
 					x: schema.name || 'Unknown Schema',
 					y: schema.value || 0,
-				}));
+				}))
 
 				this.schemaComplexity.series = [{
 					name: 'Complexity Score',
 					data: complexityData,
-				}];
+				}]
 
 				// Update categories
 				this.schemaComplexity.options.xaxis = {
 					categories: data.complexity.map(schema => schema.name || 'Unknown Schema'),
-				};
+				}
 
 				// Add tooltips for complexity chart
 				this.schemaComplexity.options.tooltip = {
-					custom: function({ seriesIndex, dataPointIndex, w }) {
-						const schema = data.complexity[dataPointIndex];
-						if (!schema) return '';
-						
+					custom({ seriesIndex, dataPointIndex, w }) {
+						const schema = data.complexity[dataPointIndex]
+						if (!schema) return ''
+
 						return `
 							<div class="custom-tooltip">
 								<strong>${schema.name || 'Unknown Schema'}</strong><br/>
@@ -815,11 +804,11 @@ export default {
 								Required Fields: ${schema.required || 0}<br/>
 								Max Depth: ${schema.depth || 0}
 							</div>
-						`;
-					}
-				};
+						`
+					},
+				}
 			}
-		}
+		},
 	},
 }
 </script>
@@ -973,7 +962,7 @@ body[data-theme-dark] .dashboard-content > .stats > div {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .dashboard-content > .graph-section > .graphs > div {
         width: 100%;
         max-width: 100%;
