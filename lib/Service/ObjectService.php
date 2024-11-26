@@ -327,12 +327,12 @@ class ObjectService
                 $this->schemaMapper->find($schema),
                 $object['id']
             );
-
-            // Check if existing object is locked
-            if ($objectEntity && objectEntity->isLocked()) {
-                throw new ValidationException('Cannot modify locked object', ['locked' => 'Object is locked for editing']);
-            }
         }
+
+        // Check if existing object is locked
+        //if ($objectEntity && objectEntity->isLocked()) {
+        //     throw new ValidationException('Cannot modify locked object', ['locked' => 'Object is locked for editing']);
+        //}
 
 		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
@@ -398,7 +398,7 @@ class ObjectService
             $object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
             
             // Log the read action to audit trail
-            $this->auditTrailMapper->logRead(new: $object);
+            $this->auditTrailMapper->logRead(object: $object);
             
             return $object;
         }
