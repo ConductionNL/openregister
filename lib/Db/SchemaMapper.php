@@ -159,18 +159,23 @@ class SchemaMapper extends QBMapper
 	/**
 	 * Get statistics about field types used across schemas
 	 * 
-	 * @return array Distribution of field types across all schemas
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema filter
+	 * @return array Distribution of field types across schemas
 	 */
-	public function getFieldTypeStats(): array {
-		$schemas = $this->findAll();
+	public function getFieldTypeStats(\DateTime $from, \DateTime $to, ?int $schemaId = null): array {
+		$schemas = $schemaId !== null ? [$this->find($schemaId)] : $this->findAll();
 		$fieldTypes = [];
 		$total = 0;
 
 		foreach ($schemas as $schema) {
-			// Properties is already an array since it's defined as json type in Schema entity
+			// Check if schema was active in the date range
+			if ($schema->getCreated() > $to || ($schema->getUpdated() && $schema->getUpdated() < $from)) {
+				continue;
+			}
+
 			$properties = $schema->getProperties();
-			
-			// Skip if properties is not an array
 			if (!is_array($properties)) {
 				continue;
 			}
@@ -201,18 +206,27 @@ class SchemaMapper extends QBMapper
 	/**
 	 * Get field usage statistics including formats
 	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema filter
 	 * @return array Field usage and format statistics across schemas
 	 */
-	public function getFieldUsageStats(): array {
-		$schemas = $this->findAll();
+	public function getFieldUsageStats(\DateTime $from, \DateTime $to, ?int $schemaId = null): array {
+		$schemas = $schemaId !== null ? [$this->find($schemaId)] : $this->findAll();
 		$fieldUsage = [];
 		$formatUsage = [];
-		$totalSchemas = count($schemas);
+		$totalSchemas = 0;
 		$totalFields = 0;
 
-		// Analyze each schema's properties
 		foreach ($schemas as $schema) {
+			// Check if schema was active in the date range
+			if ($schema->getCreated() > $to || ($schema->getUpdated() && $schema->getUpdated() < $from)) {
+				continue;
+			}
+
+			$totalSchemas++;
 			$properties = $schema->getProperties() ?? [];
+
 			foreach ($properties as $field => $config) {
 				$totalFields++;
 				
@@ -282,13 +296,21 @@ class SchemaMapper extends QBMapper
 	/**
 	 * Get schema complexity metrics
 	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema filter
 	 * @return array Complexity scores for each schema
 	 */
-	public function getComplexityStats(): array {
-		$schemas = $this->findAll();
+	public function getComplexityStats(\DateTime $from, \DateTime $to, ?int $schemaId = null): array {
+		$schemas = $schemaId !== null ? [$this->find($schemaId)] : $this->findAll();
 		$stats = [];
 
 		foreach ($schemas as $schema) {
+			// Check if schema was active in the date range
+			if ($schema->getCreated() > $to || ($schema->getUpdated() && $schema->getUpdated() < $from)) {
+				continue;
+			}
+
 			$properties = $schema->getProperties() ?? [];
 			$requiredFields = 0;
 			$maxDepth = 0;
@@ -345,14 +367,23 @@ class SchemaMapper extends QBMapper
 	/**
 	 * Get schema version distribution
 	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema filter
 	 * @return array Distribution of schema versions
 	 */
-	public function getVersionDistribution(): array {
-		$schemas = $this->findAll();
+	public function getVersionDistribution(\DateTime $from, \DateTime $to, ?int $schemaId = null): array {
+		$schemas = $schemaId !== null ? [$this->find($schemaId)] : $this->findAll();
 		$versions = [];
-		$total = count($schemas);
+		$total = 0;
 
 		foreach ($schemas as $schema) {
+			// Check if schema was active in the date range
+			if ($schema->getCreated() > $to || ($schema->getUpdated() && $schema->getUpdated() < $from)) {
+				continue;
+			}
+
+			$total++;
 			$version = $schema->getVersion();
 			if (!isset($versions[$version])) {
 				$versions[$version] = [

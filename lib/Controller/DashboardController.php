@@ -134,17 +134,24 @@ class DashboardController extends Controller {
      * 
      * @NoAdminRequired
      * @NoCSRFRequired
-     * @param string|null $from Start date (defaults to 7 days ago)
-     * @param string|null $to End date (defaults to today)
+     * @param string|null $from Start date
+     * @param string|null $to End date
+     * @param int|null $schemaId Optional schema ID filter
+     * @param int|null $registerId Optional register ID filter
      * @return JSONResponse Growth statistics or error message
      */
-    public function growthStats(?string $from = null, ?string $to = null): JSONResponse {
+    public function growthStats(
+        ?string $from = null,
+        ?string $to = null,
+        ?int $schemaId = null,
+        ?int $registerId = null
+    ): JSONResponse {
         try {
             $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
             $toDate = $to ? new \DateTime($to) : new \DateTime();
 
-            $registerGrowth = $this->objectMapper->getRegisterGrowth($fromDate, $toDate);
-            $schemaDistribution = $this->objectMapper->getSchemaDistribution($fromDate, $toDate);
+            $registerGrowth = $this->objectMapper->getRegisterGrowth($fromDate, $toDate, $registerId);
+            $schemaDistribution = $this->objectMapper->getSchemaDistribution($fromDate, $toDate, $schemaId);
 
             return new JSONResponse([
                 'registerGrowth' => $registerGrowth,
@@ -162,29 +169,30 @@ class DashboardController extends Controller {
      * @NoCSRFRequired
      * @param string|null $from Start date
      * @param string|null $to End date
+     * @param int|null $schemaId Optional schema ID filter
+     * @param int|null $registerId Optional register ID filter
      * @return JSONResponse Data quality statistics
      */
-    public function qualityStats(?string $from = null, ?string $to = null): JSONResponse {
+    public function qualityStats(
+        ?string $from = null,
+        ?string $to = null,
+        ?int $schemaId = null,
+        ?int $registerId = null
+    ): JSONResponse {
         try {
             $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
             $toDate = $to ? new \DateTime($to) : new \DateTime();
 
-            $validationErrors = $this->objectMapper->getValidationStats($fromDate, $toDate);
-            $completeness = $this->objectMapper->getCompletenessStats($fromDate, $toDate);
-            $revisions = $this->objectMapper->getRevisionStats($fromDate, $toDate);
+            $validationErrors = $this->objectMapper->getValidationStats($fromDate, $toDate, $schemaId, $registerId);
+            $completeness = $this->objectMapper->getCompletenessStats($fromDate, $toDate, $schemaId, $registerId);
+            $revisions = $this->objectMapper->getRevisionStats($fromDate, $toDate, $schemaId, $registerId);
 
-            $response = [
+            return new JSONResponse([
                 'validationErrors' => $validationErrors,
                 'completeness' => $completeness,
                 'revisions' => $revisions,
-            ];
-
-            // Debug log
-            error_log('Quality Stats Response: ' . json_encode($response));
-
-            return new JSONResponse($response);
+            ]);
         } catch (\Exception $e) {
-            error_log('Quality Stats Error: ' . $e->getMessage());
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
@@ -194,28 +202,55 @@ class DashboardController extends Controller {
      * 
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @param string|null $from Start date
+     * @param string|null $to End date
+     * @param int|null $schemaId Optional schema ID filter
+     * @param int|null $registerId Optional register ID filter
      * @return JSONResponse Schema analysis statistics
      */
-    public function schemaAnalysis(): JSONResponse {
+    public function schemaStats(
+        ?string $from = null,
+        ?string $to = null,
+        ?int $schemaId = null,
+        ?int $registerId = null
+    ): JSONResponse {
         try {
-            $fieldTypes = $this->schemaMapper->getFieldTypeStats();
-            $fieldUsage = $this->schemaMapper->getFieldUsageStats();
-            $schemaComplexity = $this->schemaMapper->getComplexityStats();
-            $versionDistribution = $this->schemaMapper->getVersionDistribution();
+            $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
+            $toDate = $to ? new \DateTime($to) : new \DateTime();
 
-            $response = [
+            $fieldTypes = $this->schemaMapper->getFieldTypeStats($fromDate, $toDate, $schemaId);
+            $fieldUsage = $this->schemaMapper->getFieldUsageStats($fromDate, $toDate, $schemaId);
+            $schemaComplexity = $this->schemaMapper->getComplexityStats($fromDate, $toDate, $schemaId);
+            $versionDistribution = $this->schemaMapper->getVersionDistribution($fromDate, $toDate, $schemaId);
+
+            return new JSONResponse([
                 'fieldTypes' => $fieldTypes,
                 'fieldUsage' => $fieldUsage,
                 'complexity' => $schemaComplexity,
                 'versions' => $versionDistribution,
-            ];
-
-            // Debug log
-            error_log('Schema Analysis Response: ' . json_encode($response));
-
-            return new JSONResponse($response);
+            ]);
         } catch (\Exception $e) {
-            error_log('Schema Analysis Error: ' . $e->getMessage());
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get access statistics
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @param string|null $from Start date
+     * @param string|null $to End date
+     * @return JSONResponse Access statistics
+     */
+    public function accessStats(?string $from = null, ?string $to = null): JSONResponse {
+        try {
+            $fromDate = $from ? new \DateTime($from) : new \DateTime('-7 days');
+            $toDate = $to ? new \DateTime($to) : new \DateTime();
+
+            $stats = $this->auditTrailMapper->getAccessStats($fromDate, $toDate);
+            return new JSONResponse($stats);
+        } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }

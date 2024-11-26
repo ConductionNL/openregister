@@ -160,6 +160,33 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Add after Schema Analysis section -->
+			<div class="graph-section">
+				<h3>Access Analysis</h3>
+				<div class="graphs">
+					<div class="graph-container">
+						<h5>Views per Schema</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="schemaViews.options"
+								:series="schemaViews.series"
+							/>
+						</div>
+					</div>
+					<div class="graph-container">
+						<h5>Views per User</h5>
+						<div class="content">
+							<apexchart
+								width="100%"
+								:options="userViews.options"
+								:series="userViews.series"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</NcAppContent>
 </template>
@@ -459,6 +486,52 @@ export default {
 					},
 				],
 			},
+			schemaViews: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'area',
+						stacked: true,
+					},
+					stroke: {
+						curve: 'smooth',
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					colors: ['#46ba61'],
+					title: {
+						text: 'Views per Schema',
+						align: 'left',
+					},
+				},
+				series: [],
+			},
+			userViews: {
+				options: {
+					theme: {
+						mode: getTheme(),
+					},
+					chart: {
+						type: 'area',
+						stacked: true,
+					},
+					stroke: {
+						curve: 'smooth',
+					},
+					xaxis: {
+						type: 'datetime',
+					},
+					colors: ['#46ba61'],
+					title: {
+						text: 'Views per User',
+						align: 'left',
+					},
+				},
+				series: [],
+			},
 		}
 	},
 	async mounted() {
@@ -477,7 +550,7 @@ export default {
 					this.fetchAuditStats(),
 					this.fetchGrowthStats(),
 					this.fetchQualityStats(),
-					this.fetchSchemaAnalysis(),
+					this.fetchSchemaStats(),
 				])
 			} finally {
 				this.isLoading = false
@@ -681,14 +754,19 @@ export default {
 			}
 		},
 
-		async fetchSchemaAnalysis() {
+		async fetchSchemaStats() {
 			try {
+				const params = {
+					from: this.dateRange.from.toISOString(),
+					to: this.dateRange.to.toISOString(),
+				}
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/dashboard/schema-analysis')
+					generateUrl('/apps/openregister/api/dashboard/schema-stats'),
+					{ params }
 				)
 				this.updateSchemaGraphs(response.data)
 			} catch (error) {
-				console.error('Error fetching schema analysis:', error)
+				console.error('Error fetching schema stats:', error)
 			}
 		},
 
@@ -697,10 +775,13 @@ export default {
 			if (data && data.fieldTypes && Array.isArray(data.fieldTypes)) {
 				this.fieldTypes.series = data.fieldTypes.map(type => type.value || 0);
 				this.fieldTypes.options.labels = data.fieldTypes.map(type => type.name || 'Unknown');
-			} else {
-				// Set default values if no data
-				this.fieldTypes.series = [0, 0, 0, 0, 0];
-				this.fieldTypes.options.labels = ['String', 'Number', 'Boolean', 'Date', 'Object'];
+				this.fieldTypes.options.colors = [
+					'#46ba61',  // Green for String
+					'#0082c9',  // Blue for Number
+					'#e9322d',  // Red for Boolean
+					'#f39c12',  // Orange for Date
+					'#d35400',  // Dark Orange for Object
+				];
 			}
 
 			// Safely update schema complexity chart
@@ -719,19 +800,8 @@ export default {
 				this.schemaComplexity.options.xaxis = {
 					categories: data.complexity.map(schema => schema.name || 'Unknown Schema'),
 				};
-			} else {
-				// Set empty state
-				this.schemaComplexity.series = [{
-					name: 'Complexity Score',
-					data: [],
-				}];
-				this.schemaComplexity.options.xaxis = {
-					categories: [],
-				};
-			}
 
-			// Add tooltips for complexity chart
-			if (data && Array.isArray(data.complexity)) {
+				// Add tooltips for complexity chart
 				this.schemaComplexity.options.tooltip = {
 					custom: function({ seriesIndex, dataPointIndex, w }) {
 						const schema = data.complexity[dataPointIndex];

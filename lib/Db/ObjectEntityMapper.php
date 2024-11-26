@@ -411,23 +411,32 @@ class ObjectEntityMapper extends QBMapper
 	 * 
 	 * @param \DateTime $from Start date
 	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema ID filter
+	 * @param int|null $registerId Optional register ID filter
 	 * @return array Validation statistics per day
 	 */
-	public function getValidationStats(\DateTime $from, \DateTime $to): array {
+	public function getValidationStats(\DateTime $from, \DateTime $to, ?int $schemaId = null, ?int $registerId = null): array {
 		$qb = $this->db->getQueryBuilder();
 		
-		// Get validation errors per day by checking the object field for validation errors
 		$qb->select(
 				$qb->createFunction('DATE(created) as date'),
 				$qb->createFunction('COUNT(*) as total_count'),
-				// Check if object field contains validation errors
 				$qb->createFunction('COUNT(CASE WHEN JSON_CONTAINS_PATH(object, \'one\', \'$.validation_errors\') = 1 THEN 1 END) as error_count')
 			)
 			->from('openregister_objects')
 			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
-			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
-			->groupBy('date')
-			->orderBy('date', 'ASC');
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+
+		// Add optional filters
+		if ($schemaId !== null) {
+			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId)));
+		}
+		if ($registerId !== null) {
+			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId)));
+		}
+
+		$qb->groupBy('date')
+		   ->orderBy('date', 'ASC');
 
 		$result = $qb->executeQuery();
 		$rows = $result->fetchAll();
@@ -493,13 +502,17 @@ class ObjectEntityMapper extends QBMapper
 	 * 
 	 * @param \DateTime $from Start date
 	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema ID filter
+	 * @param int|null $registerId Optional register ID filter
 	 * @return array Completeness statistics
 	 */
-	public function getCompletenessStats(\DateTime $from, \DateTime $to): array {
+	public function getCompletenessStats(\DateTime $from, \DateTime $to, ?int $schemaId = null, ?int $registerId = null): array {
 		$qb = $this->db->getQueryBuilder();
 		
 		// Get all schemas to analyze their required fields
-		$schemas = $this->schemaMapper->findAll();
+		$schemas = $schemaId !== null 
+			? [$this->schemaMapper->find($schemaId)]
+			: $this->schemaMapper->findAll();
 		$schemaFields = [];
 		
 		// Collect optional fields for each schema
@@ -549,8 +562,13 @@ class ObjectEntityMapper extends QBMapper
 				->from('openregister_objects')
 				->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId)))
 				->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
-				->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
-				->orderBy('date', 'ASC');
+				->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+
+			if ($registerId !== null) {
+				$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId)));
+			}
+
+			$qb->orderBy('date', 'ASC');
 
 			$result = $qb->executeQuery();
 			$objects = $result->fetchAll();
@@ -626,12 +644,13 @@ class ObjectEntityMapper extends QBMapper
 	 * 
 	 * @param \DateTime $from Start date
 	 * @param \DateTime $to End date
+	 * @param int|null $schemaId Optional schema ID filter
+	 * @param int|null $registerId Optional register ID filter
 	 * @return array Revision statistics
 	 */
-	public function getRevisionStats(\DateTime $from, \DateTime $to): array {
+	public function getRevisionStats(\DateTime $from, \DateTime $to, ?int $schemaId = null, ?int $registerId = null): array {
 		$qb = $this->db->getQueryBuilder();
 		
-		// Get version counts per day and schema
 		$qb->select(
 				$qb->createFunction('DATE(created) as date'),
 				'schema',
@@ -640,9 +659,18 @@ class ObjectEntityMapper extends QBMapper
 			)
 			->from('openregister_objects')
 			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
-			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
-			->groupBy('date', 'schema')
-			->orderBy('date', 'ASC');
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+
+		// Add optional filters
+		if ($schemaId !== null) {
+			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId)));
+		}
+		if ($registerId !== null) {
+			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId)));
+		}
+
+		$qb->groupBy('date', 'schema')
+		   ->orderBy('date', 'ASC');
 
 		$result = $qb->executeQuery();
 		$rows = $result->fetchAll();

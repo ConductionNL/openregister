@@ -368,7 +368,13 @@ class ObjectService
     {
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
-            return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+            // Get the object from the database
+            $object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+            
+            // Log the read action to audit trail
+            $this->auditTrailMapper->logRead(new: $object);
+            
+            return $object;
         }
 
         //@todo mongodb support

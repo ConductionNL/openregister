@@ -289,4 +289,159 @@ class AuditTrailMapper extends QBMapper
 
 		return $stats;
 	}
+
+	/**
+	 * Get access statistics grouped by schema and user
+	 * 
+	 * @param \DateTime $from Start date
+	 * @param \DateTime $to End date
+	 * @return array Access statistics
+	 */
+	public function getAccessStats(\DateTime $from, \DateTime $to): array {
+		// Get schema views
+		$qbSchema = $this->db->getQueryBuilder();
+		$qbSchema->select(
+				'schema',
+				$qbSchema->createFunction('DATE(created) as date'),
+				$qbSchema->createFunction('COUNT(*) as count')
+			)
+			->from('openregister_audit_trails')
+			->where($qbSchema->expr()->eq('action', $qbSchema->createNamedParameter('read')))
+			->andWhere($qbSchema->expr()->gte('created', $qbSchema->createNamedParameter($from->format('Y-m-d H:i:s'))))
+			->andWhere($qbSchema->expr()->lte('created', $qbSchema->createNamedParameter($to->format('Y-m-d H:i:s'))))
+			->groupBy('date', 'schema')
+			->orderBy('date', 'ASC');
+
+		$result = $qbSchema->executeQuery();
+		$schemaRows = $result->fetchAll();
+		$result->closeCursor();
+
+		// Get user views
+		$qbUser = $this->db->getQueryBuilder();
+		$qbUser->select(
+				'user_name',
+				$qbUser->createFunction('DATE(created) as date'),
+				$qbUser->createFunction('COUNT(*) as count')
+			)
+			->from('openregister_audit_trails')
+			->where($qbUser->expr()->eq('action', $qbUser->createNamedParameter('read')))
+			->andWhere($qbUser->expr()->gte('created', $qbUser->createNamedParameter($from->format('Y-m-d H:i:s'))))
+			->andWhere($qbUser->expr()->lte('created', $qbUser->createNamedParameter($to->format('Y-m-d H:i:s'))))
+			->groupBy('date', 'user_name')
+			->orderBy('date', 'ASC');
+
+		$result = $qbUser->executeQuery();
+		$userRows = $result->fetchAll();
+		$result->closeCursor();
+
+		// Process schema views
+		$schemaViews = [];
+		foreach ($schemaRows as $row) {
+			$schemaId = $row['schema'];
+			$schema = $this->schemaMapper->find($schemaId);
+			$schemaName = $schema->getTitle() ?? 'Unknown Schema';
+			
+			if (!isset($schemaViews[$schemaName])) {
+				$schemaViews[$schemaName] = [];
+			}
+			$schemaViews[$schemaName][$row['date']] = (int)$row['count'];
+		}
+
+		// Process user views
+		$userViews = [];
+		foreach ($userRows as $row) {
+			$userName = $row['user_name'] ?? 'Unknown User';
+			if (!isset($userViews[$userName])) {
+				$userViews[$userName] = [];
+			}
+			$userViews[$userName][$row['date']] = (int)$row['count'];
+		}
+
+		// Fill in missing dates with zeros
+		$period = new \DatePeriod(
+			$from,
+			new \DateInterval('P1D'),
+			$to->modify('+1 day')
+		);
+
+		foreach ($period as $date) {
+			$dateStr = $date->format('Y-m-d');
+			
+			// Fill schema views
+			foreach ($schemaViews as &$views) {
+				if (!isset($views[$dateStr])) {
+					$views[$dateStr] = 0;
+				}
+			}
+			
+			// Fill user views
+			foreach ($userViews as &$views) {
+				if (!isset($views[$dateStr])) {
+					$views[$dateStr] = 0;
+				}
+			}
+		}
+
+		return [
+			'schemaViews' => $schemaViews,
+			'userViews' => $userViews,
+		];
+	}
+
+	/**
+	 * Log a read action for an object
+	 * 
+	 * @param ObjectEntity $object The object that was read
+	 * @return AuditTrail The created audit trail entry
+	 */
+	public function logRead(ObjectEntity $object): AuditTrail {
+		$user = \OC::$server->getUserSession()->getUser();
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid(Uuid::v4());
+		$auditTrail->setObject($object->getId());
+		$auditTrail->setAction('read');
+		$auditTrail->setChanged([]); // No changes for read action
+		$auditTrail->setUser($user->getUID());
+		$auditTrail->setUserName($user->getDisplayName());
+		$auditTrail->setSession(session_id());
+		$auditTrail->setRequest(\OC::$server->getRequest()->getId());
+		$auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
+		$auditTrail->setCreated(new \DateTime());
+		$auditTrail->setRegister($object->getRegister());
+		$auditTrail->setSchema($object->getSchema());
+
+		return $this->insert($auditTrail);
+	}
+
+	/**
+	 * Log an error action for an object
+	 * 
+	 * @param ObjectEntity $object The object that caused the error
+	 * @param string $errorMessage The error message
+	 * @param array $context Additional error context
+	 * @return AuditTrail The created audit trail entry
+	 */
+	public function logError(ObjectEntity $object, string $errorMessage, array $context = []): AuditTrail {
+		$user = \OC::$server->getUserSession()->getUser();
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid(Uuid::v4());
+		$auditTrail->setObject($object->getId());
+		$auditTrail->setAction('error');
+		$auditTrail->setChanged([
+			'error' => $errorMessage,
+			'context' => $context,
+		]);
+		$auditTrail->setUser($user->getUID());
+		$auditTrail->setUserName($user->getDisplayName());
+		$auditTrail->setSession(session_id());
+		$auditTrail->setRequest(\OC::$server->getRequest()->getId());
+		$auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
+		$auditTrail->setCreated(new \DateTime());
+		$auditTrail->setRegister($object->getRegister());
+		$auditTrail->setSchema($object->getSchema());
+
+		return $this->insert($auditTrail);
+	}
 }
