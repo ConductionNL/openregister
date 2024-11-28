@@ -97,13 +97,16 @@ class ObjectService
      * Find an object by ID or UUID
      *
      * @param int|string $id The ID or UUID to search for
+     * @param array $extend Properties to extend with related data
+     * 
      * @return ObjectEntity The found object
      */
-    public function find(int|string $id) {
+    public function find(int|string $id, ?array $extend = []) {
         return $this->getObject(
             register: $this->registerMapper->find($this->getRegister()),
             schema: $this->schemaMapper->find($this->getSchema()),
-            uuid: $id
+            uuid: $id,
+            extend: $extend
         );
     }
 
@@ -168,9 +171,11 @@ class ObjectService
      * @param array $filters Filter criteria
      * @param array $sort Sorting criteria
      * @param string|null $search Search term
+     * @param array $extend Properties to extend with related data
+     * 
      * @return array List of matching objects
      */
-    public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null): array
+    public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
     {
         $objects = $this->getObjects(
             register: $this->getRegister(),
@@ -247,9 +252,11 @@ class ObjectService
      * Extract object data from an entity
      *
      * @param mixed $object The object to extract data from
+     * @param array $extend Properties to extend with related data
+     * 
      * @return mixed The extracted object data
      */
-    private function getDataFromObject(mixed $object) {
+    private function getDataFromObject(mixed $object, ?array $extend = []) {
         return $object->getObject();
     }
 
@@ -262,10 +269,12 @@ class ObjectService
      * @param int|null $limit The maximum number of objects to retrieve.
      * @param int|null $offset The offset from which to start retrieving objects.
      * @param array $filters
+     * @param array $extend Properties to extend with related data
+     * 
      * @return array The retrieved objects.
      * @throws \Exception
      */
-    public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null): array
+    public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
     {
         // Set object type and filters if register and schema are provided
         if ($objectType === null && $register !== null && $schema !== null) {
@@ -339,6 +348,77 @@ class ObjectService
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
+        // Handle related objects
+		// Handle object properties that are either nested objects or files
+		if (isset($schemaObject->properties) && is_array($schemaObject->properties)) {
+			foreach ($schemaObject->properties as $propertyName => $property) {
+				// Handle nested objects
+				if ($property->type === 'object' && isset($object[$propertyName])) {
+					// Save nested object and store its ID
+					$nestedObject = $this->saveObject(
+						register: $register,
+						schema: $schema, 
+						object: $object[$propertyName]
+					);
+					
+					// Store the relation ID
+					$relations = $objectEntity->getRelations() ?? [];
+					$relations[$propertyName] = $nestedObject->getId();
+					$objectEntity->setRelations($relations);
+					
+					// Replace object with reference
+					$object[$propertyName] = $nestedObject->getId();
+				}
+				
+				// Handle file properties
+				if ($property->type === 'file' && isset($object[$propertyName])) {
+					$fileContent = null;
+					$fileName = $propertyName;
+					
+					// Check if it's a base64 encoded file
+					if (preg_match('/^data:([^;]*);base64,(.*)/', $object[$propertyName], $matches)) {
+						$fileContent = base64_decode($matches[2], true);
+						if ($fileContent === false) {
+							throw new \Exception('Invalid base64 encoded file');
+						}
+					}
+					// Check if it's a URL
+					else if (filter_var($object[$propertyName], FILTER_VALIDATE_URL)) {
+						try {
+							$client = new \GuzzleHttp\Client();
+							$response = $client->get($object[$propertyName]);
+							$fileContent = $response->getBody()->getContents();
+						} catch (\Exception $e) {
+							throw new \Exception('Failed to download file from URL: ' . $e->getMessage());
+						}
+					} else {
+						throw new \Exception('Invalid file format - must be base64 encoded or valid URL');
+					}
+					
+					// Store file in Nextcloud
+					try {
+						$file = $this->fileService->createOrUpdateFile(
+							content: $fileContent,
+							fileName: $fileName
+						);
+						
+						// Store the file ID
+						$files = $objectEntity->getFiles() ?? [];
+						$files[$propertyName] = $file->getId();
+						$objectEntity->setFiles($files);
+						
+						// Replace file content with file ID reference
+						$object[$propertyName] = $file->getId();
+					} catch (\Exception $e) {
+						throw new \Exception('Failed to store file: ' . $e->getMessage());
+					}
+				}
+			}
+			
+			// Update the object with processed properties
+			$objectEntity->setObject($object);
+		}
+
 		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
@@ -360,11 +440,12 @@ class ObjectService
      * @param Register $register The register to get the object from
      * @param Schema $schema The schema of the object
      * @param string $uuid The UUID of the object to get
+     * @param array $extend Properties to extend with related data
      *
      * @return ObjectEntity The resulting object
      * @throws \Exception If source type is unsupported
      */
-    public function getObject(Register $register, Schema $schema, string $uuid): ObjectEntity
+    public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
     {
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
@@ -464,6 +545,51 @@ class ObjectService
         // Get mapper and find objects
         $mapper = $this->getMapper($objectType);
         return $mapper->findMultiple($cleanedIds);
+    }
+
+    /**
+     * Renders the entity by replacing the files and relations with their respective objects
+     * 
+     * @param array $entity The entity to render
+     * @param array|null $extend Optional array of properties to extend, defaults to files and relations if not provided
+     * @return array The rendered entity with expanded files and relations
+     */
+    public function renderEntity(array $entity, ?array $extend = []): array
+    {
+        // check if entity has files or relations and if not just return the entity
+        if (array_key_exists(key: 'files', array: $entity) === false && array_key_exists(key: 'relations', array: $entity) === false) {
+            return $entity;
+        }
+
+        // Lets create a dot array of the entity
+        $dotEntity = new Dot($entity);
+
+        // loop through the files and replace the file ids with the file objects)
+        if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
+            // Loop through the files array where key is dot notation path and value is file id
+            foreach ($entity['files'] as $path => $fileId) {
+                // Replace the value at the dot notation path with the file URL
+                $dotEntity->set($path, $filesById[$fileId]->getUrl());
+            }
+        }
+
+        // Loop through the relations and replace the relation ids with the relation objects if extended
+        if (array_key_exists(key: 'relations', array: $entity) === true && empty($entity['relations']) === false) {
+            // loop through the relations and replace the relation ids with the relation objects
+            foreach ($entity['relations'] as $path => $relationId) {
+                // if the relation is not in the extend array, skip it
+                if (in_array(needle: $path, haystack: $extend) === false) {
+                    continue;
+                }
+                // Replace the value at the dot notation path with the relation object
+                $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
+            }
+        }   
+
+        // Update the entity with modified values
+        $entity = $dotEntity->all();
+
+        return $this->extendEntity(entity: $entity, extend: $extend);
     }
 
     /**
