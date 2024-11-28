@@ -133,13 +133,12 @@ class ObjectService
         // Add ID to object data for update
         $object['id'] = $id;
 
-		if($patch === true) {
+		// If we want the update to behave like patch, merge with existing object.
+		if ($patch === true) {
 			$oldObject = $this->getObject($this->registerMapper->find($this->getRegister()), $this->schemaMapper->find($this->getSchema()), $id)->jsonSerialize();
 
 			$object = array_merge($oldObject, $object);
 		}
-
-
 
 		return $this->saveObject(
             register: $this->getRegister(),
