@@ -130,11 +130,18 @@ class ObjectService
      * @param bool $updatedObject Whether this is an update operation
      * @return ObjectEntity The updated object
      */
-    public function updateFromArray(string $id, array $object, bool $updatedObject) {
+    public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false) {
         // Add ID to object data for update
         $object['id'] = $id;
 
-        return $this->saveObject(
+		// If we want the update to behave like patch, merge with existing object.
+		if ($patch === true) {
+			$oldObject = $this->getObject($this->registerMapper->find($this->getRegister()), $this->schemaMapper->find($this->getSchema()), $id)->jsonSerialize();
+
+			$object = array_merge($oldObject, $object);
+		}
+
+		return $this->saveObject(
             register: $this->getRegister(),
             schema: $this->getSchema(),
             object: $object
