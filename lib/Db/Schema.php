@@ -82,8 +82,8 @@ class Schema extends Entity implements JsonSerializable
 		$required = $this->required ?? [];
         $properties = [];
 		if (isset($this->properties) === true) {
-			foreach ($this->properties as $key => $property) {
-				$title = $property['title'] ?? $key;
+			foreach ($this->properties as $title => $property) {
+				$title = $property['title'] ?? $title;
 				if ($property['required'] === true && in_array($title, $required) === false) {
 					$required[] = $title;
 				}
@@ -129,9 +129,9 @@ class Schema extends Entity implements JsonSerializable
 	{
 		$data = $this->jsonSerialize();
 
-		foreach ($data['properties'] as $key => $property) {
+		foreach ($data['properties'] as $title => $property) {
 			// Remove empty fields with array_filter().
-			$data['properties'][$key] = array_filter($property);
+			$data['properties'][$title] = array_filter($property);
 		}
 
 		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
