@@ -305,6 +305,7 @@ class ObjectService
         if (is_string($register)) {
             $register = $this->registerMapper->find($register);
         }
+
         if (is_string($schema)) {
             $schema = $this->schemaMapper->find($schema);
         }
@@ -321,7 +322,7 @@ class ObjectService
 		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
-        if ($objectEntity === null) {
+        if (isset($object['id']) === false || $objectEntity === null) {
             $objectEntity = new ObjectEntity();
             $objectEntity->setRegister($register);
             $objectEntity->setSchema($schema);
