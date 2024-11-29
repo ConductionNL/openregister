@@ -344,7 +344,7 @@ class ObjectService
             );
         }
 
-		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+//		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if ($objectEntity === null) {
