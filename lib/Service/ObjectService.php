@@ -563,11 +563,23 @@ class ObjectService
 						$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
 
 						$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
+						$fileContent = $response->getBody();
+
+						if(
+							base64_decode(string: $fileContent) !== false
+							&& mb_check_encoding(
+								value: base64_decode(string: $fileContent),
+								encoding: 'UTF-8'
+							) === false
+						) {
+							$fileContent = base64_decode(string: $fileContent);
+						}
+
 					} else {
 						$client = new \GuzzleHttp\Client();
 						$response = $client->get($encodedUrl);
+						$fileContent = $response->getBody()->getContents();
 					}
-					$fileContent = $response->getBody()->getContents();
 				} catch (Exception|NotFoundExceptionInterface $e) {
 					var_dump($e->getTrace()); // @todo REMOVE VAR DUMP!
 					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
