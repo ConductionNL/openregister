@@ -98,7 +98,7 @@ class ObjectService
      *
      * @param int|string $id The ID or UUID to search for
      * @param array $extend Properties to extend with related data
-     * 
+     *
      * @return ObjectEntity The found object
      */
     public function find(int|string $id, ?array $extend = []) {
@@ -179,7 +179,7 @@ class ObjectService
      * @param array $sort Sorting criteria
      * @param string|null $search Search term
      * @param array $extend Properties to extend with related data
-     * 
+     *
      * @return array List of matching objects
      */
     public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
@@ -260,7 +260,7 @@ class ObjectService
      *
      * @param mixed $object The object to extract data from
      * @param array $extend Properties to extend with related data
-     * 
+     *
      * @return mixed The extracted object data
      */
     private function getDataFromObject(mixed $object, ?array $extend = []) {
@@ -277,7 +277,7 @@ class ObjectService
      * @param int|null $offset The offset from which to start retrieving objects.
      * @param array $filters
      * @param array $extend Properties to extend with related data
-     * 
+     *
      * @return array The retrieved objects.
      * @throws \Exception
      */
@@ -356,8 +356,8 @@ class ObjectService
 		$schemaObject = $this->schemaMapper->find($schema);
 
         // Handle object properties that are either nested objects or files
-		if (isset($schemaObject->properties) && is_array($schemaObject->properties)) {
-			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->properties, $register, $schema);
+		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
+			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
 			$objectEntity->setObject($object);
 		}
 
@@ -378,15 +378,15 @@ class ObjectService
 
 	/**
 	 * Handle object relations and file properties in schema properties and array items
-	 * 
+	 *
 	 * @param ObjectEntity $objectEntity The object entity to handle relations for
 	 * @param array $object The object data
 	 * @param array $properties The schema properties
 	 * @param int $register The register ID
 	 * @param int $schema The schema ID
-	 * 
+	 *
 	 * @return array Updated object data
-	 * @throws Exception When file handling fails
+	 * @throws Exception|ValidationException When file handling fails
 	 */
 	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array {
 		foreach ($properties as $propertyName => $property) {
@@ -411,14 +411,13 @@ class ObjectService
 							schema: $schema,
 							object: $item
 						);
-						
+
 						// Store relation and replace with reference
 						$relations = $objectEntity->getRelations() ?? [];
 						$relations[$propertyName . '_' . $index] = $nestedObject->getId();
 						$objectEntity->setRelations($relations);
 						$object[$propertyName][$index] = $nestedObject->getId();
-					}
-					else if ($property->items->type === 'file') {
+					} else if ($property->items->type === 'file') {
 						// Handle file in array
 						$object[$propertyName][$index] = $this->handleFileProperty(
 							$objectEntity,
@@ -435,7 +434,7 @@ class ObjectService
 					schema: $schema,
 					object: $object[$propertyName]
 				);
-				
+
 				// Store relation and replace with reference
 				$relations = $objectEntity->getRelations() ?? [];
 				$relations[$propertyName] = $nestedObject->getId();
@@ -447,24 +446,24 @@ class ObjectService
 				$object = $this->handleFileProperty($objectEntity, $object, $propertyName);
 			}
 		}
-		
+
 		return $object;
 	}
 
 	/**
 	 * Handle file property processing
-	 * 
+	 *
 	 * @param ObjectEntity $objectEntity The object entity
 	 * @param array $object The object data
 	 * @param string $propertyName The name of the file property
-	 * 
+	 *
 	 * @return array Updated object data
 	 * @throws Exception When file handling fails
 	 */
 	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array {
 		$fileContent = null;
 		$fileName = $propertyName;
-		
+
 		// Check if it's a Nextcloud file URL
 		if (str_starts_with($object[$propertyName], $this->urlGenerator->getAbsoluteURL())) {
 			$urlPath = parse_url($object[$propertyName], PHP_URL_PATH);
@@ -484,6 +483,7 @@ class ObjectService
 				throw new \Exception('Invalid base64 encoded file');
 			}
 		}
+
 		// Handle URL file
 		else if (filter_var($object[$propertyName], FILTER_VALIDATE_URL)) {
 			try {
@@ -496,17 +496,17 @@ class ObjectService
 		} else {
 			throw new \Exception('Invalid file format - must be base64 encoded or valid URL');
 		}
-		
+
 		try {
 			$file = $this->fileService->createOrUpdateFile(
 				content: $fileContent,
 				fileName: $fileName
 			);
-			
+
 			$files = $objectEntity->getFiles() ?? [];
 			$files[$propertyName] = $file->getId();
 			$objectEntity->setFiles($files);
-			
+
 			$object[$propertyName] = $file->getId();
 		} catch (\Exception $e) {
 			throw new \Exception('Failed to store file: ' . $e->getMessage());
@@ -630,7 +630,7 @@ class ObjectService
 
     /**
      * Renders the entity by replacing the files and relations with their respective objects
-     * 
+     *
      * @param array $entity The entity to render
      * @param array|null $extend Optional array of properties to extend, defaults to files and relations if not provided
      * @return array The rendered entity with expanded files and relations
@@ -665,7 +665,7 @@ class ObjectService
                 // Replace the value at the dot notation path with the relation object
                 $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
             }
-        }   
+        }
 
         // Update the entity with modified values
         $entity = $dotEntity->all();
