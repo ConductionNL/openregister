@@ -2,7 +2,9 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Adbar\Dot;
 use Exception;
+use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use OC\URLGenerator;
 use OCA\OpenRegister\Db\Source;
@@ -17,9 +19,13 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
+use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
@@ -61,8 +67,10 @@ class ObjectService
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         AuditTrailMapper $auditTrailMapper,
+		private ContainerInterface $container,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly FileService $fileService
+		private readonly FileService $fileService,
+		private readonly IAppManager $appManager
     )
     {
         $this->objectEntityMapper = $objectEntityMapper;
@@ -70,6 +78,27 @@ class ObjectService
         $this->schemaMapper = $schemaMapper;
         $this->auditTrailMapper = $auditTrailMapper;
     }
+
+	/**
+	 * Attempts to retrieve the OpenConnector service from the container.
+	 *
+	 * @return mixed|null The OpenConnector service if available, null otherwise.
+	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+	 */
+	public function getOpenConnector(string $filePath = '\Service\ObjectService'): mixed
+	{
+		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
+			try {
+				// Attempt to get a OpenConnector file from the container
+				return $this->container->get("OCA\OpenConnector$filePath");
+			} catch (Exception $e) {
+				// If the file is not available, return null
+				return null;
+			}
+		}
+
+		return null;
+	}
 
 	/**
 	 * Validate an object with a schema.
@@ -408,20 +437,20 @@ class ObjectService
 	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array {
 		foreach ($properties as $propertyName => $property) {
 			// Skip if property not in object
-			if (!isset($object[$propertyName])) {
+			if (isset($object[$propertyName]) === false) {
 				continue;
 			}
 
 			// Handle array type with items that may contain objects/files
-			if ($property->type === 'array' && isset($property->items)) {
+			if ($property['type'] === 'array' && isset($property['items']) === true) {
 				// Skip if not array in data
-				if (!is_array($object[$propertyName])) {
+				if (is_array($object[$propertyName]) === false) {
 					continue;
 				}
 
 				// Process each array item
 				foreach ($object[$propertyName] as $index => $item) {
-					if ($property->items->type === 'object') {
+					if ($property['items']['type'] === 'object') {
 						// Handle nested object in array
 						$nestedObject = $this->saveObject(
 							register: $register,
@@ -434,18 +463,18 @@ class ObjectService
 						$relations[$propertyName . '_' . $index] = $nestedObject->getId();
 						$objectEntity->setRelations($relations);
 						$object[$propertyName][$index] = $nestedObject->getId();
-					} else if ($property->items->type === 'file') {
+					} else if ($property['items']['type'] === 'file') {
 						// Handle file in array
 						$object[$propertyName][$index] = $this->handleFileProperty(
 							objectEntity: $objectEntity,
-							object: [$propertyName => $item],
-							propertyName: $propertyName . '_' . $index
+							object: [$propertyName => [$index => $item]],
+							propertyName: $propertyName . '.' . $index
 						)[$propertyName];
 					}
 				}
 			}
 			// Handle single object type
-			else if ($property->type === 'object') {
+			else if ($property['type'] === 'object') {
 				$nestedObject = $this->saveObject(
 					register: $register,
 					schema: $schema,
@@ -459,7 +488,7 @@ class ObjectService
 				$object[$propertyName] = $nestedObject->getId();
 			}
 			// Handle single file type
-			else if ($property->type === 'file') {
+			else if ($property['type'] === 'file') {
 				$object = $this->handleFileProperty($objectEntity, $object, $propertyName);
 			}
 		}
@@ -475,42 +504,77 @@ class ObjectService
 	 * @param string $propertyName The name of the file property
 	 *
 	 * @return array Updated object data
-	 * @throws Exception When file handling fails
+	 * @throws Exception|GuzzleException When file handling fails
 	 */
 	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array {
-		$fileName = $propertyName;
+		$fileName = str_replace('.', '_', $propertyName);
+		$objectDot = new Dot($object);
 
 		// Check if it's a Nextcloud file URL
-		if (str_starts_with($object[$propertyName], $this->urlGenerator->getAbsoluteURL())) {
-			$urlPath = parse_url($object[$propertyName], PHP_URL_PATH);
-			if (preg_match('/\/f\/(\d+)/', $urlPath, $matches)) {
-				$files = $objectEntity->getFiles() ?? [];
-				$files[$propertyName] = (int)$matches[1];
-				$objectEntity->setFiles($files);
-				$object[$propertyName] = (int)$matches[1];
-				return $object;
-			}
-		}
+//		if (str_starts_with($object[$propertyName], $this->urlGenerator->getAbsoluteURL())) {
+//			$urlPath = parse_url($object[$propertyName], PHP_URL_PATH);
+//			if (preg_match('/\/f\/(\d+)/', $urlPath, $matches)) {
+//				$files = $objectEntity->getFiles() ?? [];
+//				$files[$propertyName] = (int)$matches[1];
+//				$objectEntity->setFiles($files);
+//				$object[$propertyName] = (int)$matches[1];
+//				return $object;
+//			}
+//		}
 
 		// Handle base64 encoded file
-		if (preg_match('/^data:([^;]*);base64,(.*)/', $object[$propertyName], $matches)) {
+		if (is_string($objectDot->get($propertyName)) === true
+			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get($propertyName), $matches)
+		) {
 			$fileContent = base64_decode($matches[2], true);
 			if ($fileContent === false) {
 				throw new Exception('Invalid base64 encoded file');
 			}
 		}
-
 		// Handle URL file
-		else if (filter_var($object[$propertyName], FILTER_VALIDATE_URL)) {
-			try {
-				$client = new \GuzzleHttp\Client();
-				$response = $client->get($object[$propertyName]);
-				$fileContent = $response->getBody()->getContents();
-			} catch (Exception $e) {
-				throw new Exception('Failed to download file from URL: ' . $e->getMessage());
+		else {
+			// Encode special characters in the URL
+			$encodedUrl = rawurlencode($objectDot->get("$propertyName.downloadUrl")); //@todo hardcoded .downloadUrl
+
+			// Decode valid path separators and reserved characters
+			$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
+
+			if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
+				try {
+					// @todo hacky tacky
+					// Regular expression to get the filename and extension from url //@todo hardcoded .downloadUrl
+					if (preg_match("/\/([^\/]+)'\)\/\\\$value$/", $objectDot->get("$propertyName.downloadUrl"), $matches)) {
+						// @todo hardcoded way of getting the filename and extension from the url
+						$fileNameFromUrl = $matches[1];
+						// @todo use only the extension from the url ?
+						// $fileName = $fileNameFromUrl;
+						$extension = substr(strrchr($fileNameFromUrl, '.'), 1);
+						$fileName = "$fileName.$extension";
+					}
+
+					if ($objectDot->has("$propertyName.source") === true) {
+						$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
+						$source = $sourceMapper->find($objectDot->get("$propertyName.source"));
+
+						$callService = $this->getOpenConnector(filePath: '\Service\CallService');
+						if ($callService === null) {
+							throw new Exception("OpenConnector service not available");
+						}
+						$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
+
+						$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
+					} else {
+						$client = new \GuzzleHttp\Client();
+						$response = $client->get($encodedUrl);
+					}
+					$fileContent = $response->getBody()->getContents();
+				} catch (Exception|NotFoundExceptionInterface $e) {
+					var_dump($e->getTrace()); // @todo REMOVE VAR DUMP!
+					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
+				}
+			} else {
+				throw new Exception('Invalid file format - must be base64 encoded or valid URL');
 			}
-		} else {
-			throw new Exception('Invalid file format - must be base64 encoded or valid URL');
 		}
 
 		try {
@@ -540,11 +604,13 @@ class ObjectService
 				$shareLink = $this->fileService->createShareLink(path: $filePath);
 			}
 
-			$files = $objectEntity->getFiles() ?? [];
-			$files[$propertyName] = $shareLink;
-			$objectEntity->setFiles($files);
+			$filesDot = new Dot($objectEntity->getFiles() ?? []);
+			$filesDot->set($propertyName, $shareLink);
+			$objectEntity->setFiles($filesDot->all());
 
-			$object[$propertyName] = $shareLink;
+			// Preserve the original uri in the object 'json blob'
+//			$objectDot = $objectDot->set($propertyName, $shareLink);
+			$object = $objectDot->all();
 		} catch (Exception $e) {
 			throw new Exception('Failed to store file: ' . $e->getMessage());
 		}

@@ -49,7 +49,7 @@ class FileService
 	 */
 	public function getSchemaFolderName(Schema $schema): string
 	{
-		return "({$schema->getId()} / {$schema->getUuid()}) {$schema->getTitle()}";
+		return "({$schema->getUuid()}) {$schema->getTitle()}";
 	}
 
 	/**
@@ -64,7 +64,7 @@ class FileService
 		// @todo check if property Title or Name exists and use that as object title
 		$objectTitle = 'object';
 
-		return "({$objectEntity->getId()} / {$objectEntity->getUuid()}) $objectTitle";
+		return "({$objectEntity->getUuid()}) $objectTitle";
 	}
 
 	/**
