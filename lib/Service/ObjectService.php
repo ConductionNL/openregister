@@ -290,7 +290,7 @@ class ObjectService
         return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
     }
 
-	/**
+  	/**
 	 * Save an object
 	 *
 	 * @param int $register The register to save the object to.
@@ -348,74 +348,9 @@ class ObjectService
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
-        // Handle related objects
-		// Handle object properties that are either nested objects or files
+        // Handle object properties that are either nested objects or files
 		if (isset($schemaObject->properties) && is_array($schemaObject->properties)) {
-			foreach ($schemaObject->properties as $propertyName => $property) {
-				// Handle nested objects
-				if ($property->type === 'object' && isset($object[$propertyName])) {
-					// Save nested object and store its ID
-					$nestedObject = $this->saveObject(
-						register: $register,
-						schema: $schema, 
-						object: $object[$propertyName]
-					);
-					
-					// Store the relation ID
-					$relations = $objectEntity->getRelations() ?? [];
-					$relations[$propertyName] = $nestedObject->getId();
-					$objectEntity->setRelations($relations);
-					
-					// Replace object with reference
-					$object[$propertyName] = $nestedObject->getId();
-				}
-				
-				// Handle file properties
-				if ($property->type === 'file' && isset($object[$propertyName])) {
-					$fileContent = null;
-					$fileName = $propertyName;
-					
-					// Check if it's a base64 encoded file
-					if (preg_match('/^data:([^;]*);base64,(.*)/', $object[$propertyName], $matches)) {
-						$fileContent = base64_decode($matches[2], true);
-						if ($fileContent === false) {
-							throw new \Exception('Invalid base64 encoded file');
-						}
-					}
-					// Check if it's a URL
-					else if (filter_var($object[$propertyName], FILTER_VALIDATE_URL)) {
-						try {
-							$client = new \GuzzleHttp\Client();
-							$response = $client->get($object[$propertyName]);
-							$fileContent = $response->getBody()->getContents();
-						} catch (\Exception $e) {
-							throw new \Exception('Failed to download file from URL: ' . $e->getMessage());
-						}
-					} else {
-						throw new \Exception('Invalid file format - must be base64 encoded or valid URL');
-					}
-					
-					// Store file in Nextcloud
-					try {
-						$file = $this->fileService->createOrUpdateFile(
-							content: $fileContent,
-							fileName: $fileName
-						);
-						
-						// Store the file ID
-						$files = $objectEntity->getFiles() ?? [];
-						$files[$propertyName] = $file->getId();
-						$objectEntity->setFiles($files);
-						
-						// Replace file content with file ID reference
-						$object[$propertyName] = $file->getId();
-					} catch (\Exception $e) {
-						throw new \Exception('Failed to store file: ' . $e->getMessage());
-					}
-				}
-			}
-			
-			// Update the object with processed properties
+			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->properties, $register, $schema);
 			$objectEntity->setObject($object);
 		}
 
@@ -433,6 +368,145 @@ class ObjectService
 
         return $objectEntity;
     }
+
+	/**
+	 * Handle object relations and file properties in schema properties and array items
+	 * 
+	 * @param ObjectEntity $objectEntity The object entity to handle relations for
+	 * @param array $object The object data
+	 * @param array $properties The schema properties
+	 * @param int $register The register ID
+	 * @param int $schema The schema ID
+	 * 
+	 * @return array Updated object data
+	 * @throws Exception When file handling fails
+	 */
+	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array {
+		foreach ($properties as $propertyName => $property) {
+			// Skip if property not in object
+			if (!isset($object[$propertyName])) {
+				continue;
+			}
+
+			// Handle array type with items that may contain objects/files
+			if ($property->type === 'array' && isset($property->items)) {
+				// Skip if not array in data
+				if (!is_array($object[$propertyName])) {
+					continue;
+				}
+
+				// Process each array item
+				foreach ($object[$propertyName] as $index => $item) {
+					if ($property->items->type === 'object') {
+						// Handle nested object in array
+						$nestedObject = $this->saveObject(
+							register: $register,
+							schema: $schema,
+							object: $item
+						);
+						
+						// Store relation and replace with reference
+						$relations = $objectEntity->getRelations() ?? [];
+						$relations[$propertyName . '_' . $index] = $nestedObject->getId();
+						$objectEntity->setRelations($relations);
+						$object[$propertyName][$index] = $nestedObject->getId();
+					}
+					else if ($property->items->type === 'file') {
+						// Handle file in array
+						$object[$propertyName][$index] = $this->handleFileProperty(
+							$objectEntity,
+							[$propertyName => $item],
+							$propertyName . '_' . $index
+						)[$propertyName];
+					}
+				}
+			}
+			// Handle single object type
+			else if ($property->type === 'object') {
+				$nestedObject = $this->saveObject(
+					register: $register,
+					schema: $schema,
+					object: $object[$propertyName]
+				);
+				
+				// Store relation and replace with reference
+				$relations = $objectEntity->getRelations() ?? [];
+				$relations[$propertyName] = $nestedObject->getId();
+				$objectEntity->setRelations($relations);
+				$object[$propertyName] = $nestedObject->getId();
+			}
+			// Handle single file type
+			else if ($property->type === 'file') {
+				$object = $this->handleFileProperty($objectEntity, $object, $propertyName);
+			}
+		}
+		
+		return $object;
+	}
+
+	/**
+	 * Handle file property processing
+	 * 
+	 * @param ObjectEntity $objectEntity The object entity
+	 * @param array $object The object data
+	 * @param string $propertyName The name of the file property
+	 * 
+	 * @return array Updated object data
+	 * @throws Exception When file handling fails
+	 */
+	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array {
+		$fileContent = null;
+		$fileName = $propertyName;
+		
+		// Check if it's a Nextcloud file URL
+		if (str_starts_with($object[$propertyName], $this->urlGenerator->getAbsoluteURL())) {
+			$urlPath = parse_url($object[$propertyName], PHP_URL_PATH);
+			if (preg_match('/\/f\/(\d+)/', $urlPath, $matches)) {
+				$files = $objectEntity->getFiles() ?? [];
+				$files[$propertyName] = (int)$matches[1];
+				$objectEntity->setFiles($files);
+				$object[$propertyName] = (int)$matches[1];
+				return $object;
+			}
+		}
+
+		// Handle base64 encoded file
+		if (preg_match('/^data:([^;]*);base64,(.*)/', $object[$propertyName], $matches)) {
+			$fileContent = base64_decode($matches[2], true);
+			if ($fileContent === false) {
+				throw new \Exception('Invalid base64 encoded file');
+			}
+		}
+		// Handle URL file
+		else if (filter_var($object[$propertyName], FILTER_VALIDATE_URL)) {
+			try {
+				$client = new \GuzzleHttp\Client();
+				$response = $client->get($object[$propertyName]);
+				$fileContent = $response->getBody()->getContents();
+			} catch (\Exception $e) {
+				throw new \Exception('Failed to download file from URL: ' . $e->getMessage());
+			}
+		} else {
+			throw new \Exception('Invalid file format - must be base64 encoded or valid URL');
+		}
+		
+		try {
+			$file = $this->fileService->createOrUpdateFile(
+				content: $fileContent,
+				fileName: $fileName
+			);
+			
+			$files = $objectEntity->getFiles() ?? [];
+			$files[$propertyName] = $file->getId();
+			$objectEntity->setFiles($files);
+			
+			$object[$propertyName] = $file->getId();
+		} catch (\Exception $e) {
+			throw new \Exception('Failed to store file: ' . $e->getMessage());
+		}
+
+		return $object;
+	}
 
     /**
      * Get an object
