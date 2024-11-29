@@ -41,7 +41,7 @@ class Version1Date20241128131427 extends SimpleMigrationStep {
 		// Update the openregister_objects table
 		$table = $schema->getTable('openregister_objects');
 		if ($table->hasColumn('uri') === false) {
-			$table->addColumn(name: 'uri', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addColumn(name: 'uri', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255])->setDefault('');
 		}
 		if ($table->hasColumn('files') === false) {
 			$table->addColumn(name: 'files', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');

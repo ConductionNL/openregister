@@ -327,7 +327,7 @@ class ObjectService
             );
         }
 
-		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+//		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if ($objectEntity === null) {
@@ -355,23 +355,26 @@ class ObjectService
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
+
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
-			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
+			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getSchemaObject(urlGenerator: $this->urlGenerator)->properties, $register, $schema);
 			$objectEntity->setObject($object);
 		}
 
-		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
+
+		if ($objectEntity->getId()) {// && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+		} else {//if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
-		if ($validationResult->isValid() === false) {
-			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
-		}
+//		if ($validationResult->isValid() === false) {
+//			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
+//		}
 
         return $objectEntity;
     }
@@ -388,7 +391,10 @@ class ObjectService
 	 * @return array Updated object data
 	 * @throws Exception|ValidationException When file handling fails
 	 */
-	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array {
+	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, stdClass $properties, int $register, int $schema): array
+	{
+
+
 		foreach ($properties as $propertyName => $property) {
 			// Skip if property not in object
 			if (!isset($object[$propertyName])) {
@@ -405,18 +411,36 @@ class ObjectService
 				// Process each array item
 				foreach ($object[$propertyName] as $index => $item) {
 					if ($property->items->type === 'object') {
-						// Handle nested object in array
-						$nestedObject = $this->saveObject(
-							register: $register,
-							schema: $schema,
-							object: $item
-						);
+						$subSchema = $schema;
 
-						// Store relation and replace with reference
-						$relations = $objectEntity->getRelations() ?? [];
-						$relations[$propertyName . '_' . $index] = $nestedObject->getId();
-						$objectEntity->setRelations($relations);
-						$object[$propertyName][$index] = $nestedObject->getId();
+						if(is_int($property->items->{'$ref'}) === true) {
+							$subSchema = $property->items->{'$ref'};
+						} else if (filter_var(value: $property->items->{'$ref'}, filter: FILTER_VALIDATE_URL) !== false) {
+							$parsedUrl = parse_url($property->items->{'$ref'});
+							$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
+							$subSchema = end($explodedPath);
+						}
+
+						if(is_array($item) === true) {
+							// Handle nested object in array
+							$nestedObject = $this->saveObject(
+								register: $register,
+								schema: $subSchema,
+								object: $item
+							);
+
+							// Store relation and replace with reference
+							$relations = $objectEntity->getRelations() ?? [];
+							$relations[$propertyName . '_' . $index] = $nestedObject->getUuid();
+							$objectEntity->setRelations($relations);
+							$object[$propertyName][$index] = $nestedObject->getUuid();
+
+						} else {
+							$relations = $objectEntity->getRelations() ?? [];
+							$relations[$propertyName . '_' . $index] = $item;
+							$objectEntity->setRelations($relations);
+						}
+
 					} else if ($property->items->type === 'file') {
 						// Handle file in array
 						$object[$propertyName][$index] = $this->handleFileProperty(
@@ -429,17 +453,36 @@ class ObjectService
 			}
 			// Handle single object type
 			else if ($property->type === 'object') {
-				$nestedObject = $this->saveObject(
-					register: $register,
-					schema: $schema,
-					object: $object[$propertyName]
-				);
 
-				// Store relation and replace with reference
-				$relations = $objectEntity->getRelations() ?? [];
-				$relations[$propertyName] = $nestedObject->getId();
-				$objectEntity->setRelations($relations);
-				$object[$propertyName] = $nestedObject->getId();
+				$subSchema = $schema;
+
+				if(is_int($property->{'$ref'}) === true) {
+					$subSchema = $property->{'$ref'};
+				} else if (filter_var(value: $property->{'$ref'}, filter: FILTER_VALIDATE_URL) !== false) {
+					$parsedUrl = parse_url($property->{'$ref'});
+					$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
+					$subSchema = end($explodedPath);
+				}
+
+				if(is_array($object[$propertyName]) === true) {
+					$nestedObject = $this->saveObject(
+						register: $register,
+						schema: $subSchema,
+						object: $object[$propertyName]
+					);
+
+					// Store relation and replace with reference
+					$relations = $objectEntity->getRelations() ?? [];
+					$relations[$propertyName] = $nestedObject->getUuid();
+					$objectEntity->setRelations($relations);
+					$object[$propertyName] = $nestedObject->getUuid();
+
+				} else {
+					$relations = $objectEntity->getRelations() ?? [];
+					$relations[$propertyName] = $object[$propertyName];
+					$objectEntity->setRelations($relations);
+				}
+
 			}
 			// Handle single file type
 			else if ($property->type === 'file') {
