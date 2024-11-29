@@ -2,6 +2,8 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
+use InvalidArgumentException;
 use OC\URLGenerator;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
@@ -15,7 +17,6 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
-use OCP\DB\Exception;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
@@ -60,7 +61,8 @@ class ObjectService
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         AuditTrailMapper $auditTrailMapper,
-		private readonly IURLGenerator $urlGenerator
+		private readonly IURLGenerator $urlGenerator,
+		private readonly FileService $fileService
     )
     {
         $this->objectEntityMapper = $objectEntityMapper;
@@ -94,14 +96,16 @@ class ObjectService
 	}
 
 	/**
-     * Find an object by ID or UUID
-     *
-     * @param int|string $id The ID or UUID to search for
-     * @param array $extend Properties to extend with related data
-     *
-     * @return ObjectEntity The found object
-     */
-    public function find(int|string $id, ?array $extend = []) {
+	 * Find an object by ID or UUID
+	 *
+	 * @param int|string $id The ID or UUID to search for
+	 * @param array|null $extend Properties to extend with related data
+	 *
+	 * @return ObjectEntity The found object
+	 * @throws Exception
+	 */
+    public function find(int|string $id, ?array $extend = []): ObjectEntity
+	{
         return $this->getObject(
             register: $this->registerMapper->find($this->getRegister()),
             schema: $this->schemaMapper->find($this->getSchema()),
@@ -110,13 +114,16 @@ class ObjectService
         );
     }
 
-    /**
-     * Create a new object from array data
-     *
-     * @param array $object The object data
-     * @return ObjectEntity The created object
-     */
-    public function createFromArray(array $object) {
+	/**
+	 * Create a new object from array data
+	 *
+	 * @param array $object The object data
+	 *
+	 * @return ObjectEntity The created object
+	 * @throws ValidationException
+	 */
+    public function createFromArray(array $object): ObjectEntity
+	{
         return $this->saveObject(
             register: $this->getRegister(),
             schema: $this->getSchema(),
@@ -124,15 +131,18 @@ class ObjectService
         );
     }
 
-    /**
-     * Update an existing object from array data
-     *
-     * @param string $id The object ID to update
-     * @param array $object The new object data
-     * @param bool $updatedObject Whether this is an update operation
-     * @return ObjectEntity The updated object
-     */
-    public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false) {
+	/**
+	 * Update an existing object from array data
+	 *
+	 * @param string $id The object ID to update
+	 * @param array $object The new object data
+	 * @param bool $updatedObject Whether this is an update operation
+	 *
+	 * @return ObjectEntity The updated object
+	 * @throws ValidationException
+	 */
+    public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false): ObjectEntity
+	{
         // Add ID to object data for update
         $object['id'] = $id;
 
@@ -150,12 +160,14 @@ class ObjectService
         );
     }
 
-    /**
-     * Delete an object
-     *
-     * @param array|\JsonSerializable $object The object to delete
-     * @return bool True if deletion was successful
-     */
+	/**
+	 * Delete an object
+	 *
+	 * @param array|\JsonSerializable $object The object to delete
+	 *
+	 * @return bool True if deletion was successful
+	 * @throws Exception
+	 */
     public function delete(array|\JsonSerializable $object): bool
     {
         // Convert JsonSerializable objects to array
@@ -170,18 +182,18 @@ class ObjectService
         );
     }
 
-    /**
-     * Find all objects matching given criteria
-     *
-     * @param int|null $limit Maximum number of results
-     * @param int|null $offset Starting offset for pagination
-     * @param array $filters Filter criteria
-     * @param array $sort Sorting criteria
-     * @param string|null $search Search term
-     * @param array $extend Properties to extend with related data
-     *
-     * @return array List of matching objects
-     */
+	/**
+	 * Find all objects matching given criteria
+	 *
+	 * @param int|null $limit Maximum number of results
+	 * @param int|null $offset Starting offset for pagination
+	 * @param array $filters Filter criteria
+	 * @param array $sort Sorting criteria
+	 * @param string|null $search Search term
+	 * @param array|null $extend Properties to extend with related data
+	 *
+	 * @return array List of matching objects
+	 */
     public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
     {
         $objects = $this->getObjects(
@@ -216,12 +228,14 @@ class ObjectService
             ->countAll(filters: $filters, search: $search);
     }
 
-    /**
-     * Find multiple objects by their IDs
-     *
-     * @param array $ids Array of object IDs to find
-     * @return array Array of found objects
-     */
+	/**
+	 * Find multiple objects by their IDs
+	 *
+	 * @param array $ids Array of object IDs to find
+	 *
+	 * @return array Array of found objects
+	 * @throws Exception
+	 */
     public function findMultiple(array $ids): array
     {
         $result = [];
@@ -237,6 +251,7 @@ class ObjectService
      *
      * @param array $filters Filter criteria
      * @param string|null $search Search term
+	 *
      * @return array Aggregation results
      */
     public function getAggregations(array $filters, ?string $search = null): array
@@ -255,32 +270,34 @@ class ObjectService
         return [];
     }
 
-    /**
-     * Extract object data from an entity
-     *
-     * @param mixed $object The object to extract data from
-     * @param array $extend Properties to extend with related data
-     *
-     * @return mixed The extracted object data
-     */
-    private function getDataFromObject(mixed $object, ?array $extend = []) {
+	/**
+	 * Extract object data from an entity
+	 *
+	 * @param mixed $object The object to extract data from
+	 * @param array|null $extend Properties to extend with related data
+	 *
+	 * @return mixed The extracted object data
+	 */
+    private function getDataFromObject(mixed $object, ?array $extend = []): mixed
+	{
         return $object->getObject();
     }
 
-    /**
-     * Gets all objects of a specific type.
-     *
-     * @param string|null $objectType The type of objects to retrieve.
-     * @param int|null $register
-     * @param int|null $schema
-     * @param int|null $limit The maximum number of objects to retrieve.
-     * @param int|null $offset The offset from which to start retrieving objects.
-     * @param array $filters
-     * @param array $extend Properties to extend with related data
-     *
-     * @return array The retrieved objects.
-     * @throws \Exception
-     */
+	/**
+	 * Gets all objects of a specific type.
+	 *
+	 * @param string|null $objectType The type of objects to retrieve.
+	 * @param int|null $register
+	 * @param int|null $schema
+	 * @param int|null $limit The maximum number of objects to retrieve.
+	 * @param int|null $offset The offset from which to start retrieving objects.
+	 * @param array $filters
+	 * @param array $sort
+	 * @param string|null $search
+	 * @param array|null $extend Properties to extend with related data
+	 *
+	 * @return array The retrieved objects.
+	 */
     public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
     {
         // Set object type and filters if register and schema are provided
@@ -310,7 +327,7 @@ class ObjectService
 	 */
     public function saveObject(int $register, int $schema, array $object): ObjectEntity
     {
-        // Convert register and schema to their respective objects if they are strings
+        // Convert register and schema to their respective objects if they are strings // @todo ???
         if (is_string($register)) {
             $register = $this->registerMapper->find($register);
         }
@@ -444,9 +461,9 @@ class ObjectService
 					} else if ($property->items->type === 'file') {
 						// Handle file in array
 						$object[$propertyName][$index] = $this->handleFileProperty(
-							$objectEntity,
-							[$propertyName => $item],
-							$propertyName . '_' . $index
+							objectEntity: $objectEntity,
+							object: [$propertyName => $item],
+							propertyName: $propertyName . '_' . $index
 						)[$propertyName];
 					}
 				}
@@ -504,7 +521,6 @@ class ObjectService
 	 * @throws Exception When file handling fails
 	 */
 	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array {
-		$fileContent = null;
 		$fileName = $propertyName;
 
 		// Check if it's a Nextcloud file URL
@@ -523,7 +539,7 @@ class ObjectService
 		if (preg_match('/^data:([^;]*);base64,(.*)/', $object[$propertyName], $matches)) {
 			$fileContent = base64_decode($matches[2], true);
 			if ($fileContent === false) {
-				throw new \Exception('Invalid base64 encoded file');
+				throw new Exception('Invalid base64 encoded file');
 			}
 		}
 
@@ -533,26 +549,47 @@ class ObjectService
 				$client = new \GuzzleHttp\Client();
 				$response = $client->get($object[$propertyName]);
 				$fileContent = $response->getBody()->getContents();
-			} catch (\Exception $e) {
-				throw new \Exception('Failed to download file from URL: ' . $e->getMessage());
+			} catch (Exception $e) {
+				throw new Exception('Failed to download file from URL: ' . $e->getMessage());
 			}
 		} else {
-			throw new \Exception('Invalid file format - must be base64 encoded or valid URL');
+			throw new Exception('Invalid file format - must be base64 encoded or valid URL');
 		}
 
 		try {
-			$file = $this->fileService->createOrUpdateFile(
+			$schema = $this->schemaMapper->find($objectEntity->getSchema());
+			$schemaFolder = $this->fileService->getSchemaFolderName($schema);
+			$objectFolder = $this->fileService->getObjectFolderName($objectEntity);
+
+			$this->fileService->createFolder(folderPath: 'Objects');
+			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder");
+			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder/$objectFolder");
+			$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+
+			$succes = $this->fileService->updateFile(
 				content: $fileContent,
-				fileName: $fileName
+				filePath: $filePath,
+				createNew: true
 			);
+			if ($succes === false) {
+				throw new Exception('Failed to upload this file: $filePath to NextCloud');
+			}
+
+			// Create or find ShareLink
+			$share = $this->fileService->findShare(path: $filePath);
+			if ($share !== null) {
+				$shareLink = $this->fileService->getShareLink($share);
+			} else {
+				$shareLink = $this->fileService->createShareLink(path: $filePath);
+			}
 
 			$files = $objectEntity->getFiles() ?? [];
-			$files[$propertyName] = $file->getId();
+			$files[$propertyName] = $shareLink;
 			$objectEntity->setFiles($files);
 
-			$object[$propertyName] = $file->getId();
-		} catch (\Exception $e) {
-			throw new \Exception('Failed to store file: ' . $e->getMessage());
+			$object[$propertyName] = $shareLink;
+		} catch (Exception $e) {
+			throw new Exception('Failed to store file: ' . $e->getMessage());
 		}
 
 		return $object;
@@ -567,7 +604,7 @@ class ObjectService
      * @param array $extend Properties to extend with related data
      *
      * @return ObjectEntity The resulting object
-     * @throws \Exception If source type is unsupported
+     * @throws Exception If source type is unsupported
      */
     public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
     {
@@ -578,7 +615,7 @@ class ObjectService
 
         //@todo mongodb support
 
-        throw new \Exception('Unsupported source type');
+        throw new Exception('Unsupported source type');
     }
 
     /**
@@ -589,7 +626,7 @@ class ObjectService
      * @param string $uuid The UUID of the object to delete
      *
      * @return bool True if deletion was successful
-     * @throws \Exception If source type is unsupported
+     * @throws Exception If source type is unsupported
      */
     public function deleteObject(Register $register, Schema $schema, string $uuid): bool
     {
@@ -602,7 +639,7 @@ class ObjectService
 
         //@todo mongodb support
 
-        throw new \Exception('Unsupported source type');
+        throw new Exception('Unsupported source type');
     }
 
     /**
@@ -612,9 +649,9 @@ class ObjectService
      * @param int|null $register Optional register ID
      * @param int|null $schema Optional schema ID
      * @return mixed The appropriate mapper
-     * @throws \InvalidArgumentException If unknown object type
+     * @throws InvalidArgumentException If unknown object type
      */
-    public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null)
+    public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null): mixed
     {
         // Return self if register and schema provided
         if ($register !== null && $schema !== null) {
@@ -632,7 +669,7 @@ class ObjectService
             case 'objectEntity':
                 return $this->objectEntityMapper;
             default:
-                throw new \InvalidArgumentException("Unknown object type: $objectType");
+                throw new InvalidArgumentException("Unknown object type: $objectType");
         }
     }
 
@@ -642,10 +679,10 @@ class ObjectService
      * @param string $objectType The type of objects to retrieve
      * @param array $ids The ids of the objects to retrieve
      * @return array The retrieved objects
-     * @throws \InvalidArgumentException If unknown object type
+     * @throws InvalidArgumentException If unknown object type
      */
-    public function getMultipleObjects(string $objectType, array $ids)
-    {
+    public function getMultipleObjects(string $objectType, array $ids): array
+	{
         // Process the ids to handle different formats
         $processedIds = array_map(function($id) {
             if (is_object($id) && method_exists($id, 'getId')) {
@@ -722,7 +759,7 @@ class ObjectService
      * @param mixed $entity The entity to extend
      * @param array $extend Properties to extend with related data
      * @return array The extended entity as an array
-     * @throws \Exception If property not found or no mapper available
+     * @throws Exception If property not found or no mapper available
      */
     public function extendEntity(array $entity, array $extend): array
     {
@@ -746,7 +783,7 @@ class ObjectService
             } elseif (array_key_exists(key: $singularProperty, array: $result)) {
                 $value = $result[$singularProperty];
             } else {
-                throw new \Exception("Property '$property' or '$singularProperty' is not present in the entity.");
+                throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
             }
 
             // Try to get mapper for property
@@ -754,12 +791,12 @@ class ObjectService
             try {
                 $mapper = $this->getMapper(objectType: $property);
                 $propertyObject = $singularProperty;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 try {
                     $mapper = $this->getMapper(objectType: $singularProperty);
                     $propertyObject = $singularProperty;
-                } catch (\Exception $e) {
-                    throw new \Exception("No mapper available for property '$property'.");
+                } catch (Exception $e) {
+                    throw new Exception("No mapper available for property '$property'.");
                 }
             }
 
@@ -779,7 +816,7 @@ class ObjectService
      * Get all registers extended with their schemas
      *
      * @return array The registers with schema data
-     * @throws \Exception If extension fails
+     * @throws Exception If extension fails
      */
     public function getRegisters(): array
     {

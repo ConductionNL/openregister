@@ -18,7 +18,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * FIXME Auto-generated migration step: Please modify to your needs!
  */
-class Version1Date20241128131427 extends SimpleMigrationStep {
+class Version1Date20241128221000 extends SimpleMigrationStep {
 
 	/**
 	 * @param IOutput $output
@@ -41,13 +41,28 @@ class Version1Date20241128131427 extends SimpleMigrationStep {
 		// Update the openregister_objects table
 		$table = $schema->getTable('openregister_objects');
 		if ($table->hasColumn('uri') === false) {
-			$table->addColumn(name: 'uri', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255])->setDefault('');
+			$table->addColumn(
+				name: 'uri',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => true,
+					'length'  => 255
+				]
+			)->setDefault('');
 		}
 		if ($table->hasColumn('files') === false) {
-			$table->addColumn(name: 'files', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
+			$table->addColumn(
+				name: 'files',
+				typeName: Types::JSON,
+				options: ['notnull' => false]
+			)->setDefault('{}');
 		}
 		if ($table->hasColumn('relations') === false) {
-			$table->addColumn(name: 'relations', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
+			$table->addColumn(
+				name: 'relations',
+				typeName: Types::JSON,
+				options: ['notnull' => false]
+			)->setDefault('{}');;
 		}
 
 		return $schema;
