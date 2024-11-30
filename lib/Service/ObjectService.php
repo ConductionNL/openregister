@@ -404,7 +404,7 @@ class ObjectService
 
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
-			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getSchemaObject(urlGenerator: $this->urlGenerator)->properties, $register, $schema);
+			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
 			$objectEntity->setObject($object);
 		}
 
@@ -437,7 +437,7 @@ class ObjectService
 	 * @return array Updated object data
 	 * @throws Exception|ValidationException When file handling fails
 	 */
-	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, stdClass $properties, int $register, int $schema): array
+	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array
 	{
 
 
@@ -456,13 +456,13 @@ class ObjectService
 
 				// Process each array item
 				foreach ($object[$propertyName] as $index => $item) {
-					if ($property->items->type === 'object') {
+					if ($property['items']['type'] === 'object') {
 						$subSchema = $schema;
 
-						if(is_int($property->items->{'$ref'}) === true) {
-							$subSchema = $property->items->{'$ref'};
-						} else if (filter_var(value: $property->items->{'$ref'}, filter: FILTER_VALIDATE_URL) !== false) {
-							$parsedUrl = parse_url($property->items->{'$ref'});
+						if(is_int($property['items']['$ref']) === true) {
+							$subSchema = $property['items']['$ref'];
+						} else if (filter_var(value: $property['items']['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
+							$parsedUrl = parse_url($property['items']['$ref']);
 							$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
 							$subSchema = end($explodedPath);
 						}
@@ -487,7 +487,7 @@ class ObjectService
 							$objectEntity->setRelations($relations);
 						}
 
-					} else if ($property->items->type === 'file') {
+					} else if ($property['items']['type'] === 'file') {
 						// Handle file in array
 						$object[$propertyName][$index] = $this->handleFileProperty(
 							objectEntity: $objectEntity,
@@ -498,14 +498,14 @@ class ObjectService
 				}
 			}
 			// Handle single object type
-			else if ($property->type === 'object') {
+			else if ($property['type'] === 'object') {
 
 				$subSchema = $schema;
 
-				if(is_int($property->{'$ref'}) === true) {
-					$subSchema = $property->{'$ref'};
-				} else if (filter_var(value: $property->{'$ref'}, filter: FILTER_VALIDATE_URL) !== false) {
-					$parsedUrl = parse_url($property->{'$ref'});
+				if(is_int($property['$ref']) === true) {
+					$subSchema = $property['$ref'];
+				} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
+					$parsedUrl = parse_url($property['$ref']);
 					$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
 					$subSchema = end($explodedPath);
 				}
@@ -532,7 +532,12 @@ class ObjectService
 			}
 			// Handle single file type
 			else if ($property['type'] === 'file') {
-				$object = $this->handleFileProperty($objectEntity, $object, $propertyName);
+
+				$object[$propertyName] = $this->handleFileProperty(
+					objectEntity: $objectEntity,
+					object: [$propertyName => $object[$propertyName]],
+					propertyName: $propertyName
+				);
 			}
 		}
 
@@ -605,15 +610,15 @@ class ObjectService
 						}
 						$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
 
+
+						$endpoint = urldecode($endpoint);
+
 						$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
-						$fileContent = $response->getBody();
+
+						$fileContent = $response['body'];
 
 						if(
-							base64_decode(string: $fileContent) !== false
-							&& mb_check_encoding(
-								value: base64_decode(string: $fileContent),
-								encoding: 'UTF-8'
-							) === false
+							$response['encoding'] === 'base64'
 						) {
 							$fileContent = base64_decode(string: $fileContent);
 						}
@@ -624,7 +629,6 @@ class ObjectService
 						$fileContent = $response->getBody()->getContents();
 					}
 				} catch (Exception|NotFoundExceptionInterface $e) {
-					var_dump($e->getTrace()); // @todo REMOVE VAR DUMP!
 					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
 				}
 			} else {
@@ -664,7 +668,7 @@ class ObjectService
 			$objectEntity->setFiles($filesDot->all());
 
 			// Preserve the original uri in the object 'json blob'
-//			$objectDot = $objectDot->set($propertyName, $shareLink);
+			$objectDot = $objectDot->set($propertyName, $shareLink);
 			$object = $objectDot->all();
 		} catch (Exception $e) {
 			throw new Exception('Failed to store file: ' . $e->getMessage());
