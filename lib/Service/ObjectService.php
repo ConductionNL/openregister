@@ -554,7 +554,8 @@ class ObjectService
 	 * @return array Updated object data
 	 * @throws Exception|GuzzleException When file handling fails
 	 */
-	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array {
+	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array
+	{
 		$fileName = str_replace('.', '_', $propertyName);
 		$objectDot = new Dot($object);
 
@@ -631,6 +632,8 @@ class ObjectService
 				} catch (Exception|NotFoundExceptionInterface $e) {
 					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
 				}
+			} else if (str_contains($objectDot->get($propertyName), $this->urlGenerator->getBaseUrl()) === true) {
+				return $object;
 			} else {
 				throw new Exception('Invalid file format - must be base64 encoded or valid URL');
 			}
@@ -658,9 +661,9 @@ class ObjectService
 			// Create or find ShareLink
 			$share = $this->fileService->findShare(path: $filePath);
 			if ($share !== null) {
-				$shareLink = $this->fileService->getShareLink($share);
+				$shareLink = $this->fileService->getShareLink($share).'/download';
 			} else {
-				$shareLink = $this->fileService->createShareLink(path: $filePath);
+				$shareLink = $this->fileService->createShareLink(path: $filePath).'/download';
 			}
 
 			$filesDot = new Dot($objectEntity->getFiles() ?? []);
@@ -690,6 +693,7 @@ class ObjectService
      */
     public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
     {
+
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
             return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
