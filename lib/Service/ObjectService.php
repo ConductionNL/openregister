@@ -533,9 +533,9 @@ class ObjectService
 			// Handle single file type
 			else if ($property['type'] === 'file') {
 
-				$object[$propertyName] = $this->handleFileProperty(
+				$object = $this->handleFileProperty(
 					objectEntity: $objectEntity,
-					object: [$propertyName => $object[$propertyName]],
+					object: $object,
 					propertyName: $propertyName
 				);
 			}
