@@ -14,6 +14,7 @@ use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Lock\LockedException;
 use OCP\Share\IManager;
@@ -37,7 +38,8 @@ class FileService
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly IRootFolder $rootFolder,
-		private readonly IManager $shareManager
+		private readonly IManager $shareManager,
+		private readonly IURLGenerator $urlGenerator,
 	) {}
 
 	/**
@@ -86,15 +88,7 @@ class FileService
 	 */
 	private function getCurrentDomain(): string
 	{
-		// Check if the request is over HTTPS
-		$isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-		$protocol = $isHttps ? 'https://' : 'http://';
-
-		// Get the host (domain)
-		$host = $_SERVER['HTTP_HOST'];
-
-		// Construct the full URL
-		return $protocol . $host;
+		return $this->urlGenerator->getBaseUrl();
 	}
 
 	/**
