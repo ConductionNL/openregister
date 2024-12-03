@@ -87,20 +87,23 @@ class Schema extends Entity implements JsonSerializable
 					$properties[$key] = $property;
 					continue;
 				}
-				switch ($property['format']) {
-					case 'string':
-					// For now array as string
-					case 'array':
-						$properties[$key]['default'] = (string) $property;
-						break;
-					case 'int':
-					case 'integer':
-					case 'number':
-						$properties[$key]['default'] = (int) $property;
-						break;
-					case 'bool':
-						$properties[$key]['default'] = (bool) $property;
-						break;
+
+				if (isset($property['format']) === true) {
+					switch ($property['format']) {
+						case 'string':
+						// For now array as string
+						case 'array':
+							$properties[$key]['default'] = (string) $property;
+							break;
+						case 'int':
+						case 'integer':
+						case 'number':
+							$properties[$key]['default'] = (int) $property;
+							break;
+						case 'bool':
+							$properties[$key]['default'] = (bool) $property;
+							break;
+					}
 				}
 			}
 		}
