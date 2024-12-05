@@ -445,7 +445,7 @@ export default {
 			}
 
 			if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem[this.propertyTitle].items.type) {
-				delete newSchemaItem.items
+				delete newSchemaItem.properties[[this.propertyTitle]].items
 			}
 
 			if (!newSchemaItem?.id) {
