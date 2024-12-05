@@ -221,6 +221,19 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					type: array
 				</h5>
 
+				<div class="ASP-selectContainer">
+					<NcSelect v-bind="itemsTypeOptions"
+						v-model="properties.items.type" />
+				</div>
+
+				<!-- type array and sub type object only -->
+				<div v-if="properties.items.type === 'object'">
+					<NcInputField :disabled="loading"
+						type="string"
+						label="Schema reference of object ($ref)"
+						:value.sync="properties.items.$ref" />
+				</div>
+
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Minimum number of items"
@@ -313,11 +326,21 @@ export default {
 				exclusiveMax: false,
 				minItems: 0,
 				maxItems: 0,
+				$ref: '',
+				items: {
+					$ref: '',
+					type: '',
+				},
 			},
 			typeOptions: {
 				inputLabel: 'Type*',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary'],
+				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file'],
+			},
+			itemsTypeOptions: {
+				inputLabel: 'Sub type',
+				multiple: false,
+				options: ['string', 'number', 'integer', 'object', 'boolean', 'dictionary', 'file'],
 			},
 			formatOptions: {
 				inputLabel: 'Format',
@@ -419,6 +442,10 @@ export default {
 						maxItems: parseFloat(this.properties.maxItems) || null,
 					},
 				},
+			}
+
+			if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem[this.propertyTitle].items.type) {
+				delete newSchemaItem.properties[this.propertyTitle].items
 			}
 
 			if (!newSchemaItem?.id) {
