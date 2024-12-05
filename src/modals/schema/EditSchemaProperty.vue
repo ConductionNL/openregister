@@ -181,39 +181,39 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Example"
 				:value.sync="properties.example" />
 
-			<!-- type integer and number only -->
-			<div v-if="properties.type === 'integer' || properties.type === 'number'">
-				<h5 class="weightNormal">
-					type: number
-				</h5>
+            <!-- type integer and number only -->
+            <div v-if="properties.type === 'integer' || properties.type === 'number'">
+                <h5 class="weightNormal">
+                    type: number
+                </h5>
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Minimum value"
-					:value.sync="properties.minimum" />
+                <NcInputField :disabled="loading"
+                    type="number"
+                    label="Minimum value"
+                    :value.sync="properties.minimum" />
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Maximum value"
-					:value.sync="properties.maximum" />
+                <NcInputField :disabled="loading"
+                    type="number"
+                    label="Maximum value"
+                    :value.sync="properties.maximum" />
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Multiple of"
-					:value.sync="properties.multipleOf" />
+                <NcInputField :disabled="loading"
+                    type="number"
+                    label="Multiple of"
+                    :value.sync="properties.multipleOf" />
 
-				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.exclusiveMin">
-					Exclusive minimum
-				</NcCheckboxRadioSwitch>
+                <NcCheckboxRadioSwitch
+                    :disabled="loading"
+                    :checked.sync="properties.exclusiveMin">
+                    Exclusive minimum
+                </NcCheckboxRadioSwitch>
 
-				<NcCheckboxRadioSwitch
-					:disabled="loading"
-					:checked.sync="properties.exclusiveMax">
-					Exclusive maximum
-				</NcCheckboxRadioSwitch>
-			</div>
+                <NcCheckboxRadioSwitch
+                    :disabled="loading"
+                    :checked.sync="properties.exclusiveMax">
+                    Exclusive maximum
+                </NcCheckboxRadioSwitch>
+            </div>
 
 			<!-- type array only -->
 			<div v-if="properties.type === 'array'">
@@ -221,15 +221,29 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					type: array
 				</h5>
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Minimum number of items"
-					:value.sync="properties.minItems" />
+                <div class="ASP-selectContainer">
+                    <NcSelect v-bind="itemsTypeOptions"
+                        v-model="properties.items.type" />
+			    </div>
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Maximum number of items"
-					:value.sync="properties.maxItems" />
+			    <!-- type array and sub type object only -->
+			    <div v-if="properties.items.type === 'object'">
+                    <NcInputField :disabled="loading"
+                        type="string"
+                        label="Schema reference of object ($ref)"
+                        :value.sync="properties.items.$ref" />
+                  
+                </div>
+
+                <NcInputField :disabled="loading"
+                    type="number"
+                    label="Minimum number of items"
+                    :value.sync="properties.minItems" />
+
+                <NcInputField :disabled="loading"
+                    type="number"
+                    label="Maximum number of items"
+                    :value.sync="properties.maxItems" />
 			</div>
 		</div>
 
@@ -313,11 +327,21 @@ export default {
 				exclusiveMax: false,
 				minItems: 0,
 				maxItems: 0,
+				$ref: '',
+                items: {
+                    $ref: '',
+                    type: ''
+                }
 			},
 			typeOptions: {
 				inputLabel: 'Type*',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary'],
+				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file'],
+			},
+			itemsTypeOptions: {
+				inputLabel: 'Sub type',
+				multiple: false,
+				options: ['string', 'number', 'integer', 'object', 'boolean', 'dictionary', 'file'],
 			},
 			formatOptions: {
 				inputLabel: 'Format',
@@ -420,6 +444,10 @@ export default {
 					},
 				},
 			}
+
+            if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem[this.propertyTitle].items.type) {
+				delete newSchemaItem.items
+            }
 
 			if (!newSchemaItem?.id) {
 				this.success = false
