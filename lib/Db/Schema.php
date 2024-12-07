@@ -79,29 +79,17 @@ class Schema extends Entity implements JsonSerializable
 	 */
 	public function jsonSerialize(): array
 	{
+		$required = $this->required ?? [];
         $properties = [];
 		if (isset($this->properties) === true) {
-			foreach ($this->properties as $key => $property) {
-				$properties[$key] = $property;
-				if (isset($property['type']) === false) {
-					$properties[$key] = $property;
-					continue;
+			foreach ($this->properties as $title => $property) {
+				$title = $property['title'] ?? $title;
+				if ($property['required'] === true && in_array($title, $required) === false) {
+					$required[] = $title;
 				}
-				switch ($property['format']) {
-					case 'string':
-					// For now array as string
-					case 'array':
-						$properties[$key]['default'] = (string) $property;
-						break;
-					case 'int':
-					case 'integer':
-					case 'number':
-						$properties[$key]['default'] = (int) $property;
-						break;
-					case 'bool':
-						$properties[$key]['default'] = (bool) $property;
-						break;
-				}
+				unset($property['title'], $property['required']);
+
+				$properties[$title] = $property;
 			}
 		}
 
@@ -112,7 +100,7 @@ class Schema extends Entity implements JsonSerializable
 			'description' => $this->description,
 			'version'     => $this->version,
 			'summary'     => $this->summary,
-			'required'    => $this->required,
+			'required'    => $required,
 			'properties'  => $properties,
 			'archive'	  => $this->archive,
 			'source'	  => $this->source,
@@ -140,28 +128,20 @@ class Schema extends Entity implements JsonSerializable
 	public function getSchemaObject(IURLGenerator $urlGenerator): object
 	{
 		$data = $this->jsonSerialize();
-		$properties = $data['properties'];
-		unset($data['properties'], $data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
-			$data['updated'], $data['created']);
 
-		$data['required'] = [];
-
-		$data['type'] = 'object';
-
-		foreach ($properties as $property) {
-			$title = $property['title'];
-			if ($property['required'] === true) {
-				$data['required'][] = $title;
-			}
-			unset($property['title'], $property['required']);
-
+		foreach ($data['properties'] as $title => $property) {
 			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
 		}
 
+		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
+			$data['updated'], $data['created']);
+
+		$data['type'] = 'object';
+
+		// Validator needs this specific $schema
 		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
 		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
-
 
 		return json_decode(json_encode($data));
 	}

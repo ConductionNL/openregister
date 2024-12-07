@@ -16,21 +16,27 @@ use OCP\AppFramework\Db\Entity;
 class ObjectEntity extends Entity implements JsonSerializable
 {
 	protected ?string $uuid = null;
+	protected ?string $uri = null;
 	protected ?string $version = null;
 	protected ?string $register = null;
 	protected ?string $schema = null;
 	protected ?array $object = [];
+	protected ?array $files = []; // array of file ids that are related to this object
+	protected ?array $relations = []; // array of object ids that this object is related to
 	protected ?string $textRepresentation = null;
 	protected ?array $locked = [];
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
 	public function __construct() {
-		$this->addType(fieldName:'uuid', type: 'string');
+		$this->addType(fieldName:'uuid', type: 'string');	
+		$this->addType(fieldName:'uri', type: 'string');
 		$this->addType(fieldName:'version', type: 'string');
 		$this->addType(fieldName:'register', type: 'string');
 		$this->addType(fieldName:'schema', type: 'string');
 		$this->addType(fieldName:'object', type: 'json');
+		$this->addType(fieldName:'files', type: 'json');
+		$this->addType(fieldName:'relations', type: 'json');
 		$this->addType(fieldName:'textRepresentation', type: 'text');
 		$this->addType(fieldName:'locked', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
@@ -159,10 +165,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
-			'version' => $this->version,
+			'uri' => $this->uri,
+			'version'     => $this->version,
 			'register' => $this->register,
 			'schema' => $this->schema,
 			'object' => $this->object,
+			'files' => $this->files,
+			'relations' => $this->relations,
 			'textRepresentation' => $this->textRepresentation,
 			'locked' => $this->locked,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,

@@ -225,9 +225,12 @@ class ObjectEntityMapper extends QBMapper
 		$obj->hydrate($object);
 
 		// Set or update the version
-		$version = explode('.', $obj->getVersion());
-		$version[2] = (int)$version[2] + 1;
-		$obj->setVersion(implode('.', $version));
+		if (isset($object['version']) === false) {
+			$version = explode('.', $obj->getVersion());
+			$version[2] = (int)$version[2] + 1;
+			$obj->setVersion(implode('.', $version));
+		}
+
 
 		return $this->update($obj);
 	}
