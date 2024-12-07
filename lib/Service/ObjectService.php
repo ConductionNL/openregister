@@ -17,6 +17,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\SearchLog;
+use OCA\OpenRegister\Db\SearchLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
@@ -52,6 +54,9 @@ class ObjectService
     /** @var AuditTrailMapper For tracking object changes */
     private AuditTrailMapper $auditTrailMapper;
 
+    /** @var SearchLogMapper For logging searches */
+    private SearchLogMapper $searchLogMapper;
+    
     /**
      * Constructor for ObjectService
      *
@@ -61,12 +66,14 @@ class ObjectService
      * @param RegisterMapper $registerMapper Mapper for registers
      * @param SchemaMapper $schemaMapper Mapper for schemas
      * @param AuditTrailMapper $auditTrailMapper Mapper for audit trails
+     * @param SearchLogMapper $searchLogMapper Mapper for search logs
      */
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         AuditTrailMapper $auditTrailMapper,
+        SearchLogMapper $searchLogMapper,
 		private ContainerInterface $container,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly FileService $fileService,
@@ -77,6 +84,7 @@ class ObjectService
         $this->registerMapper = $registerMapper;
         $this->schemaMapper = $schemaMapper;
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->searchLogMapper = $searchLogMapper;
     }
 
 	/**
@@ -225,6 +233,7 @@ class ObjectService
 	 */
     public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
     {
+        // Get the search results
         $objects = $this->getObjects(
             register: $this->getRegister(),
             schema: $this->getSchema(),
@@ -233,6 +242,15 @@ class ObjectService
             filters: $filters,
             sort: $sort,
             search: $search
+        );
+
+        // Log the search
+        $this->searchLogMapper->createSearchLog(
+            schema: $this->getSchema(),
+            register: $this->getRegister(),
+            filters: $filters,
+            search: $search,
+            resultCount: count($objects)
         );
 
         return $objects;
@@ -374,7 +392,12 @@ class ObjectService
             );
         }
 
-//		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+        // Check if existing object is locked
+        //if ($objectEntity && objectEntity->isLocked()) {
+        //     throw new ValidationException('Cannot modify locked object', ['locked' => 'Object is locked for editing']);
+        //}
+
+		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if (isset($object['id']) === false || $objectEntity === null) {
@@ -697,7 +720,13 @@ class ObjectService
 
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
-            return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+            // Get the object from the database
+            $object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+            
+            // Log the read action to audit trail
+            $this->auditTrailMapper->logRead(object: $object);
+            
+            return $object;
         }
 
         //@todo mongodb support
@@ -720,6 +749,12 @@ class ObjectService
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
             $object = $this->objectEntityMapper->findByUuid(register: $register, schema: $schema, uuid: $uuid);
+            
+            // Check if object is locked
+            if ($object->isLocked()) {
+                throw new ValidationException('Cannot delete locked object', ['locked' => 'Object is locked for deletion']);
+            }
+            
             $this->objectEntityMapper->delete($object);
             return true;
         }
@@ -984,4 +1019,6 @@ class ObjectService
 
         return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
     }
+
+   
 }

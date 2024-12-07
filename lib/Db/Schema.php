@@ -20,7 +20,7 @@ class Schema extends Entity implements JsonSerializable
 	protected ?array  $properties  = [];
 	protected ?array  $archive     = [];
 	protected ?string $source      = null;
-	protected bool $hardValidation = false;
+	protected ?array  $configuration = [];
 	protected ?DateTime $updated   = null;
 	protected ?DateTime $created   = null;
 
@@ -34,7 +34,7 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'properties', type: 'json');
 		$this->addType(fieldName: 'archive', type: 'json');
 		$this->addType(fieldName: 'source', type: 'string');
-		$this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
+		$this->addType(fieldName: 'configuration', type: 'json');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}
@@ -104,7 +104,7 @@ class Schema extends Entity implements JsonSerializable
 			'properties'  => $properties,
 			'archive'	  => $this->archive,
 			'source'	  => $this->source,
-			'hardValidation' => $this->hardValidation,
+			'configuration' => $this->configuration,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
 		];
@@ -144,5 +144,15 @@ class Schema extends Entity implements JsonSerializable
 		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
 
 		return json_decode(json_encode($data));
+	}
+
+	/**
+	 * Check if hard validation is enabled for this schema
+	 *
+	 * @return bool True if hard validation is enabled
+	 */
+	public function isHardValidationEnabled(): bool
+	{
+		return isset($this->configuration['hardValidation']) && $this->configuration['hardValidation'] === true;
 	}
 }
