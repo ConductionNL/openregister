@@ -219,6 +219,8 @@ class SchemasController extends Controller
 			return $phpArray;
 		}
 
+		//@todo Maybe check if Schema already exists? If uploaded with url, check if schema with this $phpArray['source'] exists?
+
 		// Set default title if not provided or empty
 		if (empty($phpArray['title']) === true) {
 			$phpArray['title'] = 'New Schema';
@@ -236,43 +238,30 @@ class SchemasController extends Controller
 
 	/**
 	 * Creates and return a json file for a Schema.
-	 * @todo move most of this code to DownloadService and make it even more Abstract using Entity->jsonSerialize instead of Schema->jsonSerialize, etc.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @param int $id The ID of the schema to return json file for
 	 * @return JSONResponse A json Response containing the json
+	 * @throws \Exception
 	 */
 	public function download(int $id): JSONResponse
 	{
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		$accept = $this->request->getHeader('Accept');
+
+		if (empty($accept) === true) {
+			return new JSONResponse(data: ['error' => 'Request is missing header Accept'], statusCode: 400);
 		}
 
-		$contentType = $this->request->getHeader('Content-Type');
+		$responseData = $this->downloadService->download(objectType: 'schema', id: $id, accept: $accept);
 
-		if (empty($contentType) === true) {
-			return new JSONResponse(data: ['error' => 'Request is missing header Content-Type'], statusCode: 400);
+		$statusCode = 200;
+		if (isset($responseData['statusCode']) === true) {
+			$statusCode = $responseData['statusCode'];
+			unset($responseData['statusCode']);
 		}
 
-		switch ($contentType) {
-			case 'application/json':
-				$type = 'json';
-				$responseData = [
-					'jsonArray' => $schema->jsonSerialize(),
-					'jsonString' => json_encode($schema->jsonSerialize())
-				];
-				break;
-			default:
-				return new JSONResponse(data: ['error' => "The Content-Type $contentType is not supported."], statusCode: 400);
-		}
-
-		// @todo Create a downloadable json file and return it.
-		$file = $this->downloadService->download(type: $type);
-
-		return new JSONResponse($responseData);
+		return new JSONResponse(data: $responseData, statusCode: $statusCode);
 	}
 }

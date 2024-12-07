@@ -13,6 +13,7 @@ use OCP\Files\InvalidPathException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
+use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -40,6 +41,7 @@ class FileService
 		private readonly IRootFolder $rootFolder,
 		private readonly IManager $shareManager,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly IConfig $config,
 	) {}
 
 	/**
@@ -88,7 +90,14 @@ class FileService
 	 */
 	private function getCurrentDomain(): string
 	{
-		return $this->urlGenerator->getBaseUrl();
+		$baseUrl = $this->urlGenerator->getBaseUrl();
+		$trustedDomains = $this->config->getSystemValue('trusted_domains');
+
+		if(isset($trustedDomains[1]) === true) {
+			$baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
+		}
+
+		return $baseUrl;
 	}
 
 	/**
