@@ -56,6 +56,16 @@ import { objectStore, navigationStore } from '../../store/store.js'
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
 						</BTab>
+						<BTab title="Objects">
+							<div v-if="true || !syncs.length" class="tabPanel">
+								{{ JSON.stringify(objectStore.objectItem.relations, null, 2) }}
+							</div>
+						</BTab>
+						<BTab title="Files">
+							<div v-if="true || !syncs.length" class="tabPanel">
+								{{ JSON.stringify(objectStore.objectItem.files, null, 2) }}
+							</div>
+						</BTab>
 						<BTab title="Syncs">
 							<div v-if="true || !syncs.length" class="tabPanel">
 								No synchronizations found
