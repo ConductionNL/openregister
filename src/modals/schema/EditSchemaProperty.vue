@@ -42,16 +42,22 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 			<!-- Object configuration -->
 			<div v-if="properties.type === 'object'" class="ASP-selectContainer">
 				<NcSelect 
-					v-bind="objectConfiguration.handling" />
+					v-bind="objectConfiguration.handling"
+					:value.sync="properties.objectConfiguration.handling" />
 				
 				<NcSelect 
-					v-bind="availableSchemas"/>
+					v-bind="availableSchemas"
+					:value.sync="properties.objectConfiguration.schema" />
 			</div>
 
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
-				<NcSelect v-bind="fileConfiguration.handling" />
-				<NcSelect v-bind="mimeTypes" 
+				<NcSelect 
+					v-bind="fileConfiguration.handling"
+					:value.sync="properties.fileConfiguration.handling" />
+				<NcSelect 
+					v-bind="mimeTypes" 
+					:value.sync="properties.fileConfiguration.allowedMimeTypes"
 					multiple />
 				<NcTextField :disabled="loading"
 					label="File Location"
@@ -363,8 +369,8 @@ export default {
 				fileConfiguration: {
 					handling: 'ignore',
 					allowedMimeTypes: [],
-					location: '',
-					maxSize: 0
+					location: '',      // Initialize with empty string
+					maxSize: 0        // Initialize with 0
 				}
 			},
 			typeOptions: {
@@ -450,7 +456,8 @@ export default {
 
 				this.propertyTitle = schemaStore.schemaPropertyKey
 				this.properties = {
-					...schemaProperty,
+					...this.properties,  // Preserve default structure
+					...schemaProperty,   // Override with existing values
 					minLength: schemaProperty.minLength ?? 0,
 					maxLength: schemaProperty.maxLength ?? 0,
 					minimum: schemaProperty.minimum ?? 0,
@@ -458,6 +465,15 @@ export default {
 					multipleOf: schemaProperty.multipleOf ?? 0,
 					minItems: schemaProperty.minItems ?? 0,
 					maxItems: schemaProperty.maxItems ?? 0,
+					// Preserve nested configurations with existing values or defaults
+					objectConfiguration: {
+						...this.properties.objectConfiguration,
+						...(schemaProperty.objectConfiguration || {})
+					},
+					fileConfiguration: {
+						...this.properties.fileConfiguration,
+						...(schemaProperty.fileConfiguration || {})
+					}
 				}
 			}
 		},
