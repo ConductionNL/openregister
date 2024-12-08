@@ -443,8 +443,15 @@ class ObjectService
 	{
 		$relations = $objectEntity->getRelations() ?? [];
 		
+		// Get object's own identifiers to skip self-references
+		$selfIdentifiers = [
+			$objectEntity->getUri(),
+			$objectEntity->getUuid(),
+			$objectEntity->getId()
+		];
+		
 		// Function to recursively find links/UUIDs and build dot notation paths
-		$findRelations = function($data, $path = '') use (&$findRelations, &$relations) {
+		$findRelations = function($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
 			foreach ($data as $key => $value) {
 				$currentPath = $path ? "$path.$key" : $key;
 				
@@ -453,8 +460,9 @@ class ObjectService
 					$findRelations($value, $currentPath);
 				} else if (is_string($value)) {
 					// Check for URLs and UUIDs
-					if (filter_var($value, FILTER_VALIDATE_URL) !== false 
-						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)
+					if ((filter_var($value, FILTER_VALIDATE_URL) !== false 
+						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value))
+						&& !in_array($value, $selfIdentifiers, true)
 					) {
 						$relations[$currentPath] = $value;
 					}
