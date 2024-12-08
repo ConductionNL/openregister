@@ -395,20 +395,21 @@ class ObjectService
         $oldObject = clone $objectEntity;
         $objectEntity->setObject($object);
 
-        // Ensure UUID exists
+        // Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
         if (empty($objectEntity->getUuid())) {
             $objectEntity->setUuid(Uuid::v4());
         }
+        
+        // Let grap any links that we can
+        $objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
-
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
-			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
-			$object = $this->handleLinkRelations($objectEntity, $object);
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
 			$objectEntity->setObject($object);
-		}
+		}			
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
@@ -436,9 +437,9 @@ class ObjectService
      * @param ObjectEntity $objectEntity The object entity to handle relations for
      * @param array $object The object data
      * 
-     * @return array Updated object data
+     * @return ObjectEntity Updated object data
      */
-	private function handleLinkRelations(ObjectEntity $objectEntity, array $object): array
+	private function handleLinkRelations(ObjectEntity $objectEntity): ObjectEntity
 	{
 		$relations = $objectEntity->getRelations() ?? [];
 		
@@ -462,10 +463,10 @@ class ObjectService
 		};
 
 		// Process the entire object structure
-		$findRelations($object);
+		$findRelations($objectEntity->getObject());
 		
 		$objectEntity->setRelations($relations);
-		return $object;
+		return $objectEntity;
 	}
 
 	/**
@@ -477,10 +478,10 @@ class ObjectService
 	 * @param int $register The register ID
 	 * @param int $schema The schema ID
 	 *
-	 * @return array Updated object data
+	 * @return ObjectEntity Updated object with linked data
 	 * @throws Exception|ValidationException When file handling fails
 	 */
-	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array
+	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): ObjectEntity
 	{
         // @todo: Multidimensional suport should be added
 		foreach ($properties as $propertyName => $property) {
@@ -585,7 +586,7 @@ class ObjectService
 			}
 		}
 
-		return $object;
+		return $objectEntity;
 	}
 
 	/**
