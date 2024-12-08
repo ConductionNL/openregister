@@ -44,7 +44,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 					:force-display-actions="true"
 					@click="objectStore.setObjectItem(object)">
 					<template #icon>
-						<DatabaseOutline :class="objectStore.objectItem?.id === object.id && 'selectedObjectIcon'"
+						<CubeOutline :class="objectStore.objectItem?.id === object.id && 'selectedObjectIcon'"
 							disable-menu
 							:size="44" />
 					</template>
@@ -84,7 +84,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 <script>
 import { NcListItem, NcActionButton, NcAppContentList, NcTextField, NcLoadingIcon, NcActions } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -101,7 +101,7 @@ export default {
 		NcTextField,
 		NcLoadingIcon,
 		Magnify,
-		DatabaseOutline,
+		CubeOutline,
 		Refresh,
 		Plus,
 		Pencil,

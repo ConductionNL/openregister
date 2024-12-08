@@ -39,9 +39,58 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:disabled="properties.type !== 'string'" />
 			</div>
 
-			<NcTextField :disabled="loading"
-				label="Pattern (regex)"
-				:value.sync="properties.pattern" />
+			<!-- Object configuration -->
+			<div v-if="properties.type === 'object'" class="ASP-selectContainer">
+				<NcSelect 
+					label="Object Handling"
+					v-bind="objectConfiguration.handling"
+					:value.sync="properties.objectConfiguration.handling" />
+				
+				<NcInputField :disabled="loading" 
+					type="string"
+					label="Schema reference of object ($ref)" 
+					:value.sync="properties.$ref" />
+			</div>
+
+			<!-- File configuration -->
+			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
+				<NcSelect 
+					label="File Handling"
+					v-bind="fileConfiguration.handling"
+					:value.sync="properties.fileConfiguration.handling" />
+				<NcSelect 
+					label="Allowed MIME Types"
+					v-bind="mimeTypes" 
+					:value.sync="properties.fileConfiguration.allowedMimeTypes"
+					multiple />
+				<NcTextField :disabled="loading"
+					label="File Location"
+					:value.sync="properties.fileConfiguration.location" />
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Maximum File Size (MB)"
+					:value.sync="properties.fileConfiguration.maxSize" />
+			</div>
+
+			<template v-if="properties.type !== 'object' && properties.type !== 'file'">
+				<NcTextField :disabled="loading"
+					label="Pattern (regex)"
+					:value.sync="properties.pattern" />
+
+				<NcTextField :disabled="loading"
+					label="Behavior"
+					:value.sync="properties.behavior" />
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Minimum length"
+					:value.sync="properties.minLength" />
+
+				<NcInputField :disabled="loading"
+					type="number"
+					label="Maximum length"
+					:value.sync="properties.maxLength" />
+			</template>
 
 			<!-- TYPE : STRING -->
 			<div v-if="properties.type === 'string'">
@@ -151,10 +200,6 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Default value"
 				:value.sync="properties.default" />
 
-			<NcTextField :disabled="loading"
-				label="Behavior"
-				:value.sync="properties.behavior" />
-
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
 				:checked.sync="properties.required">
@@ -166,16 +211,6 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				:checked.sync="properties.deprecated">
 				Deprecated
 			</NcCheckboxRadioSwitch>
-
-			<NcInputField :disabled="loading"
-				type="number"
-				label="Minimum length"
-				:value.sync="properties.minLength" />
-
-			<NcInputField :disabled="loading"
-				type="number"
-				label="Maximum length"
-				:value.sync="properties.maxLength" />
 
 			<NcTextField :disabled="loading"
 				label="Example"
@@ -331,6 +366,16 @@ export default {
 					$ref: '',
 					type: '',
 				},
+				objectConfiguration: {
+					handling: 'nested-object',
+					schema: ''
+				},
+				fileConfiguration: {
+					handling: 'ignore',
+					allowedMimeTypes: [],
+					location: '',      // Initialize with empty string
+					maxSize: 0        // Initialize with 0
+				}
 			},
 			typeOptions: {
 				inputLabel: 'Type*',
@@ -346,6 +391,30 @@ export default {
 				inputLabel: 'Format',
 				multiple: false,
 				options: ['date', 'time', 'duration', 'date-time', 'url', 'uri', 'uuid', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri-reference', 'iri', 'iri-reference', 'uri-template', 'json-pointer', 'regex', 'binary', 'byte', 'password', 'rsin', 'kvk', 'bsn', 'oidn', 'telephone'],
+			},
+			objectConfiguration: {
+				handling: {
+					inputLabel: 'Object Configuration',
+					multiple: false,
+					options: ['nested-object', 'nested-schema', 'related-schema', 'uri']
+				},
+			},
+			fileConfiguration: {
+				handling: {
+					inputLabel: 'File Configuration',
+					multiple: false,
+					options: ['ignore','transform']
+				},
+			},
+			availableSchemas: {
+				inputLabel: 'Select Schema',
+				multiple: false,
+				options: ['schema1', 'schema2', 'schema3'] // This should be populated with actual schemas
+			},
+			mimeTypes: {
+				inputLabel: 'Allowed MIME Types',
+				multiple: true,
+				options: ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'] // Add more MIME types as needed
 			},
 			loading: false,
 			success: null,
@@ -391,7 +460,8 @@ export default {
 
 				this.propertyTitle = schemaStore.schemaPropertyKey
 				this.properties = {
-					...schemaProperty,
+					...this.properties,  // Preserve default structure
+					...schemaProperty,   // Override with existing values
 					minLength: schemaProperty.minLength ?? 0,
 					maxLength: schemaProperty.maxLength ?? 0,
 					minimum: schemaProperty.minimum ?? 0,
@@ -399,6 +469,15 @@ export default {
 					multipleOf: schemaProperty.multipleOf ?? 0,
 					minItems: schemaProperty.minItems ?? 0,
 					maxItems: schemaProperty.maxItems ?? 0,
+					// Preserve nested configurations with existing values or defaults
+					objectConfiguration: {
+						...this.properties.objectConfiguration,
+						...(schemaProperty.objectConfiguration || {})
+					},
+					fileConfiguration: {
+						...this.properties.fileConfiguration,
+						...(schemaProperty.fileConfiguration || {})
+					}
 				}
 			}
 		},
