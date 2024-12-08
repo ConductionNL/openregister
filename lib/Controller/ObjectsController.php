@@ -275,6 +275,30 @@ class ObjectsController extends Controller
     }
 
     /**
+     * Retrieves all objects that use a object
+     *
+     * This method returns all the call logs associated with a object based on its ID.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the object to retrieve logs for
+	 *
+     * @return JSONResponse A JSON response containing the call logs
+     */
+    public function used(int $id): JSONResponse
+    {
+        try {
+            // Lets grap the object to stablish an uri
+            $object = $this->objectEntityMapper->find($id);
+            $relations = $this->objectEntityMapper->findByRelationUri($object->getUri());
+            return new JSONResponse($relations);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Relations not found'], 404);
+        }
+    }
+
+    /**
      * Retrieves call logs for an object
      *
      * This method returns a JSON response containing the logs for a specific object.

@@ -522,9 +522,9 @@ class ObjectService
 
 					// Store relation and replace with reference
 					$relations = $objectEntity->getRelations() ?? [];
-					$relations[$propertyName] = $nestedObject->getUuid();
+					$relations[$propertyName] = $nestedObject->getUri();
 					$objectEntity->setRelations($relations);
-					$object[$propertyName] = $nestedObject->getUuid();
+					$object[$propertyName] = $nestedObject->getUri();
 
 				} else {
 					$relations = $objectEntity->getRelations() ?? [];

@@ -185,8 +185,6 @@ class ObjectEntityMapper extends QBMapper
 		$qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
 		$qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
 
-//		var_dump($qb->getSQL());
-
 		return $this->findEntities(query: $qb);
 	}
 
@@ -267,5 +265,30 @@ class ObjectEntityMapper extends QBMapper
 			filters: $filters,
 			search: $search
 		);
+	}
+
+	/**
+	 * Find objects that have a specific URI in their relations
+	 *
+	 * @param string $uri The URI to search for in relations
+	 * @return array An array of ObjectEntities that have the specified URI
+	 */
+	public function findByRelationUri(string $uri): array
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		// In MariaDB/MySQL, we can use JSON_SEARCH to find a value in any JSON path
+		// JSON_SEARCH returns NULL if value is not found, and path if found
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->isNotNull(
+					$qb->createFunction(
+						"JSON_SEARCH(relations, 'one', " . $qb->createNamedParameter($uri) . ")"
+					)
+				)
+			);
+
+		return $this->findEntities($qb);
 	}
 }
