@@ -406,6 +406,7 @@ class ObjectService
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
 			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
+			$object = $this->handleLinkRelations($objectEntity, $object);
 			$objectEntity->setObject($object);
 		}
 
@@ -427,6 +428,47 @@ class ObjectService
     }
 
 	/**
+     * Handle link relations efficiently using JSON path traversal
+     * 
+     * Finds all links or UUIDs in the object and adds them to the relations 
+     * using dot notation paths for nested properties
+     * 
+     * @param ObjectEntity $objectEntity The object entity to handle relations for
+     * @param array $object The object data
+     * 
+     * @return array Updated object data
+     */
+	private function handleLinkRelations(ObjectEntity $objectEntity, array $object): array
+	{
+		$relations = $objectEntity->getRelations() ?? [];
+		
+		// Function to recursively find links/UUIDs and build dot notation paths
+		$findRelations = function($data, $path = '') use (&$findRelations, &$relations) {
+			foreach ($data as $key => $value) {
+				$currentPath = $path ? "$path.$key" : $key;
+				
+				if (is_array($value)) {
+					// Recurse into nested arrays
+					$findRelations($value, $currentPath);
+				} else if (is_string($value)) {
+					// Check for URLs and UUIDs
+					if (filter_var($value, FILTER_VALIDATE_URL) !== false 
+						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)
+					) {
+						$relations[$currentPath] = $value;
+					}
+				}
+			}
+		};
+
+		// Process the entire object structure
+		$findRelations($object);
+		
+		$objectEntity->setRelations($relations);
+		return $object;
+	}
+
+	/**
 	 * Handle object relations and file properties in schema properties and array items
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to handle relations for
@@ -440,8 +482,7 @@ class ObjectService
 	 */
 	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array
 	{
-
-
+        // @todo: Multidimensional suport should be added
 		foreach ($properties as $propertyName => $property) {
 			// Skip if property not in object
 			if (isset($object[$propertyName]) === false) {

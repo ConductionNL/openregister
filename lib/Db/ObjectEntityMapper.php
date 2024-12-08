@@ -180,7 +180,33 @@ class ObjectEntityMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
+		
+		// @roto: tody this code up please and make ik monogdb compatible
+		// Check if _relations filter exists to search in relations column
+		if(isset($filters['_relations'])) {
+			// Handle both single string and array of relations
+			$relations = (array)$filters['_relations'];
+			
+			// Build OR conditions for each relation
+			$orConditions = [];
+			foreach($relations as $relation) {
+				$orConditions[] = $qb->expr()->isNotNull(
+					$qb->createFunction(
+						"JSON_SEARCH(relations, 'one', " . 
+						$qb->createNamedParameter($relation) .
+						", NULL, '$')"
+					)
+				);
+			}
+			
+			// Add the combined OR conditions to query
+			$qb->andWhere($qb->expr()->orX(...$orConditions));
+			
+			// Remove _relations from filters since it's handled separately
+			unset($filters['_relations']);
+		}
 
+		// Filter and search the objects
 		$qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
 		$qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
 		$qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
