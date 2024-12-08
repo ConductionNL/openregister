@@ -42,20 +42,24 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 			<!-- Object configuration -->
 			<div v-if="properties.type === 'object'" class="ASP-selectContainer">
 				<NcSelect 
+					label="Object Handling"
 					v-bind="objectConfiguration.handling"
 					:value.sync="properties.objectConfiguration.handling" />
 				
-				<NcSelect 
-					v-bind="availableSchemas"
-					:value.sync="properties.objectConfiguration.schema" />
+				<NcInputField :disabled="loading" 
+					type="string"
+					label="Schema reference of object ($ref)" 
+					:value.sync="properties.$ref" />
 			</div>
 
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
 				<NcSelect 
+					label="File Handling"
 					v-bind="fileConfiguration.handling"
 					:value.sync="properties.fileConfiguration.handling" />
 				<NcSelect 
+					label="Allowed MIME Types"
 					v-bind="mimeTypes" 
 					:value.sync="properties.fileConfiguration.allowedMimeTypes"
 					multiple />
@@ -68,7 +72,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:value.sync="properties.fileConfiguration.maxSize" />
 			</div>
 
-			<template v-if="properties.type !== 'object'">
+			<template v-if="properties.type !== 'object' && properties.type !== 'file'">
 				<NcTextField :disabled="loading"
 					label="Pattern (regex)"
 					:value.sync="properties.pattern" />

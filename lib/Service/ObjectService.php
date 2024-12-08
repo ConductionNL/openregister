@@ -498,12 +498,14 @@ class ObjectService
 					}
 				}
 			}
+            
 			// Handle single object type
 			else if ($property['type'] === 'object') {
 
 				$subSchema = $schema;
 
-				if(is_int($property['$ref']) === true) {
+                // $ref is a int, id or uuid
+				if(is_int($property['$ref']) === true || is_numeric($property['$ref']) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $property['$ref'])) {
 					$subSchema = $property['$ref'];
 				} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
 					$parsedUrl = parse_url($property['$ref']);
