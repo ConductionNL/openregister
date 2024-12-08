@@ -286,12 +286,18 @@ class ObjectsController extends Controller
 	 *
      * @return JSONResponse A JSON response containing the call logs
      */
-    public function used(int $id): JSONResponse
+    public function relations(int $id): JSONResponse
     {
         try {
             // Lets grap the object to stablish an uri
             $object = $this->objectEntityMapper->find($id);
             $relations = $this->objectEntityMapper->findByRelationUri($object->getUri());
+
+            // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
+            foreach ($relations as $key => $relation) {
+                $relations[$key] = $relation->getObjectArray();
+            }
+
             return new JSONResponse($relations);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Relations not found'], 404);

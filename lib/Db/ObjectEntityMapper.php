@@ -268,23 +268,29 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
-	 * Find objects that have a specific URI in their relations
+	 * Find objects that have a specific URI or UUID in their relations
 	 *
-	 * @param string $uri The URI to search for in relations
-	 * @return array An array of ObjectEntities that have the specified URI
+	 * @param string $search The URI or UUID to search for in relations
+	 * @param bool $partialMatch Whether to search for partial matches (default: false)
+	 * @return array An array of ObjectEntities that have the specified URI/UUID
 	 */
-	public function findByRelationUri(string $uri): array
+	public function findByRelationUri(string $search, bool $partialMatch = false): array
 	{
 		$qb = $this->db->getQueryBuilder();
 
-		// In MariaDB/MySQL, we can use JSON_SEARCH to find a value in any JSON path
-		// JSON_SEARCH returns NULL if value is not found, and path if found
+		// For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON
+		// For exact matches, we use 'one' mode which finds exact string matches
+		$mode = $partialMatch ? 'all' : 'one';
+		$searchTerm = $partialMatch ? '%' . $search . '%' : $search;
+
 		$qb->select('*')
 			->from('openregister_objects')
 			->where(
 				$qb->expr()->isNotNull(
 					$qb->createFunction(
-						"JSON_SEARCH(relations, 'one', " . $qb->createNamedParameter($uri) . ")"
+						"JSON_SEARCH(relations, '" . $mode . "', " . 
+						$qb->createNamedParameter($searchTerm) . 
+						($partialMatch ? ", NULL, '$')" : ")")
 					)
 				)
 			);

@@ -77,7 +77,24 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab title="Used by">
-
+							<div v-if="objectStore.relations.length">
+								<NcListItem v-for="(relation, key) in objectStore.relations"
+									:key="key"
+									:name="relation.id"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<CubeOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ relation.uri }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-else class="tabPanel">
+								No relations found
+							</div>
 						</BTab>
 						<BTab title="Files">
 							<div v-if="true || !syncs.length" class="tabPanel">
@@ -162,18 +179,22 @@ export default {
 			currentActiveObject: undefined,
 			auditTrailLoading: false,
 			auditTrails: [],
+			relationsLoading: false,
+			relations: [],
 		}
 	},
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
 			this.getAuditTrails()
+			this.getRelations()
 		}
 	},
 	updated() {
 		if (this.currentActiveObject !== objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
 			this.getAuditTrails()
+			this.getRelations()
 		}
 	},
 	methods: {
@@ -184,6 +205,15 @@ export default {
 				.then(({ data }) => {
 					this.auditTrails = data
 					this.auditTrailLoading = false
+				})
+		},
+		getRelations() {
+			this.relationsLoading = true
+
+			objectStore.getRelations(objectStore.objectItem.id)
+				.then(({ data }) => {
+					this.relations = data
+					this.relationsLoading = false
 				})
 		},
 	},
