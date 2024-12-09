@@ -396,20 +396,20 @@ class ObjectService
         $objectEntity->setObject($object);
 
         // Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
-        if (empty($objectEntity->getUuid())) {
+        if (empty($objectEntity->getUuid()) === true) {
             $objectEntity->setUuid(Uuid::v4());
         }
-        
+
         // Let grap any links that we can
         $objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
         // Handle object properties that are either nested objects or files
-		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
+		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
 			$objectEntity->setObject($object);
-		}			
+		}
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
@@ -430,39 +430,39 @@ class ObjectService
 
 	/**
      * Handle link relations efficiently using JSON path traversal
-     * 
-     * Finds all links or UUIDs in the object and adds them to the relations 
+     *
+     * Finds all links or UUIDs in the object and adds them to the relations
      * using dot notation paths for nested properties
-     * 
+     *
      * @param ObjectEntity $objectEntity The object entity to handle relations for
      * @param array $object The object data
-     * 
+     *
      * @return ObjectEntity Updated object data
      */
 	private function handleLinkRelations(ObjectEntity $objectEntity): ObjectEntity
 	{
 		$relations = $objectEntity->getRelations() ?? [];
-		
+
 		// Get object's own identifiers to skip self-references
 		$selfIdentifiers = [
 			$objectEntity->getUri(),
 			$objectEntity->getUuid(),
 			$objectEntity->getId()
 		];
-		
+
 		// Function to recursively find links/UUIDs and build dot notation paths
 		$findRelations = function($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
 			foreach ($data as $key => $value) {
 				$currentPath = $path ? "$path.$key" : $key;
-				
-				if (is_array($value)) {
+
+				if (is_array($value) === true) {
 					// Recurse into nested arrays
 					$findRelations($value, $currentPath);
-				} else if (is_string($value)) {
+				} else if (is_string($value) === true) {
 					// Check for URLs and UUIDs
-					if ((filter_var($value, FILTER_VALIDATE_URL) !== false 
-						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value))
-						&& !in_array($value, $selfIdentifiers, true)
+					if ((filter_var($value, FILTER_VALIDATE_URL) !== false
+						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1)
+						&& in_array($value, $selfIdentifiers, true) === false
 					) {
 						$relations[$currentPath] = $value;
 					}
@@ -472,7 +472,7 @@ class ObjectService
 
 		// Process the entire object structure
 		$findRelations($objectEntity->getObject());
-		
+
 		$objectEntity->setRelations($relations);
 		return $objectEntity;
 	}
@@ -548,14 +548,17 @@ class ObjectService
 					}
 				}
 			}
-            
+
 			// Handle single object type
 			else if ($property['type'] === 'object') {
 
 				$subSchema = $schema;
 
                 // $ref is a int, id or uuid
-				if(is_int($property['$ref']) === true || is_numeric($property['$ref']) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $property['$ref'])) {
+				if (is_int($property['$ref']) === true
+					|| is_numeric($property['$ref']) === true
+					|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $property['$ref']) === 1
+				) {
 					$subSchema = $property['$ref'];
 				} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
 					$parsedUrl = parse_url($property['$ref']);

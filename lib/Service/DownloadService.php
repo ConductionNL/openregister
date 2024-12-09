@@ -9,6 +9,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;
 
+/**
+ * Service for handling download requests for database entities.
+ *
+ * This service enables downloading database entities as files in various formats,
+ * determined by the `Accept` header of the request. It retrieves the appropriate
+ * data from mappers and generates responses or downloadable files.
+ */
 class DownloadService
 {
 	public function __construct(
