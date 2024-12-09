@@ -528,13 +528,13 @@ class ObjectService
 
 							// Store relation and replace with reference
 							$relations = $objectEntity->getRelations() ?? [];
-							$relations[$propertyName . '_' . $index] = $nestedObject->getUuid();
+							$relations[$propertyName . '.' . $index] = $nestedObject->getUri();
 							$objectEntity->setRelations($relations);
-							$object[$propertyName][$index] = $nestedObject->getUuid();
+							$object[$propertyName][$index] = $nestedObject->getUri();
 
 						} else {
 							$relations = $objectEntity->getRelations() ?? [];
-							$relations[$propertyName . '_' . $index] = $item;
+							$relations[$propertyName . '.' . $index] = $item;
 							$objectEntity->setRelations($relations);
 						}
 
@@ -593,6 +593,8 @@ class ObjectService
 				);
 			}
 		}
+
+		$objectEntity->setObject($object);
 
 		return $objectEntity;
 	}
