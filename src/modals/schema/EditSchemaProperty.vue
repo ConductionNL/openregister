@@ -38,16 +38,16 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					v-model="properties.format"
 					:disabled="properties.type !== 'string'" />
 			</div>
-
-			<!-- Object configuration -->
-			<div v-if="properties.type === 'object'" class="ASP-selectContainer">
+			<!-- TYPE : OBJECT -->
+			<div v-if="properties.type === 'object'" class="objectConfigurationContainer">
+				<div class="objectConfigurationTitle">
+					Object Configuration:
+				</div>
 				<NcSelect
-					label="Object Handling"
-					v-bind="objectConfiguration.handling"
-					:value.sync="properties.objectConfiguration.handling" />
-
+					v-model="properties.objectConfiguration.handling"
+					v-bind="objectConfiguration.handling" />
 				<NcInputField :disabled="loading"
-					type="string"
+					type="text"
 					label="Schema reference of object ($ref)"
 					:value.sync="properties.$ref" />
 			</div>
@@ -55,13 +55,13 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
 				<NcSelect
-					label="File Handling"
 					v-bind="fileConfiguration.handling"
-					:value.sync="properties.fileConfiguration.handling" />
+					v-model="properties.fileConfiguration.handling"
+					label="File Handling" />
 				<NcSelect
-					label="Allowed MIME Types"
 					v-bind="mimeTypes"
-					:value.sync="properties.fileConfiguration.allowedMimeTypes"
+					v-model="properties.fileConfiguration.allowedMimeTypes"
+					label="Allowed MIME Types"
 					multiple />
 				<NcTextField :disabled="loading"
 					label="File Location"
@@ -264,7 +264,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<!-- type array and sub type object only -->
 				<div v-if="properties.items.type === 'object'">
 					<NcInputField :disabled="loading"
-						type="string"
+						type="text"
 						label="Schema reference of object ($ref)"
 						:value.sync="properties.items.$ref" />
 				</div>
@@ -394,7 +394,7 @@ export default {
 			},
 			objectConfiguration: {
 				handling: {
-					inputLabel: 'Object Configuration',
+					inputLabel: 'Object Handeling',
 					multiple: false,
 					options: ['nested-object', 'nested-schema', 'related-schema', 'uri'],
 				},
@@ -523,7 +523,7 @@ export default {
 				},
 			}
 
-			if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem[this.propertyTitle].items.type) {
+			if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem.properties[this.propertyTitle].items.type) {
 				delete newSchemaItem.properties[this.propertyTitle].items
 			}
 
@@ -561,7 +561,7 @@ export default {
 
 <style>
 .modal__content {
-  margin: var(--OC-margin-50);
+  margin: var(--OR-margin-50);
   text-align: center;
 }
 
@@ -570,9 +570,9 @@ export default {
 }
 
 .zaakDetailsContainer {
-  margin-block-start: var(--OC-margin-20);
-  margin-inline-start: var(--OC-margin-20);
-  margin-inline-end: var(--OC-margin-20);
+  margin-block-start: var(--OR-margin-20);
+  margin-inline-start: var(--OR-margin-20);
+  margin-inline-end: var(--OR-margin-20);
 }
 
 .success {
@@ -587,5 +587,14 @@ export default {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+}
+
+.objectConfigurationContainer {
+	margin-block-end: 15px;
+}
+
+.objectConfigurationTitle {
+	margin-block-end: 5px;
+	font-weight: bold;
 }
 </style>
