@@ -555,7 +555,7 @@ class ObjectService
 				$subSchema = $schema;
 
                 // $ref is a int, id or uuid
-				if(is_int($property['$ref']) === true
+				if (is_int($property['$ref']) === true
 					|| is_numeric($property['$ref']) === true
 					|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $property['$ref']) === 1
 				) {
