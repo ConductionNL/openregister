@@ -41,26 +41,26 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 			<!-- Object configuration -->
 			<div v-if="properties.type === 'object'" class="ASP-selectContainer">
-				<NcSelect 
+				<NcSelect
 					label="Object Handling"
 					v-bind="objectConfiguration.handling"
 					:value.sync="properties.objectConfiguration.handling" />
-				
-				<NcInputField :disabled="loading" 
+
+				<NcInputField :disabled="loading"
 					type="string"
-					label="Schema reference of object ($ref)" 
+					label="Schema reference of object ($ref)"
 					:value.sync="properties.$ref" />
 			</div>
 
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
-				<NcSelect 
+				<NcSelect
 					label="File Handling"
 					v-bind="fileConfiguration.handling"
 					:value.sync="properties.fileConfiguration.handling" />
-				<NcSelect 
+				<NcSelect
 					label="Allowed MIME Types"
-					v-bind="mimeTypes" 
+					v-bind="mimeTypes"
 					:value.sync="properties.fileConfiguration.allowedMimeTypes"
 					multiple />
 				<NcTextField :disabled="loading"
@@ -368,14 +368,14 @@ export default {
 				},
 				objectConfiguration: {
 					handling: 'nested-object',
-					schema: ''
+					schema: '',
 				},
 				fileConfiguration: {
 					handling: 'ignore',
 					allowedMimeTypes: [],
-					location: '',      // Initialize with empty string
-					maxSize: 0        // Initialize with 0
-				}
+					location: '', // Initialize with empty string
+					maxSize: 0, // Initialize with 0
+				},
 			},
 			typeOptions: {
 				inputLabel: 'Type*',
@@ -396,25 +396,25 @@ export default {
 				handling: {
 					inputLabel: 'Object Configuration',
 					multiple: false,
-					options: ['nested-object', 'nested-schema', 'related-schema', 'uri']
+					options: ['nested-object', 'nested-schema', 'related-schema', 'uri'],
 				},
 			},
 			fileConfiguration: {
 				handling: {
 					inputLabel: 'File Configuration',
 					multiple: false,
-					options: ['ignore','transform']
+					options: ['ignore', 'transform'],
 				},
 			},
 			availableSchemas: {
 				inputLabel: 'Select Schema',
 				multiple: false,
-				options: ['schema1', 'schema2', 'schema3'] // This should be populated with actual schemas
+				options: ['schema1', 'schema2', 'schema3'], // This should be populated with actual schemas
 			},
 			mimeTypes: {
 				inputLabel: 'Allowed MIME Types',
 				multiple: true,
-				options: ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'] // Add more MIME types as needed
+				options: ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'], // Add more MIME types as needed
 			},
 			loading: false,
 			success: null,
@@ -460,8 +460,8 @@ export default {
 
 				this.propertyTitle = schemaStore.schemaPropertyKey
 				this.properties = {
-					...this.properties,  // Preserve default structure
-					...schemaProperty,   // Override with existing values
+					...this.properties, // Preserve default structure
+					...schemaProperty, // Override with existing values
 					minLength: schemaProperty.minLength ?? 0,
 					maxLength: schemaProperty.maxLength ?? 0,
 					minimum: schemaProperty.minimum ?? 0,
@@ -472,12 +472,12 @@ export default {
 					// Preserve nested configurations with existing values or defaults
 					objectConfiguration: {
 						...this.properties.objectConfiguration,
-						...(schemaProperty.objectConfiguration || {})
+						...(schemaProperty.objectConfiguration || {}),
 					},
 					fileConfiguration: {
 						...this.properties.fileConfiguration,
-						...(schemaProperty.fileConfiguration || {})
-					}
+						...(schemaProperty.fileConfiguration || {}),
+					},
 				}
 			}
 		},

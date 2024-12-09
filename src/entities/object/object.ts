@@ -21,8 +21,8 @@ export class ObjectEntity implements TObject {
 		this.register = object.register
 		this.schema = object.schema
 		this.object = object.object
-		this.relations = object.relations 
-		this.files = object.files 
+		this.relations = object.relations
+		this.files = object.files
 		this.updated = object.updated || ''
 		this.created = object.created || ''
 	}
