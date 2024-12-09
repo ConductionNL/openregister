@@ -8,6 +8,8 @@ export const useObjectStore = defineStore('object', {
 		objectList: [],
 		auditTrailItem: false,
 		auditTrails: [],
+		relationItem: false,
+		relations: [],
 	}),
 	actions: {
 		setObjectItem(objectItem) {
@@ -26,6 +28,14 @@ export const useObjectStore = defineStore('object', {
 		setAuditTrails(auditTrails) {
 			this.auditTrails = auditTrails.map(
 				(auditTrail) => new AuditTrail(auditTrail),
+			)
+		},
+		setRelationItem(relationItem) {
+			this.relationItem = relationItem && new ObjectEntity(relationItem)
+		},
+		setRelations(relations) {
+			this.relations = relations.map(
+				(relation) => new ObjectEntity(relation),
 			)
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
@@ -63,6 +73,7 @@ export const useObjectStore = defineStore('object', {
 				const data = await response.json()
 				this.setObjectItem(data)
 				this.getAuditTrails(data.id)
+				this.getRelations(data.id)
 
 				return data
 			} catch (err) {
@@ -141,6 +152,7 @@ export const useObjectStore = defineStore('object', {
 			this.refreshObjectList()
 			this.setObjectItem(data)
 			this.getAuditTrails(data.id)
+			this.getRelations(data.id)
 
 			return { response, data }
 		},
@@ -160,6 +172,25 @@ export const useObjectStore = defineStore('object', {
 			const data = responseData.map((auditTrail) => new AuditTrail(auditTrail))
 
 			this.setAuditTrails(data)
+
+			return { response, data }
+		},
+		// RELATIONS
+		async getRelations(id) {
+			if (!id) {
+				throw new Error('No object id to get relations for')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/relations/${id}`
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+			})
+
+			const responseData = await response.json()
+			const data = responseData.map((relation) => new ObjectEntity(relation))
+
+			this.setRelations(data)
 
 			return { response, data }
 		},

@@ -29,7 +29,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 					</NcActions>
 				</div>
-				<span>{{ objectStore.objectItem.uuid }}</span>
+				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
 						<b>Register:</b>
@@ -55,6 +55,51 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							<pre class="json-display"><!-- do not remove this comment
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
+						</BTab>
+						<BTab title="Uses">
+							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0">
+								<NcListItem v-for="(relation, key) in objectStore.objectItem.relations"
+									:key="key"
+									:name="key"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<CubeOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ relation }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-else class="tabPanel">
+								No relations found
+							</div>
+						</BTab>
+						<BTab title="Used by">
+							<div v-if="objectStore.relations.length">
+								<NcListItem v-for="(relation, key) in objectStore.relations"
+									:key="key"
+									:name="relation.id"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<CubeOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ relation.uri }}
+									</template>
+								</NcListItem>
+							</div>
+							<div v-else class="tabPanel">
+								No relations found
+							</div>
+						</BTab>
+						<BTab title="Files">
+							<div v-if="true || !syncs.length" class="tabPanel">
+								{{ JSON.stringify(objectStore.objectItem.files, null, 2) }}
+							</div>
 						</BTab>
 						<BTab title="Syncs">
 							<div v-if="true || !syncs.length" class="tabPanel">
@@ -111,6 +156,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -124,24 +170,30 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		TimelineQuestionOutline,
+		CubeOutline,
+		Eye,
 	},
 	data() {
 		return {
 			currentActiveObject: undefined,
 			auditTrailLoading: false,
 			auditTrails: [],
+			relationsLoading: false,
+			relations: [],
 		}
 	},
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
 			this.getAuditTrails()
+			this.getRelations()
 		}
 	},
 	updated() {
 		if (this.currentActiveObject !== objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
 			this.getAuditTrails()
+			this.getRelations()
 		}
 	},
 	methods: {
@@ -152,6 +204,15 @@ export default {
 				.then(({ data }) => {
 					this.auditTrails = data
 					this.auditTrailLoading = false
+				})
+		},
+		getRelations() {
+			this.relationsLoading = true
+
+			objectStore.getRelations(objectStore.objectItem.id)
+				.then(({ data }) => {
+					this.relations = data
+					this.relationsLoading = false
 				})
 		},
 	},

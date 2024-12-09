@@ -180,7 +180,7 @@ class ObjectsController extends Controller
 	 *
      * @return JSONResponse A JSON response containing the updated object details
      */
-    public function update(int $id): JSONResponse
+    public function update(int $id, ObjectService $objectService): JSONResponse
     {
         $data = $this->request->getParams();
         $object = $data['object'];
@@ -204,8 +204,12 @@ class ObjectsController extends Controller
         }
 
         // save it
-        $oldObject = $this->objectEntityMapper->find($id);
-        $objectEntity = $this->objectEntityMapper->updateFromArray(id: $id, object: $data);
+        try {
+            $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data['object']);
+        } catch (ValidationException $exception) {
+            $formatter = new ErrorFormatter();
+            return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
+        }
 
         $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 
@@ -272,6 +276,36 @@ class ObjectsController extends Controller
         $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
 		return new JSONResponse(['error' => 'Not yet implemented'], 501);
+    }
+
+    /**
+     * Retrieves all objects that use a object
+     *
+     * This method returns all the call logs associated with a object based on its ID.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the object to retrieve logs for
+	 *
+     * @return JSONResponse A JSON response containing the call logs
+     */
+    public function relations(int $id): JSONResponse
+    {
+        try {
+            // Lets grap the object to stablish an uri
+            $object = $this->objectEntityMapper->find($id);
+            $relations = $this->objectEntityMapper->findByRelationUri($object->getUri());
+
+            // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
+            foreach ($relations as $key => $relation) {
+                $relations[$key] = $relation->getObjectArray();
+            }
+
+            return new JSONResponse($relations);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Relations not found'], 404);
+        }
     }
 
     /**
