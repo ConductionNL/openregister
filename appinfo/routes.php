@@ -13,6 +13,7 @@ return [
 		['name' => 'objects#logs', 'url' => '/api/objects-logs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'objects#mappings', 'url' => '/api/objects/mappings', 'verb' => 'GET'],
 		['name' => 'objects#auditTrails', 'url' => '/api/objects/audit-trails/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'objects#relations', 'url' => '/api/objects/relations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
 		['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

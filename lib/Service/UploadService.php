@@ -12,6 +12,14 @@ use OCP\AppFramework\Http\JSONResponse;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * Service for handling file and JSON uploads.
+ *
+ * This service processes uploaded JSON data, either directly via a POST body,
+ * from a provided URL, or from an uploaded file. It supports multiple data
+ * formats (e.g., JSON, YAML) and integrates with schemas and registers for
+ * database updates.
+ */
 class UploadService
 {
 	public function __construct(
@@ -56,7 +64,9 @@ class UploadService
 		}
 
 		if (empty($data['url']) === false) {
-			return $this->getJSONfromURL($data['url']);
+			$phpArray = $this->getJSONfromURL($data['url']);
+			$phpArray['source'] = $data['url'];
+			return $phpArray;
 		}
 
 		$phpArray = $data['json'];

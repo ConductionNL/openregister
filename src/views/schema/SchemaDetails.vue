@@ -50,6 +50,14 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				<span>{{ schemaStore.schemaItem.description }}</span>
 
 				<div class="detailGrid">
+					<div class="gridContent ">
+						<b>Id:</b>
+						<p>{{ schemaStore.schemaItem.id }}</p>
+					</div>
+					<div class="gridContent ">
+						<b>Uuid:</b>
+						<p>{{ schemaStore.schemaItem.uuid }}</p>
+					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Version:</b>
 						<p>{{ schemaStore.schemaItem.version }}</p>

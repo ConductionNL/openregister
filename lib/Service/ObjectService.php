@@ -395,17 +395,19 @@ class ObjectService
         $oldObject = clone $objectEntity;
         $objectEntity->setObject($object);
 
-        // Ensure UUID exists
-        if (empty($objectEntity->getUuid())) {
+        // Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
+        if (empty($objectEntity->getUuid()) === true) {
             $objectEntity->setUuid(Uuid::v4());
         }
 
+        // Let grap any links that we can
+        $objectEntity = $this->handleLinkRelations($objectEntity, $object);
+
 		$schemaObject = $this->schemaMapper->find($schema);
 
-
         // Handle object properties that are either nested objects or files
-		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
-			$object = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
+		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
 			$objectEntity->setObject($object);
 		}
 
@@ -427,6 +429,55 @@ class ObjectService
     }
 
 	/**
+     * Handle link relations efficiently using JSON path traversal
+     *
+     * Finds all links or UUIDs in the object and adds them to the relations
+     * using dot notation paths for nested properties
+     *
+     * @param ObjectEntity $objectEntity The object entity to handle relations for
+     * @param array $object The object data
+     *
+     * @return ObjectEntity Updated object data
+     */
+	private function handleLinkRelations(ObjectEntity $objectEntity): ObjectEntity
+	{
+		$relations = $objectEntity->getRelations() ?? [];
+
+		// Get object's own identifiers to skip self-references
+		$selfIdentifiers = [
+			$objectEntity->getUri(),
+			$objectEntity->getUuid(),
+			$objectEntity->getId()
+		];
+
+		// Function to recursively find links/UUIDs and build dot notation paths
+		$findRelations = function($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
+			foreach ($data as $key => $value) {
+				$currentPath = $path ? "$path.$key" : $key;
+
+				if (is_array($value) === true) {
+					// Recurse into nested arrays
+					$findRelations($value, $currentPath);
+				} else if (is_string($value) === true) {
+					// Check for URLs and UUIDs
+					if ((filter_var($value, FILTER_VALIDATE_URL) !== false
+						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1)
+						&& in_array($value, $selfIdentifiers, true) === false
+					) {
+						$relations[$currentPath] = $value;
+					}
+				}
+			}
+		};
+
+		// Process the entire object structure
+		$findRelations($objectEntity->getObject());
+
+		$objectEntity->setRelations($relations);
+		return $objectEntity;
+	}
+
+	/**
 	 * Handle object relations and file properties in schema properties and array items
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to handle relations for
@@ -435,13 +486,12 @@ class ObjectService
 	 * @param int $register The register ID
 	 * @param int $schema The schema ID
 	 *
-	 * @return array Updated object data
+	 * @return ObjectEntity Updated object with linked data
 	 * @throws Exception|ValidationException When file handling fails
 	 */
-	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): array
+	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): ObjectEntity
 	{
-
-
+        // @todo: Multidimensional suport should be added
 		foreach ($properties as $propertyName => $property) {
 			// Skip if property not in object
 			if (isset($object[$propertyName]) === false) {
@@ -478,13 +528,13 @@ class ObjectService
 
 							// Store relation and replace with reference
 							$relations = $objectEntity->getRelations() ?? [];
-							$relations[$propertyName . '_' . $index] = $nestedObject->getUuid();
+							$relations[$propertyName . '.' . $index] = $nestedObject->getUri();
 							$objectEntity->setRelations($relations);
-							$object[$propertyName][$index] = $nestedObject->getUuid();
+							$object[$propertyName][$index] = $nestedObject->getUri();
 
 						} else {
 							$relations = $objectEntity->getRelations() ?? [];
-							$relations[$propertyName . '_' . $index] = $item;
+							$relations[$propertyName . '.' . $index] = $item;
 							$objectEntity->setRelations($relations);
 						}
 
@@ -498,12 +548,17 @@ class ObjectService
 					}
 				}
 			}
+
 			// Handle single object type
 			else if ($property['type'] === 'object') {
 
 				$subSchema = $schema;
 
-				if(is_int($property['$ref']) === true) {
+                // $ref is a int, id or uuid
+				if (is_int($property['$ref']) === true
+					|| is_numeric($property['$ref']) === true
+					|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $property['$ref']) === 1
+				) {
 					$subSchema = $property['$ref'];
 				} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
 					$parsedUrl = parse_url($property['$ref']);
@@ -520,9 +575,9 @@ class ObjectService
 
 					// Store relation and replace with reference
 					$relations = $objectEntity->getRelations() ?? [];
-					$relations[$propertyName] = $nestedObject->getUuid();
+					$relations[$propertyName] = $nestedObject->getUri();
 					$objectEntity->setRelations($relations);
-					$object[$propertyName] = $nestedObject->getUuid();
+					$object[$propertyName] = $nestedObject->getUri();
 
 				} else {
 					$relations = $objectEntity->getRelations() ?? [];
@@ -542,7 +597,9 @@ class ObjectService
 			}
 		}
 
-		return $object;
+		$objectEntity->setObject($object);
+
+		return $objectEntity;
 	}
 
 	/**

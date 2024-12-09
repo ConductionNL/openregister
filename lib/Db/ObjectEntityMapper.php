@@ -181,11 +181,35 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
+		// @roto: tody this code up please and make ik monogdb compatible
+		// Check if _relations filter exists to search in relations column
+		if (isset($filters['_relations']) === true) {
+			// Handle both single string and array of relations
+			$relations = (array) $filters['_relations'];
+
+			// Build OR conditions for each relation
+			$orConditions = [];
+			foreach ($relations as $relation) {
+				$orConditions[] = $qb->expr()->isNotNull(
+					$qb->createFunction(
+						"JSON_SEARCH(relations, 'one', " .
+						$qb->createNamedParameter($relation) .
+						", NULL, '$')"
+					)
+				);
+			}
+
+			// Add the combined OR conditions to query
+			$qb->andWhere($qb->expr()->orX(...$orConditions));
+
+			// Remove _relations from filters since it's handled separately
+			unset($filters['_relations']);
+		}
+
+		// Filter and search the objects
 		$qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
 		$qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
 		$qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
-
-//		var_dump($qb->getSQL());
 
 		return $this->findEntities(query: $qb);
 	}
@@ -219,9 +243,12 @@ class ObjectEntityMapper extends QBMapper
 		$obj->hydrate($object);
 
 		// Set or update the version
-		$version = explode('.', $obj->getVersion());
-		$version[2] = (int)$version[2] + 1;
-		$obj->setVersion(implode('.', $version));
+		if (isset($object['version']) === false) {
+			$version = explode('.', $obj->getVersion());
+			$version[2] = (int)$version[2] + 1;
+			$obj->setVersion(implode('.', $version));
+		}
+
 
 		return $this->update($obj);
 	}
@@ -264,5 +291,36 @@ class ObjectEntityMapper extends QBMapper
 			filters: $filters,
 			search: $search
 		);
+	}
+
+	/**
+	 * Find objects that have a specific URI or UUID in their relations
+	 *
+	 * @param string $search The URI or UUID to search for in relations
+	 * @param bool $partialMatch Whether to search for partial matches (default: false)
+	 * @return array An array of ObjectEntities that have the specified URI/UUID
+	 */
+	public function findByRelationUri(string $search, bool $partialMatch = false): array
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		// For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON
+		// For exact matches, we use 'one' mode which finds exact string matches
+		$mode = $partialMatch ? 'all' : 'one';
+		$searchTerm = $partialMatch ? '%' . $search . '%' : $search;
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->isNotNull(
+					$qb->createFunction(
+						"JSON_SEARCH(relations, '" . $mode . "', " .
+						$qb->createNamedParameter($searchTerm) .
+						($partialMatch ? ", NULL, '$')" : ")")
+					)
+				)
+			);
+
+		return $this->findEntities($qb);
 	}
 }
