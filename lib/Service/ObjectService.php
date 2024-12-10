@@ -23,6 +23,7 @@ use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
+use Opis\Uri\Uri;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -101,6 +102,29 @@ class ObjectService
 	}
 
 	/**
+	 * Fetch schema from URL
+	 *
+	 * @param Uri $uri The URI registered by the resolver.
+	 * 
+	 * @return string The resulting json object.
+	 */
+	public function fetchSchema(Uri $uri):string
+	{
+		if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
+			&& str_contains(haystack: $uri->path(), needle: '/api/schemas') === true
+		) {
+			$exploded = explode(separator: '/', string: $uri->path());
+			$schema   =  $this->schemaMapper->find(end($exploded));
+
+			return json_encode($schema->getSchemaObject($this->urlGenerator));
+		}
+
+		// @TODO: Decide if we also want to accept truly external schemas, and if so, implement them.
+
+		return '';
+	}
+
+	/**
 	 * Validate an object with a schema.
 	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
 	 *
@@ -119,6 +143,8 @@ class ObjectService
 		$validator = new Validator();
 		$validator->setMaxErrors(100);
 		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
+		$validator->loader()->resolver()->registerProtocol('http', [$this, 'fetchSchema']);
+
 
 		return $validator->validate(data: json_decode(json_encode($object)), schema: $schemaObject);
 
@@ -374,7 +400,7 @@ class ObjectService
             );
         }
 
-//		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if (isset($object['id']) === false || $objectEntity === null) {
@@ -413,17 +439,17 @@ class ObjectService
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
-		if ($objectEntity->getId()) {// && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		} else {//if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
-//		if ($validationResult->isValid() === false) {
-//			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
-//		}
+		if ($validationResult->isValid() === false) {
+			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
+		}
 
         return $objectEntity;
     }

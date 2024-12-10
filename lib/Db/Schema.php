@@ -141,7 +141,7 @@ class Schema extends Entity implements JsonSerializable
 
 		// Validator needs this specific $schema
 		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
-		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
+		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getId()]));
 
 		return json_decode(json_encode($data));
 	}
