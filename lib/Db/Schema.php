@@ -132,6 +132,23 @@ class Schema extends Entity implements JsonSerializable
 		foreach ($data['properties'] as $title => $property) {
 			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
+
+			if($property['type'] === 'file') {
+				$data['properties'][$title] = ['$ref' => $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema'];
+			}
+			if($property['type'] === 'oneOf') {
+				unset($data['properties'][$title]['type']);
+				$data['properties'][$title]['oneOf'] = array_map(
+					callback: function (array $item) use ($urlGenerator) {
+						if($item['type'] === 'file') {
+							unset($item['type']);
+							$item['$ref'] = $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema';
+						}
+
+						return $item;
+					},
+					array: $property['oneOf']);
+			}
 		}
 
 		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
