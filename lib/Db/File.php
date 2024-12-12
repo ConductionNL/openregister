@@ -3,26 +3,73 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use Exception;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\IURLGenerator;
 
 class File extends Entity implements JsonSerializable
 {
-    protected string $uuid;
-    protected string $filename;
+	/**
+	 * @var string The unique identifier for the file.
+	 */
+	protected string $uuid;
+
+	/**
+	 * @var string The name of the file.
+	 */
+	protected string $filename;
+
+	/**
+	 * @var string The URL to download the file.
+	 */
 	protected string $downloadUrl;
+
+	/**
+	 * @var string The URL to share the file.
+	 */
 	protected string $shareUrl;
+
+	/**
+	 * @var string The URL to access the file.
+	 */
 	protected string $accessUrl;
+
+	/**
+	 * @var string The file extension (e.g., .txt, .jpg).
+	 */
 	protected string $extension;
+
+	/**
+	 * @var string The checksum of the file for integrity verification.
+	 */
 	protected string $checksum;
+
+	/**
+	 * @var string The source of the file.
+	 */
 	protected string $source;
+
+	/**
+	 * @var string The ID of the user associated with the file.
+	 */
 	protected string $userId;
+
+	/**
+	 * @var DateTime The date and time when the file was created.
+	 */
 	protected DateTime $created;
+
+	/**
+	 * @var DateTime The date and time when the file was last updated.
+	 */
 	protected DateTime $updated;
 
+	/**
+	 * Constructor for the File entity.
+	 */
 	public function __construct() {
-        $this->addType('uuid', 'string');
+		$this->addType('uuid', 'string');
 		$this->addType('filename', 'string');
 		$this->addType('downloadUrl', 'string');
 		$this->addType('shareUrl', 'string');
@@ -35,6 +82,11 @@ class File extends Entity implements JsonSerializable
 		$this->addType('updated', 'datetime');
 	}
 
+	/**
+	 * Retrieves the fields that should be treated as JSON.
+	 *
+	 * @return array List of JSON field names.
+	 */
 	public function getJsonFields(): array
 	{
 		return array_keys(
@@ -44,6 +96,13 @@ class File extends Entity implements JsonSerializable
 		);
 	}
 
+	/**
+	 * Populates the entity with data from an array.
+	 *
+	 * @param array $object Data to populate the entity.
+	 *
+	 * @return self The hydrated entity.
+	 */
 	public function hydrate(array $object): self
 	{
 		$jsonFields = $this->getJsonFields();
@@ -57,14 +116,19 @@ class File extends Entity implements JsonSerializable
 
 			try {
 				$this->$method($value);
-			} catch (\Exception $exception) {
-//				("Error writing $key");
+			} catch (Exception $exception) {
+				// Log or handle the exception.
 			}
 		}
 
 		return $this;
 	}
 
+	/**
+	 * Serializes the entity to a JSON-compatible array.
+	 *
+	 * @return array The serialized entity data.
+	 */
 	public function jsonSerialize(): array
 	{
 		return [
@@ -78,11 +142,18 @@ class File extends Entity implements JsonSerializable
 			'checksum' => $this->checksum,
 			'source' => $this->source,
 			'userId' => $this->userId,
-            'created' => isset($this->created) ? $this->created->format('c') : null,
-			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
+			'created' => isset($this->created) === true ? $this->created->format('c') : null,
+			'updated' => isset($this->updated) === true ? $this->updated->format('c') : null,
 		];
 	}
 
+	/**
+	 * Generates a JSON schema for the File entity.
+	 *
+	 * @param IURLGenerator $IURLGenerator The URL generator instance.
+	 *
+	 * @return string The JSON schema as a string.
+	 */
 	public static function getSchema(IURLGenerator $IURLGenerator): string {
 		return json_encode([
 			'$id'        => $IURLGenerator->getBaseUrl().'/apps/openconnector/api/files/schema',
