@@ -6,24 +6,20 @@ use Adbar\Dot;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
-use OC\URLGenerator;
+use JsonSerializable;
 use OCA\OpenRegister\Db\File;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
-use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
@@ -53,36 +49,34 @@ class ObjectService
     /** @var int The current schema ID */
     private int $schema;
 
-    /** @var AuditTrailMapper For tracking object changes */
-    private AuditTrailMapper $auditTrailMapper;
+	/**
+	 * Constructor for ObjectService
+	 *
+	 * Initializes the service with required mappers for database operations
+	 *
+	 * @param ObjectEntityMapper $objectEntityMapper
+	 * @param RegisterMapper $registerMapper
+	 * @param SchemaMapper $schemaMapper
+	 * @param AuditTrailMapper $auditTrailMapper
+	 * @param ContainerInterface $container
+	 * @param IURLGenerator $urlGenerator
+	 * @param FileService $fileService
+	 * @param IAppManager $appManager
+	 * @param IAppConfig $config
+	 */
+	public function __construct(
+		private readonly ObjectEntityMapper $objectEntityMapper,
+		private readonly RegisterMapper     $registerMapper,
+		private readonly SchemaMapper       $schemaMapper,
+		private readonly AuditTrailMapper   $auditTrailMapper,
+		private readonly ContainerInterface $container,
+		private readonly IURLGenerator      $urlGenerator,
+		private readonly FileService        $fileService,
+		private readonly IAppManager        $appManager,
+		private readonly IAppConfig         $config,
+    ) {
 
-    /**
-     * Constructor for ObjectService
-     *
-     * Initializes the service with required mappers for database operations
-     *
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities
-     * @param RegisterMapper $registerMapper Mapper for registers
-     * @param SchemaMapper $schemaMapper Mapper for schemas
-     * @param AuditTrailMapper $auditTrailMapper Mapper for audit trails
-     */
-    public function __construct(
-        ObjectEntityMapper $objectEntityMapper,
-        RegisterMapper $registerMapper,
-        SchemaMapper $schemaMapper,
-        AuditTrailMapper $auditTrailMapper,
-		private ContainerInterface $container,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly FileService $fileService,
-		private readonly IAppManager $appManager,
-		private readonly IAppConfig $config,
-    )
-    {
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper = $registerMapper;
-        $this->schemaMapper = $schemaMapper;
-        $this->auditTrailMapper = $auditTrailMapper;
-    }
+	}
 
 	/**
 	 * Attempts to retrieve the OpenConnector service from the container.
@@ -111,7 +105,6 @@ class ObjectService
 	 * @param Uri $uri The URI registered by the resolver.
 	 *
 	 * @return string The resulting json object.
-	 *
 	 * @throws GuzzleException
 	 */
 	public function resolveSchema(Uri $uri): string
@@ -199,7 +192,7 @@ class ObjectService
 	 * @param array $object The object data
 	 *
 	 * @return ObjectEntity The created object
-	 * @throws ValidationException
+	 * @throws ValidationException|GuzzleException
 	 */
     public function createFromArray(array $object): ObjectEntity
 	{
@@ -218,7 +211,7 @@ class ObjectService
 	 * @param bool $updatedObject Whether this is an update operation
 	 *
 	 * @return ObjectEntity The updated object
-	 * @throws ValidationException
+	 * @throws ValidationException|GuzzleException
 	 */
     public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false): ObjectEntity
 	{
@@ -242,15 +235,15 @@ class ObjectService
 	/**
 	 * Delete an object
 	 *
-	 * @param array|\JsonSerializable $object The object to delete
+	 * @param array|JsonSerializable $object The object to delete
 	 *
 	 * @return bool True if deletion was successful
 	 * @throws Exception
 	 */
-    public function delete(array|\JsonSerializable $object): bool
+    public function delete(array|JsonSerializable $object): bool
     {
         // Convert JsonSerializable objects to array
-        if ($object instanceof \JsonSerializable === true) {
+        if ($object instanceof JsonSerializable === true) {
             $object = $object->jsonSerialize();
         }
 
@@ -275,17 +268,15 @@ class ObjectService
 	 */
     public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
     {
-        $objects = $this->getObjects(
-            register: $this->getRegister(),
-            schema: $this->getSchema(),
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $sort,
-            search: $search
-        );
-
-        return $objects;
+		return $this->getObjects(
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			limit: $limit,
+			offset: $offset,
+			filters: $filters,
+			sort: $sort,
+			search: $search
+		);
     }
 
     /**
@@ -293,6 +284,7 @@ class ObjectService
      *
      * @param array $filters Filter criteria
      * @param string|null $search Search term
+	 *
      * @return int Total count
      */
     public function count(array $filters = [], ?string $search = null): int
@@ -402,7 +394,7 @@ class ObjectService
 	 *
 	 * @return ObjectEntity The resulting object.
 	 * @throws ValidationException When the validation fails and returns an error.
-	 * @throws Exception
+	 * @throws Exception|GuzzleException
 	 */
     public function saveObject(int $register, int $schema, array $object): ObjectEntity
     {
@@ -478,16 +470,15 @@ class ObjectService
     }
 
 	/**
-     * Handle link relations efficiently using JSON path traversal
-     *
-     * Finds all links or UUIDs in the object and adds them to the relations
-     * using dot notation paths for nested properties
-     *
-     * @param ObjectEntity $objectEntity The object entity to handle relations for
-     * @param array $object The object data
-     *
-     * @return ObjectEntity Updated object data
-     */
+	 * Handle link relations efficiently using JSON path traversal
+	 *
+	 * Finds all links or UUIDs in the object and adds them to the relations
+	 * using dot notation paths for nested properties
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to handle relations for
+	 *
+	 * @return ObjectEntity Updated object data
+	 */
 	private function handleLinkRelations(ObjectEntity $objectEntity): ObjectEntity
 	{
 		$relations = $objectEntity->getRelations() ?? [];
@@ -584,14 +575,15 @@ class ObjectService
 	/**
 	 * Handles a property that is of the type array.
 	 *
-	 * @param array $property			 The property to handle
-	 * @param string $propertyName  	 The name of the property
-	 * @param array $item			     The contents of the property
+	 * @param array $property The property to handle
+	 * @param string $propertyName The name of the property
+	 * @param array $item The contents of the property
 	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
-	 * @param int $register				 The register connected to the objectEntity
-	 * @param int $schema				 The schema connected to the objectEntity
+	 * @param int $register The register connected to the objectEntity
+	 * @param int $schema The schema connected to the objectEntity
 	 *
 	 * @return string The updated item
+	 * @throws ValidationException
 	 */
 	private function handleObjectProperty(
 		array        $property,
@@ -618,7 +610,7 @@ class ObjectService
 	 * @param int $schema				 The schema connected to the objectEntity
 	 *
 	 * @return array The updated item
-	 * @throws GuzzleException
+	 * @throws GuzzleException|ValidationException
 	 */
 	private function handleArrayProperty(
 		array        $property,
@@ -693,7 +685,7 @@ class ObjectService
 	 * @param int|null $index			 If the oneOf is in an array, the index within the array
 	 *
 	 * @return string|array The updated item
-	 * @throws GuzzleException
+	 * @throws GuzzleException|ValidationException
 	 */
 	private function handleOneOfProperty(
 		array        $property,
@@ -768,7 +760,7 @@ class ObjectService
 	 * @param ObjectEntity $objectEntity The objectEntity to write the object in
 	 *
 	 * @return array The resulting object
-	 * @throws GuzzleException
+	 * @throws GuzzleException|ValidationException
 	 */
 	private function handleProperty (
 		array $property,
@@ -833,7 +825,7 @@ class ObjectService
 	 * @param int $schema The schema ID
 	 *
 	 * @return ObjectEntity Updated object with linked data
-	 * @throws Exception|ValidationException When file handling fails
+	 * @throws Exception|ValidationException|GuzzleException When file handling fails
 	 */
 	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): ObjectEntity
 	{
@@ -981,17 +973,17 @@ class ObjectService
 		return $object;
 	}
 
-    /**
-     * Get an object
-     *
-     * @param Register $register The register to get the object from
-     * @param Schema $schema The schema of the object
-     * @param string $uuid The UUID of the object to get
-     * @param array $extend Properties to extend with related data
-     *
-     * @return ObjectEntity The resulting object
-     * @throws Exception If source type is unsupported
-     */
+	/**
+	 * Get an object
+	 *
+	 * @param Register $register The register to get the object from
+	 * @param Schema $schema The schema of the object
+	 * @param string $uuid The UUID of the object to get
+	 * @param array|null $extend Properties to extend with related data
+	 *
+	 * @return ObjectEntity The resulting object
+	 * @throws Exception If source type is unsupported
+	 */
     public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
     {
 
@@ -1035,6 +1027,7 @@ class ObjectService
      * @param string|null $objectType The type of object to retrieve the mapper for
      * @param int|null $register Optional register ID
      * @param int|null $schema Optional schema ID
+	 *
      * @return mixed The appropriate mapper
      * @throws InvalidArgumentException If unknown object type
      */
@@ -1065,6 +1058,7 @@ class ObjectService
      *
      * @param string $objectType The type of objects to retrieve
      * @param array $ids The ids of the objects to retrieve
+	 *
      * @return array The retrieved objects
      * @throws InvalidArgumentException If unknown object type
      */
@@ -1095,13 +1089,15 @@ class ObjectService
         return $mapper->findMultiple($cleanedIds);
     }
 
-    /**
-     * Renders the entity by replacing the files and relations with their respective objects
-     *
-     * @param array $entity The entity to render
-     * @param array|null $extend Optional array of properties to extend, defaults to files and relations if not provided
-     * @return array The rendered entity with expanded files and relations
-     */
+	/**
+	 * Renders the entity by replacing the files and relations with their respective objects
+	 *
+	 * @param array $entity The entity to render
+	 * @param array|null $extend Optional array of properties to extend, defaults to files and relations if not provided
+	 *
+	 * @return array The rendered entity with expanded files and relations
+	 * @throws Exception
+	 */
     public function renderEntity(array $entity, ?array $extend = []): array
     {
         // check if entity has files or relations and if not just return the entity
@@ -1145,6 +1141,7 @@ class ObjectService
      *
      * @param mixed $entity The entity to extend
      * @param array $extend Properties to extend with related data
+	 *
      * @return array The extended entity as an array
      * @throws Exception If property not found or no mapper available
      */
