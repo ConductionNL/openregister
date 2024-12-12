@@ -526,6 +526,20 @@ class ObjectService
 		return $objectEntity;
 	}
 
+	/**
+	 * Adds a subobject based upon given parameters and adds it to the main object.
+	 *
+	 * @param array $property      		 The property to handle
+	 * @param string $propertyName 		 The name of the property
+	 * @param array $item 		   		 The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register   			 The register connected to the objectEntity
+	 * @param int $schema     			 The schema connected to the objectEntity
+	 * @param int|null $index 			 If the subobject is in an array, the index of the object in the array.
+	 *
+	 * @return string The updated item
+	 * @throws ValidationException
+	 */
 	private function addObject
 	(
 		array  		 $property,
@@ -567,6 +581,18 @@ class ObjectService
 		return $nestedObject->getUuid();
 	}
 
+	/**
+	 * Handles a property that is of the type array.
+	 *
+	 * @param array $property			 The property to handle
+	 * @param string $propertyName  	 The name of the property
+	 * @param array $item			     The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register				 The register connected to the objectEntity
+	 * @param int $schema				 The schema connected to the objectEntity
+	 *
+	 * @return string The updated item
+	 */
 	private function handleObjectProperty(
 		array        $property,
 		string       $propertyName,
@@ -581,6 +607,19 @@ class ObjectService
 		);
 	}
 
+	/**
+	 * Handles a property that is of the type array.
+	 *
+	 * @param array $property			 The property to handle
+	 * @param string $propertyName  	 The name of the property
+	 * @param array $items			     The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register				 The register connected to the objectEntity
+	 * @param int $schema				 The schema connected to the objectEntity
+	 *
+	 * @return array The updated item
+	 * @throws GuzzleException
+	 */
 	private function handleArrayProperty(
 		array        $property,
 		string       $propertyName,
@@ -642,6 +681,20 @@ class ObjectService
 		return $items;
 	}
 
+	/**
+	 * Handles a property that of the type oneOf.
+	 *
+	 * @param array $property			 The property to handle
+	 * @param string $propertyName  	 The name of the property
+	 * @param string|array $item		 The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register				 The register connected to the objectEntity
+	 * @param int $schema				 The schema connected to the objectEntity
+	 * @param int|null $index			 If the oneOf is in an array, the index within the array
+	 *
+	 * @return string|array The updated item
+	 * @throws GuzzleException
+	 */
 	private function handleOneOfProperty(
 		array        $property,
 		string       $propertyName,
@@ -703,6 +756,20 @@ class ObjectService
 		);
 	}
 
+	/**
+	 * Rewrites subobjects stored in separate objectentities to the Uuid of that object,
+	 * rewrites files to the chosen format
+	 *
+	 * @param array $property	   		 The content of the property in the schema
+	 * @param string $propertyName 		 The name of the property
+	 * @param int $register		   		 The register the main object is in
+	 * @param int $schema		   		 The schema of the main object
+	 * @param array $object		   		 The object to rewrite
+	 * @param ObjectEntity $objectEntity The objectEntity to write the object in
+	 *
+	 * @return array The resulting object
+	 * @throws GuzzleException
+	 */
 	private function handleProperty (
 		array $property,
 		string $propertyName,
