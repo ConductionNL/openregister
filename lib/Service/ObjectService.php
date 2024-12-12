@@ -31,38 +31,38 @@ use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
 
 /**
- * Service class for handling object operations
+ * Service class for handling object operations.
  *
- * This service provides methods for CRUD operations on objects, including:
- * - Creating, reading, updating and deleting objects
- * - Finding objects by ID/UUID
- * - Getting audit trails
- * - Extending objects with related data
+ * This service provides methods for:
+ * - CRUD operations on objects.
+ * - Schema resolution and validation.
+ * - Managing relations and linked data (extending objects with related sub-objects).
+ * - Audit trails and data aggregation.
  *
  * @package OCA\OpenRegister\Service
  */
 class ObjectService
 {
-    /** @var int The current register ID */
-    private int $register;
+	/** @var int The current register ID */
+	private int $register;
 
-    /** @var int The current schema ID */
-    private int $schema;
+	/** @var int The current schema ID */
+	private int $schema;
 
 	/**
-	 * Constructor for ObjectService
+	 * Constructor for ObjectService.
 	 *
-	 * Initializes the service with required mappers for database operations
+	 * Initializes the service with dependencies required for database and object operations.
 	 *
-	 * @param ObjectEntityMapper $objectEntityMapper
-	 * @param RegisterMapper $registerMapper
-	 * @param SchemaMapper $schemaMapper
-	 * @param AuditTrailMapper $auditTrailMapper
-	 * @param ContainerInterface $container
-	 * @param IURLGenerator $urlGenerator
-	 * @param FileService $fileService
-	 * @param IAppManager $appManager
-	 * @param IAppConfig $config
+	 * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
+	 * @param RegisterMapper $registerMapper Register data mapper.
+	 * @param SchemaMapper $schemaMapper Schema data mapper.
+	 * @param AuditTrailMapper $auditTrailMapper Audit trail data mapper.
+	 * @param ContainerInterface $container Dependency injection container.
+	 * @param IURLGenerator $urlGenerator URL generator service.
+	 * @param FileService $fileService File service for managing files.
+	 * @param IAppManager $appManager Application manager service.
+	 * @param IAppConfig $config Configuration manager.
 	 */
 	public function __construct(
 		private readonly ObjectEntityMapper $objectEntityMapper,
@@ -73,25 +73,25 @@ class ObjectService
 		private readonly IURLGenerator      $urlGenerator,
 		private readonly FileService        $fileService,
 		private readonly IAppManager        $appManager,
-		private readonly IAppConfig         $config,
-    ) {
-
+		private readonly IAppConfig         $config
+	) {
 	}
 
 	/**
-	 * Attempts to retrieve the OpenConnector service from the container.
+	 * Retrieves the OpenConnector service from the container.
 	 *
-	 * @return mixed|null The OpenConnector service if available, null otherwise.
-	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+	 * @param string $filePath Optional file path for the OpenConnector service.
+	 *
+	 * @return mixed|null The OpenConnector service instance or null if not available.
+	 * @throws ContainerExceptionInterface If there is a container exception.
+	 * @throws NotFoundExceptionInterface If the service is not found.
 	 */
 	public function getOpenConnector(string $filePath = '\Service\ObjectService'): mixed
 	{
-		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
+		if (in_array('openconnector', $this->appManager->getInstalledApps())) {
 			try {
-				// Attempt to get a OpenConnector file from the container
 				return $this->container->get("OCA\OpenConnector$filePath");
 			} catch (Exception $e) {
-				// If the file is not available, return null
 				return null;
 			}
 		}
@@ -100,34 +100,34 @@ class ObjectService
 	}
 
 	/**
-	 * Fetch schema from URL
+	 * Resolves a schema from a given URI.
 	 *
-	 * @param Uri $uri The URI registered by the resolver.
+	 * @param Uri $uri The URI pointing to the schema.
 	 *
-	 * @return string The resulting json object.
-	 * @throws GuzzleException
+	 * @return string The schema content in JSON format.
+	 * @throws GuzzleException If there is an error during schema fetching.
 	 */
 	public function resolveSchema(Uri $uri): string
 	{
-		if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
-			&& str_contains(haystack: $uri->path(), needle: '/api/schemas') === true
+		// Local schema resolution
+		if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
+			&& str_contains($uri->path(), '/api/schemas')
 		) {
-			$exploded = explode(separator: '/', string: $uri->path());
-			$schema   =  $this->schemaMapper->find(end($exploded));
+			$exploded = explode('/', $uri->path());
+			$schema = $this->schemaMapper->find(end($exploded));
 
 			return json_encode($schema->getSchemaObject($this->urlGenerator));
 		}
 
-		if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
-			&& str_contains(haystack: $uri->path(), needle: '/api/files/schema') === true
+		// File schema resolution
+		if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
+			&& str_contains($uri->path(), '/api/files/schema')
 		) {
-			$exploded = explode(separator: '/', string: $uri->path());
 			return File::getSchema($this->urlGenerator);
 		}
 
-		// @TODO: Validate file schema
-
-		if ($this->config->getValueBool(app: 'openregister', key: 'allowExternalSchemas') === true) {
+		// External schema resolution
+		if ($this->config->getValueBool('openregister', 'allowExternalSchemas')) {
 			$client = new Client();
 			$result = $client->get(\GuzzleHttp\Psr7\Uri::fromParts($uri->components()));
 
@@ -138,14 +138,13 @@ class ObjectService
 	}
 
 	/**
-	 * Validate an object with a schema.
-	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
+	 * Validates an object against a schema.
 	 *
-	 * @param array    $object		 The object to validate.
-	 * @param int|null $schemaId		 The id of the schema to validate to.
-	 * @param object   $schemaObject A schema object to validate to.
+	 * @param array $object The object to validate.
+	 * @param int|null $schemaId The schema ID to validate against.
+	 * @param object $schemaObject A custom schema object for validation.
 	 *
-	 * @return ValidationResult The validation result from opis/json-schema.
+	 * @return ValidationResult The result of the validation.
 	 */
 	public function validateObject(array $object, ?int $schemaId = null, object $schemaObject = new stdClass()): ValidationResult
 	{
@@ -153,121 +152,119 @@ class ObjectService
 			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
 		}
 
-		if ($schemaObject->properties === []) {
-			$schemaObject->properties = new stdClass();
-		}
-
 		$validator = new Validator();
 		$validator->setMaxErrors(100);
 		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
 		$validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
-
-		return $validator->validate(data: json_decode(json_encode($object)), schema: $schemaObject);
-
+		return $validator->validate(json_decode(json_encode($object)), $schemaObject);
 	}
 
 	/**
-	 * Find an object by ID or UUID
+	 * Finds an object by ID or UUID.
 	 *
-	 * @param int|string $id The ID or UUID to search for
-	 * @param array|null $extend Properties to extend with related data
+	 * @param int|string $id The object ID or UUID.
+	 * @param array|null $extend Properties to extend the object with.
 	 *
-	 * @return ObjectEntity The found object
-	 * @throws Exception
+	 * @return ObjectEntity The found object entity.
+	 * @throws Exception If the object is not found.
 	 */
-    public function find(int|string $id, ?array $extend = []): ObjectEntity
+	public function find(int|string $id, ?array $extend = []): ObjectEntity
 	{
-        return $this->getObject(
-            register: $this->registerMapper->find($this->getRegister()),
-            schema: $this->schemaMapper->find($this->getSchema()),
-            uuid: $id,
-            extend: $extend
-        );
-    }
+		return $this->getObject(
+			$this->registerMapper->find($this->getRegister()),
+			$this->schemaMapper->find($this->getSchema()),
+			$id,
+			$extend
+		);
+	}
 
 	/**
-	 * Create a new object from array data
+	 * Creates a new object from provided data.
 	 *
-	 * @param array $object The object data
+	 * @param array $object The object data.
 	 *
-	 * @return ObjectEntity The created object
-	 * @throws ValidationException|GuzzleException
+	 * @return ObjectEntity The created object entity.
+	 * @throws ValidationException If validation fails.
+	 * @throws GuzzleException If there is an error during file upload.
 	 */
-    public function createFromArray(array $object): ObjectEntity
+	public function createFromArray(array $object): ObjectEntity
 	{
-        return $this->saveObject(
-            register: $this->getRegister(),
-            schema: $this->getSchema(),
-            object: $object
-        );
-    }
+		return $this->saveObject(
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			object: $object
+		);
+	}
 
 	/**
-	 * Update an existing object from array data
+	 * Updates an existing object with new data.
 	 *
-	 * @param string $id The object ID to update
-	 * @param array $object The new object data
-	 * @param bool $updatedObject Whether this is an update operation
+	 * @param string $id The ID of the object to update.
+	 * @param array $object The new data for the object.
+	 * @param bool $updatedObject If true, performs a full update. If false, performs a patch update.
+	 * @param bool $patch Determines if the update should merge with existing data.
 	 *
-	 * @return ObjectEntity The updated object
-	 * @throws ValidationException|GuzzleException
+	 * @return ObjectEntity The updated object entity.
+	 * @throws ValidationException If validation fails.
+	 * @throws GuzzleException If there is an error during file upload.
 	 */
-    public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false): ObjectEntity
+	public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false): ObjectEntity
 	{
-        // Add ID to object data for update
-        $object['id'] = $id;
+		$object['id'] = $id;
 
-		// If we want the update to behave like patch, merge with existing object.
 		if ($patch === true) {
-			$oldObject = $this->getObject($this->registerMapper->find($this->getRegister()), $this->schemaMapper->find($this->getSchema()), $id)->jsonSerialize();
+			$oldObject = $this->getObject(
+				$this->registerMapper->find($this->getRegister()),
+				$this->schemaMapper->find($this->getSchema()),
+				$id
+			)->jsonSerialize();
 
 			$object = array_merge($oldObject, $object);
 		}
 
 		return $this->saveObject(
-            register: $this->getRegister(),
-            schema: $this->getSchema(),
-            object: $object
-        );
-    }
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			object: $object
+		);
+	}
 
 	/**
-	 * Delete an object
+	 * Deletes an object.
 	 *
-	 * @param array|JsonSerializable $object The object to delete
+	 * @param array|JsonSerializable $object The object to delete.
 	 *
-	 * @return bool True if deletion was successful
-	 * @throws Exception
+	 * @return bool True if deletion is successful, false otherwise.
+	 * @throws Exception If deletion fails.
 	 */
-    public function delete(array|JsonSerializable $object): bool
-    {
-        // Convert JsonSerializable objects to array
-        if ($object instanceof JsonSerializable === true) {
-            $object = $object->jsonSerialize();
-        }
+	public function delete(array|JsonSerializable $object): bool
+	{
+		if ($object instanceof JsonSerializable) {
+			$object = $object->jsonSerialize();
+		}
 
-        return $this->deleteObject(
-            register: $this->registerMapper->find($this->getRegister()),
-            schema: $this->schemaMapper->find($this->getSchema()),
-            uuid: $object['id']
-        );
-    }
+		return $this->deleteObject(
+			register: $this->registerMapper->find($this->getRegister()),
+			schema: $this->schemaMapper->find($this->getSchema()),
+			uuid: $object['id']
+		);
+	}
 
 	/**
-	 * Find all objects matching given criteria
+	 * Retrieves all objects matching criteria.
 	 *
-	 * @param int|null $limit Maximum number of results
-	 * @param int|null $offset Starting offset for pagination
-	 * @param array $filters Filter criteria
-	 * @param array $sort Sorting criteria
-	 * @param string|null $search Search term
-	 * @param array|null $extend Properties to extend with related data
+	 * @param int|null $limit Maximum number of results.
+	 * @param int|null $offset Starting offset for pagination.
+	 * @param array $filters Criteria to filter the objects.
+	 * @param array $sort Sorting options.
+	 * @param string|null $search Search term.
+	 * @param array|null $extend Properties to extend the results with.
 	 *
-	 * @return array List of matching objects
+	 * @return array List of matching objects.
 	 */
-    public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
-    {
+	public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
+	{
 		return $this->getObjects(
 			register: $this->getRegister(),
 			schema: $this->getSchema(),
@@ -277,124 +274,136 @@ class ObjectService
 			sort: $sort,
 			search: $search
 		);
-    }
-
-    /**
-     * Count total objects matching filters
-     *
-     * @param array $filters Filter criteria
-     * @param string|null $search Search term
-	 *
-     * @return int Total count
-     */
-    public function count(array $filters = [], ?string $search = null): int
-    {
-        // Add register and schema filters if set
-        if ($this->getSchema() !== null && $this->getRegister() !== null) {
-            $filters['register'] = $this->getRegister();
-            $filters['schema']   = $this->getSchema();
-        }
-
-        return $this->objectEntityMapper
-            ->countAll(filters: $filters, search: $search);
-    }
+	}
 
 	/**
-	 * Find multiple objects by their IDs
+	 * Counts the total number of objects matching criteria.
 	 *
-	 * @param array $ids Array of object IDs to find
+	 * @param array $filters Criteria to filter the objects.
+	 * @param string|null $search Search term.
 	 *
-	 * @return array Array of found objects
-	 * @throws Exception
+	 * @return int The total count of matching objects.
 	 */
-    public function findMultiple(array $ids): array
-    {
-        $result = [];
-        foreach ($ids as $id) {
-            $result[] = $this->find($id);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get aggregations for objects matching filters
-     *
-     * @param array $filters Filter criteria
-     * @param string|null $search Search term
-	 *
-     * @return array Aggregation results
-     */
-    public function getAggregations(array $filters, ?string $search = null): array
-    {
-        $mapper = $this->getMapper(objectType: 'objectEntity');
-
-        $filters['register'] = $this->getRegister();
-        $filters['schema']   = $this->getSchema();
-
-        // Only ObjectEntityMapper supports facets
-        if ($mapper instanceof ObjectEntityMapper === true) {
-            $facets = $this->objectEntityMapper->getFacets($filters, $search);
-            return $facets;
-        }
-
-        return [];
-    }
-
-	/**
-	 * Extract object data from an entity
-	 *
-	 * @param mixed $object The object to extract data from
-	 * @param array|null $extend Properties to extend with related data
-	 *
-	 * @return mixed The extracted object data
-	 */
-    private function getDataFromObject(mixed $object, ?array $extend = []): mixed
+	public function count(array $filters = [], ?string $search = null): int
 	{
-        return $object->getObject();
-    }
+		// Add register and schema filters if set
+		if ($this->getSchema() !== null && $this->getRegister() !== null) {
+			$filters['register'] = $this->getRegister();
+			$filters['schema'] = $this->getSchema();
+		}
+
+		return $this->objectEntityMapper
+			->countAll(filters: $filters, search: $search);
+	}
 
 	/**
-	 * Gets all objects of a specific type.
+	 * Retrieves multiple objects by their IDs.
 	 *
-	 * @param string|null $objectType The type of objects to retrieve.
-	 * @param int|null $register
-	 * @param int|null $schema
-	 * @param int|null $limit The maximum number of objects to retrieve.
-	 * @param int|null $offset The offset from which to start retrieving objects.
-	 * @param array $filters
-	 * @param array $sort
-	 * @param string|null $search
-	 * @param array|null $extend Properties to extend with related data
+	 * @param array $ids List of object IDs to retrieve.
 	 *
-	 * @return array The retrieved objects.
+	 * @return array List of retrieved objects.
+	 * @throws Exception If an error occurs during retrieval.
 	 */
-    public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
-    {
-        // Set object type and filters if register and schema are provided
-        if ($objectType === null && $register !== null && $schema !== null) {
-            $objectType          = 'objectEntity';
-            $filters['register'] = $register;
-            $filters['schema']   = $schema;
-        }
+	public function findMultiple(array $ids): array
+	{
+		$result = [];
+		foreach ($ids as $id) {
+			$result[] = $this->find($id);
+		}
 
-        // Get the appropriate mapper for the object type
-        $mapper = $this->getMapper($objectType);
+		return $result;
+	}
 
-        // Use the mapper to find and return all objects of the specified type
-        return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
-    }
-
-  	/**
-	 * Save an object
+	/**
+	 * Retrieves aggregation data based on filters and criteria.
 	 *
-	 * @param int $register The register to save the object to.
-	 * @param int $schema The schema to save the object to.
-	 * @param array $object The data to be saved.
+	 * @param array $filters Criteria to filter objects.
+	 * @param string|null $search Search term.
 	 *
-	 * @return ObjectEntity The resulting object.
-	 * @throws ValidationException When the validation fails and returns an error.
-	 * @throws Exception|GuzzleException
+	 * @return array Aggregated data results.
+	 */
+	public function getAggregations(array $filters, ?string $search = null): array
+	{
+		$mapper = $this->getMapper(objectType: 'objectEntity');
+
+		$filters['register'] = $this->getRegister();
+		$filters['schema'] = $this->getSchema();
+
+		if ($mapper instanceof ObjectEntityMapper) {
+			return $mapper->getFacets($filters, $search);
+		}
+
+		return [];
+	}
+
+	/**
+	 * Extracts object data from an entity.
+	 *
+	 * @param mixed $object The object entity.
+	 * @param array|null $extend Properties to extend the object data with.
+	 *
+	 * @return mixed The extracted object data.
+	 */
+	private function getDataFromObject(mixed $object, ?array $extend = []): mixed
+	{
+		return $object->getObject();
+	}
+
+	/**
+	 * Retrieves all objects of a specified type.
+	 *
+	 * @param string|null $objectType The type of objects to retrieve. Defaults to 'objectEntity' if register and schema are provided.
+	 * @param int|null $register The ID of the register to filter objects by.
+	 * @param int|null $schema The ID of the schema to filter objects by.
+	 * @param int|null $limit The maximum number of objects to retrieve. Null for no limit.
+	 * @param int|null $offset The offset for pagination. Null for no offset.
+	 * @param array $filters Additional filters for retrieving objects.
+	 * @param array $sort Sorting criteria for the retrieved objects.
+	 * @param string|null $search Search term for filtering objects.
+	 * @param array|null $extend Properties to extend with related data.
+	 *
+	 * @return array An array of objects matching the specified criteria.
+	 * @throws InvalidArgumentException If an invalid object type is specified.
+	 */
+	public function getObjects(
+		?string $objectType = null,
+		?int $register = null,
+		?int $schema = null,
+		?int $limit = null,
+		?int $offset = null,
+		array $filters = [],
+		array $sort = [],
+		?string $search = null,
+		?array $extend = []
+	): array
+	{
+		if ($objectType === null && $register !== null && $schema !== null) {
+			$objectType = 'objectEntity';
+			$filters['register'] = $register;
+			$filters['schema'] = $schema;
+		}
+
+		$mapper = $this->getMapper($objectType);
+
+		return $mapper->findAll(
+			limit: $limit,
+			offset: $offset,
+			filters: $filters,
+			sort: $sort,
+			search: $search
+		);
+	}
+
+	/**
+	 * Saves an object to the database.
+	 *
+	 * @param int $register The ID of the register to save the object to.
+	 * @param int $schema The ID of the schema to save the object to.
+	 * @param array $object The data of the object to save.
+	 *
+	 * @return ObjectEntity The saved object entity.
+	 * @throws ValidationException If the object fails validation.
+	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
 	 */
     public function saveObject(int $register, int $schema, array $object): ObjectEntity
     {
@@ -470,14 +479,14 @@ class ObjectService
     }
 
 	/**
-	 * Handle link relations efficiently using JSON path traversal
+	 * Efficiently processes link relations within an object using JSON path traversal.
 	 *
-	 * Finds all links or UUIDs in the object and adds them to the relations
-	 * using dot notation paths for nested properties
+	 * Identifies and maps all URLs or UUIDs to their corresponding relations using dot notation paths
+	 * for nested properties, excluding self-references of the object entity.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity to handle relations for
+	 * @param ObjectEntity $objectEntity The object entity to analyze and update relations for.
 	 *
-	 * @return ObjectEntity Updated object data
+	 * @return ObjectEntity The updated object entity with new relations mapped.
 	 */
 	private function handleLinkRelations(ObjectEntity $objectEntity): ObjectEntity
 	{
@@ -518,28 +527,31 @@ class ObjectService
 	}
 
 	/**
-	 * Adds a subobject based upon given parameters and adds it to the main object.
+	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
-	 * @param array $property      		 The property to handle
-	 * @param string $propertyName 		 The name of the property
-	 * @param array $item 		   		 The contents of the property
-	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
-	 * @param int $register   			 The register connected to the objectEntity
-	 * @param int $schema     			 The schema connected to the objectEntity
-	 * @param int|null $index 			 If the subobject is in an array, the index of the object in the array.
+	 * Handles $ref resolution for schema subtypes, stores relations, and replaces nested subobject
+	 * data with its reference URI or UUID.
 	 *
-	 * @return string The updated item
-	 * @throws ValidationException
+	 * @param array $property The property schema details for the nested object.
+	 * @param string $propertyName The name of the property in the parent object.
+	 * @param array $item The nested subobject data to process.
+	 * @param ObjectEntity $objectEntity The parent object entity to associate the nested subobject with.
+	 * @param int $register The register associated with the schema.
+	 * @param int $schema The schema identifier for the subobject.
+	 * @param int|null $index Optional index of the subobject if it resides in an array.
+	 *
+	 * @return string The UUID of the nested subobject.
+	 * @throws ValidationException When schema or object validation fails.
+	 * @throws GuzzleException
 	 */
-	private function addObject
-	(
-		array  		 $property,
-		string 		 $propertyName,
-		array  		 $item,
+	private function addObject(
+		array $property,
+		string $propertyName,
+		array $item,
 		ObjectEntity $objectEntity,
-		int    	 	 $register,
-		int	   	 	 $schema,
-		?int   	 	 $index = null,
+		int $register,
+		int $schema,
+		?int $index = null
 	): string
 	{
 		$subSchema = $schema;
@@ -573,52 +585,61 @@ class ObjectService
 	}
 
 	/**
-	 * Handles a property that is of the type array.
+	 * Processes an object property by delegating it to a subobject handling mechanism.
 	 *
-	 * @param array $property The property to handle
-	 * @param string $propertyName The name of the property
-	 * @param array $item The contents of the property
-	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
-	 * @param int $register The register connected to the objectEntity
-	 * @param int $schema The schema connected to the objectEntity
+	 * @param array $property The schema definition for the object property.
+	 * @param string $propertyName The name of the object property.
+	 * @param array $item The data corresponding to the property in the parent object.
+	 * @param ObjectEntity $objectEntity The object entity to link the processed data to.
+	 * @param int $register The register associated with the schema.
+	 * @param int $schema The schema identifier for the property.
 	 *
-	 * @return string The updated item
-	 * @throws ValidationException
+	 * @return string The updated property data, typically a reference UUID.
+	 * @throws ValidationException When schema or object validation fails.
+	 * @throws GuzzleException
 	 */
 	private function handleObjectProperty(
-		array        $property,
-		string       $propertyName,
-		array        $item,
+		array $property,
+		string $propertyName,
+		array $item,
 		ObjectEntity $objectEntity,
-		int          $register,
-		int          $schema
+		int $register,
+		int $schema
 	): string
 	{
 		return $this->addObject(
-			property: $property,propertyName: $propertyName, item: $item, objectEntity: $objectEntity, register: $register, schema: $schema
+			property: $property,
+			propertyName: $propertyName,
+			item: $item,
+			objectEntity: $objectEntity,
+			register: $register,
+			schema: $schema
 		);
 	}
 
 	/**
-	 * Handles a property that is of the type array.
+	 * Handles array-type properties by processing each element based on its schema type.
 	 *
-	 * @param array $property			 The property to handle
-	 * @param string $propertyName  	 The name of the property
-	 * @param array $items			     The contents of the property
-	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
-	 * @param int $register				 The register connected to the objectEntity
-	 * @param int $schema				 The schema connected to the objectEntity
+	 * Supports nested objects, files, or oneOf schema types, delegating to specific handlers
+	 * for each element in the array.
 	 *
-	 * @return array The updated item
-	 * @throws GuzzleException|ValidationException
+	 * @param array $property The schema definition for the array property.
+	 * @param string $propertyName The name of the array property.
+	 * @param array $items The elements of the array to process.
+	 * @param ObjectEntity $objectEntity The object entity the data belongs to.
+	 * @param int $register The register associated with the schema.
+	 * @param int $schema The schema identifier for the array elements.
+	 *
+	 * @return array The processed array with updated references or data.
+	 * @throws GuzzleException|ValidationException When schema validation or file handling fails.
 	 */
 	private function handleArrayProperty(
-		array        $property,
-		string       $propertyName,
-		array        $items,
+		array $property,
+		string $propertyName,
+		array $items,
 		ObjectEntity $objectEntity,
-		int          $register,
-		int          $schema
+		int $register,
+		int $schema
 	): array
 	{
 		if (isset($property['items']) === false) {
@@ -674,27 +695,30 @@ class ObjectService
 	}
 
 	/**
-	 * Handles a property that of the type oneOf.
+	 * Processes properties defined as oneOf, selecting the appropriate schema option for the data.
 	 *
-	 * @param array $property			 The property to handle
-	 * @param string $propertyName  	 The name of the property
-	 * @param string|array $item		 The contents of the property
-	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
-	 * @param int $register				 The register connected to the objectEntity
-	 * @param int $schema				 The schema connected to the objectEntity
-	 * @param int|null $index			 If the oneOf is in an array, the index within the array
+	 * Handles various types of schemas, including files and references, to correctly process
+	 * and replace the input data with the resolved references or processed results.
 	 *
-	 * @return string|array The updated item
-	 * @throws GuzzleException|ValidationException
+	 * @param array $property The oneOf schema definition.
+	 * @param string $propertyName The name of the property in the parent object.
+	 * @param string|array $item The data to process, either as a scalar or a nested array.
+	 * @param ObjectEntity $objectEntity The object entity the data belongs to.
+	 * @param int $register The register associated with the schema.
+	 * @param int $schema The schema identifier for the property.
+	 * @param int|null $index Optional index for array-based oneOf properties.
+	 *
+	 * @return string|array The processed data, resolved to a reference or updated structure.
+	 * @throws GuzzleException|ValidationException When schema validation or file handling fails.
 	 */
 	private function handleOneOfProperty(
-		array        $property,
-		string       $propertyName,
+		array $property,
+		string $propertyName,
 		string|array $item,
 		ObjectEntity $objectEntity,
-		int          $register,
-		int          $schema,
-		?int		 $index = null
+		int $register,
+		int $schema,
+		?int $index = null
 	): string|array
 	{
 		if (array_is_list($property) === false) {
@@ -749,20 +773,22 @@ class ObjectService
 	}
 
 	/**
-	 * Rewrites subobjects stored in separate objectentities to the Uuid of that object,
-	 * rewrites files to the chosen format
+	 * Processes and rewrites properties within an object based on their schema definitions.
 	 *
-	 * @param array $property	   		 The content of the property in the schema
-	 * @param string $propertyName 		 The name of the property
-	 * @param int $register		   		 The register the main object is in
-	 * @param int $schema		   		 The schema of the main object
-	 * @param array $object		   		 The object to rewrite
-	 * @param ObjectEntity $objectEntity The objectEntity to write the object in
+	 * Determines the type of each property (object, array, oneOf, or file) and delegates to the
+	 * corresponding handler. Updates the object data with references or processed results.
 	 *
-	 * @return array The resulting object
-	 * @throws GuzzleException|ValidationException
+	 * @param array $property The schema definition of the property.
+	 * @param string $propertyName The name of the property in the object.
+	 * @param int $register The register ID associated with the schema.
+	 * @param int $schema The schema ID associated with the property.
+	 * @param array $object The parent object data to update.
+	 * @param ObjectEntity $objectEntity The object entity being processed.
+	 *
+	 * @return array The updated object with processed properties.
+	 * @throws GuzzleException|ValidationException When schema validation or file handling fails.
 	 */
-	private function handleProperty (
+	private function handleProperty(
 		array $property,
 		string $propertyName,
 		int $register,
@@ -816,18 +842,27 @@ class ObjectService
 
 
 	/**
-	 * Handle object relations and file properties in schema properties and array items
+	 * Links object relations and handles file-based properties within an object schema.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity to handle relations for
-	 * @param array $object The object data
-	 * @param array $properties The schema properties
-	 * @param int $register The register ID
-	 * @param int $schema The schema ID
+	 * Iterates through schema-defined properties, processing and resolving nested relations,
+	 * array items, and file-based data. Updates the object entity with resolved references.
 	 *
-	 * @return ObjectEntity Updated object with linked data
-	 * @throws Exception|ValidationException|GuzzleException When file handling fails
+	 * @param ObjectEntity $objectEntity The object entity being processed.
+	 * @param array $object The parent object data to analyze.
+	 * @param array $properties The schema properties defining the object structure.
+	 * @param int $register The register ID associated with the schema.
+	 * @param int $schema The schema ID associated with the object.
+	 *
+	 * @return ObjectEntity The updated object entity with resolved relations and file references.
+	 * @throws Exception|ValidationException|GuzzleException When file handling or schema processing fails.
 	 */
-	private function handleObjectRelations(ObjectEntity $objectEntity, array $object, array $properties, int $register, int $schema): ObjectEntity
+	private function handleObjectRelations(
+		ObjectEntity $objectEntity,
+		array $object,
+		array $properties,
+		int $register,
+		int $schema
+	): ObjectEntity
 	{
         // @todo: Multidimensional suport should be added
 		foreach ($properties as $propertyName => $property) {
@@ -852,14 +887,17 @@ class ObjectService
 	}
 
 	/**
-	 * Handle file property processing
+	 * Processes file properties within an object, storing and resolving file content to sharable URLs.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity
-	 * @param array $object The object data
-	 * @param string $propertyName The name of the file property
+	 * Handles both base64-encoded and URL-based file sources, storing the resolved content and
+	 * updating the object data with the resulting file references.
 	 *
-	 * @return array Updated object data
-	 * @throws Exception|GuzzleException When file handling fails
+	 * @param ObjectEntity $objectEntity The object entity containing the file property.
+	 * @param array $object The parent object data containing the file reference.
+	 * @param string $propertyName The name of the file property.
+	 *
+	 * @return array The updated object with resolved file references.
+	 * @throws Exception|GuzzleException When file processing or storage fails.
 	 */
 	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array
 	{
@@ -974,18 +1012,20 @@ class ObjectService
 	}
 
 	/**
-	 * Get an object
+	 * Retrieves an object from a specified register and schema using its UUID.
 	 *
-	 * @param Register $register The register to get the object from
-	 * @param Schema $schema The schema of the object
-	 * @param string $uuid The UUID of the object to get
-	 * @param array|null $extend Properties to extend with related data
+	 * Supports only internal sources and raises an exception for unsupported source types.
 	 *
-	 * @return ObjectEntity The resulting object
-	 * @throws Exception If source type is unsupported
+	 * @param Register $register The register from which the object is retrieved.
+	 * @param Schema $schema The schema defining the object structure.
+	 * @param string $uuid The unique identifier of the object to retrieve.
+	 * @param array|null $extend Optional properties to include in the retrieved object.
+	 *
+	 * @return ObjectEntity The retrieved object as an entity.
+	 * @throws Exception If the source type is unsupported.
 	 */
-    public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
-    {
+	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
+	{
 
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
@@ -997,18 +1037,20 @@ class ObjectService
         throw new Exception('Unsupported source type');
     }
 
-    /**
-     * Delete an object
-     *
-     * @param Register $register The register to delete from
-     * @param Schema $schema The schema of the object
-     * @param string $uuid The UUID of the object to delete
-     *
-     * @return bool True if deletion was successful
-     * @throws Exception If source type is unsupported
-     */
-    public function deleteObject(Register $register, Schema $schema, string $uuid): bool
-    {
+	/**
+	 * Deletes an object from a specified register and schema using its UUID.
+	 *
+	 * Supports only internal sources and raises an exception for unsupported source types.
+	 *
+	 * @param Register $register The register containing the object to delete.
+	 * @param Schema $schema The schema defining the object structure.
+	 * @param string $uuid The unique identifier of the object to delete.
+	 *
+	 * @return bool True if the object was successfully deleted.
+	 * @throws Exception If the source type is unsupported.
+	 */
+	public function deleteObject(Register $register, Schema $schema, string $uuid): bool
+	{
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
             $object = $this->objectEntityMapper->findByUuid(register: $register, schema: $schema, uuid: $uuid);
@@ -1021,18 +1063,20 @@ class ObjectService
         throw new Exception('Unsupported source type');
     }
 
-    /**
-     * Gets the appropriate mapper based on the object type.
-     *
-     * @param string|null $objectType The type of object to retrieve the mapper for
-     * @param int|null $register Optional register ID
-     * @param int|null $schema Optional schema ID
+	/**
+	 * Retrieves the appropriate mapper for a specific object type.
 	 *
-     * @return mixed The appropriate mapper
-     * @throws InvalidArgumentException If unknown object type
-     */
-    public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null): mixed
-    {
+	 * Optionally sets the current register and schema when both are provided.
+	 *
+	 * @param string|null $objectType The type of the object for which a mapper is needed.
+	 * @param int|null $register Optional register ID to set for the mapper.
+	 * @param int|null $schema Optional schema ID to set for the mapper.
+	 *
+	 * @return mixed The mapper for the specified object type.
+	 * @throws InvalidArgumentException If the object type is unknown.
+	 */
+	public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null): mixed
+	{
         // Return self if register and schema provided
         if ($register !== null && $schema !== null) {
             $this->setSchema($schema);
@@ -1053,16 +1097,18 @@ class ObjectService
         }
     }
 
-    /**
-     * Gets multiple objects based on the object type and ids.
-     *
-     * @param string $objectType The type of objects to retrieve
-     * @param array $ids The ids of the objects to retrieve
+	/**
+	 * Retrieves multiple objects of a specified type using their identifiers.
 	 *
-     * @return array The retrieved objects
-     * @throws InvalidArgumentException If unknown object type
-     */
-    public function getMultipleObjects(string $objectType, array $ids): array
+	 * Processes and cleans input IDs to ensure compatibility with the mapper.
+	 *
+	 * @param string $objectType The type of objects to retrieve.
+	 * @param array $ids The list of object IDs to retrieve.
+	 *
+	 * @return array The retrieved objects.
+	 * @throws InvalidArgumentException If the object type is unknown.
+	 */
+	public function getMultipleObjects(string $objectType, array $ids): array
 	{
         // Process the ids to handle different formats
         $processedIds = array_map(function($id) {
@@ -1090,16 +1136,18 @@ class ObjectService
     }
 
 	/**
-	 * Renders the entity by replacing the files and relations with their respective objects
+	 * Renders an entity by replacing file and relation IDs with their respective objects.
 	 *
-	 * @param array $entity The entity to render
-	 * @param array|null $extend Optional array of properties to extend, defaults to files and relations if not provided
+	 * Expands files and relations within the entity based on the provided extend array.
 	 *
-	 * @return array The rendered entity with expanded files and relations
-	 * @throws Exception
+	 * @param array $entity The entity data to render.
+	 * @param array|null $extend Optional properties to expand within the entity.
+	 *
+	 * @return array The rendered entity with expanded properties.
+	 * @throws Exception If rendering or extending fails.
 	 */
-    public function renderEntity(array $entity, ?array $extend = []): array
-    {
+	public function renderEntity(array $entity, ?array $extend = []): array
+	{
         // check if entity has files or relations and if not just return the entity
         if (array_key_exists(key: 'files', array: $entity) === false && array_key_exists(key: 'relations', array: $entity) === false) {
             return $entity;
@@ -1136,17 +1184,19 @@ class ObjectService
         return $this->extendEntity(entity: $entity, extend: $extend);
     }
 
-    /**
-     * Extends an entity with related objects based on the extend array.
-     *
-     * @param mixed $entity The entity to extend
-     * @param array $extend Properties to extend with related data
+	/**
+	 * Extends an entity with related objects based on the provided properties.
 	 *
-     * @return array The extended entity as an array
-     * @throws Exception If property not found or no mapper available
-     */
-    public function extendEntity(array $entity, array $extend): array
-    {
+	 * Processes the extend array to replace IDs with full related objects within the entity.
+	 *
+	 * @param array $entity The entity data to extend.
+	 * @param array $extend The list of properties to expand within the entity.
+	 *
+	 * @return array The extended entity with additional related data.
+	 * @throws Exception If a property is missing or no mapper is available.
+	 */
+	public function extendEntity(array $entity, array $extend): array
+	{
         // Convert entity to array if needed
         if (is_array($entity)) {
             $result = $entity;
@@ -1196,14 +1246,16 @@ class ObjectService
         return $result;
     }
 
-    /**
-     * Get all registers extended with their schemas
-     *
-     * @return array The registers with schema data
-     * @throws Exception If extension fails
-     */
-    public function getRegisters(): array
-    {
+	/**
+	 * Retrieves all registers with their associated schema data.
+	 *
+	 * Converts registers to arrays and extends them with schema information as needed.
+	 *
+	 * @return array The list of registers with extended schema details.
+	 * @throws Exception If extending schemas fails.
+	 */
+	public function getRegisters(): array
+	{
         // Get all registers
         $registers = $this->registerMapper->findAll();
 
@@ -1223,58 +1275,56 @@ class ObjectService
         return $registers;
     }
 
-    /**
-     * Get current register ID
-     *
-     * @return int The register ID
-     */
-    public function getRegister(): int
-    {
+	/**
+	 * Retrieves the current register ID.
+	 *
+	 * @return int The current register ID.
+	 */
+	public function getRegister(): int
+	{
         return $this->register;
     }
 
-    /**
-     * Set current register ID
-     *
-     * @param int $register The register ID to set
-     */
-    public function setRegister(int $register): void
-    {
+	/**
+	 * Sets the current register ID.
+	 *
+	 * @param int $register The register ID to set.
+	 */
+	public function setRegister(int $register): void
+	{
         $this->register = $register;
     }
 
-    /**
-     * Get current schema ID
-     *
-     * @return int The schema ID
-     */
-    public function getSchema(): int
-    {
+	/**
+	 * Retrieves the current schema ID.
+	 *
+	 * @return int The current schema ID.
+	 */
+	public function getSchema(): int
+	{
         return $this->schema;
     }
 
-    /**
-     * Set current schema ID
-     *
-     * @param int $schema The schema ID to set
-     */
-    public function setSchema(int $schema): void
-    {
+	/**
+	 * Sets the current schema ID.
+	 *
+	 * @param int $schema The schema ID to set.
+	 */
+	public function setSchema(int $schema): void
+	{
         $this->schema = $schema;
     }
 
-    /**
-     * Get the audit trail for a specific object
-     *
-     * @todo: register and schema parameters are not needed anymore
-     *
-     * @param int $register The register ID
-     * @param int $schema The schema ID
-     * @param string $id The object ID
-     * @return array The audit trail entries
-     */
-    public function getAuditTrail(int $register, int $schema, string $id): array
-    {
+	/**
+	 * Retrieves the audit trail for a specific object by its identifier.
+	 *
+	 * Processes audit trail entries to return a complete history for the specified object.
+	 * @param string $id The unique identifier of the object.
+	 *
+	 * @return array The list of audit trail entries for the object.
+	 */
+	public function getAuditTrail(string $id): array
+	{
         $filters = [
             'object' => $id
         ];
