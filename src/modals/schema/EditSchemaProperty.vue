@@ -181,6 +181,13 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				:loading="loading"
 				:error="!verifyJsonValidity(properties.default)"
 				:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
+
+            <NcCheckboxRadioSwitch v-else-if="properties.type === 'object'"
+                :disabled="loading"
+                :checked.sync="properties.cascadeDelete">
+                Cascade delete
+            </NcCheckboxRadioSwitch>
+
 			<!-- TYPE : ARRAY -->
 			<NcTextArea v-else-if="properties.type === 'array'"
 				:disabled="loading"
@@ -200,11 +207,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Default value"
 				:value.sync="properties.default" />
 
-			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="properties.required">
-				Required
-			</NcCheckboxRadioSwitch>
+            <NcCheckboxRadioSwitch
+                :disabled="loading"
+                :checked.sync="properties.required">
+                Required
+            </NcCheckboxRadioSwitch>
 
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
@@ -267,6 +274,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						type="text"
 						label="Schema reference of object ($ref)"
 						:value.sync="properties.items.$ref" />
+
+                    <NcCheckboxRadioSwitch
+                        :disabled="loading"
+                        :checked.sync="properties.items.cascadeDelete">
+                        Cascade delete
+                    </NcCheckboxRadioSwitch>
 				</div>
 
 				<NcInputField :disabled="loading"
@@ -361,8 +374,10 @@ export default {
 				exclusiveMax: false,
 				minItems: 0,
 				maxItems: 0,
+				cascadeDelete: false,
 				$ref: '',
 				items: {
+					cascadeDelete: false,
 					$ref: '',
 					type: '',
 				},
