@@ -149,6 +149,11 @@ class Schema extends Entity implements JsonSerializable
 					},
 					array: $property['oneOf']);
 			}
+			if($property['type'] === 'array'
+				&& isset($property['items']['type']) === true
+				&& $property['items']['type'] === 'oneOf') {
+				unset($data['properties'][$title]['items']['type']);
+			}
 		}
 
 		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],

@@ -458,7 +458,6 @@ class ObjectService
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
-			$objectEntity->setObject($object);
 		}
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
@@ -565,7 +564,7 @@ class ObjectService
 			$objectEntity->setRelations($relations);
 		}
 
-		return $nestedObject->getUri();
+		return $nestedObject->getUuid();
 	}
 
 	private function handleObjectProperty(
@@ -598,12 +597,13 @@ class ObjectService
 		if(isset($property['items']['oneOf'])) {
 			foreach($items as $index=>$item) {
 				$items[$index] = $this->handleOneOfProperty(
-					property: $property['items'],
+					property: $property['items']['oneOf'],
 					propertyName: $propertyName,
 					item: $item,
 					objectEntity: $objectEntity,
 					register: $register,
-					schema: $schema
+					schema: $schema,
+					index: $index
 				);
 			}
 			return $items;
@@ -656,6 +656,27 @@ class ObjectService
 			return $item;
 		}
 
+		if (in_array(needle:'file', haystack: array_column(array: $property, column_key: 'type')) === true
+			&& is_array($item) === true
+			&& $index !== null
+		) {
+			return $this->handleFileProperty(
+				objectEntity: $objectEntity,
+				object: [$propertyName => [$index => $item]],
+				propertyName: $propertyName
+			);
+		}
+		if (in_array(needle:'file', haystack: array_column(array: $property, column_key: 'type')) === true
+			&& is_array($item) === true
+			&& $index === null
+		) {
+			return $this->handleFileProperty(
+				objectEntity: $objectEntity,
+				object: [$propertyName => $item],
+				propertyName: $propertyName
+			);
+		}
+
 		if (array_column(array: $property, column_key: '$ref') === []) {
 			return $item;
 		}
@@ -667,7 +688,7 @@ class ObjectService
 		$oneOf = array_filter(
 			array: $property,
 			callback: function (array $option) {
-				return isset($option['$ref']);
+				return isset($option['$ref']) === true;
 			}
 		)[0];
 
@@ -689,7 +710,7 @@ class ObjectService
 		int $schema,
 		array $object,
 		ObjectEntity $objectEntity
-	): ObjectEntity
+	): array
 	{
 		switch($property['type']) {
 			case 'object':
@@ -714,12 +735,12 @@ class ObjectService
 				break;
 			case 'oneOf':
 				$object[$propertyName] = $this->handleOneOfProperty(
-					property: $property,
+					property: $property['oneOf'],
 					propertyName: $propertyName,
 					item: $object[$propertyName],
 					objectEntity: $objectEntity,
 					register: $register,
-					schema: $schema,);
+					schema: $schema);
 				break;
 			case 'file':
 				$object[$propertyName] = $this->handleFileProperty(
@@ -731,9 +752,7 @@ class ObjectService
 				break;
 		}
 
-		$objectEntity->setObject($object);
-
-		return $objectEntity;
+		return $object;
 	}
 
 
@@ -758,7 +777,7 @@ class ObjectService
 				continue;
 			}
 
-			$objectEntity = $this->handleProperty(
+			$object = $this->handleProperty(
 				property: $property,
 				propertyName: $propertyName,
 				register: $register,
@@ -767,6 +786,9 @@ class ObjectService
 				objectEntity: $objectEntity,
 			);
 		}
+
+		$objectEntity->setObject($object);
+
 		return $objectEntity;
 	}
 
@@ -785,18 +807,6 @@ class ObjectService
 		$fileName = str_replace('.', '_', $propertyName);
 		$objectDot = new Dot($object);
 
-		// Check if it's a Nextcloud file URL
-//		if (str_starts_with($object[$propertyName], $this->urlGenerator->getAbsoluteURL())) {
-//			$urlPath = parse_url($object[$propertyName], PHP_URL_PATH);
-//			if (preg_match('/\/f\/(\d+)/', $urlPath, $matches)) {
-//				$files = $objectEntity->getFiles() ?? [];
-//				$files[$propertyName] = (int)$matches[1];
-//				$objectEntity->setFiles($files);
-//				$object[$propertyName] = (int)$matches[1];
-//				return $object;
-//			}
-//		}
-
 		// Handle base64 encoded file
 		if (is_string($objectDot->get($propertyName)) === true
 			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get($propertyName), $matches)
@@ -809,7 +819,7 @@ class ObjectService
 		// Handle URL file
 		else {
 			// Encode special characters in the URL
-			$encodedUrl = rawurlencode($objectDot->get("$propertyName.downloadUrl")); //@todo hardcoded .downloadUrl
+			$encodedUrl = rawurlencode($objectDot->get("$propertyName.accessUrl")); //@todo hardcoded .downloadUrl
 
 			// Decode valid path separators and reserved characters
 			$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);

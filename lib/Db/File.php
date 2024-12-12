@@ -91,7 +91,6 @@ class File extends Entity implements JsonSerializable
 			'required'   => [
 				'filename',
 				'accessUrl',
-				'userId',
 			],
 			'properties' => [
 				'filename' => [
