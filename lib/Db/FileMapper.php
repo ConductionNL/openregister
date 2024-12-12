@@ -76,7 +76,7 @@ class FileMapper extends QBMapper
 
 		// Set or update the version
 		$version = explode('.', $obj->getVersion());
-		$version[2] = (int)$version[2] + 1;
+		$version[2] = (int) $version[2] + 1;
 		$obj->setVersion(implode('.', $version));
 
 		return $this->update($obj);
@@ -99,6 +99,6 @@ class FileMapper extends QBMapper
         $row = $result->fetch();
 
         // Return the total count
-        return (int)$row['count'];
+        return (int) $row['count'];
     }
 }

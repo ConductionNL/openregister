@@ -160,7 +160,7 @@ class ObjectService
 			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
 		}
 
-		if($schemaObject->properties === []) {
+		if ($schemaObject->properties === []) {
 			$schemaObject->properties = new stdClass();
 		}
 
@@ -552,7 +552,7 @@ class ObjectService
 	): string
 	{
 		$subSchema = $schema;
-		if(is_int($property['$ref']) === true) {
+		if (is_int($property['$ref']) === true) {
 			$subSchema = $property['$ref'];
 		} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
 			$parsedUrl = parse_url($property['$ref']);
@@ -567,7 +567,7 @@ class ObjectService
 			object: $item
 		);
 
-		if($index === null) {
+		if ($index === null) {
 			// Store relation and replace with reference
 			$relations = $objectEntity->getRelations() ?? [];
 			$relations[$propertyName] = $nestedObject->getUri();
@@ -629,12 +629,12 @@ class ObjectService
 		int          $schema
 	): array
 	{
-		if(isset($property['items']) === false) {
+		if (isset($property['items']) === false) {
 			return $items;
 		}
 
-		if(isset($property['items']['oneOf'])) {
-			foreach($items as $index=>$item) {
+		if (isset($property['items']['oneOf']) === true) {
+			foreach ($items as $index=>$item) {
 				$items[$index] = $this->handleOneOfProperty(
 					property: $property['items']['oneOf'],
 					propertyName: $propertyName,
@@ -656,7 +656,7 @@ class ObjectService
 
 		if ($property['items']['type'] === 'file')
 		{
-			foreach($items as $index => $item) {
+			foreach ($items as $index => $item) {
 				$items[$index] = $this->handleFileProperty(
 					objectEntity: $objectEntity,
 					object: [$propertyName => [$index => $item]],
@@ -666,7 +666,7 @@ class ObjectService
 			return $items;
 		}
 
-		foreach($items as $index=>$item) {
+		foreach ($items as $index=>$item) {
 			$items[$index] = $this->addObject(
 				property: $property['items'],
 				propertyName: $propertyName,
@@ -921,9 +921,7 @@ class ObjectService
 
 						$fileContent = $response['body'];
 
-						if(
-							$response['encoding'] === 'base64'
-						) {
+						if ($response['encoding'] === 'base64') {
 							$fileContent = base64_decode(string: $fileContent);
 						}
 

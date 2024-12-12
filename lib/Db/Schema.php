@@ -133,14 +133,14 @@ class Schema extends Entity implements JsonSerializable
 			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
 
-			if($property['type'] === 'file') {
+			if ($property['type'] === 'file') {
 				$data['properties'][$title] = ['$ref' => $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema'];
 			}
-			if($property['type'] === 'oneOf') {
+			if ($property['type'] === 'oneOf') {
 				unset($data['properties'][$title]['type']);
 				$data['properties'][$title]['oneOf'] = array_map(
 					callback: function (array $item) use ($urlGenerator) {
-						if($item['type'] === 'file') {
+						if ($item['type'] === 'file') {
 							unset($item['type']);
 							$item['$ref'] = $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema';
 						}
@@ -149,7 +149,7 @@ class Schema extends Entity implements JsonSerializable
 					},
 					array: $property['oneOf']);
 			}
-			if($property['type'] === 'array'
+			if ($property['type'] === 'array'
 				&& isset($property['items']['type']) === true
 				&& $property['items']['type'] === 'oneOf') {
 				unset($data['properties'][$title]['items']['type']);
