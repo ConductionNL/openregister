@@ -3,11 +3,13 @@
 namespace OCA\OpenRegister\Service;
 
 use Adbar\Dot;
+use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use OC\URLGenerator;
 use OCA\OpenRegister\Db\File;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -76,6 +78,7 @@ class ObjectService
 		private readonly FileService $fileService,
 		private readonly IAppManager $appManager,
 		private readonly IAppConfig $config,
+		private readonly FileMapper $fileMapper,
     )
     {
         $this->objectEntityMapper = $objectEntityMapper;
@@ -859,88 +862,10 @@ class ObjectService
 		return $objectEntity;
 	}
 
-	/**
-	 * Handle file property processing
-	 *
-	 * @param ObjectEntity $objectEntity The object entity
-	 * @param array $object The object data
-	 * @param string $propertyName The name of the file property
-	 *
-	 * @return array Updated object data
-	 * @throws Exception|GuzzleException When file handling fails
-	 */
-	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array
+
+	private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
 	{
-		$fileName = str_replace('.', '_', $propertyName);
-		$objectDot = new Dot($object);
-
-		// Handle base64 encoded file
-		if (is_string($objectDot->get($propertyName)) === true
-			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get($propertyName), $matches)
-		) {
-			$fileContent = base64_decode($matches[2], true);
-			if ($fileContent === false) {
-				throw new Exception('Invalid base64 encoded file');
-			}
-		}
-		// Handle URL file
-		else {
-			// Encode special characters in the URL
-			$encodedUrl = rawurlencode($objectDot->get("$propertyName.accessUrl")); //@todo hardcoded .downloadUrl
-
-			// Decode valid path separators and reserved characters
-			$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
-
-			if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
-				try {
-					// @todo hacky tacky
-					// Regular expression to get the filename and extension from url //@todo hardcoded .downloadUrl
-					if (preg_match("/\/([^\/]+)'\)\/\\\$value$/", $objectDot->get("$propertyName.downloadUrl"), $matches)) {
-						// @todo hardcoded way of getting the filename and extension from the url
-						$fileNameFromUrl = $matches[1];
-						// @todo use only the extension from the url ?
-						// $fileName = $fileNameFromUrl;
-						$extension = substr(strrchr($fileNameFromUrl, '.'), 1);
-						$fileName = "$fileName.$extension";
-					}
-
-					if ($objectDot->has("$propertyName.source") === true) {
-						$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
-						$source = $sourceMapper->find($objectDot->get("$propertyName.source"));
-
-						$callService = $this->getOpenConnector(filePath: '\Service\CallService');
-						if ($callService === null) {
-							throw new Exception("OpenConnector service not available");
-						}
-						$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
-
-
-						$endpoint = urldecode($endpoint);
-
-						$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
-
-						$fileContent = $response['body'];
-
-						if(
-							$response['encoding'] === 'base64'
-						) {
-							$fileContent = base64_decode(string: $fileContent);
-						}
-
-					} else {
-						$client = new \GuzzleHttp\Client();
-						$response = $client->get($encodedUrl);
-						$fileContent = $response->getBody()->getContents();
-					}
-				} catch (Exception|NotFoundExceptionInterface $e) {
-					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
-				}
-			} else if (str_contains($objectDot->get($propertyName), $this->urlGenerator->getBaseUrl()) === true) {
-				return $object;
-			} else {
-				throw new Exception('Invalid file format - must be base64 encoded or valid URL');
-			}
-		}
+		$fileName = $file->getFileName();
 
 		try {
 			$schema = $this->schemaMapper->find($objectEntity->getSchema());
@@ -964,9 +889,11 @@ class ObjectService
 			// Create or find ShareLink
 			$share = $this->fileService->findShare(path: $filePath);
 			if ($share !== null) {
-				$shareLink = $this->fileService->getShareLink($share).'/download';
+				$shareLink = $this->fileService->getShareLink($share);
+				$downloadLink = $shareLink.'/download';
 			} else {
-				$shareLink = $this->fileService->createShareLink(path: $filePath).'/download';
+				$shareLink = $this->fileService->createShareLink(path: $filePath);
+				$downloadLink = $shareLink.'/download';
 			}
 
 			$filesDot = new Dot($objectEntity->getFiles() ?? []);
@@ -974,13 +901,148 @@ class ObjectService
 			$objectEntity->setFiles($filesDot->all());
 
 			// Preserve the original uri in the object 'json blob'
-			$objectDot = $objectDot->set($propertyName, $shareLink);
-			$object = $objectDot->all();
+			$file->setDownloadUrl($downloadLink);
+			$file->setShareUrl($shareLink);
 		} catch (Exception $e) {
 			throw new Exception('Failed to store file: ' . $e->getMessage());
 		}
 
-		return $object;
+		return $file;
+	}
+
+	private function setExtension(File $file): File
+	{
+		// Regular expression to get the filename and extension from url
+		if ($file->getExtension() === false && preg_match("/\/([^\/]+)'\)\/\\\$value$/", $file->getAccessUrl(), $matches)) {
+			$fileNameFromUrl = $matches[1];
+			$file->setExtension(substr(strrchr($fileNameFromUrl, '.'), 1));
+		}
+
+		return $file;
+	}
+	private function fetchFile(File $file, string $propertyName, ObjectEntity $objectEntity): File
+	{
+		$fileContent = null;
+
+		// Encode special characters in the URL
+		$encodedUrl = rawurlencode($file->getAccessUrl());
+
+
+		// Decode valid path separators and reserved characters
+		$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
+
+		if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
+			$this->setExtension($file);
+			try {
+
+				if ($file->getSource() !== null) {
+					$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
+					$source = $sourceMapper->find($file->getSource());
+
+					$callService = $this->getOpenConnector(filePath: '\Service\CallService');
+					if ($callService === null) {
+						throw new Exception("OpenConnector service not available");
+					}
+					$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
+					$endpoint = urldecode($endpoint);
+					$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
+
+					$fileContent = $response['body'];
+
+					if(
+						$response['encoding'] === 'base64'
+					) {
+						$fileContent = base64_decode(string: $fileContent);
+					}
+
+				} else {
+					$client = new Client();
+					$response = $client->get($encodedUrl);
+					$fileContent = $response->getBody()->getContents();
+				}
+			} catch (Exception|NotFoundExceptionInterface $e) {
+				throw new Exception('Failed to download file from URL: ' . $e->getMessage());
+			}
+		}
+
+		$this->writeFile(fileContent: $fileContent, propertyName:  $propertyName, objectEntity:  $objectEntity, file: $file);
+
+		return $file;
+	}
+
+	/**
+	 * Handle file property processing
+	 *
+	 * @param ObjectEntity $objectEntity The object entity
+	 * @param array $object The object data
+	 * @param string $propertyName The name of the file property
+	 *
+	 * @return array Updated object data
+	 * @throws Exception|GuzzleException When file handling fails
+	 */
+	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName, ?string $format = null): array
+	{
+		$fileName = str_replace('.', '_', $propertyName);
+		$objectDot = new Dot($object);
+
+		// Handle base64 encoded file
+		if (is_string($objectDot->get("$propertyName.base64")) === true
+			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get("$propertyName.base64"), $matches)
+		) {
+			unset($object[$propertyName]['base64']);
+			$fileEntity = new File();
+			$fileEntity->hydrate($object[$propertyName]);
+			$fileEntity->setFilename($fileName);
+			$this->setExtension($fileEntity);
+
+			$this->fileMapper->insert($fileEntity);
+
+			$fileContent = base64_decode($matches[2], true);
+			if ($fileContent === false) {
+				throw new Exception('Invalid base64 encoded file');
+			}
+
+			$fileEntity = $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $fileEntity);
+		}
+		// Handle URL file
+		else {
+			$fileEntities = $this->fileMapper->findAll(filters: ['accessUrl' => $objectDot->get("$propertyName.accessUrl")]);
+			if(count($fileEntities) > 0) {
+				$fileEntity = $fileEntities[0];
+			}
+
+			if (count($fileEntities) === 0) {
+				$fileEntity = new File();
+				$fileEntity->hydrate($object[$propertyName]);
+			}
+
+			if($fileEntity->getFilename() === null) {
+				$fileEntity->setFilename($fileName);
+			}
+
+			if($fileEntity->getChecksum() === null || $fileEntity->getUpdated() > new DateTime('-5 minutes')) {
+				$fileEntity = $this->fetchFile(file: $fileEntity, propertyName: $propertyName, objectEntity: $objectEntity);
+				$fileEntity->setUpdated(new DateTime());
+			}
+		}
+
+		$fileEntity->setChecksum(md5(serialize($fileContent)));
+
+		$this->fileMapper->update($fileEntity);
+
+		switch($format) {
+			case 'filename':
+				return $fileEntity->getFileName();
+			case 'extension':
+				return $fileEntity->getExtension();
+			case 'shareUrl':
+				return $fileEntity->getShareUrl();
+			case 'accessUrl':
+				return  $fileEntity->getAccessUrl();
+			case 'downloadUrl':
+			default:
+				return $fileEntity->getDownloadUrl();
+		}
 	}
 
     /**

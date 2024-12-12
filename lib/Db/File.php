@@ -10,14 +10,16 @@ use OCP\IURLGenerator;
 class File extends Entity implements JsonSerializable
 {
     protected string $uuid;
-    protected string $filename;
-	protected string $downloadUrl;
-	protected string $shareUrl;
-	protected string $accessUrl;
-	protected string $extension;
-	protected string $checksum;
-	protected string $source;
-	protected string $userId;
+    protected ?string $filename = null;
+	protected ?string $downloadUrl = null;
+	protected ?string $shareUrl = null;
+	protected ?string $accessUrl = null;
+	protected ?string $extension = null;
+	protected ?string $checksum = null;
+	protected ?string $source = null;
+	protected ?string $userId = null;
+	protected ?string $base64 = null;
+	protected ?string $filePath = null;
 	protected DateTime $created;
 	protected DateTime $updated;
 
@@ -89,8 +91,6 @@ class File extends Entity implements JsonSerializable
 			'$schema'    => 'https://json-schema.org/draft/2020-12/schema',
 			'type'       => 'object',
 			'required'   => [
-				'filename',
-				'accessUrl',
 			],
 			'properties' => [
 				'filename' => [
@@ -122,6 +122,9 @@ class File extends Entity implements JsonSerializable
 				],
 				'userId' => [
 					'type' => 'string',
+				],
+				'base64' => [
+					'type' => 'string'
 				]
 			]
 		]);
