@@ -244,12 +244,12 @@ class ObjectService
 			$object = $object->jsonSerialize();
 		}
 
-		return $this->deleteObject(
-			register: $this->registerMapper->find($this->getRegister()),
-			schema: $this->schemaMapper->find($this->getSchema()),
-			uuid: $object['id']
-		);
-	}
+        return $this->deleteObject(
+            register: $this->getRegister(),
+            schema: $this->getSchema(),
+            uuid: $object['id']
+        );
+    }
 
 	/**
 	 * Retrieves all objects matching criteria.
@@ -1037,23 +1037,105 @@ class ObjectService
         throw new Exception('Unsupported source type');
     }
 
-	/**
-	 * Deletes an object from a specified register and schema using its UUID.
-	 *
-	 * Supports only internal sources and raises an exception for unsupported source types.
-	 *
-	 * @param Register $register The register containing the object to delete.
-	 * @param Schema $schema The schema defining the object structure.
-	 * @param string $uuid The unique identifier of the object to delete.
-	 *
-	 * @return bool True if the object was successfully deleted.
-	 * @throws Exception If the source type is unsupported.
-	 */
-	public function deleteObject(Register $register, Schema $schema, string $uuid): bool
-	{
+    /**
+     * Check if a string contains a dot and get the substring before the first dot.
+     *
+     * @param string $input The input string.
+     *
+     * @return string The substring before the first dot, or the original string if no dot is found.
+     */
+    private function getStringBeforeDot(string $input): string
+    {
+        // Find the position of the first dot
+        $dotPosition = strpos($input, '.');
+        
+        // Return the substring before the dot, or the original string if no dot is found
+        return $dotPosition !== false ? substr($input, 0, $dotPosition) : $input;
+    }
+
+    /**
+     * Get the substring after the last slash in a string.
+     *
+     * @param string $input The input string.
+     *
+     * @return string The substring after the last slash.
+     */
+    function getStringAfterLastSlash(string $input): string
+    {
+        // Find the position of the last slash
+        $lastSlashPos = strrpos($input, '/');
+        
+        // Return the substring after the last slash, or the original string if no slash is found
+        return $lastSlashPos !== false ? substr($input, $lastSlashPos + 1) : $input;
+    }
+
+    /**
+     * Cascade delete related objects based on schema properties.
+     *
+     * This method identifies properties in the schema marked for cascade deletion and deletes
+     * related objects associated with those properties in the given object.
+     *
+     * @param Register     $register The register containing the objects.
+     * @param Schema       $schema   The schema defining the properties and relationships.
+     * @param ObjectEntity $object   The object entity whose related objects should be deleted.
+     *
+     * @return void
+     *
+     * @throws Exception If any errors occur during the deletion process.
+     */
+    private function cascadeDeleteObjects(Register $register, Schema $schema, ObjectEntity $object, string $originalObjectId): void
+    {
+        $cascadeDeleteProperties = [];
+        foreach ($schema->getProperties() as $propertyName => $property) {
+            if ((isset($property['cascadeDelete']) === true && $property['cascadeDelete'] === true) || (isset($property['items']['cascadeDelete']) === true && $property['items']['cascadeDelete'] === true)) {
+                $cascadeDeleteProperties[] = $propertyName;
+            }
+        }
+
+        foreach ($object->getRelations() as $relationName => $relation) {
+            $relationName = $this->getStringBeforeDot(input: $relationName);
+            $relatedObjectId = $this->getStringAfterLastSlash(input: $relation);
+            // Check if this sub object has cacsadeDelete = true and is not the original object that started this delete streakt
+            if (in_array(needle: $relationName, haystack: $cascadeDeleteProperties) === true && $relatedObjectId !== $originalObjectId) {
+                $this->deleteObject(register: $register->getId(), schema: $schema->getId(), uuid: $relatedObjectId, originalObjectId: $originalObjectId);
+            }
+        }
+    }
+
+    /**
+     * Delete an object
+     *
+     * @param string|int  $register         The register to delete from
+     * @param string|int  $schema           The schema of the object
+     * @param string      $uuid             The UUID of the object to delete
+     * @param string|null $originalObjectId The UUID of the parent object so we dont delete the object we come from and cause a loop
+     *
+     * @return bool      True if deletion was successful
+     * @throws Exception If source type is unsupported
+     */
+    public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId = null): bool
+    {
+        $register = $this->registerMapper->find($register);
+        $schema = $this->schemaMapper->find($schema);
+
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
-            $object = $this->objectEntityMapper->findByUuid(register: $register, schema: $schema, uuid: $uuid);
+            $object = $this->objectEntityMapper->findByUuidOnly(uuid: $uuid);
+
+            if ($object === null) {
+                return false;
+            }
+
+            // If internal register and schema should be found from the object himself. Makes it possible to delete cascaded objects.
+            $register = $this->registerMapper->find($object->getRegister());
+            $schema = $this->schemaMapper->find($object->getSchema());
+
+            if ($originalObjectId === null) {
+                $originalObjectId = $object->getUuid();
+            }
+
+            $this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $originalObjectId);
+
             $this->objectEntityMapper->delete($object);
             return true;
         }
