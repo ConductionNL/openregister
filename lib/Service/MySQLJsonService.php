@@ -140,7 +140,7 @@ class MySQLJsonService implements IDatabaseJsonService
 			// Create parameter for JSON path
 			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
 
-			if(is_array($value) === true && array_is_list($value) === false) {
+			if (is_array($value) === true && array_is_list($value) === false) {
 				// Handle complex filters (after/before)
 				$builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
 				continue;

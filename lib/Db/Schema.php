@@ -132,6 +132,28 @@ class Schema extends Entity implements JsonSerializable
 		foreach ($data['properties'] as $title => $property) {
 			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
+
+			if ($property['type'] === 'file') {
+				$data['properties'][$title] = ['$ref' => $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema'];
+			}
+			if ($property['type'] === 'oneOf') {
+				unset($data['properties'][$title]['type']);
+				$data['properties'][$title]['oneOf'] = array_map(
+					callback: function (array $item) use ($urlGenerator) {
+						if ($item['type'] === 'file') {
+							unset($item['type']);
+							$item['$ref'] = $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema';
+						}
+
+						return $item;
+					},
+					array: $property['oneOf']);
+			}
+			if ($property['type'] === 'array'
+				&& isset($property['items']['type']) === true
+				&& $property['items']['type'] === 'oneOf') {
+				unset($data['properties'][$title]['items']['type']);
+			}
 		}
 
 		unset($data['id'], $data['uuid'], $data['summary'], $data['archive'], $data['source'],
@@ -141,7 +163,7 @@ class Schema extends Entity implements JsonSerializable
 
 		// Validator needs this specific $schema
 		$data['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
-		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getUuid()]));
+		$data['$id'] = $urlGenerator->getAbsoluteURL($urlGenerator->linkToRoute('openregister.Schemas.show', ['id' => $this->getId()]));
 
 		return json_decode(json_encode($data));
 	}
