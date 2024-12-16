@@ -865,7 +865,7 @@ class ObjectService
 
 	private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
 	{
-		$fileName = $file->getFileName();
+		$fileName = $file->getFilename();
 
 		try {
 			$schema = $this->schemaMapper->find($objectEntity->getSchema());
@@ -875,7 +875,13 @@ class ObjectService
 			$this->fileService->createFolder(folderPath: 'Objects');
 			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder");
 			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder/$objectFolder");
-			$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+
+			$filePath = $file->getFilePath();
+
+			if($filePath === null) {
+				$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+			}
+
 
 			$succes = $this->fileService->updateFile(
 				content: $fileContent,
@@ -903,6 +909,7 @@ class ObjectService
 			// Preserve the original uri in the object 'json blob'
 			$file->setDownloadUrl($downloadLink);
 			$file->setShareUrl($shareLink);
+			$file->setFilePath($filePath);
 		} catch (Exception $e) {
 			throw new Exception('Failed to store file: ' . $e->getMessage());
 		}
@@ -965,6 +972,7 @@ class ObjectService
 			}
 		}
 
+
 		$this->writeFile(fileContent: $fileContent, propertyName:  $propertyName, objectEntity:  $objectEntity, file: $file);
 
 		return $file;
@@ -980,7 +988,7 @@ class ObjectService
 	 * @return array Updated object data
 	 * @throws Exception|GuzzleException When file handling fails
 	 */
-	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName, ?string $format = null): array
+	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName, ?string $format = null): string
 	{
 		$fileName = str_replace('.', '_', $propertyName);
 		$objectDot = new Dot($object);
@@ -1012,8 +1020,7 @@ class ObjectService
 			}
 
 			if (count($fileEntities) === 0) {
-				$fileEntity = new File();
-				$fileEntity->hydrate($object[$propertyName]);
+				$fileEntity = $this->fileMapper->createFromArray($object[$propertyName]);
 			}
 
 			if($fileEntity->getFilename() === null) {

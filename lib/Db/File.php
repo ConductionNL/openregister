@@ -9,19 +9,19 @@ use OCP\IURLGenerator;
 
 class File extends Entity implements JsonSerializable
 {
-    protected string $uuid;
+    protected ?string $uuid = null;
     protected ?string $filename = null;
 	protected ?string $downloadUrl = null;
 	protected ?string $shareUrl = null;
 	protected ?string $accessUrl = null;
 	protected ?string $extension = null;
 	protected ?string $checksum = null;
-	protected ?string $source = null;
+	protected ?int $source = null;
 	protected ?string $userId = null;
 	protected ?string $base64 = null;
 	protected ?string $filePath = null;
-	protected DateTime $created;
-	protected DateTime $updated;
+	protected ?DateTime $created = null;
+	protected ?DateTime $updated = null;
 
 	public function __construct() {
         $this->addType('uuid', 'string');

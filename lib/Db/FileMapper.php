@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCA\OpenRegister\Db\File;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -13,7 +14,7 @@ class FileMapper extends QBMapper
 {
 	public function __construct(IDBConnection $db)
 	{
-		parent::__construct($db, 'openconnector_jobs');
+		parent::__construct($db, 'openregister_files');
 	}
 
 	public function find(int $id): File
@@ -21,7 +22,7 @@ class FileMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openconnector_jobs')
+			->from('openregister_files')
 			->where(
 				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
@@ -34,11 +35,12 @@ class FileMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
-			->from('openconnector_jobs')
+			->from('openregister_files')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
         foreach ($filters as $filter => $value) {
+			$filter = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $filter));
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
 			} elseif ($value === 'IS NULL') {
@@ -56,6 +58,41 @@ class FileMapper extends QBMapper
         }
 
 		return $this->findEntities(query: $qb);
+	}
+
+	/**
+	 * @inheritDoc
+	 *
+	 * @param \OCA\OpenRegister\Db\File|Entity $entity
+	 * @return \OCA\OpenRegister\Db\File
+	 * @throws \OCP\DB\Exception
+	 */
+	public function insert(File|Entity $entity): File
+	{
+		// Set created and updated fields
+		$entity->setCreated(new DateTime());
+		$entity->setUpdated(new DateTime());
+
+		if($entity->getUuid() === null) {
+			$entity->setUuid(Uuid::v4());
+		}
+
+		return parent::insert($entity);
+	}
+
+	/**
+	 * @inheritDoc
+	 *
+	 * @param \OCA\OpenRegister\Db\File|Entity $entity
+	 * @return \OCA\OpenRegister\Db\File
+	 * @throws \OCP\DB\Exception
+	 */
+	public function update(File|Entity $entity): File
+	{
+		// Set updated field
+		$entity->setUpdated(new DateTime());
+
+		return parent::update($entity);
 	}
 
 	public function createFromArray(array $object): File
@@ -93,7 +130,7 @@ class FileMapper extends QBMapper
 
         // Select count of all logs
         $qb->select($qb->createFunction('COUNT(*) as count'))
-           ->from('openconnector_jobs');
+           ->from('openregister_files');
 
         $result = $qb->execute();
         $row = $result->fetch();
