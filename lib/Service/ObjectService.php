@@ -152,6 +152,12 @@ class ObjectService
 			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
 		}
 
+		// if there are no properties we dont have to validate
+		if ($schemaObject instanceof stdClass || !method_exists($schemaObject, 'getProperties')) {
+			// Return a default ValidationResult indicating success
+			return new ValidationResult(null);
+		}
+
 		$validator = new Validator();
 		$validator->setMaxErrors(100);
 		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
@@ -1048,7 +1054,7 @@ class ObjectService
     {
         // Find the position of the first dot
         $dotPosition = strpos($input, '.');
-        
+
         // Return the substring before the dot, or the original string if no dot is found
         return $dotPosition !== false ? substr($input, 0, $dotPosition) : $input;
     }
@@ -1064,7 +1070,7 @@ class ObjectService
     {
         // Find the position of the last slash
         $lastSlashPos = strrpos($input, '/');
-        
+
         // Return the substring after the last slash, or the original string if no slash is found
         return $lastSlashPos !== false ? substr($input, $lastSlashPos + 1) : $input;
     }
