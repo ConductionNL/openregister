@@ -64,6 +64,8 @@ class File extends Entity implements JsonSerializable
 	 * @var DateTime The date and time when the file was last updated.
 	 */
 	protected DateTime $updated;
+	protected ?string $base64 = null;
+	protected ?string $filePath = null;
 
 	/**
 	 * Constructor for the File entity.
@@ -160,8 +162,6 @@ class File extends Entity implements JsonSerializable
 			'$schema'    => 'https://json-schema.org/draft/2020-12/schema',
 			'type'       => 'object',
 			'required'   => [
-				'filename',
-				'accessUrl',
 			],
 			'properties' => [
 				'filename' => [
@@ -193,6 +193,9 @@ class File extends Entity implements JsonSerializable
 				],
 				'userId' => [
 					'type' => 'string',
+				],
+				'base64' => [
+					'type' => 'string'
 				]
 			]
 		]);
