@@ -3,10 +3,13 @@
 namespace OCA\OpenRegister\Service;
 
 use Adbar\Dot;
+use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use OC\URLGenerator;
+use OCA\OpenRegister\Db\File;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -20,9 +23,12 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
+use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
+use Opis\Uri\Uri;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -70,7 +76,9 @@ class ObjectService
 		private ContainerInterface $container,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly FileService $fileService,
-		private readonly IAppManager $appManager
+		private readonly IAppManager $appManager,
+		private readonly IAppConfig $config,
+		private readonly FileMapper $fileMapper,
     )
     {
         $this->objectEntityMapper = $objectEntityMapper;
@@ -101,6 +109,45 @@ class ObjectService
 	}
 
 	/**
+	 * Fetch schema from URL
+	 *
+	 * @param Uri $uri The URI registered by the resolver.
+	 *
+	 * @return string The resulting json object.
+	 *
+	 * @throws GuzzleException
+	 */
+	public function resolveSchema(Uri $uri): string
+	{
+		if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
+			&& str_contains(haystack: $uri->path(), needle: '/api/schemas') === true
+		) {
+			$exploded = explode(separator: '/', string: $uri->path());
+			$schema   =  $this->schemaMapper->find(end($exploded));
+
+			return json_encode($schema->getSchemaObject($this->urlGenerator));
+		}
+
+		if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
+			&& str_contains(haystack: $uri->path(), needle: '/api/files/schema') === true
+		) {
+			$exploded = explode(separator: '/', string: $uri->path());
+			return File::getSchema($this->urlGenerator);
+		}
+
+		// @TODO: Validate file schema
+
+		if ($this->config->getValueBool(app: 'openregister', key: 'allowExternalSchemas') === true) {
+			$client = new Client();
+			$result = $client->get(\GuzzleHttp\Psr7\Uri::fromParts($uri->components()));
+
+			return $result->getBody()->getContents();
+		}
+
+		return '';
+	}
+
+	/**
 	 * Validate an object with a schema.
 	 * If schema is not given and schemaObject is filled, the object will validate to the schemaObject.
 	 *
@@ -116,9 +163,15 @@ class ObjectService
 			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
 		}
 
+		if($schemaObject->properties === []) {
+			$schemaObject->properties = new stdClass();
+		}
+
 		$validator = new Validator();
 		$validator->setMaxErrors(100);
 		$validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
+		$validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
+
 
 		return $validator->validate(data: json_decode(json_encode($object)), schema: $schemaObject);
 
@@ -275,6 +328,23 @@ class ObjectService
         return $result;
     }
 
+	public function findSubObjects(array $ids, string $property): array
+	{
+		$schemaObject = $this->schemaMapper->find($this->schema);
+		$property = $schemaObject->getProperties()[$property];
+
+		if(isset($property['items'])) {
+			$ref = explode('/', $property['items']['$ref']);
+		} else {
+			$subSchema = explode('/', $property['$ref']);
+		}
+		$subSchema = end($ref);
+
+		$subSchemaMapper = $this->getMapper(register: $this->getRegister(), schema: $subSchema);
+
+		return $subSchemaMapper->findMultiple($ids);
+	}
+
     /**
      * Get aggregations for objects matching filters
      *
@@ -311,6 +381,54 @@ class ObjectService
 	{
         return $object->getObject();
     }
+
+	public function findAllPaginated(array $requestParams): array
+	{
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+
+		// Ensure order and extend are arrays
+		if (is_string($order)) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend)) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
+		$total   = $this->count($filters);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		$facets  = $this->getAggregations(
+			filters: $filters,
+			search: $search
+		);
+
+		return [
+			'results' => $objects,
+			'facets' => $facets,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
+	}
 
 	/**
 	 * Gets all objects of a specific type.
@@ -374,7 +492,7 @@ class ObjectService
             );
         }
 
-//		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if (isset($object['id']) === false || $objectEntity === null) {
@@ -408,22 +526,21 @@ class ObjectService
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
-			$objectEntity->setObject($object);
 		}
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
-		if ($objectEntity->getId()) {// && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		} else {//if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
-//		if ($validationResult->isValid() === false) {
-//			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
-//		}
+		if ($validationResult->isValid() === false) {
+			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
+		}
 
         return $objectEntity;
     }
@@ -478,6 +595,303 @@ class ObjectService
 	}
 
 	/**
+	 * Adds a subobject based upon given parameters and adds it to the main object.
+	 *
+	 * @param array $property      		 The property to handle
+	 * @param string $propertyName 		 The name of the property
+	 * @param array $item 		   		 The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register   			 The register connected to the objectEntity
+	 * @param int $schema     			 The schema connected to the objectEntity
+	 * @param int|null $index 			 If the subobject is in an array, the index of the object in the array.
+	 *
+	 * @return string The updated item
+	 * @throws ValidationException
+	 */
+	private function addObject
+	(
+		array  		 $property,
+		string 		 $propertyName,
+		array  		 $item,
+		ObjectEntity $objectEntity,
+		int    	 	 $register,
+		int	   	 	 $schema,
+		?int   	 	 $index = null,
+	): string
+	{
+		$subSchema = $schema;
+		if(is_int($property['$ref']) === true) {
+			$subSchema = $property['$ref'];
+		} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
+			$parsedUrl = parse_url($property['$ref']);
+			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
+			$subSchema = end($explodedPath);
+		}
+
+		// Handle nested object in array
+		$nestedObject = $this->saveObject(
+			register: $register,
+			schema: $subSchema,
+			object: $item
+		);
+
+		if($index === null) {
+			// Store relation and replace with reference
+			$relations = $objectEntity->getRelations() ?? [];
+			$relations[$propertyName] = $nestedObject->getUri();
+			$objectEntity->setRelations($relations);
+		} else {
+			$relations = $objectEntity->getRelations() ?? [];
+			$relations[$propertyName . '.' . $index] = $nestedObject->getUri();
+			$objectEntity->setRelations($relations);
+		}
+
+		return $nestedObject->getUuid();
+	}
+
+	/**
+	 * Handles a property that is of the type array.
+	 *
+	 * @param array $property			 The property to handle
+	 * @param string $propertyName  	 The name of the property
+	 * @param array $item			     The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register				 The register connected to the objectEntity
+	 * @param int $schema				 The schema connected to the objectEntity
+	 *
+	 * @return string The updated item
+	 */
+	private function handleObjectProperty(
+		array        $property,
+		string       $propertyName,
+		array        $item,
+		ObjectEntity $objectEntity,
+		int          $register,
+		int          $schema
+	): string
+	{
+		return $this->addObject(
+			property: $property,propertyName: $propertyName, item: $item, objectEntity: $objectEntity, register: $register, schema: $schema
+		);
+	}
+
+	/**
+	 * Handles a property that is of the type array.
+	 *
+	 * @param array $property			 The property to handle
+	 * @param string $propertyName  	 The name of the property
+	 * @param array $items			     The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register				 The register connected to the objectEntity
+	 * @param int $schema				 The schema connected to the objectEntity
+	 *
+	 * @return array The updated item
+	 * @throws GuzzleException
+	 */
+	private function handleArrayProperty(
+		array        $property,
+		string       $propertyName,
+		array        $items,
+		ObjectEntity $objectEntity,
+		int          $register,
+		int          $schema
+	): array
+	{
+		if(isset($property['items']) === false) {
+			return $items;
+		}
+
+		if(isset($property['items']['oneOf'])) {
+			foreach($items as $index=>$item) {
+				$items[$index] = $this->handleOneOfProperty(
+					property: $property['items']['oneOf'],
+					propertyName: $propertyName,
+					item: $item,
+					objectEntity: $objectEntity,
+					register: $register,
+					schema: $schema,
+					index: $index
+				);
+			}
+			return $items;
+		}
+
+		if ($property['items']['type'] !== 'object'
+			&& $property['items']['type'] !== 'file'
+		) {
+			return $items;
+		}
+
+		if ($property['items']['type'] === 'file')
+		{
+			foreach($items as $index => $item) {
+				$items[$index] = $this->handleFileProperty(
+					objectEntity: $objectEntity,
+					object: [$propertyName => [$index => $item]],
+					propertyName: $propertyName . '.' . $index
+				)[$propertyName];
+			}
+			return $items;
+		}
+
+		foreach($items as $index=>$item) {
+			$items[$index] = $this->addObject(
+				property: $property['items'],
+				propertyName: $propertyName,
+				item: $item,
+				objectEntity: $objectEntity,
+				register: $register,
+				schema: $schema,
+				index: $index
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Handles a property that of the type oneOf.
+	 *
+	 * @param array $property			 The property to handle
+	 * @param string $propertyName  	 The name of the property
+	 * @param string|array $item		 The contents of the property
+	 * @param ObjectEntity $objectEntity The objectEntity the data belongs to
+	 * @param int $register				 The register connected to the objectEntity
+	 * @param int $schema				 The schema connected to the objectEntity
+	 * @param int|null $index			 If the oneOf is in an array, the index within the array
+	 *
+	 * @return string|array The updated item
+	 * @throws GuzzleException
+	 */
+	private function handleOneOfProperty(
+		array        $property,
+		string       $propertyName,
+		string|array $item,
+		ObjectEntity $objectEntity,
+		int          $register,
+		int          $schema,
+		?int		 $index = null
+	): string|array
+	{
+		if (array_is_list($property) === false) {
+			return $item;
+		}
+
+		if (in_array(needle:'file', haystack: array_column(array: $property, column_key: 'type')) === true
+			&& is_array($item) === true
+			&& $index !== null
+		) {
+			return $this->handleFileProperty(
+				objectEntity: $objectEntity,
+				object: [$propertyName => [$index => $item]],
+				propertyName: $propertyName
+			);
+		}
+		if (in_array(needle:'file', haystack: array_column(array: $property, column_key: 'type')) === true
+			&& is_array($item) === true
+			&& $index === null
+		) {
+			return $this->handleFileProperty(
+				objectEntity: $objectEntity,
+				object: [$propertyName => $item],
+				propertyName: $propertyName
+			);
+		}
+
+		if (array_column(array: $property, column_key: '$ref') === []) {
+			return $item;
+		}
+
+		if (is_array($item) === false) {
+			return $item;
+		}
+
+		$oneOf = array_filter(
+			array: $property,
+			callback: function (array $option) {
+				return isset($option['$ref']) === true;
+			}
+		)[0];
+
+		return $this->addObject(
+			property: $oneOf,
+			propertyName: $propertyName,
+			item: $item,
+			objectEntity: $objectEntity,
+			register: $register,
+			schema: $schema,
+			index: $index
+		);
+	}
+
+	/**
+	 * Rewrites subobjects stored in separate objectentities to the Uuid of that object,
+	 * rewrites files to the chosen format
+	 *
+	 * @param array $property	   		 The content of the property in the schema
+	 * @param string $propertyName 		 The name of the property
+	 * @param int $register		   		 The register the main object is in
+	 * @param int $schema		   		 The schema of the main object
+	 * @param array $object		   		 The object to rewrite
+	 * @param ObjectEntity $objectEntity The objectEntity to write the object in
+	 *
+	 * @return array The resulting object
+	 * @throws GuzzleException
+	 */
+	private function handleProperty (
+		array $property,
+		string $propertyName,
+		int $register,
+		int $schema,
+		array $object,
+		ObjectEntity $objectEntity
+	): array
+	{
+		switch($property['type']) {
+			case 'object':
+				$object[$propertyName] = $this->handleObjectProperty(
+					property: $property,
+					propertyName: $propertyName,
+					item: $object[$propertyName],
+					objectEntity: $objectEntity,
+					register: $register,
+					schema: $schema,
+				);
+				break;
+			case 'array':
+				$object[$propertyName] = $this->handleArrayProperty(
+					property: $property,
+					propertyName: $propertyName,
+					items: $object[$propertyName],
+					objectEntity: $objectEntity,
+					register: $register,
+					schema: $schema,
+				);
+				break;
+			case 'oneOf':
+				$object[$propertyName] = $this->handleOneOfProperty(
+					property: $property['oneOf'],
+					propertyName: $propertyName,
+					item: $object[$propertyName],
+					objectEntity: $objectEntity,
+					register: $register,
+					schema: $schema);
+				break;
+			case 'file':
+				$object[$propertyName] = $this->handleFileProperty(
+					objectEntity: $objectEntity,
+					object: $object,
+					propertyName: $propertyName
+				);
+			default:
+				break;
+		}
+
+		return $object;
+	}
+
+
+	/**
 	 * Handle object relations and file properties in schema properties and array items
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to handle relations for
@@ -498,103 +912,14 @@ class ObjectService
 				continue;
 			}
 
-			// Handle array type with items that may contain objects/files
-			if ($property['type'] === 'array' && isset($property['items']) === true) {
-				// Skip if not array in data
-				if (is_array($object[$propertyName]) === false) {
-					continue;
-				}
-
-				// Process each array item
-				foreach ($object[$propertyName] as $index => $item) {
-					if ($property['items']['type'] === 'object') {
-						$subSchema = $schema;
-
-						if(is_int($property['items']['$ref']) === true) {
-							$subSchema = $property['items']['$ref'];
-						} else if (filter_var(value: $property['items']['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
-							$parsedUrl = parse_url($property['items']['$ref']);
-							$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
-							$subSchema = end($explodedPath);
-						}
-
-						if(is_array($item) === true) {
-							// Handle nested object in array
-							$nestedObject = $this->saveObject(
-								register: $register,
-								schema: $subSchema,
-								object: $item
-							);
-
-							// Store relation and replace with reference
-							$relations = $objectEntity->getRelations() ?? [];
-							$relations[$propertyName . '.' . $index] = $nestedObject->getUri();
-							$objectEntity->setRelations($relations);
-							$object[$propertyName][$index] = $nestedObject->getUri();
-
-						} else {
-							$relations = $objectEntity->getRelations() ?? [];
-							$relations[$propertyName . '.' . $index] = $item;
-							$objectEntity->setRelations($relations);
-						}
-
-					} else if ($property['items']['type'] === 'file') {
-						// Handle file in array
-						$object[$propertyName][$index] = $this->handleFileProperty(
-							objectEntity: $objectEntity,
-							object: [$propertyName => [$index => $item]],
-							propertyName: $propertyName . '.' . $index
-						)[$propertyName];
-					}
-				}
-			}
-
-			// Handle single object type
-			else if ($property['type'] === 'object') {
-
-				$subSchema = $schema;
-
-                // $ref is a int, id or uuid
-				if (is_int($property['$ref']) === true
-					|| is_numeric($property['$ref']) === true
-					|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $property['$ref']) === 1
-				) {
-					$subSchema = $property['$ref'];
-				} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
-					$parsedUrl = parse_url($property['$ref']);
-					$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
-					$subSchema = end($explodedPath);
-				}
-
-				if(is_array($object[$propertyName]) === true) {
-					$nestedObject = $this->saveObject(
-						register: $register,
-						schema: $subSchema,
-						object: $object[$propertyName]
-					);
-
-					// Store relation and replace with reference
-					$relations = $objectEntity->getRelations() ?? [];
-					$relations[$propertyName] = $nestedObject->getUri();
-					$objectEntity->setRelations($relations);
-					$object[$propertyName] = $nestedObject->getUri();
-
-				} else {
-					$relations = $objectEntity->getRelations() ?? [];
-					$relations[$propertyName] = $object[$propertyName];
-					$objectEntity->setRelations($relations);
-				}
-
-			}
-			// Handle single file type
-			else if ($property['type'] === 'file') {
-
-				$object = $this->handleFileProperty(
-					objectEntity: $objectEntity,
-					object: $object,
-					propertyName: $propertyName
-				);
-			}
+			$object = $this->handleProperty(
+				property: $property,
+				propertyName: $propertyName,
+				register: $register,
+				schema: $schema,
+				object: $object,
+				objectEntity: $objectEntity,
+			);
 		}
 
 		$objectEntity->setObject($object);
@@ -602,100 +927,10 @@ class ObjectService
 		return $objectEntity;
 	}
 
-	/**
-	 * Handle file property processing
-	 *
-	 * @param ObjectEntity $objectEntity The object entity
-	 * @param array $object The object data
-	 * @param string $propertyName The name of the file property
-	 *
-	 * @return array Updated object data
-	 * @throws Exception|GuzzleException When file handling fails
-	 */
-	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array
+
+	private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
 	{
-		$fileName = str_replace('.', '_', $propertyName);
-		$objectDot = new Dot($object);
-
-		// Check if it's a Nextcloud file URL
-//		if (str_starts_with($object[$propertyName], $this->urlGenerator->getAbsoluteURL())) {
-//			$urlPath = parse_url($object[$propertyName], PHP_URL_PATH);
-//			if (preg_match('/\/f\/(\d+)/', $urlPath, $matches)) {
-//				$files = $objectEntity->getFiles() ?? [];
-//				$files[$propertyName] = (int)$matches[1];
-//				$objectEntity->setFiles($files);
-//				$object[$propertyName] = (int)$matches[1];
-//				return $object;
-//			}
-//		}
-
-		// Handle base64 encoded file
-		if (is_string($objectDot->get($propertyName)) === true
-			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get($propertyName), $matches)
-		) {
-			$fileContent = base64_decode($matches[2], true);
-			if ($fileContent === false) {
-				throw new Exception('Invalid base64 encoded file');
-			}
-		}
-		// Handle URL file
-		else {
-			// Encode special characters in the URL
-			$encodedUrl = rawurlencode($objectDot->get("$propertyName.downloadUrl")); //@todo hardcoded .downloadUrl
-
-			// Decode valid path separators and reserved characters
-			$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
-
-			if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
-				try {
-					// @todo hacky tacky
-					// Regular expression to get the filename and extension from url //@todo hardcoded .downloadUrl
-					if (preg_match("/\/([^\/]+)'\)\/\\\$value$/", $objectDot->get("$propertyName.downloadUrl"), $matches)) {
-						// @todo hardcoded way of getting the filename and extension from the url
-						$fileNameFromUrl = $matches[1];
-						// @todo use only the extension from the url ?
-						// $fileName = $fileNameFromUrl;
-						$extension = substr(strrchr($fileNameFromUrl, '.'), 1);
-						$fileName = "$fileName.$extension";
-					}
-
-					if ($objectDot->has("$propertyName.source") === true) {
-						$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
-						$source = $sourceMapper->find($objectDot->get("$propertyName.source"));
-
-						$callService = $this->getOpenConnector(filePath: '\Service\CallService');
-						if ($callService === null) {
-							throw new Exception("OpenConnector service not available");
-						}
-						$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
-
-
-						$endpoint = urldecode($endpoint);
-
-						$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
-
-						$fileContent = $response['body'];
-
-						if(
-							$response['encoding'] === 'base64'
-						) {
-							$fileContent = base64_decode(string: $fileContent);
-						}
-
-					} else {
-						$client = new \GuzzleHttp\Client();
-						$response = $client->get($encodedUrl);
-						$fileContent = $response->getBody()->getContents();
-					}
-				} catch (Exception|NotFoundExceptionInterface $e) {
-					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
-				}
-			} else if (str_contains($objectDot->get($propertyName), $this->urlGenerator->getBaseUrl()) === true) {
-				return $object;
-			} else {
-				throw new Exception('Invalid file format - must be base64 encoded or valid URL');
-			}
-		}
+		$fileName = $file->getFilename();
 
 		try {
 			$schema = $this->schemaMapper->find($objectEntity->getSchema());
@@ -705,7 +940,13 @@ class ObjectService
 			$this->fileService->createFolder(folderPath: 'Objects');
 			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder");
 			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder/$objectFolder");
-			$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+
+			$filePath = $file->getFilePath();
+
+			if($filePath === null) {
+				$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+			}
+
 
 			$succes = $this->fileService->updateFile(
 				content: $fileContent,
@@ -719,9 +960,11 @@ class ObjectService
 			// Create or find ShareLink
 			$share = $this->fileService->findShare(path: $filePath);
 			if ($share !== null) {
-				$shareLink = $this->fileService->getShareLink($share).'/download';
+				$shareLink = $this->fileService->getShareLink($share);
+				$downloadLink = $shareLink.'/download';
 			} else {
-				$shareLink = $this->fileService->createShareLink(path: $filePath).'/download';
+				$shareLink = $this->fileService->createShareLink(path: $filePath);
+				$downloadLink = $shareLink.'/download';
 			}
 
 			$filesDot = new Dot($objectEntity->getFiles() ?? []);
@@ -729,13 +972,149 @@ class ObjectService
 			$objectEntity->setFiles($filesDot->all());
 
 			// Preserve the original uri in the object 'json blob'
-			$objectDot = $objectDot->set($propertyName, $shareLink);
-			$object = $objectDot->all();
+			$file->setDownloadUrl($downloadLink);
+			$file->setShareUrl($shareLink);
+			$file->setFilePath($filePath);
 		} catch (Exception $e) {
 			throw new Exception('Failed to store file: ' . $e->getMessage());
 		}
 
-		return $object;
+		return $file;
+	}
+
+	private function setExtension(File $file): File
+	{
+		// Regular expression to get the filename and extension from url
+		if ($file->getExtension() === false && preg_match("/\/([^\/]+)'\)\/\\\$value$/", $file->getAccessUrl(), $matches)) {
+			$fileNameFromUrl = $matches[1];
+			$file->setExtension(substr(strrchr($fileNameFromUrl, '.'), 1));
+		}
+
+		return $file;
+	}
+	private function fetchFile(File $file, string $propertyName, ObjectEntity $objectEntity): File
+	{
+		$fileContent = null;
+
+		// Encode special characters in the URL
+		$encodedUrl = rawurlencode($file->getAccessUrl());
+
+
+		// Decode valid path separators and reserved characters
+		$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
+
+		if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
+			$this->setExtension($file);
+			try {
+
+				if ($file->getSource() !== null) {
+					$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
+					$source = $sourceMapper->find($file->getSource());
+
+					$callService = $this->getOpenConnector(filePath: '\Service\CallService');
+					if ($callService === null) {
+						throw new Exception("OpenConnector service not available");
+					}
+					$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
+					$endpoint = urldecode($endpoint);
+					$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
+
+					$fileContent = $response['body'];
+
+					if(
+						$response['encoding'] === 'base64'
+					) {
+						$fileContent = base64_decode(string: $fileContent);
+					}
+
+				} else {
+					$client = new Client();
+					$response = $client->get($encodedUrl);
+					$fileContent = $response->getBody()->getContents();
+				}
+			} catch (Exception|NotFoundExceptionInterface $e) {
+				throw new Exception('Failed to download file from URL: ' . $e->getMessage());
+			}
+		}
+
+
+		$this->writeFile(fileContent: $fileContent, propertyName:  $propertyName, objectEntity:  $objectEntity, file: $file);
+
+		return $file;
+	}
+
+	/**
+	 * Handle file property processing
+	 *
+	 * @param ObjectEntity $objectEntity The object entity
+	 * @param array $object The object data
+	 * @param string $propertyName The name of the file property
+	 *
+	 * @return array Updated object data
+	 * @throws Exception|GuzzleException When file handling fails
+	 */
+	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName, ?string $format = null): string
+	{
+		$fileName = str_replace('.', '_', $propertyName);
+		$objectDot = new Dot($object);
+
+		// Handle base64 encoded file
+		if (is_string($objectDot->get("$propertyName.base64")) === true
+			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get("$propertyName.base64"), $matches)
+		) {
+			unset($object[$propertyName]['base64']);
+			$fileEntity = new File();
+			$fileEntity->hydrate($object[$propertyName]);
+			$fileEntity->setFilename($fileName);
+			$this->setExtension($fileEntity);
+
+			$this->fileMapper->insert($fileEntity);
+
+			$fileContent = base64_decode($matches[2], true);
+			if ($fileContent === false) {
+				throw new Exception('Invalid base64 encoded file');
+			}
+
+			$fileEntity = $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $fileEntity);
+		}
+		// Handle URL file
+		else {
+			$fileEntities = $this->fileMapper->findAll(filters: ['accessUrl' => $objectDot->get("$propertyName.accessUrl")]);
+			if(count($fileEntities) > 0) {
+				$fileEntity = $fileEntities[0];
+			}
+
+			if (count($fileEntities) === 0) {
+				$fileEntity = $this->fileMapper->createFromArray($object[$propertyName]);
+			}
+
+			if($fileEntity->getFilename() === null) {
+				$fileEntity->setFilename($fileName);
+			}
+
+			if($fileEntity->getChecksum() === null || $fileEntity->getUpdated() > new DateTime('-5 minutes')) {
+				$fileEntity = $this->fetchFile(file: $fileEntity, propertyName: $propertyName, objectEntity: $objectEntity);
+				$fileEntity->setUpdated(new DateTime());
+			}
+		}
+
+		$fileEntity->setChecksum(md5(serialize($fileContent)));
+
+		$this->fileMapper->update($fileEntity);
+
+		switch($format) {
+			case 'filename':
+				return $fileEntity->getFileName();
+			case 'extension':
+				return $fileEntity->getExtension();
+			case 'shareUrl':
+				return $fileEntity->getShareUrl();
+			case 'accessUrl':
+				return  $fileEntity->getAccessUrl();
+			case 'downloadUrl':
+			default:
+				return $fileEntity->getDownloadUrl();
+		}
 	}
 
     /**
