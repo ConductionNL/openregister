@@ -169,16 +169,16 @@ class FileMapper extends QBMapper
 	}
 
 	/**
-	 * Gets the total count of all call logs.
+	 * Gets the total count of files.
 	 *
-	 * @return int The total number of call logs in the database.
+	 * @return int The total number of files in the database.
 	 * @throws Exception If a database error occurs.
 	 */
-	public function getTotalCallCount(): int
+	public function countAll(): int
 	{
 		$qb = $this->db->getQueryBuilder();
 
-        // Select count of all logs
+        // Select count of all files
         $qb->select($qb->createFunction('COUNT(*) as count'))
            ->from('openregister_files');
 

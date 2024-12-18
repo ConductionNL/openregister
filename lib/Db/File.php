@@ -11,9 +11,9 @@ use OCP\IURLGenerator;
 class File extends Entity implements JsonSerializable
 {
 	/**
-	 * @var string The unique identifier for the file.
+	 * @var string|null The unique identifier for the file.
 	 */
-	protected string $uuid;
+	protected ?string $uuid;
 
 	/**
 	 * @var string The name of the file.
@@ -46,9 +46,9 @@ class File extends Entity implements JsonSerializable
 	protected string $checksum;
 
 	/**
-	 * @var string The source of the file.
+	 * @var int|null The source of the file.
 	 */
-	protected string $source;
+	protected ?int $source;
 
 	/**
 	 * @var string The ID of the user associated with the file.
@@ -56,16 +56,24 @@ class File extends Entity implements JsonSerializable
 	protected string $userId;
 
 	/**
-	 * @var DateTime The date and time when the file was created.
+	 * @var string|null The base64 string for this file.
 	 */
-	protected DateTime $created;
+	protected ?string $base64 = null;
 
 	/**
-	 * @var DateTime The date and time when the file was last updated.
+	 * @var string|null The path to this file.
 	 */
-	protected DateTime $updated;
-	protected ?string $base64 = null;
 	protected ?string $filePath = null;
+
+	/**
+	 * @var DateTime|null The date and time when the file was created.
+	 */
+	protected ?DateTime $created = null;
+
+	/**
+	 * @var DateTime|null The date and time when the file was last updated.
+	 */
+	protected ?DateTime $updated = null;
 
 	/**
 	 * Constructor for the File entity.
@@ -80,6 +88,8 @@ class File extends Entity implements JsonSerializable
 		$this->addType('checksum', 'string');
 		$this->addType('source', 'int');
 		$this->addType('userId', 'string');
+		$this->addType('base64', 'string');
+		$this->addType('filePath', 'string');
 		$this->addType('created', 'datetime');
 		$this->addType('updated', 'datetime');
 	}
@@ -144,6 +154,8 @@ class File extends Entity implements JsonSerializable
 			'checksum' => $this->checksum,
 			'source' => $this->source,
 			'userId' => $this->userId,
+			'base64' => $this->base64,
+			'filePath' => $this->filePath,
 			'created' => isset($this->created) === true ? $this->created->format('c') : null,
 			'updated' => isset($this->updated) === true ? $this->updated->format('c') : null,
 		];

@@ -77,11 +77,10 @@ class ObjectService
 		private readonly IURLGenerator      $urlGenerator,
 		private readonly FileService        $fileService,
 		private readonly IAppManager        $appManager,
-		private readonly IAppConfig         $config
+		private readonly IAppConfig         $config,
+		private readonly FileMapper 	    $fileMapper,
 	) {
 	}
-
-		private readonly FileMapper $fileMapper,
 	/**
 	 * Retrieves the OpenConnector service from the container.
 	 *
@@ -875,7 +874,7 @@ class ObjectService
 		int $schema
 	): ObjectEntity
 	{
-        // @todo: Multidimensional suport should be added
+        // @todo: Multidimensional support should be added
 		foreach ($properties as $propertyName => $property) {
 			// Skip if property not in object
 			if (isset($object[$propertyName]) === false) {
@@ -898,89 +897,19 @@ class ObjectService
 	}
 
 	/**
-	 * Processes file properties within an object, storing and resolving file content to sharable URLs.
+	 * @todo
 	 *
-	 * Handles both base64-encoded and URL-based file sources, storing the resolved content and
-	 * updating the object data with the resulting file references.
+	 * @param string $fileContent
+	 * @param string $propertyName
+	 * @param ObjectEntity $objectEntity
+	 * @param File $file
 	 *
-	 * @param ObjectEntity $objectEntity The object entity containing the file property.
-	 * @param array $object The parent object data containing the file reference.
-	 * @param string $propertyName The name of the file property.
-	 *
-	 * @return array The updated object with resolved file references.
-	 * @throws Exception|GuzzleException When file processing or storage fails.
+	 * @return File
+	 * @throws Exception
 	 */
-	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName): array
+	private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
 	{
 		$fileName = $file->getFilename();
-
-		// Handle base64 encoded file
-		if (is_string($objectDot->get($propertyName)) === true
-			&& preg_match('/^data:([^;]*);base64,(.*)/', $objectDot->get($propertyName), $matches)
-		) {
-			$fileContent = base64_decode($matches[2], true);
-			if ($fileContent === false) {
-				throw new Exception('Invalid base64 encoded file');
-			}
-		}
-		// Handle URL file
-		else {
-			// Encode special characters in the URL
-			$encodedUrl = rawurlencode($objectDot->get("$propertyName.accessUrl")); //@todo hardcoded .downloadUrl
-
-			// Decode valid path separators and reserved characters
-			$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
-
-			if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
-				try {
-					// @todo hacky tacky
-					// Regular expression to get the filename and extension from url //@todo hardcoded .downloadUrl
-					if (preg_match("/\/([^\/]+)'\)\/\\\$value$/", $objectDot->get("$propertyName.downloadUrl"), $matches)) {
-						// @todo hardcoded way of getting the filename and extension from the url
-						$fileNameFromUrl = $matches[1];
-						// @todo use only the extension from the url ?
-						// $fileName = $fileNameFromUrl;
-						$extension = substr(strrchr($fileNameFromUrl, '.'), 1);
-						$fileName = "$fileName.$extension";
-					}
-
-					if ($objectDot->has("$propertyName.source") === true) {
-						$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
-						$source = $sourceMapper->find($objectDot->get("$propertyName.source"));
-
-						$callService = $this->getOpenConnector(filePath: '\Service\CallService');
-						if ($callService === null) {
-							throw new Exception("OpenConnector service not available");
-						}
-						$endpoint = str_replace($source->getLocation(), "", $encodedUrl);
-
-
-						$endpoint = urldecode($endpoint);
-
-						$response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
-
-						$fileContent = $response['body'];
-
-						if(
-							$response['encoding'] === 'base64'
-						) {
-							$fileContent = base64_decode(string: $fileContent);
-						}
-
-					} else {
-						$client = new \GuzzleHttp\Client();
-						$response = $client->get($encodedUrl);
-						$fileContent = $response->getBody()->getContents();
-					}
-				} catch (Exception|NotFoundExceptionInterface $e) {
-					throw new Exception('Failed to download file from URL: ' . $e->getMessage());
-				}
-			} else if (str_contains($objectDot->get($propertyName), $this->urlGenerator->getBaseUrl()) === true) {
-				return $object;
-			} else {
-				throw new Exception('Invalid file format - must be base64 encoded or valid URL');
-			}
-		}
 
 		try {
 			$schema = $this->schemaMapper->find($objectEntity->getSchema());
@@ -993,16 +922,16 @@ class ObjectService
 
 			$filePath = $file->getFilePath();
 
-			if($filePath === null) {
+			if ($filePath === null) {
 				$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
 			}
-
 
 			$succes = $this->fileService->updateFile(
 				content: $fileContent,
 				filePath: $filePath,
 				createNew: true
 			);
+
 			if ($succes === false) {
 				throw new Exception('Failed to upload this file: $filePath to NextCloud');
 			}
@@ -1032,6 +961,13 @@ class ObjectService
 		return $file;
 	}
 
+	/**
+	 * @todo
+	 *
+	 * @param File $file
+	 *
+	 * @return File
+	 */
 	private function setExtension(File $file): File
 	{
 		// Regular expression to get the filename and extension from url
@@ -1042,6 +978,18 @@ class ObjectService
 
 		return $file;
 	}
+
+	/**
+	 * @todo
+	 *
+	 * @param File $file
+	 * @param string $propertyName
+	 * @param ObjectEntity $objectEntity
+	 *
+	 * @return File
+	 * @throws ContainerExceptionInterface
+	 * @throws GuzzleException
+	 */
 	private function fetchFile(File $file, string $propertyName, ObjectEntity $objectEntity): File
 	{
 		$fileContent = null;
@@ -1049,14 +997,12 @@ class ObjectService
 		// Encode special characters in the URL
 		$encodedUrl = rawurlencode($file->getAccessUrl());
 
-
 		// Decode valid path separators and reserved characters
 		$encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
 
 		if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
 			$this->setExtension($file);
 			try {
-
 				if ($file->getSource() !== null) {
 					$sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
 					$source = $sourceMapper->find($file->getSource());
@@ -1071,9 +1017,7 @@ class ObjectService
 
 					$fileContent = $response['body'];
 
-					if(
-						$response['encoding'] === 'base64'
-					) {
+					if ($response['encoding'] === 'base64') {
 						$fileContent = base64_decode(string: $fileContent);
 					}
 
@@ -1087,21 +1031,26 @@ class ObjectService
 			}
 		}
 
-
 		$this->writeFile(fileContent: $fileContent, propertyName:  $propertyName, objectEntity:  $objectEntity, file: $file);
 
 		return $file;
 	}
 
 	/**
-	 * Handle file property processing
+	 * Processes file properties within an object, storing and resolving file content to sharable URLs.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity
-	 * @param array $object The object data
-	 * @param string $propertyName The name of the file property
+	 * Handles both base64-encoded and URL-based file sources, storing the resolved content and
+	 * updating the object data with the resulting file references.
 	 *
-	 * @return array Updated object data
-	 * @throws Exception|GuzzleException When file handling fails
+	 * @param ObjectEntity $objectEntity The object entity containing the file property.
+	 * @param array $object The parent object data containing the file reference.
+	 * @param string $propertyName The name of the file property.
+	 * @param string|null $format
+	 *
+	 * @return string The updated object with resolved file references.
+	 * @throws ContainerExceptionInterface
+	 * @throws GuzzleException When file handling fails
+	 * @throws \OCP\DB\Exception
 	 */
 	private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName, ?string $format = null): string
 	{
@@ -1130,7 +1079,7 @@ class ObjectService
 		// Handle URL file
 		else {
 			$fileEntities = $this->fileMapper->findAll(filters: ['accessUrl' => $objectDot->get("$propertyName.accessUrl")]);
-			if(count($fileEntities) > 0) {
+			if (count($fileEntities) > 0) {
 				$fileEntity = $fileEntities[0];
 			}
 
@@ -1138,11 +1087,11 @@ class ObjectService
 				$fileEntity = $this->fileMapper->createFromArray($object[$propertyName]);
 			}
 
-			if($fileEntity->getFilename() === null) {
+			if ($fileEntity->getFilename() === null) {
 				$fileEntity->setFilename($fileName);
 			}
 
-			if($fileEntity->getChecksum() === null || $fileEntity->getUpdated() > new DateTime('-5 minutes')) {
+			if ($fileEntity->getChecksum() === null || $fileEntity->getUpdated() > new DateTime('-5 minutes')) {
 				$fileEntity = $this->fetchFile(file: $fileEntity, propertyName: $propertyName, objectEntity: $objectEntity);
 				$fileEntity->setUpdated(new DateTime());
 			}
@@ -1152,7 +1101,7 @@ class ObjectService
 
 		$this->fileMapper->update($fileEntity);
 
-		switch($format) {
+		switch ($format) {
 			case 'filename':
 				return $fileEntity->getFileName();
 			case 'extension':
@@ -1399,7 +1348,8 @@ class ObjectService
             // Loop through the files array where key is dot notation path and value is file id
             foreach ($entity['files'] as $path => $fileId) {
                 // Replace the value at the dot notation path with the file URL
-                $dotEntity->set($path, $filesById[$fileId]->getUrl());
+				// @todo: does not work
+//                $dotEntity->set($path, $filesById[$fileId]->getUrl());
             }
         }
 
@@ -1412,7 +1362,8 @@ class ObjectService
                     continue;
                 }
                 // Replace the value at the dot notation path with the relation object
-                $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
+				// @todo: does not work
+//                $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
             }
         }
 
