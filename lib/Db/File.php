@@ -78,7 +78,8 @@ class File extends Entity implements JsonSerializable
 	/**
 	 * Constructor for the File entity.
 	 */
-	public function __construct() {
+	public function __construct()
+	{
 		$this->addType('uuid', 'string');
 		$this->addType('filename', 'string');
 		$this->addType('downloadUrl', 'string');
@@ -124,7 +125,7 @@ class File extends Entity implements JsonSerializable
 				$value = [];
 			}
 
-			$method = 'set'.ucfirst($key);
+			$method = 'set' . ucfirst($key);
 
 			try {
 				$this->$method($value);
@@ -168,7 +169,8 @@ class File extends Entity implements JsonSerializable
 	 *
 	 * @return string The JSON schema as a string.
 	 */
-	public static function getSchema(IURLGenerator $IURLGenerator): string {
+	public static function getSchema(IURLGenerator $IURLGenerator): string
+	{
 		return json_encode([
 			'$id'        => $IURLGenerator->getBaseUrl().'/apps/openconnector/api/files/schema',
 			'$schema'    => 'https://json-schema.org/draft/2020-12/schema',
@@ -185,11 +187,11 @@ class File extends Entity implements JsonSerializable
 					'type' => 'string',
 					'format' => 'uri',
 				],
-				'shareUrl'  => [
+				'shareUrl' => [
 					'type' => 'string',
 					'format' => 'uri',
 				],
-				'accessUrl'  => [
+				'accessUrl' => [
 					'type' => 'string',
 					'format' => 'uri',
 				],

@@ -78,9 +78,11 @@ class ObjectService
 		private readonly FileService        $fileService,
 		private readonly IAppManager        $appManager,
 		private readonly IAppConfig         $config,
-		private readonly FileMapper 	    $fileMapper,
-	) {
+		private readonly FileMapper         $fileMapper,
+	)
+	{
 	}
+
 	/**
 	 * Retrieves the OpenConnector service from the container.
 	 *
@@ -254,12 +256,12 @@ class ObjectService
 			$object = $object->jsonSerialize();
 		}
 
-        return $this->deleteObject(
-            register: $this->getRegister(),
-            schema: $this->getSchema(),
-            uuid: $object['id']
-        );
-    }
+		return $this->deleteObject(
+			register: $this->getRegister(),
+			schema: $this->getSchema(),
+			uuid: $object['id']
+		);
+	}
 
 	/**
 	 * Retrieves all objects matching criteria.
@@ -415,69 +417,69 @@ class ObjectService
 	 * @throws ValidationException If the object fails validation.
 	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
 	 */
-    public function saveObject(int $register, int $schema, array $object): ObjectEntity
-    {
-        // Convert register and schema to their respective objects if they are strings // @todo ???
-        if (is_string($register)) {
-            $register = $this->registerMapper->find($register);
-        }
+	public function saveObject(int $register, int $schema, array $object): ObjectEntity
+	{
+		// Convert register and schema to their respective objects if they are strings // @todo ???
+		if (is_string($register)) {
+			$register = $this->registerMapper->find($register);
+		}
 
-        if (is_string($schema)) {
-            $schema = $this->schemaMapper->find($schema);
-        }
+		if (is_string($schema)) {
+			$schema = $this->schemaMapper->find($schema);
+		}
 
-        // Check if object already exists
-        if (isset($object['id']) === true) {
-            $objectEntity = $this->objectEntityMapper->findByUuid(
-                $this->registerMapper->find($register),
-                $this->schemaMapper->find($schema),
-                $object['id']
-            );
-        }
+		// Check if object already exists
+		if (isset($object['id']) === true) {
+			$objectEntity = $this->objectEntityMapper->findByUuid(
+				$this->registerMapper->find($register),
+				$this->schemaMapper->find($schema),
+				$object['id']
+			);
+		}
 
 		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
-        // Create new entity if none exists
-        if (isset($object['id']) === false || $objectEntity === null) {
-            $objectEntity = new ObjectEntity();
-            $objectEntity->setRegister($register);
-            $objectEntity->setSchema($schema);
-        }
+		// Create new entity if none exists
+		if (isset($object['id']) === false || $objectEntity === null) {
+			$objectEntity = new ObjectEntity();
+			$objectEntity->setRegister($register);
+			$objectEntity->setSchema($schema);
+		}
 
-        // Handle UUID assignment
-        if (isset($object['id']) && !empty($object['id'])) {
-            $objectEntity->setUuid($object['id']);
-        } else {
-            $objectEntity->setUuid(Uuid::v4());
-            $object['id'] = $objectEntity->getUuid();
-        }
+		// Handle UUID assignment
+		if (isset($object['id']) && !empty($object['id'])) {
+			$objectEntity->setUuid($object['id']);
+		} else {
+			$objectEntity->setUuid(Uuid::v4());
+			$object['id'] = $objectEntity->getUuid();
+		}
 
-        // Store old version for audit trail
-        $oldObject = clone $objectEntity;
-        $objectEntity->setObject($object);
+		// Store old version for audit trail
+		$oldObject = clone $objectEntity;
+		$objectEntity->setObject($object);
 
-        // Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
-        if (empty($objectEntity->getUuid()) === true) {
-            $objectEntity->setUuid(Uuid::v4());
-        }
+		// Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
+		if (empty($objectEntity->getUuid()) === true) {
+			$objectEntity->setUuid(Uuid::v4());
+		}
 
-        // Let grap any links that we can
-        $objectEntity = $this->handleLinkRelations($objectEntity, $object);
+		// Let grap any links that we can
+		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
 		$schemaObject = $this->schemaMapper->find($schema);
 
-        // Handle object properties that are either nested objects or files
+		// Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
 		}
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
-		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
+		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
-			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
+			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
@@ -485,8 +487,8 @@ class ObjectService
 			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
 		}
 
-        return $objectEntity;
-    }
+		return $objectEntity;
+	}
 
 	/**
 	 * Efficiently processes link relations within an object using JSON path traversal.
@@ -510,7 +512,7 @@ class ObjectService
 		];
 
 		// Function to recursively find links/UUIDs and build dot notation paths
-		$findRelations = function($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
+		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
 			foreach ($data as $key => $value) {
 				$currentPath = $path ? "$path.$key" : $key;
 
@@ -520,7 +522,7 @@ class ObjectService
 				} else if (is_string($value) === true) {
 					// Check for URLs and UUIDs
 					if ((filter_var($value, FILTER_VALIDATE_URL) !== false
-						|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1)
+							|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1)
 						&& in_array($value, $selfIdentifiers, true) === false
 					) {
 						$relations[$currentPath] = $value;
@@ -657,7 +659,7 @@ class ObjectService
 		}
 
 		if (isset($property['items']['oneOf']) === true) {
-			foreach ($items as $index=>$item) {
+			foreach ($items as $index => $item) {
 				$items[$index] = $this->handleOneOfProperty(
 					property: $property['items']['oneOf'],
 					propertyName: $propertyName,
@@ -677,8 +679,7 @@ class ObjectService
 			return $items;
 		}
 
-		if ($property['items']['type'] === 'file')
-		{
+		if ($property['items']['type'] === 'file') {
 			foreach ($items as $index => $item) {
 				$items[$index] = $this->handleFileProperty(
 					objectEntity: $objectEntity,
@@ -689,7 +690,7 @@ class ObjectService
 			return $items;
 		}
 
-		foreach ($items as $index=>$item) {
+		foreach ($items as $index => $item) {
 			$items[$index] = $this->addObject(
 				property: $property['items'],
 				propertyName: $propertyName,
@@ -745,7 +746,7 @@ class ObjectService
 				propertyName: $propertyName
 			);
 		}
-		if (in_array(needle:'file', haystack: array_column(array: $property, column_key: 'type')) === true
+		if (in_array(needle: 'file', haystack: array_column(array: $property, column_key: 'type')) === true
 			&& is_array($item) === true
 			&& $index === null
 		) {
@@ -940,10 +941,10 @@ class ObjectService
 			$share = $this->fileService->findShare(path: $filePath);
 			if ($share !== null) {
 				$shareLink = $this->fileService->getShareLink($share);
-				$downloadLink = $shareLink.'/download';
+				$downloadLink = $shareLink . '/download';
 			} else {
 				$shareLink = $this->fileService->createShareLink(path: $filePath);
-				$downloadLink = $shareLink.'/download';
+				$downloadLink = $shareLink . '/download';
 			}
 
 			$filesDot = new Dot($objectEntity->getFiles() ?? []);
@@ -1031,7 +1032,7 @@ class ObjectService
 			}
 		}
 
-		$this->writeFile(fileContent: $fileContent, propertyName:  $propertyName, objectEntity:  $objectEntity, file: $file);
+		$this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $file);
 
 		return $file;
 	}
@@ -1075,8 +1076,7 @@ class ObjectService
 			}
 
 			$fileEntity = $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $fileEntity);
-		}
-		// Handle URL file
+		} // Handle URL file
 		else {
 			$fileEntities = $this->fileMapper->findAll(filters: ['accessUrl' => $objectDot->get("$propertyName.accessUrl")]);
 			if (count($fileEntities) > 0) {
@@ -1109,7 +1109,7 @@ class ObjectService
 			case 'shareUrl':
 				return $fileEntity->getShareUrl();
 			case 'accessUrl':
-				return  $fileEntity->getAccessUrl();
+				return $fileEntity->getAccessUrl();
 			case 'downloadUrl':
 			default:
 				return $fileEntity->getDownloadUrl();
@@ -1132,123 +1132,123 @@ class ObjectService
 	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
 	{
 
-        // Handle internal source
-        if ($register->getSource() === 'internal' || $register->getSource() === '') {
-            return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
-        }
+		// Handle internal source
+		if ($register->getSource() === 'internal' || $register->getSource() === '') {
+			return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+		}
 
-        //@todo mongodb support
+		//@todo mongodb support
 
-        throw new Exception('Unsupported source type');
-    }
+		throw new Exception('Unsupported source type');
+	}
 
-    /**
-     * Check if a string contains a dot and get the substring before the first dot.
-     *
-     * @param string $input The input string.
-     *
-     * @return string The substring before the first dot, or the original string if no dot is found.
-     */
-    private function getStringBeforeDot(string $input): string
-    {
-        // Find the position of the first dot
-        $dotPosition = strpos($input, '.');
+	/**
+	 * Check if a string contains a dot and get the substring before the first dot.
+	 *
+	 * @param string $input The input string.
+	 *
+	 * @return string The substring before the first dot, or the original string if no dot is found.
+	 */
+	private function getStringBeforeDot(string $input): string
+	{
+		// Find the position of the first dot
+		$dotPosition = strpos($input, '.');
 
-        // Return the substring before the dot, or the original string if no dot is found
-        return $dotPosition !== false ? substr($input, 0, $dotPosition) : $input;
-    }
+		// Return the substring before the dot, or the original string if no dot is found
+		return $dotPosition !== false ? substr($input, 0, $dotPosition) : $input;
+	}
 
-    /**
-     * Get the substring after the last slash in a string.
-     *
-     * @param string $input The input string.
-     *
-     * @return string The substring after the last slash.
-     */
-    function getStringAfterLastSlash(string $input): string
-    {
-        // Find the position of the last slash
-        $lastSlashPos = strrpos($input, '/');
+	/**
+	 * Get the substring after the last slash in a string.
+	 *
+	 * @param string $input The input string.
+	 *
+	 * @return string The substring after the last slash.
+	 */
+	function getStringAfterLastSlash(string $input): string
+	{
+		// Find the position of the last slash
+		$lastSlashPos = strrpos($input, '/');
 
-        // Return the substring after the last slash, or the original string if no slash is found
-        return $lastSlashPos !== false ? substr($input, $lastSlashPos + 1) : $input;
-    }
+		// Return the substring after the last slash, or the original string if no slash is found
+		return $lastSlashPos !== false ? substr($input, $lastSlashPos + 1) : $input;
+	}
 
-    /**
-     * Cascade delete related objects based on schema properties.
-     *
-     * This method identifies properties in the schema marked for cascade deletion and deletes
-     * related objects associated with those properties in the given object.
-     *
-     * @param Register     $register The register containing the objects.
-     * @param Schema       $schema   The schema defining the properties and relationships.
-     * @param ObjectEntity $object   The object entity whose related objects should be deleted.
-     *
-     * @return void
-     *
-     * @throws Exception If any errors occur during the deletion process.
-     */
-    private function cascadeDeleteObjects(Register $register, Schema $schema, ObjectEntity $object, string $originalObjectId): void
-    {
-        $cascadeDeleteProperties = [];
-        foreach ($schema->getProperties() as $propertyName => $property) {
-            if ((isset($property['cascadeDelete']) === true && $property['cascadeDelete'] === true) || (isset($property['items']['cascadeDelete']) === true && $property['items']['cascadeDelete'] === true)) {
-                $cascadeDeleteProperties[] = $propertyName;
-            }
-        }
+	/**
+	 * Cascade delete related objects based on schema properties.
+	 *
+	 * This method identifies properties in the schema marked for cascade deletion and deletes
+	 * related objects associated with those properties in the given object.
+	 *
+	 * @param Register $register The register containing the objects.
+	 * @param Schema $schema The schema defining the properties and relationships.
+	 * @param ObjectEntity $object The object entity whose related objects should be deleted.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If any errors occur during the deletion process.
+	 */
+	private function cascadeDeleteObjects(Register $register, Schema $schema, ObjectEntity $object, string $originalObjectId): void
+	{
+		$cascadeDeleteProperties = [];
+		foreach ($schema->getProperties() as $propertyName => $property) {
+			if ((isset($property['cascadeDelete']) === true && $property['cascadeDelete'] === true) || (isset($property['items']['cascadeDelete']) === true && $property['items']['cascadeDelete'] === true)) {
+				$cascadeDeleteProperties[] = $propertyName;
+			}
+		}
 
-        foreach ($object->getRelations() as $relationName => $relation) {
-            $relationName = $this->getStringBeforeDot(input: $relationName);
-            $relatedObjectId = $this->getStringAfterLastSlash(input: $relation);
-            // Check if this sub object has cacsadeDelete = true and is not the original object that started this delete streakt
-            if (in_array(needle: $relationName, haystack: $cascadeDeleteProperties) === true && $relatedObjectId !== $originalObjectId) {
-                $this->deleteObject(register: $register->getId(), schema: $schema->getId(), uuid: $relatedObjectId, originalObjectId: $originalObjectId);
-            }
-        }
-    }
+		foreach ($object->getRelations() as $relationName => $relation) {
+			$relationName = $this->getStringBeforeDot(input: $relationName);
+			$relatedObjectId = $this->getStringAfterLastSlash(input: $relation);
+			// Check if this sub object has cacsadeDelete = true and is not the original object that started this delete streakt
+			if (in_array(needle: $relationName, haystack: $cascadeDeleteProperties) === true && $relatedObjectId !== $originalObjectId) {
+				$this->deleteObject(register: $register->getId(), schema: $schema->getId(), uuid: $relatedObjectId, originalObjectId: $originalObjectId);
+			}
+		}
+	}
 
-    /**
-     * Delete an object
-     *
-     * @param string|int  $register         The register to delete from
-     * @param string|int  $schema           The schema of the object
-     * @param string      $uuid             The UUID of the object to delete
-     * @param string|null $originalObjectId The UUID of the parent object so we dont delete the object we come from and cause a loop
-     *
-     * @return bool      True if deletion was successful
-     * @throws Exception If source type is unsupported
-     */
-    public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId = null): bool
-    {
-        $register = $this->registerMapper->find($register);
-        $schema = $this->schemaMapper->find($schema);
+	/**
+	 * Delete an object
+	 *
+	 * @param string|int $register The register to delete from
+	 * @param string|int $schema The schema of the object
+	 * @param string $uuid The UUID of the object to delete
+	 * @param string|null $originalObjectId The UUID of the parent object so we dont delete the object we come from and cause a loop
+	 *
+	 * @return bool      True if deletion was successful
+	 * @throws Exception If source type is unsupported
+	 */
+	public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId = null): bool
+	{
+		$register = $this->registerMapper->find($register);
+		$schema = $this->schemaMapper->find($schema);
 
-        // Handle internal source
-        if ($register->getSource() === 'internal' || $register->getSource() === '') {
-            $object = $this->objectEntityMapper->findByUuidOnly(uuid: $uuid);
+		// Handle internal source
+		if ($register->getSource() === 'internal' || $register->getSource() === '') {
+			$object = $this->objectEntityMapper->findByUuidOnly(uuid: $uuid);
 
-            if ($object === null) {
-                return false;
-            }
+			if ($object === null) {
+				return false;
+			}
 
-            // If internal register and schema should be found from the object himself. Makes it possible to delete cascaded objects.
-            $register = $this->registerMapper->find($object->getRegister());
-            $schema = $this->schemaMapper->find($object->getSchema());
+			// If internal register and schema should be found from the object himself. Makes it possible to delete cascaded objects.
+			$register = $this->registerMapper->find($object->getRegister());
+			$schema = $this->schemaMapper->find($object->getSchema());
 
-            if ($originalObjectId === null) {
-                $originalObjectId = $object->getUuid();
-            }
+			if ($originalObjectId === null) {
+				$originalObjectId = $object->getUuid();
+			}
 
-            $this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $originalObjectId);
+			$this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $originalObjectId);
 
-            $this->objectEntityMapper->delete($object);
-            return true;
-        }
+			$this->objectEntityMapper->delete($object);
+			return true;
+		}
 
-        //@todo mongodb support
+		//@todo mongodb support
 
-        throw new Exception('Unsupported source type');
-    }
+		throw new Exception('Unsupported source type');
+	}
 
 	/**
 	 * Retrieves the appropriate mapper for a specific object type.
@@ -1264,25 +1264,25 @@ class ObjectService
 	 */
 	public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null): mixed
 	{
-        // Return self if register and schema provided
-        if ($register !== null && $schema !== null) {
-            $this->setSchema($schema);
-            $this->setRegister($register);
-            return $this;
-        }
+		// Return self if register and schema provided
+		if ($register !== null && $schema !== null) {
+			$this->setSchema($schema);
+			$this->setRegister($register);
+			return $this;
+		}
 
-        // Return appropriate mapper based on object type
-        switch ($objectType) {
-            case 'register':
-                return $this->registerMapper;
-            case 'schema':
-                return $this->schemaMapper;
-            case 'objectEntity':
-                return $this->objectEntityMapper;
-            default:
-                throw new InvalidArgumentException("Unknown object type: $objectType");
-        }
-    }
+		// Return appropriate mapper based on object type
+		switch ($objectType) {
+			case 'register':
+				return $this->registerMapper;
+			case 'schema':
+				return $this->schemaMapper;
+			case 'objectEntity':
+				return $this->objectEntityMapper;
+			default:
+				throw new InvalidArgumentException("Unknown object type: $objectType");
+		}
+	}
 
 	/**
 	 * Retrieves multiple objects of a specified type using their identifiers.
@@ -1297,30 +1297,30 @@ class ObjectService
 	 */
 	public function getMultipleObjects(string $objectType, array $ids): array
 	{
-        // Process the ids to handle different formats
-        $processedIds = array_map(function($id) {
-            if (is_object($id) && method_exists($id, 'getId')) {
-                return $id->getId();
-            } elseif (is_array($id) && isset($id['id'])) {
-                return $id['id'];
-            } else {
-                return $id;
-            }
-        }, $ids);
+		// Process the ids to handle different formats
+		$processedIds = array_map(function ($id) {
+			if (is_object($id) && method_exists($id, 'getId')) {
+				return $id->getId();
+			} elseif (is_array($id) && isset($id['id'])) {
+				return $id['id'];
+			} else {
+				return $id;
+			}
+		}, $ids);
 
-        // Clean up URIs to get just the ID portion
-        $cleanedIds = array_map(function($id) {
-            if (filter_var($id, FILTER_VALIDATE_URL)) {
-                $parts = explode('/', rtrim($id, '/'));
-                return end($parts);
-            }
-            return $id;
-        }, $processedIds);
+		// Clean up URIs to get just the ID portion
+		$cleanedIds = array_map(function ($id) {
+			if (filter_var($id, FILTER_VALIDATE_URL)) {
+				$parts = explode('/', rtrim($id, '/'));
+				return end($parts);
+			}
+			return $id;
+		}, $processedIds);
 
-        // Get mapper and find objects
-        $mapper = $this->getMapper($objectType);
-        return $mapper->findMultiple($cleanedIds);
-    }
+		// Get mapper and find objects
+		$mapper = $this->getMapper($objectType);
+		return $mapper->findMultiple($cleanedIds);
+	}
 
 	/**
 	 * Renders an entity by replacing file and relation IDs with their respective objects.
@@ -1335,43 +1335,43 @@ class ObjectService
 	 */
 	public function renderEntity(array $entity, ?array $extend = []): array
 	{
-        // check if entity has files or relations and if not just return the entity
-        if (array_key_exists(key: 'files', array: $entity) === false && array_key_exists(key: 'relations', array: $entity) === false) {
-            return $entity;
-        }
+		// check if entity has files or relations and if not just return the entity
+		if (array_key_exists(key: 'files', array: $entity) === false && array_key_exists(key: 'relations', array: $entity) === false) {
+			return $entity;
+		}
 
-        // Lets create a dot array of the entity
-        $dotEntity = new Dot($entity);
+		// Lets create a dot array of the entity
+		$dotEntity = new Dot($entity);
 
-        // loop through the files and replace the file ids with the file objects)
-        if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
-            // Loop through the files array where key is dot notation path and value is file id
-            foreach ($entity['files'] as $path => $fileId) {
-                // Replace the value at the dot notation path with the file URL
+		// loop through the files and replace the file ids with the file objects)
+		if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
+			// Loop through the files array where key is dot notation path and value is file id
+			foreach ($entity['files'] as $path => $fileId) {
+				// Replace the value at the dot notation path with the file URL
 				// @todo: does not work
 //                $dotEntity->set($path, $filesById[$fileId]->getUrl());
-            }
-        }
+			}
+		}
 
-        // Loop through the relations and replace the relation ids with the relation objects if extended
-        if (array_key_exists(key: 'relations', array: $entity) === true && empty($entity['relations']) === false) {
-            // loop through the relations and replace the relation ids with the relation objects
-            foreach ($entity['relations'] as $path => $relationId) {
-                // if the relation is not in the extend array, skip it
-                if (in_array(needle: $path, haystack: $extend) === false) {
-                    continue;
-                }
-                // Replace the value at the dot notation path with the relation object
+		// Loop through the relations and replace the relation ids with the relation objects if extended
+		if (array_key_exists(key: 'relations', array: $entity) === true && empty($entity['relations']) === false) {
+			// loop through the relations and replace the relation ids with the relation objects
+			foreach ($entity['relations'] as $path => $relationId) {
+				// if the relation is not in the extend array, skip it
+				if (in_array(needle: $path, haystack: $extend) === false) {
+					continue;
+				}
+				// Replace the value at the dot notation path with the relation object
 				// @todo: does not work
 //                $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
-            }
-        }
+			}
+		}
 
-        // Update the entity with modified values
-        $entity = $dotEntity->all();
+		// Update the entity with modified values
+		$entity = $dotEntity->all();
 
-        return $this->extendEntity(entity: $entity, extend: $extend);
-    }
+		return $this->extendEntity(entity: $entity, extend: $extend);
+	}
 
 	/**
 	 * Extends an entity with related objects based on the provided properties.
@@ -1386,54 +1386,54 @@ class ObjectService
 	 */
 	public function extendEntity(array $entity, array $extend): array
 	{
-        // Convert entity to array if needed
-        if (is_array($entity)) {
-            $result = $entity;
-        } else {
-            $result = $entity->jsonSerialize();
-        }
+		// Convert entity to array if needed
+		if (is_array($entity)) {
+			$result = $entity;
+		} else {
+			$result = $entity->jsonSerialize();
+		}
 
-        // Process each property to extend
-        foreach ($extend as $property) {
-            $singularProperty = rtrim($property, 's');
+		// Process each property to extend
+		foreach ($extend as $property) {
+			$singularProperty = rtrim($property, 's');
 
-            // Check if property exists
-            if (array_key_exists(key: $property, array: $result) === true) {
-                $value = $result[$property];
-                if (empty($value)) {
-                    continue;
-                }
-            } elseif (array_key_exists(key: $singularProperty, array: $result)) {
-                $value = $result[$singularProperty];
-            } else {
-                throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
-            }
+			// Check if property exists
+			if (array_key_exists(key: $property, array: $result) === true) {
+				$value = $result[$property];
+				if (empty($value)) {
+					continue;
+				}
+			} elseif (array_key_exists(key: $singularProperty, array: $result)) {
+				$value = $result[$singularProperty];
+			} else {
+				throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
+			}
 
-            // Try to get mapper for property
-            $propertyObject = $property;
-            try {
-                $mapper = $this->getMapper(objectType: $property);
-                $propertyObject = $singularProperty;
-            } catch (Exception $e) {
-                try {
-                    $mapper = $this->getMapper(objectType: $singularProperty);
-                    $propertyObject = $singularProperty;
-                } catch (Exception $e) {
-                    throw new Exception("No mapper available for property '$property'.");
-                }
-            }
+			// Try to get mapper for property
+			$propertyObject = $property;
+			try {
+				$mapper = $this->getMapper(objectType: $property);
+				$propertyObject = $singularProperty;
+			} catch (Exception $e) {
+				try {
+					$mapper = $this->getMapper(objectType: $singularProperty);
+					$propertyObject = $singularProperty;
+				} catch (Exception $e) {
+					throw new Exception("No mapper available for property '$property'.");
+				}
+			}
 
-            // Extend with related objects
-            if (is_array($value) === true) {
-                $result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
-            } else {
-                $objectId = is_object(value: $value) ? $value->getId() : $value;
-                $result[$property] = $mapper->find($objectId);
-            }
-        }
+			// Extend with related objects
+			if (is_array($value) === true) {
+				$result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
+			} else {
+				$objectId = is_object(value: $value) ? $value->getId() : $value;
+				$result[$property] = $mapper->find($objectId);
+			}
+		}
 
-        return $result;
-    }
+		return $result;
+	}
 
 	/**
 	 * Retrieves all registers with their associated schema data.
@@ -1445,24 +1445,24 @@ class ObjectService
 	 */
 	public function getRegisters(): array
 	{
-        // Get all registers
-        $registers = $this->registerMapper->findAll();
+		// Get all registers
+		$registers = $this->registerMapper->findAll();
 
-        // Convert to arrays
-        $registers = array_map(function($object) {
-            return $object->jsonSerialize();
-        }, $registers);
+		// Convert to arrays
+		$registers = array_map(function ($object) {
+			return $object->jsonSerialize();
+		}, $registers);
 
-        // Extend with schemas
-        $extend = ['schemas'];
-        if (empty($extend) === false) {
-            $registers = array_map(function($object) use ($extend) {
-                return $this->extendEntity(entity: $object, extend: $extend);
-            }, $registers);
-        }
+		// Extend with schemas
+		$extend = ['schemas'];
+		if (empty($extend) === false) {
+			$registers = array_map(function ($object) use ($extend) {
+				return $this->extendEntity(entity: $object, extend: $extend);
+			}, $registers);
+		}
 
-        return $registers;
-    }
+		return $registers;
+	}
 
 	/**
 	 * Retrieves the current register ID.
@@ -1471,8 +1471,8 @@ class ObjectService
 	 */
 	public function getRegister(): int
 	{
-        return $this->register;
-    }
+		return $this->register;
+	}
 
 	/**
 	 * Sets the current register ID.
@@ -1481,8 +1481,8 @@ class ObjectService
 	 */
 	public function setRegister(int $register): void
 	{
-        $this->register = $register;
-    }
+		$this->register = $register;
+	}
 
 	/**
 	 * Retrieves the current schema ID.
@@ -1491,8 +1491,8 @@ class ObjectService
 	 */
 	public function getSchema(): int
 	{
-        return $this->schema;
-    }
+		return $this->schema;
+	}
 
 	/**
 	 * Sets the current schema ID.
@@ -1501,8 +1501,8 @@ class ObjectService
 	 */
 	public function setSchema(int $schema): void
 	{
-        $this->schema = $schema;
-    }
+		$this->schema = $schema;
+	}
 
 	/**
 	 * Retrieves the audit trail for a specific object by its identifier.
@@ -1514,10 +1514,10 @@ class ObjectService
 	 */
 	public function getAuditTrail(string $id): array
 	{
-        $filters = [
-            'object' => $id
-        ];
+		$filters = [
+			'object' => $id
+		];
 
-        return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
-    }
+		return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
+	}
 }

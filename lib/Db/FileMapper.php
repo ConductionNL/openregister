@@ -69,7 +69,7 @@ class FileMapper extends QBMapper
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-        foreach ($filters as $filter => $value) {
+		foreach ($filters as $filter => $value) {
 			$filter = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $filter));
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
@@ -103,7 +103,7 @@ class FileMapper extends QBMapper
 		$entity->setCreated(new DateTime());
 		$entity->setUpdated(new DateTime());
 
-		if($entity->getUuid() === null) {
+		if ($entity->getUuid() === null) {
 			$entity->setUuid(Uuid::v4());
 		}
 
@@ -162,7 +162,7 @@ class FileMapper extends QBMapper
 
 		// Set or update the version
 		$version = explode('.', $obj->getVersion());
-		$version[2] = (int) $version[2] + 1;
+		$version[2] = (int)$version[2] + 1;
 		$obj->setVersion(implode('.', $version));
 
 		return $this->update($obj);
@@ -178,14 +178,14 @@ class FileMapper extends QBMapper
 	{
 		$qb = $this->db->getQueryBuilder();
 
-        // Select count of all files
-        $qb->select($qb->createFunction('COUNT(*) as count'))
-           ->from('openregister_files');
+		// Select count of all files
+		$qb->select($qb->createFunction('COUNT(*) as count'))
+			->from('openregister_files');
 
 		$result = $qb->execute();
 		$row = $result->fetch();
 
 		// Return the total count
-		return (int) $row['count'];
+		return (int)$row['count'];
 	}
 }
