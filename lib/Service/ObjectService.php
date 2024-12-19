@@ -288,7 +288,7 @@ class ObjectService
 		$schemaObject = $this->schemaMapper->find($this->schema);
 		$property = $schemaObject->getProperties()[$property];
 
-		if (isset($property['items'])) {
+		if (isset($property['items']) === true) {
 			$ref = explode('/', $property['items']['$ref']);
 		} else {
 			$subSchema = explode('/', $property['$ref']);
@@ -360,10 +360,10 @@ class ObjectService
 		}
 
 		// Ensure order and extend are arrays
-		if (is_string($order)) {
+		if (is_string($order) === true) {
 			$order = array_map('trim', explode(',', $order));
 		}
-		if (is_string($extend)) {
+		if (is_string($extend) === true) {
 			$extend = array_map('trim', explode(',', $extend));
 		}
 
