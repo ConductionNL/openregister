@@ -275,6 +275,14 @@ class ObjectService
         return $result;
     }
 
+	/**
+	 * Find subobjects for a certain property with given ids
+	 *
+	 * @param array $ids The IDs to fetch the subobjects for
+	 * @param string $property The property in which the objects reside.
+	 *
+	 * @return array The resulting subobjects.
+	 */
 	public function findSubObjects(array $ids, string $property): array
 	{
 		$schemaObject = $this->schemaMapper->find($this->schema);
@@ -329,6 +337,13 @@ class ObjectService
         return $object->getObject();
     }
 
+	/**
+	 * Find all objects conforming to the request parameters, surrounded with pagination data.
+	 *
+	 * @param array $requestParams The request parameters to search with.
+	 *
+	 * @return array The result including pagination data.
+	 */
 	public function findAllPaginated(array $requestParams): array
 	{
 		// Extract specific parameters
