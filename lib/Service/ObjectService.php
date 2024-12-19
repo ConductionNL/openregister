@@ -275,6 +275,31 @@ class ObjectService
         return $result;
     }
 
+	/**
+	 * Find subobjects for a certain property with given ids
+	 *
+	 * @param array $ids The IDs to fetch the subobjects for
+	 * @param string $property The property in which the objects reside.
+	 *
+	 * @return array The resulting subobjects.
+	 */
+	public function findSubObjects(array $ids, string $property): array
+	{
+		$schemaObject = $this->schemaMapper->find($this->schema);
+		$property = $schemaObject->getProperties()[$property];
+
+		if (isset($property['items'])) {
+			$ref = explode('/', $property['items']['$ref']);
+		} else {
+			$subSchema = explode('/', $property['$ref']);
+		}
+		$subSchema = end($ref);
+
+		$subSchemaMapper = $this->getMapper(register: $this->getRegister(), schema: $subSchema);
+
+		return $subSchemaMapper->findMultiple($ids);
+	}
+
     /**
      * Get aggregations for objects matching filters
      *
@@ -311,6 +336,60 @@ class ObjectService
 	{
         return $object->getObject();
     }
+
+	/**
+	 * Find all objects conforming to the request parameters, surrounded with pagination data.
+	 *
+	 * @param array $requestParams The request parameters to search with.
+	 *
+	 * @return array The result including pagination data.
+	 */
+	public function findAllPaginated(array $requestParams): array
+	{
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order)) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend)) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
+		$total   = $this->count($filters);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		$facets  = $this->getAggregations(
+			filters: $filters,
+			search: $search
+		);
+
+		return [
+			'results' => $objects,
+			'facets' => $facets,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
+	}
 
 	/**
 	 * Gets all objects of a specific type.
