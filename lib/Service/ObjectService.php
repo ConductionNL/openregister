@@ -487,7 +487,6 @@ class ObjectService
         // Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
-			// $objectEntity->setObject($object);
 		}
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
