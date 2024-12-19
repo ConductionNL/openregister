@@ -288,7 +288,7 @@ class ObjectService
 		$schemaObject = $this->schemaMapper->find($this->schema);
 		$property = $schemaObject->getProperties()[$property];
 
-		if(isset($property['items'])) {
+		if (isset($property['items'])) {
 			$ref = explode('/', $property['items']['$ref']);
 		} else {
 			$subSchema = explode('/', $property['$ref']);
@@ -358,7 +358,6 @@ class ObjectService
 			$page = (int) $page;
 			$offset = $limit * ($page - 1);
 		}
-
 
 		// Ensure order and extend are arrays
 		if (is_string($order)) {
