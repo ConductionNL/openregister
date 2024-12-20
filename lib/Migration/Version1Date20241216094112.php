@@ -52,7 +52,7 @@ class Version1Date20241216094112 extends SimpleMigrationStep {
 			$table->addColumn(name: 'user_id', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
 			$table->addColumn(name: 'created', typeName: Types::DATETIME_IMMUTABLE, options: ['notnull' => true, 'length' => 255]);
 			$table->addColumn(name: 'updated', typeName: Types::DATETIME_MUTABLE, options: ['notnull' => true, 'length' => 255]);
-			$table->addColumn(name: 'file_path', typeName: Types::STRING);
+			$table->addColumn(name: 'file_path', typeName: Types::STRING)->setNotnull(false)->setDefault(null);
 
 			$table->setPrimaryKey(['id']);
 		}

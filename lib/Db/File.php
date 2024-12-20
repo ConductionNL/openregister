@@ -13,47 +13,47 @@ class File extends Entity implements JsonSerializable
 	/**
 	 * @var string|null The unique identifier for the file.
 	 */
-	protected ?string $uuid;
+	protected ?string $uuid = null;
 
 	/**
 	 * @var string The name of the file.
 	 */
-	protected string $filename;
+	protected ?string $filename = null;
 
 	/**
 	 * @var string The URL to download the file.
 	 */
-	protected string $downloadUrl;
+	protected ?string $downloadUrl = null;
 
 	/**
 	 * @var string The URL to share the file.
 	 */
-	protected string $shareUrl;
+	protected ?string $shareUrl = null;
 
 	/**
 	 * @var string The URL to access the file.
 	 */
-	protected string $accessUrl;
+	protected ?string $accessUrl = null;
 
 	/**
 	 * @var string The file extension (e.g., .txt, .jpg).
 	 */
-	protected string $extension;
+	protected ?string $extension = null;
 
 	/**
 	 * @var string The checksum of the file for integrity verification.
 	 */
-	protected string $checksum;
+	protected ?string $checksum = null;
 
 	/**
 	 * @var int|null The source of the file.
 	 */
-	protected ?int $source;
+	protected ?int $source = null;
 
 	/**
 	 * @var string The ID of the user associated with the file.
 	 */
-	protected string $userId;
+	protected ?string $userId = null;
 
 	/**
 	 * @var string|null The base64 string for this file.
