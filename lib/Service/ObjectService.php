@@ -766,7 +766,8 @@ class ObjectService
 				$items[$index] = $this->handleFileProperty(
 					objectEntity: $objectEntity,
 					object: [$propertyName => [$index => $item]],
-					propertyName: $propertyName . '.' . $index
+					propertyName: $propertyName . '.' . $index,
+                    format: $item['format'] ?? null
 				)[$propertyName];
 			}
 			return $items;
@@ -825,7 +826,8 @@ class ObjectService
 			return $this->handleFileProperty(
 				objectEntity: $objectEntity,
 				object: [$propertyName => [$index => $item]],
-				propertyName: $propertyName
+				propertyName: $propertyName,
+                format: $property['format'] ?? null
 			);
 		}
 		if (in_array(needle: 'file', haystack: array_column(array: $property, column_key: 'type')) === true
@@ -835,7 +837,8 @@ class ObjectService
 			return $this->handleFileProperty(
 				objectEntity: $objectEntity,
 				object: [$propertyName => $item],
-				propertyName: $propertyName
+				propertyName: $propertyName,
+                format: $property['format'] ?? null
 			);
 		}
 
@@ -924,7 +927,8 @@ class ObjectService
 				$object[$propertyName] = $this->handleFileProperty(
 					objectEntity: $objectEntity,
 					object: $object,
-					propertyName: $propertyName
+					propertyName: $propertyName,
+                    format: $property['format'] ?? null
 				);
 			default:
 				break;
