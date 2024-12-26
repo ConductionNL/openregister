@@ -58,7 +58,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</BTab>
 						<BTab title="Uses">
 							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0">
-								<NcListItem v-for="(relation, key) in objectStore.objectItem.relations" 
+								<NcListItem v-for="(relation, key) in objectStore.objectItem.relations"
 									:key="key"
 									:name="key"
 									:bold="false"
@@ -158,7 +158,6 @@ import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionO
 import Eye from 'vue-material-design-icons/Eye.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 
-
 export default {
 	name: 'ObjectDetails',
 	components: {
@@ -172,7 +171,7 @@ export default {
 		TrashCanOutline,
 		TimelineQuestionOutline,
 		CubeOutline,
-		Eye
+		Eye,
 	},
 	data() {
 		return {

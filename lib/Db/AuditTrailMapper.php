@@ -12,7 +12,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
  * The AuditTrailMapper class
- * 
+ *
  * @package OCA\OpenRegister\Db
  */
 class AuditTrailMapper extends QBMapper
@@ -125,7 +125,7 @@ class AuditTrailMapper extends QBMapper
 
 		return $this->insert(entity: $log);
 	}
-	
+
     /**
      * Creates an audit trail for object changes
      *
@@ -152,7 +152,7 @@ class AuditTrailMapper extends QBMapper
         if ($action !== 'delete') {
             $oldArray = $old ? $old->jsonSerialize() : [];
             $newArray = $new->jsonSerialize();
-            
+
             // Compare old and new values to detect changes
             foreach ($newArray as $key => $value) {
                 if (!isset($oldArray[$key]) || $oldArray[$key] !== $value) {
@@ -162,7 +162,7 @@ class AuditTrailMapper extends QBMapper
                     ];
                 }
             }
-            
+
             // For updates, check for removed fields
             if ($action === 'update') {
                 foreach ($oldArray as $key => $value) {
@@ -185,8 +185,8 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setObject($objectEntity->getId());
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);
-        $auditTrail->setUser($user->getUID());
-        $auditTrail->setUserName($user->getDisplayName());
+        $auditTrail->setUser(($user !== null) ? $user->getUID() : 'System');
+        $auditTrail->setUserName(($user !== null) ? $user->getDisplayName() : 'System');
         $auditTrail->setSession(session_id());
         $auditTrail->setRequest(\OC::$server->getRequest()->getId());
         $auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());

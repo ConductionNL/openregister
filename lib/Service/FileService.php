@@ -23,7 +23,11 @@ use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service class for handling file operations in OpenCatalogi
+ * Service for handling file operations in OpenRegister.
+ *
+ * This service provides functionalities for managing files and folders within the NextCloud environment,
+ * including creation, deletion, sharing, and file updates. It integrates with NextCloud's file and
+ * sharing APIs to provide seamless file management for the application.
  */
 class FileService
 {
