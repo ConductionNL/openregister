@@ -897,7 +897,7 @@ class ObjectService
      * @param mixed $entity The entity to extend
      * @param array $extend Properties to extend with related data
      * @return array The extended entity as an array
-     * @throws Exception If property not found or no mapper available
+     * @throws Exception If property not found
      */
     public function extendEntity(array $entity, array $extend): array
     {
@@ -925,25 +925,47 @@ class ObjectService
             }
 
             // Try to get mapper for property
-            $propertyObject = $property;
             try {
                 $mapper = $this->getMapper(objectType: $property);
                 $propertyObject = $singularProperty;
-            } catch (Exception $e) {
-                try {
-                    $mapper = $this->getMapper(objectType: $singularProperty);
-                    $propertyObject = $singularProperty;
-                } catch (Exception $e) {
-                    throw new Exception("No mapper available for property '$property'.");
+                
+                // Extend with related objects using specific mapper
+                if (is_array($value) === true) {
+                    $result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
+                } else {
+                    $objectId = is_object(value: $value) ? $value->getId() : $value;
+                    $result[$property] = $mapper->find($objectId);
                 }
-            }
-
-            // Extend with related objects
-            if (is_array($value) === true) {
-                $result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
-            } else {
-                $objectId = is_object(value: $value) ? $value->getId() : $value;
-                $result[$property] = $mapper->find($objectId);
+            } catch (Exception $e) {
+                // If no specific mapper found, try to look up values in default database
+                try {
+                    if (is_array($value)) {
+                        // Handle array of values
+                        $extendedValues = [];
+                        foreach ($value as $val) {
+                            try {
+                                $found = $this->objectEntityMapper->find($val);
+                                if ($found) {
+                                    $extendedValues[] = $found;
+                                }
+                            } catch (Exception $e) {
+                                continue;
+                            }
+                        }
+                        if (!empty($extendedValues)) {
+                            $result[$property] = $extendedValues;
+                        }
+                    } else {
+                        // Handle single value
+                        $found = $this->objectEntityMapper->find($value);
+                        if ($found) {
+                            $result[$property] = $found;
+                        }
+                    }
+                } catch (Exception $e2) {
+                    // If lookup fails, keep original value
+                    continue;
+                }
             }
         }
 
