@@ -223,7 +223,13 @@ class ObjectService
 	 *
 	 * @return array List of matching objects
 	 */
-    public function findAll(?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
+    public function findAll(
+        ?int $limit = null, 
+        ?int $offset = null, 
+        array $filters = [], 
+        array $sort = [], ?
+        string $search = null, 
+        ?array $extend = []): array
     {
         $objects = $this->getObjects(
             register: $this->getRegister(),
@@ -232,7 +238,8 @@ class ObjectService
             offset: $offset,
             filters: $filters,
             sort: $sort,
-            search: $search
+            search: $search,
+            extend: $extend
         );
 
         return $objects;
@@ -406,7 +413,16 @@ class ObjectService
 	 *
 	 * @return array The retrieved objects.
 	 */
-    public function getObjects(?string $objectType = null, ?int $register = null, ?int $schema = null, ?int $limit = null, ?int $offset = null, array $filters = [], array $sort = [], ?string $search = null, ?array $extend = []): array
+    public function getObjects(
+        ?string $objectType = null, 
+        ?int $register = null, 
+        ?int $schema = null, 
+        ?int $limit = null, 
+        ?int $offset = null, 
+        array $filters = [], 
+        array $sort = [], 
+        ?string $search = null, 
+        ?array $extend = []): array
     {
         // Set object type and filters if register and schema are provided
         if ($objectType === null && $register !== null && $schema !== null) {
@@ -419,7 +435,13 @@ class ObjectService
         $mapper = $this->getMapper($objectType);
 
         // Use the mapper to find and return all objects of the specified type
-        return $mapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $sort, search: $search);
+        return $mapper->findAll(
+            limit: $limit, 
+            offset: $offset, 
+            filters: $filters, 
+            sort: $sort, 
+            search: $search
+        );
     }
 
   	/**
