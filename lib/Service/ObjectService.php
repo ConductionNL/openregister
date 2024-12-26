@@ -356,6 +356,11 @@ class ObjectService
 	 */
     public function saveObject(int $register, int $schema, array $object): ObjectEntity
     {
+        // Remove system properties (starting with _)
+        $object = array_filter($object, function($key) {
+            return !str_starts_with($key, '_');
+        }, ARRAY_FILTER_USE_KEY);
+
         // Convert register and schema to their respective objects if they are strings // @todo ???
         if (is_string($register)) {
             $register = $this->registerMapper->find($register);
@@ -373,8 +378,6 @@ class ObjectService
                 $object['id']
             );
         }
-
-//		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
 
         // Create new entity if none exists
         if (isset($object['id']) === false || $objectEntity === null) {
@@ -395,7 +398,7 @@ class ObjectService
         $oldObject = clone $objectEntity;
         $objectEntity->setObject($object);
 
-        // Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
+        // Ensure UUID exists
         if (empty($objectEntity->getUuid())) {
             $objectEntity->setUuid(Uuid::v4());
         }
@@ -403,27 +406,23 @@ class ObjectService
         // Let grap any links that we can
         $objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
-		$schemaObject = $this->schemaMapper->find($schema);
+        $schemaObject = $this->schemaMapper->find($schema);
 
         // Handle object properties that are either nested objects or files
-		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
-			$objectEntity->setObject($object);
-		}			
+        if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties())) {
+            $objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
+            $objectEntity->setObject($object);
+        }           
 
-		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
+        $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
-		if ($objectEntity->getId()) {// && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)){
-			$objectEntity = $this->objectEntityMapper->update($objectEntity);
-			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		} else {//if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
-			$objectEntity =  $this->objectEntityMapper->insert($objectEntity);
-			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
-		}
-
-//		if ($validationResult->isValid() === false) {
-//			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
-//		}
+        if ($objectEntity->getId()) {
+            $objectEntity = $this->objectEntityMapper->update($objectEntity);
+            $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
+        } else {
+            $objectEntity =  $this->objectEntityMapper->insert($objectEntity);
+            $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+        }
 
         return $objectEntity;
     }
@@ -1021,19 +1020,83 @@ class ObjectService
     /**
      * Get the audit trail for a specific object
      *
-     * @todo: register and schema parameters are not needed anymore
-     *
-     * @param int $register The register ID
-     * @param int $schema The schema ID
      * @param string $id The object ID
+     * @param int|null $register Optional register ID to override current register
+     * @param int|null $schema Optional schema ID to override current schema
      * @return array The audit trail entries
      */
-    public function getAuditTrail(int $register, int $schema, string $id): array
+    public function getAuditTrail(string $id, ?int $register = null, ?int $schema = null): array
     {
+        $register = $register ?? $this->getRegister();
+        $schema = $schema ?? $this->getSchema();
+
         $filters = [
-            'object' => $id
+            'object' => $id,
+            'register' => $register,
+            'schema' => $schema
         ];
 
         return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
+    }
+
+    /**
+     * Get all relations for a specific object
+     * Returns objects that this object links to
+     *
+     * @param string $id The object ID
+     * @param int|null $register Optional register ID to override current register
+     * @param int|null $schema Optional schema ID to override current schema
+     * @return array The related objects
+     */
+    public function getRelations(string $id, ?int $register = null, ?int $schema = null): array
+    {
+        $register = $register ?? $this->getRegister();
+        $schema = $schema ?? $this->getSchema();
+
+        // First get the object to access its relations
+        $object = $this->find($id);
+        $relations = $object->getRelations() ?? [];
+
+        // Get all referenced objects
+        $relatedObjects = [];
+        foreach ($relations as $path => $relationId) {
+            try {
+                $relatedObjects[$path] = $this->find($relationId);
+            } catch (Exception $e) {
+                // Skip relations that can't be found
+                continue;
+            }
+        }
+
+        return $relatedObjects;
+    }
+
+    /**
+     * Get all uses of a specific object
+     * Returns objects that link to this object
+     *
+     * @param string $id The object ID
+     * @param int|null $register Optional register ID to override current register
+     * @param int|null $schema Optional schema ID to override current schema
+     * @return array The objects using this object
+     */
+    public function getUses(string $id, ?int $register = null, ?int $schema = null): array
+    {
+        $register = $register ?? $this->getRegister();
+        $schema = $schema ?? $this->getSchema();
+
+        // Get the object to get its URI and UUID
+        $object = $this->find($id);
+        
+        // Find objects that reference this object's URI or UUID
+        $usingObjects = $this->objectEntityMapper->findByRelationUri(
+            search: $object->getUuid(),
+            partialMatch: true
+        );
+
+        // Filter out self-references if any
+        return array_filter($usingObjects, function($usingObject) use ($id) {
+            return $usingObject->getUuid() !== $id;
+        });
     }
 }
