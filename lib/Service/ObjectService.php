@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
@@ -67,6 +68,7 @@ class ObjectService
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         AuditTrailMapper $auditTrailMapper,
+        ObjectAuditLogMapper $objectAuditLogMapper,
 		private ContainerInterface $container,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly FileService $fileService,
@@ -77,6 +79,7 @@ class ObjectService
         $this->registerMapper = $registerMapper;
         $this->schemaMapper = $schemaMapper;
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->objectAuditLogMapper = $objectAuditLogMapper;
     }
 
 	/**
@@ -1162,16 +1165,13 @@ class ObjectService
      */
     public function getAuditTrail(string $id, ?int $register = null, ?int $schema = null): array
     {
-        $register = $register ?? $this->getRegister();
-        $schema = $schema ?? $this->getSchema();
+        // Get the object to get its URI and UUID
+        $object = $this->find($id);
 
-        $filters = [
-            'object' => $id,
-            'register' => $register,
-            'schema' => $schema
-        ];
-
-        return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
+        // @todo this is not working, it fails to find the logs
+		$auditTrails = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => (int) $object->getId()]);
+		
+        return $auditTrails;
     }
 
     /**
