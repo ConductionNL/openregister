@@ -1176,46 +1176,14 @@ class ObjectService
 
     /**
      * Get all relations for a specific object
-     * Returns objects that this object links to
+     * Returns objects that link to this object (incoming references)
      *
      * @param string $id The object ID
      * @param int|null $register Optional register ID to override current register
      * @param int|null $schema Optional schema ID to override current schema
-     * @return array The related objects
+     * @return array The objects that reference this object
      */
     public function getRelations(string $id, ?int $register = null, ?int $schema = null): array
-    {
-        $register = $register ?? $this->getRegister();
-        $schema = $schema ?? $this->getSchema();
-
-        // First get the object to access its relations
-        $object = $this->find($id);
-        $relations = $object->getRelations() ?? [];
-
-        // Get all referenced objects
-        $relatedObjects = [];
-        foreach ($relations as $path => $relationId) {
-            try {
-                $relatedObjects[$path] = $this->find($relationId);
-            } catch (Exception $e) {
-                // Skip relations that can't be found
-                continue;
-            }
-        }
-
-        return $relatedObjects;
-    }
-
-    /**
-     * Get all uses of a specific object
-     * Returns objects that link to this object
-     *
-     * @param string $id The object ID
-     * @param int|null $register Optional register ID to override current register
-     * @param int|null $schema Optional schema ID to override current schema
-     * @return array The objects using this object
-     */
-    public function getUses(string $id, ?int $register = null, ?int $schema = null): array
     {
         $register = $register ?? $this->getRegister();
         $schema = $schema ?? $this->getSchema();
@@ -1224,14 +1192,42 @@ class ObjectService
         $object = $this->find($id);
         
         // Find objects that reference this object's URI or UUID
-        $usingObjects = $this->objectEntityMapper->findByRelationUri(
+        $referencingObjects = $this->objectEntityMapper->findByRelationUri(
             search: $object->getUuid(),
             partialMatch: true
         );
 
         // Filter out self-references if any
-        return array_filter($usingObjects, function($usingObject) use ($id) {
-            return $usingObject->getUuid() !== $id;
+        return array_filter($referencingObjects, function($referencingObject) use ($id) {
+            return $referencingObject->getUuid() !== $id;
         });
+    }
+
+    /**
+     * Get all uses of a specific object
+     * Returns objects that this object links to (outgoing references)
+     *
+     * @param string $id The object ID
+     * @param int|null $register Optional register ID to override current register
+     * @param int|null $schema Optional schema ID to override current schema
+     * @return array The objects this object references
+     */
+    public function getUses(string $id, ?int $register = null, ?int $schema = null): array
+    {
+        // First get the object to access its relations
+        $object = $this->find($id);
+        $relations = $object->getRelations() ?? [];
+
+        // Get all referenced objects
+        $referencedObjects = [];
+        foreach ($relations as $path => $relationId) {
+            $referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
+
+            if($referencedObjects[$path] === null){
+                $referencedObjects[$path] = $relationId;
+            }
+        }
+
+        return $referencedObjects;
     }
 }
