@@ -1169,7 +1169,7 @@ class ObjectService
         $object = $this->find($id);
 
         // @todo this is not working, it fails to find the logs
-		$auditTrails = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => (int) $object->getId()]);
+		$auditTrails = $this->auditTrailMapper->findAll(filters: ['object' => $object->getId()]);
 		
         return $auditTrails;
     }
