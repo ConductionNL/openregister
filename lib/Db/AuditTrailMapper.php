@@ -98,7 +98,7 @@ class AuditTrailMapper extends QBMapper
 	public function findAllUuid(string $idOrUuid, ?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
 	{
 		try {
-			$object = $this->objectEntityMapper->find(idOrUuid: $idOrUuid);
+			$object = $this->objectEntityMapper->find(identifier: $identifier);
 			$objectId = $object->getId();
 			$filters['object'] = $objectId;
 			return $this->findAll($limit, $offset, $filters, $searchConditions, $searchParams);
