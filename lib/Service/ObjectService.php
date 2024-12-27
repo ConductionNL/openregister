@@ -227,9 +227,10 @@ class ObjectService
         ?int $limit = null, 
         ?int $offset = null, 
         array $filters = [], 
-        array $sort = [], ?
-        string $search = null, 
-        ?array $extend = []): array
+        array $sort = [], 
+        ?string $search = null, 
+        ?array $extend = []
+    ): array
     {
         $objects = $this->getObjects(
             register: $this->getRegister(),
@@ -238,9 +239,17 @@ class ObjectService
             offset: $offset,
             filters: $filters,
             sort: $sort,
-            search: $search,
-            extend: $extend
+            search: $search
         );
+
+        // If extend is provided, extend each object
+        if (!empty($extend)) {
+            $objects = array_map(function($object) use ($extend) {
+                // Convert object to array if needed
+                $objectArray = is_array($object) ? $object : $object->jsonSerialize();
+                return $this->extendEntity(entity: $objectArray, extend: $extend);
+            }, $objects);
+        }
 
         return $objects;
     }
@@ -421,8 +430,8 @@ class ObjectService
         ?int $offset = null, 
         array $filters = [], 
         array $sort = [], 
-        ?string $search = null, 
-        ?array $extend = []): array
+        ?string $search = null
+    )
     {
         // Set object type and filters if register and schema are provided
         if ($objectType === null && $register !== null && $schema !== null) {
