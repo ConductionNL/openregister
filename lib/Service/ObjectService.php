@@ -130,10 +130,10 @@ class ObjectService
 	 * @param int|string $id The ID or UUID to search for
 	 * @param array|null $extend Properties to extend with related data
 	 *
-	 * @return ObjectEntity The found object
+	 * @return ObjectEntity|null The found object or null if not found
 	 * @throws Exception
 	 */
-    public function find(int|string $id, ?array $extend = []): ObjectEntity
+    public function find(int|string $id, ?array $extend = []): ?ObjectEntity
 	{
         return $this->getObject(
             register: $this->registerMapper->find($this->getRegister()),
@@ -854,12 +854,11 @@ class ObjectService
      * @param string $uuid The UUID of the object to get
      * @param array $extend Properties to extend with related data
      *
-     * @return ObjectEntity The resulting object
+     * @return ObjectEntity|null The resulting object or null if not found
      * @throws Exception If source type is unsupported
      */
-    public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
+    public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ?ObjectEntity
     {
-
         // Handle internal source
         if ($register->getSource() === 'internal' || $register->getSource() === '') {
             return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
