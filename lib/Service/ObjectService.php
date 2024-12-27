@@ -425,6 +425,8 @@ class ObjectService
 		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
+//		var_dump($filters);
+
 		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
 		$total   = $this->count($filters);
 		$pages   = $limit !== null ? ceil($total/$limit) : 1;
@@ -499,8 +501,14 @@ class ObjectService
 	 * @throws ValidationException If the object fails validation.
 	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
 	 */
-	public function saveObject(int $register, int $schema, array $object): ObjectEntity
+	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
 	{
+
+		if ($depth === null) {
+			//@TODO fetch depth from schema
+			$depth = 3;
+		}
+
 		// Convert register and schema to their respective objects if they are strings // @todo ???
 		if (is_string($register)) {
 			$register = $this->registerMapper->find($register);
@@ -552,7 +560,7 @@ class ObjectService
 
 		// Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema, depth: $depth);
 		}
 
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
@@ -645,8 +653,9 @@ class ObjectService
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
-		?int $index = null
-	): string
+		?int $index = null,
+		int $depth = 0,
+	): string|array
 	{
 		$subSchema = $schema;
 		if (is_int($property['$ref']) === true) {
@@ -661,7 +670,8 @@ class ObjectService
 		$nestedObject = $this->saveObject(
 			register: $register,
 			schema: $subSchema,
-			object: $item
+			object: $item,
+			depth: $depth-1
 		);
 
 		if ($index === null) {
@@ -675,6 +685,9 @@ class ObjectService
 			$objectEntity->setRelations($relations);
 		}
 
+		if ($depth !== 0) {
+			return $nestedObject->jsonSerialize();
+		}
 		return $nestedObject->getUuid();
 	}
 
@@ -698,7 +711,8 @@ class ObjectService
 		array $item,
 		ObjectEntity $objectEntity,
 		int $register,
-		int $schema
+		int $schema,
+		int $depth = 0
 	): string
 	{
 		return $this->addObject(
@@ -707,7 +721,8 @@ class ObjectService
 			item: $item,
 			objectEntity: $objectEntity,
 			register: $register,
-			schema: $schema
+			schema: $schema,
+			depth: $depth
 		);
 	}
 
@@ -733,7 +748,8 @@ class ObjectService
 		array $items,
 		ObjectEntity $objectEntity,
 		int $register,
-		int $schema
+		int $schema,
+		int $depth = 0
 	): array
 	{
 		if (isset($property['items']) === false) {
@@ -749,7 +765,8 @@ class ObjectService
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
-					index: $index
+					index: $index,
+					depth: $depth
 				);
 			}
 			return $items;
@@ -781,7 +798,8 @@ class ObjectService
 				objectEntity: $objectEntity,
 				register: $register,
 				schema: $schema,
-				index: $index
+				index: $index,
+				depth: $depth
 			);
 		}
 
@@ -812,7 +830,8 @@ class ObjectService
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
-		?int $index = null
+		?int $index = null,
+		int $depth = 0
 	): string|array
 	{
 		if (array_is_list($property) === false) {
@@ -864,7 +883,8 @@ class ObjectService
 			objectEntity: $objectEntity,
 			register: $register,
 			schema: $schema,
-			index: $index
+			index: $index,
+			depth: $depth
 		);
 	}
 
@@ -890,7 +910,8 @@ class ObjectService
 		int $register,
 		int $schema,
 		array $object,
-		ObjectEntity $objectEntity
+		ObjectEntity $objectEntity,
+		int $depth = 0
 	): array
 	{
 		switch($property['type']) {
@@ -902,6 +923,7 @@ class ObjectService
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
+					depth: $depth
 				);
 				break;
 			case 'array':
@@ -912,6 +934,7 @@ class ObjectService
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
+					depth: $depth
 				);
 				break;
 			case 'oneOf':
@@ -921,7 +944,9 @@ class ObjectService
 					item: $object[$propertyName],
 					objectEntity: $objectEntity,
 					register: $register,
-					schema: $schema);
+					schema: $schema,
+					depth: $depth
+				);
 				break;
 			case 'file':
 				$object[$propertyName] = $this->handleFileProperty(
@@ -958,7 +983,8 @@ class ObjectService
 		array $object,
 		array $properties,
 		int $register,
-		int $schema
+		int $schema,
+		int $depth = 0
 	): ObjectEntity
 	{
         // @todo: Multidimensional support should be added
@@ -975,6 +1001,7 @@ class ObjectService
 				schema: $schema,
 				object: $object,
 				objectEntity: $objectEntity,
+				depth: $depth
 			);
 		}
 
