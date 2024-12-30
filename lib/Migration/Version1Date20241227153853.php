@@ -43,6 +43,8 @@ class Version1Date20241227153853 extends SimpleMigrationStep {
 		if ($table->hasColumn('max_depth') === false) {
 			$table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true])->setDefault(default: 0);
 		}
+
+		return $schema;
 	}
 
 	/**
