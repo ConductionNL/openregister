@@ -823,22 +823,24 @@ class ObjectService
 			&& is_array($item) === true
 			&& $index !== null
 		) {
+			$fileIndex = array_search(needle: 'file', haystack: array_column(array: $property, column_key: 'type'));
 			return $this->handleFileProperty(
 				objectEntity: $objectEntity,
 				object: [$propertyName => [$index => $item]],
 				propertyName: $propertyName,
-                format: $property['format'] ?? null
+                format: $property[$fileIndex]['format'] ?? null
 			);
 		}
 		if (in_array(needle: 'file', haystack: array_column(array: $property, column_key: 'type')) === true
 			&& is_array($item) === true
 			&& $index === null
 		) {
+			$fileIndex = array_search(needle: 'file', haystack: array_column(array: $property, column_key: 'type'));
 			return $this->handleFileProperty(
 				objectEntity: $objectEntity,
 				object: [$propertyName => $item],
 				propertyName: $propertyName,
-                format: $property['format'] ?? null
+                format: $property[$fileIndex]['format'] ?? null
 			);
 		}
 
@@ -1153,9 +1155,7 @@ class ObjectService
 			$fileEntity->hydrate($object[$propertyName]);
 			$fileEntity->setFilename($fileName);
 			$this->setExtension($fileEntity);
-
 			$this->fileMapper->insert($fileEntity);
-
 			$fileContent = base64_decode($matches[2], true);
 			if ($fileContent === false) {
 				throw new Exception('Invalid base64 encoded file');
