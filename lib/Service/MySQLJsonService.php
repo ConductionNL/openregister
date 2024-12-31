@@ -70,16 +70,36 @@ class MySQLJsonService implements IDatabaseJsonService
 		foreach ($values as $key => $value) {
 			switch ($key) {
 				case 'after':
+				case 'gte':
+				case '>=':
 					// Add >= filter for dates after specified value
 					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}after");
 					$builder
 						->andWhere("json_unquote(json_extract(object, :path$filter)) >= (:value{$filter}after)");
 					break;
 				case 'before':
+				case 'lte':
+				case '<=':
 					// Add <= filter for dates before specified value
 					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}before");
 					$builder
 						->andWhere("json_unquote(json_extract(object, :path$filter)) <= (:value{$filter}before)");
+					break;
+				case 'strictly_after':
+				case 'gt':
+				case '>':
+					// Add >= filter for dates after specified value
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}after");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) > (:value{$filter}after)");
+					break;
+				case 'strictly_before':
+				case 'lt':
+				case '<':
+					// Add <= filter for dates before specified value
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}before");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) < (:value{$filter}before)");
 					break;
 				default:
 					// Add IN clause for array of values
