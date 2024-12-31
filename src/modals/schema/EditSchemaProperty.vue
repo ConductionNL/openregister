@@ -188,7 +188,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:disabled="loading"
 					:checked.sync="properties.cascadeDelete">
 					Cascade delete
-            </NcCheckboxRadioSwitch>
+				</NcCheckboxRadioSwitch>
 			</div>
 
 			<!-- TYPE : ARRAY -->
@@ -210,11 +210,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Default value"
 				:value.sync="properties.default" />
 
-            <NcCheckboxRadioSwitch
-                :disabled="loading"
-                :checked.sync="properties.required">
-                Required
-            </NcCheckboxRadioSwitch>
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.required">
+				Required
+			</NcCheckboxRadioSwitch>
 
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
@@ -277,11 +277,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						type="text"
 						label="Schema reference of object ($ref)"
 						:value.sync="properties.items.$ref" />
-                    <NcCheckboxRadioSwitch
-                        :disabled="loading"
-                        :checked.sync="properties.items.cascadeDelete">
-                        Cascade delete
-                    </NcCheckboxRadioSwitch>
+					<NcCheckboxRadioSwitch
+						:disabled="loading"
+						:checked.sync="properties.items.cascadeDelete">
+						Cascade delete
+					</NcCheckboxRadioSwitch>
 				</div>
 
 				<NcInputField :disabled="loading"
@@ -297,7 +297,9 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 			<!-- type oneOf only -->
 			<div v-if="properties.type === 'oneOf'">
-				<h5 class="weightNormal">type: oneOf</h5>
+				<h5 class="weightNormal">
+					type: oneOf
+				</h5>
 
 				<div v-for="(oneOfItem, index) in properties.oneOf" :key="index" class="ASP-oneOfItem">
 					<h6>oneOf entry {{ index + 1 }}</h6>
@@ -509,11 +511,11 @@ export default {
 	methods: {
 		addOneOfEntry() {
 			// Push a new default object into the oneOf array
-			this.properties.oneOf.push({ type: '', format: '' });
+			this.properties.oneOf.push({ type: '', format: '' })
 		},
 		removeOneOfEntry(index) {
 			// Remove the entry at the specified index
-			this.properties.oneOf.splice(index, 1);
+			this.properties.oneOf.splice(index, 1)
 		},
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
