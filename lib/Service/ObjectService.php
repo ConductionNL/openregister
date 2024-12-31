@@ -278,11 +278,11 @@ class ObjectService
 	 * @return array List of matching objects.
 	 */
     public function findAll(
-        ?int $limit = null, 
-        ?int $offset = null, 
-        array $filters = [], 
-        array $sort = [], 
-        ?string $search = null, 
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        array $sort = [],
+        ?string $search = null,
         ?array $extend = []
     ): array
     {
@@ -307,7 +307,7 @@ class ObjectService
 
         return $objects;
     }
-    
+
 	/**
 	 * Counts the total number of objects matching criteria.
 	 *
@@ -480,13 +480,13 @@ class ObjectService
 	 * @throws InvalidArgumentException If an invalid object type is specified.
 	 */
     public function getObjects(
-        ?string $objectType = null, 
-        ?int $register = null, 
-        ?int $schema = null, 
-        ?int $limit = null, 
-        ?int $offset = null, 
-        array $filters = [], 
-        array $sort = [], 
+        ?string $objectType = null,
+        ?int $register = null,
+        ?int $schema = null,
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        array $sort = [],
         ?string $search = null
     )
     {
@@ -501,10 +501,10 @@ class ObjectService
 
         // Use the mapper to find and return all objects of the specified type
         return $mapper->findAll(
-            limit: $limit, 
-            offset: $offset, 
-            filters: $filters, 
-            sort: $sort, 
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            sort: $sort,
             search: $search
         );
     }
@@ -1486,15 +1486,12 @@ class ObjectService
 	}
 
 	/**
-	 * Extends an entity with related objects based on the provided properties.
+	 * Extends an entity with related objects based on the extend array.
 	 *
-	 * Processes the extend array to replace IDs with full related objects within the entity.
-	 *
-	 * @param array $entity The entity data to extend.
-	 * @param array $extend The list of properties to expand within the entity.
-	 *
-	 * @return array The extended entity with additional related data.
-	 * @throws Exception If a property is missing or no mapper is available.
+	 * @param mixed $entity The entity to extend
+	 * @param array $extend Properties to extend with related data
+	 * @return array The extended entity as an array
+	 * @throws Exception If property not found
 	 */
 	public function extendEntity(array $entity, array $extend): array
 	{
@@ -1522,25 +1519,47 @@ class ObjectService
 			}
 
 			// Try to get mapper for property
-			$propertyObject = $property;
 			try {
 				$mapper = $this->getMapper(objectType: $property);
 				$propertyObject = $singularProperty;
-			} catch (Exception $e) {
-				try {
-					$mapper = $this->getMapper(objectType: $singularProperty);
-					$propertyObject = $singularProperty;
-				} catch (Exception $e) {
-					throw new Exception("No mapper available for property '$property'.");
-				}
-			}
 
-			// Extend with related objects
-			if (is_array($value) === true) {
-				$result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
-			} else {
-				$objectId = is_object(value: $value) ? $value->getId() : $value;
-				$result[$property] = $mapper->find($objectId);
+				// Extend with related objects using specific mapper
+				if (is_array($value) === true) {
+					$result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
+				} else {
+					$objectId = is_object(value: $value) ? $value->getId() : $value;
+					$result[$property] = $mapper->find($objectId);
+				}
+			} catch (Exception $e) {
+				// If no specific mapper found, try to look up values in default database
+				try {
+					if (is_array($value)) {
+						// Handle array of values
+						$extendedValues = [];
+						foreach ($value as $val) {
+							try {
+								$found = $this->objectEntityMapper->find($val);
+								if ($found) {
+									$extendedValues[] = $found;
+								}
+							} catch (Exception $e) {
+								continue;
+							}
+						}
+						if (!empty($extendedValues)) {
+							$result[$property] = $extendedValues;
+						}
+					} else {
+						// Handle single value
+						$found = $this->objectEntityMapper->find($value);
+						if ($found) {
+							$result[$property] = $found;
+						}
+					}
+				} catch (Exception $e2) {
+					// If lookup fails, keep original value
+					continue;
+				}
 			}
 		}
 
@@ -1617,19 +1636,78 @@ class ObjectService
 	}
 
 	/**
-	 * Retrieves the audit trail for a specific object by its identifier.
+	 * Get the audit trail for a specific object
 	 *
-	 * Processes audit trail entries to return a complete history for the specified object.
-	 * @param string $id The unique identifier of the object.
-	 *
-	 * @return array The list of audit trail entries for the object.
+	 * @param string $id The object ID
+	 * @param int|null $register Optional register ID to override current register
+	 * @param int|null $schema Optional schema ID to override current schema
+	 * @return array The audit trail entries
 	 */
-	public function getAuditTrail(string $id): array
+	public function getAuditTrail(string $id, ?int $register = null, ?int $schema = null): array
 	{
-		$filters = [
-			'object' => $id
-		];
+		// Get the object to get its URI and UUID
+		$object = $this->find($id);
 
-		return $this->auditTrailMapper->findAllUuid(idOrUuid: $id);
+		// @todo this is not working, it fails to find the logs
+		$auditTrails = $this->auditTrailMapper->findAll(filters: ['object' => $object->getId()]);
+
+		return $auditTrails;
+	}
+
+	/**
+	 * Get all relations for a specific object
+	 * Returns objects that link to this object (incoming references)
+	 *
+	 * @param string $id The object ID
+	 * @param int|null $register Optional register ID to override current register
+	 * @param int|null $schema Optional schema ID to override current schema
+	 * @return array The objects that reference this object
+	 */
+	public function getRelations(string $id, ?int $register = null, ?int $schema = null): array
+	{
+		$register = $register ?? $this->getRegister();
+		$schema = $schema ?? $this->getSchema();
+
+		// Get the object to get its URI and UUID
+		$object = $this->find($id);
+
+		// Find objects that reference this object's URI or UUID
+		$referencingObjects = $this->objectEntityMapper->findByRelationUri(
+			search: $object->getUuid(),
+			partialMatch: true
+		);
+
+		// Filter out self-references if any
+		return array_filter($referencingObjects, function($referencingObject) use ($id) {
+			return $referencingObject->getUuid() !== $id;
+		});
+	}
+
+	/**
+	 * Get all uses of a specific object
+	 * Returns objects that this object links to (outgoing references)
+	 *
+	 * @param string $id The object ID
+	 * @param int|null $register Optional register ID to override current register
+	 * @param int|null $schema Optional schema ID to override current schema
+	 * @return array The objects this object references
+	 */
+	public function getUses(string $id, ?int $register = null, ?int $schema = null): array
+	{
+		// First get the object to access its relations
+		$object = $this->find($id);
+		$relations = $object->getRelations() ?? [];
+
+		// Get all referenced objects
+		$referencedObjects = [];
+		foreach ($relations as $path => $relationId) {
+			$referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
+
+			if($referencedObjects[$path] === null){
+				$referencedObjects[$path] = $relationId;
+			}
+		}
+
+		return $referencedObjects;
 	}
 }
