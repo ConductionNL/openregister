@@ -46,7 +46,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param int|string $idOrUuid The ID or UUID of the object to find
 	 * @return ObjectEntity The ObjectEntity
 	 */
-	public function find($idOrUuid): ObjectEntity
+	public function find($identifier): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -54,8 +54,9 @@ class ObjectEntityMapper extends QBMapper
 			->from('openregister_objects')
 			->where(
 				$qb->expr()->orX(
-					$qb->expr()->eq('id', $qb->createNamedParameter($idOrUuid, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('uuid', $qb->createNamedParameter($idOrUuid, IQueryBuilder::PARAM_STR))
+					$qb->expr()->eq('id', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
 				)
 			);
 
