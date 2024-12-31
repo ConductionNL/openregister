@@ -154,12 +154,13 @@ class ObjectService
 	 * @return ObjectEntity The created object
 	 * @throws ValidationException
 	 */
-    public function createFromArray(array $object): ObjectEntity
+    public function createFromArray(array $object, ?array $extend = []): array
 	{
         return $this->saveObject(
             register: $this->getRegister(),
             schema: $this->getSchema(),
-            object: $object
+            object: $object,
+            extend: $extend
         );
     }
 
@@ -168,12 +169,14 @@ class ObjectService
 	 *
 	 * @param string $id The object ID to update
 	 * @param array $object The new object data
-	 * @param bool $updatedObject Whether this is an update operation
+	 * @param bool $updateVersion Whether this is an update operation
+     * @param bool $patch Whether this is a patch operation
+     * @param array|null $extend Properties to extend with related data
 	 *
 	 * @return ObjectEntity The updated object
 	 * @throws ValidationException
 	 */
-    public function updateFromArray(string $id, array $object, bool $updatedObject, bool $patch = false): ObjectEntity
+    public function updateFromArray(string $id, array $object, bool $updateVersion, bool $patch = false, ?array $extend = []): array
 	{
         // Add ID to object data for update
         $object['id'] = $id;
@@ -188,7 +191,8 @@ class ObjectService
 		return $this->saveObject(
             register: $this->getRegister(),
             schema: $this->getSchema(),
-            object: $object
+            object: $object,
+            extend: $extend
         );
     }
 
@@ -462,12 +466,13 @@ class ObjectService
 	 * @param int $register The register to save the object to.
 	 * @param int $schema The schema to save the object to.
 	 * @param array $object The data to be saved.
+     * @param array|null $extend Properties to extend with related data
 	 *
 	 * @return ObjectEntity The resulting object.
 	 * @throws ValidationException When the validation fails and returns an error.
 	 * @throws Exception
 	 */
-    public function saveObject(int $register, int $schema, array $object): ObjectEntity
+    public function saveObject(int $register, int $schema, array $object, ?array $extend = []): array
     {
         // Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
@@ -534,6 +539,14 @@ class ObjectService
         } else {
             $objectEntity =  $this->objectEntityMapper->insert($objectEntity);
             $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+        }
+
+        // Lets turn the whole thing into an array
+        $objectEntity = $objectEntity->jsonSerialize();
+
+        // Extend object with properties if requested	
+        if (empty($extend) === false) {
+            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
         }
 
         return $objectEntity;
@@ -1099,18 +1112,27 @@ class ObjectService
         // Get all registers
         $registers = $this->registerMapper->findAll();
 
-        // Convert to arrays
-        $registers = array_map(function($object) {
-            return $object->jsonSerialize();
-        }, $registers);
+        // Convert to arrays and extend schemas
+        $registers = array_map(function($register) {
+            $registerArray = is_array($register) ? $register : $register->jsonSerialize();
+            
+            // Replace schema IDs with actual schema objects if schemas property exists
+            if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
+                $registerArray['schemas'] = array_map(
+                    function($schemaId) {
+                        try {
+                            return $this->schemaMapper->find($schemaId)->jsonSerialize();
+                        } catch (Exception $e) {
+                            // If schema can't be found, return the ID
+                            return $schemaId;
+                        }
+                    },
+                    $registerArray['schemas']
+                );
+            }
 
-        // Extend with schemas
-        $extend = ['schemas'];
-        if (empty($extend) === false) {
-            $registers = array_map(function($object) use ($extend) {
-                return $this->extendEntity(entity: $object, extend: $extend);
-            }, $registers);
-        }
+            return $registerArray;
+        }, $registers);
 
         return $registers;
     }
