@@ -34,7 +34,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcSelect v-bind="typeOptions"
 					v-model="properties.type" />
 
-				<NcSelect v-bind="formatOptions"
+				<NcSelect
+					v-bind="formatOptions"
 					v-model="properties.format"
 					:disabled="properties.type !== 'string'" />
 			</div>
@@ -174,13 +175,22 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				:value.sync="properties.default"
 				:loading="loading" />
 			<!-- TYPE : OBJECT -->
-			<NcTextArea v-else-if="properties.type === 'object'"
-				:disabled="loading"
-				label="Default value"
-				:value.sync="properties.default"
-				:loading="loading"
-				:error="!verifyJsonValidity(properties.default)"
-				:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
+			<div v-else-if="properties.type === 'object'">
+				<NcTextArea
+					:disabled="loading"
+					label="Default value"
+					:value.sync="properties.default"
+					:loading="loading"
+					:error="!verifyJsonValidity(properties.default)"
+					:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
+
+				<NcCheckboxRadioSwitch
+					:disabled="loading"
+					:checked.sync="properties.cascadeDelete">
+					Cascade delete
+				</NcCheckboxRadioSwitch>
+			</div>
+
 			<!-- TYPE : ARRAY -->
 			<NcTextArea v-else-if="properties.type === 'array'"
 				:disabled="loading"
@@ -267,6 +277,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						type="text"
 						label="Schema reference of object ($ref)"
 						:value.sync="properties.items.$ref" />
+					<NcCheckboxRadioSwitch
+						:disabled="loading"
+						:checked.sync="properties.items.cascadeDelete">
+						Cascade delete
+					</NcCheckboxRadioSwitch>
 				</div>
 
 				<NcInputField :disabled="loading"
@@ -278,6 +293,43 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					type="number"
 					label="Maximum number of items"
 					:value.sync="properties.maxItems" />
+			</div>
+
+			<!-- type oneOf only -->
+			<div v-if="properties.type === 'oneOf'">
+				<h5 class="weightNormal">
+					type: oneOf
+				</h5>
+
+				<div v-for="(oneOfItem, index) in properties.oneOf" :key="index" class="ASP-oneOfItem">
+					<h6>oneOf entry {{ index + 1 }}</h6>
+
+					<div class="ASP-selectContainer">
+						<NcSelect
+							v-bind="itemsTypeOptions"
+							v-model="oneOfItem.type"
+							:input-label="'Type'" />
+					</div>
+
+					<div class="ASP-selectContainer">
+						<NcSelect
+							v-bind="formatOptions"
+							v-model="oneOfItem.format"
+							:input-label="'Format'" />
+					</div>
+
+					<NcButton
+						variant="danger"
+						@click="removeOneOfEntry(index)">
+						Remove oneOf entry
+					</NcButton>
+				</div>
+
+				<NcButton
+					variant="primary"
+					@click="addOneOfEntry">
+					Add oneOf entry
+				</NcButton>
 			</div>
 		</div>
 
@@ -361,8 +413,10 @@ export default {
 				exclusiveMax: false,
 				minItems: 0,
 				maxItems: 0,
+				cascadeDelete: false,
 				$ref: '',
 				items: {
+					cascadeDelete: false,
 					$ref: '',
 					type: '',
 				},
@@ -376,11 +430,12 @@ export default {
 					location: '', // Initialize with empty string
 					maxSize: 0, // Initialize with 0
 				},
+				oneOf: [],
 			},
 			typeOptions: {
 				inputLabel: 'Type*',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file'],
+				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file', 'oneOf'],
 			},
 			itemsTypeOptions: {
 				inputLabel: 'Sub type',
@@ -390,7 +445,7 @@ export default {
 			formatOptions: {
 				inputLabel: 'Format',
 				multiple: false,
-				options: ['date', 'time', 'duration', 'date-time', 'url', 'uri', 'uuid', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri-reference', 'iri', 'iri-reference', 'uri-template', 'json-pointer', 'regex', 'binary', 'byte', 'password', 'rsin', 'kvk', 'bsn', 'oidn', 'telephone'],
+				options: ['date', 'time', 'duration', 'date-time', 'url', 'uri', 'uuid', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri-reference', 'iri', 'iri-reference', 'uri-template', 'json-pointer', 'regex', 'binary', 'byte', 'password', 'rsin', 'kvk', 'bsn', 'oidn', 'telephone', 'accessUrl', 'shareUrl', 'downloadUrl', 'extension', 'filename'],
 			},
 			objectConfiguration: {
 				handling: {
@@ -454,6 +509,14 @@ export default {
 		this.initializeSchemaItem()
 	},
 	methods: {
+		addOneOfEntry() {
+			// Push a new default object into the oneOf array
+			this.properties.oneOf.push({ type: '', format: '' })
+		},
+		removeOneOfEntry(index) {
+			// Remove the entry at the specified index
+			this.properties.oneOf.splice(index, 1)
+		},
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
@@ -469,6 +532,7 @@ export default {
 					multipleOf: schemaProperty.multipleOf ?? 0,
 					minItems: schemaProperty.minItems ?? 0,
 					maxItems: schemaProperty.maxItems ?? 0,
+					oneOf: schemaProperty.oneOf ?? [],
 					// Preserve nested configurations with existing values or defaults
 					objectConfiguration: {
 						...this.properties.objectConfiguration,
