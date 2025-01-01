@@ -156,12 +156,21 @@ class ObjectService
 	 */
     public function createFromArray(array $object, ?array $extend = []): array
 	{
-        return $this->saveObject(
+        $objectEntity = $this->saveObject(
             register: $this->getRegister(),
             schema: $this->getSchema(),
-            object: $object,
-            extend: $extend
-        );
+            object: $object
+        );        
+
+        // Lets turn the whole thing into an array
+        $objectEntity = $objectEntity->jsonSerialize();
+
+        // Extend object with properties if requested	
+        if (empty($extend) === false) {
+            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
+        }
+
+        return $objectEntity;
     }
 
 	/**
@@ -188,12 +197,21 @@ class ObjectService
 			$object = array_merge($oldObject, $object);
 		}
 
-		return $this->saveObject(
+		$objectEntity =  $this->saveObject(
             register: $this->getRegister(),
             schema: $this->getSchema(),
             object: $object,
-            extend: $extend
         );
+
+        // Lets turn the whole thing into an array
+        $objectEntity = $objectEntity->jsonSerialize();
+
+        // Extend object with properties if requested	
+        if (empty($extend) === false) {
+            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
+        }
+
+        return $objectEntity;
     }
 
 	/**
@@ -472,7 +490,7 @@ class ObjectService
 	 * @throws ValidationException When the validation fails and returns an error.
 	 * @throws Exception
 	 */
-    public function saveObject(int $register, int $schema, array $object, ?array $extend = []): array
+    public function saveObject(int $register, int $schema, array $object): ObjectEntity
     {
         // Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
@@ -539,14 +557,6 @@ class ObjectService
         } else {
             $objectEntity =  $this->objectEntityMapper->insert($objectEntity);
             $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
-        }
-
-        // Lets turn the whole thing into an array
-        $objectEntity = $objectEntity->jsonSerialize();
-
-        // Extend object with properties if requested	
-        if (empty($extend) === false) {
-            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
         }
 
         return $objectEntity;
