@@ -97,7 +97,7 @@ class FileService
 		$baseUrl = $this->urlGenerator->getBaseUrl();
 		$trustedDomains = $this->config->getSystemValue('trusted_domains');
 
-		if(isset($trustedDomains[1]) === true) {
+		if (isset($trustedDomains[1]) === true) {
 			$baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
 		}
 
