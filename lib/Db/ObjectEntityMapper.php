@@ -93,6 +93,29 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
+	 * Find an object by UUID only
+	 *
+	 * @param string $uuid The UUID of the object to find
+	 * @return ObjectEntity The object
+	 */
+	public function findByUuidOnly(string $uuid): ObjectEntity|null
+	{
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_objects')
+			->where(
+				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+            );
+
+		try {
+			return $this->findEntity($qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
+	}
+
+	/**
 	 * Find objects by register and schema
 	 *
 	 * @param string $register The register to find objects for
@@ -246,7 +269,7 @@ class ObjectEntityMapper extends QBMapper
 		// Set or update the version
 		if (isset($object['version']) === false) {
 			$version = explode('.', $obj->getVersion());
-			$version[2] = (int)$version[2] + 1;
+			$version[2] = (int) $version[2] + 1;
 			$obj->setVersion(implode('.', $version));
 		}
 
