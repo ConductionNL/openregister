@@ -133,7 +133,13 @@ export default {
 				object: '',
 			},
 			schemasLoading: false,
-			schemas: {},
+			schemasData: [],
+			schemas: {
+				multiple: false,
+				closeOnSelect: true,
+				options: [],
+				value: null,
+			},
 			registersLoading: false,
 			registers: {},
 			success: null,
@@ -143,13 +149,31 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+	watch: {
+		'registers.value': {
+			handler(newVal) {
+				if (newVal) {
+					if (!newVal.id) return
+
+					const currentRegister = registerStore.registerList.find((register) => register.id === newVal.id)
+					const filteredSchemas = this.schemasData.filter((schema) => currentRegister.schemas.includes(schema.id))
+
+					this.schemas.options = filteredSchemas.map((schema) => ({
+						id: schema.id,
+						label: schema.title,
+					}))
+				}
+			},
+			deep: true,
+		},
+	},
 	mounted() {
 		this.initializeObjectItem()
 	},
 	updated() {
 		if (navigationStore.modal === 'editObject' && !this.hasUpdated) {
 			this.initializeObjectItem()
-			this.initializeSchemas()
+			this.fetchSchemas()
 			this.initializeRegisters()
 			this.hasUpdated = true
 		}
@@ -165,30 +189,18 @@ export default {
 				}
 			}
 		},
-		initializeSchemas() {
+		fetchSchemas() {
 			this.schemasLoading = true
 
 			schemaStore.refreshSchemaList()
 				.then(() => {
-					const activeSchemas = objectStore.objectItem?.id
-						? schemaStore.schemaList.find((schema) => schema.id.toString() === objectStore.objectItem.schema)
+					this.schemasData = schemaStore.schemaList
+
+					this.schemas.value = objectStore.objectItem?.id
+						? this.schemasData.find((schema) => schema.id.toString() === objectStore.objectItem.schema.toString())
 						: null
-
-					this.schemas = {
-						multiple: false,
-						closeOnSelect: true,
-						options: schemaStore.schemaList.map((schema) => ({
-							id: schema.id,
-							label: schema.title,
-						})),
-						value: activeSchemas
-							? {
-								id: activeSchemas.id,
-								label: activeSchemas.title,
-							}
-							: null,
-					}
-
+				})
+				.finally(() => {
 					this.schemasLoading = false
 				})
 		},
