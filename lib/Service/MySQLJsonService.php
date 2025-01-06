@@ -23,13 +23,13 @@ class MySQLJsonService implements IDatabaseJsonService
 	public function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
 	{
 		// Loop through each ordering field and direction
-		foreach ($order as $item=>$direction) {
+		foreach ($order as $item => $direction) {
 			// Create parameters for the JSON path and sort direction
 			$builder->createNamedParameter(value: "$.$item", placeHolder: ":path$item");
 			$builder->createNamedParameter(value: $direction, placeHolder: ":direction$item");
 
 			// Add ORDER BY clause using JSON_UNQUOTE and JSON_EXTRACT
-			$builder->orderBy($builder->createFunction("json_unquote(json_extract(object, :path$item))"),$direction);
+			$builder->orderBy($builder->createFunction("json_unquote(json_extract(object, :path$item))"), $direction);
 		}
 
 		return $builder;
@@ -67,19 +67,39 @@ class MySQLJsonService implements IDatabaseJsonService
 	 */
 	private function jsonFilterArray(IQueryBuilder $builder, string $filter, array $values): IQueryBuilder
 	{
-		foreach ($values as $key=>$value) {
+		foreach ($values as $key => $value) {
 			switch ($key) {
 				case 'after':
+				case 'gte':
+				case '>=':
 					// Add >= filter for dates after specified value
 					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}after");
 					$builder
 						->andWhere("json_unquote(json_extract(object, :path$filter)) >= (:value{$filter}after)");
 					break;
 				case 'before':
+				case 'lte':
+				case '<=':
 					// Add <= filter for dates before specified value
 					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}before");
 					$builder
 						->andWhere("json_unquote(json_extract(object, :path$filter)) <= (:value{$filter}before)");
+					break;
+				case 'strictly_after':
+				case 'gt':
+				case '>':
+					// Add >= filter for dates after specified value
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}after");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) > (:value{$filter}after)");
+					break;
+				case 'strictly_before':
+				case 'lt':
+				case '<':
+					// Add <= filter for dates before specified value
+					$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value{$filter}before");
+					$builder
+						->andWhere("json_unquote(json_extract(object, :path$filter)) < (:value{$filter}before)");
 					break;
 				default:
 					// Add IN clause for array of values
@@ -105,11 +125,10 @@ class MySQLJsonService implements IDatabaseJsonService
 	 * @param IQueryBuilder $builder The query builder instance
 	 * @return string The resulting OR conditions as a string
 	 */
-	private function getMultipleContains (array $values, string $filter, IQueryBuilder $builder): string
+	private function getMultipleContains(array $values, string $filter, IQueryBuilder $builder): string
 	{
 		$orString = '';
-		foreach ($values as $key=>$value)
-		{
+		foreach ($values as $key => $value) {
 			// Create parameter for each value
 			$builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value$filter$key");
 			// Add OR condition checking if value exists in JSON array
@@ -117,6 +136,27 @@ class MySQLJsonService implements IDatabaseJsonService
 		}
 
 		return $orString;
+	}
+
+	/**
+	 * Parse filter in PHP style to MySQL style filter
+	 *
+	 * @param string $filter The original filter
+	 * @return string The parsed filter for MySQL
+	 */
+	private function parseFilter(string $filter): string
+	{
+		$explodedFilter = explode(
+			separator: '_',
+			string: $filter
+		);
+
+		$explodedFilter = array_map(function($field) {return "\"$field\"";}, $explodedFilter);
+
+		return implode(
+			separator: '**.',
+			array: $explodedFilter
+		);
 	}
 
 	/**
@@ -137,8 +177,10 @@ class MySQLJsonService implements IDatabaseJsonService
 		unset($filters['register'], $filters['schema'], $filters['updated'], $filters['created'], $filters['_queries']);
 
 		foreach ($filters as $filter=>$value) {
+			$parsedFilter = $this->parseFilter($filter);
+
 			// Create parameter for JSON path
-			$builder->createNamedParameter(value: "$.$filter", placeHolder: ":path$filter");
+			$builder->createNamedParameter(value: "$.$parsedFilter", placeHolder: ":path$filter");
 
 			if (is_array($value) === true && array_is_list($value) === false) {
 				// Handle complex filters (after/before)
@@ -155,7 +197,7 @@ class MySQLJsonService implements IDatabaseJsonService
 			// Handle simple equality filter
 			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
 			$builder
-				->andWhere("json_extract(object, :path$filter) = :value$filter OR json_contains(object, json_quote(:value$filter), :path$filter)");
+				->andWhere("json_extract(object, :path$filter) = :value$filter OR json_contains(json_extract(object, :path$filter), json_quote(:value$filter))");
 		}
 
 		return $builder;
