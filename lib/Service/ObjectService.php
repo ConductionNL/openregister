@@ -208,12 +208,12 @@ class ObjectService
             register: $this->getRegister(),
             schema: $this->getSchema(),
             object: $object
-        );        
+        );
 
         // Lets turn the whole thing into an array
         $objectEntity = $objectEntity->jsonSerialize();
 
-        // Extend object with properties if requested	
+        // Extend object with properties if requested
         if (empty($extend) === false) {
             $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
         }
@@ -257,7 +257,7 @@ class ObjectService
         // Lets turn the whole thing into an array
         $objectEntity = $objectEntity->jsonSerialize();
 
-        // Extend object with properties if requested	
+        // Extend object with properties if requested
         if (empty($extend) === false) {
             $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
         }
@@ -546,23 +546,25 @@ class ObjectService
 	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
 	{
 
-		if ($depth === null) {
-			//@TODO fetch depth from schema
-			$depth = 3;
-		}
-
         // Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
 
         // Convert register and schema to their respective objects if they are strings // @todo ???
-        if (is_string($register)) {
+        if (is_string($register) === true) {
             $register = $this->registerMapper->find($register);
         }
 
-		if (is_string($schema)) {
+		if (is_string($schema) === true) {
 			$schema = $this->schemaMapper->find($schema);
+		}
+		
+		if ($depth === null && $schema instanceof Schema) {
+			$depth = $schema->getMaxDepth();;
+		} else if ($depth === null) {
+			$schemaObject = $this->schemaMapper->find($schema);
+			$depth = $schemaObject->getMaxDepth();
 		}
 
 		// Check if object already exists
@@ -1628,7 +1630,7 @@ class ObjectService
 		// Convert to arrays and extend schemas
 		$registers = array_map(function($register) {
 			$registerArray = is_array($register) ? $register : $register->jsonSerialize();
-			
+
 			// Replace schema IDs with actual schema objects if schemas property exists
 			if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
 				$registerArray['schemas'] = array_map(
