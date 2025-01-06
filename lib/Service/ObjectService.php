@@ -557,7 +557,7 @@ class ObjectService
 		if (is_string($schema) === true) {
 			$schema = $this->schemaMapper->find($schema);
 		}
-		
+
 		if ($depth === null && $schema instanceof Schema) {
 			$depth = $schema->getMaxDepth();;
 		} else if ($depth === null) {
@@ -760,7 +760,7 @@ class ObjectService
 		int $register,
 		int $schema,
 		int $depth = 0
-	): string
+	): string|array
 	{
 		return $this->addObject(
 			property: $property,
