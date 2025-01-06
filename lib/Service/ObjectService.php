@@ -466,8 +466,6 @@ class ObjectService
 		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
-//		var_dump($filters);
-
 		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
 		$total   = $this->count($filters);
 		$pages   = $limit !== null ? ceil($total/$limit) : 1;
