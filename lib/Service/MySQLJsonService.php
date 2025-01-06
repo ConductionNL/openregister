@@ -138,6 +138,12 @@ class MySQLJsonService implements IDatabaseJsonService
 		return $orString;
 	}
 
+	/**
+	 * Parse filter in PHP style to MySQL style filter
+	 *
+	 * @param string $filter The original filter
+	 * @return string The parsed filter for MySQL
+	 */
 	private function parseFilter(string $filter): string
 	{
 		$explodedFilter = explode(
