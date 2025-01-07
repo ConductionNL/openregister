@@ -100,7 +100,12 @@ export default {
 				updated: '',
 			},
 			schemasLoading: false,
-			schemas: {},
+			schemas: {
+				options: [],
+				value: [],
+				multiple: true,
+				closeOnSelect: false,
+			},
 			sourcesLoading: false,
 			sources: {},
 			success: false,
@@ -147,20 +152,15 @@ export default {
 						})
 						: null
 
-					this.schemas = {
-						multiple: true,
-						closeOnSelect: false,
-						options: schemaStore.schemaList.map((schema) => ({
-							id: schema.id,
-							label: schema.title,
-						})),
-						value: activeSchemas
-							? activeSchemas.map((schema) => ({
-								id: schema.id,
-								label: schema.title,
-							}))
-							: null,
-					}
+					this.schemas.options = schemaStore.schemaList.map((schema) => ({
+						id: schema.id,
+						label: schema.title,
+					}))
+
+					this.schemas.value = activeSchemas.map((schema) => ({
+						id: schema.id,
+						label: schema.title,
+					}))
 
 					this.schemasLoading = false
 				})
