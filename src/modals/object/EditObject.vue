@@ -54,7 +54,7 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 		<div v-if="!success" class="formContainer">
 			<div v-if="registers?.value?.id && success === null">
 				<b>Register:</b> {{ registers.value.label }}
-				<NcButton @click="registers.value = null">
+				<NcButton @click="registers.value = null; schemas.value = null;">
 					Edit Register
 				</NcButton>
 			</div>
