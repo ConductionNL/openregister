@@ -208,12 +208,12 @@ class ObjectService
             register: $this->getRegister(),
             schema: $this->getSchema(),
             object: $object
-        );        
+        );
 
         // Lets turn the whole thing into an array
         $objectEntity = $objectEntity->jsonSerialize();
 
-        // Extend object with properties if requested	
+        // Extend object with properties if requested
         if (empty($extend) === false) {
             $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
         }
@@ -257,7 +257,7 @@ class ObjectService
         // Lets turn the whole thing into an array
         $objectEntity = $objectEntity->jsonSerialize();
 
-        // Extend object with properties if requested	
+        // Extend object with properties if requested
         if (empty($extend) === false) {
             $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
         }
@@ -541,20 +541,28 @@ class ObjectService
 	 * @throws ValidationException If the object fails validation.
 	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
 	 */
-    public function saveObject(int $register, int $schema, array $object): ObjectEntity
-    {
+	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
+	{
+
         // Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
 
         // Convert register and schema to their respective objects if they are strings // @todo ???
-        if (is_string($register)) {
+        if (is_string($register) === true) {
             $register = $this->registerMapper->find($register);
         }
 
-		if (is_string($schema)) {
+		if (is_string($schema) === true) {
 			$schema = $this->schemaMapper->find($schema);
+		}
+
+		if ($depth === null && $schema instanceof Schema) {
+			$depth = $schema->getMaxDepth();;
+		} else if ($depth === null) {
+			$schemaObject = $this->schemaMapper->find($schema);
+			$depth = $schemaObject->getMaxDepth();
 		}
 
 		// Check if object already exists
@@ -599,7 +607,7 @@ class ObjectService
 
 		// Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema);
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema, depth: $depth);
 		}
 
         $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
@@ -692,8 +700,9 @@ class ObjectService
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
-		?int $index = null
-	): string
+		?int $index = null,
+		int $depth = 0,
+	): string|array
 	{
 		$subSchema = $schema;
 		if (is_int($property['$ref']) === true) {
@@ -708,7 +717,8 @@ class ObjectService
 		$nestedObject = $this->saveObject(
 			register: $register,
 			schema: $subSchema,
-			object: $item
+			object: $item,
+			depth: $depth-1
 		);
 
 		if ($index === null) {
@@ -722,6 +732,9 @@ class ObjectService
 			$objectEntity->setRelations($relations);
 		}
 
+		if ($depth !== 0) {
+			return $nestedObject->jsonSerialize();
+		}
 		return $nestedObject->getUuid();
 	}
 
@@ -745,8 +758,9 @@ class ObjectService
 		array $item,
 		ObjectEntity $objectEntity,
 		int $register,
-		int $schema
-	): string
+		int $schema,
+		int $depth = 0
+	): string|array
 	{
 		return $this->addObject(
 			property: $property,
@@ -754,7 +768,8 @@ class ObjectService
 			item: $item,
 			objectEntity: $objectEntity,
 			register: $register,
-			schema: $schema
+			schema: $schema,
+			depth: $depth
 		);
 	}
 
@@ -780,7 +795,8 @@ class ObjectService
 		array $items,
 		ObjectEntity $objectEntity,
 		int $register,
-		int $schema
+		int $schema,
+		int $depth = 0
 	): array
 	{
 		if (isset($property['items']) === false) {
@@ -796,7 +812,8 @@ class ObjectService
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
-					index: $index
+					index: $index,
+					depth: $depth
 				);
 			}
 			return $items;
@@ -828,7 +845,8 @@ class ObjectService
 				objectEntity: $objectEntity,
 				register: $register,
 				schema: $schema,
-				index: $index
+				index: $index,
+				depth: $depth
 			);
 		}
 
@@ -859,7 +877,8 @@ class ObjectService
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
-		?int $index = null
+		?int $index = null,
+		int $depth = 0
 	): string|array
 	{
 		if (array_is_list($property) === false) {
@@ -913,7 +932,8 @@ class ObjectService
 			objectEntity: $objectEntity,
 			register: $register,
 			schema: $schema,
-			index: $index
+			index: $index,
+			depth: $depth
 		);
 	}
 
@@ -939,7 +959,8 @@ class ObjectService
 		int $register,
 		int $schema,
 		array $object,
-		ObjectEntity $objectEntity
+		ObjectEntity $objectEntity,
+		int $depth = 0
 	): array
 	{
 		switch($property['type']) {
@@ -951,6 +972,7 @@ class ObjectService
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
+					depth: $depth
 				);
 				break;
 			case 'array':
@@ -961,6 +983,7 @@ class ObjectService
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
+					depth: $depth
 				);
 				break;
 			case 'oneOf':
@@ -970,7 +993,9 @@ class ObjectService
 					item: $object[$propertyName],
 					objectEntity: $objectEntity,
 					register: $register,
-					schema: $schema);
+					schema: $schema,
+					depth: $depth
+				);
 				break;
 			case 'file':
 				$object[$propertyName] = $this->handleFileProperty(
@@ -1007,7 +1032,8 @@ class ObjectService
 		array $object,
 		array $properties,
 		int $register,
-		int $schema
+		int $schema,
+		int $depth = 0
 	): ObjectEntity
 	{
         // @todo: Multidimensional support should be added
@@ -1024,6 +1050,7 @@ class ObjectService
 				schema: $schema,
 				object: $object,
 				objectEntity: $objectEntity,
+				depth: $depth
 			);
 		}
 
@@ -1601,7 +1628,7 @@ class ObjectService
 		// Convert to arrays and extend schemas
 		$registers = array_map(function($register) {
 			$registerArray = is_array($register) ? $register : $register->jsonSerialize();
-			
+
 			// Replace schema IDs with actual schema objects if schemas property exists
 			if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
 				$registerArray['schemas'] = array_map(

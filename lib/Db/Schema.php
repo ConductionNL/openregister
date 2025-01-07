@@ -23,6 +23,7 @@ class Schema extends Entity implements JsonSerializable
 	protected bool $hardValidation = false;
 	protected ?DateTime $updated   = null;
 	protected ?DateTime $created   = null;
+	protected int	    $maxDepth  = 0;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
@@ -37,6 +38,7 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
 	}
 
 	public function getJsonFields(): array
@@ -107,6 +109,7 @@ class Schema extends Entity implements JsonSerializable
 			'hardValidation' => $this->hardValidation,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
+			'maxDepth' => $this->maxDepth,
 		];
 
 		$jsonFields = $this->getJsonFields();
