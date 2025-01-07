@@ -1,0 +1,52 @@
+version: "3.5"
+volumes:
+  nextcloud:
+  apps:
+  db:
+  config:
+
+services:
+  db:
+    image: mariadb:10.6
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD='!ChangeMe!'
+      - MYSQL_PASSWORD='!ChangeMe!'
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+
+  init-ubuntu:
+    image: ubuntu
+    command: sh /home/ubuntu/docker/init-ubuntu.sh
+    volumes:
+      - ./docker:/home/ubuntu/docker
+      - .:/home/ubuntu/app
+
+  nextcloud:
+    user: root
+    container_name: nextcloud
+#    entrypoint: occ app:enable openregister
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    links:
+      - db
+    volumes:
+      - nextcloud:/var/www/html:rw
+      - ./custom_apps:/var/www/html/custom_apps
+      - .:/var/www/html/custom_apps/openregister
+    environment:
+      - MYSQL_PASSWORD='!ChangeMe!'
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=db
+      - TZ=Europe/Amsterdam
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+    depends_on:
+      init-ubuntu:
+        condition: service_completed_successfully

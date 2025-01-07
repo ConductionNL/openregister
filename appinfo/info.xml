@@ -1,52 +1,54 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-	<id>openregister</id>
-	<name>Open Register</name>
-	<summary>Quickly build data registers based on schema.json</summary>
-	<description><![CDATA[📰 A OpenCatalogi App for Nextcloud
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>openregister</id>
+    <name>Open Register</name>
+    <summary>Quickly build data registers based on schema.json</summary>
+    <description><![CDATA[📰 An OpenRegister App for Nextcloud
 
-The OpenCatalogi Nextcloud app provides a framework for federated catalogi to work together in an open data ecosystem
+The OpenRegister Nextcloud app provides a framework for federated registers to work together in an open data ecosystem
 
-- 📲 Synchronize your sources with multiple catalogi
+- 📲 Synchronize your sources with multiple registers
 - 🔄 Automatic publications of your open data
 - 🆓 Free and open source under EUPL
 
 **System Cron is currently required for this app to work**
 
-Requirements can be found [here](https://conduction.gitbook.io/opencatalogi-nextcloud/installatie)
+Requirements can be found [here](https://conduction.gitbook.io/openregister-nextcloud/installatie)
 
-The Roadmap is available [here](https://github.com/orgs/OpenCatalogi/projects/1/views/2)
+The Roadmap is available [here](https://github.com/orgs/OpenRegister/projects/1/views/2)
 
-Create a [bug report](https://github.com/OpenCatalogi/.github/issues/new/choose)
+Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 
-Create a [feature request](https://github.com/OpenCatalogi/.github/issues/new/choose)
+Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
-	<version>0.1.2</version>
-	<licence>agpl</licence>
-	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-	<namespace>OpenRegister</namespace>
-    <category>organisation</category>
+    <version>0.1.35</version>
+    <licence>agpl</licence>
+    <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
+    <namespace>OpenRegister</namespace>
+    <category>organization</category>
+    <category>tools</category>
     <website>https://github.com/ConductionNL/OpenRegister</website>
-	<bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository type="git">https://github.com/ConductionNL/OpenRegister.git</repository>
-
-    
-   	<dependencies>
+    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
+    <repository>https://github.com/ConductionNL/OpenRegister</repository>
+    <documentation>
+        <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
+        <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
+        <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
+    </documentation>
+    <dependencies>
         <php min-version="8.0" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-		
-        <owncloud max-version="0" min-version="0"/>
-		<nextcloud min-version="28" max-version="30"/>
-	</dependencies>
-
-	<navigations>
-		<navigation>
-			<id>openregister</id>
-			<name>Register</name>
-			<route>openregister.dashboard.page</route>
-		</navigation>
-	</navigations>
+        <nextcloud min-version="28" max-version="30"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <id>openregister</id>
+            <name>Register</name>
+            <route>openregister.dashboard.page</route>
+            <icon>app.svg</icon>
+        </navigation>
+    </navigations>
 </info>

@@ -10,11 +10,27 @@ import { navigationStore } from '../store/store.js'
 					<Finance :size="20" />
 				</template>
 			</NcAppNavigationItem>
-		</NcAppNavigationList>
-		<NcAppNavigationSettings>
-			<NcAppNavigationItem :active="navigationStore.selected === 'dashboard'" name="Dashboard" @click="navigationStore.setSelected('dashboard')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'registers'" name="Registers" @click="navigationStore.setSelected('registers')">
 				<template #icon>
-					<Finance :size="20" />
+					<DatabaseOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'schemas'" name="Schemas" @click="navigationStore.setSelected('schemas')">
+				<template #icon>
+					<FileTreeOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Objects" @click="navigationStore.setSelected('objects')">
+				<template #icon>
+					<CubeOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+		</NcAppNavigationList>
+
+		<NcAppNavigationSettings>
+			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" name="Data sources" @click="navigationStore.setSelected('sources')">
+				<template #icon>
+					<DatabaseArrowRightOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
@@ -31,6 +47,10 @@ import {
 
 // Icons
 import Finance from 'vue-material-design-icons/Finance.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 
 export default {
 	name: 'MainMenu',
@@ -41,6 +61,9 @@ export default {
 		NcAppNavigationItem,
 		// icons
 		Finance,
+		DatabaseOutline,
+		DatabaseArrowRightOutline,
+		FileTreeOutline,
 	},
 	methods: {
 		openLink(url, type = '') {
