@@ -13,6 +13,10 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
 
 /**
  * The ObjectEntityMapper class
@@ -22,6 +26,7 @@ use Symfony\Component\Uid\Uuid;
 class ObjectEntityMapper extends QBMapper
 {
 	private IDatabaseJsonService $databaseJsonService;
+	private IEventDispatcher $eventDispatcher;
 
 	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
@@ -30,14 +35,19 @@ class ObjectEntityMapper extends QBMapper
 	 *
 	 * @param IDBConnection $db The database connection
 	 * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
+	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 */
-	public function __construct(IDBConnection $db, MySQLJsonService $mySQLJsonService)
-	{
+	public function __construct(
+		IDBConnection $db, 
+		MySQLJsonService $mySQLJsonService,
+		IEventDispatcher $eventDispatcher
+	) {
 		parent::__construct($db, 'openregister_objects');
 
 		if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
 			$this->databaseJsonService = $mySQLJsonService;
 		}
+		$this->eventDispatcher = $eventDispatcher;
 	}
 
 	/**
@@ -251,7 +261,16 @@ class ObjectEntityMapper extends QBMapper
 		if ($obj->getUuid() === null) {
 			$obj->setUuid(Uuid::v4());
 		}
-		return $this->insert($obj);
+
+		$obj = $this->insert($obj);
+
+		// Dispatch creation event
+		$this->eventDispatcher->dispatch(
+			ObjectCreatedEvent::class,
+			new ObjectCreatedEvent($obj)
+		);
+
+		return $obj;
 	}
 
 	/**
@@ -263,18 +282,45 @@ class ObjectEntityMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): ObjectEntity
 	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
+		$oldObject = $this->find($id);
+		$newObject = clone $oldObject;
+		$newObject->hydrate($object);
 
 		// Set or update the version
 		if (isset($object['version']) === false) {
-			$version = explode('.', $obj->getVersion());
+			$version = explode('.', $newObject->getVersion());
 			$version[2] = (int) $version[2] + 1;
-			$obj->setVersion(implode('.', $version));
+			$newObject->setVersion(implode('.', $version));
 		}
 
+		$newObject = $this->update($newObject);
 
-		return $this->update($obj);
+		// Dispatch update event
+		$this->eventDispatcher->dispatch(
+			ObjectUpdatedEvent::class,
+			new ObjectUpdatedEvent($newObject, $oldObject)
+		);
+
+		return $newObject;
+	}
+
+	/**
+	 * Delete an object
+	 *
+	 * @param ObjectEntity $object The object to delete
+	 * @return ObjectEntity The deleted object
+	 */
+	public function delete(Entity $object): ObjectEntity
+	{
+		$result = parent::delete($object);
+
+		// Dispatch deletion event
+		$this->eventDispatcher->dispatch(
+			ObjectDeletedEvent::class,
+			new ObjectDeletedEvent($object)
+		);
+
+		return $result;
 	}
 
 	/**

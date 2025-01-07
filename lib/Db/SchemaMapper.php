@@ -8,6 +8,10 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
 
 /**
  * The SchemaMapper class
@@ -16,14 +20,20 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemaMapper extends QBMapper
 {
+	private $eventDispatcher;
+
 	/**
 	 * Constructor for the SchemaMapper
 	 *
 	 * @param IDBConnection $db The database connection
+	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 */
-	public function __construct(IDBConnection $db)
-	{
+	public function __construct(
+		IDBConnection $db,
+		IEventDispatcher $eventDispatcher
+	) {
 		parent::__construct($db, 'openregister_schemas');
+		$this->eventDispatcher = $eventDispatcher;
 	}
 
 	/**
@@ -112,12 +122,19 @@ class SchemaMapper extends QBMapper
 		$schema = new Schema();
 		$schema->hydrate(object: $object);
 
-		// Set uuid if not provided
 		if ($schema->getUuid() === null) {
 			$schema->setUuid(Uuid::v4());
 		}
 
-		return $this->insert(entity: $schema);
+		$schema = $this->insert(entity: $schema);
+		
+		// Dispatch creation event
+		$this->eventDispatcher->dispatch(
+			SchemaCreatedEvent::class, 
+			new SchemaCreatedEvent($schema)
+		);
+
+		return $schema;
 	}
 
 	/**
@@ -129,16 +146,43 @@ class SchemaMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Schema
 	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
+		$oldSchema = $this->find($id);
+		$newSchema = clone $oldSchema;
+		$newSchema->hydrate($object);
 
-		// Set or update the version
 		if (isset($object['version']) === false) {
-			$version = explode('.', $obj->getVersion());
+			$version = explode('.', $newSchema->getVersion());
 			$version[2] = (int) $version[2] + 1;
-			$obj->setVersion(implode('.', $version));
+			$newSchema->setVersion(implode('.', $version));
 		}
 
-		return $this->update($obj);
+		$newSchema = $this->update($newSchema);
+		
+		// Dispatch update event
+		$this->eventDispatcher->dispatch(
+			SchemaUpdatedEvent::class, 
+			new SchemaUpdatedEvent($newSchema, $oldSchema)
+		);
+
+		return $newSchema;
+	}
+
+	/**
+	 * Delete a schema
+	 *
+	 * @param Schema $schema The schema to delete
+	 * @return Schema The deleted schema
+	 */
+	public function delete(Entity $schema): Schema 
+	{
+		$result = parent::delete($schema);
+		
+		// Dispatch deletion event
+		$this->eventDispatcher->dispatch(
+			SchemaDeletedEvent::class, 
+			new SchemaDeletedEvent($schema)
+		);
+
+		return $result;
 	}
 }

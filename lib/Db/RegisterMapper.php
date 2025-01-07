@@ -10,6 +10,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\RegisterCreatedEvent;
+use OCA\OpenRegister\Event\RegisterUpdatedEvent;
+use OCA\OpenRegister\Event\RegisterDeletedEvent;
 
 /**
  * The RegisterMapper class
@@ -19,17 +23,23 @@ use Symfony\Component\Uid\Uuid;
 class RegisterMapper extends QBMapper
 {
 	private $schemaMapper;
+	private $eventDispatcher;
 
 	/**
 	 * Constructor for RegisterMapper
 	 *
 	 * @param IDBConnection $db The database connection
 	 * @param SchemaMapper $schemaMapper The schema mapper
+	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 */
-	public function __construct(IDBConnection $db, SchemaMapper $schemaMapper)
-	{
+	public function __construct(
+		IDBConnection $db, 
+		SchemaMapper $schemaMapper,
+		IEventDispatcher $eventDispatcher
+	) {
 		parent::__construct($db, 'openregister_registers');
 		$this->schemaMapper = $schemaMapper;
+		$this->eventDispatcher = $eventDispatcher;
 	}
 
 	/**
@@ -107,12 +117,19 @@ class RegisterMapper extends QBMapper
 		$register = new Register();
 		$register->hydrate(object: $object);
 
-		// Set uuid if not provided
 		if ($register->getUuid() === null) {
 			$register->setUuid(Uuid::v4());
 		}
 
-		return $this->insert(entity: $register);
+		$register = $this->insert(entity: $register);
+		
+		// Dispatch creation event
+		$this->eventDispatcher->dispatch(
+			RegisterCreatedEvent::class, 
+			new RegisterCreatedEvent($register)
+		);
+
+		return $register;
 	}
 
 	/**
@@ -124,18 +141,44 @@ class RegisterMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Register
 	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
+		$oldRegister = $this->find($id);
+		$newRegister = clone $oldRegister;
+		$newRegister->hydrate($object);
 
-		// Update the version
 		if (isset($object['version']) === false) {
-			$version = explode('.', $obj->getVersion());
+			$version = explode('.', $newRegister->getVersion());
 			$version[2] = (int) $version[2] + 1;
-			$obj->setVersion(implode('.', $version));
+			$newRegister->setVersion(implode('.', $version));
 		}
 
-		// Update the register and return it
-		return $this->update($obj);
+		$newRegister = $this->update($newRegister);
+		
+		// Dispatch update event
+		$this->eventDispatcher->dispatch(
+			RegisterUpdatedEvent::class, 
+			new RegisterUpdatedEvent($newRegister, $oldRegister)
+		);
+
+		return $newRegister;
+	}
+
+	/**
+	 * Delete a register
+	 *
+	 * @param Register $register The register to delete
+	 * @return Register The deleted register
+	 */
+	public function delete(Entity $register): Register 
+	{
+		$result = parent::delete($register);
+		
+		// Dispatch deletion event
+		$this->eventDispatcher->dispatch(
+			RegisterDeletedEvent::class, 
+			new RegisterDeletedEvent($register)
+		);
+
+		return $result;
 	}
 
 	/**
