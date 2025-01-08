@@ -40,7 +40,7 @@ class DownloadService
 		$mapper = $this->getMapper($objectType);
 
 		try {
-			$object = $mapper->find($id);
+			$object = $mapper->find(identifier: $id);
 		} catch (Exception $exception) {
 			return ['error' => "Could not find $objectType with id $id.", 'statusCode' => 404];
 		}

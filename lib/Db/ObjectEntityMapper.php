@@ -41,12 +41,14 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
-	 * Find an object by ID or UUID
+	 * Find an object by ID, UUID or URI with optional register and schema filtering
 	 *
-	 * @param int|string $idOrUuid The ID or UUID of the object to find
-	 * @return ObjectEntity The ObjectEntity
+	 * @param int|string $identifier The ID, UUID or URI of the object to find
+	 * @param Register|null $register Optional register to filter by
+	 * @param Schema|null $schema Optional schema to filter by  
+	 * @return ObjectEntity|null The found object entity or null if not found
 	 */
-	public function find($identifier): ObjectEntity
+	public function find($identifier, ?Register $register = null, ?Schema $schema = null): ObjectEntity|null
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -60,53 +62,19 @@ class ObjectEntityMapper extends QBMapper
 				)
 			);
 
-		return $this->findEntity($qb);
-	}
-
-	/**
-	 * Find an object by UUID
-	 *
-	 * @param string $uuid The UUID of the object to find
-	 * @return ObjectEntity The object
-	 */
-	public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity|null
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
-			)
-			->andWhere(
+		// Add register filter if provided
+		if ($register !== null) {
+			$qb->andWhere(
 				$qb->expr()->eq('register', $qb->createNamedParameter($register->getId()))
-			)
-			->andWhere(
+			);
+		}
+
+		// Add schema filter if provided 
+		if ($schema !== null) {
+			$qb->andWhere(
 				$qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId()))
 			);
-
-		try {
-			return $this->findEntity($qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
 		}
-	}
-
-	/**
-	 * Find an object by UUID only
-	 *
-	 * @param string $uuid The UUID of the object to find
-	 * @return ObjectEntity The object
-	 */
-	public function findByUuidOnly(string $uuid): ObjectEntity|null
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
-            );
 
 		try {
 			return $this->findEntity($qb);
@@ -263,7 +231,7 @@ class ObjectEntityMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): ObjectEntity
 	{
-		$obj = $this->find($id);
+		$obj = $this->find(identifier: $id);
 		$obj->hydrate($object);
 
 		// Set or update the version

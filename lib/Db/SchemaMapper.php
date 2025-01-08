@@ -32,14 +32,14 @@ class SchemaMapper extends QBMapper
 	 * @param int $id The id of the schema
 	 * @return Schema The schema
 	 */
-	public function find(int $id): Schema
+	public function find(int $identifier): Schema
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_schemas')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->eq('id', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_INT))
 			);
 
 		return $this->findEntity(query: $qb);
@@ -55,7 +55,7 @@ class SchemaMapper extends QBMapper
 	{
 		$result = [];
 		foreach ($ids as $id) {
-			$result[] = $this->find($id);
+			$result[] = $this->find(identifier: $id);
 		}
 
 		return $result;
@@ -129,7 +129,7 @@ class SchemaMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Schema
 	{
-		$obj = $this->find($id);
+		$obj = $this->find(identifier: $identifier);
 		$obj->hydrate($object);
 
 		// Set or update the version
