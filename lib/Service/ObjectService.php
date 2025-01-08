@@ -122,7 +122,7 @@ class ObjectService
 			&& str_contains($uri->path(), '/api/schemas')
 		) {
 			$exploded = explode('/', $uri->path());
-			$schema = $this->schemaMapper->find(end($exploded));
+			$schema = $this->schemaMapper->find(identifier: end($exploded));
 
 			return json_encode($schema->getSchemaObject($this->urlGenerator));
 		}
@@ -157,7 +157,7 @@ class ObjectService
 	public function validateObject(array $object, ?int $schemaId = null, object $schemaObject = new stdClass()): ValidationResult
 	{
 		if ($schemaObject === new stdClass() || $schemaId !== null) {
-			$schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
+			$schemaObject = $this->schemaMapper->find(identifier: $schemaId)->getSchemaObject($this->urlGenerator);
 		}
 
 		// if there are no properties we dont have to validate
@@ -183,12 +183,12 @@ class ObjectService
 	 * @return ObjectEntity|null The found object or null if not found
 	 * @throws Exception If the object is not found.
 	 */
-    public function find(int|string $id, ?array $extend = []): ?ObjectEntity
+    public function find(int|string $identifier, ?array $extend = []): ?ObjectEntity
 	{
 		return $this->getObject(
-			$this->registerMapper->find($this->getRegister()),
-			$this->schemaMapper->find($this->getSchema()),
-			$id,
+			$this->registerMapper->find(identifier: $this->getRegister()),
+			$this->schemaMapper->find(identifier: $this->getSchema()),
+			$identifier,
 			$extend
 		);
 	}
@@ -240,8 +240,8 @@ class ObjectService
 
 		if ($patch === true) {
 			$oldObject = $this->getObject(
-				$this->registerMapper->find($this->getRegister()),
-				$this->schemaMapper->find($this->getSchema()),
+				$this->registerMapper->find(identifier: $this->getRegister()),
+				$this->schemaMapper->find(identifier: $this->getSchema()),
 				$id
 			)->jsonSerialize();
 
@@ -361,7 +361,7 @@ class ObjectService
 	{
 		$result = [];
 		foreach ($ids as $id) {
-			$result[] = $this->find($id);
+			$result[] = $this->find(identifier: $id);
 		}
 
 		return $result;
@@ -551,26 +551,26 @@ class ObjectService
 
         // Convert register and schema to their respective objects if they are strings // @todo ???
         if (is_string($register) === true) {
-            $register = $this->registerMapper->find($register);
+            $register = $this->registerMapper->find(identifier: $register);
         }
 
 		if (is_string($schema) === true) {
-			$schema = $this->schemaMapper->find($schema);
+			$schema = $this->schemaMapper->find(identifier: $schema);
 		}
 
 		if ($depth === null && $schema instanceof Schema) {
 			$depth = $schema->getMaxDepth();;
 		} else if ($depth === null) {
-			$schemaObject = $this->schemaMapper->find($schema);
+			$schemaObject = $this->schemaMapper->find(identifier: $schema);
 			$depth = $schemaObject->getMaxDepth();
 		}
 
 		// Check if object already exists
 		if (isset($object['id']) === true) {
-			$objectEntity = $this->objectEntityMapper->findByUuid(
-				$this->registerMapper->find($register),
-				$this->schemaMapper->find($schema),
-				$object['id']
+			$objectEntity = $this->objectEntityMapper->find(
+				identifier: $object['id'],
+				register: $this->registerMapper->find(identifier: $register),
+				schema: $this->schemaMapper->find(identifier: $schema)
 			);
 		}
 
@@ -603,7 +603,7 @@ class ObjectService
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
-        $schemaObject = $this->schemaMapper->find($schema);
+        $schemaObject = $this->schemaMapper->find(identifier: $schema);
 
 		// Handle object properties that are either nested objects or files
 		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
@@ -1075,7 +1075,7 @@ class ObjectService
 		$fileName = $file->getFilename();
 
 		try {
-			$schema = $this->schemaMapper->find($objectEntity->getSchema());
+			$schema = $this->schemaMapper->find(identifier: $objectEntity->getSchema());
 			$schemaFolder = $this->fileService->getSchemaFolderName($schema);
 			$objectFolder = $this->fileService->getObjectFolderName($objectEntity);
 
@@ -1294,7 +1294,7 @@ class ObjectService
 
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
-			return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+			return $this->objectEntityMapper->find(identifier: $uuid, register: $register, schema: $schema);
 		}
 
 		//@todo mongodb support
@@ -1380,20 +1380,20 @@ class ObjectService
 	 */
 	public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId = null): bool
 	{
-		$register = $this->registerMapper->find($register);
-		$schema = $this->schemaMapper->find($schema);
+		$register = $this->registerMapper->find(identifier: $register);
+		$schema = $this->schemaMapper->find(identifier: $schema);
 
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
-			$object = $this->objectEntityMapper->findByUuidOnly(uuid: $uuid);
+			$object = $this->objectEntityMapper->find(identifier: $uuid);
 
 			if ($object === null) {
 				return false;
 			}
 
 			// If internal register and schema should be found from the object himself. Makes it possible to delete cascaded objects.
-			$register = $this->registerMapper->find($object->getRegister());
-			$schema = $this->schemaMapper->find($object->getSchema());
+			$register = $this->registerMapper->find(identifier: $object->getRegister());
+			$schema = $this->schemaMapper->find(identifier: $object->getSchema());
 
 			if ($originalObjectId === null) {
 				$originalObjectId = $object->getUuid();
@@ -1576,7 +1576,7 @@ class ObjectService
 					$result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
 				} else {
 					$objectId = is_object(value: $value) ? $value->getId() : $value;
-					$result[$property] = $mapper->find($objectId);
+					$result[$property] = $mapper->find(identifier: $objectId);
 				}
 			} catch (Exception $e) {
 				// If no specific mapper found, try to look up values in default database
@@ -1586,7 +1586,7 @@ class ObjectService
 						$extendedValues = [];
 						foreach ($value as $val) {
 							try {
-								$found = $this->objectEntityMapper->find($val);
+								$found = $this->objectEntityMapper->find(identifier: $val);
 								if ($found) {
 									$extendedValues[] = $found;
 								}
@@ -1599,7 +1599,7 @@ class ObjectService
 						}
 					} else {
 						// Handle single value
-						$found = $this->objectEntityMapper->find($value);
+						$found = $this->objectEntityMapper->find(identifier: $value);
 						if ($found) {
 							$result[$property] = $found;
 						}
@@ -1634,7 +1634,7 @@ class ObjectService
 				$registerArray['schemas'] = array_map(
 					function($schemaId) {
 						try {
-							return $this->schemaMapper->find($schemaId)->jsonSerialize();
+							return $this->schemaMapper->find(identifier: $schemaId)->jsonSerialize();
 						} catch (Exception $e) {
 							// If schema can't be found, return the ID
 							return $schemaId;
@@ -1701,7 +1701,7 @@ class ObjectService
 	public function getAuditTrail(string $id, ?int $register = null, ?int $schema = null): array
 	{
 		// Get the object to get its URI and UUID
-		$object = $this->find($id);
+		$object = $this->find(identifier: $id);
 
 		// @todo this is not working, it fails to find the logs
 		$auditTrails = $this->auditTrailMapper->findAll(filters: ['object' => $object->getId()]);
@@ -1756,7 +1756,7 @@ class ObjectService
 		// Get all referenced objects
 		$referencedObjects = [];
 		foreach ($relations as $path => $relationId) {
-			$referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
+			$referencedObjects[$path] = $this->objectEntityMapper->find(identifier: $relationId);
 
 			if($referencedObjects[$path] === null){
 				$referencedObjects[$path] = $relationId;

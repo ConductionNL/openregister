@@ -111,7 +111,7 @@ class ObjectsController extends Controller
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->objectEntityMapper->find(idOrUuid: (int) $id)->getObjectArray());
+            return new JSONResponse($this->objectEntityMapper->find(identifier: (int) $id)->getObjectArray());
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
@@ -235,7 +235,7 @@ class ObjectsController extends Controller
         $oldObject = $this->objectEntityMapper->find($id);
         $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
-        $this->objectEntityMapper->delete($this->objectEntityMapper->find($id));
+        $this->objectEntityMapper->delete($this->objectEntityMapper->find(identifier: $id));
 
         return new JSONResponse([]);
     }
@@ -272,7 +272,7 @@ class ObjectsController extends Controller
     public function contracts(int $id): JSONResponse
     {
         // Create a log entry
-        $oldObject = $this->objectEntityMapper->find($id);
+        $oldObject = $this->objectEntityMapper->find(identifier: $id);
         $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
 		return new JSONResponse(['error' => 'Not yet implemented'], 501);
@@ -294,7 +294,7 @@ class ObjectsController extends Controller
     {
         try {
             // Lets grap the object to stablish an uri
-            $object = $this->objectEntityMapper->find($id);
+            $object = $this->objectEntityMapper->find(identifier: $id);
             $relations = $this->objectEntityMapper->findByRelationUri($object->getUri());
 
             // We dont want to return the entity, but the object (and kant reley on the normal serilzier)

@@ -33,14 +33,14 @@ class SourceMapper extends QBMapper
 	 * @param int $id The id of the source
 	 * @return Source The source
 	 */
-	public function find(int $id): Source
+	public function find(int $identifier): Source
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_sources')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->eq('id', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_INT))
 			);
 
 		return $this->findEntity(query: $qb);
@@ -110,9 +110,9 @@ class SourceMapper extends QBMapper
 	 * @param array $object The object to update
 	 * @return Source The updated source
 	 */
-	public function updateFromArray(int $id, array $object): Source
+	public function updateFromArray(int $identifier, array $object): Source
 	{
-		$obj = $this->find($id);
+		$obj = $this->find(identifier: $identifier);
 		$obj->hydrate($object);
 
 		// Set or update the version

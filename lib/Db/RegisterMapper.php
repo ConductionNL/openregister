@@ -38,7 +38,7 @@ class RegisterMapper extends QBMapper
 	 * @param int $id The ID of the register to find
 	 * @return Register The found register
 	 */
-	public function find(int $id): Register
+	public function find(int $identifier): Register
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -46,7 +46,7 @@ class RegisterMapper extends QBMapper
 		$qb->select('*')
 			->from('openregister_registers')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->eq('id', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_INT))
 			);
 
 		// Execute the query and return the result
@@ -118,13 +118,13 @@ class RegisterMapper extends QBMapper
 	/**
 	 * Update an existing register from an array of data
 	 *
-	 * @param int $id The ID of the register to update
+	 * @param int $identifier The ID of the register to update
 	 * @param array $object The new data for the register
 	 * @return Register The updated register
 	 */
-	public function updateFromArray(int $id, array $object): Register
+	public function updateFromArray(int $identifier, array $object): Register
 	{
-		$obj = $this->find($id);
+		$obj = $this->find(identifier: $identifier);
 		$obj->hydrate($object);
 
 		// Update the version
@@ -153,7 +153,7 @@ class RegisterMapper extends QBMapper
 
 		// Fetch each schema by its ID
 		foreach ($schemaIds as $schemaId) {
-			$schemas[] = $this->schemaMapper->find((int) $schemaId);
+			$schemas[] = $this->schemaMapper->find(identifier: (int) $schemaId);
 		}
 
 		return $schemas;

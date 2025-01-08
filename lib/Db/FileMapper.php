@@ -35,14 +35,14 @@ class FileMapper extends QBMapper
 	 * @throws DoesNotExistException If no file is found with the given ID.
 	 * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
 	 */
-	public function find(int $id): File
+	public function find(int $identifier): File
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_files')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->eq('id', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_INT))
 			);
 
 		return $this->findEntity(query: $qb);
