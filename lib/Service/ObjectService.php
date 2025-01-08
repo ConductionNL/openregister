@@ -976,10 +976,17 @@ class ObjectService
 				);
 				break;
 			case 'array':
+				$items = $object[$propertyName];
+				
+				// Lets make sure that we have an array
+				if (is_array($items) === false) {
+					$items = $items[$items];
+				}
+
 				$object[$propertyName] = $this->handleArrayProperty(
 					property: $property,
 					propertyName: $propertyName,
-					items: $object[$propertyName],
+					items: $items,
 					objectEntity: $objectEntity,
 					register: $register,
 					schema: $schema,
@@ -1283,18 +1290,18 @@ class ObjectService
 	 *
 	 * @param Register $register The register from which the object is retrieved.
 	 * @param Schema $schema The schema defining the object structure.
-	 * @param string $uuid The unique identifier of the object to retrieve.
+	 * @param string $identifier The unique identifier of the object to retrieve.
 	 * @param array|null $extend Optional properties to include in the retrieved object.
 	 *
-	 * @return ObjectEntity The retrieved object as an entity.
+	 * @return ObjectEntity|null The retrieved object as an entity or null if not found.
 	 * @throws Exception If the source type is unsupported.
 	 */
-	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
+	public function getObject(Register $register, Schema $schema, string $identifier, ?array $extend = []): ObjectEntity|null
 	{
 
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
-			return $this->objectEntityMapper->find(identifier: $uuid, register: $register, schema: $schema);
+			return $this->objectEntityMapper->find(identifier: $identifier, register: $register, schema: $schema);
 		}
 
 		//@todo mongodb support
