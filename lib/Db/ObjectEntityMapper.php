@@ -38,7 +38,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 */
 	public function __construct(
-		IDBConnection $db, 
+		IDBConnection $db,
 		MySQLJsonService $mySQLJsonService,
 		IEventDispatcher $eventDispatcher
 	) {
@@ -249,6 +249,19 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
+	 * @inheritDoc
+	 */
+	public function insert(Entity $entity): Entity
+	{
+		$entity = parent::insert($entity);
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+
+		return $entity;
+
+	}
+
+	/**
 	 * Creates an object from an array
 	 *
 	 * @param array $object The object to create
@@ -264,13 +277,23 @@ class ObjectEntityMapper extends QBMapper
 
 		$obj = $this->insert($obj);
 
-		// Dispatch creation event
-		$this->eventDispatcher->dispatch(
-			ObjectCreatedEvent::class,
-			new ObjectCreatedEvent($obj)
-		);
 
 		return $obj;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function update(Entity $entity): Entity
+	{
+		$oldObject = $this->find($entity->getId());
+
+		$entity = parent::update($entity);
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+
+		return $entity;
+
 	}
 
 	/**
@@ -294,12 +317,6 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		$newObject = $this->update($newObject);
-
-		// Dispatch update event
-		$this->eventDispatcher->dispatch(
-			ObjectUpdatedEvent::class,
-			new ObjectUpdatedEvent($newObject, $oldObject)
-		);
 
 		return $newObject;
 	}
