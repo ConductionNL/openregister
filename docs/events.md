@@ -120,7 +120,7 @@ class SchemaListener implements IEventListener {
         // Handle the event
     }
 }
-```	
+```
 
 ### 2. Register the Event Listener
 
