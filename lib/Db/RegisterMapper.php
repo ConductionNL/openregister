@@ -7,8 +7,6 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -115,7 +113,7 @@ class RegisterMapper extends QBMapper
 		$entity = parent::insert($entity);
 
 		// Dispatch creation event
-		$this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
+		$this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent($entity));
 
 		return $entity;
 	}
@@ -180,16 +178,16 @@ class RegisterMapper extends QBMapper
 	/**
 	 * Delete a register
 	 *
-	 * @param Register $register The register to delete
+	 * @param Register $entity The register to delete
 	 * @return Register The deleted register
 	 */
-	public function delete(Entity $register): Register
+	public function delete(Entity $entity): Register
 	{
-		$result = parent::delete($register);
+		$result = parent::delete($entity);
 
 		// Dispatch deletion event
 		$this->eventDispatcher->dispatchTyped(
-			new RegisterDeletedEvent($register)
+			new RegisterDeletedEvent($entity)
 		);
 
 		return $result;
