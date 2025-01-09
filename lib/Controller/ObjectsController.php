@@ -210,9 +210,7 @@ class ObjectsController extends Controller
             $formatter = new ErrorFormatter();
             return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
         }
-
-//        $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-
+        
         return new JSONResponse($objectEntity->getObjectArray());
     }
 
