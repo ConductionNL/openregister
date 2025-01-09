@@ -112,6 +112,19 @@ class SchemaMapper extends QBMapper
 	}
 
 	/**
+	 * @inheritdoc
+	 */
+	public function insert(Entity $entity): Entity
+	{
+		$entity = parent::insert($entity);
+
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
+
+		return $entity;
+	}
+
+	/**
 	 * Creates a schema from an array
 	 *
 	 * @param array $object The object to create
@@ -127,14 +140,22 @@ class SchemaMapper extends QBMapper
 		}
 
 		$schema = $this->insert(entity: $schema);
-		
-		// Dispatch creation event
-		$this->eventDispatcher->dispatch(
-			SchemaCreatedEvent::class, 
-			new SchemaCreatedEvent($schema)
-		);
 
 		return $schema;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function update(Entity $entity): Entity
+	{
+		$oldSchema = $this->find($entity->getId());
+		$entity = parent::update($entity);
+
+		// Dispatch update event
+		$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent($entity, $oldSchema));
+
+		return $entity;
 	}
 
 	/**
@@ -146,8 +167,7 @@ class SchemaMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Schema
 	{
-		$oldSchema = $this->find($id);
-		$newSchema = clone $oldSchema;
+		$newSchema = $this->find($id);
 		$newSchema->hydrate($object);
 
 		if (isset($object['version']) === false) {
@@ -157,12 +177,6 @@ class SchemaMapper extends QBMapper
 		}
 
 		$newSchema = $this->update($newSchema);
-		
-		// Dispatch update event
-		$this->eventDispatcher->dispatch(
-			SchemaUpdatedEvent::class, 
-			new SchemaUpdatedEvent($newSchema, $oldSchema)
-		);
 
 		return $newSchema;
 	}
@@ -173,13 +187,12 @@ class SchemaMapper extends QBMapper
 	 * @param Schema $schema The schema to delete
 	 * @return Schema The deleted schema
 	 */
-	public function delete(Entity $schema): Schema 
+	public function delete(Entity $schema): Schema
 	{
 		$result = parent::delete($schema);
-		
+
 		// Dispatch deletion event
-		$this->eventDispatcher->dispatch(
-			SchemaDeletedEvent::class, 
+		$this->eventDispatcher->dispatchTyped(
 			new SchemaDeletedEvent($schema)
 		);
 

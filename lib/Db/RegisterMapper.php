@@ -3,11 +3,10 @@
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -33,7 +32,7 @@ class RegisterMapper extends QBMapper
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 */
 	public function __construct(
-		IDBConnection $db, 
+		IDBConnection $db,
 		SchemaMapper $schemaMapper,
 		IEventDispatcher $eventDispatcher
 	) {
@@ -107,6 +106,19 @@ class RegisterMapper extends QBMapper
 	}
 
 	/**
+	 * @inheritdoc
+	 */
+	public function insert(Entity $entity): Entity
+	{
+		$entity = parent::insert($entity);
+
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent($entity));
+
+		return $entity;
+	}
+
+	/**
 	 * Create a new register from an array of data
 	 *
 	 * @param array $object The data to create the register from
@@ -122,14 +134,22 @@ class RegisterMapper extends QBMapper
 		}
 
 		$register = $this->insert(entity: $register);
-		
-		// Dispatch creation event
-		$this->eventDispatcher->dispatch(
-			RegisterCreatedEvent::class, 
-			new RegisterCreatedEvent($register)
-		);
 
 		return $register;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function update(Entity $entity): Entity
+	{
+		$oldSchema = $this->find($entity->getId());
+		$entity = parent::update($entity);
+
+		// Dispatch update event
+		$this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent($entity, $oldSchema));
+
+		return $entity;
 	}
 
 	/**
@@ -141,8 +161,7 @@ class RegisterMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Register
 	{
-		$oldRegister = $this->find($id);
-		$newRegister = clone $oldRegister;
+		$newRegister = $this->find($id);
 		$newRegister->hydrate($object);
 
 		if (isset($object['version']) === false) {
@@ -152,12 +171,6 @@ class RegisterMapper extends QBMapper
 		}
 
 		$newRegister = $this->update($newRegister);
-		
-		// Dispatch update event
-		$this->eventDispatcher->dispatch(
-			RegisterUpdatedEvent::class, 
-			new RegisterUpdatedEvent($newRegister, $oldRegister)
-		);
 
 		return $newRegister;
 	}
@@ -165,17 +178,16 @@ class RegisterMapper extends QBMapper
 	/**
 	 * Delete a register
 	 *
-	 * @param Register $register The register to delete
+	 * @param Register $entity The register to delete
 	 * @return Register The deleted register
 	 */
-	public function delete(Entity $register): Register 
+	public function delete(Entity $entity): Register
 	{
-		$result = parent::delete($register);
-		
+		$result = parent::delete($entity);
+
 		// Dispatch deletion event
-		$this->eventDispatcher->dispatch(
-			RegisterDeletedEvent::class, 
-			new RegisterDeletedEvent($register)
+		$this->eventDispatcher->dispatchTyped(
+			new RegisterDeletedEvent($entity)
 		);
 
 		return $result;

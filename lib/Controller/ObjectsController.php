@@ -13,7 +13,7 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
-use OCP\IRequest;           
+use OCP\IRequest;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -111,7 +111,7 @@ class ObjectsController extends Controller
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->objectEntityMapper->find(idOrUuid: (int) $id)->getObjectArray());
+            return new JSONResponse($this->objectEntityMapper->find((int) $id)->getObjectArray());
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
@@ -146,7 +146,7 @@ class ObjectsController extends Controller
             unset($data['id']);
         }
 
-        // If mapping ID is provided, transform the object using the mapping        
+        // If mapping ID is provided, transform the object using the mapping
         $mappingService = $this->getOpenConnectorMappingService();
 
         if ($mapping !== null && $mappingService !== null) {
@@ -195,7 +195,7 @@ class ObjectsController extends Controller
             unset($data['id']);
         }
 
-        // If mapping ID is provided, transform the object using the mapping        
+        // If mapping ID is provided, transform the object using the mapping
         $mappingService = $this->getOpenConnectorMappingService();
 
         if ($mapping !== null && $mappingService !== null) {
@@ -211,9 +211,9 @@ class ObjectsController extends Controller
             return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
         }
 
-        $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
+//        $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 
-        return new JSONResponse($objectEntity->getOBjectArray());
+        return new JSONResponse($objectEntity->getObjectArray());
     }
 
 	/**
@@ -330,11 +330,11 @@ class ObjectsController extends Controller
         }
     }
 
-    
+
 
     /**
      * Retrieves all available mappings
-     * 
+     *
      * This method returns a JSON response containing all available mappings in the system.
      *
      * @NoAdminRequired
@@ -346,15 +346,15 @@ class ObjectsController extends Controller
     {
         // Get mapping service, which will return null based on implementation
         $mappingService = $this->getOpenConnectorMappingService();
-        
+
         // Initialize results array
         $results = [];
-        
+
         // If mapping service exists, get all mappings using find() method
         if ($mappingService !== null) {
             $results = $mappingService->getMappings();
         }
-        
+
         // Return response with results array and total count
         return new JSONResponse([
             'results' => $results,
