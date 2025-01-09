@@ -127,7 +127,9 @@ class SchemaListener implements IEventListener {
 After creating your listener class, you need to register it with Nextcloud's event dispatcher system. This is done in your application's `lib/AppInfo/Application.php` file by registering the listener in the `register()` method:
 
 ```php
-$container->query(EventDispatcherInterface::class)->addListener(SchemaCreatedEvent::class, [SchemaListener::class, 'handle']);
+/* @var IEventDispatcher $dispatcher */
+$dispatcher = $this->getContainer()->get(IEventDispatcher::class);
+$dispatcher->addServiceListener(eventName: SchemaCreatedEvent::class, className: SchemaCreatedEvent::class);
 ```
 
 This line registers the `SchemaListener` class to handle `SchemaCreatedEvent` events. You can add similar lines for other events to register your listener for those specific events.
