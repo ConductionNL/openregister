@@ -210,7 +210,7 @@ class ObjectsController extends Controller
             $formatter = new ErrorFormatter();
             return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
         }
-        
+
         return new JSONResponse($objectEntity->getObjectArray());
     }
 

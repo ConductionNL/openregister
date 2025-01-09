@@ -129,7 +129,7 @@ After creating your listener class, you need to register it with Nextcloud's eve
 ```php
 /* @var IEventDispatcher $dispatcher */
 $dispatcher = $this->getContainer()->get(IEventDispatcher::class);
-$dispatcher->addServiceListener(eventName: SchemaCreatedEvent::class, className: SchemaCreatedEvent::class);
+$dispatcher->addServiceListener(eventName: SchemaCreatedEvent::class, className: SchemaCreatedListener::class);
 ```
 
 This line registers the `SchemaListener` class to handle `SchemaCreatedEvent` events. You can add similar lines for other events to register your listener for those specific events.
