@@ -132,6 +132,6 @@ $dispatcher = $this->getContainer()->get(IEventDispatcher::class);
 $dispatcher->addServiceListener(eventName: SchemaCreatedEvent::class, className: SchemaCreatedListener::class);
 ```
 
-This line registers the `SchemaListener` class to handle `SchemaCreatedEvent` events. You can add similar lines for other events to register your listener for those specific events.
+This line registers the `SchemaListener` class to handle `SchemaCreatedEvent` events. You can register your listener to other events by adding similar lines.
 
 You can read more about event handling in the [Nextcloud documentation](https://docs.nextcloud.com/server/latest/developer_manual/basics/events.html).
