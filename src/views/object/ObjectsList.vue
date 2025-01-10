@@ -22,7 +22,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="navigationStore.setModal('uploadObject')">
+					<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
