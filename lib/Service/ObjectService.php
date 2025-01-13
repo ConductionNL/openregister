@@ -8,6 +8,8 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use JsonSerializable;
+use OCA\OpenConnector\Twig\MappingExtension;
+use OCA\OpenConnector\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\Source;
@@ -34,6 +36,8 @@ use Psr\Container\NotFoundExceptionInterface;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 /**
  * Service class for handling object operations.
@@ -81,8 +85,11 @@ class ObjectService
 		private readonly IAppManager        $appManager,
 		private readonly IAppConfig         $config,
 		private readonly FileMapper         $fileMapper,
+		ArrayLoader $loader
 	)
 	{
+		$this->twig = new Environment($loader);
+		$this->twig->addExtension(new MappingExtension());
 	}
 
 	/**
@@ -600,6 +607,8 @@ class ObjectService
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
+		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
+
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
@@ -610,7 +619,7 @@ class ObjectService
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema, depth: $depth);
 		}
 
-        $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
+		$this->setDefaults($objectEntity);
 
 		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
@@ -1764,5 +1773,30 @@ class ObjectService
 		}
 
 		return $referencedObjects;
+	}
+
+    /**
+     * Sets default values for an object based upon its schema
+     *
+     * @param ObjectEntity $objectEntity The object to set default values in.
+     *
+     * @return ObjectEntity The resulting objectEntity.
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\SyntaxError
+     */
+	public function setDefaults(ObjectEntity $objectEntity): ObjectEntity
+	{
+		$data = $objectEntity->jsonSerialize();
+		$schema = $this->schemaMapper->find($objectEntity->getSchema());
+
+		foreach ($schema->getProperties() as $name=>$property) {
+			if (isset($data[$name]) === false && isset($property['default']) === true) {
+				$data[$name] = $this->twig->createTemplate($property['default'], "{$schema->getTitle()}.$name")->render($objectEntity->getObjectArray());
+			}
+		}
+
+		$objectEntity->setObject($data);
+
+		return $objectEntity;
 	}
 }
