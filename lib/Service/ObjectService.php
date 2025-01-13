@@ -1775,6 +1775,15 @@ class ObjectService
 		return $referencedObjects;
 	}
 
+    /**
+     * Sets default values for an object based upon its schema
+     *
+     * @param ObjectEntity $objectEntity The object to set default values in.
+     *
+     * @return ObjectEntity The resulting objectEntity.
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\SyntaxError
+     */
 	public function setDefaults(ObjectEntity $objectEntity): ObjectEntity
 	{
 		$data = $objectEntity->jsonSerialize();
