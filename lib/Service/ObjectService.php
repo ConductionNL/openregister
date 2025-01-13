@@ -1790,7 +1790,7 @@ class ObjectService
 		$schema = $this->schemaMapper->find($objectEntity->getSchema());
 
 		foreach ($schema->getProperties() as $name=>$property) {
-			if(isset($data[$name]) === false && isset($property['default']) === true) {
+			if (isset($data[$name]) === false && isset($property['default']) === true) {
 				$data[$name] = $this->twig->createTemplate($property['default'], "{$schema->getTitle()}.$name")->render($objectEntity->getObjectArray());
 			}
 		}
