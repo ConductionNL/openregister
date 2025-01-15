@@ -25,6 +25,19 @@ describe('Object Entity', () => {
 		expect(object.files).toBe(mockObjectData()[0].files)
 		expect(object.updated).toBe(mockObjectData()[0].updated)
 		expect(object.created).toBe(mockObjectData()[0].created)
+		expect(object.locked).toBe(null)
+		expect(object.owner).toBe('')
+		expect(object.validate().success).toBe(true)
+	})
+
+	it('should handle locked array and owner string', () => {
+		const mockData = mockObjectData()[0]
+		mockData.locked = ['token1', 'token2']
+		mockData.owner = 'user1'
+		const object = new ObjectEntity(mockData)
+
+		expect(object.locked).toEqual(['token1', 'token2'])
+		expect(object.owner).toBe('user1')
 		expect(object.validate().success).toBe(true)
 	})
 

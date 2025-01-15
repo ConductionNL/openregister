@@ -21,6 +21,18 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</template>
 							Edit
 						</NcActionButton>
+						<NcActionButton v-if="!objectStore.objectItem.locked" @click="navigationStore.setModal('lockObject')">
+							<template #icon>
+								<LockOutline :size="20" />
+							</template>
+							Lock
+						</NcActionButton>
+						<NcActionButton v-if="objectStore.objectItem.locked" @click="unlockObject(objectStore.objectItem)">
+							<template #icon>
+								<LockOpenOutline :size="20" />
+							</template>
+							Unlock
+						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -29,6 +41,18 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 					</NcActions>
 				</div>
+
+				<NcNoteCard
+					v-if="objectStore.objectItem.locked"
+					type="warning"
+					:show-close="false">
+					<template #icon>
+						<LockOutline :size="20" />
+					</template>
+					This object is locked by {{ objectStore.objectItem.lockedBy }}
+					until {{ new Date(objectStore.objectItem.lockedUntil).toLocaleString() }}
+				</NcNoteCard>
+
 				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
@@ -148,6 +172,7 @@ import {
 	NcActions,
 	NcActionButton,
 	NcListItem,
+	NcNoteCard,
 } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 
@@ -157,6 +182,8 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -164,6 +191,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcListItem,
+		NcNoteCard,
 		BTabs,
 		BTab,
 		DotsHorizontal,
@@ -172,6 +200,8 @@ export default {
 		TimelineQuestionOutline,
 		CubeOutline,
 		Eye,
+		LockOutline,
+		LockOpenOutline,
 	},
 	data() {
 		return {

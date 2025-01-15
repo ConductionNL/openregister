@@ -58,6 +58,20 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 							</template>
 							Edit
 						</NcActionButton>
+						<NcActionButton v-if="!object.locked"
+							@click="objectStore.setObjectItem(object); navigationStore.setModal('lockObject')">
+							<template #icon>
+								<LockOutline />
+							</template>
+							Lock
+						</NcActionButton>
+						<NcActionButton v-if="object.locked"
+							@click="unlockObject(object)">
+							<template #icon>
+								<LockOpenOutline />
+							</template>
+							Unlock
+						</NcActionButton>
 						<NcActionButton @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline />
@@ -90,6 +104,9 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
+import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'ObjectsList',
@@ -106,9 +123,21 @@ export default {
 		Plus,
 		Pencil,
 		TrashCanOutline,
+		LockOutline,
+		LockOpenOutline,
 	},
 	mounted() {
 		objectStore.refreshObjectList()
+	},
+	methods: {
+		async unlockObject(object) {
+			try {
+				await objectStore.unlockObject(object.id)
+				showSuccess('Object unlocked successfully')
+			} catch (error) {
+				showError(error.message || 'Failed to unlock object')
+			}
+		},
 	},
 }
 </script>
