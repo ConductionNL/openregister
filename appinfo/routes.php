@@ -20,5 +20,8 @@ return [
 		['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
 		['name' => 'registers#uploadUpdate', 'url' => '/api/registers/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'objects#lock', 'url' => '/api/objects/{id}/lock', 'verb' => 'POST'],
+		['name' => 'objects#unlock', 'url' => '/api/objects/{id}/unlock', 'verb' => 'POST'],
+		['name' => 'objects#revert', 'url' => '/api/objects/{id}/revert', 'verb' => 'POST'],
 	],
 ];

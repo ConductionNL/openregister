@@ -1867,4 +1867,46 @@ class ObjectService
 			throw new NotFoundException('Object not found');
 		}
 	}
+
+	/**
+	 * Revert an object to a previous state
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
+	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
+	 * @return ObjectEntity The reverted object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws \Exception If revert fails
+	 */
+	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity 
+	{
+		try {
+			// Get the reverted object (unsaved)
+			$revertedObject = $this->objectEntityMapper->revertObject(
+				$identifier, 
+				$until, 
+				$overwriteVersion
+			);
+
+			// Save the reverted object
+			$revertedObject = $this->objectEntityMapper->update($revertedObject);
+
+			// Dispatch revert event
+			$this->eventDispatcher->dispatch(
+				ObjectRevertedEvent::class,
+				new ObjectRevertedEvent($revertedObject, $until)
+			);
+
+			return $revertedObject;
+
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		} catch (\Exception $e) {
+			if (str_contains($e->getMessage(), 'Must be logged in')) {
+				throw new NotAuthorizedException($e->getMessage());
+			}
+			throw $e;
+		}
+	}
 }

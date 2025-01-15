@@ -47,6 +47,8 @@ Each object contains:
 - Automatic version incrementing
 - Full audit trail of changes
 - Historical version access
+- Ability to revert to any previous version
+- Detailed change tracking between versions
 
 ### Access Control
 - Object-level ownership
@@ -67,5 +69,30 @@ Objects support standard CRUD operations:
 - Delete objects
 - Search and filter objects
 - Export object data
+- Revert to previous versions
 
-For detailed API documentation and examples, see the API reference section.
+## Object Locking and Versioning
+
+### Version Control and Revert Functionality
+
+OpenRegister provides comprehensive version control capabilities:
+
+- Every change creates a new version with full audit trail
+- Changes are tracked at the field level
+- Previous versions can be viewed and compared
+- Objects can be reverted to any historical version
+- Revert operation creates new version rather than overwriting
+- Audit logs maintain full history of all changes including reverts
+- Revert includes all object properties including relations and files
+- Batch revert operations supported for related objects
+
+### Locking Objects
+
+Objects can be locked to prevent concurrent modifications. This is useful when:
+- Long-running processes need exclusive access
+- Multiple users/systems are working on the same object
+- Ensuring data consistency during complex updates
+
+#### Lock API Endpoints
+
+To lock an object via the REST API:
