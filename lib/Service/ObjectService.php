@@ -1765,4 +1765,107 @@ class ObjectService
 
 		return $referencedObjects;
 	}
+
+	/**
+	 * Lock an object
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param string|null $process Optional process identifier
+	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
+	 * @return ObjectEntity The locked object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws LockedException If object already locked by another user
+	 */
+	public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity 
+	{
+		try {
+			$object = $this->objectEntityMapper->find($identifier);
+			
+			// Check if user has permission to lock
+			if (!$this->userSession->isLoggedIn()) {
+				throw new NotAuthorizedException('Must be logged in to lock objects');
+			}
+
+			// Attempt to lock the object
+			try {
+				$object->lock($this->userSession, $process, $duration);
+			} catch (\Exception $e) {
+				throw new LockedException($e->getMessage());
+			}
+
+			// Save the locked object
+			$object = $this->objectEntityMapper->update($object);
+
+			// Dispatch lock event
+			$this->eventDispatcher->dispatch(
+				ObjectLockedEvent::class,
+				new ObjectLockedEvent($object)
+			);
+
+			return $object;
+
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		}
+	}
+
+	/**
+	 * Unlock an object
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @return ObjectEntity The unlocked object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws LockedException If object locked by another user
+	 */
+	public function unlockObject($identifier): ObjectEntity 
+	{
+		try {
+			$object = $this->objectEntityMapper->find($identifier);
+			
+			// Check if user has permission to unlock
+			if (!$this->userSession->isLoggedIn()) {
+				throw new NotAuthorizedException('Must be logged in to unlock objects');
+			}
+
+			// Attempt to unlock the object
+			try {
+				$object->unlock($this->userSession);
+			} catch (\Exception $e) {
+				throw new LockedException($e->getMessage());
+			}
+
+			// Save the unlocked object
+			$object = $this->objectEntityMapper->update($object);
+
+			// Dispatch unlock event
+			$this->eventDispatcher->dispatch(
+				ObjectUnlockedEvent::class,
+				new ObjectUnlockedEvent($object)
+			);
+
+			return $object;
+
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		}
+	}
+
+	/**
+	 * Check if an object is locked
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @return bool True if object is locked, false otherwise
+	 * @throws NotFoundException If object not found
+	 */
+	public function isLocked($identifier): bool
+	{
+		try {
+			$object = $this->objectEntityMapper->find($identifier);
+			return $object->isLocked();
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		}
+	}
 }
