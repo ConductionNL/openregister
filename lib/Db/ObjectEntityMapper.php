@@ -15,6 +15,9 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 
@@ -253,6 +256,19 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
+	 * @inheritDoc
+	 */
+	public function insert(Entity $entity): Entity
+	{
+		$entity = parent::insert($entity);
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+
+		return $entity;
+
+	}
+
+	/**
 	 * Creates an object from an array
 	 *
 	 * @param array $object The object to create
@@ -273,6 +289,21 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
+	 * @inheritDoc
+	 */
+	public function update(Entity $entity): Entity
+	{
+		$oldObject = $this->find($entity->getId());
+
+		$entity = parent::update($entity);
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+
+		return $entity;
+
+	}
+
+	/**
 	 * Updates an object from an array
 	 *
 	 * @param int $id The id of the object to update
@@ -281,14 +312,15 @@ class ObjectEntityMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): ObjectEntity
 	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
+		$oldObject = $this->find($id);
+		$newObject = clone $oldObject;
+		$newObject->hydrate($object);
 
 		// Set or update the version
 		if (isset($object['version']) === false) {
-			$version = explode('.', $obj->getVersion());
+			$version = explode('.', $newObject->getVersion());
 			$version[2] = (int) $version[2] + 1;
-			$obj->setVersion(implode('.', $version));
+			$newObject->setVersion(implode('.', $version));
 		}
 
 		// Set current user as owner if not already set
@@ -296,7 +328,26 @@ class ObjectEntityMapper extends QBMapper
 			$obj->setOwner($this->userSession->getUser()->getUID());
 		}
 
-		return $this->update($obj);
+		return $newObject;
+	}
+
+	/**
+	 * Delete an object
+	 *
+	 * @param ObjectEntity $object The object to delete
+	 * @return ObjectEntity The deleted object
+	 */
+	public function delete(Entity $object): ObjectEntity
+	{
+		$result = parent::delete($object);
+
+		// Dispatch deletion event
+		$this->eventDispatcher->dispatch(
+			ObjectDeletedEvent::class,
+			new ObjectDeletedEvent($object)
+		);
+
+		return $result;
 	}
 
 	/**
