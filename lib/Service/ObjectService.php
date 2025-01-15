@@ -1780,33 +1780,18 @@ class ObjectService
 	public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity 
 	{
 		try {
-			$object = $this->objectEntityMapper->find($identifier);
-			
-			// Check if user has permission to lock
-			if (!$this->userSession->isLoggedIn()) {
-				throw new NotAuthorizedException('Must be logged in to lock objects');
-			}
-
-			// Attempt to lock the object
-			try {
-				$object->lock($this->userSession, $process, $duration);
-			} catch (\Exception $e) {
-				throw new LockedException($e->getMessage());
-			}
-
-			// Save the locked object
-			$object = $this->objectEntityMapper->update($object);
-
-			// Dispatch lock event
-			$this->eventDispatcher->dispatch(
-				ObjectLockedEvent::class,
-				new ObjectLockedEvent($object)
+			return $this->objectEntityMapper->lockObject(
+				$identifier, 
+				$process, 
+				$duration
 			);
-
-			return $object;
-
 		} catch (DoesNotExistException $e) {
 			throw new NotFoundException('Object not found');
+		} catch (\Exception $e) {
+			if (str_contains($e->getMessage(), 'Must be logged in')) {
+				throw new NotAuthorizedException($e->getMessage());
+			}
+			throw new LockedException($e->getMessage());
 		}
 	}
 
@@ -1822,33 +1807,14 @@ class ObjectService
 	public function unlockObject($identifier): ObjectEntity 
 	{
 		try {
-			$object = $this->objectEntityMapper->find($identifier);
-			
-			// Check if user has permission to unlock
-			if (!$this->userSession->isLoggedIn()) {
-				throw new NotAuthorizedException('Must be logged in to unlock objects');
-			}
-
-			// Attempt to unlock the object
-			try {
-				$object->unlock($this->userSession);
-			} catch (\Exception $e) {
-				throw new LockedException($e->getMessage());
-			}
-
-			// Save the unlocked object
-			$object = $this->objectEntityMapper->update($object);
-
-			// Dispatch unlock event
-			$this->eventDispatcher->dispatch(
-				ObjectUnlockedEvent::class,
-				new ObjectUnlockedEvent($object)
-			);
-
-			return $object;
-
+			return $this->objectEntityMapper->unlockObject($identifier);
 		} catch (DoesNotExistException $e) {
 			throw new NotFoundException('Object not found');
+		} catch (\Exception $e) {
+			if (str_contains($e->getMessage(), 'Must be logged in')) {
+				throw new NotAuthorizedException($e->getMessage());
+			}
+			throw new LockedException($e->getMessage());
 		}
 	}
 
@@ -1862,8 +1828,7 @@ class ObjectService
 	public function isLocked($identifier): bool
 	{
 		try {
-			$object = $this->objectEntityMapper->find($identifier);
-			return $object->isLocked();
+			return $this->objectEntityMapper->isObjectLocked($identifier);
 		} catch (DoesNotExistException $e) {
 			throw new NotFoundException('Object not found');
 		}
