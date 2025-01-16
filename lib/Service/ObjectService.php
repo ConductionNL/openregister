@@ -1550,8 +1550,12 @@ class ObjectService
 	 * @return array The extended entity as an array
 	 * @throws Exception If property not found
 	 */
-	public function extendEntity(array $entity, array $extend): array
+	public function extendEntity(array $entity, array $extend, ?int $depth = 0): array
 	{
+		if ($depth > 3) {
+			return $entity;
+		}
+
 		// Convert entity to array if needed
 		if (is_array($entity)) {
 			$result = $entity;
@@ -1559,8 +1563,12 @@ class ObjectService
 			$result = $entity->jsonSerialize();
 		}
 
+		if (in_array('all', $extend)) {
+			$extendProperties = array_keys($result);
+		}
+
 		// Process each property to extend
-		foreach ($extend as $property) {
+		foreach ($extendProperties as $property) {
 			$singularProperty = rtrim($property, 's');
 
 			// Check if property exists
@@ -1597,7 +1605,8 @@ class ObjectService
 							try {
 								$found = $this->objectEntityMapper->find($val);
 								if ($found) {
-									$extendedValues[] = $found;
+									$extendedFound = $this->extendEntity($found->jsonSerialize(), $extend, $depth + 1);
+									$extendedValues[] = $extendedFound;
 								}
 							} catch (Exception $e) {
 								continue;
@@ -1610,7 +1619,8 @@ class ObjectService
 						// Handle single value
 						$found = $this->objectEntityMapper->find($value);
 						if ($found) {
-							$result[$property] = $found;
+							// Serialize and recursively extend the found object (apply depth tracking here)
+							$result[$property] = $this->extendEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1
 						}
 					}
 				} catch (Exception $e2) {
