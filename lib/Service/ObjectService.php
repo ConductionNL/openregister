@@ -8,12 +8,8 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use JsonSerializable;
-use OCA\OpenConnector\Twig\MappingExtension;
-use OCA\OpenConnector\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
@@ -89,7 +85,6 @@ class ObjectService
 	)
 	{
 		$this->twig = new Environment($loader);
-		$this->twig->addExtension(new MappingExtension());
 	}
 
 	/**

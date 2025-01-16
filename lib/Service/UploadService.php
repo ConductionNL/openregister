@@ -81,6 +81,11 @@ class UploadService
 		return $phpArray;
 	}
 
+	/**
+	 * Gets uploaded file form request and returns it as PHP array to use for creating/updating an object.
+	 *
+	 * @return array|JSONResponse
+	 */
 	private function getJSONfromFile(): array|JSONResponse
 	{
 		// @todo
