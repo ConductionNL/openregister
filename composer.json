@@ -36,7 +36,8 @@
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4"
+		"symfony/yaml": "^6.4",
+		"twig/twig": "^3.18"
 	},
 	"require-dev": {
 		"nextcloud/ocp": "dev-stable29",

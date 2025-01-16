@@ -8,6 +8,10 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
 
 /**
  * The SchemaMapper class
@@ -16,14 +20,20 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemaMapper extends QBMapper
 {
+	private $eventDispatcher;
+
 	/**
 	 * Constructor for the SchemaMapper
 	 *
 	 * @param IDBConnection $db The database connection
+	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 */
-	public function __construct(IDBConnection $db)
-	{
+	public function __construct(
+		IDBConnection $db,
+		IEventDispatcher $eventDispatcher
+	) {
 		parent::__construct($db, 'openregister_schemas');
+		$this->eventDispatcher = $eventDispatcher;
 	}
 
 	/**
@@ -102,6 +112,19 @@ class SchemaMapper extends QBMapper
 	}
 
 	/**
+	 * @inheritdoc
+	 */
+	public function insert(Entity $entity): Entity
+	{
+		$entity = parent::insert($entity);
+
+		// Dispatch creation event
+		$this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
+
+		return $entity;
+	}
+
+	/**
 	 * Creates a schema from an array
 	 *
 	 * @param array $object The object to create
@@ -112,12 +135,27 @@ class SchemaMapper extends QBMapper
 		$schema = new Schema();
 		$schema->hydrate(object: $object);
 
-		// Set uuid if not provided
 		if ($schema->getUuid() === null) {
 			$schema->setUuid(Uuid::v4());
 		}
 
-		return $this->insert(entity: $schema);
+		$schema = $this->insert(entity: $schema);
+
+		return $schema;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function update(Entity $entity): Entity
+	{
+		$oldSchema = $this->find($entity->getId());
+		$entity = parent::update($entity);
+
+		// Dispatch update event
+		$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent($entity, $oldSchema));
+
+		return $entity;
 	}
 
 	/**
@@ -129,16 +167,35 @@ class SchemaMapper extends QBMapper
 	 */
 	public function updateFromArray(int $id, array $object): Schema
 	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
+		$newSchema = $this->find($id);
+		$newSchema->hydrate($object);
 
-		// Set or update the version
 		if (isset($object['version']) === false) {
-			$version = explode('.', $obj->getVersion());
+			$version = explode('.', $newSchema->getVersion());
 			$version[2] = (int) $version[2] + 1;
-			$obj->setVersion(implode('.', $version));
+			$newSchema->setVersion(implode('.', $version));
 		}
 
-		return $this->update($obj);
+		$newSchema = $this->update($newSchema);
+
+		return $newSchema;
+	}
+
+	/**
+	 * Delete a schema
+	 *
+	 * @param Schema $schema The schema to delete
+	 * @return Schema The deleted schema
+	 */
+	public function delete(Entity $schema): Schema
+	{
+		$result = parent::delete($schema);
+
+		// Dispatch deletion event
+		$this->eventDispatcher->dispatchTyped(
+			new SchemaDeletedEvent($schema)
+		);
+
+		return $result;
 	}
 }
