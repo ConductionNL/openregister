@@ -5,7 +5,10 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\GenericFileException;
@@ -31,6 +34,8 @@ use Psr\Log\LoggerInterface;
  */
 class FileService
 {
+	const ROOT_FOLDER = 'Open Registers';
+
 	/**
 	 * Constructor for FileService
 	 *
@@ -40,13 +45,83 @@ class FileService
 	 * @param IManager $shareManager The share manager interface
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
+		private readonly IUserSession 	 $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly IRootFolder $rootFolder,
-		private readonly IManager $shareManager,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IConfig $config,
+		private readonly IRootFolder 	 $rootFolder,
+		private readonly IManager 		 $shareManager,
+		private readonly IURLGenerator 	 $urlGenerator,
+		private readonly IConfig 		 $config,
+		private readonly RegisterMapper  $registerMapper,
+		private readonly SchemaMapper    $schemaMapper,
 	) {}
+
+	/**
+	 * Creates a folder for a Register (used for storing files of Schemas/Objects).
+	 *
+	 * @param Register|int $register The Register to create the folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createRegisterFolder(Register|int $register): string
+	{
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
+		
+		$registerFolderName = $this->getRegisterFolderName($register);
+
+		$folderPath = $this::ROOT_FOLDER."/$registerFolderName";
+		$this->createFolder(folderPath: $folderPath);
+
+		return $folderPath;
+	}
+
+	/**
+	 * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
+	 *
+	 * @param Register $register The Register to get the folder name for.
+	 *
+	 * @return string The name the folder for this Register should have.
+	 */
+	private function getRegisterFolderName(Register $register): string
+	{
+		$title = $register->getTitle();
+
+		if (str_ends_with(strtolower($title), 'register')) {
+			return $title;
+		}
+
+		return "$title Register";
+	}
+
+	/**
+	 * Creates a folder for a Schema (used for storing files of Objects).
+	 *
+	 * @param Register|int $register The Register to create the schema folder for.
+	 * @param Schema|int $schema The Schema to create the folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createSchemaFolder(Register|int $register, Schema|int $schema): string
+	{
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
+
+		if (is_int($schema) === true) {
+			$schema = $this->schemaMapper->find($schema);
+		}
+
+		$registerFolderName = $this->getRegisterFolderName($register);
+		$schemaFolderName = $this->getSchemaFolderName($schema);
+
+		$folderPath = $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName";
+		$this->createFolder(folderPath: $folderPath);
+
+		return $folderPath;
+	}
 
 	/**
 	 * Get the name for the folder used for storing files of objects of a specific Schema.
@@ -55,9 +130,49 @@ class FileService
 	 *
 	 * @return string The name the folder for this Schema should have.
 	 */
-	public function getSchemaFolderName(Schema $schema): string
+	private function getSchemaFolderName(Schema $schema): string
 	{
-		return "({$schema->getUuid()}) {$schema->getTitle()}";
+		return $schema->getTitle();
+	}
+
+	/**
+	 * Creates a folder for an Object (used for storing files of this Object).
+	 *
+	 * @param ObjectEntity $objectEntity The Object to create the folder for.
+	 * @param Register|int|null $register The Register to create the Object folder for.
+	 * @param Schema|int|null $schema The Schema to create the Object folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createObjectFolder(
+		ObjectEntity $objectEntity,
+		Register|int|null $register = null,
+		Schema|int|null $schema = null
+	): string
+	{
+		if ($register === null) {
+			$register = (int) $objectEntity->getRegister();
+		}
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
+
+		if ($schema === null) {
+			$schema = (int) $objectEntity->getSchema();
+		}
+		if (is_int($schema) === true) {
+			$schema = $this->schemaMapper->find($schema);
+		}
+
+		$registerFolderName = $this->getRegisterFolderName($register);
+		$schemaFolderName = $this->getSchemaFolderName($schema);
+		$objectFolderName = $this->getObjectFolderName($objectEntity);
+
+		$folderPath = $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName/$objectFolderName";
+		$this->createFolder(folderPath: $folderPath);
+
+		return $folderPath;
 	}
 
 	/**
@@ -67,12 +182,13 @@ class FileService
 	 *
 	 * @return string The name the folder for this object should have.
 	 */
-	public function getObjectFolderName(ObjectEntity $objectEntity): string
+	private function getObjectFolderName(ObjectEntity $objectEntity): string
 	{
 		// @todo check if property Title or Name exists and use that as object title
 		$objectTitle = 'object';
 
-		return "({$objectEntity->getUuid()}) $objectTitle";
+//		return "{$objectEntity->getUuid()} ($objectTitle)";
+		return $objectEntity->getUuid();
 	}
 
 	/**

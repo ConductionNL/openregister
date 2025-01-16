@@ -545,8 +545,7 @@ class ObjectService
 	 */
 	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
 	{
-
-        // Remove system properties (starting with _)
+		// Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
@@ -592,6 +591,9 @@ class ObjectService
 			$objectEntity->setUuid(Uuid::v4());
 			$object['id'] = $objectEntity->getUuid();
 		}
+
+		// Make sure we create a folder in NC for this object
+		$this->fileService->createObjectFolder($objectEntity);
 
 		// Store old version for audit trail
 		$oldObject = clone $objectEntity;
@@ -1081,18 +1083,12 @@ class ObjectService
 		$fileName = $file->getFilename();
 
 		try {
-			$schema = $this->schemaMapper->find($objectEntity->getSchema());
-			$schemaFolder = $this->fileService->getSchemaFolderName($schema);
-			$objectFolder = $this->fileService->getObjectFolderName($objectEntity);
-
-			$this->fileService->createFolder(folderPath: 'Objects');
-			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder");
-			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder/$objectFolder");
+			$folderPath = $this->fileService->createObjectFolder($objectEntity);
 
 			$filePath = $file->getFilePath();
 
 			if ($filePath === null) {
-				$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+				$filePath = "$folderPath/$fileName";
 			}
 
 			$succes = $this->fileService->updateFile(
@@ -1818,12 +1814,12 @@ class ObjectService
 	 * @throws NotAuthorizedException If user not authorized
 	 * @throws LockedException If object already locked by another user
 	 */
-	public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity 
+	public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity
 	{
 		try {
 			return $this->objectEntityMapper->lockObject(
-				$identifier, 
-				$process, 
+				$identifier,
+				$process,
 				$duration
 			);
 		} catch (DoesNotExistException $e) {
@@ -1845,7 +1841,7 @@ class ObjectService
 	 * @throws NotAuthorizedException If user not authorized
 	 * @throws LockedException If object locked by another user
 	 */
-	public function unlockObject($identifier): ObjectEntity 
+	public function unlockObject($identifier): ObjectEntity
 	{
 		try {
 			return $this->objectEntityMapper->unlockObject($identifier);
@@ -1886,13 +1882,13 @@ class ObjectService
 	 * @throws NotAuthorizedException If user not authorized
 	 * @throws \Exception If revert fails
 	 */
-	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity 
+	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity
 	{
 		try {
 			// Get the reverted object (unsaved)
 			$revertedObject = $this->auditTrailMapper->revertObject(
-				$identifier, 
-				$until, 
+				$identifier,
+				$until,
 				$overwriteVersion
 			);
 
