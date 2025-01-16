@@ -68,8 +68,9 @@ class FileService
 		if (is_int($register) === true) {
 			$register = $this->registerMapper->find($register);
 		}
-		
+
 		$registerFolderName = $this->getRegisterFolderName($register);
+		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName"); // @todo maybe we want to use ShareLink here as well?
 
 		$folderPath = $this::ROOT_FOLDER."/$registerFolderName";
 		$this->createFolder(folderPath: $folderPath);
@@ -115,6 +116,8 @@ class FileService
 		}
 
 		$registerFolderName = $this->getRegisterFolderName($register);
+		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName"); // @todo maybe we want to use ShareLink here as well?
+
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 
 		$folderPath = $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName";
@@ -166,11 +169,23 @@ class FileService
 		}
 
 		$registerFolderName = $this->getRegisterFolderName($register);
+		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName"); // @todo maybe we want to use ShareLink here as well?
+
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 		$objectFolderName = $this->getObjectFolderName($objectEntity);
 
 		$folderPath = $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName/$objectFolderName";
 		$this->createFolder(folderPath: $folderPath);
+
+		// @todo Do we want to use ShareLink here?
+		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
+//		// Create or find ShareLink
+//		$share = $this->fileService->findShare(path: $filePath);
+//		if ($share !== null) {
+//			$shareLink = $this->fileService->getShareLink($share);
+//		} else {
+//			$shareLink = $this->fileService->createShareLink(path: $filePath);
+//		}
 
 		return $folderPath;
 	}
@@ -189,6 +204,18 @@ class FileService
 
 //		return "{$objectEntity->getUuid()} ($objectTitle)";
 		return $objectEntity->getUuid();
+	}
+
+	/**
+	 * Returns a link to the given folder path.
+	 *
+	 * @param string $folderPath The path to a folder in NextCloud.
+	 *
+	 * @return string The share link needed to get the file or folder for the given IShare object.
+	 */
+	public function getFolderLink(string $folderPath): string
+	{
+		return $this->getCurrentDomain() . "/index.php/apps/files/files?dir=$folderPath";
 	}
 
 	/**
