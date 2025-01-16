@@ -32,7 +32,6 @@ class ObjectEntityMapper extends QBMapper
 	private IDatabaseJsonService $databaseJsonService;
 	private IEventDispatcher $eventDispatcher;
 	private IUserSession $userSession;
-	private AuditTrailMapper $auditTrailMapper;
 
 	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
@@ -43,14 +42,12 @@ class ObjectEntityMapper extends QBMapper
 	 * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher
 	 * @param IUserSession $userSession The user session
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
 	 */
 	public function __construct(
 		IDBConnection $db, 
 		MySQLJsonService $mySQLJsonService,
 		IEventDispatcher $eventDispatcher,
 		IUserSession $userSession,
-		AuditTrailMapper $auditTrailMapper
 	) {
 		parent::__construct($db, 'openregister_objects');
 
@@ -59,7 +56,6 @@ class ObjectEntityMapper extends QBMapper
 		}
 		$this->eventDispatcher = $eventDispatcher;
 		$this->userSession = $userSession;
-		$this->auditTrailMapper = $auditTrailMapper;
 	}
 
 	/**
@@ -503,71 +499,5 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$object = $this->find($identifier);
 		return $object->isLocked();
-	}
-
-	/**
-	 * Revert an object to a previous state
-	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
-	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
-	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
-	 * @return ObjectEntity The reverted object (unsaved)
-	 * @throws DoesNotExistException If object not found
-	 * @throws \Exception If revert fails
-	 */
-	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity 
-	{
-		// Get the current object
-		$object = $this->find($identifier);
-		
-		// Get audit trail entries until the specified point
-		$auditTrails = $this->auditTrailMapper->findByObjectUntil(
-			$object->getId(),
-			$object->getUuid(),
-			$until
-		);
-
-		if (empty($auditTrails) && $until !== null) {
-			throw new \Exception('No audit trail entries found for the specified reversion point');
-		}
-
-		// Create a clone of the current object to apply reversions
-		$revertedObject = clone $object;
-
-		// Apply changes in reverse
-		foreach ($auditTrails as $audit) {
-			$this->revertChanges($revertedObject, $audit);
-		}
-
-		// Handle versioning
-		if (!$overwriteVersion) {
-			$version = explode('.', $revertedObject->getVersion());
-			$version[2] = (int) $version[2] + 1;
-			$revertedObject->setVersion(implode('.', $version));
-		}
-
-		return $revertedObject;
-	}
-
-	/**
-	 * Helper function to revert changes from an audit trail entry
-	 *
-	 * @param ObjectEntity $object The object to apply reversions to
-	 * @param AuditTrail $audit The audit trail entry
-	 */
-	private function revertChanges(ObjectEntity $object, AuditTrail $audit): void
-	{
-		$changes = $audit->getChanges();
-		
-		// Iterate through each change and apply the reverse
-		foreach ($changes as $field => $change) {
-			if (isset($change['old'])) {
-				// Use reflection to set the value if it's a protected property
-				$reflection = new \ReflectionClass($object);
-				$property = $reflection->getProperty($field);
-				$property->setAccessible(true);
-				$property->setValue($object, $change['old']);
-			}
-		}
 	}
 }

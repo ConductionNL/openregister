@@ -160,6 +160,13 @@ class ObjectsController extends Controller
 		// Save the object
 		try {
 			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
+			
+			// Unlock the object after saving
+			try {
+				$this->objectEntityMapper->unlockObject($objectEntity->getId());
+			} catch (\Exception $e) {
+				// Ignore unlock errors since the save was successful
+			}
 		} catch (ValidationException $exception) {
 			$formatter = new ErrorFormatter();
 			return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
@@ -206,6 +213,13 @@ class ObjectsController extends Controller
         // save it
         try {
             $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data['object']);
+            
+            // Unlock the object after saving
+            try {
+                $this->objectEntityMapper->unlockObject($objectEntity->getId());
+            } catch (\Exception $e) {
+                // Ignore unlock errors since the save was successful
+            }
         } catch (ValidationException $exception) {
             $formatter = new ErrorFormatter();
             return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
@@ -511,8 +525,8 @@ class ObjectsController extends Controller
 
 			$overwriteVersion = $data['overwriteVersion'] ?? false;
 
-			// Get the reverted object
-			$revertedObject = $this->objectEntityMapper->revertObject(
+			// Get the reverted object using AuditTrailMapper instead
+			$revertedObject = $this->auditTrailMapper->revertObject(
 				$id,
 				$until,
 				$overwriteVersion

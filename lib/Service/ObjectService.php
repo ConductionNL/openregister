@@ -623,9 +623,11 @@ class ObjectService
 
 		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+			// Create audit trail for update
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
+			// Create audit trail for creation
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
@@ -1883,7 +1885,7 @@ class ObjectService
 	{
 		try {
 			// Get the reverted object (unsaved)
-			$revertedObject = $this->objectEntityMapper->revertObject(
+			$revertedObject = $this->auditTrailMapper->revertObject(
 				$identifier, 
 				$until, 
 				$overwriteVersion

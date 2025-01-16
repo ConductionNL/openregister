@@ -66,7 +66,7 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 							Lock
 						</NcActionButton>
 						<NcActionButton v-if="object.locked"
-							@click="unlockObject(object)">
+							@click="objectStore.unlockObject(objectStore.objectItem.id)">
 							<template #icon>
 								<LockOpenOutline />
 							</template>
@@ -128,17 +128,7 @@ export default {
 	},
 	mounted() {
 		objectStore.refreshObjectList()
-	},
-	methods: {
-		async unlockObject(object) {
-			try {
-				await objectStore.unlockObject(object.id)
-				showSuccess('Object unlocked successfully')
-			} catch (error) {
-				showError(error.message || 'Failed to unlock object')
-			}
-		},
-	},
+	}
 }
 </script>
 

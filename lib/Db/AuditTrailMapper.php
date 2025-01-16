@@ -11,13 +11,13 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
- * The AuditTrailMapper class
+ * The AuditTrailMapper class handles audit trail operations and object reversions
  *
  * @package OCA\OpenRegister\Db
  */
 class AuditTrailMapper extends QBMapper
 {
-	private $objectEntityMapper;
+	private ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Constructor for the AuditTrailMapper
@@ -263,6 +263,72 @@ class AuditTrailMapper extends QBMapper
 	{
 		return preg_match('/^\d+\.\d+\.\d+$/', $version) === 1;
 	}
+
+    /**
+     * Revert an object to a previous state
+     *
+     * @param string|int $identifier Object ID, UUID, or URI
+     * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
+     * @param bool $overwriteVersion Whether to overwrite the version or increment it
+     * @return ObjectEntity The reverted object (unsaved)
+     * @throws DoesNotExistException If object not found
+     * @throws \Exception If revert fails
+     */
+    public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity 
+    {
+        // Get the current object
+        $object = $this->objectEntityMapper->find($identifier);
+        
+        // Get audit trail entries until the specified point
+        $auditTrails = $this->findByObjectUntil(
+            $object->getId(),
+            $object->getUuid(),
+            $until
+        );
+
+        if (empty($auditTrails) && $until !== null) {
+            throw new \Exception('No audit trail entries found for the specified reversion point');
+        }
+
+        // Create a clone of the current object to apply reversions
+        $revertedObject = clone $object;
+
+        // Apply changes in reverse
+        foreach ($auditTrails as $audit) {
+            $this->revertChanges($revertedObject, $audit);
+        }
+
+        // Handle versioning
+        if (!$overwriteVersion) {
+            $version = explode('.', $revertedObject->getVersion());
+            $version[2] = (int) $version[2] + 1;
+            $revertedObject->setVersion(implode('.', $version));
+        }
+
+        return $revertedObject;
+    }
+
+    /**
+     * Helper function to revert changes from an audit trail entry
+     *
+     * @param ObjectEntity $object The object to apply reversions to
+     * @param AuditTrail $audit The audit trail entry
+     */
+    private function revertChanges(ObjectEntity $object, AuditTrail $audit): void
+    {
+        $changes = $audit->getChanges();
+        
+        // Iterate through each change and apply the reverse
+        foreach ($changes as $field => $change) {
+            if (isset($change['old'])) {
+                // Use reflection to set the value if it's a protected property
+                $reflection = new \ReflectionClass($object);
+                $property = $reflection->getProperty($field);
+                $property->setAccessible(true);
+                $property->setValue($object, $change['old']);
+            }
+        }
+    }
 
 	// We dont need update as we dont change the log
 }

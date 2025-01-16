@@ -13,7 +13,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
-							<DotsHorizontal :size="20" />
+							<LockOutline v-if="objectStore.objectItem.locked" :size="20" />
+							<DotsHorizontal v-else :size="20" />
 						</template>
 						<NcActionButton @click="navigationStore.setModal('editObject')">
 							<template #icon>
@@ -27,7 +28,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</template>
 							Lock
 						</NcActionButton>
-						<NcActionButton v-if="objectStore.objectItem.locked" @click="unlockObject(objectStore.objectItem)">
+						<NcActionButton v-if="objectStore.objectItem.locked" @click="objectStore.unlockObject(objectStore.objectItem.id)">
 							<template #icon>
 								<LockOpenOutline :size="20" />
 							</template>
@@ -49,8 +50,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<LockOutline :size="20" />
 					</template>
-					This object is locked by {{ objectStore.objectItem.lockedBy }}
-					until {{ new Date(objectStore.objectItem.lockedUntil).toLocaleString() }}
+					This object is locked by {{ objectStore.objectItem.locked.user }}
+					{{ objectStore.objectItem.locked.process ? `for process "${objectStore.objectItem.locked.process}"` : '' }}
+					until {{ new Date(objectStore.objectItem.locked.expiration).toLocaleString() }}
 				</NcNoteCard>
 
 				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
