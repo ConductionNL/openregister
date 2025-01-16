@@ -593,8 +593,7 @@ class ObjectService
 		}
 
 		// Make sure we create a folder in NC for this object
-		$folderPath = $this->fileService->createObjectFolder($objectEntity);
-		$objectEntity->setFolder($folderPath);
+		$this->fileService->createObjectFolder($objectEntity);
 
 		// Store old version for audit trail
 		$oldObject = clone $objectEntity;

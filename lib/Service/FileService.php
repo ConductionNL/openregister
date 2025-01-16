@@ -70,7 +70,8 @@ class FileService
 		}
 
 		$registerFolderName = $this->getRegisterFolderName($register);
-		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName"); // @todo maybe we want to use ShareLink here as well?
+		// @todo maybe we want to use ShareLink here for register->folder as well?
+		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER."/$registerFolderName"));
 
 		$folderPath = $this::ROOT_FOLDER."/$registerFolderName";
 		$this->createFolder(folderPath: $folderPath);
@@ -116,7 +117,8 @@ class FileService
 		}
 
 		$registerFolderName = $this->getRegisterFolderName($register);
-		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName"); // @todo maybe we want to use ShareLink here as well?
+		// @todo maybe we want to use ShareLink here for register->folder as well?
+		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER."/$registerFolderName"));
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 
@@ -169,7 +171,8 @@ class FileService
 		}
 
 		$registerFolderName = $this->getRegisterFolderName($register);
-		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName"); // @todo maybe we want to use ShareLink here as well?
+		// @todo maybe we want to use ShareLink here for register->folder as well?
+		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER."/$registerFolderName"));
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 		$objectFolderName = $this->getObjectFolderName($objectEntity);
@@ -179,6 +182,8 @@ class FileService
 
 		// @todo Do we want to use ShareLink here?
 		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
+		$objectEntity->setFolder($this->getFolderLink($folderPath));
+
 //		// Create or find ShareLink
 //		$share = $this->fileService->findShare(path: $filePath);
 //		if ($share !== null) {
@@ -215,6 +220,7 @@ class FileService
 	 */
 	public function getFolderLink(string $folderPath): string
 	{
+		$folderPath = str_replace('%2F','/', urlencode($folderPath));
 		return $this->getCurrentDomain() . "/index.php/apps/files/files?dir=$folderPath";
 	}
 
