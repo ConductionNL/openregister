@@ -23,6 +23,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?array $authorization = []; // JSON object describing authorizations
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
+	protected ?string $folder = null; // The folder path where this object is stored
 
 	public function __construct() {
 		$this->addType(fieldName:'uuid', type: 'string');	
@@ -39,6 +40,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'authorization', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
+		$this->addType(fieldName:'folder', type: 'string');
 	}
 
 	public function getJsonFields(): array
@@ -97,7 +99,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 			'owner' => $this->owner,
 			'authorization' => $this->authorization,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-			'created' => isset($this->created) ? $this->created->format('c') : null
+			'created' => isset($this->created) ? $this->created->format('c') : null,
+			'folder' => $this->folder
 		];
 	}
 

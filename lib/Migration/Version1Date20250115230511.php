@@ -16,8 +16,9 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Migration to add locked, owner and authorization columns to openregister_objects table
- * These columns are used to track object locking, ownership and access permissions
+ * Migration to add locked, owner, authorization and folder columns to openregister_objects table
+ * and folder column to openregister_registers table.
+ * These columns are used to track object locking, ownership, access permissions and folder location
  */
 class Version1Date20250115230511 extends SimpleMigrationStep {
 
@@ -64,6 +65,27 @@ class Version1Date20250115230511 extends SimpleMigrationStep {
 			$table->addColumn('authorization', Types::TEXT, [
 				'notnull' => false,
 				'default' => null,
+			]);
+		}
+
+		// Add folder column to store Nextcloud folder path
+		if ($table->hasColumn('folder') === false) {
+			$table->addColumn('folder', Types::STRING, [
+				'notnull' => false,
+				'length' => 4000,
+				'default' => '',
+			]);
+		}
+
+		// Update the openregister_registers table
+		$registersTable = $schema->getTable('openregister_registers');
+
+		// Add folder column to store Nextcloud folder path for registers
+		if ($registersTable->hasColumn('folder') === false) {
+			$registersTable->addColumn('folder', Types::STRING, [
+				'notnull' => false,
+				'length' => 4000,
+				'default' => '',
 			]);
 		}
 
