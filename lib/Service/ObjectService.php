@@ -828,7 +828,7 @@ class ObjectService
 			return $items;
 		}
 
-		if ($property['items']['type'] !== 'object'
+		if (isset($property['items']['type']) === true && $property['items']['type'] !== 'object'
 			&& $property['items']['type'] !== 'file'
 		) {
 			return $items;
