@@ -828,7 +828,7 @@ class ObjectService
 			return $items;
 		}
 
-		if ($property['items']['type'] !== 'object'
+		if (isset($property['items']['type']) === true && $property['items']['type'] !== 'object'
 			&& $property['items']['type'] !== 'file'
 		) {
 			return $items;
@@ -1798,6 +1798,10 @@ class ObjectService
 	{
 		$data = $objectEntity->jsonSerialize();
 		$schema = $this->schemaMapper->find($objectEntity->getSchema());
+
+        if ($schema->getProperties() === null) {
+            return $objectEntity;
+        }
 
 		foreach ($schema->getProperties() as $name=>$property) {
 			if (isset($data[$name]) === false && isset($property['default']) === true) {
