@@ -86,7 +86,7 @@ class Schema extends Entity implements JsonSerializable
 		if (isset($this->properties) === true) {
 			foreach ($this->properties as $title => $property) {
 				$title = $property['title'] ?? $title;
-				if ($property['required'] === true && in_array($title, $required) === false) {
+				if (isset($property['required']) === true && $property['required'] === true && in_array($title, $required) === false) {
 					$required[] = $title;
 				}
 				unset($property['title'], $property['required']);
