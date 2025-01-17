@@ -972,6 +972,10 @@ class ObjectService
 		int $depth = 0
 	): array
 	{
+        if (isset($property['type']) === false) {
+            return $object;
+        }
+
 		switch($property['type']) {
 			case 'object':
 				$object[$propertyName] = $this->handleObjectProperty(
