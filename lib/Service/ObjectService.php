@@ -1083,7 +1083,8 @@ class ObjectService
 		$fileName = $file->getFilename();
 
 		try {
-			$folderPath = $this->fileService->createObjectFolder($objectEntity);
+			$folderNode = $this->fileService->createObjectFolder($objectEntity);
+			$folderPath = $folderNode->getPath();
 
 			$filePath = $file->getFilePath();
 
