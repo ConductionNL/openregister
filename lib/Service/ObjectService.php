@@ -725,7 +725,7 @@ class ObjectService
 		// Handle nested object in array
 		$nestedObject = $this->saveObject(
 			register: $register,
-			schema: $subSchema,
+			schema: (int) $subSchema,
 			object: $item,
 			depth: $depth-1
 		);
@@ -834,7 +834,7 @@ class ObjectService
 			return $items;
 		}
 
-		if ($property['items']['type'] === 'file') {
+		if (isset($property['items']['type']) === true && $property['items']['type'] === 'file') {
 			foreach ($items as $index => $item) {
 				$items[$index] = $this->handleFileProperty(
 					objectEntity: $objectEntity,
@@ -972,6 +972,10 @@ class ObjectService
 		int $depth = 0
 	): array
 	{
+        if (isset($property['type']) === false) {
+            return $object;
+        }
+
 		switch($property['type']) {
 			case 'object':
 				$object[$propertyName] = $this->handleObjectProperty(
