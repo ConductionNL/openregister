@@ -136,6 +136,10 @@ class Schema extends Entity implements JsonSerializable
 			// Remove empty fields with array_filter().
 			$data['properties'][$title] = array_filter($property);
 
+            if (isset($property['type']) === false) {
+                continue;
+            }
+
 			if ($property['type'] === 'file') {
 				$data['properties'][$title] = ['$ref' => $urlGenerator->getBaseUrl().'/apps/openregister/api/files/schema'];
 			}
