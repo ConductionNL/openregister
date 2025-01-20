@@ -21,6 +21,8 @@ use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
+use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\Files\Folder;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
@@ -523,13 +525,20 @@ class ObjectService
 		$mapper = $this->getMapper($objectType);
 
         // Use the mapper to find and return all objects of the specified type
-        return $mapper->findAll(
+        $objects = $mapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             sort: $sort,
             search: $search
         );
+
+        $objects = array_map(function($object) {
+            return $this->getFiles($object, $object->getRegister(), $object->getSchema());
+        }, $objects);
+
+        return $objects;
+
     }
 
 	/**
@@ -1127,6 +1136,17 @@ class ObjectService
 		return $file;
 	}
 
+    public function nodeCreatedEventFunction(NodeCreatedEvent $event): void
+    {
+        $node = $event->getNode();
+        var_dump($node->getMetadata());
+        if ($node instanceof \OC\Files\Node\File === true) {
+            $path     = $node->getFileInfo()->getPath();
+            $metadata = $node->getFileInfo()->getMetadata();
+            var_dump($metadata);
+        }
+    }
+
 	/**
 	 * @todo
 	 *
@@ -1279,6 +1299,40 @@ class ObjectService
 		}
 	}
 
+    private function getFiles(ObjectEntity $object, int $register, int $schema): ObjectEntity
+    {
+        $folder = $this->fileService->getObjectFolder(objectEntity: $object, register: $register, schema: $schema);
+
+        if($folder instanceof Folder === true) {
+            $files = $folder->getDirectoryListing();
+        }
+
+        $formattedFiles = [];
+
+        foreach($files as $file) {
+            $formattedFile = [
+                'id'        => $file->getId(),
+                'path'      => $file->getPath(),
+                'filename'  => $file->getName(),
+                'extension' => $file->getExtension(),
+                'metadata'  => $file->getMetadata(),
+                'mimeType'  => $file->getMimetype(),
+                'uploaded'  => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+                'Etag'      => $file->getEtag(),
+            ];
+
+            if($file->isShared() === true) {
+                var_dump('a');
+            }
+
+            $formattedFiles[] = $formattedFile;
+        }
+
+        $object->setFiles($formattedFiles);
+
+        return $object;
+    }
+
 	/**
 	 * Retrieves an object from a specified register and schema using its UUID.
 	 *
@@ -1297,7 +1351,9 @@ class ObjectService
 
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
-			return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+
+            return $this->getFiles($object, $register->getId(), $schema->getId());
 		}
 
 		//@todo mongodb support

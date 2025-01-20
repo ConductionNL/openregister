@@ -45,7 +45,7 @@ class AbstractNodeFolderEventListener implements IEventListener
 	}
 
 	private function handleNodeCreated(NodeCreatedEvent $event): void {
-//		$this->objectService->nodeCreatedEventFunction();
+//		$this->objectService->nodeCreatedEventFunction(event: $event);
 	}
 
 	private function handleNodeDeleted(NodeDeletedEvent $event): void {

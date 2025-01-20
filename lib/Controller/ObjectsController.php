@@ -86,7 +86,8 @@ class ObjectsController extends Controller
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // @todo: figure out how to use extend here
-        $results = $this->objectEntityMapper->findAll(filters: $filters);
+        $results = $objectService->getObjects(objectType: 'objectEntity', filters: $filters);
+//        $results = $this->objectEntityMapper->findAll(filters: $filters);
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($results as $key => $result) {
@@ -160,7 +161,7 @@ class ObjectsController extends Controller
 		// Save the object
 		try {
 			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
-			
+
 			// Unlock the object after saving
 			try {
 				$this->objectEntityMapper->unlockObject($objectEntity->getId());
@@ -213,7 +214,7 @@ class ObjectsController extends Controller
         // save it
         try {
             $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data['object']);
-            
+
             // Unlock the object after saving
             try {
                 $this->objectEntityMapper->unlockObject($objectEntity->getId());
@@ -458,7 +459,7 @@ class ObjectsController extends Controller
 
 	/**
 	 * Revert an object to a previous state
-	 * 
+	 *
 	 * This endpoint allows reverting an object to a previous state based on different criteria:
 	 * 1. DateTime - Revert to the state at a specific point in time
 	 * 2. Audit Trail ID - Revert to the state after a specific audit trail entry
@@ -505,7 +506,7 @@ class ObjectsController extends Controller
 	{
 		try {
 			$data = $this->request->getParams();
-			
+
 			// Parse the revert point
 			$until = null;
 			if (isset($data['datetime'])) {
@@ -518,7 +519,7 @@ class ObjectsController extends Controller
 
 			if ($until === null) {
 				return new JSONResponse(
-					['error' => 'Must specify either datetime, auditTrailId, or version'], 
+					['error' => 'Must specify either datetime, auditTrailId, or version'],
 					400
 				);
 			}
