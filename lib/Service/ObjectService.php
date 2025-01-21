@@ -1312,6 +1312,9 @@ class ObjectService
 	/**
 	 * Get files for object
 	 *
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     *
 	 * @param ObjectEntity $object The object to fetch files for.
 	 * @return Node[] The files found.
 	 * @throws \OCP\Files\NotFoundException
@@ -1330,9 +1333,12 @@ class ObjectService
 	/**
 	 * Hydrate files array with metadata.
 	 *
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     *
 	 * @param ObjectEntity $object The object to hydrate the files array of.
 	 * @param Node[] $files The files to hydrate the files array with.
-	 *
+     *
 	 * @return ObjectEntity The object with hydrated files array.
 	 */
 	public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
@@ -1340,6 +1346,8 @@ class ObjectService
 		$formattedFiles = [];
 
 		foreach($files as $file) {
+
+            // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
 			$shares = $this->fileService->findShares($file);
 
 			$formattedFile = [
