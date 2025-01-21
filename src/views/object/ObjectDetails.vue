@@ -40,6 +40,14 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</template>
 							Delete
 						</NcActionButton>
+						<NcActionButton 
+							:disabled="!objectStore.objectItem.folder"
+							@click="openFolder(objectStore.objectItem.folder)">
+							<template #icon>
+								<FolderOutline :size="20" />
+							</template>
+							Open Folder
+						</NcActionButton>
 					</NcActions>
 				</div>
 
@@ -64,6 +72,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<div class="gridContent gridFullWidth">
 						<b>Schema:</b>
 						<p>{{ objectStore.objectItem.schema }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Folder:</b>
+						<p>{{ objectStore.objectItem.folder || '-' }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Updated:</b>
@@ -186,6 +198,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -204,6 +217,7 @@ export default {
 		Eye,
 		LockOutline,
 		LockOpenOutline,
+		FolderOutline,
 	},
 	data() {
 		return {
@@ -246,6 +260,17 @@ export default {
 					this.relations = data
 					this.relationsLoading = false
 				})
+		},
+		/**
+		 * Opens the folder URL in a new tab after parsing the encoded URL
+		 * @param {string} url - The encoded folder URL to open
+		 */
+		openFolder(url) {
+			// Parse the encoded URL by replacing escaped characters
+			const decodedUrl = url.replace(/\\\//g, '/') 
+			
+			// Open URL in new tab
+			window.open(decodedUrl, '_blank')
 		},
 	},
 }

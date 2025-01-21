@@ -11,6 +11,7 @@ export const mockObjectData = (): TObject[] => [
 		object: JSON.stringify({ key: 'value' }),
 		relations: JSON.stringify({ key: 'value' }),
 		files: JSON.stringify({ key: 'value' }),
+		folder: 'https://example.com/character/1234a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 		created: new Date().toISOString(),
 		updated: new Date().toISOString(),
 		locked: ['token1', 'token2'], // Array of lock tokens
@@ -25,6 +26,7 @@ export const mockObjectData = (): TObject[] => [
 		object: JSON.stringify({ key: 'value' }),
 		relations: JSON.stringify({ key: 'value' }),
 		files: JSON.stringify({ key: 'value' }),
+		folder: 'https://example.com/item/5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 		created: new Date().toISOString(),
 		updated: new Date().toISOString(),
 		locked: null, // Not locked
