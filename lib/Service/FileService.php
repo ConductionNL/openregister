@@ -46,15 +46,17 @@ class FileService
 	 * @param IManager $shareManager The share manager interface
 	 */
 	public function __construct(
-		private readonly IUserSession 	 $userSession,
+		private readonly IUserSession    $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly IRootFolder 	 $rootFolder,
-		private readonly IManager 		 $shareManager,
-		private readonly IURLGenerator 	 $urlGenerator,
-		private readonly IConfig 		 $config,
+		private readonly IRootFolder     $rootFolder,
+		private readonly IManager        $shareManager,
+		private readonly IURLGenerator   $urlGenerator,
+		private readonly IConfig         $config,
 		private readonly RegisterMapper  $registerMapper,
 		private readonly SchemaMapper    $schemaMapper,
-	) {}
+	)
+	{
+	}
 
 	/**
 	 * Creates a folder for a Register (used for storing files of Schemas/Objects).
@@ -72,9 +74,9 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER."/$registerFolderName"));
+		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER . "/$registerFolderName"));
 
-		$folderPath = $this::ROOT_FOLDER."/$registerFolderName";
+		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName";
 		$this->createFolder(folderPath: $folderPath);
 
 		return $folderPath;
@@ -120,11 +122,11 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER."/$registerFolderName"));
+		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER . "/$registerFolderName"));
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 
-		$folderPath = $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName";
+		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName/$schemaFolderName";
 		$this->createFolder(folderPath: $folderPath);
 
 		return $folderPath;
@@ -153,10 +155,10 @@ class FileService
 	 * @throws Exception In case we can't create the folder because it is not permitted.
 	 */
 	public function createObjectFolder(
-		ObjectEntity $objectEntity,
+		ObjectEntity      $objectEntity,
 		Register|int|null $register = null,
-		Schema|int|null $schema = null,
-		string $folderPath = null
+		Schema|int|null   $schema = null,
+		string            $folderPath = null
 	): ?Node
 	{
 		if ($folderPath === null) {
@@ -190,9 +192,9 @@ class FileService
 	 * @throws Exception In case we can't create the folder because it is not permitted.
 	 */
 	public function getObjectFolder(
-		ObjectEntity $objectEntity,
+		ObjectEntity      $objectEntity,
 		Register|int|null $register = null,
-		Schema|int|null $schema = null
+		Schema|int|null   $schema = null
 	): ?Node
 	{
 		$folderPath = $this->getObjectFolderPath(
@@ -224,12 +226,12 @@ class FileService
 	 * @throws Exception If something went wrong getting the path, a mismatch in object register/schema & function parameters register/schema for example.
 	 */
 	private function getObjectFolderPath(
-		ObjectEntity $objectEntity,
+		ObjectEntity      $objectEntity,
 		Register|int|null $register = null,
-		Schema|int|null $schema = null
+		Schema|int|null   $schema = null
 	): string
 	{
-		$objectRegister = (int) $objectEntity->getRegister();
+		$objectRegister = (int)$objectEntity->getRegister();
 		if ($register === null) {
 			$register = $objectRegister;
 		}
@@ -242,7 +244,7 @@ class FileService
 			$register = $this->registerMapper->find($register);
 		}
 
-		$objectSchema = (int) $objectEntity->getSchema();
+		$objectSchema = (int)$objectEntity->getSchema();
 		if ($schema === null) {
 			$schema = $objectSchema;
 		}
@@ -257,12 +259,12 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER."/$registerFolderName"));
+		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER . "/$registerFolderName"));
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 		$objectFolderName = $this->getObjectFolderName($objectEntity);
 
-		return $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName/$objectFolderName";
+		return $this::ROOT_FOLDER . "/$registerFolderName/$schemaFolderName/$objectFolderName";
 	}
 
 	/**
@@ -290,7 +292,7 @@ class FileService
 	 */
 	private function getFolderLink(string $folderPath): string
 	{
-		$folderPath = str_replace('%2F','/', urlencode($folderPath));
+		$folderPath = str_replace('%2F', '/', urlencode($folderPath));
 		return $this->getCurrentDomain() . "/index.php/apps/files/files?dir=$folderPath";
 	}
 
@@ -343,6 +345,20 @@ class FileService
 			$this->logger->error(message: $e->getMessage());
 			return null;
 		}
+	}
+
+	/**
+	 * @param Node $file
+	 * @param int $shareType
+	 * @return IShare[]
+	 */
+	public function findShares(Node $file, int $shareType = 3): array
+	{
+		// Get the current user.
+		$currentUser = $this->userSession->getUser();
+		$userId = $currentUser ? $currentUser->getUID() : 'Guest';
+
+		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file);
 	}
 
 	/**

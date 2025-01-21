@@ -517,7 +517,7 @@ class ObjectService
         array $filters = [],
         array $sort = [],
         ?string $search = null,
-		bool $files = false,
+		bool $files = true,
     )
     {
         // Set object type and filters if register and schema are provided
@@ -1340,19 +1340,21 @@ class ObjectService
 		$formattedFiles = [];
 
 		foreach($files as $file) {
-			$formattedFile = [
-				'id'        => $file->getId(),
-				'path'      => $file->getPath(),
-				'filename'  => $file->getName(),
-				'extension' => $file->getExtension(),
-				'metadata'  => $file->getMetadata(),
-				'mimeType'  => $file->getMimetype(),
-				'uploaded'  => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-				'Etag'      => $file->getEtag(),
-			];
+			$shares = $this->fileService->findShares($file);
 
-			if($file->isShared() === true) {
-			}
+			$formattedFile = [
+				'id'          => $file->getId(),
+				'path' 		  => $file->getPath(),
+				'title'  	  => $file->getName(),
+				'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
+				'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
+				'type'  	  => $file->getMimetype(),
+				'extension'   => $file->getExtension(),
+				'size'		  => $file->getSize(),
+				'hash'		  => $file->getEtag(),
+				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+			];
 
 			$formattedFiles[] = $formattedFile;
 		}
