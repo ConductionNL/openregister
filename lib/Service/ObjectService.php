@@ -8,6 +8,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use JsonSerializable;
+use OC\Files\Node\Node;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -187,13 +188,14 @@ class ObjectService
 	 * @return ObjectEntity|null The found object or null if not found
 	 * @throws Exception If the object is not found.
 	 */
-    public function find(int|string $id, ?array $extend = []): ?ObjectEntity
+    public function find(int|string $id, ?array $extend = [], bool $files = false): ?ObjectEntity
 	{
 		return $this->getObject(
 			$this->registerMapper->find($this->getRegister()),
 			$this->schemaMapper->find($this->getSchema()),
 			$id,
-			$extend
+			$extend,
+			files: $files
 		);
 	}
 
@@ -308,7 +310,8 @@ class ObjectService
         array $filters = [],
         array $sort = [],
         ?string $search = null,
-        ?array $extend = []
+        ?array $extend = [],
+		bool $files = false
     ): array
     {
         $objects = $this->getObjects(
@@ -318,7 +321,8 @@ class ObjectService
             offset: $offset,
             filters: $filters,
             sort: $sort,
-            search: $search
+            search: $search,
+			files: $files
         );
 
         // If extend is provided, extend each object
@@ -512,7 +516,8 @@ class ObjectService
         ?int $offset = null,
         array $filters = [],
         array $sort = [],
-        ?string $search = null
+        ?string $search = null,
+		bool $files = false,
     )
     {
         // Set object type and filters if register and schema are provided
@@ -533,8 +538,13 @@ class ObjectService
             search: $search
         );
 
+		if($files === false) {
+			return $objects;
+		}
+
         $objects = array_map(function($object) {
-            return $this->getFiles($object, $object->getRegister(), $object->getSchema());
+            $files = $this->getFiles($object);
+			return $this->hydrateFiles($object, $files);
         }, $objects);
 
         return $objects;
@@ -1299,39 +1309,58 @@ class ObjectService
 		}
 	}
 
-    private function getFiles(ObjectEntity $object, int $register, int $schema): ObjectEntity
+	/**
+	 * Get files for object
+	 *
+	 * @param ObjectEntity $object The object to fetch files for.
+	 * @return Node[] The files found.
+	 * @throws \OCP\Files\NotFoundException
+	 */
+    private function getFiles(ObjectEntity $object): array
     {
-        $folder = $this->fileService->getObjectFolder(objectEntity: $object, register: $register, schema: $schema);
+        $folder = $this->fileService->getObjectFolder(objectEntity: $object, register: $object->getRegister(), schema: $object->getSchema());
 
         if($folder instanceof Folder === true) {
             $files = $folder->getDirectoryListing();
         }
 
-        $formattedFiles = [];
-
-        foreach($files as $file) {
-            $formattedFile = [
-                'id'        => $file->getId(),
-                'path'      => $file->getPath(),
-                'filename'  => $file->getName(),
-                'extension' => $file->getExtension(),
-                'metadata'  => $file->getMetadata(),
-                'mimeType'  => $file->getMimetype(),
-                'uploaded'  => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-                'Etag'      => $file->getEtag(),
-            ];
-
-            if($file->isShared() === true) {
-                var_dump('a');
-            }
-
-            $formattedFiles[] = $formattedFile;
-        }
-
-        $object->setFiles($formattedFiles);
-
-        return $object;
+		return $files;
     }
+
+	/**
+	 * Hydrate files array with metadata.
+	 *
+	 * @param ObjectEntity $object The object to hydrate the files array of.
+	 * @param Node[] $files The files to hydrate the files array with.
+	 *
+	 * @return ObjectEntity The object with hydrated files array.
+	 */
+	private function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
+	{
+		$formattedFiles = [];
+
+		foreach($files as $file) {
+			$formattedFile = [
+				'id'        => $file->getId(),
+				'path'      => $file->getPath(),
+				'filename'  => $file->getName(),
+				'extension' => $file->getExtension(),
+				'metadata'  => $file->getMetadata(),
+				'mimeType'  => $file->getMimetype(),
+				'uploaded'  => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+				'Etag'      => $file->getEtag(),
+			];
+
+			if($file->isShared() === true) {
+			}
+
+			$formattedFiles[] = $formattedFile;
+		}
+
+		$object->setFiles($formattedFiles);
+
+		return $object;
+	}
 
 	/**
 	 * Retrieves an object from a specified register and schema using its UUID.
@@ -1346,14 +1375,19 @@ class ObjectService
 	 * @return ObjectEntity The retrieved object as an entity.
 	 * @throws Exception If the source type is unsupported.
 	 */
-	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
+	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = [], bool $files = false): ObjectEntity
 	{
 
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
 			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
 
-            return $this->getFiles($object, $register->getId(), $schema->getId());
+			if($files === false) {
+				return $object;
+			}
+
+            $files = $this->getFiles($object);
+			return $this->hydrateFiles($object, $files);
 		}
 
 		//@todo mongodb support
