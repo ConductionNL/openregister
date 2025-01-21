@@ -14,6 +14,7 @@ export class ObjectEntity implements TObject {
 	public object: string
 	public relations: string
 	public files: string
+	public folder: string
 	public updated: string
 	public created: string
 	public locked: string[] | null // Array of lock tokens or null if not locked
@@ -28,6 +29,7 @@ export class ObjectEntity implements TObject {
 		this.object = object.object
 		this.relations = object.relations
 		this.files = object.files
+		this.folder = object.folder || ''
 		this.updated = object.updated || ''
 		this.created = object.created || ''
 		this.locked = object.locked || null
@@ -47,6 +49,7 @@ export class ObjectEntity implements TObject {
 			object: z.string(),
 			relations: z.string(),
 			files: z.string(),
+			folder: z.string(),
 			updated: z.string(),
 			created: z.string(),
 			locked: z.array(z.string()).nullable(),

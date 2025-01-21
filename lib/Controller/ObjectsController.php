@@ -40,7 +40,9 @@ class ObjectsController extends Controller
         private readonly ContainerInterface $container,
         private readonly ObjectEntityMapper $objectEntityMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper
+        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
+        private readonly ObjectService $objectService,
+
     )
     {
         parent::__construct($appName, $request);
@@ -343,8 +345,6 @@ class ObjectsController extends Controller
         }
     }
 
-
-
     /**
      * Retrieves all available mappings
      *
@@ -546,4 +546,31 @@ class ObjectsController extends Controller
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}
 	}
+
+    /**
+     * Retrieves files associated with an object
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $id The ID of the object to get files for
+     * @return JSONResponse A JSON response containing the object's files
+     */
+    public function files(string $id, ObjectService $objectService): JSONResponse
+    {
+        try {
+            // Get the object with files included
+            $object = $this->objectEntityMapper->find((int) $id);
+            $files = $objectService->getFiles($object);
+            $object = $objectService->hydrateFiles($object, $files);
+            
+            // Return just the files array from the object
+            return new JSONResponse($object->getFiles());
+            
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
 }

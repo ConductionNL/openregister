@@ -10,11 +10,18 @@ export const useObjectStore = defineStore('object', {
 		auditTrails: [],
 		relationItem: false,
 		relations: [],
+		fileItem: false, // Single file item
+		files: [], // List of files
 	}),
 	actions: {
-		setObjectItem(objectItem) {
+		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
 			console.log('Active object item set to ' + objectItem)
+
+			// Get files when object is set
+			if (objectItem && objectItem.id) {
+				await this.getFiles(objectItem.id)
+			}
 		},
 		setObjectList(objectList) {
 			this.objectList = objectList.map(
@@ -37,6 +44,12 @@ export const useObjectStore = defineStore('object', {
 			this.relations = relations.map(
 				(relation) => new ObjectEntity(relation),
 			)
+		},
+		setFileItem(fileItem) {
+			this.fileItem = fileItem
+		},
+		setFiles(files) {
+			this.files = files
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshObjectList(search = null) {
@@ -193,6 +206,38 @@ export const useObjectStore = defineStore('object', {
 			this.setRelations(data)
 
 			return { response, data }
+		},
+		// FILES
+		/**
+		 * Get files for an object
+		 * 
+		 * @param {number} id Object ID
+		 * @return {Promise} Promise that resolves with the object's files
+		 */
+		async getFiles(id) {
+			if (!id) {
+				throw new Error('No object id to get files for')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/files/${id}`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				this.setFiles(data || [])
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error getting files:', error)
+				throw new Error(`Failed to get files: ${error.message}`)
+			}
 		},
 		// mappings
 		async getMappings() {
