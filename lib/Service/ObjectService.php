@@ -1316,7 +1316,7 @@ class ObjectService
 	 * @return Node[] The files found.
 	 * @throws \OCP\Files\NotFoundException
 	 */
-    private function getFiles(ObjectEntity $object): array
+    public function getFiles(ObjectEntity $object): array
     {
         $folder = $this->fileService->getObjectFolder(objectEntity: $object, register: $object->getRegister(), schema: $object->getSchema());
 
@@ -1335,7 +1335,7 @@ class ObjectService
 	 *
 	 * @return ObjectEntity The object with hydrated files array.
 	 */
-	private function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
+	public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
 	{
 		$formattedFiles = [];
 

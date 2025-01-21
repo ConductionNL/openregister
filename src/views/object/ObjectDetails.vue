@@ -135,8 +135,31 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab title="Files">
-							<div v-if="true || !syncs.length" class="tabPanel">
-								{{ JSON.stringify(objectStore.objectItem.files, null, 2) }}
+							<div v-if="objectStore.files.length">
+								<NcListItem v-for="(file, key) in objectStore.files"
+									:key="key"
+									:name="file.filename"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<FileOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ file.mimeType }} - Uploaded: {{ new Date(file.uploaded).toLocaleString() }}
+									</template>
+									<template #actions>
+										<NcActionButton @click="openFile(file)">
+											<template #icon>
+												<Eye :size="20" />
+											</template>
+											View file
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-else class="tabPanel">
+								No files found
 							</div>
 						</BTab>
 						<BTab title="Syncs">
@@ -199,6 +222,7 @@ import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -218,6 +242,7 @@ export default {
 		LockOutline,
 		LockOpenOutline,
 		FolderOutline,
+		FileOutline,
 	},
 	data() {
 		return {
@@ -271,6 +296,23 @@ export default {
 			
 			// Open URL in new tab
 			window.open(decodedUrl, '_blank')
+		},
+		/**
+		 * Opens a file in the Nextcloud Files app
+		 * @param {Object} file - The file object containing id, path, and other metadata
+		 */
+		openFile(file) {
+			// Extract the directory path without the filename
+			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
+			
+			// Remove the '/admin/files/' prefix if it exists
+			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
+			
+			// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
+			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
+			
+			// Open URL in new tab
+			window.open(filesAppUrl, '_blank')
 		},
 	},
 }
