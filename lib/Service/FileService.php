@@ -74,7 +74,7 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER . "/$registerFolderName"));
+		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
 
 		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName";
 		$this->createFolder(folderPath: $folderPath);
@@ -122,7 +122,7 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER . "/$registerFolderName"));
+		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 
@@ -168,7 +168,7 @@ class FileService
 
 		// @todo Do we want to use ShareLink here?
 		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
-		$objectEntity->setFolder($this->getFolderLink($folderPath));
+		$objectEntity->setFolder($folderPath);
 
 //		// Create or find ShareLink
 //		$share = $this->fileService->findShare(path: $filePath);
@@ -197,11 +197,16 @@ class FileService
 		Schema|int|null   $schema = null
 	): ?Node
 	{
-		$folderPath = $this->getObjectFolderPath(
-			objectEntity: $objectEntity,
-			register: $register,
-			schema: $schema
-		);
+        if($objectEntity->getFolder() === null) {
+            $folderPath = $this->getObjectFolderPath(
+                objectEntity: $objectEntity,
+                register: $register,
+                schema: $schema
+            );
+        } else {
+            $folderPath = $objectEntity->getFolder();
+        }
+
 		$node = $this->getNode($folderPath);
 
 		if ($node === null) {
@@ -259,7 +264,7 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this->getFolderLink($this::ROOT_FOLDER . "/$registerFolderName"));
+		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 		$objectFolderName = $this->getObjectFolderName($objectEntity);
