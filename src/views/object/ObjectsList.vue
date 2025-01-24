@@ -128,7 +128,7 @@ export default {
 	},
 	mounted() {
 		objectStore.refreshObjectList()
-	}
+	},
 }
 </script>
 

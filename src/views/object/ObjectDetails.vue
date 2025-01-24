@@ -40,7 +40,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</template>
 							Delete
 						</NcActionButton>
-						<NcActionButton 
+						<NcActionButton
 							:disabled="!objectStore.objectItem.folder"
 							@click="openFolder(objectStore.objectItem.folder)">
 							<template #icon>
@@ -292,25 +292,25 @@ export default {
 		 */
 		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
-			const decodedUrl = url.replace(/\\\//g, '/') 
-			
+			const decodedUrl = url.replace(/\\\//g, '/')
+
 			// Open URL in new tab
 			window.open(decodedUrl, '_blank')
 		},
 		/**
 		 * Opens a file in the Nextcloud Files app
-		 * @param {Object} file - The file object containing id, path, and other metadata
+		 * @param {object} file - The file object containing id, path, and other metadata
 		 */
 		openFile(file) {
 			// Extract the directory path without the filename
 			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
-			
+
 			// Remove the '/admin/files/' prefix if it exists
 			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
-			
+
 			// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
 			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
-			
+
 			// Open URL in new tab
 			window.open(filesAppUrl, '_blank')
 		},
