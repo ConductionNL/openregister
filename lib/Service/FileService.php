@@ -411,6 +411,18 @@ class FileService
 		return null;
 	}
 
+    /**
+     * Share a file or folder with a user group in Nextcloud.
+     *
+     * @param int $nodeId The file or folder to share.
+     * @param string $nodeType 'file' or 'folder', the type of node.
+     * @param string $target The target folder to share the node in.
+     * @param int $permissions Permissions the group members will have in the folder.
+     * @param string $groupId The id of the group to share the folder with.
+     *
+     * @return IShare The resulting share
+     * @throws Exception
+     */
     private function shareWithGroup(int $nodeId, string $nodeType, string $target, int $permissions, string $groupId): IShare
     {
         $share = $this->shareManager->newShare();
@@ -533,6 +545,7 @@ class FileService
 
 		// Check if folder exists and if not create it.
 		try {
+            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
             try {
                 $userFolder->get(self::ROOT_FOLDER);
             } catch(NotFoundException $exception) {

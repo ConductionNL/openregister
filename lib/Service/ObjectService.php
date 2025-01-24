@@ -1146,17 +1146,6 @@ class ObjectService
 		return $file;
 	}
 
-    public function nodeCreatedEventFunction(NodeCreatedEvent $event): void
-    {
-        $node = $event->getNode();
-        var_dump($node->getMetadata());
-        if ($node instanceof \OC\Files\Node\File === true) {
-            $path     = $node->getFileInfo()->getPath();
-            $metadata = $node->getFileInfo()->getMetadata();
-            var_dump($metadata);
-        }
-    }
-
 	/**
 	 * @todo
 	 *
