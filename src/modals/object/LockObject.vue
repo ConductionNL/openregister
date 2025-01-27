@@ -24,7 +24,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="success === null"
+			<NcButton
 				:disabled="loading"
 				type="primary"
 				@click="lockObject()">
@@ -103,9 +103,9 @@ export default {
 					this.duration || undefined,
 				)
 				this.success = true
+				this.error = null
 				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 			} catch (error) {
-				this.success = false
 				this.error = error.message || 'Failed to lock object'
 			} finally {
 				this.loading = false
