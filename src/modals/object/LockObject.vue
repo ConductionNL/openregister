@@ -25,7 +25,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton
-				:disabled="loading"
+				:disabled="loading || success"
 				type="primary"
 				@click="lockObject()">
 				<template #icon>
