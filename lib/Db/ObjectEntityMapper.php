@@ -34,6 +34,7 @@ class ObjectEntityMapper extends QBMapper
 	private IUserSession $userSession;
 
 	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
+	public const DEFAULT_LOCK_DURATION = 3600;
 
 	/**
 	 * Constructor for the ObjectEntityMapper
@@ -432,10 +433,14 @@ class ObjectEntityMapper extends QBMapper
 	 * @throws DoesNotExistException If object not found
 	 * @throws \Exception If locking fails
 	 */
-	public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity 
+	public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
 	{
 		$object = $this->find($identifier);
-		
+
+		if ($duration === null) {
+			$duration = $this::DEFAULT_LOCK_DURATION;
+		}
+
 		// Check if user has permission to lock
 		if (!$this->userSession->isLoggedIn()) {
 			throw new \Exception('Must be logged in to lock objects');
