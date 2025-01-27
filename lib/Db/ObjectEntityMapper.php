@@ -12,11 +12,15 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectLockedEvent;
+use OCA\OpenRegister\Event\ObjectUnlockedEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * The ObjectEntityMapper class
@@ -27,8 +31,10 @@ class ObjectEntityMapper extends QBMapper
 {
 	private IDatabaseJsonService $databaseJsonService;
 	private IEventDispatcher $eventDispatcher;
+	private IUserSession $userSession;
 
 	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
+	public const DEFAULT_LOCK_DURATION = 3600;
 
 	/**
 	 * Constructor for the ObjectEntityMapper
@@ -36,11 +42,13 @@ class ObjectEntityMapper extends QBMapper
 	 * @param IDBConnection $db The database connection
 	 * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher
+	 * @param IUserSession $userSession The user session
 	 */
 	public function __construct(
-		IDBConnection $db,
+		IDBConnection $db, 
 		MySQLJsonService $mySQLJsonService,
-		IEventDispatcher $eventDispatcher
+		IEventDispatcher $eventDispatcher,
+		IUserSession $userSession,
 	) {
 		parent::__construct($db, 'openregister_objects');
 
@@ -48,6 +56,7 @@ class ObjectEntityMapper extends QBMapper
 			$this->databaseJsonService = $mySQLJsonService;
 		}
 		$this->eventDispatcher = $eventDispatcher;
+		$this->userSession = $userSession;
 	}
 
 	/**
@@ -274,11 +283,11 @@ class ObjectEntityMapper extends QBMapper
 		if ($obj->getUuid() === null) {
 			$obj->setUuid(Uuid::v4());
 		}
-
-		$obj = $this->insert($obj);
-
-
-		return $obj;
+		// Set current user as owner when creating new object
+		if ($this->userSession->isLoggedIn()) {
+			$obj->setOwner($this->userSession->getUser()->getUID());
+		}
+		return $this->insert($obj);
 	}
 
 	/**
@@ -316,7 +325,10 @@ class ObjectEntityMapper extends QBMapper
 			$newObject->setVersion(implode('.', $version));
 		}
 
-		$newObject = $this->update($newObject);
+		// Set current user as owner if not already set
+		if ($obj->getOwner() === null && $this->userSession->isLoggedIn()) {
+			$obj->setOwner($this->userSession->getUser()->getUID());
+		}
 
 		return $newObject;
 	}
@@ -409,5 +421,88 @@ class ObjectEntityMapper extends QBMapper
 			);
 
 		return $this->findEntities($qb);
+	}
+
+	/**
+	 * Lock an object
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param string|null $process Optional process identifier
+	 * @param int|null $duration Lock duration in seconds
+	 * @return ObjectEntity The locked object
+	 * @throws DoesNotExistException If object not found
+	 * @throws \Exception If locking fails
+	 */
+	public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
+	{
+		$object = $this->find($identifier);
+
+		if ($duration === null) {
+			$duration = $this::DEFAULT_LOCK_DURATION;
+		}
+
+		// Check if user has permission to lock
+		if (!$this->userSession->isLoggedIn()) {
+			throw new \Exception('Must be logged in to lock objects');
+		}
+
+		// Attempt to lock the object
+		$object->lock($this->userSession, $process, $duration);
+
+		// Save the locked object
+		$object = $this->update($object);
+
+		// Dispatch lock event
+		$this->eventDispatcher->dispatch(
+			ObjectLockedEvent::class,
+			new ObjectLockedEvent($object)
+		);
+
+		return $object;
+	}
+
+	/**
+	 * Unlock an object
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @return ObjectEntity The unlocked object
+	 * @throws DoesNotExistException If object not found
+	 * @throws \Exception If unlocking fails
+	 */
+	public function unlockObject($identifier): ObjectEntity 
+	{
+		$object = $this->find($identifier);
+		
+		// Check if user has permission to unlock
+		if (!$this->userSession->isLoggedIn()) {
+			throw new \Exception('Must be logged in to unlock objects');
+		}
+
+		// Attempt to unlock the object
+		$object->unlock($this->userSession);
+
+		// Save the unlocked object
+		$object = $this->update($object);
+
+		// Dispatch unlock event
+		$this->eventDispatcher->dispatch(
+			ObjectUnlockedEvent::class,
+			new ObjectUnlockedEvent($object)
+		);
+
+		return $object;
+	}
+
+	/**
+	 * Check if an object is locked
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @return bool True if object is locked, false otherwise
+	 * @throws DoesNotExistException If object not found
+	 */
+	public function isObjectLocked($identifier): bool
+	{
+		$object = $this->find($identifier);
+		return $object->isLocked();
 	}
 }

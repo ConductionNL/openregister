@@ -8,12 +8,9 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use JsonSerializable;
-use OCA\OpenConnector\Twig\MappingExtension;
-use OCA\OpenConnector\Twig\MappingRuntimeLoader;
+use OC\Files\Node\Node;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
@@ -25,6 +22,8 @@ use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
+use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\Files\Folder;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
@@ -89,7 +88,6 @@ class ObjectService
 	)
 	{
 		$this->twig = new Environment($loader);
-		$this->twig->addExtension(new MappingExtension());
 	}
 
 	/**
@@ -190,13 +188,14 @@ class ObjectService
 	 * @return ObjectEntity|null The found object or null if not found
 	 * @throws Exception If the object is not found.
 	 */
-    public function find(int|string $id, ?array $extend = []): ?ObjectEntity
+    public function find(int|string $id, ?array $extend = [], bool $files = false): ?ObjectEntity
 	{
 		return $this->getObject(
 			$this->registerMapper->find($this->getRegister()),
 			$this->schemaMapper->find($this->getSchema()),
 			$id,
-			$extend
+			$extend,
+			files: $files
 		);
 	}
 
@@ -311,7 +310,8 @@ class ObjectService
         array $filters = [],
         array $sort = [],
         ?string $search = null,
-        ?array $extend = []
+        ?array $extend = [],
+		bool $files = false
     ): array
     {
         $objects = $this->getObjects(
@@ -321,7 +321,8 @@ class ObjectService
             offset: $offset,
             filters: $filters,
             sort: $sort,
-            search: $search
+            search: $search,
+			files: $files
         );
 
         // If extend is provided, extend each object
@@ -515,7 +516,8 @@ class ObjectService
         ?int $offset = null,
         array $filters = [],
         array $sort = [],
-        ?string $search = null
+        ?string $search = null,
+		bool $files = true,
     )
     {
         // Set object type and filters if register and schema are provided
@@ -528,13 +530,25 @@ class ObjectService
 		$mapper = $this->getMapper($objectType);
 
         // Use the mapper to find and return all objects of the specified type
-        return $mapper->findAll(
+        $objects = $mapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             sort: $sort,
             search: $search
         );
+
+		if($files === false) {
+			return $objects;
+		}
+
+        $objects = array_map(function($object) {
+            $files = $this->getFiles($object);
+			return $this->hydrateFiles($object, $files);
+        }, $objects);
+
+        return $objects;
+
     }
 
 	/**
@@ -550,8 +564,7 @@ class ObjectService
 	 */
 	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
 	{
-
-        // Remove system properties (starting with _)
+		// Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
@@ -598,6 +611,9 @@ class ObjectService
 			$object['id'] = $objectEntity->getUuid();
 		}
 
+		// Make sure we create a folder in NC for this object
+		$this->fileService->createObjectFolder($objectEntity);
+
 		// Store old version for audit trail
 		$oldObject = clone $objectEntity;
 		$objectEntity->setObject($object);
@@ -623,9 +639,11 @@ class ObjectService
 
 		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+			// Create audit trail for update
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
 		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
+			// Create audit trail for creation
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
 		}
 
@@ -1088,18 +1106,13 @@ class ObjectService
 		$fileName = $file->getFilename();
 
 		try {
-			$schema = $this->schemaMapper->find($objectEntity->getSchema());
-			$schemaFolder = $this->fileService->getSchemaFolderName($schema);
-			$objectFolder = $this->fileService->getObjectFolderName($objectEntity);
-
-			$this->fileService->createFolder(folderPath: 'Objects');
-			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder");
-			$this->fileService->createFolder(folderPath: "Objects/$schemaFolder/$objectFolder");
+			$folderNode = $this->fileService->createObjectFolder($objectEntity);
+			$folderPath = $folderNode->getPath();
 
 			$filePath = $file->getFilePath();
 
 			if ($filePath === null) {
-				$filePath = "Objects/$schemaFolder/$objectFolder/$fileName";
+				$filePath = "$folderPath/$fileName";
 			}
 
 			$succes = $this->fileService->updateFile(
@@ -1290,6 +1303,91 @@ class ObjectService
 	}
 
 	/**
+	 * Get files for object
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param ObjectEntity|string $object The object or object ID to fetch files for
+	 * @return Node[] The files found
+	 * @throws \OCP\Files\NotFoundException If the folder is not found
+	 * @throws DoesNotExistException If the object ID is not found
+	 */
+	public function getFiles(ObjectEntity|string $object): array
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		$folder = $this->fileService->getObjectFolder(
+			objectEntity: $object,
+			register: $object->getRegister(),
+			schema: $object->getSchema()
+		);
+
+		if ($folder instanceof Folder === true) {
+			$files = $folder->getDirectoryListing();
+		}
+
+		return $files;
+	}
+
+	/**
+	 * Formats an array of Node files into an array of metadata arrays.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 * 
+	 * @param Node[] $files Array of Node files to format
+	 * @return array Array of formatted file metadata arrays
+	 */
+	public function formatFiles(array $files): array 
+	{
+		$formattedFiles = [];
+
+		foreach($files as $file) {
+			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+			$shares = $this->fileService->findShares($file);
+
+			$formattedFile = [
+				'id'          => $file->getId(),
+				'path' 		  => $file->getPath(),
+				'title'  	  => $file->getName(), 
+				'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
+				'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
+				'type'  	  => $file->getMimetype(),
+				'extension'   => $file->getExtension(),
+				'size'		  => $file->getSize(),
+				'hash'		  => $file->getEtag(),
+				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+			];
+
+			$formattedFiles[] = $formattedFile;
+		}
+
+		return $formattedFiles;
+	}
+
+	/**
+	 * Hydrate files array with metadata.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param ObjectEntity $object The object to hydrate the files array of.
+	 * @param Node[] $files The files to hydrate the files array with.
+	 * @return ObjectEntity The object with hydrated files array.
+	 */
+	public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
+	{
+		$formattedFiles = $this->formatFiles($files);
+		$object->setFiles($formattedFiles);
+		return $object;
+	}
+
+	/**
 	 * Retrieves an object from a specified register and schema using its UUID.
 	 *
 	 * Supports only internal sources and raises an exception for unsupported source types.
@@ -1302,12 +1400,19 @@ class ObjectService
 	 * @return ObjectEntity The retrieved object as an entity.
 	 * @throws Exception If the source type is unsupported.
 	 */
-	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = []): ObjectEntity
+	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = [], bool $files = false): ObjectEntity
 	{
 
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
-			return $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+
+			if($files === false) {
+				return $object;
+			}
+
+            $files = $this->getFiles($object);
+			return $this->hydrateFiles($object, $files);
 		}
 
 		//@todo mongodb support
@@ -1816,5 +1921,115 @@ class ObjectService
 		$objectEntity->setObject($data);
 
 		return $objectEntity;
+	}
+
+	/**
+	 * Lock an object
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param string|null $process Optional process identifier
+	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
+	 * @return ObjectEntity The locked object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws LockedException If object already locked by another user
+	 */
+	public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity
+	{
+		try {
+			return $this->objectEntityMapper->lockObject(
+				$identifier,
+				$process,
+				$duration
+			);
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		} catch (\Exception $e) {
+			if (str_contains($e->getMessage(), 'Must be logged in')) {
+				throw new NotAuthorizedException($e->getMessage());
+			}
+			throw new LockedException($e->getMessage());
+		}
+	}
+
+	/**
+	 * Unlock an object
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @return ObjectEntity The unlocked object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws LockedException If object locked by another user
+	 */
+	public function unlockObject($identifier): ObjectEntity
+	{
+		try {
+			return $this->objectEntityMapper->unlockObject($identifier);
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		} catch (\Exception $e) {
+			if (str_contains($e->getMessage(), 'Must be logged in')) {
+				throw new NotAuthorizedException($e->getMessage());
+			}
+			throw new LockedException($e->getMessage());
+		}
+	}
+
+	/**
+	 * Check if an object is locked
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @return bool True if object is locked, false otherwise
+	 * @throws NotFoundException If object not found
+	 */
+	public function isLocked($identifier): bool
+	{
+		try {
+			return $this->objectEntityMapper->isObjectLocked($identifier);
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		}
+	}
+
+	/**
+	 * Revert an object to a previous state
+	 *
+	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
+	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
+	 * @return ObjectEntity The reverted object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws \Exception If revert fails
+	 */
+	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity
+	{
+		try {
+			// Get the reverted object (unsaved)
+			$revertedObject = $this->auditTrailMapper->revertObject(
+				$identifier,
+				$until,
+				$overwriteVersion
+			);
+
+			// Save the reverted object
+			$revertedObject = $this->objectEntityMapper->update($revertedObject);
+
+			// Dispatch revert event
+			$this->eventDispatcher->dispatch(
+				ObjectRevertedEvent::class,
+				new ObjectRevertedEvent($revertedObject, $until)
+			);
+
+			return $revertedObject;
+
+		} catch (DoesNotExistException $e) {
+			throw new NotFoundException('Object not found');
+		} catch (\Exception $e) {
+			if (str_contains($e->getMessage(), 'Must be logged in')) {
+				throw new NotAuthorizedException($e->getMessage());
+			}
+			throw $e;
+		}
 	}
 }

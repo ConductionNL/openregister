@@ -1,6 +1,9 @@
 import { SafeParseReturnType, z } from 'zod'
 import { TObject } from './object.types'
 
+/**
+ * Entity class representing an Object with validation
+ */
 export class ObjectEntity implements TObject {
 
 	public id: string
@@ -11,8 +14,11 @@ export class ObjectEntity implements TObject {
 	public object: string
 	public relations: string
 	public files: string
+	public folder: string
 	public updated: string
 	public created: string
+	public locked: string[] | null // Array of lock tokens or null if not locked
+	public owner: string // Owner of the object
 
 	constructor(object: TObject) {
 		this.id = object.id || ''
@@ -23,10 +29,17 @@ export class ObjectEntity implements TObject {
 		this.object = object.object
 		this.relations = object.relations
 		this.files = object.files
+		this.folder = object.folder || ''
 		this.updated = object.updated || ''
 		this.created = object.created || ''
+		this.locked = object.locked || null
+		this.owner = object.owner || ''
 	}
 
+	/**
+	 * Validates the object against a schema
+	 * @return {SafeParseReturnType<TObject, unknown>} Object containing validation result with success/error status
+	 */
 	public validate(): SafeParseReturnType<TObject, unknown> {
 		const schema = z.object({
 			id: z.string().min(1),
@@ -36,8 +49,11 @@ export class ObjectEntity implements TObject {
 			object: z.string(),
 			relations: z.string(),
 			files: z.string(),
+			folder: z.string(),
 			updated: z.string(),
 			created: z.string(),
+			locked: z.array(z.string()).nullable(),
+			owner: z.string(),
 		})
 
 		return schema.safeParse(this)

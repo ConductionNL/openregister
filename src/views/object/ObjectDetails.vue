@@ -13,7 +13,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
-							<DotsHorizontal :size="20" />
+							<LockOutline v-if="objectStore.objectItem.locked" :size="20" />
+							<DotsHorizontal v-else :size="20" />
 						</template>
 						<NcActionButton @click="navigationStore.setModal('editObject')">
 							<template #icon>
@@ -21,14 +22,47 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</template>
 							Edit
 						</NcActionButton>
+						<NcActionButton v-if="!objectStore.objectItem.locked" @click="navigationStore.setModal('lockObject')">
+							<template #icon>
+								<LockOutline :size="20" />
+							</template>
+							Lock
+						</NcActionButton>
+						<NcActionButton v-if="objectStore.objectItem.locked" @click="objectStore.unlockObject(objectStore.objectItem.id)">
+							<template #icon>
+								<LockOpenOutline :size="20" />
+							</template>
+							Unlock
+						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
 							Delete
 						</NcActionButton>
+						<NcActionButton
+							:disabled="!objectStore.objectItem.folder"
+							@click="openFolder(objectStore.objectItem.folder)">
+							<template #icon>
+								<FolderOutline :size="20" />
+							</template>
+							Open Folder
+						</NcActionButton>
 					</NcActions>
 				</div>
+
+				<NcNoteCard
+					v-if="objectStore.objectItem.locked"
+					type="warning"
+					:show-close="false">
+					<template #icon>
+						<LockOutline :size="20" />
+					</template>
+					This object is locked by {{ objectStore.objectItem.locked.user }}
+					{{ objectStore.objectItem.locked.process ? `for process "${objectStore.objectItem.locked.process}"` : '' }}
+					until {{ new Date(objectStore.objectItem.locked.expiration).toLocaleString() }}
+				</NcNoteCard>
+
 				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
@@ -38,6 +72,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<div class="gridContent gridFullWidth">
 						<b>Schema:</b>
 						<p>{{ objectStore.objectItem.schema }}</p>
+					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Folder:</b>
+						<p>{{ objectStore.objectItem.folder || '-' }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Updated:</b>
@@ -97,8 +135,37 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab title="Files">
-							<div v-if="true || !syncs.length" class="tabPanel">
-								{{ JSON.stringify(objectStore.objectItem.files, null, 2) }}
+							<NcButton @click="openFolder(objectStore.objectItem.folder)">
+								<template #icon>
+									<FolderOutline :size="20" />
+								</template>
+								Open folder
+							</NcButton>
+							<div v-if="objectStore.files.length">
+								<NcListItem v-for="(file, key) in objectStore.files"
+									:key="key"
+									:name="file.filename"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<FileOutline disable-menu
+											:size="44" />
+									</template>
+									<template #subname>
+										{{ file.mimeType }} - Uploaded: {{ new Date(file.uploaded).toLocaleString() }}
+									</template>
+									<template #actions>
+										<NcActionButton @click="openFile(file)">
+											<template #icon>
+												<Eye :size="20" />
+											</template>
+											View file
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-else class="tabPanel">
+								No files found
 							</div>
 						</BTab>
 						<BTab title="Syncs">
@@ -148,6 +215,8 @@ import {
 	NcActions,
 	NcActionButton,
 	NcListItem,
+	NcNoteCard,
+	NcButton,
 } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 
@@ -157,6 +226,10 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -164,6 +237,8 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcListItem,
+		NcNoteCard,
+		NcButton,
 		BTabs,
 		BTab,
 		DotsHorizontal,
@@ -172,6 +247,10 @@ export default {
 		TimelineQuestionOutline,
 		CubeOutline,
 		Eye,
+		LockOutline,
+		LockOpenOutline,
+		FolderOutline,
+		FileOutline,
 	},
 	data() {
 		return {
@@ -214,6 +293,41 @@ export default {
 					this.relations = data
 					this.relationsLoading = false
 				})
+		},
+		/**
+		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
+		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 */
+		openFolder(url) {
+			// Parse the encoded URL by replacing escaped characters
+			const decodedUrl = url.replace(/\\\//g, '/')
+
+			// Ensure URL starts with forward slash
+			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
+
+			// Construct the proper Nextcloud Files app URL with the normalized path
+			// Use window.location.origin to get the current domain instead of hardcoding
+			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
+
+			// Open URL in new tab
+			window.open(nextcloudUrl, '_blank')
+		},
+		/**
+		 * Opens a file in the Nextcloud Files app
+		 * @param {object} file - The file object containing id, path, and other metadata
+		 */
+		openFile(file) {
+			// Extract the directory path without the filename
+			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
+
+			// Remove the '/admin/files/' prefix if it exists
+			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
+
+			// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
+			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
+
+			// Open URL in new tab
+			window.open(filesAppUrl, '_blank')
 		},
 	},
 }

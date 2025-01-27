@@ -34,7 +34,7 @@ class DownloadService
 	 * @return array The response data for the download request.
 	 * @throws Exception
 	 */
-	public function download(string $objectType, string|int $id, string $accept)
+	public function download(string $objectType, string|int $id, string $accept): array
 	{
 		// Get the appropriate mapper for the object type
 		$mapper = $this->getMapper($objectType);

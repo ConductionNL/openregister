@@ -40,7 +40,9 @@ class ObjectsController extends Controller
         private readonly ContainerInterface $container,
         private readonly ObjectEntityMapper $objectEntityMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper
+        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
+        private readonly ObjectService $objectService,
+
     )
     {
         parent::__construct($appName, $request);
@@ -86,7 +88,8 @@ class ObjectsController extends Controller
         $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // @todo: figure out how to use extend here
-        $results = $this->objectEntityMapper->findAll(filters: $filters);
+        $results = $objectService->getObjects(objectType: 'objectEntity', filters: $filters);
+//        $results = $this->objectEntityMapper->findAll(filters: $filters);
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($results as $key => $result) {
@@ -160,6 +163,13 @@ class ObjectsController extends Controller
 		// Save the object
 		try {
 			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
+
+			// Unlock the object after saving
+			try {
+				$this->objectEntityMapper->unlockObject($objectEntity->getId());
+			} catch (\Exception $e) {
+				// Ignore unlock errors since the save was successful
+			}
 		} catch (ValidationException $exception) {
 			$formatter = new ErrorFormatter();
 			return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
@@ -206,6 +216,13 @@ class ObjectsController extends Controller
         // save it
         try {
             $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data['object']);
+
+            // Unlock the object after saving
+            try {
+                $this->objectEntityMapper->unlockObject($objectEntity->getId());
+            } catch (\Exception $e) {
+                // Ignore unlock errors since the save was successful
+            }
         } catch (ValidationException $exception) {
             $formatter = new ErrorFormatter();
             return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
@@ -328,8 +345,6 @@ class ObjectsController extends Controller
         }
     }
 
-
-
     /**
      * Retrieves all available mappings
      *
@@ -380,4 +395,182 @@ class ObjectsController extends Controller
 
 		return null;
 	}
+
+	/**
+	 * Lock an object
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the object to lock
+	 * @return JSONResponse A JSON response containing the locked object
+	 */
+	public function lock(int $id): JSONResponse
+	{
+		try {
+			$data = $this->request->getParams();
+			$process = $data['process'] ?? null;
+			$duration = isset($data['duration']) ? (int)$data['duration'] : null;
+
+			$object = $this->objectEntityMapper->lockObject(
+				$id,
+				$process,
+				$duration
+			);
+
+			return new JSONResponse($object->getObjectArray());
+
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 403);
+		} catch (LockedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 423); // 423 Locked
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * Unlock an object
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the object to unlock
+	 * @return JSONResponse A JSON response containing the unlocked object
+	 */
+	public function unlock(int $id): JSONResponse
+	{
+		try {
+			$object = $this->objectEntityMapper->unlockObject($id);
+			return new JSONResponse($object->getObjectArray());
+
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 403);
+		} catch (LockedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 423);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * Revert an object to a previous state
+	 *
+	 * This endpoint allows reverting an object to a previous state based on different criteria:
+	 * 1. DateTime - Revert to the state at a specific point in time
+	 * 2. Audit Trail ID - Revert to the state after a specific audit trail entry
+	 * 3. Semantic Version - Revert to a specific version of the object
+	 *
+	 * Request body should contain one of:
+	 * - datetime: ISO 8601 datetime string (e.g., "2024-03-01T12:00:00Z")
+	 * - auditTrailId: UUID of an audit trail entry
+	 * - version: Semantic version string (e.g., "1.0.0")
+	 *
+	 * Optional parameters:
+	 * - overwriteVersion: boolean (default: false) - If true, keeps the version number,
+	 *                     if false, increments the patch version
+	 *
+	 * Example requests:
+	 * ```json
+	 * {
+	 *     "datetime": "2024-03-01T12:00:00Z"
+	 * }
+	 * ```
+	 * ```json
+	 * {
+	 *     "auditTrailId": "550e8400-e29b-41d4-a716-446655440000"
+	 * }
+	 * ```
+	 * ```json
+	 * {
+	 *     "version": "1.0.0",
+	 *     "overwriteVersion": true
+	 * }
+	 * ```
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $id The ID of the object to revert
+	 * @return JSONResponse A JSON response containing the reverted object
+	 * @throws NotFoundException If object not found
+	 * @throws NotAuthorizedException If user not authorized
+	 * @throws BadRequestException If no valid reversion point specified
+	 * @throws LockedException If object is locked
+	 */
+	public function revert(int $id): JSONResponse
+	{
+		try {
+			$data = $this->request->getParams();
+
+			// Parse the revert point
+			$until = null;
+			if (isset($data['datetime'])) {
+				$until = new \DateTime($data['datetime']);
+			} elseif (isset($data['auditTrailId'])) {
+				$until = $data['auditTrailId'];
+			} elseif (isset($data['version'])) {
+				$until = $data['version'];
+			}
+
+			if ($until === null) {
+				return new JSONResponse(
+					['error' => 'Must specify either datetime, auditTrailId, or version'],
+					400
+				);
+			}
+
+			$overwriteVersion = $data['overwriteVersion'] ?? false;
+
+			// Get the reverted object using AuditTrailMapper instead
+			$revertedObject = $this->auditTrailMapper->revertObject(
+				$id,
+				$until,
+				$overwriteVersion
+			);
+
+			// Save the reverted object
+			$savedObject = $this->objectEntityMapper->update($revertedObject);
+
+			return new JSONResponse($savedObject->getObjectArray());
+
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 403);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+    /**
+     * Retrieves files associated with an object
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $id The ID of the object to get files for
+     * @return JSONResponse A JSON response containing the object's files
+     */
+    public function files(string $id, ObjectService $objectService): JSONResponse
+    {
+        try {
+            // Get the object with files included
+            $object = $this->objectEntityMapper->find((int) $id);
+            $files = $objectService->getFiles($object);
+            $object = $objectService->hydrateFiles($object, $files);
+            
+            // Return just the files array from the object
+            return new JSONResponse($object->getFiles());
+            
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
 }

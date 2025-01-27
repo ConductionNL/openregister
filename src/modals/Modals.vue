@@ -17,6 +17,7 @@ import { navigationStore } from '../store/store.js'
 		<DeleteSource />
 		<EditObject />
 		<DeleteObject />
+		<LockObject />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 	</div>
@@ -37,6 +38,7 @@ import EditObject from './object/EditObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
+import LockObject from './object/LockObject.vue'
 
 export default {
 	name: 'Modals',
@@ -55,6 +57,7 @@ export default {
 		DeleteObject,
 		UploadObject,
 		ViewObjectAuditTrail,
+		LockObject,
 	},
 }
 </script>

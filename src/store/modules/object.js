@@ -10,11 +10,18 @@ export const useObjectStore = defineStore('object', {
 		auditTrails: [],
 		relationItem: false,
 		relations: [],
+		fileItem: false, // Single file item
+		files: [], // List of files
 	}),
 	actions: {
-		setObjectItem(objectItem) {
+		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
 			console.log('Active object item set to ' + objectItem)
+
+			// Get files when object is set
+			if (objectItem && objectItem.id) {
+				await this.getFiles(objectItem.id)
+			}
 		},
 		setObjectList(objectList) {
 			this.objectList = objectList.map(
@@ -37,6 +44,12 @@ export const useObjectStore = defineStore('object', {
 			this.relations = relations.map(
 				(relation) => new ObjectEntity(relation),
 			)
+		},
+		setFileItem(fileItem) {
+			this.fileItem = fileItem
+		},
+		setFiles(files) {
+			this.files = files
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshObjectList(search = null) {
@@ -194,6 +207,38 @@ export const useObjectStore = defineStore('object', {
 
 			return { response, data }
 		},
+		// FILES
+		/**
+		 * Get files for an object
+		 *
+		 * @param {number} id Object ID
+		 * @return {Promise} Promise that resolves with the object's files
+		 */
+		async getFiles(id) {
+			if (!id) {
+				throw new Error('No object id to get files for')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/files/${id}`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'GET',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				this.setFiles(data || [])
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error getting files:', error)
+				throw new Error(`Failed to get files: ${error.message}`)
+			}
+		},
 		// mappings
 		async getMappings() {
 			const endpoint = '/index.php/apps/openregister/api/objects/mappings'
@@ -205,6 +250,108 @@ export const useObjectStore = defineStore('object', {
 			const data = (await response.json()).results
 
 			return { response, data }
+		},
+		/**
+		 * Lock an object
+		 *
+		 * @param {number} id Object ID
+		 * @param {string|null} process Optional process identifier
+		 * @param {number|null} duration Lock duration in seconds
+		 * @return {Promise} Promise that resolves when the object is locked
+		 */
+		async lockObject(id, process = null, duration = null) {
+			const endpoint = `/index.php/apps/openregister/api/objects/${id}/lock`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						process,
+						duration,
+					}),
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				this.setObjectItem(data)
+				this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error locking object:', error)
+				throw new Error(`Failed to lock object: ${error.message}`)
+			}
+		},
+		/**
+		 * Unlock an object
+		 *
+		 * @param {number} id Object ID
+		 * @return {Promise} Promise that resolves when the object is unlocked
+		 */
+		async unlockObject(id) {
+			const endpoint = `/index.php/apps/openregister/api/objects/${id}/unlock`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				this.setObjectItem(data)
+				this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error unlocking object:', error)
+				throw new Error(`Failed to unlock object: ${error.message}`)
+			}
+		},
+		/**
+		 * Revert an object to a previous state
+		 *
+		 * @param {number} id Object ID
+		 * @param {object} options Revert options
+		 * @param {string} [options.datetime] ISO datetime string
+		 * @param {string} [options.auditTrailId] Audit trail ID
+		 * @param {string} [options.version] Semantic version
+		 * @param {boolean} [options.overwriteVersion] Whether to overwrite version
+		 * @return {Promise} Promise that resolves when the object is reverted
+		 */
+		async revertObject(id, options) {
+			const endpoint = `/index.php/apps/openregister/api/objects/${id}/revert`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(options),
+				})
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const data = await response.json()
+				this.setObjectItem(data)
+				this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error reverting object:', error)
+				throw new Error(`Failed to revert object: ${error.message}`)
+			}
 		},
 	},
 })

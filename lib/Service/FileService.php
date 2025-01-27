@@ -5,15 +5,20 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\GenericFileException;
 use OCP\Files\InvalidPathException;
 use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -31,6 +36,9 @@ use Psr\Log\LoggerInterface;
  */
 class FileService
 {
+	const ROOT_FOLDER = 'Open Registers';
+    const APP_GROUP = 'openregister';
+
 	/**
 	 * Constructor for FileService
 	 *
@@ -40,13 +48,92 @@ class FileService
 	 * @param IManager $shareManager The share manager interface
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
+		private readonly IUserSession    $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly IRootFolder $rootFolder,
-		private readonly IManager $shareManager,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IConfig $config,
-	) {}
+		private readonly IRootFolder     $rootFolder,
+		private readonly IManager        $shareManager,
+		private readonly IURLGenerator   $urlGenerator,
+		private readonly IConfig         $config,
+		private readonly RegisterMapper  $registerMapper,
+		private readonly SchemaMapper    $schemaMapper,
+        private readonly IGroupManager   $groupManager,
+	)
+	{
+	}
+
+	/**
+	 * Creates a folder for a Register (used for storing files of Schemas/Objects).
+	 *
+	 * @param Register|int $register The Register to create the folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createRegisterFolder(Register|int $register): string
+	{
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
+
+		$registerFolderName = $this->getRegisterFolderName($register);
+		// @todo maybe we want to use ShareLink here for register->folder as well?
+		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+
+		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName";
+		$this->createFolder(folderPath: $folderPath);
+
+		return $folderPath;
+	}
+
+	/**
+	 * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
+	 *
+	 * @param Register $register The Register to get the folder name for.
+	 *
+	 * @return string The name the folder for this Register should have.
+	 */
+	private function getRegisterFolderName(Register $register): string
+	{
+		$title = $register->getTitle();
+
+		if (str_ends_with(strtolower($title), 'register')) {
+			return $title;
+		}
+
+		return "$title Register";
+	}
+
+	/**
+	 * Creates a folder for a Schema (used for storing files of Objects).
+	 *
+	 * @param Register|int $register The Register to create the schema folder for.
+	 * @param Schema|int $schema The Schema to create the folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createSchemaFolder(Register|int $register, Schema|int $schema): string
+	{
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
+
+		if (is_int($schema) === true) {
+			$schema = $this->schemaMapper->find($schema);
+		}
+		// @todo we could check here if Register contains/has Schema else throw Exception.
+
+		$registerFolderName = $this->getRegisterFolderName($register);
+		// @todo maybe we want to use ShareLink here for register->folder as well?
+		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+
+		$schemaFolderName = $this->getSchemaFolderName($schema);
+
+		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName/$schemaFolderName";
+		$this->createFolder(folderPath: $folderPath);
+
+		return $folderPath;
+	}
 
 	/**
 	 * Get the name for the folder used for storing files of objects of a specific Schema.
@@ -55,9 +142,137 @@ class FileService
 	 *
 	 * @return string The name the folder for this Schema should have.
 	 */
-	public function getSchemaFolderName(Schema $schema): string
+	private function getSchemaFolderName(Schema $schema): string
 	{
-		return "({$schema->getUuid()}) {$schema->getTitle()}";
+		return $schema->getTitle();
+	}
+
+	/**
+	 * Creates a folder for an Object (used for storing files of this Object).
+	 *
+	 * @param ObjectEntity $objectEntity The Object to create the folder for.
+	 * @param Register|int|null $register The Register to create the Object folder for.
+	 * @param Schema|int|null $schema The Schema to create the Object folder for.
+	 *
+	 * @return Node|null The NextCloud Node object of the folder. Or null if something went wrong creating the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createObjectFolder(
+		ObjectEntity      $objectEntity,
+		Register|int|null $register = null,
+		Schema|int|null   $schema = null,
+		string            $folderPath = null
+	): ?Node
+	{
+		if ($folderPath === null) {
+			$folderPath = $this->getObjectFolderPath(objectEntity: $objectEntity, register: $register, schema: $schema);
+		}
+		$this->createFolder(folderPath: $folderPath);
+
+		// @todo Do we want to use ShareLink here?
+		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
+		$objectEntity->setFolder($folderPath);
+
+//		// Create or find ShareLink
+//		$share = $this->fileService->findShare(path: $filePath);
+//		if ($share !== null) {
+//			$shareLink = $this->fileService->getShareLink($share);
+//		} else {
+//			$shareLink = $this->fileService->createShareLink(path: $filePath);
+//		}
+
+		return $this->getNode($folderPath);
+	}
+
+	/**
+	 * Gets the NextCloud Node object for the folder of an Object.
+	 *
+	 * @param ObjectEntity $objectEntity The Object to get the folder for.
+	 * @param Register|int|null $register The Register to get the Object folder for.
+	 * @param Schema|int|null $schema The Schema to get the Object folder for.
+	 *
+	 * @return Node|null The NextCloud Node object of the folder. Or null if something went wrong getting / creating the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function getObjectFolder(
+		ObjectEntity      $objectEntity,
+		Register|int|null $register = null,
+		Schema|int|null   $schema = null
+	): ?Node
+	{
+        if($objectEntity->getFolder() === null) {
+            $folderPath = $this->getObjectFolderPath(
+                objectEntity: $objectEntity,
+                register: $register,
+                schema: $schema
+            );
+        } else {
+            $folderPath = $objectEntity->getFolder();
+        }
+
+		$node = $this->getNode($folderPath);
+
+		if ($node === null) {
+			return $this->createObjectFolder(
+				objectEntity: $objectEntity,
+				register: $register,
+				schema: $schema,
+				folderPath: $folderPath
+			);
+		}
+		return $node;
+	}
+
+	/**
+	 * Gets the path to the folder of an object.
+	 *
+	 * @param ObjectEntity $objectEntity The Object to get the folder path for.
+	 * @param Register|int|null $register The Register to get the Object folder path for (must match Object->register).
+	 * @param Schema|int|null $schema The Schema to get the Object folder path for (must match Object->schema).
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception If something went wrong getting the path, a mismatch in object register/schema & function parameters register/schema for example.
+	 */
+	private function getObjectFolderPath(
+		ObjectEntity      $objectEntity,
+		Register|int|null $register = null,
+		Schema|int|null   $schema = null
+	): string
+	{
+		$objectRegister = (int)$objectEntity->getRegister();
+		if ($register === null) {
+			$register = $objectRegister;
+		}
+		if (is_int($register) === true) {
+			if ($register !== $objectRegister) {
+				$message = "Mismatch in Object->Register ($objectRegister) & Register given in function: getObjectFolderPath() ($register)";
+				$this->logger->error(message: $message);
+				throw new Exception(message: $message);
+			}
+			$register = $this->registerMapper->find($register);
+		}
+
+		$objectSchema = (int)$objectEntity->getSchema();
+		if ($schema === null) {
+			$schema = $objectSchema;
+		}
+		if (is_int($schema) === true) {
+			if ($schema !== $objectSchema) {
+				$message = "Mismatch in Object->Schema ($objectSchema) & Schema given in function: getObjectFolderPath() ($schema)";
+				$this->logger->error(message: $message);
+				throw new Exception(message: $message);
+			}
+			$schema = $this->schemaMapper->find($schema);
+		}
+
+		$registerFolderName = $this->getRegisterFolderName($register);
+		// @todo maybe we want to use ShareLink here for register->folder as well?
+		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+
+		$schemaFolderName = $this->getSchemaFolderName($schema);
+		$objectFolderName = $this->getObjectFolderName($objectEntity);
+
+		return $this::ROOT_FOLDER . "/$registerFolderName/$schemaFolderName/$objectFolderName";
 	}
 
 	/**
@@ -67,12 +282,26 @@ class FileService
 	 *
 	 * @return string The name the folder for this object should have.
 	 */
-	public function getObjectFolderName(ObjectEntity $objectEntity): string
+	private function getObjectFolderName(ObjectEntity $objectEntity): string
 	{
 		// @todo check if property Title or Name exists and use that as object title
 		$objectTitle = 'object';
 
-		return "({$objectEntity->getUuid()}) $objectTitle";
+//		return "{$objectEntity->getUuid()} ($objectTitle)";
+		return $objectEntity->getUuid();
+	}
+
+	/**
+	 * Returns a link to the given folder path.
+	 *
+	 * @param string $folderPath The path to a folder in NextCloud.
+	 *
+	 * @return string The share link needed to get the file or folder for the given IShare object.
+	 */
+	private function getFolderLink(string $folderPath): string
+	{
+		$folderPath = str_replace('%2F', '/', urlencode($folderPath));
+		return $this->getCurrentDomain() . "/index.php/apps/files/files?dir=$folderPath";
 	}
 
 	/**
@@ -102,6 +331,42 @@ class FileService
 		}
 
 		return $baseUrl;
+	}
+
+	/**
+	 * Gets a NextCloud Node object for the given file or folder path.
+	 *
+	 * @param string $path A path to a file or folder in NextCloud.
+	 *
+	 * @return Node|null The Node object found for a file or folder. Or null if not found.
+	 * @throws NotPermittedException When not allowed to get the user folder.
+	 */
+	private function getNode(string $path): ?Node
+	{
+		// Get the current user.
+		$currentUser = $this->userSession->getUser();
+		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
+
+		try {
+			return $node = $userFolder->get(path: $path);
+		} catch (NotFoundException $e) {
+			$this->logger->error(message: $e->getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * @param Node $file
+	 * @param int $shareType
+	 * @return IShare[]
+	 */
+	public function findShares(Node $file, int $shareType = 3): array
+	{
+		// Get the current user.
+		$currentUser = $this->userSession->getUser();
+		$userId = $currentUser ? $currentUser->getUID() : 'Guest';
+
+		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file);
 	}
 
 	/**
@@ -145,6 +410,36 @@ class FileService
 
 		return null;
 	}
+
+    /**
+     * Share a file or folder with a user group in Nextcloud.
+     *
+     * @param int $nodeId The file or folder to share.
+     * @param string $nodeType 'file' or 'folder', the type of node.
+     * @param string $target The target folder to share the node in.
+     * @param int $permissions Permissions the group members will have in the folder.
+     * @param string $groupId The id of the group to share the folder with.
+     *
+     * @return IShare The resulting share
+     * @throws Exception
+     */
+    private function shareWithGroup(int $nodeId, string $nodeType, string $target, int $permissions, string $groupId): IShare
+    {
+        $share = $this->shareManager->newShare();
+        $share->setTarget(target: '/'. $target);
+        $share->setNodeId(fileId:$nodeId);
+        $share->setNodeType(type:$nodeType);
+
+        $share->setShareType(shareType: 1);
+        $share->setPermissions(permissions: $permissions);
+        $share->setSharedBy(sharedBy:$this->userSession->getUser()->getUID());
+        $share->setShareOwner(shareOwner:$this->userSession->getUser()->getUID());
+        $share->setShareTime(shareTime: new DateTime());
+        $share->setSharedWith(sharedWith: $groupId);
+        $share->setStatus(status: $share::STATUS_ACCEPTED);
+
+        return $this->shareManager->createShare($share);
+    }
 
 	/**
 	 * Creates a IShare object using the $shareData array data.
@@ -241,6 +536,7 @@ class FileService
 	 */
 	public function createFolder(string $folderPath): bool
 	{
+
 		$folderPath = trim(string: $folderPath, characters: '/');
 
 		// Get the current user.
@@ -249,6 +545,25 @@ class FileService
 
 		// Check if folder exists and if not create it.
 		try {
+            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
+            try {
+                $userFolder->get(self::ROOT_FOLDER);
+            } catch(NotFoundException $exception) {
+                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+
+                if($this->groupManager->groupExists(self::APP_GROUP) === false) {
+                    $this->groupManager->createGroup(self::APP_GROUP);
+                }
+
+                $this->shareWithGroup(
+                    nodeId: $rootFolder->getId(),
+                    nodeType: $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+                    target: self::ROOT_FOLDER,
+                    permissions: 31,
+                    groupId: self::APP_GROUP
+                );
+            }
+
 			try {
 				$userFolder->get(path: $folderPath);
 			} catch (NotFoundException $e) {
