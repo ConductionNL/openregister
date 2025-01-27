@@ -45,7 +45,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep {
 		
 		// Add locked column to store lock tokens as JSON array
 		if ($table->hasColumn('locked') === false) {
-			$table->addColumn('locked', Types::TEXT, [
+			$table->addColumn('locked', Types::JSON, [
 				'notnull' => false,
 				'default' => null,
 			]);
