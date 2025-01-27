@@ -85,4 +85,51 @@ class ObjectAuditLogMapper extends QBMapper
 
 		return $this->update($obj);
 	}
+
+	/**
+	 * Get audit trails for an object until a specific point
+	 *
+	 * @param int $objectId The object ID
+	 * @param string $objectUuid The object UUID
+	 * @param DateTime|string|null $until DateTime or AuditTrail ID to get trails until
+	 * @return array Array of AuditTrail objects
+	 */
+	public function findByObjectUntil(int $objectId, string $objectUuid, $until = null): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		
+		// Base query
+		$qb->select('*')
+			->from('openregister_auditlog')
+			->where(
+				$qb->expr()->eq('object_id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT))
+			)
+			->andWhere(
+				$qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR))
+			)
+			->orderBy('created', 'DESC');
+
+		// Add condition based on until parameter
+		if ($until instanceof \DateTime) {
+			$qb->andWhere(
+				$qb->expr()->gte('created', $qb->createNamedParameter(
+					$until->format('Y-m-d H:i:s'),
+					IQueryBuilder::PARAM_STR
+				))
+			);
+		} elseif (is_string($until)) {
+			$qb->andWhere(
+				$qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
+			);
+			// We want all entries up to and including this ID
+			$qb->orWhere(
+				$qb->expr()->gt('created', 
+					$qb->createFunction('(SELECT created FROM `*PREFIX*openregister_auditlog` WHERE id = ' . 
+						$qb->createNamedParameter($until, IQueryBuilder::PARAM_STR) . ')')
+				)
+			);
+		}
+
+		return $this->findEntities($qb);
+	}
 }

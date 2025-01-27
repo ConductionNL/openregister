@@ -7,6 +7,9 @@ export type TObject = {
     object: string // JSON object
     relations: string
     files: string
+    folder: string
     updated: string
     created: string
+    locked: string[] | null // Array of lock tokens or null if not locked
+    owner: string // Owner of the object
 }
