@@ -106,7 +106,6 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'ObjectsList',
