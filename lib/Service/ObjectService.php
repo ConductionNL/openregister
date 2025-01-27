@@ -1301,48 +1301,55 @@ class ObjectService
 	/**
 	 * Get files for object
 	 *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
-     *
-	 * @param ObjectEntity $object The object to fetch files for.
-	 * @return Node[] The files found.
-	 * @throws \OCP\Files\NotFoundException
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param ObjectEntity|string $object The object or object ID to fetch files for
+	 * @return Node[] The files found
+	 * @throws \OCP\Files\NotFoundException If the folder is not found
+	 * @throws DoesNotExistException If the object ID is not found
 	 */
-    public function getFiles(ObjectEntity $object): array
-    {
-        $folder = $this->fileService->getObjectFolder(objectEntity: $object, register: $object->getRegister(), schema: $object->getSchema());
+	public function getFiles(ObjectEntity|string $object): array
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
 
-        if($folder instanceof Folder === true) {
-            $files = $folder->getDirectoryListing();
-        }
+		$folder = $this->fileService->getObjectFolder(
+			objectEntity: $object,
+			register: $object->getRegister(),
+			schema: $object->getSchema()
+		);
+
+		if ($folder instanceof Folder === true) {
+			$files = $folder->getDirectoryListing();
+		}
 
 		return $files;
-    }
+	}
 
 	/**
-	 * Hydrate files array with metadata.
+	 * Formats an array of Node files into an array of metadata arrays.
 	 *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
-     *
-	 * @param ObjectEntity $object The object to hydrate the files array of.
-	 * @param Node[] $files The files to hydrate the files array with.
-     *
-	 * @return ObjectEntity The object with hydrated files array.
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 * 
+	 * @param Node[] $files Array of Node files to format
+	 * @return array Array of formatted file metadata arrays
 	 */
-	public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
+	public function formatFiles(array $files): array 
 	{
 		$formattedFiles = [];
 
 		foreach($files as $file) {
-
-            // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
 			$shares = $this->fileService->findShares($file);
 
 			$formattedFile = [
 				'id'          => $file->getId(),
 				'path' 		  => $file->getPath(),
-				'title'  	  => $file->getName(),
+				'title'  	  => $file->getName(), 
 				'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
 				'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
 				'type'  	  => $file->getMimetype(),
@@ -1356,8 +1363,23 @@ class ObjectService
 			$formattedFiles[] = $formattedFile;
 		}
 
-		$object->setFiles($formattedFiles);
+		return $formattedFiles;
+	}
 
+	/**
+	 * Hydrate files array with metadata.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param ObjectEntity $object The object to hydrate the files array of.
+	 * @param Node[] $files The files to hydrate the files array with.
+	 * @return ObjectEntity The object with hydrated files array.
+	 */
+	public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
+	{
+		$formattedFiles = $this->formatFiles($files);
+		$object->setFiles($formattedFiles);
 		return $object;
 	}
 
