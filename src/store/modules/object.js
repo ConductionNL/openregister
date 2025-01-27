@@ -210,7 +210,7 @@ export const useObjectStore = defineStore('object', {
 		// FILES
 		/**
 		 * Get files for an object
-		 * 
+		 *
 		 * @param {number} id Object ID
 		 * @return {Promise} Promise that resolves with the object's files
 		 */

@@ -38,7 +38,7 @@ export class ObjectEntity implements TObject {
 
 	/**
 	 * Validates the object against a schema
-	 * @returns {SafeParseReturnType<TObject, unknown>} Object containing validation result with success/error status
+	 * @return {SafeParseReturnType<TObject, unknown>} Object containing validation result with success/error status
 	 */
 	public validate(): SafeParseReturnType<TObject, unknown> {
 		const schema = z.object({

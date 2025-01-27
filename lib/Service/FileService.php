@@ -18,6 +18,7 @@ use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -36,6 +37,7 @@ use Psr\Log\LoggerInterface;
 class FileService
 {
 	const ROOT_FOLDER = 'Open Registers';
+    const APP_GROUP = 'openregister';
 
 	/**
 	 * Constructor for FileService
@@ -54,6 +56,7 @@ class FileService
 		private readonly IConfig         $config,
 		private readonly RegisterMapper  $registerMapper,
 		private readonly SchemaMapper    $schemaMapper,
+        private readonly IGroupManager   $groupManager,
 	)
 	{
 	}
@@ -408,6 +411,36 @@ class FileService
 		return null;
 	}
 
+    /**
+     * Share a file or folder with a user group in Nextcloud.
+     *
+     * @param int $nodeId The file or folder to share.
+     * @param string $nodeType 'file' or 'folder', the type of node.
+     * @param string $target The target folder to share the node in.
+     * @param int $permissions Permissions the group members will have in the folder.
+     * @param string $groupId The id of the group to share the folder with.
+     *
+     * @return IShare The resulting share
+     * @throws Exception
+     */
+    private function shareWithGroup(int $nodeId, string $nodeType, string $target, int $permissions, string $groupId): IShare
+    {
+        $share = $this->shareManager->newShare();
+        $share->setTarget(target: '/'. $target);
+        $share->setNodeId(fileId:$nodeId);
+        $share->setNodeType(type:$nodeType);
+
+        $share->setShareType(shareType: 1);
+        $share->setPermissions(permissions: $permissions);
+        $share->setSharedBy(sharedBy:$this->userSession->getUser()->getUID());
+        $share->setShareOwner(shareOwner:$this->userSession->getUser()->getUID());
+        $share->setShareTime(shareTime: new DateTime());
+        $share->setSharedWith(sharedWith: $groupId);
+        $share->setStatus(status: $share::STATUS_ACCEPTED);
+
+        return $this->shareManager->createShare($share);
+    }
+
 	/**
 	 * Creates a IShare object using the $shareData array data.
 	 *
@@ -503,6 +536,7 @@ class FileService
 	 */
 	public function createFolder(string $folderPath): bool
 	{
+
 		$folderPath = trim(string: $folderPath, characters: '/');
 
 		// Get the current user.
@@ -511,6 +545,25 @@ class FileService
 
 		// Check if folder exists and if not create it.
 		try {
+            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
+            try {
+                $userFolder->get(self::ROOT_FOLDER);
+            } catch(NotFoundException $exception) {
+                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+
+                if($this->groupManager->groupExists(self::APP_GROUP) === false) {
+                    $this->groupManager->createGroup(self::APP_GROUP);
+                }
+
+                $this->shareWithGroup(
+                    nodeId: $rootFolder->getId(),
+                    nodeType: $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+                    target: self::ROOT_FOLDER,
+                    permissions: 31,
+                    groupId: self::APP_GROUP
+                );
+            }
+
 			try {
 				$userFolder->get(path: $folderPath);
 			} catch (NotFoundException $e) {
