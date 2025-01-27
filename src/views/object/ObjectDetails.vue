@@ -301,14 +301,14 @@ export default {
 		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
 			const decodedUrl = url.replace(/\\\//g, '/')
-			
+
 			// Ensure URL starts with forward slash
 			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
-			
+
 			// Construct the proper Nextcloud Files app URL with the normalized path
 			// Use window.location.origin to get the current domain instead of hardcoding
 			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
-			
+
 			// Open URL in new tab
 			window.open(nextcloudUrl, '_blank')
 		},
