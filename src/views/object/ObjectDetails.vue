@@ -135,6 +135,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab title="Files">
+							<NcButton @click="openFolder(objectStore.objectItem.folder)">
+								<template #icon>
+									<FolderOutline :size="20" />
+								</template>
+								Open folder
+							</NcButton>
 							<div v-if="objectStore.files.length">
 								<NcListItem v-for="(file, key) in objectStore.files"
 									:key="key"
@@ -210,6 +216,7 @@ import {
 	NcActionButton,
 	NcListItem,
 	NcNoteCard,
+	NcButton,
 } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 
@@ -231,6 +238,7 @@ export default {
 		NcActionButton,
 		NcListItem,
 		NcNoteCard,
+		NcButton,
 		BTabs,
 		BTab,
 		DotsHorizontal,
@@ -287,15 +295,22 @@ export default {
 				})
 		},
 		/**
-		 * Opens the folder URL in a new tab after parsing the encoded URL
-		 * @param {string} url - The encoded folder URL to open
+		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
+		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
 		 */
 		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
-			const decodedUrl = url.replace(/\\\//g, '/') 
+			const decodedUrl = url.replace(/\\\//g, '/')
+			
+			// Ensure URL starts with forward slash
+			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
+			
+			// Construct the proper Nextcloud Files app URL with the normalized path
+			// Use window.location.origin to get the current domain instead of hardcoding
+			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
 			
 			// Open URL in new tab
-			window.open(decodedUrl, '_blank')
+			window.open(nextcloudUrl, '_blank')
 		},
 		/**
 		 * Opens a file in the Nextcloud Files app
