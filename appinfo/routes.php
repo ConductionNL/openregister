@@ -24,5 +24,6 @@ return [
 		['name' => 'objects#lock', 'url' => '/api/objects/{id}/lock', 'verb' => 'POST'],
 		['name' => 'objects#unlock', 'url' => '/api/objects/{id}/unlock', 'verb' => 'POST'],
 		['name' => 'objects#revert', 'url' => '/api/objects/{id}/revert', 'verb' => 'POST'],
+		['name' => 'files#search', 'url' => '/api/files/search', 'verb' => 'GET'],
 	],
 ];

@@ -2,15 +2,15 @@
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use Exception;
+use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\GenericFileException;
 use OCP\Files\InvalidPathException;
 use OCP\Files\IRootFolder;
@@ -19,13 +19,17 @@ use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IConfig;
 use OCP\IGroupManager;
-use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Lock\LockedException;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
+use PhpOffice\PhpWord\IOFactory;
 use Psr\Log\LoggerInterface;
+use Smalot\PdfParser\Parser;
+use Symfony\Component\Yaml\Yaml;
+use thiagoalessio\TesseractOCR\TesseractOCR;
+use ZipArchive;
 
 /**
  * Service for handling file operations in OpenRegister.
@@ -200,7 +204,7 @@ class FileService
 		Schema|int|null   $schema = null
 	): ?Node
 	{
-        if($objectEntity->getFolder() === null) {
+        if ($objectEntity->getFolder() === null) {
             $folderPath = $this->getObjectFolderPath(
                 objectEntity: $objectEntity,
                 register: $register,
@@ -298,7 +302,7 @@ class FileService
 	 *
 	 * @return string The share link needed to get the file or folder for the given IShare object.
 	 */
-	private function getFolderLink(string $folderPath): string
+	public function getFolderLink(string $folderPath): string
 	{
 		$folderPath = str_replace('%2F', '/', urlencode($folderPath));
 		return $this->getCurrentDomain() . "/index.php/apps/files/files?dir=$folderPath";
@@ -348,11 +352,310 @@ class FileService
 		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
 
 		try {
-			return $node = $userFolder->get(path: $path);
+			return $userFolder->get(path: $path);
 		} catch (NotFoundException $e) {
 			$this->logger->error(message: $e->getMessage());
 			return null;
 		}
+	}
+
+	/**
+	 * Perform a search on all files in a given folder / from a specific path. Find all files where content contains the search term.
+	 *
+	 * @param string $searchTerm The term to search for in file content.
+	 * @param string|null $folderPath The folder to search files in.
+	 *
+	 * @return array The search results containing matching files.
+	 * @throws InvalidPathException
+	 * @throws NotFoundException
+	 * @throws NotPermittedException
+	 */
+	public function search(string $searchTerm, string $folderPath = null): array {
+		$results = [];
+
+		// Get the current user.
+		$currentUser = $this->userSession->getUser();
+		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
+
+		try {
+			$rootFolder = $userFolder->get(self::ROOT_FOLDER);
+		} catch(NotFoundException $exception) {
+			$rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+		}
+
+		$searchFolder = $rootFolder;
+		if (empty($folderPath) === false) {
+			try {
+				$searchFolder = $userFolder->get($folderPath);
+			} catch(NotFoundException $exception) {
+				$this->logger->error(message: 'Could not find this folder to search in: ' . $folderPath);
+			}
+		}
+
+		try {
+			// Recursively search files
+			$this->searchFilesContext(folder: $searchFolder, searchTerm: $searchTerm, results: $results);
+		} catch (Exception $e) {
+			$this->logger->error(message: 'Error during search: ' . $e->getMessage());
+		}
+
+		return $this->formatFiles($results);
+	}
+
+	/**
+	 * Recursively search for files in a folder where the content of the file contain the search term.
+	 *
+	 * @param Folder $folder The folder to search within.
+	 * @param string $searchTerm The term to search for in file content.
+	 * @param array &$results The array to store search results.
+	 *
+	 * @return void
+	 * @throws NotFoundException
+	 */
+	private function searchFilesContext(Folder $folder, string $searchTerm, array &$results): void
+	{
+		foreach ($folder->getDirectoryListing() as $node) {
+			if ($node instanceof File) {
+				try {
+					$content = $this->decodeFileContent($node);
+				} catch (Exception $e) {
+					$this->logger->error(message: 'searchFilesByContext error: ' . $e->getMessage());
+					continue;
+				}
+
+				// Check if the file content contains the search term
+				if (str_contains(strtolower($content), strtolower($searchTerm))) {
+					$results[] = $node;
+				}
+			} elseif ($node instanceof Folder) {
+				// Recursively search subfolders
+				$this->searchFilesContext(folder: $node, searchTerm: $searchTerm, results: $results);
+			}
+		}
+	}
+
+	/**
+	 * Decodes the content of a file based on its extension and returns the extracted or formatted text.
+	 *
+	 * This function supports the following file types:
+	 * - DOC/DOCX: Extracts text content using the PhpOffice\PhpWord\IOFactory.
+	 * - PDF: Extracts text content using the Smalot\PdfParser\Parser.
+	 * - JSON: Decodes the JSON content into an associative array and re-encodes it with pretty printing.
+	 * - YAML: Parses the YAML content and converts it back to a YAML string if valid.
+	 *
+	 * If the file type is unsupported, an error is logged, and the function returns null.
+	 *
+	 * @param File $file The file whose content needs to be decoded.
+	 *
+	 * @return string|null The decoded content of the file as a string, or null if decoding fails
+	 *                     or the file type is unsupported.
+	 * @throws GenericFileException
+	 * @throws LockedException
+	 * @throws NotPermittedException
+	 */
+	private function decodeFileContent(File $file): ?string
+	{
+		$content = $file->getContent();
+
+		switch (strtolower($file->getExtension())) {
+			case 'txt':
+			case 'md':
+			case 'log':
+				return $content;
+			case 'html':
+			case 'htm':
+				return strip_tags($content);
+			case 'docx':
+			case 'doc':
+				return $this->decodeWordFileContent($content);
+			case 'xlsx':
+			case 'xls':
+				return $this->decodeExcelFileContent($content);
+			case 'csv':
+				$rows = array_map('str_getcsv', explode(PHP_EOL, $content));
+				return json_encode($rows, JSON_PRETTY_PRINT);
+			case 'pdf':
+				$parser = new Parser();
+				$pdf = $parser->parseContent($content);
+				return $pdf->getText();
+			case 'json':
+				$data = json_decode($content, true);
+				return json_last_error() === JSON_ERROR_NONE ? json_encode($data, JSON_PRETTY_PRINT) : '';
+			case 'yaml':
+				$data = Yaml::parse($content);
+				return is_array($data) ? Yaml::dump($data) : '';
+			case 'xml':
+				$xml = simplexml_load_string($content);
+				return $xml ? $xml->asXML() : '';
+			case 'zip':
+				return $this->decodeArchiveContent($content);
+			case 'jpg':
+			case 'jpeg':
+			case 'png':
+			case 'gif':
+				return $this->decodeImageContent($content);
+			default:
+				$this->logger->error(message: 'Unsupported file extension/type cannot decode it\'s content');
+				return null;
+		}
+	}
+
+	/**
+	 * Decodes the content of a Word file and extracts the text from it.
+	 *
+	 * This function processes the binary content of a Word document (e.g., .docx or .doc),
+	 * saves it temporarily to the file system, and uses `PhpOffice\PhpWord\IOFactory`
+	 * to load and parse the file. The text content is extracted from the document's sections
+	 * and elements and returned as a plain string.
+	 *
+	 * @param string $content The binary content of the Word file.
+	 *
+	 * @return string The extracted text content of the Word file.
+	 */
+	private function decodeWordFileContent(string $content): string
+	{
+		$tempFile = tempnam(sys_get_temp_dir(), 'word_');
+		file_put_contents($tempFile, $content);
+
+		$phpWord = IOFactory::load($tempFile);
+		unlink($tempFile);
+
+		$text = '';
+		foreach ($phpWord->getSections() as $section) {
+			foreach ($section->getElements() as $element) {
+				if (method_exists($element, 'getText')) {
+					$text .= $element->getText() . "\n";
+				}
+			}
+		}
+
+		return $text;
+	}
+
+	/**
+	 * Decodes the content of an Excel file and extracts its data as a JSON string.
+	 *
+	 * This function processes the binary content of an Excel file (e.g., `.xlsx` or `.xls`)
+	 * by saving it temporarily to the file system, loading it using `PhpOffice\PhpSpreadsheet`,
+	 * and converting the active sheet's data into a structured array. The data is then encoded
+	 * as a pretty-printed JSON string.
+	 *
+	 * @param string $content The binary content of the Excel file.
+	 *
+	 * @return string The extracted sheet data in JSON format, with cell references as keys.
+	 * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception If the file cannot be read or parsed.
+	 */
+	private function decodeExcelFileContent(string $content): string
+	{
+		$tempFile = tempnam(sys_get_temp_dir(), 'excel_');
+		file_put_contents($tempFile, $content);
+
+		$spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tempFile);
+		unlink($tempFile);
+
+		$sheetData = $spreadsheet->getActiveSheet()->toArray(returnCellRef: true);
+		return json_encode($sheetData, JSON_PRETTY_PRINT);
+	}
+
+	/**
+	 * Decodes the content of a ZIP archive and extracts a list of contained files.
+	 *
+	 * This function processes the binary content of a ZIP archive by temporarily saving it to the
+	 * file system, opening it with PHP's `ZipArchive`, and retrieving the names of all files within
+	 * the archive. The extracted file list is returned as a pretty-printed JSON string.
+	 *
+	 * @param string $content The binary content of the ZIP archive.
+	 *
+	 * @return string A JSON-encoded array containing the names of files in the archive.
+	 * @throws Exception If the archive cannot be opened or processed.
+	 */
+	private function decodeArchiveContent(string $content): string
+	{
+		$tempFile = tempnam(sys_get_temp_dir(), 'zip_');
+		file_put_contents($tempFile, $content);
+
+		$zip = new ZipArchive();
+		if ($zip->open($tempFile) === true) {
+			$fileList = [];
+			for ($i = 0; $i < $zip->numFiles; $i++) {
+				$fileList[] = $zip->getNameIndex($i);
+			}
+			$zip->close();
+		}
+		unlink($tempFile);
+
+		return json_encode($fileList, JSON_PRETTY_PRINT);
+	}
+
+	/**
+	 * Decodes the content of an image file and extracts its metadata.
+	 *
+	 * This function processes the binary content of an image file (e.g., `.jpg`, `.png`, `.gif`)
+	 * by temporarily saving it to the file system, reading its metadata using PHP's `exif_read_data`,
+	 * and returning the metadata as a pretty-printed JSON string. If no metadata is found, a
+	 * default message is returned.
+	 *
+	 * @param string $content The binary content of the image file.
+	 *
+	 * @return string A JSON-encoded string containing the image's metadata, or a message indicating
+	 *                that no metadata was found.
+	 * @throws Exception If the file cannot be processed or metadata extraction fails.
+	 */
+	private function decodeImageContent(string $content): string
+	{
+		// Save the image temporarily
+		$tempFile = tempnam(sys_get_temp_dir(), 'img_');
+		file_put_contents($tempFile, $content);
+
+		// Use Tesseract OCR to extract text
+		$text = (new TesseractOCR($tempFile))
+			->lang('nld') // Set language to Dutch ('nld')
+			->run();
+
+		// Remove temp file
+		unlink($tempFile);
+
+		return $text ?: 'No text detected';
+	}
+
+	/**
+	 * Formats an array of Node files into an array of metadata arrays.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param Node[] $files Array of Node files to format
+	 *
+	 * @return array Array of formatted file metadata arrays
+	 * @throws InvalidPathException
+	 * @throws NotFoundException
+	 */
+	public function formatFiles(array $files): array
+	{
+		$formattedFiles = [];
+
+		foreach($files as $file) {
+			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+			$shares = $this->findShares($file);
+
+			$formattedFile = [
+				'id'          => $file->getId(),
+				'path' 		  => $file->getPath(),
+				'title'  	  => $file->getName(),
+				'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
+				'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
+				'type'  	  => $file->getMimetype(),
+				'extension'   => $file->getExtension(),
+				'size'		  => $file->getSize(),
+				'hash'		  => $file->getEtag(),
+				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+			];
+
+			$formattedFiles[] = $formattedFile;
+		}
+
+		return $formattedFiles;
 	}
 
 	/**
@@ -411,36 +714,6 @@ class FileService
 		return null;
 	}
 
-    /**
-     * Share a file or folder with a user group in Nextcloud.
-     *
-     * @param int $nodeId The file or folder to share.
-     * @param string $nodeType 'file' or 'folder', the type of node.
-     * @param string $target The target folder to share the node in.
-     * @param int $permissions Permissions the group members will have in the folder.
-     * @param string $groupId The id of the group to share the folder with.
-     *
-     * @return IShare The resulting share
-     * @throws Exception
-     */
-    private function shareWithGroup(int $nodeId, string $nodeType, string $target, int $permissions, string $groupId): IShare
-    {
-        $share = $this->shareManager->newShare();
-        $share->setTarget(target: '/'. $target);
-        $share->setNodeId(fileId:$nodeId);
-        $share->setNodeType(type:$nodeType);
-
-        $share->setShareType(shareType: 1);
-        $share->setPermissions(permissions: $permissions);
-        $share->setSharedBy(sharedBy:$this->userSession->getUser()->getUID());
-        $share->setShareOwner(shareOwner:$this->userSession->getUser()->getUID());
-        $share->setShareTime(shareTime: new DateTime());
-        $share->setSharedWith(sharedWith: $groupId);
-        $share->setStatus(status: $share::STATUS_ACCEPTED);
-
-        return $this->shareManager->createShare($share);
-    }
-
 	/**
 	 * Creates a IShare object using the $shareData array data.
 	 *
@@ -454,8 +727,13 @@ class FileService
 		// Create a new share
 		$share = $this->shareManager->newShare();
 		$share->setTarget(target: '/'.$shareData['path']);
-		$share->setNodeId(fileId: $shareData['file']->getId());
-		$share->setNodeType(type: 'file');
+		if (empty($shareData['file']) === false) {
+			$share->setNodeId(fileId: $shareData['file']->getId());
+		}
+		if (empty($shareData['nodeId']) === false) {
+			$share->setNodeId(fileId: $shareData['nodeId']);
+		}
+		$share->setNodeType(type: $shareData['nodeType'] ?? 'file');
 		$share->setShareType(shareType: $shareData['shareType']);
 		if ($shareData['permissions'] !== null) {
 			$share->setPermissions(permissions: $shareData['permissions']);
@@ -463,6 +741,9 @@ class FileService
 		$share->setSharedBy(sharedBy: $shareData['userId']);
 		$share->setShareOwner(shareOwner: $shareData['userId']);
 		$share->setShareTime(shareTime: new DateTime());
+		if (empty($shareData['sharedWith']) === false) {
+			$share->setSharedWith(sharedWith: $shareData['sharedWith']);
+		}
 		$share->setStatus(status: $share::STATUS_ACCEPTED);
 
 		return $this->shareManager->createShare(share: $share);
@@ -551,17 +832,19 @@ class FileService
             } catch(NotFoundException $exception) {
                 $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
 
-                if($this->groupManager->groupExists(self::APP_GROUP) === false) {
+                if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
                     $this->groupManager->createGroup(self::APP_GROUP);
                 }
 
-                $this->shareWithGroup(
-                    nodeId: $rootFolder->getId(),
-                    nodeType: $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
-                    target: self::ROOT_FOLDER,
-                    permissions: 31,
-                    groupId: self::APP_GROUP
-                );
+				$this->createShare([
+					'path' => self::ROOT_FOLDER,
+					'nodeId' => $rootFolder->getId(),
+					'nodeType' => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+					'shareType' => 1,
+					'permissions' => 31,
+					'userId' => $this->userSession->getUser()->getUID(),
+					'sharedWith' => self::APP_GROUP
+				]);
             }
 
 			try {
