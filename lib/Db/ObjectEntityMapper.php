@@ -45,7 +45,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param IUserSession $userSession The user session
 	 */
 	public function __construct(
-		IDBConnection $db, 
+		IDBConnection $db,
 		MySQLJsonService $mySQLJsonService,
 		IEventDispatcher $eventDispatcher,
 		IUserSession $userSession,
@@ -73,7 +73,7 @@ class ObjectEntityMapper extends QBMapper
 			->from('openregister_objects')
 			->where(
 				$qb->expr()->orX(
-					$qb->expr()->eq('id', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('id', $qb->createNamedParameter(is_numeric($identifier) ? $identifier : -1, IQueryBuilder::PARAM_INT)),
 					$qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
 					$qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
 				)
@@ -469,10 +469,10 @@ class ObjectEntityMapper extends QBMapper
 	 * @throws DoesNotExistException If object not found
 	 * @throws \Exception If unlocking fails
 	 */
-	public function unlockObject($identifier): ObjectEntity 
+	public function unlockObject($identifier): ObjectEntity
 	{
 		$object = $this->find($identifier);
-		
+
 		// Check if user has permission to unlock
 		if (!$this->userSession->isLoggedIn()) {
 			throw new \Exception('Must be logged in to unlock objects');
