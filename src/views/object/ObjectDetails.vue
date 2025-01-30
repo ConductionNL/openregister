@@ -152,7 +152,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 											:size="44" />
 									</template>
 									<template #subname>
-										{{ file.mimeType }} - Uploaded: {{ new Date(file.uploaded).toLocaleString() }}
+										{{ file.title }} - Uploaded: {{ new Date(file.modified).toLocaleString() }}
 									</template>
 									<template #actions>
 										<NcActionButton @click="openFile(file)">
