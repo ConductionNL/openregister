@@ -144,7 +144,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							<div v-if="objectStore.files.length">
 								<NcListItem v-for="(file, key) in objectStore.files"
 									:key="key"
-									:name="file.filename"
+									:name="file.title"
 									:bold="false"
 									:force-display-actions="true">
 									<template #icon>
@@ -152,7 +152,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 											:size="44" />
 									</template>
 									<template #subname>
-										{{ file.title }} - Uploaded: {{ new Date(file.published).toLocaleString() }}
+										{{ file.type }} - Uploaded: {{ new Date(file.modified).toLocaleString() }}
 									</template>
 									<template #actions>
 										<NcActionButton @click="openFile(file)">
