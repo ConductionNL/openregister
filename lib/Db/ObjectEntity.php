@@ -7,6 +7,12 @@ use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
+/**
+ * Entity class representing an object in the OpenRegister system
+ * 
+ * This class handles storage and manipulation of objects including their metadata,
+ * locking mechanisms, and serialization for API responses.
+ */
 class ObjectEntity extends Entity implements JsonSerializable
 {
 	protected ?string $uuid = null;
@@ -25,6 +31,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?DateTime $created = null;
 	protected ?string $folder = null; // The folder path where this object is stored
 
+	/**
+	 * Initialize the entity and define field types
+	 */
 	public function __construct() {
 		$this->addType(fieldName:'uuid', type: 'string');	
 		$this->addType(fieldName:'uri', type: 'string');
@@ -43,6 +52,11 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'folder', type: 'string');
 	}
 
+	/**
+	 * Get array of field names that are JSON type
+	 *
+	 * @return array List of field names that are JSON type
+	 */
 	public function getJsonFields(): array
 	{
 		return array_keys(
@@ -52,6 +66,12 @@ class ObjectEntity extends Entity implements JsonSerializable
 		);
 	}
 
+	/**
+	 * Hydrate the entity from an array of data
+	 *
+	 * @param array $object Array of data to hydrate the entity with
+	 * @return self Returns the hydrated entity
+	 */
 	public function hydrate(array $object): self
 	{
 		$jsonFields = $this->getJsonFields();
@@ -76,12 +96,30 @@ class ObjectEntity extends Entity implements JsonSerializable
 		return $this;
 	}
 
-
+	/**
+	 * Serialize the entity to JSON format
+	 * 
+	 * Creates a metadata array containing object properties except sensitive fields.
+	 * Filters out 'object', 'textRepresentation' and 'authorization' fields and 
+	 * stores remaining properties under '@self' key for API responses.
+	 *
+	 * @return array Serialized object data
+	 */
 	public function jsonSerialize(): array
 	{
-		return $this->object;
+		$metadata = [
+			'@self' => array_filter($this->getObjectArray(), function($key) {
+				return !in_array($key, ['object', 'textRepresentation', 'authorization']);
+			}, ARRAY_FILTER_USE_KEY)
+		];
+		return array_merge($metadata, $this->object);
 	}
 
+	/**
+	 * Get array representation of all object properties
+	 *
+	 * @return array Array containing all object properties
+	 */
 	public function getObjectArray(): array
 	{
 		return [
