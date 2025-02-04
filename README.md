@@ -74,6 +74,9 @@ Open Register makes these principles accessible to any organization by providing
 | ⚡ [Elasticsearch](docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
 | 📋 [Schema Import & Sharing](docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
 | 🔔 [Events & Webhooks](docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
+| 🔄 [Data Extension](docs/data-extension.md) | Automatically include related entities in responses | Efficient data retrieval, reduced API calls, complete context |
+| ✂️ [Data Filtering](docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
+| 🔍 [Advanced Search](docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
 
 ## Documentation
 
