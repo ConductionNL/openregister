@@ -1,3 +1,9 @@
+# Version: 0.1.43
+
+* [#152](https://github.com/ConductionNL/openregister/pull/152): fixed files list
+* [#155](https://github.com/ConductionNL/openregister/pull/155): Lets add Documentation for Digilab
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
