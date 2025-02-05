@@ -43,7 +43,7 @@ When an object is locked, the following metadata is stored:
 | Field | Type | Description |
 |-------|------|-------------|
 | user | string | The ID of the user who created the lock |
-| system | string | The ID of the system that created the lock |
+| system | string | TODO: The ID of the system that created the lock |
 | process | string | Optional name of the process that created the lock |
 | created | timestamp | When the lock was created |
 | duration | integer | How long the lock should last in seconds |
@@ -55,11 +55,17 @@ The user, system and process fields follow the definition set by [Audit Trails](
 
 When an object is locked, the following logic is applied:
 
-1. The lock is created with the specified duration.
-2. The lock is automatically extended if the user is still active.
-3. The lock is automatically released if the user is inactive for a specified period.
+1. On object is considerd 'locked' when the object has a lock metadata field set to a diferend vallue then null.
+2. When an object is locked, the object is only editable or deletable by the user who created the lock.
+3. Only the user who created the lock OR the system that created the lock can unlock the object.
+4. When an locked objets is updated, the lock is automatically extended by the duration of the update.
+5. Locks my be set for any duration, but the default duration is 1 hour.
 
 ## Related Features
 
 - [Audit Trails](audit-trails.md) - Track lock operations
 - [Access Control](access-control.md) - Manage lock permissions 
+
+## Lock Process Flow
+
+![Object Locking Sequence](diagrams/object-locking-sequence.svg) 

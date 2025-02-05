@@ -20,6 +20,7 @@ Registers can also apply additional logic to objects, such as validation that is
 - 💾 **Flexible Storage**: Store objects in Nextcloud, external databases, or object stores.
 - 🔄 **APIs**: Provide APIs for consumption.
 - 🧩 **Additional Logic**: Apply extra validation and logic beyond [`schema.json`](https://json-schema.org/).
+- 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management
 
 ## Documentation
 
@@ -77,6 +78,7 @@ Open Register makes these principles accessible to any organization by providing
 | 🔄 [Data Extension](docs/data-extension.md) | Automatically include related entities in responses | Efficient data retrieval, reduced API calls, complete context |
 | ✂️ [Data Filtering](docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
 | 🔍 [Advanced Search](docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
+| 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
 
 ## Documentation
 
