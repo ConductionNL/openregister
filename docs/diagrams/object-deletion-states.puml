@@ -1,0 +1,15 @@
+@startuml Object Deletion States
+skinparam monochrome true
+skinparam defaultTextAlignment center
+
+[*] --> Active
+Active --> SoftDeleted : delete()
+SoftDeleted --> Active : restore()
+SoftDeleted --> PendingPurge : retention period expired
+PendingPurge --> [*] : purge()
+
+note right of Active : Object is fully accessible\ndeleted = null
+note right of SoftDeleted : Object hidden from queries\ndeleted = timestamp
+note right of PendingPurge : Object ready for removal\ncurrent date > purgeDate
+
+@enduml 
