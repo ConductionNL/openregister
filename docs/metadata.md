@@ -45,6 +45,8 @@ When an object is locked, the following metadata is stored:
     'expiration': 'timestamp'
 }
 
+You can read more about locking objects [here](object-locking.md).
+
 ## Authorization Structure
 The authorization metadata can contain:
 - Access rules
