@@ -37,6 +37,8 @@ use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
 
 /**
  * Service class for handling object operations.
@@ -84,7 +86,9 @@ class ObjectService
 		private readonly IAppManager        $appManager,
 		private readonly IAppConfig         $config,
 		private readonly FileMapper         $fileMapper,
-		ArrayLoader $loader
+		ArrayLoader $loader,
+        private readonly ISystemTagManager      $systemTagManager,
+        private readonly ISystemTagObjectMapper $systemTagMapper,
 	)
 	{
 		$this->twig = new Environment($loader);
@@ -1338,11 +1342,11 @@ class ObjectService
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
-	 * 
+	 *
 	 * @param Node[] $files Array of Node files to format
 	 * @return array Array of formatted file metadata arrays
 	 */
-	public function formatFiles(array $files): array 
+	public function formatFiles(array $files): array
 	{
 		$formattedFiles = [];
 
@@ -1353,7 +1357,7 @@ class ObjectService
 			$formattedFile = [
 				'id'          => $file->getId(),
 				'path' 		  => $file->getPath(),
-				'title'  	  => $file->getName(), 
+				'title'  	  => $file->getName(),
 				'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
 				'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
 				'type'  	  => $file->getMimetype(),
@@ -1362,6 +1366,7 @@ class ObjectService
 				'hash'		  => $file->getEtag(),
 				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
 				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+				'tags' 		  => $this->getFileTags(fileId: $file->getId())
 			];
 
 			$formattedFiles[] = $formattedFile;
@@ -1369,6 +1374,30 @@ class ObjectService
 
 		return $formattedFiles;
 	}
+
+	/**
+ 	* Get the tags associated with a file.
+	*
+	* @param string $fileId The ID of the file.
+	*
+	* @return array The list of tags associated with the file.
+	*/
+	private function getFileTags(string $fileId): array
+	{
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: 'file');
+		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+            return [];
+        }
+
+        $tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+
+		$tagNames = array_map(static function ($tag) {
+			return $tag->getName();
+		}, $tags);
+
+		return $tagNames;
+	}
+
 
 	/**
 	 * Hydrate files array with metadata.
