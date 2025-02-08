@@ -24,13 +24,21 @@ jobs:
           ls -la
           ls -la website/
 
+      # Generate SVG files using PlantUML
+      - name: Generate SVG diagrams
+        uses: holowinski/plantuml-github-action@main
+        with:
+          args: -v -tsvg 'website/docs/**/*.puml'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # https://github.com/marketplace/actions/docusaurus-builddeploy-action
       - name: Deploy Docusaurus
         id: deploy
         uses: redkubes/docusaurus-deploy-action@v1.2
         with:
           source-folder: website
-          git-user: github-actions[bot]
+          git-user: ${{ github.actor }}
           git-password: ${{ secrets.GITHUB_TOKEN }}
           deployment-branch: gh-pages
 
@@ -41,4 +49,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          filename: .github/DOCUMENTATION_ISSUE_TEMPLATE.md 
+          filename: .github/DOCUMENTATION_ISSUE_TEMPLATE.md
