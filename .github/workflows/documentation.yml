@@ -12,48 +12,27 @@ jobs:
   deploy:
     name: Deploy Documentation
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
+      # https://github.com/marketplace/actions/checkout
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # https://github.com/marketplace/actions/docusaurus-builddeploy-action
+      - name: Deploy Docusaurus
+        id: deploy
+        uses: redkubes/docusaurus-deploy-action@v1
         with:
-          node-version: 18
-          cache: npm
+          source-folder: website
+          git-user: github-actions[bot]
+          git-password: ${{ secrets.GITHUB_TOKEN }}
+          deployment-branch: gh-pages
 
-      - name: Install dependencies
-        run: |
-          cd website
-          npm ci
-
-      - name: Build website
-        run: |
-          cd website
-          npm run build
-
-      # Deploy to GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/documentation'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./website/build
-          user_name: github-actions[bot]
-          user_email: 41898282+github-actions[bot]@users.noreply.github.com
-
-      # Notify on failure
-      - name: Notify on failure
+      # https://github.com/marketplace/actions/create-an-issue
+      - name: Create issue on failure
         if: failure()
-        uses: actions/github-script@v6
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Documentation build failed',
-              body: 'The documentation build failed. Please check the workflow logs.'
-            }) 
+          filename: .github/DOCUMENTATION_ISSUE_TEMPLATE.md 
