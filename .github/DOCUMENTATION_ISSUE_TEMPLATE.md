@@ -1,6 +1,6 @@
 ---
 title: Documentation Build Failed
-assignees: ${{ github.actor }}
+assignees: rubenvdlinde
 labels: documentation, bug
 ---
 
