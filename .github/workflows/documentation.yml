@@ -25,10 +25,11 @@ jobs:
           ls -la website/
 
       # Generate SVG files using PlantUML
-      - name: Generate SVG diagrams
-        uses: holowinski/plantuml-github-action@main
+      - name: plantuml
+        id: plantuml
+        uses: grassedge/generate-plantuml-action@v1.5
         with:
-          args: -v -tsvg 'website/docs/**/*.puml'
+          message: "Render PlantUML files"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
