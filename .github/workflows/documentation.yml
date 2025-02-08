@@ -18,10 +18,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Verify directory structure
+      - name: List directory structure
+        run: |
+          ls -la
+          ls -la website/
+
       # https://github.com/marketplace/actions/docusaurus-builddeploy-action
       - name: Deploy Docusaurus
         id: deploy
-        uses: redkubes/docusaurus-deploy-action@v1.2
+        uses: redkubes/docusaurus-deploy-action@v1
         with:
           source-folder: website
           git-user: github-actions[bot]
