@@ -81,6 +81,5 @@ The _filter parameter enables:
 
 ## Related Features
 
-- [Data Extension](data-extension.md) - Combine with extension for precise data retrieval
 - [Access Control](access-control.md) - Security for filtered data
 - [Audit Trails](audit-trails.md) - Track data access patterns 
