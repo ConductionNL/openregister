@@ -23,8 +23,7 @@ const sidebars = {
         'schema-validation',
         'register-management',
         'access-control',
-        'storing-objects',
-        'data-extension'
+        'storing-objects'
       ],
     },
   ],
