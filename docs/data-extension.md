@@ -1,15 +1,104 @@
 # Data Extension (_extend)
 
-Data Extension allows you to automatically include related entities in API responses, reducing the need for multiple API calls and providing complete context in a single request.
+Data Extension allows you to automatically include related entities in API responses, reducing the need for multiple API calls and providing complete context in a single request. This is useful when you need to retrieve related data for a specific object or collection an lowers the number of API calls needed therby reducing the load on the server and improving performence client side.
+
+The extend patern is based was orginally developed for the [Open Catalogi](https://opencatalogi.org) project and is now available in the ObjectStore API. Its baed on the extend functionality of [Zaak gericht werken]  but brought in line with p[NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) by adding a _ prefix to the parameter
+
 
 ## Overview
 
-The _extend parameter provides:
-- Automatic inclusion of related entities
-- Support for nested relations
-- Resolution of both ID and URL references
-- Configurable depth limits
-- Circular reference handling
+The extension system provides:
+- Automatic inclusion of related objects
+- Nested object resolution
+- Circular reference protection
+- Depth limiting
+- Performance optimization
+
+## Extension Patterns
+
+### Basic Extension
+Extend a single property:
+- `?_extend=author` - Include full author object
+- `?_extend=category` - Include full category object
+- `?_extend=files` - Include file metadata
+
+### Nested Extension
+Extend nested properties:
+- `?_extend=author.organization` - Include author with their organization
+- `?_extend=department.employees` - Include department with all employees
+- `?_extend=project.tasks.assignee` - Include project with tasks and their assignees
+
+### Multiple Extensions
+Combine multiple extensions:
+- `?_extend=author,category,comments` - Include multiple related objects
+- `?_extend=files,metadata,relations` - Include all related data
+- `?_extend=all` - Include all possible relations on the root object
+
+## Extension Logic
+
+1. **Depth Control**
+   - Maximum depth of 3 levels
+   - Prevents infinite recursion
+   - Optimizes response size
+   - Manages performance
+
+2. **Circular Detection**
+   - Identifies circular references
+   - Prevents infinite loops
+   - Maintains data integrity
+   - Optimizes response
+
+3. **Type Handling**
+   - Single object relations
+   - Array of objects
+   - File references
+   - External references
+
+## Performance Considerations
+
+1. **Query Optimization**
+   - Efficient database queries
+   - Batch loading
+   - Cache utilization
+   - Resource management
+
+2. **Response Size**
+   - Selective extension
+   - Depth limiting
+   - Data filtering
+   - Compression
+
+3. **Caching**
+   - Response caching
+   - Relation caching
+   - Cache invalidation
+   - Cache optimization
+
+## Best Practices
+
+1. **Extension Selection**
+   - Request only needed relations
+   - Consider response size
+   - Use appropriate depth
+   - Plan for performance
+
+2. **Query Design**
+   - Use specific extensions
+   - Combine related requests
+   - Optimize query patterns
+   - Consider caching
+
+3. **Error Handling**
+   - Handle missing relations
+   - Validate extension paths
+   - Manage timeouts
+   - Provide fallbacks
+
+## Related Features
+
+- [Object Relations](object-relations.md) - Base for extensions
+- [Data Selection](data-selection.md) - Combine with property selection
+- [Content Search](content-search.md) - Search within extended data
 
 ## Extension Types
 

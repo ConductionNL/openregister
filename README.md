@@ -1,6 +1,6 @@
 # Open Registers
 
-Open Registers provides the ability to work with objects based on [`schema.json`](https://json-schema.org/).
+Open Registers provides a way to quicly build and deploy standardized registers based on [NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) and [Common Ground Principles](https://common-ground.nl/common-ground-principes/). It is based on based on the concepts of defining object types in [`schema.json`](https://json-schema.org/) and storing objects in configurable source.
 
 ## What is Open Registers?
 
@@ -12,7 +12,7 @@ Registers provide APIs for consumption.
 
 Registers can also apply additional logic to objects, such as validation that is not applicable through the [`schema.json`](https://json-schema.org/) format.
 
-## Features
+## Key Features
 
 - 📦 **Object Management**: Work with objects based on [`schema.json`](https://json-schema.org/).
 - 🗂️ **Register System**: Manage collections of object types.
@@ -60,7 +60,7 @@ Open Register makes these principles accessible to any organization by providing
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
-| 💾 [Object Storage](docs/object-storage.md) | Flexible storage backend selection per register | Storage flexibility, system integration, scalability |
+| 💾 [Storing Objects](docs/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
 | 📝 [Audit Trails](docs/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
 | ⏰ [Time Travel](docs/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
 | 🔒 [Object Locking](docs/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
@@ -75,7 +75,7 @@ Open Register makes these principles accessible to any organization by providing
 | ⚡ [Elasticsearch](docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
 | 📋 [Schema Import & Sharing](docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
 | 🔔 [Events & Webhooks](docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
-| 🔄 [Data Extension](docs/data-extension.md) | Automatically include related entities in responses | Efficient data retrieval, reduced API calls, complete context |
+| 🔄 [Data Extension](docs/data-extension.md) | Include related entities in responses using _extend | Reduced API calls, complete context, efficient data retrieval |
 | ✂️ [Data Filtering](docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
 | 🔍 [Advanced Search](docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
 | 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
