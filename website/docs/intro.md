@@ -45,7 +45,3 @@ The documentation is automatically deployed to GitHub Pages when changes are pus
 2. Make your changes
 3. Test locally using `npm start`
 4. Create a Pull Request to the `documentation` branch
-
-## License
-
-This documentation is licensed under the AGPL-3.0 License - see the [LICENSE](../LICENSE) file for details. 
