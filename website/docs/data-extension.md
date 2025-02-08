@@ -97,7 +97,6 @@ Combine multiple extensions:
 ## Related Features
 
 - [Object Relations](object-relations.md) - Base for extensions
-- [Data Selection](data-selection.md) - Combine with property selection
 - [Content Search](content-search.md) - Search within extended data
 
 ## Extension Types
