@@ -21,7 +21,7 @@ jobs:
       # https://github.com/marketplace/actions/docusaurus-builddeploy-action
       - name: Deploy Docusaurus
         id: deploy
-        uses: redkubes/docusaurus-deploy-action@v1
+        uses: redkubes/docusaurus-deploy-action@v1.2
         with:
           source-folder: website
           git-user: github-actions[bot]
