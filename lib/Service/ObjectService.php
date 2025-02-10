@@ -58,6 +58,8 @@ class ObjectService
 
 	/** @var int The current schema ID */
 	private int $schema;
+    
+    const FILE_TAG_TYPE = 'file';
 
 	/**
 	 * Constructor for ObjectService.
@@ -1384,7 +1386,7 @@ class ObjectService
 	*/
 	private function getFileTags(string $fileId): array
 	{
-		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: 'file');
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
 		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
