@@ -51,3 +51,13 @@ This document provides some information about the NextCloud Full Text Search App
 	sudo -u www-data php ./occ fulltextsearch:index
 	```
 11. Open the **search app** and search for files based on the text inside them.
+
+## More Information
+
+If you need more details or troubleshooting help, you can refer to the following resources:
+
+- [Nextcloud Full Text Search Wiki - Basic Installation](https://github.com/nextcloud/fulltextsearch/wiki/Basic-Installation)
+- [Nextcloud Docker Development - Full Text Search](https://juliusknorr.github.io/nextcloud-docker-dev/services/more/#fulltextsearch)
+- [YouTube Guide on Full Text Search for Nextcloud](https://www.youtube.com/watch?v=yPZkrzgue5c)
+
+These resources provide in-depth explanations, configurations, and troubleshooting tips.
