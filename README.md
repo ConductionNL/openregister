@@ -29,13 +29,6 @@ For more detailed information, please refer to the documentation files in the `d
 - [Developer Guide](docs/developers.md)
 - [Styleguide](docs/styleguide.md)
 
-## Project Structure
-
-- **appinfo/routes.php**: Defines the routes for the application.
-- **lib**: Contains all the PHP code for the application.
-- **src**: Contains all the Vue.js code for the application.
-- **docs**: Contains documentation files.
-
 # Open Register
 
 Open Register is a powerful object management system for Nextcloud that helps organizations store, track, and manage objects with their associated metadata, files, and relationships. Born from the Dutch Common Ground initiative, it addresses the need for quickly deploying standardized registers based on centralized definitions from standardization organizations.
@@ -81,7 +74,7 @@ Open Register makes these principles accessible to any organization by providing
 
 ## Documentation
 
-For detailed information about each feature, please visit our [documentation](docs/).
+Documentation is available at [https://conduction.nl/openconnector](https://conduction.nl/openconnector) and created from the website folder of this repository.
 
 ## Requirements
 
@@ -91,12 +84,39 @@ For detailed information about each feature, please visit our [documentation](do
 
 ## Installation
 
-[Installation instructions]
+[Installation instructions](https://conduction.nl/openconnector/installation)
 
 ## Support
 
-[Support information]
+[Support information](https://conduction.nl/openconnector/support)
+
+## Project Structure
+
+This monorepo is a Nextcloud app, it is based on the following structure:
+
+    /
+    ├── app/          # App initialization and bootstrap files
+    ├── appinfo/      # Nextcloud app metadata and configuration
+    ├── css/          # Stylesheets for the app interface
+    ├── docker/       # Docker configuration for development
+    ├── img/          # App icons and images
+    ├── js/           # JavaScript files for frontend functionality
+    ├── lib/          # PHP library files containing core business logic
+    ├── src/          # Vue.js frontend application source code
+    ├── templates/    # Template files for rendering app views
+    └── website/      # Documentation website source files
+
+When running locally, or in development mode the folders nodus_modules and vendor are added. Thes shoudl however not be commited.
+
+## Contributing
+
+Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
 
 ## License
 
-This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the EUPL License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For more information, please contact [info@conduction.nl](mailto:info@conduction.nl).
+
