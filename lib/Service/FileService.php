@@ -96,7 +96,7 @@ class FileService
 	{
 		$title = $register->getTitle();
 
-		if (str_ends_with(strtolower($title), 'register')) {
+		if (str_ends_with(haystack: strtolower(rtrim($title)), needle: 'register')) {
 			return $title;
 		}
 
