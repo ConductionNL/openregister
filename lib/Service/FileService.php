@@ -9,7 +9,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\GenericFileException;
 use OCP\Files\InvalidPathException;
@@ -19,7 +18,6 @@ use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IConfig;
 use OCP\IGroupManager;
-use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Lock\LockedException;
@@ -200,7 +198,7 @@ class FileService
 		Schema|int|null   $schema = null
 	): ?Node
 	{
-        if($objectEntity->getFolder() === null) {
+        if ($objectEntity->getFolder() === null) {
             $folderPath = $this->getObjectFolderPath(
                 objectEntity: $objectEntity,
                 register: $register,
@@ -348,11 +346,51 @@ class FileService
 		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
 
 		try {
-			return $node = $userFolder->get(path: $path);
+			return $userFolder->get(path: $path);
 		} catch (NotFoundException $e) {
 			$this->logger->error(message: $e->getMessage());
 			return null;
 		}
+	}
+
+	/**
+	 * Formats an array of Node files into an array of metadata arrays.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param Node[] $files Array of Node files to format
+	 *
+	 * @return array Array of formatted file metadata arrays
+	 * @throws InvalidPathException
+	 * @throws NotFoundException
+	 */
+	public function formatFiles(array $files): array
+	{
+		$formattedFiles = [];
+
+		foreach($files as $file) {
+			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+			$shares = $this->findShares($file);
+
+			$formattedFile = [
+				'id'          => $file->getId(),
+				'path' 		  => $file->getPath(),
+				'title'  	  => $file->getName(),
+				'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
+				'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
+				'type'  	  => $file->getMimetype(),
+				'extension'   => $file->getExtension(),
+				'size'		  => $file->getSize(),
+				'hash'		  => $file->getEtag(),
+				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+			];
+
+			$formattedFiles[] = $formattedFile;
+		}
+
+		return $formattedFiles;
 	}
 
 	/**
@@ -411,36 +449,6 @@ class FileService
 		return null;
 	}
 
-    /**
-     * Share a file or folder with a user group in Nextcloud.
-     *
-     * @param int $nodeId The file or folder to share.
-     * @param string $nodeType 'file' or 'folder', the type of node.
-     * @param string $target The target folder to share the node in.
-     * @param int $permissions Permissions the group members will have in the folder.
-     * @param string $groupId The id of the group to share the folder with.
-     *
-     * @return IShare The resulting share
-     * @throws Exception
-     */
-    private function shareWithGroup(int $nodeId, string $nodeType, string $target, int $permissions, string $groupId): IShare
-    {
-        $share = $this->shareManager->newShare();
-        $share->setTarget(target: '/'. $target);
-        $share->setNodeId(fileId:$nodeId);
-        $share->setNodeType(type:$nodeType);
-
-        $share->setShareType(shareType: 1);
-        $share->setPermissions(permissions: $permissions);
-        $share->setSharedBy(sharedBy:$this->userSession->getUser()->getUID());
-        $share->setShareOwner(shareOwner:$this->userSession->getUser()->getUID());
-        $share->setShareTime(shareTime: new DateTime());
-        $share->setSharedWith(sharedWith: $groupId);
-        $share->setStatus(status: $share::STATUS_ACCEPTED);
-
-        return $this->shareManager->createShare($share);
-    }
-
 	/**
 	 * Creates a IShare object using the $shareData array data.
 	 *
@@ -454,8 +462,13 @@ class FileService
 		// Create a new share
 		$share = $this->shareManager->newShare();
 		$share->setTarget(target: '/'.$shareData['path']);
-		$share->setNodeId(fileId: $shareData['file']->getId());
-		$share->setNodeType(type: 'file');
+		if (empty($shareData['file']) === false) {
+			$share->setNodeId(fileId: $shareData['file']->getId());
+		}
+		if (empty($shareData['nodeId']) === false) {
+			$share->setNodeId(fileId: $shareData['nodeId']);
+		}
+		$share->setNodeType(type: $shareData['nodeType'] ?? 'file');
 		$share->setShareType(shareType: $shareData['shareType']);
 		if ($shareData['permissions'] !== null) {
 			$share->setPermissions(permissions: $shareData['permissions']);
@@ -463,6 +476,9 @@ class FileService
 		$share->setSharedBy(sharedBy: $shareData['userId']);
 		$share->setShareOwner(shareOwner: $shareData['userId']);
 		$share->setShareTime(shareTime: new DateTime());
+		if (empty($shareData['sharedWith']) === false) {
+			$share->setSharedWith(sharedWith: $shareData['sharedWith']);
+		}
 		$share->setStatus(status: $share::STATUS_ACCEPTED);
 
 		return $this->shareManager->createShare(share: $share);
@@ -545,24 +561,26 @@ class FileService
 
 		// Check if folder exists and if not create it.
 		try {
-            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
-            try {
-                $userFolder->get(self::ROOT_FOLDER);
-            } catch(NotFoundException $exception) {
-                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+			// First, check if the root folder exists, and if not, create it and share it with the openregister group.
+			try {
+				$userFolder->get(self::ROOT_FOLDER);
+			} catch(NotFoundException $exception) {
+				$rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
 
-                if($this->groupManager->groupExists(self::APP_GROUP) === false) {
-                    $this->groupManager->createGroup(self::APP_GROUP);
-                }
+				if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
+					$this->groupManager->createGroup(self::APP_GROUP);
+				}
 
-                $this->shareWithGroup(
-                    nodeId: $rootFolder->getId(),
-                    nodeType: $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
-                    target: self::ROOT_FOLDER,
-                    permissions: 31,
-                    groupId: self::APP_GROUP
-                );
-            }
+				$this->createShare([
+					'path' => self::ROOT_FOLDER,
+					'nodeId' => $rootFolder->getId(),
+					'nodeType' => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+					'shareType' => 1,
+					'permissions' => 31,
+					'userId' => $this->userSession->getUser()->getUID(),
+					'sharedWith' => self::APP_GROUP
+				]);
+			}
 
 			try {
 				$userFolder->get(path: $folderPath);
