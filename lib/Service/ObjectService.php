@@ -39,6 +39,7 @@ use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
+
 /**
  * Service class for handling object operations.
  *
@@ -85,7 +86,7 @@ class ObjectService
 		private readonly IAppManager        $appManager,
 		private readonly IAppConfig         $config,
 		private readonly FileMapper         $fileMapper,
-		ArrayLoader $loader,
+		ArrayLoader $loader
 	)
 	{
 		$this->twig = new Environment($loader);
