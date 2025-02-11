@@ -1397,7 +1397,7 @@ class ObjectService
 			return $tag->getName();
 		}, $tags);
 
-		return $tagNames;
+		return array_values($tagNames);
 	}
 
 
