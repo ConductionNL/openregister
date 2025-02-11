@@ -174,7 +174,6 @@ class FileService
 		// @todo Do we want to use ShareLink here?
 		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
 		$objectEntity->setFolder($folderPath);
-		$this->objectEntityMapper->update($objectEntity);
 
 //		// Create or find ShareLink
 //		$share = $this->fileService->findShare(path: $filePath);
