@@ -39,9 +39,6 @@ use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
-
 /**
  * Service class for handling object operations.
  *
@@ -60,8 +57,6 @@ class ObjectService
 
 	/** @var int The current schema ID */
 	private int $schema;
-    
-    const FILE_TAG_TYPE = 'file';
 
 	/**
 	 * Constructor for ObjectService.
@@ -91,8 +86,6 @@ class ObjectService
 		private readonly IAppConfig         $config,
 		private readonly FileMapper         $fileMapper,
 		ArrayLoader $loader,
-        private readonly ISystemTagManager      $systemTagManager,
-        private readonly ISystemTagObjectMapper $systemTagMapper,
 	)
 	{
 		$this->twig = new Environment($loader);
@@ -1358,30 +1351,6 @@ class ObjectService
 	{
 		return $this->fileService->formatFiles($files);
 	}
-
-	/**
- 	* Get the tags associated with a file.
-	*
-	* @param string $fileId The ID of the file.
-	*
-	* @return array The list of tags associated with the file.
-	*/
-	private function getFileTags(string $fileId): array
-	{
-		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
-		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
-            return [];
-        }
-
-        $tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
-
-		$tagNames = array_map(static function ($tag) {
-			return $tag->getName();
-		}, $tags);
-
-		return array_values($tagNames);
-	}
-
 
 	/**
 	 * Hydrate files array with metadata.

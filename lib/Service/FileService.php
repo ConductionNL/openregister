@@ -24,6 +24,8 @@ use OCP\Lock\LockedException;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
 
 /**
  * Service for handling file operations in OpenRegister.
@@ -37,6 +39,8 @@ class FileService
 	const ROOT_FOLDER = 'Open Registers';
     const APP_GROUP = 'openregister';
 
+    const FILE_TAG_TYPE = 'file';
+    
 	/**
 	 * Constructor for FileService
 	 *
@@ -46,15 +50,17 @@ class FileService
 	 * @param IManager $shareManager The share manager interface
 	 */
 	public function __construct(
-		private readonly IUserSession    $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly IRootFolder     $rootFolder,
-		private readonly IManager        $shareManager,
-		private readonly IURLGenerator   $urlGenerator,
-		private readonly IConfig         $config,
-		private readonly RegisterMapper  $registerMapper,
-		private readonly SchemaMapper    $schemaMapper,
-        private readonly IGroupManager   $groupManager,
+		private readonly IUserSession           $userSession,
+		private readonly LoggerInterface        $logger,
+		private readonly IRootFolder            $rootFolder,
+		private readonly IManager               $shareManager,
+		private readonly IURLGenerator          $urlGenerator,
+		private readonly IConfig                $config,
+		private readonly RegisterMapper         $registerMapper,
+		private readonly SchemaMapper           $schemaMapper,
+        private readonly IGroupManager          $groupManager,
+        private readonly ISystemTagManager      $systemTagManager,
+        private readonly ISystemTagObjectMapper $systemTagMapper,
 	)
 	{
 	}
@@ -384,13 +390,37 @@ class FileService
 				'size'		  => $file->getSize(),
 				'hash'		  => $file->getEtag(),
 				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
-				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),				
+                'labels'      => $this->getFileTags(fileId: $file->getId())
 			];
 
 			$formattedFiles[] = $formattedFile;
 		}
 
 		return $formattedFiles;
+	}
+
+	/**
+ 	* Get the tags associated with a file.
+	*
+	* @param string $fileId The ID of the file.
+	*
+	* @return array The list of tags associated with the file.
+	*/
+	private function getFileTags(string $fileId): array
+	{
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
+		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+            return [];
+        }
+
+        $tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+
+		$tagNames = array_map(static function ($tag) {
+			return $tag->getName();
+		}, $tags);
+
+		return array_values($tagNames);
 	}
 
 	/**
