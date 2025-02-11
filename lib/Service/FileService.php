@@ -5,6 +5,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -59,6 +60,7 @@ class FileService
 		private readonly RegisterMapper         $registerMapper,
 		private readonly SchemaMapper           $schemaMapper,
         private readonly IGroupManager          $groupManager,
+		private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly ISystemTagManager      $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
 	)
@@ -82,6 +84,7 @@ class FileService
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
 		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+		$this->registerMapper->update($register);
 
 		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName";
 		$this->createFolder(folderPath: $folderPath);
@@ -130,6 +133,7 @@ class FileService
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
 		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+		$this->registerMapper->update($register);
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 
@@ -176,6 +180,7 @@ class FileService
 		// @todo Do we want to use ShareLink here?
 		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
 		$objectEntity->setFolder($folderPath);
+		$this->objectEntityMapper->update($objectEntity);
 
 //		// Create or find ShareLink
 //		$share = $this->fileService->findShare(path: $filePath);
@@ -204,12 +209,14 @@ class FileService
 		Schema|int|null   $schema = null
 	): ?Node
 	{
-        if ($objectEntity->getFolder() === null) {
+        if (empty($objectEntity->getFolder()) === true) {
             $folderPath = $this->getObjectFolderPath(
                 objectEntity: $objectEntity,
                 register: $register,
                 schema: $schema
             );
+			$objectEntity->setFolder($folderPath);
+			$this->objectEntityMapper->update($objectEntity);
         } else {
             $folderPath = $objectEntity->getFolder();
         }
@@ -272,6 +279,7 @@ class FileService
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
 		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+		$this->registerMapper->update($register);
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 		$objectFolderName = $this->getObjectFolderName($objectEntity);
@@ -582,7 +590,6 @@ class FileService
 	 */
 	public function createFolder(string $folderPath): bool
 	{
-
 		$folderPath = trim(string: $folderPath, characters: '/');
 
 		// Get the current user.
