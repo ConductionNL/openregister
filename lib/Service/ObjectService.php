@@ -1368,7 +1368,7 @@ class ObjectService
 				'hash'		  => $file->getEtag(),
 				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
 				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-				'tags' 		  => $this->getFileTags(fileId: $file->getId())
+				'labels'      => $this->getFileTags(fileId: $file->getId())
 			];
 
 			$formattedFiles[] = $formattedFile;
