@@ -540,7 +540,7 @@ class ObjectService
             search: $search
         );
 
-		if($files === false) {
+		if ($files === false) {
 			return $objects;
 		}
 
@@ -1377,7 +1377,7 @@ class ObjectService
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
 			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
 
-			if($files === false) {
+			if ($files === false) {
 				return $object;
 			}
 
@@ -1856,7 +1856,7 @@ class ObjectService
 		foreach ($relations as $path => $relationId) {
 			$referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
 
-			if($referencedObjects[$path] === null){
+			if ($referencedObjects[$path] === null){
 				$referencedObjects[$path] = $relationId;
 			}
 		}
