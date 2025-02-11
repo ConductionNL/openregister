@@ -109,7 +109,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		$metadata = [
 			'@self' => array_filter($this->getObjectArray(), function($key) {
-				return !in_array($key, ['object', 'textRepresentation', 'authorization']);
+				return in_array($key, ['object', 'textRepresentation', 'authorization']) === false;
 			}, ARRAY_FILTER_USE_KEY)
 		];
 		return array_merge($metadata, $this->object);
