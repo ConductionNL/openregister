@@ -612,7 +612,7 @@ class FileService
 		$folderPath = trim(string: $folderPath, characters: '/');
 
 		// Get the current user.
-		$userFolder = $this->rootFolder->getUserFolder(userId: $userId);
+		$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
 		// Check if folder exists and if not create it.
 		try {
@@ -814,6 +814,10 @@ class FileService
 				schema: $objectEntity->getSchema()
 			);
 
+			// Set the OpenCatalogi user as the current user
+			$currentUser = $this->userSession->getUser();
+			$this->userSession->setUser($this->getUser());
+
 			$file = $folder->newFile($fileName);
 			
 			// Write content to the file
@@ -821,6 +825,8 @@ class FileService
 			
 			// Set the OpenCatalogi user as owner
 			$file->setOwner($this->getUser());
+
+			$this->userSession->setUser($currentUser);
 			
 			return $file;
 			
