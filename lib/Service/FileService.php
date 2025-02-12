@@ -822,9 +822,6 @@ class FileService
 			
 			// Write content to the file
 			$file->putContent($content);
-			
-			// Set the OpenCatalogi user as owner
-			$file->setOwner($this->getUser());
 
 			$this->userSession->setUser($currentUser);
 			
