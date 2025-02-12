@@ -26,6 +26,8 @@ use OCP\Lock\LockedException;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
+use OCP\IUser;
+use OCP\IUserManager;
 
 /**
  * Service for handling file operations in OpenRegister.
@@ -38,7 +40,7 @@ class FileService
 {
 	const ROOT_FOLDER = 'Open Registers';
     const APP_GROUP = 'openregister';
-
+    const APP_USER = 'OpenCatalogi';
 	/**
 	 * Constructor for FileService
 	 *
@@ -57,6 +59,7 @@ class FileService
 		private readonly RegisterMapper  $registerMapper,
 		private readonly SchemaMapper    $schemaMapper,
         private readonly IGroupManager   $groupManager,
+        private readonly IUserManager $userManager,
 	)
 	{
 	}
@@ -332,24 +335,45 @@ class FileService
 
 		return $baseUrl;
 	}
+	/**
+	 * Gets or creates the OpenCatalogi user for file operations
+	 *
+	 * @return IUser The OpenCatalogi user
+	 * @throws Exception If OpenCatalogi user cannot be created
+	 */
+	private function getUser(): IUser
+	{
+		$openCatalogiUser = $this->userManager->get(self::APP_USER);
+		
+		if (!$openCatalogiUser) {
+			// Create OpenCatalogi user if it doesn't exist
+			$password = bin2hex(random_bytes(16)); // Generate random password
+			$openCatalogiUser = $this->userManager->createUser(self::APP_USER, $password);
+			
+			if (!$openCatalogiUser) {
+				throw new \Exception('Failed to create OpenCatalogi user account.');
+			}
+			
+			// Add user to OpenCatalogi group
+			$group = $this->groupManager->get(self::APP_GROUP);
+			if (!$group) {
+				$group = $this->groupManager->createGroup(self::APP_GROUP);
+			}
+			$group->addUser($openCatalogiUser);
+		}
+		
+		return $openCatalogiUser;
+	}
 
 	/**
 	 * Gets a NextCloud Node object for the given file or folder path.
-	 *
-	 * @param string $path A path to a file or folder in NextCloud.
-	 *
-	 * @return Node|null The Node object found for a file or folder. Or null if not found.
-	 * @throws NotPermittedException When not allowed to get the user folder.
 	 */
 	private function getNode(string $path): ?Node
 	{
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
-
 		try {
-			return $node = $userFolder->get(path: $path);
-		} catch (NotFoundException $e) {
+			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+			return $userFolder->get(path: $path);
+		} catch (NotFoundException|NotPermittedException $e) {
 			$this->logger->error(message: $e->getMessage());
 			return null;
 		}
@@ -380,15 +404,12 @@ class FileService
 	public function findShare(string $path, ?int $shareType = 3): ?IShare
 	{
 		$path = trim(string: $path, characters: '/');
+		$userId = $this->getUser()->getUID();
 
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userId = $currentUser ? $currentUser->getUID() : 'Guest';
 		try {
 			$userFolder = $this->rootFolder->getUserFolder(userId: $userId);
 		} catch (NotPermittedException) {
 			$this->logger->error("Can't find share for $path because user (folder) for user $userId couldn't be found");
-
 			return null;
 		}
 
@@ -449,8 +470,10 @@ class FileService
 	 * @return IShare The Created IShare object.
 	 * @throws Exception
 	 */
-	private function createShare(array $shareData) :IShare
+	private function createShare(array $shareData): IShare
 	{
+		$userId = $this->getUser()->getUID();
+		
 		// Create a new share
 		$share = $this->shareManager->newShare();
 		$share->setTarget(target: '/'.$shareData['path']);
@@ -460,8 +483,8 @@ class FileService
 		if ($shareData['permissions'] !== null) {
 			$share->setPermissions(permissions: $shareData['permissions']);
 		}
-		$share->setSharedBy(sharedBy: $shareData['userId']);
-		$share->setShareOwner(shareOwner: $shareData['userId']);
+		$share->setSharedBy(sharedBy: $userId);
+		$share->setShareOwner(shareOwner: $userId);
 		$share->setShareTime(shareTime: new DateTime());
 		$share->setStatus(status: $share::STATUS_ACCEPTED);
 
@@ -489,14 +512,12 @@ class FileService
 			}
 		}
 
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userId = $currentUser ? $currentUser->getUID() : 'Guest';
+		$userId = $this->getUser()->getUID();
+		
 		try {
 			$userFolder = $this->rootFolder->getUserFolder(userId: $userId);
 		} catch (NotPermittedException) {
 			$this->logger->error("Can't create share link for $path because user (folder) for user $userId couldn't be found");
-
 			return "User (folder) couldn't be found";
 		}
 
@@ -536,50 +557,53 @@ class FileService
 	 */
 	public function createFolder(string $folderPath): bool
 	{
-
 		$folderPath = trim(string: $folderPath, characters: '/');
-
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
-
-		// Check if folder exists and if not create it.
+		
 		try {
-            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
-            try {
-                $userFolder->get(self::ROOT_FOLDER);
-            } catch(NotFoundException $exception) {
-                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
-                if($this->groupManager->groupExists(self::APP_GROUP) === false) {
-                    $this->groupManager->createGroup(self::APP_GROUP);
-                }
-
-                $this->shareWithGroup(
-                    nodeId: $rootFolder->getId(),
-                    nodeType: $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
-                    target: self::ROOT_FOLDER,
-                    permissions: 31,
-                    groupId: self::APP_GROUP
-                );
-            }
-
+			// Check if folder exists and if not create it.
 			try {
-				$userFolder->get(path: $folderPath);
-			} catch (NotFoundException $e) {
-				$userFolder->newFolder(path: $folderPath);
+				// First, check if the root folder exists, and if not, create it and share it with the openregister group.
+				try {
+					$userFolder->get(self::ROOT_FOLDER);
+				} catch(NotFoundException $exception) {
+					$rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
 
-				return true;
+					if($this->groupManager->groupExists(self::APP_GROUP) === false) {
+						$this->groupManager->createGroup(self::APP_GROUP);
+					}
+
+					$this->shareWithGroup(
+						nodeId: $rootFolder->getId(),
+						nodeType: $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+						target: self::ROOT_FOLDER,
+						permissions: 31,
+						groupId: self::APP_GROUP
+					);
+				}
+
+				try {
+					$userFolder->get(path: $folderPath);
+				} catch (NotFoundException $e) {
+					$userFolder->newFolder(path: $folderPath);
+
+					return true;
+				}
+
+				// Folder already exists.
+				$this->logger->info("This folder already exits $folderPath");
+				return false;
+
+			} catch (NotPermittedException $e) {
+				$this->logger->error("Can't create folder $folderPath: " . $e->getMessage());
+
+				throw new Exception("Can't create folder $folderPath");
 			}
-
-			// Folder already exists.
-			$this->logger->info("This folder already exits $folderPath");
-			return false;
-
 		} catch (NotPermittedException $e) {
 			$this->logger->error("Can't create folder $folderPath: " . $e->getMessage());
 
-			throw new Exception("Can\'t create folder $folderPath");
+			throw new Exception("Can't create folder $folderPath");
 		}
 	}
 
@@ -596,28 +620,32 @@ class FileService
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
-
-		// Check if file exists and create it if not.
 		try {
+			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+			// Check if file exists and create it if not.
 			try {
-				$userFolder->get(path: $filePath);
-			} catch (NotFoundException $e) {
-				$userFolder->newFile(path: $filePath);
-				$file = $userFolder->get(path: $filePath);
+				try {
+					$userFolder->get(path: $filePath);
+				} catch (NotFoundException $e) {
+					$userFolder->newFile(path: $filePath);
+					$file = $userFolder->get(path: $filePath);
 
-				$file->putContent(data: $content);
+					$file->putContent(data: $content);
 
-				return true;
+					return true;
+				}
+
+				// File already exists.
+				$this->logger->warning("File $filePath already exists.");
+				return false;
+
+			} catch (NotPermittedException|GenericFileException|LockedException $e) {
+				$this->logger->error("Can't create file $filePath: " . $e->getMessage());
+
+				throw new Exception("Can't write to file $filePath");
 			}
-
-			// File already exists.
-			$this->logger->warning("File $filePath already exists.");
-			return false;
-
-		} catch (NotPermittedException|GenericFileException|LockedException $e) {
+		} catch (NotPermittedException $e) {
 			$this->logger->error("Can't create file $filePath: " . $e->getMessage());
 
 			throw new Exception("Can't write to file $filePath");
@@ -638,35 +666,39 @@ class FileService
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
-
-		// Check if file exists and overwrite it if it does.
 		try {
+			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+			// Check if file exists and overwrite it if it does.
 			try {
-				$file = $userFolder->get(path: $filePath);
-
-				$file->putContent(data: $content);
-
-				return true;
-			} catch (NotFoundException $e) {
-				if ($createNew === true) {
-					$userFolder->newFile(path: $filePath);
+				try {
 					$file = $userFolder->get(path: $filePath);
 
 					$file->putContent(data: $content);
 
-					$this->logger->info("File $filePath did not exist, created a new file for it.");
 					return true;
+				} catch (NotFoundException $e) {
+					if ($createNew === true) {
+						$userFolder->newFile(path: $filePath);
+						$file = $userFolder->get(path: $filePath);
+
+						$file->putContent(data: $content);
+
+						$this->logger->info("File $filePath did not exist, created a new file for it.");
+						return true;
+					}
 				}
+
+				// File already exists.
+				$this->logger->warning("File $filePath already exists.");
+				return false;
+
+			} catch (NotPermittedException|GenericFileException|LockedException $e) {
+				$this->logger->error("Can't create file $filePath: " . $e->getMessage());
+
+				throw new Exception("Can't write to file $filePath");
 			}
-
-			// File already exists.
-			$this->logger->warning("File $filePath already exists.");
-			return false;
-
-		} catch (NotPermittedException|GenericFileException|LockedException $e) {
+		} catch (NotPermittedException $e) {
 			$this->logger->error("Can't create file $filePath: " . $e->getMessage());
 
 			throw new Exception("Can't write to file $filePath");
@@ -685,24 +717,28 @@ class FileService
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
-		// Get the current user.
-		$currentUser = $this->userSession->getUser();
-		$userFolder = $this->rootFolder->getUserFolder(userId: $currentUser ? $currentUser->getUID() : 'Guest');
-
-		// Check if file exists and delete it if it does.
 		try {
+			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+			// Check if file exists and delete it if it does.
 			try {
-				$file = $userFolder->get(path: $filePath);
-				$file->delete();
+				try {
+					$file = $userFolder->get(path: $filePath);
+					$file->delete();
 
-				return true;
-			} catch (NotFoundException $e) {
-				// File does not exist.
-				$this->logger->warning("File $filePath does not exist.");
+					return true;
+				} catch (NotFoundException $e) {
+					// File does not exist.
+					$this->logger->warning("File $filePath does not exist.");
 
-				return false;
+					return false;
+				}
+			} catch (NotPermittedException|InvalidPathException $e) {
+				$this->logger->error("Can't delete file $filePath: " . $e->getMessage());
+
+				throw new Exception("Can't delete file $filePath");
 			}
-		} catch (NotPermittedException|InvalidPathException $e) {
+		} catch (NotPermittedException $e) {
 			$this->logger->error("Can't delete file $filePath: " . $e->getMessage());
 
 			throw new Exception("Can't delete file $filePath");
