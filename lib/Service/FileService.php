@@ -41,7 +41,7 @@ class FileService
 {
 	const ROOT_FOLDER = 'Open Registers';
     const APP_GROUP = 'openregister';
-    const APP_USER = 'OpenCatalogi';
+    const APP_USER = 'OpenRegister';
     const FILE_TAG_TYPE = 'file';
 	/**
 	 * Constructor for FileService
