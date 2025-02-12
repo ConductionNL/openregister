@@ -1,5 +1,5 @@
 <script setup>
-import { searchStore } from '../../store/store.js'
+import { searchStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -11,96 +11,93 @@ import { searchStore } from '../../store/store.js'
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
-			Zoek snel in het voor uw beschikbare federatieve netwerk<br>
-			<NcTextField class="searchField"
-				:value.sync="searchStore.search"
-				label="Zoeken" />
-			<NcNoteCard v-if="searchStore.searchError" type="error">
-				<p>{{ searchStore.searchError }}</p>
-			</NcNoteCard>
+			<NcSelect v-bind="registerOptions" v-model="selectedRegister" input-label="Registratie" />
+			<NcSelect v-bind="schemaOptions" v-model="selectedSchema" input-label="Schema" />
 		</NcAppSidebarTab>
-		<NcAppSidebarTab id="settings-tab" name="Catalogi" :order="2">
+
+		<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
 			<template #icon>
-				<DatabaseOutline :size="20" />
+				<Upload :size="20" />
 			</template>
-			<NcCheckboxRadioSwitch v-for="(catalogiItem, i) in catalogiStore.catalogiList"
-				:key="`${catalogiItem}${i}`"
-				type="switch"
-				:checked.sync="searchStore.catalogi[catalogiItem.id]">
-				{{ catalogiItem.title || 'Geen titel' }}
-			</NcCheckboxRadioSwitch>
+			<NcButton type="primary">
+				Upload
+			</NcButton>
 		</NcAppSidebarTab>
-		<NcAppSidebarTab id="share-tab" name="Publicatie typen" :order="3">
+
+		<NcAppSidebarTab id="download-tab" name="Download" :order="3">
 			<template #icon>
-				<FileTreeOutline :size="20" />
+				<Download :size="20" />
 			</template>
-			<NcCheckboxRadioSwitch v-for="(metaData, i) in metadataStore.metaDataList"
-				:key="`${metaData}${i}`"
-				type="switch"
-				:checked.sync="searchStore.metadata[metaData.id]">
-				{{ metaData.title || 'Geen titel' }}
-			</NcCheckboxRadioSwitch>
+			<NcButton type="primary">
+				Download
+			</NcButton>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 <script>
 
-import { NcAppSidebar, NcAppSidebarTab, NcTextField, NcNoteCard, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
-import { debounce } from 'lodash'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import Download from 'vue-material-design-icons/Download.vue'
 
 export default {
 	name: 'SearchSideBar',
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
-		NcTextField,
-		NcCheckboxRadioSwitch,
-		// Icons
-		Magnify,
-		DatabaseOutline,
-		FileTreeOutline,
-	},
-	props: {
-		search: {
-			type: String,
-			required: true,
-		},
-		metadata: {
-			type: Object,
-			required: true,
-		},
-		catalogi: {
-			type: Object,
-			required: true,
-		},
+		NcSelect,
+		NcButton,
 	},
 	data() {
 		return {
-			starred: false,
+			selectedRegister: null,
+			selectedSchema: null,
 		}
 	},
-	watch: {
-		search: 'debouncedSearch',
-		metadata: {
-			handler() {
-				this.debouncedSearch()
-			},
-			deep: true,
+	computed: {
+		// when registerList is filled, make a options object for NcSelect
+		registerOptions() {
+			return {
+				options: registerStore.registerList.map(register => ({
+					label: register.title,
+					id: register.id,
+				})),
+			}
 		},
-		catalogi: {
-			handler() {
-				this.debouncedSearch()
-			},
-			deep: true,
+		// when schemaList is filled, make a options object for NcSelect based on the selected register
+		schemaOptions() {
+			const fullSelectedRegister = registerStore.registerList.find(register => register.id === (this.selectedRegister?.id || Symbol('no selected register')))
+			if (!fullSelectedRegister) return []
+
+			return {
+				options: schemaStore.schemaList
+					.filter(schema => fullSelectedRegister.schemas.includes(schema.id))
+					.map(schema => ({
+						label: schema.title,
+						id: schema.id,
+					})),
+			}
 		},
 	},
-	methods: {
-		debouncedSearch: debounce(function() {
-			searchStore.getSearchResults()
-		}, 500),
+	watch: {
+		// when the selected register changes clear the selected schema
+		selectedRegister(newValue) {
+			this.selectedSchema = null
+		},
+		// when selectedSchema changes, search for objects with the selected register and schema as filters
+		selectedSchema(newValue) {
+			if (newValue?.id) {
+				searchStore.searchObjects({
+					register: this.selectedRegister?.id,
+					schema: this.selectedSchema?.id,
+				})
+			}
+		},
+	},
+	mounted() {
+		registerStore.refreshRegisterList()
+		schemaStore.refreshSchemaList()
 	},
 }
 </script>
