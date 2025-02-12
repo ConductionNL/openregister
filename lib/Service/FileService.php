@@ -745,4 +745,43 @@ class FileService
 		}
 	}
 
+	/**
+	 * Adds a new file to an object's folder with the OpenCatalogi user as owner
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to add the file to
+	 * @param string $fileName The name of the file to create
+	 * @param string $content The content to write to the file
+	 * @return File The created file
+	 * @throws NotPermittedException If file creation fails due to permissions
+	 * @throws Exception If file creation fails for other reasons
+	 */
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content): File
+	{
+		try {
+			// Create new file in the folder
+			$folder = $this->getObjectFolder(
+				objectEntity: $objectEntity,
+				register: $objectEntity->getRegister(),
+				schema: $objectEntity->getSchema()
+			);
+
+			$file = $folder->newFile($fileName);
+			
+			// Write content to the file
+			$file->putContent($content);
+			
+			// Set the OpenCatalogi user as owner
+			$file->setOwner($this->getUser());
+			
+			return $file;
+			
+		} catch (NotPermittedException $e) {
+			$this->logger->error("Permission denied creating file $fileName: " . $e->getMessage());
+			throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
+		} catch (\Exception $e) {
+			$this->logger->error("Failed to create file $fileName: " . $e->getMessage());
+			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
+		}
+	}
+
 }

@@ -1334,6 +1334,23 @@ class ObjectService
 	}
 
 	/**
+	 * Add a file to the object
+	 *
+	 * @param ObjectEntity|string $object The object to add the file to
+	 * @param string $fileName The name of the file to add
+	 * @param string $base64Content The base64 encoded content of the file
+	 */
+	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content)
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		return $file = $this->fileService->addFile($object, $fileName, $base64Content);
+	}
+
+	/**
 	 * Formats an array of Node files into an array of metadata arrays.
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
