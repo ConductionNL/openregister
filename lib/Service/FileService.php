@@ -610,17 +610,9 @@ class FileService
 	public function createFolder(string $folderPath): bool
 	{
 		$folderPath = trim(string: $folderPath, characters: '/');
-		
-		try {
-			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
-			// Check if folder exists and if not create it.
-			try {
-				// First, check if the root folder exists, and if not, create it and share it with the openregister group.
-				try {
-					$userFolder->get(self::ROOT_FOLDER);
-				} catch(NotFoundException $exception) {
-					$rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+		// Get the current user.
+		$userFolder = $this->rootFolder->getUserFolder(userId: $userId);
 
 		// Check if folder exists and if not create it.
 		try {
@@ -645,22 +637,22 @@ class FileService
 				]);
 			}
 
-					return true;
-				}
+			try {
+				$userFolder->get(path: $folderPath);
+			} catch (NotFoundException $e) {
+				$userFolder->newFolder(path: $folderPath);
 
-				// Folder already exists.
-				$this->logger->info("This folder already exits $folderPath");
-				return false;
-
-			} catch (NotPermittedException $e) {
-				$this->logger->error("Can't create folder $folderPath: " . $e->getMessage());
-
-				throw new Exception("Can't create folder $folderPath");
+				return true;
 			}
+
+			// Folder already exists.
+			$this->logger->info("This folder already exits $folderPath");
+			return false;
+
 		} catch (NotPermittedException $e) {
 			$this->logger->error("Can't create folder $folderPath: " . $e->getMessage());
 
-			throw new Exception("Can't create folder $folderPath");
+			throw new Exception("Can\'t create folder $folderPath");
 		}
 	}
 
