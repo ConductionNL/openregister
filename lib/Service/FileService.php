@@ -464,7 +464,7 @@ class FileService
 		$currentUser = $this->userSession->getUser();
 		$userId = $currentUser ? $currentUser->getUID() : 'Guest';
 
-		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file);
+		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
 	}
 
 	/**
@@ -497,7 +497,7 @@ class FileService
 		}
 
 		if ($file instanceof File) {
-			$shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file);
+			$shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
 			if (count($shares) > 0) {
 				return $shares[0];
 			}
