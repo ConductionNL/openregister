@@ -42,7 +42,7 @@ class FileService
 	const ROOT_FOLDER = 'Open Registers';
     const APP_GROUP = 'openregister';
     const APP_USER = 'OpenRegister';
-    const FILE_TAG_TYPE = 'file';
+    const FILE_TAG_TYPE = 'files';
 	/**
 	 * Constructor for FileService
 	 *
@@ -354,16 +354,16 @@ class FileService
 	private function getUser(): IUser
 	{
 		$openCatalogiUser = $this->userManager->get(self::APP_USER);
-		
+
 		if (!$openCatalogiUser) {
 			// Create OpenCatalogi user if it doesn't exist
 			$password = bin2hex(random_bytes(16)); // Generate random password
 			$openCatalogiUser = $this->userManager->createUser(self::APP_USER, $password);
-			
+
 			if (!$openCatalogiUser) {
 				throw new \Exception('Failed to create OpenCatalogi user account.');
 			}
-			
+
 			// Add user to OpenCatalogi group
 			$group = $this->groupManager->get(self::APP_GROUP);
 			if (!$group) {
@@ -371,7 +371,7 @@ class FileService
 			}
 			$group->addUser($openCatalogiUser);
 		}
-		
+
 		return $openCatalogiUser;
 	}
 
@@ -420,7 +420,7 @@ class FileService
 				'size'		  => $file->getSize(),
 				'hash'		  => $file->getEtag(),
 				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
-				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),				
+				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
                 'labels'      => $this->getFileTags(fileId: $file->getId())
 			];
 
@@ -464,7 +464,7 @@ class FileService
 		$currentUser = $this->userSession->getUser();
 		$userId = $currentUser ? $currentUser->getUID() : 'Guest';
 
-		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file);
+		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
 	}
 
 	/**
@@ -497,7 +497,7 @@ class FileService
 		}
 
 		if ($file instanceof File) {
-			$shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file);
+			$shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
 			if (count($shares) > 0) {
 				return $shares[0];
 			}
@@ -517,7 +517,7 @@ class FileService
 	private function createShare(array $shareData): IShare
 	{
 		$userId = $this->getUser()->getUID();
-		
+
 		// Create a new share
 		$share = $this->shareManager->newShare();
 		$share->setTarget(target: '/'.$shareData['path']);
@@ -565,7 +565,7 @@ class FileService
 		}
 
 		$userId = $this->getUser()->getUID();
-		
+
 		try {
 			$userFolder = $this->rootFolder->getUserFolder(userId: $userId);
 		} catch (NotPermittedException) {
@@ -819,14 +819,14 @@ class FileService
 			$this->userSession->setUser($this->getUser());
 
 			$file = $folder->newFile($fileName);
-			
+
 			// Write content to the file
 			$file->putContent($content);
 
 			$this->userSession->setUser($currentUser);
-			
+
 			return $file;
-			
+
 		} catch (NotPermittedException $e) {
 			$this->logger->error("Permission denied creating file $fileName: " . $e->getMessage());
 			throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
