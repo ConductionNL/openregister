@@ -16,11 +16,11 @@ export const useSearchStore = defineStore('search', () => {
 
 	function setSearch(search: string) {
 		this.search = search
-		console.log('Active search set to ' + search)
+		console.info('Active search set to ' + search)
 	}
 	function setSearchResults(searchResults: string) {
 		this.searchResults = searchResults
-		console.log('Active search set to ' + searchResults)
+		console.info('Active search set to ' + searchResults)
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
 	function getSearchResults() {
@@ -36,7 +36,7 @@ export const useSearchStore = defineStore('search', () => {
 						(data) => {
 							if (data?.code === 403 && data?.message) {
 								this.searchError = data.message
-								console.log(this.searchError)
+								console.info(this.searchError)
 							} else {
 								this.searchError = '' // Clear any previous errors
 							}

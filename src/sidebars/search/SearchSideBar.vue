@@ -11,8 +11,15 @@ import { searchStore, registerStore, schemaStore } from '../../store/store.js'
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
-			<NcSelect v-bind="registerOptions" v-model="selectedRegister" input-label="Registratie" />
-			<NcSelect v-bind="schemaOptions" v-model="selectedSchema" input-label="Schema" />
+			<NcSelect v-bind="registerOptions"
+				v-model="selectedRegister"
+				input-label="Registratie"
+				:loading="registerLoading" />
+			<NcSelect v-bind="schemaOptions"
+				v-model="selectedSchema"
+				input-label="Schema"
+				:loading="schemaLoading"
+				:disabled="!selectedRegister?.id" />
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
@@ -51,7 +58,9 @@ export default {
 	},
 	data() {
 		return {
+			registerLoading: false,
 			selectedRegister: null,
+			schemaLoading: false,
 			selectedSchema: null,
 		}
 	},
@@ -96,8 +105,10 @@ export default {
 		},
 	},
 	mounted() {
-		registerStore.refreshRegisterList()
-		schemaStore.refreshSchemaList()
+		this.registerLoading = true
+		this.schemaLoading = true
+		registerStore.refreshRegisterList().finally(() => (this.registerLoading = false))
+		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
 	},
 }
 </script>
