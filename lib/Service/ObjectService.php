@@ -1349,7 +1349,7 @@ class ObjectService
 			$object = $this->objectEntityMapper->find($object);
 		}
 
-		return $file = $this->fileService->addFile($object, $fileName, $base64Content);
+		return $file = $this->fileService->addFile($object, $fileName, base64_decode($base64Content));
 	}
 
 	/**
