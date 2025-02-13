@@ -25,6 +25,11 @@ import { navigationStore } from '../store/store.js'
 					<CubeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'search'" name="Search" @click="navigationStore.setSelected('search')">
+				<template #icon>
+					<LayersSearchOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
@@ -51,6 +56,7 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 
 export default {
 	name: 'MainMenu',

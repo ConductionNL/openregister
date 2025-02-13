@@ -11,6 +11,7 @@ import { navigationStore } from '../store/store.js'
 			<SourcesIndex v-if="navigationStore.selected === 'sources'" />
 			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
+			<SearchIndex v-if="navigationStore.selected === 'search'" />
 		</template>
 	</NcAppContent>
 </template>
@@ -22,6 +23,7 @@ import RegistersIndex from './register/RegistersIndex.vue'
 import SourcesIndex from './source/SourcesIndex.vue'
 import SchemasIndex from './schema/SchemasIndex.vue'
 import ObjectsIndex from './object/ObjectsIndex.vue'
+import SearchIndex from './search/SearchIndex.vue'
 export default {
 	name: 'Views',
 	components: {
@@ -31,6 +33,7 @@ export default {
 		SourcesIndex,
 		SchemasIndex,
 		ObjectsIndex,
+		SearchIndex,
 	},
 }
 </script>
