@@ -1342,14 +1342,14 @@ class ObjectService
 	 * @param string $fileName The name of the file to add
 	 * @param string $base64Content The base64 encoded content of the file
 	 */
-	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content)
+	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false)
 	{
 		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
-		return $file = $this->fileService->addFile($object, $fileName, base64_decode($base64Content));
+		return $file = $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: base64_decode($base64Content), share: $share);
 	}
 
 	/**

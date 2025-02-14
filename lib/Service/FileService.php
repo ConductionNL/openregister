@@ -574,8 +574,8 @@ class FileService
 		}
 
 		try {
-			// Note: if we ever want to create share links for folders instead of files, just remove this try catch and only use setTarget, not setNodeId.
-			$file = $userFolder->get(path: $path);
+            $file = $this->rootFolder->get($path);
+//			$file = $userFolder->get(path: $path);
 		} catch (NotFoundException $e) {
 			$this->logger->error("Can't create share link for $path because file doesn't exist");
 
@@ -590,7 +590,6 @@ class FileService
 				'permissions' => $permissions,
 				'userId' => $userId
 			]);
-
 			return $this->getShareLink($share);
 		} catch (Exception $exception) {
 			$this->logger->error("Can't create share link for $path: " . $exception->getMessage());
@@ -804,7 +803,7 @@ class FileService
 	 * @throws NotPermittedException If file creation fails due to permissions
 	 * @throws Exception If file creation fails for other reasons
 	 */
-	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content): File
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false): File
 	{
 		try {
 			// Create new file in the folder
@@ -818,10 +817,17 @@ class FileService
 			$currentUser = $this->userSession->getUser();
 			$this->userSession->setUser($this->getUser());
 
+            /**
+             * @var File $file
+             */
 			$file = $folder->newFile($fileName);
 
 			// Write content to the file
 			$file->putContent($content);
+
+            if ($share === true) {
+                $this->createShareLink(path: $file->getPath());
+            }
 
 			$this->userSession->setUser($currentUser);
 
