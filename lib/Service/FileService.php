@@ -574,7 +574,6 @@ class FileService
 		}
 
 		try {
-			// Note: if we ever want to create share links for folders instead of files, just remove this try catch and only use setTarget, not setNodeId.
             $file = $this->rootFolder->get($path);
 //			$file = $userFolder->get(path: $path);
 		} catch (NotFoundException $e) {
@@ -826,7 +825,7 @@ class FileService
 			// Write content to the file
 			$file->putContent($content);
 
-            if($share === true) {
+            if ($share === true) {
                 $this->createShareLink(path: $file->getPath());
             }
 
