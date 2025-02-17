@@ -5,8 +5,8 @@
 const config = {
   title: 'Open Register',
   tagline: 'Flexible object management for Nextcloud',
-  url: 'https://conductionnl.github.io',
-  baseUrl: '/openregister/',
+  url: 'https://openregister.app',
+  baseUrl: '/',
   
   // GitHub pages deployment config
   organizationName: 'conductionnl',
@@ -86,7 +86,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Open Register. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a>`,
       },
       prism: {
         theme: require('prism-react-renderer/themes/github'),
