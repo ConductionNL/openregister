@@ -17,6 +17,8 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -48,15 +50,17 @@ class FileService
 	 * @param IManager $shareManager The share manager interface
 	 */
 	public function __construct(
-		private readonly IUserSession    $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly IRootFolder     $rootFolder,
-		private readonly IManager        $shareManager,
-		private readonly IURLGenerator   $urlGenerator,
-		private readonly IConfig         $config,
-		private readonly RegisterMapper  $registerMapper,
-		private readonly SchemaMapper    $schemaMapper,
-        private readonly IGroupManager   $groupManager,
+		private readonly IUserSession    		$userSession,
+		private readonly LoggerInterface 		$logger,
+		private readonly IRootFolder     		$rootFolder,
+		private readonly IManager        		$shareManager,
+		private readonly IURLGenerator   		$urlGenerator,
+		private readonly IConfig         		$config,
+		private readonly RegisterMapper  		$registerMapper,
+		private readonly SchemaMapper    		$schemaMapper,
+        private readonly IGroupManager   		$groupManager,
+        private readonly ISystemTagManager      $systemTagManager,
+        private readonly ISystemTagObjectMapper $systemTagMapper,
 	)
 	{
 	}
@@ -612,10 +616,8 @@ class FileService
 				$file->putContent(data: $content);
 
 				// Add tags to the file if provided
-				if (!empty($tags)) {
-					foreach ($tags as $tag) {
-						$file->addTag($tag);
-					}
+				if ($file instanceof File === true && empty($tags) !== false) {
+					$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 				}
 
 				return true;
@@ -659,10 +661,8 @@ class FileService
 				$file->putContent(data: $content);
 
 				// Add tags to the file if provided
-				if (!empty($tags)) {
-					foreach ($tags as $tag) {
-						$file->addTag($tag);
-					}
+				if ($file instanceof File === true && empty($tags) !== false) {
+					$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 				}
 
 				return true;
@@ -674,10 +674,8 @@ class FileService
 					$file->putContent(data: $content);
 
 					// Add tags to the file if provided
-					if (!empty($tags)) {
-						foreach ($tags as $tag) {
-							$file->addTag($tag);
-						}
+					if ($file instanceof File === true && empty($tags) !== false) {
+						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 					}
 
 					$this->logger->info("File $filePath did not exist, created a new file for it.");
@@ -730,6 +728,30 @@ class FileService
 
 			throw new Exception("Can't delete file $filePath");
 		}
+	}
+
+	
+
+	/**
+	 * Attach tags to a file.
+	 *
+	 * @param string $fileId The fileId.
+	 * @param array $tags Tags to associate with the file.
+	 */
+	private function attachTagsToFile(string $fileId, array $tags): void
+	{
+        $tagIds = [];
+		foreach ($tags as $key => $tagName) {
+            try {
+                $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
+            } catch (TagNotFoundException $exception) {
+                $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
+            }
+
+            $tagIds[] = $tag->getId();
+		}
+
+        $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagIds);
 	}
 
 }
