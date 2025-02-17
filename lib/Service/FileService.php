@@ -656,64 +656,12 @@ class FileService
 	}
 
 	/**
-	 * Uploads a file to NextCloud. Will create a new file if it doesn't exist yet.
-	 *
-	 * @param mixed $content The content of the file.
-	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
-	 * @param array<string> $tags Optional array of tags to tag the file with
-	 *
-	 * @return bool True if successful.
-	 * @throws Exception In case we can't write to file because it is not permitted.
-	 */
-	public function uploadFile(mixed $content, string $filePath, array $tags = []): bool
-	{
-		$filePath = trim(string: $filePath, characters: '/');
-
-		try {
-			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
-
-			// Check if file exists and create it if not.
-			try {
-				try {
-					$userFolder->get(path: $filePath);
-				} catch (NotFoundException $e) {
-					$userFolder->newFile(path: $filePath);
-					$file = $userFolder->get(path: $filePath);
-
-					$file->putContent(data: $content);
-
-				// Add tags to the file if provided
-				if ($file instanceof File === true && empty($tags) !== false) {
-					$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-				}
-
-				return true;
-			}
-
-				// File already exists.
-				$this->logger->warning("File $filePath already exists.");
-				return false;
-
-			} catch (NotPermittedException|GenericFileException|LockedException $e) {
-				$this->logger->error("Can't create file $filePath: " . $e->getMessage());
-
-				throw new Exception("Can't write to file $filePath");
-			}
-		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't create file $filePath: " . $e->getMessage());
-
-			throw new Exception("Can't write to file $filePath");
-		}
-	}
-
-	/**
 	 * Overwrites an existing file in NextCloud.
 	 *
 	 * @param mixed $content The content of the file.
 	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
 	 * @param bool $createNew Default = false. If set to true this function will create a new file if it doesn't exist yet.
-	 * @param array<string> $tags Optional array of tags to tag the file with
-	 *
+	 * @param array $tags Optional array of tags to attach to the file.
 	 * @return bool True if successful.
 	 * @throws Exception In case we can't write to file because it is not permitted.
 	 */
@@ -726,29 +674,16 @@ class FileService
 
 			// Check if file exists and overwrite it if it does.
 			try {
-				$file = $userFolder->get(path: $filePath);
-
-				$file->putContent(data: $content);
-
-				// Add tags to the file if provided
-				if ($file instanceof File === true && empty($tags) !== false) {
-					$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-				}
-
-				return true;
-			} catch (NotFoundException $e) {
-				if ($createNew === true) {
-					$userFolder->newFile(path: $filePath);
+				try {
 					$file = $userFolder->get(path: $filePath);
 
 					$file->putContent(data: $content);
-
+					
 					// Add tags to the file if provided
-					if ($file instanceof File === true && empty($tags) !== false) {
+					if (empty($tags) !== false) {
 						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 					}
 
-					$this->logger->info("File $filePath did not exist, created a new file for it.");
 					return true;
 				} catch (NotFoundException $e) {
 					if ($createNew === true) {
@@ -756,6 +691,11 @@ class FileService
 						$file = $userFolder->get(path: $filePath);
 
 						$file->putContent(data: $content);
+					
+						// Add tags to the file if provided
+						if (empty($tags) !== false) {
+							$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+						}
 
 						$this->logger->info("File $filePath did not exist, created a new file for it.");
 						return true;
@@ -843,52 +783,59 @@ class FileService
 	}
 
 
-	}
-		}
-			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
-			$this->logger->error("Failed to create file $fileName: " . $e->getMessage());
-		} catch (\Exception $e) {
-			throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
-			$this->logger->error("Permission denied creating file $fileName: " . $e->getMessage());
-
-		} catch (NotPermittedException $e) {
-
-			return $file;
-             * @var File $file
-             */
-
-			// Write content to the file
-			$file->putContent($content);
-
-            if ($share === true) {
-                $this->createShareLink(path: $file->getPath());
-            }
-			$this->userSession->setUser($currentUser);
-
-			$file = $folder->newFile($fileName);
-            /**
-
-	 */
-	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false): File
-	{
-		try {
-			$folder = $this->getObjectFolder(
-			// Create new file in the folder
-				objectEntity: $objectEntity,
-				register: $objectEntity->getRegister(),
-				schema: $objectEntity->getSchema()
-			);
-
-			$currentUser = $this->userSession->getUser();
-			// Set the OpenCatalogi user as the current user
-			$this->userSession->setUser($this->getUser());
 	/**
 	 * Adds a new file to an object's folder with the OpenCatalogi user as owner
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to add the file to
 	 * @param string $fileName The name of the file to create
 	 * @param string $content The content to write to the file
+	 * @param bool $share Whether to create a share link for the file
 	 * @return File The created file
-	 * @throws Exception If file creation fails for other reasons
 	 * @throws NotPermittedException If file creation fails due to permissions
+	 * @throws Exception If file creation fails for other reasons
+	 */
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false): File
+	{
+		try {
+			// Create new file in the folder
+			$folder = $this->getObjectFolder(
+				objectEntity: $objectEntity,
+				register: $objectEntity->getRegister(),
+				schema: $objectEntity->getSchema()
+			);
+
+			// Set the OpenCatalogi user as the current user
+			$currentUser = $this->userSession->getUser();
+			$this->userSession->setUser($this->getUser());
+
+            /**
+             * @var File $file
+             */
+			$file = $folder->newFile($fileName);
+
+			// Write content to the file
+			$file->putContent($content);
+
+			// Create a share link for the file if requested
+            if ($share === true) {
+                $this->createShareLink(path: $file->getPath());
+            }	
+
+			// Add tags to the file if provided
+			if ( empty($tags) !== false) {
+				$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+			}
+
+			$this->userSession->setUser($currentUser);
+
+			return $file;
+
+		} catch (NotPermittedException $e) {
+			$this->logger->error("Permission denied creating file $fileName: " . $e->getMessage());
+			throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
+		} catch (\Exception $e) {
+			$this->logger->error("Failed to create file $fileName: " . $e->getMessage());
+			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
+		}
+	}
 }
