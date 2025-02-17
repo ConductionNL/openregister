@@ -8,7 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use JsonSerializable;
-use OC\Files\Node\Node;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -22,9 +21,10 @@ use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
-use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
+use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -1312,7 +1312,7 @@ class ObjectService
 	 *
 	 * @param ObjectEntity|string $object The object or object ID to fetch files for
 	 * @return Node[] The files found
-	 * @throws \OCP\Files\NotFoundException If the folder is not found
+	 * @throws NotFoundException If the folder is not found
 	 * @throws DoesNotExistException If the object ID is not found
 	 */
 	public function getFiles(ObjectEntity|string $object): array
@@ -1343,10 +1343,11 @@ class ObjectService
 	 * @param string $base64Content The base64 encoded content of the file
 	 * @param bool $share Whether to create a share link for the file
 	 * @param array $tags Optional array of tags to attach to the file
-	 * @return File The added file
+	 *
+	 * @return \OCP\Files\File The added file
 	 * @throws Exception If file addition fails
 	 */
-	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false, array $tags = [])
+	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false, array $tags = []): \OCP\Files\File
 	{
 		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
@@ -1358,7 +1359,7 @@ class ObjectService
 
 	/**
 	 * Update an existing file for an object
-	 * 
+	 *
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to update
 	 * @param string $content New file content

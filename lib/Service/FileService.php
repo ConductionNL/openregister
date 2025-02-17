@@ -5,7 +5,6 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -28,9 +27,6 @@ use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
 use OCP\IUser;
-use OCP\IUserManager;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 
 /**
  * Service for handling file operations in OpenRegister.
@@ -678,7 +674,7 @@ class FileService
 					$file = $userFolder->get(path: $filePath);
 
 					$file->putContent(data: $content);
-					
+
 					// Add tags to the file if provided
 					if (empty($tags) !== false) {
 						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
@@ -691,7 +687,7 @@ class FileService
 						$file = $userFolder->get(path: $filePath);
 
 						$file->putContent(data: $content);
-					
+
 						// Add tags to the file if provided
 						if (empty($tags) !== false) {
 							$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
@@ -758,7 +754,7 @@ class FileService
 		}
 	}
 
-	
+
 
 	/**
 	 * Attach tags to a file.
@@ -790,6 +786,7 @@ class FileService
 	 * @param string $fileName The name of the file to create
 	 * @param string $content The content to write to the file
 	 * @param bool $share Whether to create a share link for the file
+	 *
 	 * @return File The created file
 	 * @throws NotPermittedException If file creation fails due to permissions
 	 * @throws Exception If file creation fails for other reasons
@@ -819,7 +816,7 @@ class FileService
 			// Create a share link for the file if requested
             if ($share === true) {
                 $this->createShareLink(path: $file->getPath());
-            }	
+            }
 
 			// Add tags to the file if provided
 			if ( empty($tags) !== false) {
