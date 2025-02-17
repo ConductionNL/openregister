@@ -588,11 +588,12 @@ class FileService
 	 *
 	 * @param mixed $content The content of the file.
 	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
+	 * @param array<string> $tags Optional array of tags to tag the file with
 	 *
 	 * @return bool True if successful.
 	 * @throws Exception In case we can't write to file because it is not permitted.
 	 */
-	public function uploadFile(mixed $content, string $filePath): bool
+	public function uploadFile(mixed $content, string $filePath, array $tags = []): bool
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
@@ -609,6 +610,13 @@ class FileService
 				$file = $userFolder->get(path: $filePath);
 
 				$file->putContent(data: $content);
+
+				// Add tags to the file if provided
+				if (!empty($tags)) {
+					foreach ($tags as $tag) {
+						$file->addTag($tag);
+					}
+				}
 
 				return true;
 			}
@@ -630,11 +638,12 @@ class FileService
 	 * @param mixed $content The content of the file.
 	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
 	 * @param bool $createNew Default = false. If set to true this function will create a new file if it doesn't exist yet.
+	 * @param array<string> $tags Optional array of tags to tag the file with
 	 *
 	 * @return bool True if successful.
 	 * @throws Exception In case we can't write to file because it is not permitted.
 	 */
-	public function updateFile(mixed $content, string $filePath, bool $createNew = false): bool
+	public function updateFile(mixed $content, string $filePath, bool $createNew = false, array $tags = []): bool
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
@@ -649,6 +658,13 @@ class FileService
 
 				$file->putContent(data: $content);
 
+				// Add tags to the file if provided
+				if (!empty($tags)) {
+					foreach ($tags as $tag) {
+						$file->addTag($tag);
+					}
+				}
+
 				return true;
 			} catch (NotFoundException $e) {
 				if ($createNew === true) {
@@ -656,6 +672,13 @@ class FileService
 					$file = $userFolder->get(path: $filePath);
 
 					$file->putContent(data: $content);
+
+					// Add tags to the file if provided
+					if (!empty($tags)) {
+						foreach ($tags as $tag) {
+							$file->addTag($tag);
+						}
+					}
 
 					$this->logger->info("File $filePath did not exist, created a new file for it.");
 					return true;

@@ -1334,6 +1334,71 @@ class ObjectService
 	}
 
 	/**
+	 * Add a new file to an object
+	 *
+	 * @param ObjectEntity|string $object The object or object ID to add file to
+	 * @param string $filePath Path to the file to upload
+	 * @param string $content File content
+	 * @param array $tags Optional tags to add to the file
+	 * @return bool True if successful
+	 * @throws Exception If file upload fails
+	 */
+	public function addFile(ObjectEntity|string $object, string $filePath, string $content, array $tags = []): bool
+	{
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		return $this->fileService->uploadFile(
+			filePath: $this->fileService->getObjectFilePath($object, $filePath),
+			content: $content,
+			tags: $tags
+		);
+	}
+
+	/**
+	 * Update an existing file for an object
+	 * 
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to update
+	 * @param string $content New file content
+	 * @param array $tags Optional tags to update
+	 * @return bool True if successful
+	 * @throws Exception If file update fails
+	 */
+	public function updateFile(ObjectEntity|string $object, string $filePath, string $content, array $tags = []): bool
+	{
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		return $this->fileService->updateFile(
+			filePath: $this->fileService->getObjectFilePath($object, $filePath),
+			content: $content,
+			tags: $tags
+		);
+	}
+
+	/**
+	 * Delete a file from an object
+	 *
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to delete
+	 * @return bool True if successful
+	 * @throws Exception If file deletion fails
+	 */
+	public function deleteFile(ObjectEntity|string $object, string $filePath): bool
+	{
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		return $this->fileService->deleteFile(
+			filePath: $this->fileService->getObjectFilePath($object, $filePath)
+		);
+	}
+
+	/**
 	 * Formats an array of Node files into an array of metadata arrays.
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
@@ -1518,6 +1583,8 @@ class ObjectService
 			}
 
 			$this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $originalObjectId);
+
+			//Todo: delete files
 
 			$this->objectEntityMapper->delete($object);
 			return true;
