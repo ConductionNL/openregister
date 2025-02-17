@@ -5,7 +5,7 @@
 const config = {
   title: 'Open Register',
   tagline: 'Flexible object management for Nextcloud',
-  url: 'https://openregister.app',
+  url: 'https://openregisters.app',
   baseUrl: '/',
   
   // GitHub pages deployment config
