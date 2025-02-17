@@ -1341,8 +1341,12 @@ class ObjectService
 	 * @param ObjectEntity|string $object The object to add the file to
 	 * @param string $fileName The name of the file to add
 	 * @param string $base64Content The base64 encoded content of the file
+	 * @param bool $share Whether to create a share link for the file
+	 * @param array $tags Optional array of tags to attach to the file
+	 * @return File The added file
+	 * @throws Exception If file addition fails
 	 */
-	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false)
+	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false, array $tags = [])
 	{
 		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
