@@ -1336,6 +1336,39 @@ class ObjectService
 	}
 
 	/**
+	 * Get a single file for an object by filepath
+	 *
+	 * @param ObjectEntity|string $object The object or object ID to fetch the file for
+	 * @param string $filePath The path to the specific file
+	 * @return Node|null The file if found, null otherwise
+	 * @throws NotFoundException If the folder or file is not found
+	 * @throws DoesNotExistException If the object ID is not found
+	 */
+	public function getFile(ObjectEntity|string $object, string $filePath): ?Node
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		$folder = $this->fileService->getObjectFolder(
+			objectEntity: $object,
+			register: $object->getRegister(),
+			schema: $object->getSchema()
+		);
+
+		if ($folder instanceof Folder === true) {
+			try {
+				return $folder->get($filePath);
+			} catch (NotFoundException $e) {
+				return null;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Add a file to the object
 	 *
 	 * @param ObjectEntity|string $object The object to add the file to
@@ -1943,6 +1976,7 @@ class ObjectService
 	 * @param string $id The object ID
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
+	 * 
 	 * @return array The objects this object references
 	 */
 	public function getUses(string $id, ?int $register = null, ?int $schema = null): array
