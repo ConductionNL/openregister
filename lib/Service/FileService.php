@@ -424,7 +424,7 @@ class FileService
 				list($key, $value) = explode(':', $label, 2);
 				$key = trim($key);
 				$value = trim($value);
-				
+
 				// Skip if key exists in base metadata
 				if (isset($metadata[$key])) {
 					$remainingLabels[] = $label;
@@ -836,12 +836,13 @@ class FileService
 	 * @param string $fileName The name of the file to create
 	 * @param string $content The content to write to the file
 	 * @param bool $share Whether to create a share link for the file
+	 * @param array $tags Optional array of tags to attach to the file
 	 *
 	 * @return File The created file
 	 * @throws NotPermittedException If file creation fails due to permissions
 	 * @throws Exception If file creation fails for other reasons
 	 */
-	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false): File
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
 	{
 		try {
 			// Create new file in the folder

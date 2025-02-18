@@ -1387,7 +1387,7 @@ class ObjectService
 			$object = $this->objectEntityMapper->find($object);
 		}
 
-		return $file = $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: base64_decode($base64Content), share: $share);
+		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: base64_decode($base64Content), share: $share, tags: $tags);
 	}
 
 	/**
@@ -1976,7 +1976,7 @@ class ObjectService
 	 * @param string $id The object ID
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
-	 * 
+	 *
 	 * @return array The objects this object references
 	 */
 	public function getUses(string $id, ?int $register = null, ?int $schema = null): array
