@@ -27,6 +27,7 @@ use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
 use OCP\IUser;
+use OCP\IUserManager;
 
 /**
  * Service for handling file operations in OpenRegister.
@@ -51,6 +52,7 @@ class FileService
 	 */
 	public function __construct(
 		private readonly IUserSession    		$userSession,
+		private readonly IUserManager    		$userManager,
 		private readonly LoggerInterface 		$logger,
 		private readonly IRootFolder     		$rootFolder,
 		private readonly IManager        		$shareManager,
