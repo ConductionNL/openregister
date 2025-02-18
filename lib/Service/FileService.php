@@ -869,7 +869,7 @@ class FileService
             }
 
 			// Add tags to the file if provided
-			if ( empty($tags) !== false) {
+			if ( empty($tags) === false) {
 				$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 			}
 
