@@ -1,4 +1,5 @@
 @startuml Object Deletion States
+title Object Lifecycle State Machine
 skinparam monochrome true
 skinparam defaultTextAlignment center
 
@@ -12,4 +13,4 @@ note right of Active : Object is fully accessible\ndeleted = null
 note right of SoftDeleted : Object hidden from queries\ndeleted = timestamp
 note right of PendingPurge : Object ready for removal\ncurrent date > purgeDate
 
-@enduml 
+@enduml

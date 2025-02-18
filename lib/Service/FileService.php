@@ -5,7 +5,6 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -17,6 +16,8 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -27,8 +28,6 @@ use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
 use OCP\IUser;
 use OCP\IUserManager;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 
 /**
  * Service for handling file operations in OpenRegister.
@@ -52,17 +51,16 @@ class FileService
 	 * @param IManager $shareManager The share manager interface
 	 */
 	public function __construct(
-		private readonly IUserSession    $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly IRootFolder     $rootFolder,
-		private readonly IManager        $shareManager,
-		private readonly IURLGenerator   $urlGenerator,
-		private readonly IConfig         $config,
-		private readonly RegisterMapper  $registerMapper,
-		private readonly SchemaMapper    $schemaMapper,
-        private readonly IGroupManager   $groupManager,
-        private readonly IUserManager $userManager,
-		private readonly ObjectEntityMapper $objectEntityMapper,
+		private readonly IUserSession    		$userSession,
+		private readonly IUserManager    		$userManager,
+		private readonly LoggerInterface 		$logger,
+		private readonly IRootFolder     		$rootFolder,
+		private readonly IManager        		$shareManager,
+		private readonly IURLGenerator   		$urlGenerator,
+		private readonly IConfig         		$config,
+		private readonly RegisterMapper  		$registerMapper,
+		private readonly SchemaMapper    		$schemaMapper,
+        private readonly IGroupManager   		$groupManager,
         private readonly ISystemTagManager      $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
 	)
@@ -390,13 +388,79 @@ class FileService
 	}
 
 	/**
+	 * Formats a single Node file into a metadata array.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param Node $file The Node file to format
+	 * @return array The formatted file metadata array
+	 */
+	public function formatFile(Node $file): array
+	{
+		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+		$shares = $this->findShares($file);
+
+		// Get base metadata array
+		$metadata = [
+			'id'          => $file->getId(),
+			'path'        => $file->getPath(),
+			'title'       => $file->getName(),
+			'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
+			'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
+			'type'        => $file->getMimetype(),
+			'extension'   => $file->getExtension(),
+			'size'        => $file->getSize(),
+			'hash'        => $file->getEtag(),
+			'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+			'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+			'labels'      => $this->getFileTags(fileId: $file->getId())
+		];
+
+		// Process labels that contain ':' to add as separate metadata fields
+		$remainingLabels = [];
+		foreach ($metadata['labels'] as $label) {
+			if (strpos($label, ':') !== false) {
+				list($key, $value) = explode(':', $label, 2);
+				$key = trim($key);
+				$value = trim($value);
+
+				// Skip if key exists in base metadata
+				if (isset($metadata[$key])) {
+					$remainingLabels[] = $label;
+					continue;
+				}
+
+				// If key already exists as array, append value
+				if (isset($metadata[$key]) && is_array($metadata[$key])) {
+					$metadata[$key][] = $value;
+				}
+				// If key exists but not as array, convert to array with both values
+				elseif (isset($metadata[$key])) {
+					$metadata[$key] = [$metadata[$key], $value];
+				}
+				// If key doesn't exist, create new entry
+				else {
+					$metadata[$key] = $value;
+				}
+			} else {
+				$remainingLabels[] = $label;
+			}
+		}
+
+		// Update labels array to only contain non-processed labels
+		$metadata['labels'] = $remainingLabels;
+
+		return $metadata;
+	}
+
+	/**
 	 * Formats an array of Node files into an array of metadata arrays.
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param Node[] $files Array of Node files to format
-	 *
 	 * @return array Array of formatted file metadata arrays
 	 * @throws InvalidPathException
 	 * @throws NotFoundException
@@ -406,25 +470,7 @@ class FileService
 		$formattedFiles = [];
 
 		foreach($files as $file) {
-			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
-			$shares = $this->findShares($file);
-
-			$formattedFile = [
-				'id'          => $file->getId(),
-				'path' 		  => $file->getPath(),
-				'title'  	  => $file->getName(),
-				'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
-				'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
-				'type'  	  => $file->getMimetype(),
-				'extension'   => $file->getExtension(),
-				'size'		  => $file->getSize(),
-				'hash'		  => $file->getEtag(),
-				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
-				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-                'labels'      => $this->getFileTags(fileId: $file->getId())
-			];
-
-			$formattedFiles[] = $formattedFile;
+			$formattedFiles[] = $this->formatFile($file);
 		}
 
 		return $formattedFiles;
@@ -656,61 +702,16 @@ class FileService
 	}
 
 	/**
-	 * Uploads a file to NextCloud. Will create a new file if it doesn't exist yet.
-	 *
-	 * @param mixed $content The content of the file.
-	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
-	 *
-	 * @return bool True if successful.
-	 * @throws Exception In case we can't write to file because it is not permitted.
-	 */
-	public function uploadFile(mixed $content, string $filePath): bool
-	{
-		$filePath = trim(string: $filePath, characters: '/');
-
-		try {
-			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
-
-			// Check if file exists and create it if not.
-			try {
-				try {
-					$userFolder->get(path: $filePath);
-				} catch (NotFoundException $e) {
-					$userFolder->newFile(path: $filePath);
-					$file = $userFolder->get(path: $filePath);
-
-					$file->putContent(data: $content);
-
-					return true;
-				}
-
-				// File already exists.
-				$this->logger->warning("File $filePath already exists.");
-				return false;
-
-			} catch (NotPermittedException|GenericFileException|LockedException $e) {
-				$this->logger->error("Can't create file $filePath: " . $e->getMessage());
-
-				throw new Exception("Can't write to file $filePath");
-			}
-		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't create file $filePath: " . $e->getMessage());
-
-			throw new Exception("Can't write to file $filePath");
-		}
-	}
-
-	/**
 	 * Overwrites an existing file in NextCloud.
 	 *
 	 * @param mixed $content The content of the file.
 	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
 	 * @param bool $createNew Default = false. If set to true this function will create a new file if it doesn't exist yet.
-	 *
+	 * @param array $tags Optional array of tags to attach to the file.
 	 * @return bool True if successful.
 	 * @throws Exception In case we can't write to file because it is not permitted.
 	 */
-	public function updateFile(mixed $content, string $filePath, bool $createNew = false): bool
+	public function updateFile(mixed $content, string $filePath, bool $createNew = false, array $tags = []): bool
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
@@ -724,6 +725,11 @@ class FileService
 
 					$file->putContent(data: $content);
 
+					// Add tags to the file if provided
+					if (empty($tags) === false) {
+						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+					}
+
 					return true;
 				} catch (NotFoundException $e) {
 					if ($createNew === true) {
@@ -731,6 +737,11 @@ class FileService
 						$file = $userFolder->get(path: $filePath);
 
 						$file->putContent(data: $content);
+
+						// Add tags to the file if provided
+						if (empty($tags) === false) {
+							$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+						}
 
 						$this->logger->info("File $filePath did not exist, created a new file for it.");
 						return true;
@@ -793,17 +804,45 @@ class FileService
 		}
 	}
 
+
+
+	/**
+	 * Attach tags to a file.
+	 *
+	 * @param string $fileId The fileId.
+	 * @param array $tags Tags to associate with the file.
+	 */
+	private function attachTagsToFile(string $fileId, array $tags): void
+	{
+        $tagIds = [];
+		foreach ($tags as $key => $tagName) {
+            try {
+                $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
+            } catch (TagNotFoundException $exception) {
+                $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
+            }
+
+            $tagIds[] = $tag->getId();
+		}
+
+        $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagIds);
+	}
+
+
 	/**
 	 * Adds a new file to an object's folder with the OpenCatalogi user as owner
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to add the file to
 	 * @param string $fileName The name of the file to create
 	 * @param string $content The content to write to the file
+	 * @param bool $share Whether to create a share link for the file
+	 * @param array $tags Optional array of tags to attach to the file
+	 *
 	 * @return File The created file
 	 * @throws NotPermittedException If file creation fails due to permissions
 	 * @throws Exception If file creation fails for other reasons
 	 */
-	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false): File
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
 	{
 		try {
 			// Create new file in the folder
@@ -825,9 +864,15 @@ class FileService
 			// Write content to the file
 			$file->putContent($content);
 
+			// Create a share link for the file if requested
             if ($share === true) {
                 $this->createShareLink(path: $file->getPath());
             }
+
+			// Add tags to the file if provided
+			if (empty($tags) === false) {
+				$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+			}
 
 			$this->userSession->setUser($currentUser);
 
@@ -841,5 +886,4 @@ class FileService
 			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
 		}
 	}
-
 }
