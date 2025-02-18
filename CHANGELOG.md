@@ -1,3 +1,11 @@
+# Version: 0.1.48
+
+* [#173](https://github.com/ConductionNL/openregister/pull/173): feature/REGISTERS-100/branch-fix-object-codemirror
+* [#194](https://github.com/ConductionNL/openregister/pull/194): finished table
+* [#195](https://github.com/ConductionNL/openregister/pull/195): Share file if requested
+* [#196](https://github.com/ConductionNL/openregister/pull/196): development to main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
