@@ -1418,6 +1418,22 @@ class ObjectService
 	}
 
 	/**
+	 * Formats a single Node file into a metadata array.
+	 * Uses FileService formatFile function, this function is here to be used by OpenCatalog or OpenConnector!
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param Node $file The Node file to format
+	 *
+	 * @return array The formatted file metadata array
+	 */
+	public function formatFile(Node $file): array
+	{
+		return $this->fileService->formatFile($file);
+	}
+
+	/**
 	 * Hydrate files array with metadata.
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class

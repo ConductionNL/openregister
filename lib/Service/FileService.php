@@ -386,13 +386,79 @@ class FileService
 	}
 
 	/**
+	 * Formats a single Node file into a metadata array.
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param Node $file The Node file to format
+	 * @return array The formatted file metadata array
+	 */
+	private function formatFile(Node $file): array
+	{
+		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+		$shares = $this->findShares($file);
+
+		// Get base metadata array
+		$metadata = [
+			'id'          => $file->getId(),
+			'path'        => $file->getPath(),
+			'title'       => $file->getName(),
+			'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
+			'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
+			'type'        => $file->getMimetype(),
+			'extension'   => $file->getExtension(),
+			'size'        => $file->getSize(),
+			'hash'        => $file->getEtag(),
+			'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+			'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
+			'labels'      => $this->getFileTags(fileId: $file->getId())
+		];
+
+		// Process labels that contain ':' to add as separate metadata fields
+		$remainingLabels = [];
+		foreach ($metadata['labels'] as $label) {
+			if (strpos($label, ':') !== false) {
+				list($key, $value) = explode(':', $label, 2);
+				$key = trim($key);
+				$value = trim($value);
+				
+				// Skip if key exists in base metadata
+				if (isset($metadata[$key])) {
+					$remainingLabels[] = $label;
+					continue;
+				}
+
+				// If key already exists as array, append value
+				if (isset($metadata[$key]) && is_array($metadata[$key])) {
+					$metadata[$key][] = $value;
+				}
+				// If key exists but not as array, convert to array with both values
+				elseif (isset($metadata[$key])) {
+					$metadata[$key] = [$metadata[$key], $value];
+				}
+				// If key doesn't exist, create new entry
+				else {
+					$metadata[$key] = $value;
+				}
+			} else {
+				$remainingLabels[] = $label;
+			}
+		}
+
+		// Update labels array to only contain non-processed labels
+		$metadata['labels'] = $remainingLabels;
+
+		return $metadata;
+	}
+
+	/**
 	 * Formats an array of Node files into an array of metadata arrays.
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param Node[] $files Array of Node files to format
-	 *
 	 * @return array Array of formatted file metadata arrays
 	 * @throws InvalidPathException
 	 * @throws NotFoundException
@@ -402,25 +468,7 @@ class FileService
 		$formattedFiles = [];
 
 		foreach($files as $file) {
-			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
-			$shares = $this->findShares($file);
-
-			$formattedFile = [
-				'id'          => $file->getId(),
-				'path' 		  => $file->getPath(),
-				'title'  	  => $file->getName(),
-				'accessUrl'   => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
-				'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
-				'type'  	  => $file->getMimetype(),
-				'extension'   => $file->getExtension(),
-				'size'		  => $file->getSize(),
-				'hash'		  => $file->getEtag(),
-				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
-				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-                'labels'      => $this->getFileTags(fileId: $file->getId())
-			];
-
-			$formattedFiles[] = $formattedFile;
+			$formattedFiles[] = $this->formatFile($file);
 		}
 
 		return $formattedFiles;
