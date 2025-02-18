@@ -65,7 +65,3 @@ When an object is locked, the following logic is applied:
 
 - [Audit Trails](audit-trails.md) - Track lock operations
 - [Access Control](access-control.md) - Manage lock permissions 
-
-## Lock Process Flow
-
-![Object Locking Sequence](diagrams/object-locking-sequence.svg) 

@@ -1,6 +1,6 @@
 # Open Registers
 
-Open Registers provides the ability to work with objects based on [`schema.json`](https://json-schema.org/).
+Open Registers provides a way to quicly build and deploy standardized registers based on [NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) and [Common Ground Principles](https://common-ground.nl/common-ground-principes/). It is based on based on the concepts of defining object types in [`schema.json`](https://json-schema.org/) and storing objects in configurable source.
 
 ## What is Open Registers?
 
@@ -12,7 +12,7 @@ Registers provide APIs for consumption.
 
 Registers can also apply additional logic to objects, such as validation that is not applicable through the [`schema.json`](https://json-schema.org/) format.
 
-## Features
+## Key Features
 
 - 📦 **Object Management**: Work with objects based on [`schema.json`](https://json-schema.org/).
 - 🗂️ **Register System**: Manage collections of object types.
@@ -28,13 +28,6 @@ For more detailed information, please refer to the documentation files in the `d
 
 - [Developer Guide](docs/developers.md)
 - [Styleguide](docs/styleguide.md)
-
-## Project Structure
-
-- **appinfo/routes.php**: Defines the routes for the application.
-- **lib**: Contains all the PHP code for the application.
-- **src**: Contains all the Vue.js code for the application.
-- **docs**: Contains documentation files.
 
 # Open Register
 
@@ -60,7 +53,7 @@ Open Register makes these principles accessible to any organization by providing
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
-| 💾 [Object Storage](docs/object-storage.md) | Flexible storage backend selection per register | Storage flexibility, system integration, scalability |
+| 💾 [Storing Objects](docs/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
 | 📝 [Audit Trails](docs/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
 | ⏰ [Time Travel](docs/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
 | 🔒 [Object Locking](docs/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
@@ -75,14 +68,13 @@ Open Register makes these principles accessible to any organization by providing
 | ⚡ [Elasticsearch](docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
 | 📋 [Schema Import & Sharing](docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
 | 🔔 [Events & Webhooks](docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
-| 🔄 [Data Extension](docs/data-extension.md) | Automatically include related entities in responses | Efficient data retrieval, reduced API calls, complete context |
 | ✂️ [Data Filtering](docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
 | 🔍 [Advanced Search](docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
 | 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
 
 ## Documentation
 
-For detailed information about each feature, please visit our [documentation](docs/).
+Documentation is available at [https://conduction.nl/openconnector](https://conduction.nl/openconnector) and created from the website folder of this repository.
 
 ## Requirements
 
@@ -92,12 +84,39 @@ For detailed information about each feature, please visit our [documentation](do
 
 ## Installation
 
-[Installation instructions]
+[Installation instructions](https://conduction.nl/openconnector/installation)
 
 ## Support
 
-[Support information]
+[Support information](https://conduction.nl/openconnector/support)
+
+## Project Structure
+
+This monorepo is a Nextcloud app, it is based on the following structure:
+
+    /
+    ├── app/          # App initialization and bootstrap files
+    ├── appinfo/      # Nextcloud app metadata and configuration
+    ├── css/          # Stylesheets for the app interface
+    ├── docker/       # Docker configuration for development
+    ├── img/          # App icons and images
+    ├── js/           # JavaScript files for frontend functionality
+    ├── lib/          # PHP library files containing core business logic
+    ├── src/          # Vue.js frontend application source code
+    ├── templates/    # Template files for rendering app views
+    └── website/      # Documentation website source files
+
+When running locally, or in development mode the folders nodus_modules and vendor are added. Thes shoudl however not be commited.
+
+## Contributing
+
+Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
 
 ## License
 
-This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the EUPL License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For more information, please contact [info@conduction.nl](mailto:info@conduction.nl).
+

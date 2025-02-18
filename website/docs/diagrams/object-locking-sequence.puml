@@ -1,4 +1,5 @@
 @startuml Object Locking Process
+title Object Locking Sequence Diagram
 skinparam monochrome true
 
 actor User
