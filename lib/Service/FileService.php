@@ -396,7 +396,7 @@ class FileService
 	 * @param Node $file The Node file to format
 	 * @return array The formatted file metadata array
 	 */
-	private function formatFile(Node $file): array
+	public function formatFile(Node $file): array
 	{
 		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
 		$shares = $this->findShares($file);
@@ -869,7 +869,7 @@ class FileService
             }
 
 			// Add tags to the file if provided
-			if ( empty($tags) === false) {
+			if (empty($tags) === false) {
 				$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 			}
 
