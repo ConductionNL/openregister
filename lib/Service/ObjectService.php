@@ -1,7 +1,6 @@
 <?php
 
 // phpcs:disable Generic.ControlStructures.InlineControlStructure
-// phpcs:disable Generic.WhiteSpace.ScopeIndent
 // phpcs:disable PEAR.Functions.FunctionDeclaration
 
 namespace OCA\OpenRegister\Service;
@@ -1288,7 +1287,7 @@ if (array_is_list($property) === false) {
                     }
 
                     $fileEntity = $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $fileEntity);
-                } // Handle URL file
+                }// Handle URL file
                 else {
                     $fileEntities = $this->fileMapper->findAll(filters: ['accessUrl' => $objectDot->get("$propertyName.accessUrl")]);
                     if (count($fileEntities) > 0) {
@@ -1447,6 +1446,7 @@ if (array_is_list($property) === false) {
              *
              * @param  ObjectEntity|string $object   The object or object ID
              * @param  string              $filePath Path to the file to delete
+			 * 
              * @return bool True if successful
              * 
              * @throws Exception If file deletion fails
@@ -1602,7 +1602,7 @@ if (array_is_list($property) === false) {
              * @param Register     $register The register containing the objects.
              * @param Schema       $schema   The schema defining the properties and relationships.
              * @param ObjectEntity $object   The object entity whose related objects should be deleted.
-             *
+             * @param string       $originalObjectId The UUID of the parent object so we dont delete the object we come from and cause a loop
              * @return void
              *
              * @throws Exception If any errors occur during the deletion process.
@@ -1949,6 +1949,8 @@ if (array_is_list($property) === false) {
                  * Sets the current register ID.
                  *
                  * @param int $register The register ID to set.
+				 * 
+				 * @return void
                  */
                 public function setRegister(int $register): void
                 {
@@ -1969,6 +1971,8 @@ if (array_is_list($property) === false) {
                  * Sets the current schema ID.
                  *
                  * @param int $schema The schema ID to set.
+				 * 
+				 * @return void
                  */
                 public function setSchema(int $schema): void
                 {
@@ -2163,10 +2167,12 @@ if (array_is_list($property) === false) {
                 /**
                  * Revert an object to a previous state
                  *
-                 * @param  string|int           $identifier       Object ID, UUID, or URI
-                 * @param  DateTime|string|null $until            DateTime or AuditTrail ID to revert to
-                 * @param  bool                 $overwriteVersion Whether to overwrite the version or increment it
+                 * @param string|int           $identifier       Object ID, UUID, or URI
+                 * @param DateTime|string|null $until            DateTime or AuditTrail ID to revert to
+                 * @param bool                 $overwriteVersion Whether to overwrite the version or increment it
+                 * 
                  * @return ObjectEntity The reverted object
+                 * 
                  * @throws NotFoundException If object not found
                  * @throws NotAuthorizedException If user not authorized
                  * @throws \Exception If revert fails
