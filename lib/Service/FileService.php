@@ -412,7 +412,7 @@ class FileService
 			'extension'   => $file->getExtension(),
 			'size'        => $file->getSize(),
 			'hash'        => $file->getEtag(),
-			'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
+			'published'   => count($shares) > 0 ? $shares[0]->getShareTime()->format('c') : null,
 			'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
 			'labels'      => $this->getFileTags(fileId: $file->getId())
 		];
