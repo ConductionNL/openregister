@@ -3,43 +3,52 @@ import { searchStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcAppSidebar
-		name="Zoek opdracht"
-		subtitle="baldie"
-		subname="Binnen het federatieve netwerk">
-		<NcAppSidebarTab id="search-tab" name="Zoeken" :order="1">
-			<template #icon>
-				<Magnify :size="20" />
-			</template>
-			<NcSelect v-bind="registerOptions"
-				v-model="selectedRegister"
-				input-label="Registratie"
-				:loading="registerLoading" />
-			<NcSelect v-bind="schemaOptions"
-				v-model="selectedSchema"
-				input-label="Schema"
-				:loading="schemaLoading"
-				:disabled="!selectedRegister?.id" />
-		</NcAppSidebarTab>
+	<div>
+		<NcAppSidebar
+			name="Zoek opdracht"
+			subtitle="baldie"
+			subname="Binnen het federatieve netwerk">
+			<NcAppSidebarTab id="search-tab" name="Zoeken" :order="1">
+				<template #icon>
+					<Magnify :size="20" />
+				</template>
+				<NcSelect v-bind="registerOptions"
+					v-model="selectedRegister"
+					input-label="Registratie"
+					:loading="registerLoading" />
+				<NcSelect v-bind="schemaOptions"
+					v-model="selectedSchema"
+					input-label="Schema"
+					:loading="schemaLoading"
+					:disabled="!selectedRegister?.id" />
+			</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
-			<template #icon>
-				<Upload :size="20" />
-			</template>
-			<NcButton type="primary">
-				Upload
-			</NcButton>
-		</NcAppSidebarTab>
+			<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
+				<template #icon>
+					<Upload :size="20" />
+				</template>
+				<NcButton :disabled="!selectedRegister?.id && !selectedSchema?.id" type="primary" @click="uploadObjectModal = true">
+					Upload
+				</NcButton>
+			</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="download-tab" name="Download" :order="3">
-			<template #icon>
-				<Download :size="20" />
-			</template>
-			<NcButton type="primary">
-				Download
-			</NcButton>
-		</NcAppSidebarTab>
-	</NcAppSidebar>
+			<NcAppSidebarTab id="download-tab" name="Download" :order="3">
+				<template #icon>
+					<Download :size="20" />
+				</template>
+				<NcButton :disabled="true" type="primary">
+					Download
+				</NcButton>
+			</NcAppSidebarTab>
+		</NcAppSidebar>
+
+		<UploadObject v-if="uploadObjectModal"
+			:register-id="selectedRegister?.id"
+			:schema-id="selectedSchema?.id"
+			:disable-change-selectors="true"
+			@on-close="uploadObjectModal = false"
+			@on-success="searchObjects" />
+	</div>
 </template>
 <script>
 
@@ -47,6 +56,7 @@ import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton } from '@nextcloud/vu
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import UploadObject from '../../modals/object/UploadObject.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -62,6 +72,7 @@ export default {
 			selectedRegister: null,
 			schemaLoading: false,
 			selectedSchema: null,
+			uploadObjectModal: false,
 		}
 	},
 	computed: {
@@ -97,10 +108,7 @@ export default {
 		// when selectedSchema changes, search for objects with the selected register and schema as filters
 		selectedSchema(newValue) {
 			if (newValue?.id) {
-				searchStore.searchObjects({
-					register: this.selectedRegister?.id,
-					schema: this.selectedSchema?.id,
-				})
+				this.searchObjects()
 			}
 		},
 	},
@@ -109,6 +117,16 @@ export default {
 		this.schemaLoading = true
 		registerStore.refreshRegisterList().finally(() => (this.registerLoading = false))
 		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
+	},
+	methods: {
+		searchObjects() {
+			if (!this.selectedRegister?.id || !this.selectedSchema?.id) return
+
+			searchStore.searchObjects({
+				register: this.selectedRegister?.id,
+				schema: this.selectedSchema?.id,
+			})
+		},
 	},
 }
 </script>

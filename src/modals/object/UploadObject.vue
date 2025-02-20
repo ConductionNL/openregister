@@ -14,7 +14,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
+			<NcButton v-if="registers?.value?.id && !schemas?.value?.id && !disableChangeSelectors"
 				:disabled="loading"
 				@click="registers.value = null">
 				<template #icon>
@@ -22,7 +22,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				</template>
 				Back to Register
 			</NcButton>
-			<NcButton v-if="registers.value?.id && schemas.value?.id"
+			<NcButton v-if="registers.value?.id && schemas.value?.id && !disableChangeSelectors"
 				:disabled="loading"
 				@click="schemas.value = null">
 				<template #icon>
@@ -50,13 +50,13 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		</template>
 
 		<div v-if="!success" class="formContainer">
-			<div v-if="registers?.value?.id && success === null">
+			<div v-if="registers?.value?.id && success === null && !disableChangeSelectors">
 				<b>Register:</b> {{ registers.value.label }}
 				<NcButton @click="registers.value = null">
 					Edit Register
 				</NcButton>
 			</div>
-			<div v-if="schemas.value?.id && success === null">
+			<div v-if="schemas.value?.id && success === null && !disableChangeSelectors">
 				<b>Schema:</b> {{ schemas.value.label }}
 				<NcButton @click="schemas.value = null">
 					Edit Schema
@@ -139,6 +139,34 @@ export default {
 		Cancel,
 		Upload,
 	},
+	props: {
+		/**
+		 * When registerId is set, the modal will open with the register already selected
+		 */
+		registerId: {
+			type: String,
+			required: false,
+			default: null,
+		},
+		/**
+		 * When schemaId is set, the modal will open with the schema already selected
+		 */
+		schemaId: {
+			type: String,
+			required: false,
+			default: null,
+		},
+		/**
+		 * When disableChangeSelectors is set to true, You will not be able to change the selection of Register and Schema once selected.
+		 *
+		 * Pair this with the registerId and schemaId props to open the modal with the selectors already selected.
+		 */
+		disableChangeSelectors: {
+			type: Boolean,
+			required: false,
+			default: false,
+		},
+	},
 	data() {
 		return {
 			object: '{}',
@@ -184,6 +212,8 @@ export default {
 
 			schemaStore.refreshSchemaList()
 				.then(() => {
+					const selectedSchema = schemaStore.schemaList.find((schema) => schema.id === this.schemaId)
+
 					this.schemas = {
 						multiple: false,
 						closeOnSelect: true,
@@ -191,7 +221,7 @@ export default {
 							id: schema.id,
 							label: schema.title,
 						})),
-						value: null,
+						value: selectedSchema,
 					}
 				})
 				.finally(() => {
@@ -203,6 +233,8 @@ export default {
 
 			registerStore.refreshRegisterList()
 				.then(() => {
+					const selectedRegister = registerStore.registerList.find((register) => register.id === this.registerId)
+
 					this.registers = {
 						multiple: false,
 						closeOnSelect: true,
@@ -210,7 +242,7 @@ export default {
 							id: register.id,
 							label: register.title,
 						})),
-						value: null,
+						value: selectedRegister,
 					}
 				})
 				.finally(() => {
@@ -219,6 +251,7 @@ export default {
 		},
 		closeModal() {
 			navigationStore.setModal(false)
+			this.$emit('on-close')
 			this.success = null
 			this.loading = false
 			this.error = false
@@ -243,6 +276,7 @@ export default {
 				.then(({ response }) => {
 					this.success = response.ok
 					this.error = false
+					this.$emit('on-success')
 					response.ok && setTimeout(this.closeModal, 2000)
 				}).catch((error) => {
 					this.success = false
