@@ -267,6 +267,18 @@ export default {
 </script>
 
 <style scoped>
+/*
+    The classes to recognize dark and light mode from the :dark attribute on CodeMirror is:
+    - dark: cm-editor ͼ1 ͼ3 ͼ4 ͼr
+    - light: cm-editor ͼ1 ͼ2 ͼ4 ͼq
+    specifically ͼr and ͼq are the ones that change
+
+    String color is .ͼe
+    Boolean color is .ͼc
+    Null color is .ͼb
+    Number color is .ͼd
+*/
+
 .codeMirrorContainer {
 	margin-block-start: 6px;
 }
@@ -290,11 +302,36 @@ export default {
 }
 
 /* value text color */
+/* string */
 .codeMirrorContainer.light :deep(.ͼe) {
 	color: #448c27;
 }
 .codeMirrorContainer.dark :deep(.ͼe) {
 	color: #88c379;
+}
+
+/* boolean */
+.codeMirrorContainer.light :deep(.ͼc) {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.ͼc) {
+	color: #8d64f7;
+}
+
+/* null */
+.codeMirrorContainer.light :deep(.ͼb) {
+	color: #770088;
+}
+.codeMirrorContainer.dark :deep(.ͼb) {
+	color: #be55cd;
+}
+
+/* number */
+.codeMirrorContainer.light :deep(.ͼd) {
+	color: #d19a66;
+}
+.codeMirrorContainer.dark :deep(.ͼd) {
+	color: #9d6c3a;
 }
 
 /* text cursor */
@@ -314,10 +351,35 @@ export default {
     color: black;
 }
 
+/* string */
 .codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
     color: #2d770f;
 }
 .codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
     color: #104e0c;
+}
+
+/* boolean */
+.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
+	color: #4026af;
+}
+
+/* null */
+.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
+	color: #770088;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
+	color: #770088;
+}
+
+/* number */
+.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
+	color: #8c5c2c;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
+	color: #623907;
 }
 </style>
