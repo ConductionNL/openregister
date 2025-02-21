@@ -301,4 +301,23 @@ export default {
 .codeMirrorContainer :deep(.cm-content) * {
 	cursor: text !important;
 }
+
+/* selection color */
+.codeMirrorContainer.light :deep(.cm-line)::selection,
+.codeMirrorContainer.light :deep(.cm-line) ::selection {
+	background-color: #d7eaff !important;
+    color: black;
+}
+.codeMirrorContainer.dark :deep(.cm-line)::selection,
+.codeMirrorContainer.dark :deep(.cm-line) ::selection {
+	background-color: #8fb3e6 !important;
+    color: black;
+}
+
+.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
+    color: #2d770f;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
+    color: #104e0c;
+}
 </style>
