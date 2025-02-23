@@ -1,5 +1,6 @@
 <script setup>
 import { objectStore, schemaStore, registerStore, navigationStore } from '../../store/store.js'
+import { getTheme } from '../../services/getTheme.js'
 </script>
 
 <template>
@@ -39,7 +40,7 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !verifyJsonValidity(objectItem.object)"
+				:disabled="!registers.value?.id || !schemas.value?.id || loading || !isValidJson(objectItem.object)"
 				type="primary"
 				@click="editObject()">
 				<template #icon>
@@ -85,12 +86,28 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 
 			<!-- STAGE 3 -->
 			<div v-if="registers.value?.id && schemas.value?.id">
-				<NcTextArea :disabled="loading"
-					label="Object"
-					placeholder="{ &quot;key&quot;: &quot;value&quot; }"
-					:value.sync="objectItem.object"
-					:error="!verifyJsonValidity(objectItem.object)"
-					:helper-text="!verifyJsonValidity(objectItem.object) ? 'This is not valid JSON (optional)' : ''" />
+				<div class="json-editor">
+					<label>Object (JSON)</label>
+					<div :class="`codeMirrorContainer ${getTheme()}`">
+						<CodeMirror v-model="objectItem.object"
+							:basic="true"
+							placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+							:dark="getTheme() === 'dark'"
+							:linter="jsonParseLinter()"
+							:lang="json()"
+							:tab-size="2" />
+
+						<NcButton class="format-json-button"
+							type="secondary"
+							size="small"
+							@click="formatJSON_Object">
+							Format JSON
+						</NcButton>
+					</div>
+					<span v-if="!isValidJson(objectItem.object)" class="error-message">
+						Invalid JSON format
+					</span>
+				</div>
 			</div>
 		</div>
 	</NcDialog>
@@ -100,11 +117,12 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 import {
 	NcButton,
 	NcDialog,
-	NcTextArea,
 	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -115,11 +133,11 @@ export default {
 	name: 'EditObject',
 	components: {
 		NcDialog,
-		NcTextArea,
 		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
+		CodeMirror,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -185,7 +203,7 @@ export default {
 					...objectStore.objectItem,
 					schemas: objectStore.objectItem.schemas || '',
 					register: objectStore.objectItem.register || '',
-					object: JSON.stringify(objectStore.objectItem.object) || '',
+					object: JSON.stringify(objectStore.objectItem.object, null, 2) || '',
 				}
 			}
 		},
@@ -263,15 +281,123 @@ export default {
 				this.loading = false
 			})
 		},
-		verifyJsonValidity(jsonInput) {
-			if (jsonInput === '') return true
+
+		isValidJson(str) {
+			if (!str) return true
 			try {
-				JSON.parse(jsonInput)
+				JSON.parse(str)
 				return true
 			} catch (e) {
 				return false
 			}
 		},
+
+		formatJSON_Object() {
+			try {
+				if (this.objectItem.object) {
+					// Format the JSON with proper indentation
+					const parsed = JSON.parse(this.objectItem.object)
+					this.objectItem.object = JSON.stringify(parsed, null, 2)
+				}
+			} catch (e) {
+				// Keep invalid JSON as-is to allow user to fix it
+			}
+		},
 	},
 }
 </script>
+
+<style scoped>
+.json-editor {
+    position: relative;
+	margin-bottom: 2.5rem;
+}
+
+.json-editor label {
+	display: block;
+	margin-bottom: 0.5rem;
+	font-weight: bold;
+}
+
+.json-editor .error-message {
+    position: absolute;
+	bottom: 0;
+	right: 50%;
+    transform: translateY(100%) translateX(50%);
+
+	color: var(--color-error);
+	font-size: 0.8rem;
+	padding-top: 0.25rem;
+	display: block;
+}
+
+.json-editor .format-json-button {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+    transform: translateY(100%);
+}
+
+/* Add styles for the code editor */
+.code-editor {
+	font-family: monospace;
+	width: 100%;
+	background-color: var(--color-background-dark);
+}
+
+.info-text {
+	margin: 1rem 0;
+	padding: 0.5rem;
+	background-color: var(--color-background-dark);
+	border-radius: var(--border-radius);
+}
+
+/* CodeMirror */
+.codeMirrorContainer {
+	margin-block-start: 6px;
+    text-align: left;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
+}
+
+/* value number color */
+.codeMirrorContainer.light :deep(.ͼd) {
+	color: #c68447;
+}
+.codeMirrorContainer.dark :deep(.ͼd) {
+	color: #d19a66;
+}
+
+/* value boolean color */
+.codeMirrorContainer.light :deep(.ͼc) {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.ͼc) {
+	color: #260dd4;
+}
+</style>

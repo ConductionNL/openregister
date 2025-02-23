@@ -8,7 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use InvalidArgumentException;
 use JsonSerializable;
-use OC\Files\Node\Node;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -22,8 +21,11 @@ use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
-use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\Folder;
+use OCP\Files\InvalidPathException;
+use OCP\Files\Node;
+use OCP\Files\NotFoundException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use Opis\JsonSchema\ValidationResult;
@@ -538,7 +540,7 @@ class ObjectService
             search: $search
         );
 
-		if($files === false) {
+		if ($files === false) {
 			return $objects;
 		}
 
@@ -1310,7 +1312,7 @@ class ObjectService
 	 *
 	 * @param ObjectEntity|string $object The object or object ID to fetch files for
 	 * @return Node[] The files found
-	 * @throws \OCP\Files\NotFoundException If the folder is not found
+	 * @throws NotFoundException If the folder is not found
 	 * @throws DoesNotExistException If the object ID is not found
 	 */
 	public function getFiles(ObjectEntity|string $object): array
@@ -1334,31 +1336,63 @@ class ObjectService
 	}
 
 	/**
-	 * Add a new file to an object
+	 * Get a single file for an object by filepath
 	 *
-	 * @param ObjectEntity|string $object The object or object ID to add file to
-	 * @param string $filePath Path to the file to upload
-	 * @param string $content File content
-	 * @param array $tags Optional tags to add to the file
-	 * @return bool True if successful
-	 * @throws Exception If file upload fails
+	 * @param ObjectEntity|string $object The object or object ID to fetch the file for
+	 * @param string $filePath The path to the specific file
+	 * @return Node|null The file if found, null otherwise
+	 * @throws NotFoundException If the folder or file is not found
+	 * @throws DoesNotExistException If the object ID is not found
 	 */
-	public function addFile(ObjectEntity|string $object, string $filePath, string $content, array $tags = []): bool
+	public function getFile(ObjectEntity|string $object, string $filePath): ?Node
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
-		return $this->fileService->uploadFile(
-			filePath: $this->fileService->getObjectFilePath($object, $filePath),
-			content: $content,
-			tags: $tags
+		$folder = $this->fileService->getObjectFolder(
+			objectEntity: $object,
+			register: $object->getRegister(),
+			schema: $object->getSchema()
 		);
+
+		if ($folder instanceof Folder === true) {
+			try {
+				return $folder->get($filePath);
+			} catch (NotFoundException $e) {
+				return null;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Add a file to the object
+	 *
+	 * @param ObjectEntity|string $object The object to add the file to
+	 * @param string $fileName The name of the file to add
+	 * @param string $base64Content The base64 encoded content of the file
+	 * @param bool $share Whether to create a share link for the file
+	 * @param array $tags Optional array of tags to attach to the file
+	 *
+	 * @return \OCP\Files\File The added file
+	 * @throws Exception If file addition fails
+	 */
+	public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false, array $tags = []): \OCP\Files\File
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: base64_decode($base64Content), share: $share, tags: $tags);
 	}
 
 	/**
 	 * Update an existing file for an object
-	 * 
+	 *
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to update
 	 * @param string $content New file content
@@ -1400,39 +1434,36 @@ class ObjectService
 
 	/**
 	 * Formats an array of Node files into an array of metadata arrays.
+	 * Uses FileService formatFiles function, this function is here to be used by OpenCatalog or OpenConnector!
 	 *
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
-	 * 
+	 *
 	 * @param Node[] $files Array of Node files to format
+	 *
 	 * @return array Array of formatted file metadata arrays
+	 * @throws InvalidPathException
+	 * @throws NotFoundException
 	 */
-	public function formatFiles(array $files): array 
+	public function formatFiles(array $files): array
 	{
-		$formattedFiles = [];
+		return $this->fileService->formatFiles($files);
+	}
 
-		foreach($files as $file) {
-			// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
-			$shares = $this->fileService->findShares($file);
-
-			$formattedFile = [
-				'id'          => $file->getId(),
-				'path' 		  => $file->getPath(),
-				'title'  	  => $file->getName(), 
-				'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
-				'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
-				'type'  	  => $file->getMimetype(),
-				'extension'   => $file->getExtension(),
-				'size'		  => $file->getSize(),
-				'hash'		  => $file->getEtag(),
-				'published'   => (new DateTime())->setTimestamp($file->getCreationTime())->format('c'),
-				'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-			];
-
-			$formattedFiles[] = $formattedFile;
-		}
-
-		return $formattedFiles;
+	/**
+	 * Formats a single Node file into a metadata array.
+	 * Uses FileService formatFile function, this function is here to be used by OpenCatalog or OpenConnector!
+	 *
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+	 *
+	 * @param Node $file The Node file to format
+	 *
+	 * @return array The formatted file metadata array
+	 */
+	public function formatFile(Node $file): array
+	{
+		return $this->fileService->formatFile($file);
 	}
 
 	/**
@@ -1447,7 +1478,12 @@ class ObjectService
 	 */
 	public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
 	{
-		$formattedFiles = $this->formatFiles($files);
+		try {
+			$formattedFiles = $this->fileService->formatFiles($files);
+		} catch (InvalidPathException|NotFoundException $e) {
+
+		}
+
 		$object->setFiles($formattedFiles);
 		return $object;
 	}
@@ -1472,7 +1508,7 @@ class ObjectService
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
 			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
 
-			if($files === false) {
+			if ($files === false) {
 				return $object;
 			}
 
@@ -1940,6 +1976,7 @@ class ObjectService
 	 * @param string $id The object ID
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
+	 *
 	 * @return array The objects this object references
 	 */
 	public function getUses(string $id, ?int $register = null, ?int $schema = null): array
@@ -1953,7 +1990,7 @@ class ObjectService
 		foreach ($relations as $path => $relationId) {
 			$referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
 
-			if($referencedObjects[$path] === null){
+			if ($referencedObjects[$path] === null){
 				$referencedObjects[$path] = $relationId;
 			}
 		}

@@ -2,7 +2,7 @@
 // The store script handles app wide variables (or state), for the use of these variables and there governing concepts read the design.md
 import pinia from '../pinia.js'
 import { useNavigationStore } from './modules/navigation.js'
-import { useSearchStore } from './modules/search.js'
+import { useSearchStore } from './modules/search.ts'
 import { useRegisterStore } from './modules/register.js'
 import { useSourceStore } from './modules/source.js'
 import { useSchemaStore } from './modules/schema.js'
