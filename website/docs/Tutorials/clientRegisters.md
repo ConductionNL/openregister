@@ -525,14 +525,17 @@ Our message object is inspired by [email standards (RFC 5322)](https://datatrack
 | from | From | sender | SenderParty | Sender information |
 | to | To | recipient | ReceiverParty | Recipient information |
 | cc | Cc | recipient | CopyReceiverParty | Carbon copy recipients |
-| sentAt | Date | dateSent | IssueDate | When message was sent |
-| receivedAt | Received | dateReceived | ReceivedDate | When message was received |
-| readAt | (Custom) | (None direct equivalent) | (None) | When message was read |
+| sentAt | Date | dateSent | sentAt | When message was sent |
+| receivedAt | Received | dateReceived | receivedAt | When message was received |
+| readAt | - | - | - | When message was read |
 | attachments | Attachments | attachment | Attachment | File attachments |
-| thread | References/Thread-ID | (None direct equivalent) | (None) | Thread identifier |
-| channel | (Custom) | (None direct equivalent) | (None) | Communication channel |
-| direction | (Custom) | (None direct equivalent) | (None) | Message direction |
-| status | (Custom) | (None direct equivalent) | StatusCode | Delivery status |
+| thread | References/Thread-ID | - | - | Thread identifier |
+| channel | - | - | - | Communication channel |
+| direction | - | - | - | Message direction |
+| status | - | - | - | Delivery status |
+| clientId | about | - | - | Associated client |
+| dateCreated | - | - | - | Creation timestamp |
+| dateModified | - | - | - | Last update timestamp |
 
 **Justification for email standards as primary influence:**
 
@@ -612,7 +615,7 @@ To provide a clear overview of how our API aligns with various standards, here's
 | @type | @type | - | - | - | Entity type (Person/Organization) |
 | name | name | FN | Name | fullName/legalName | Full name |
 | givenName | givenName | N (part) | FirstName | givenName | First name |
-| familyName | familyName | N (part) | FamilyName | familyName | Last name |
+| familyName | familyName | N (part) | FamilyName | LastName | lastname | LastName |
 | additionalName | additionalName | N (part) | MiddleName | - | Middle name |
 | honorificPrefix | honorificPrefix | N (part) | Title | - | Title prefix (Dr., Mr.) |
 | honorificSuffix | honorificSuffix | N (part) | NameSuffix | - | Title suffix (Jr., PhD) |
@@ -661,10 +664,10 @@ To provide a clear overview of how our API aligns with various standards, here's
 | @type | @type | - | - | - | Entity type (Message) |
 | about | about | Subject | subject | Subject | Message subject |
 | text | text | Body | bodyValues | TextContent | Message content |
-| sender | sender | From | from | SenderParty | Sender information |
+| from | from | From | from | SenderParty | Sender information |
 | recipient | recipient | To/Cc/Bcc | to/cc/bcc | ReceiverParty | Recipient information |
-| dateSent | dateSent | Date | sentAt | IssueDate | When message was sent |
-| dateReceived | dateReceived | Received | receivedAt | ReceivedDate | When message was received |
+| dateSent | dateSent | Date | sentAt | When message was sent |
+| dateReceived | dateReceived | Received | receivedAt | When message was received |
 | dateRead | - | - | - | - | When message was read |
 | attachment | attachment | Attachments | attachments | Attachment | File attachments |
 | messageId | - | Message-ID | messageId | - | Unique message identifier |
