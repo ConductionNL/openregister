@@ -1,12 +1,13 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Client Management API",
-    "description": "API for managing clients, tasks, messages, and notes based on Schema.org and industry standards",
+    "title": "European Client Register API",
+    "description": "API for managing clients, tasks, messages, notes, products, services, and orders based on European standards",
     "version": "1.0.0",
     "contact": {
       "name": "Open Register",
-      "url": "https://openregisters.app"
+      "url": "https://openregister.dev",
+      "email": "info@openregister.dev"
     },
     "license": {
       "name": "EUPL-1.2",
@@ -26,19 +27,35 @@
   "tags": [
     {
       "name": "clients",
-      "description": "Client information based on Schema.org Person/Organization and vCard"
+      "description": "Client information based on EU Core Vocabularies, Schema.org Person/Organization and vCard"
     },
     {
       "name": "tasks",
-      "description": "Tasks based on Schema.org PlanAction and iCalendar VTODO"
+      "description": "Tasks based on iCalendar VTODO and Schema.org PlanAction"
     },
     {
       "name": "messages",
-      "description": "Client communication messages based on Schema.org Message"
+      "description": "Client communication messages based on RFC 5322, JMAP, and Schema.org Message"
     },
     {
       "name": "notes",
-      "description": "Notes about clients based on Schema.org Comment"
+      "description": "Notes about clients based on Schema.org Comment and UBL Note"
+    },
+    {
+      "name": "products",
+      "description": "Products based on UBL Item and Schema.org Product"
+    },
+    {
+      "name": "services",
+      "description": "Services based on CPSV and Schema.org Service"
+    },
+    {
+      "name": "orders",
+      "description": "Orders based on UBL Order and Schema.org Order"
+    },
+    {
+      "name": "orderItems",
+      "description": "Order items based on UBL OrderLine and Schema.org OrderItem"
     }
   ],
   "security": [
@@ -180,7 +197,7 @@
                 },
                 "addressLocality": {
                   "type": "string",
-                  "description": "City/town (Schema.org addressLocality)",
+                  "description": "City (Schema.org addressLocality)",
                   "example": "Anytown"
                 },
                 "addressRegion": {
@@ -190,13 +207,13 @@
                 },
                 "postalCode": {
                   "type": "string",
-                  "description": "Postal/ZIP code (Schema.org postalCode)",
-                  "example": "91921"
+                  "description": "Postal code (Schema.org postalCode)",
+                  "example": "12345"
                 },
                 "addressCountry": {
                   "type": "string",
                   "description": "Country (Schema.org addressCountry)",
-                  "example": "USA"
+                  "example": "US"
                 },
                 "type": {
                   "type": "string",
@@ -206,15 +223,9 @@
               }
             }
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date",
-            "description": "Birth date (Schema.org birthDate, vCard BDAY)",
-            "example": "1973-04-22"
-          },
           "url": {
             "type": "array",
-            "description": "URLs/websites (Schema.org url, vCard URL)",
+            "description": "Websites (Schema.org url, vCard URL)",
             "items": {
               "type": "object",
               "properties": {
@@ -225,37 +236,22 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["work", "home", "other"],
+                  "enum": ["work", "personal", "other"],
                   "example": "work"
                 }
               }
             }
           },
-          "description": {
+          "birthDate": {
             "type": "string",
-            "description": "Notes about the client (Schema.org description, vCard NOTE)",
-            "example": "Prefers email contact"
+            "format": "date",
+            "description": "Date of birth (Schema.org birthDate, vCard BDAY)",
+            "example": "1980-01-15"
           },
-          "identifier": {
-            "type": "array",
-            "description": "Official identifiers (EU Core Vocabulary identifier)",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "example": "12345678"
-                },
-                "type": {
-                  "type": "string",
-                  "example": "CompanyCode"
-                },
-                "schemeID": {
-                  "type": "string",
-                  "example": "BE:VAT"
-                }
-              }
-            }
+          "note": {
+            "type": "string",
+            "description": "General notes about the client (Schema.org description, vCard NOTE)",
+            "example": "Prefers to be contacted by email."
           },
           "dateCreated": {
             "type": "string",
@@ -268,11 +264,11 @@
             "description": "When the client record was last updated (Schema.org dateModified)"
           }
         },
-        "required": ["id", "name"]
+        "required": ["id", "@type", "name"]
       },
       "Task": {
         "type": "object",
-        "description": "Task information based on Schema.org PlanAction and iCalendar VTODO",
+        "description": "Task based on Schema.org PlanAction and iCalendar VTODO",
         "properties": {
           "id": {
             "type": "string",
@@ -286,120 +282,101 @@
           },
           "name": {
             "type": "string",
-            "description": "Task title/summary (Schema.org name, iCal SUMMARY)",
-            "example": "Call client about project"
+            "description": "Task name/summary (Schema.org name, iCal SUMMARY)",
+            "example": "Prepare client proposal"
           },
           "description": {
             "type": "string",
-            "description": "Detailed description of the task (Schema.org description, iCal DESCRIPTION)",
-            "example": "Discuss timeline and requirements for the new website project"
+            "description": "Task description (Schema.org description, iCal DESCRIPTION)",
+            "example": "Create a detailed proposal for the new website project including timeline and budget."
           },
-          "startTime": {
+          "startDate": {
             "type": "string",
             "format": "date-time",
-            "description": "Start date/time of the task (Schema.org startTime, iCal DTSTART)",
-            "example": "2023-06-10T14:00:00Z"
+            "description": "Start date/time (Schema.org startTime, iCal DTSTART)",
+            "example": "2023-06-15T09:00:00Z"
           },
-          "endTime": {
+          "endDate": {
             "type": "string",
             "format": "date-time",
-            "description": "Due date/time of the task (Schema.org endTime, iCal DUE)",
-            "example": "2023-06-15T16:00:00Z"
+            "description": "Due date/time (Schema.org endTime, iCal DUE)",
+            "example": "2023-06-20T17:00:00Z"
           },
-          "completedTime": {
+          "completedDate": {
             "type": "string",
             "format": "date-time",
-            "description": "When the task was completed (Schema.org completedTime, iCal COMPLETED)",
-            "example": "2023-06-12T15:30:00Z"
+            "description": "Completion date/time (Schema.org endTime, iCal COMPLETED)",
+            "example": "2023-06-19T16:30:00Z"
           },
           "actionStatus": {
             "type": "string",
-            "description": "Current status of the task (Schema.org actionStatus, iCal STATUS)",
-            "enum": ["PotentialActionStatus", "ActiveActionStatus", "CompletedActionStatus", "FailedActionStatus"],
+            "description": "Task status (Schema.org actionStatus, iCal STATUS)",
+            "enum": ["PotentialActionStatus", "ActiveActionStatus", "CompletedActionStatus", "FailedActionStatus", "CanceledActionStatus"],
             "example": "ActiveActionStatus"
           },
           "priority": {
             "type": "integer",
-            "description": "Priority level (1-9, 1 is highest) (Schema.org priority, iCal PRIORITY)",
-            "minimum": 1,
+            "description": "Priority (0-9, 0=undefined, 1=highest, 9=lowest) (iCal PRIORITY)",
+            "minimum": 0,
             "maximum": 9,
             "example": 2
           },
+          "percentComplete": {
+            "type": "integer",
+            "description": "Percent complete (0-100) (iCal PERCENT-COMPLETE)",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 75
+          },
           "category": {
             "type": "array",
-            "description": "Categories/tags for the task (Schema.org category, iCal CATEGORIES)",
+            "description": "Categories/tags (Schema.org category, iCal CATEGORIES)",
             "items": {
               "type": "string"
             },
-            "example": ["Client", "Sales", "Follow-up"]
-          },
-          "object": {
-            "type": "array",
-            "description": "Related tasks or objects (Schema.org object, iCal RELATED-TO)",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "example": ["proposal", "client", "website"]
           },
           "agent": {
             "type": "object",
-            "description": "Person responsible for the task (Schema.org agent, iCal ORGANIZER)",
+            "description": "Person assigned to the task (Schema.org agent, iCal ORGANIZER)",
             "properties": {
-              "name": {
-                "type": "string",
-                "example": "Jane Doe"
-              },
-              "email": {
-                "type": "string",
-                "format": "email",
-                "example": "jane.doe@example.com"
-              },
-              "userId": {
+              "id": {
                 "type": "string",
                 "description": "ID of the user in the system",
                 "example": "user-123"
+              },
+              "name": {
+                "type": "string",
+                "example": "Jane Doe"
               }
             }
           },
           "participant": {
             "type": "array",
-            "description": "People involved in the task (Schema.org participant, iCal ATTENDEE)",
+            "description": "Other participants (Schema.org participant, iCal ATTENDEE)",
             "items": {
               "type": "object",
               "properties": {
-                "name": {
-                  "type": "string",
-                  "example": "John Smith"
-                },
-                "email": {
-                  "type": "string",
-                  "format": "email",
-                  "example": "john.smith@example.com"
-                },
-                "userId": {
+                "id": {
                   "type": "string",
                   "description": "ID of the user in the system",
                   "example": "user-456"
                 },
+                "name": {
+                  "type": "string",
+                  "example": "John Smith"
+                },
                 "role": {
                   "type": "string",
-                  "enum": ["requiredParticipant", "optionalParticipant", "informedParticipant"],
-                  "example": "requiredParticipant"
+                  "example": "reviewer"
                 }
               }
             }
           },
-          "percentComplete": {
-            "type": "integer",
-            "description": "Completion percentage (0-100) (iCal PERCENT-COMPLETE)",
-            "minimum": 0,
-            "maximum": 100,
-            "example": 75
-          },
           "recurrenceRule": {
             "type": "string",
-            "description": "Recurrence rule for recurring tasks (iCal RRULE)",
-            "example": "FREQ=WEEKLY;BYDAY=MO"
+            "description": "Recurrence rule (iCal RRULE)",
+            "example": "FREQ=WEEKLY;BYDAY=MO,WE,FR"
           },
           "clientId": {
             "type": "string",
@@ -409,19 +386,19 @@
           "dateCreated": {
             "type": "string",
             "format": "date-time",
-            "description": "When the task record was created (Schema.org dateCreated)"
+            "description": "When the task record was created (Schema.org dateCreated, iCal CREATED)"
           },
           "dateModified": {
             "type": "string",
             "format": "date-time",
-            "description": "When the task record was last updated (Schema.org dateModified)"
+            "description": "When the task record was last updated (Schema.org dateModified, iCal LAST-MODIFIED)"
           }
         },
         "required": ["id", "name", "actionStatus", "clientId"]
       },
       "Message": {
         "type": "object",
-        "description": "Message information based on Schema.org Message and email standards",
+        "description": "Message based on Schema.org Message and email standards",
         "properties": {
           "id": {
             "type": "string",
@@ -436,12 +413,12 @@
           "about": {
             "type": "string",
             "description": "Message subject (Schema.org about, email Subject)",
-            "example": "Project Update - June 2023"
+            "example": "Website Project Proposal"
           },
           "text": {
             "type": "string",
             "description": "Message content (Schema.org text, email Body)",
-            "example": "Dear John, I'm writing to update you on the progress of your website project..."
+            "example": "Dear John,\n\nAttached is the proposal for your website project. Please review and let me know if you have any questions.\n\nBest regards,\nJane"
           },
           "sender": {
             "type": "object",
@@ -455,17 +432,12 @@
                 "type": "string",
                 "format": "email",
                 "example": "jane.doe@example.com"
-              },
-              "userId": {
-                "type": "string",
-                "description": "ID of the user in the system",
-                "example": "user-123"
               }
             }
           },
           "recipient": {
             "type": "array",
-            "description": "Recipient information (Schema.org recipient, email To)",
+            "description": "Recipients (Schema.org recipient, email To)",
             "items": {
               "type": "object",
               "properties": {
@@ -477,11 +449,42 @@
                   "type": "string",
                   "format": "email",
                   "example": "john.smith@example.com"
-                },
-                "type": {
+                }
+              }
+            }
+          },
+          "ccRecipient": {
+            "type": "array",
+            "description": "CC recipients (email Cc)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
                   "type": "string",
-                  "enum": ["to", "cc", "bcc"],
-                  "example": "to"
+                  "example": "Alice Brown"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "alice.brown@example.com"
+                }
+              }
+            }
+          },
+          "bccRecipient": {
+            "type": "array",
+            "description": "BCC recipients (email Bcc)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Bob Green"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "bob.green@example.com"
                 }
               }
             }
