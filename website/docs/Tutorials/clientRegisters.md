@@ -431,3 +431,205 @@ The following table compares our European-based client object with other standar
 | dateCreated | - | - | dateCreated | CreationDate | CreatedDate | createdon | Created |
 | dateModified | - | - | dateModified | LastModificationDate | LastModifiedDate | modifiedon | Modified |
 
+## Tasks Object
+
+For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf.org/doc/html/rfc5545) (RFC 5545), specifically the VTODO component, as our foundational standard. This choice is driven by several key factors:
+
+1. **Widespread Industry Adoption**
+   - iCalendar is supported by major calendar and productivity platforms including Google Calendar, Microsoft Outlook, Apple Calendar, and Nextcloud
+   - The standard has been stable and actively used since 1998, demonstrating its longevity and reliability
+   - Extensive tooling and libraries exist across all major programming languages
+
+2. **Interoperability Benefits**
+   - Native support in CalDAV servers enables seamless synchronization between systems
+   - Built-in compatibility with email systems through .ics file attachments
+   - Standard format for calendar data exchange between enterprise systems
+
+3. **Technical Advantages**
+   - Rich set of standardized properties covering all common task management needs
+   - Support for recurring tasks through RRULE specifications
+   - Built-in timezone handling and date/time standardization
+   - Extensible through custom properties while maintaining compatibility
+
+4. **Enterprise Integration**
+   - Direct integration with Microsoft Exchange and Google Workspace
+   - Support in major CRM and project management systems
+   - Easy conversion to other task formats while preserving data fidelity
+
+While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
+
+### Standards Comparison
+
+<Tabs>
+  <TabItem value="eu-core" label="iCalender">
+  
+**iCalendar Standards**
+- [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
+- [iCalendar Extensions (RFC 7986)](https://datatracker.ietf.org/doc/html/rfc7986) - Additional task properties
+
+**Strengths**
+- Widespread adoption
+- Rich property set
+- Timezone support
+- Enterprise integration
+- Stable standard
+
+**Limitations**
+- Complex recurrence rules
+- Limited custom fields
+- No built-in sharing
+- Basic priority levels
+- Text-only descriptions
+
+**Best Used For**
+- Calendar integration
+- Personal tasks
+- Email systems
+- Mobile devices
+- Basic scheduling
+
+</TabItem>
+<TabItem value="nextcloud" label="Nextcloud">
+
+**Nextcloud Standards**
+- [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
+- [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
+
+**Strengths**
+- Open source
+- CalDAV compatible
+- Self-hosted option
+- Team collaboration
+- File integration
+
+**Limitations**
+- Server required
+- Limited mobile apps
+- Basic reporting
+- Simple workflows
+- Community support
+
+**Best Used For**
+- Team tasks
+- File sharing
+- Private cloud
+- Small teams
+- Personal productivity
+
+</TabItem>
+<TabItem value="schema" label="Schema.org">
+
+**Schema.org Task Standards**
+- [Schema.org PlanAction](https://schema.org/PlanAction) - For general task/action representation
+- [Schema.org TodoAction](https://schema.org/TodoAction) - Specifically for to-do items
+- [Schema.org Task](https://schema.org/Task) - For project management tasks
+
+**Strengths**
+- SEO benefits
+- Semantic web ready
+- Flexible structure
+- Search integration
+- Growing adoption
+
+**Limitations**
+- Web-focused only
+- Loose validation
+- Basic task model
+- Limited tooling
+- Evolving standard
+
+**Best Used For**
+- Web content
+- Search visibility
+- Data integration
+- Public tasks
+- Knowledge graphs
+
+</TabItem>
+<TabItem value="microsoft" label="Microsoft 365">
+
+**Microsoft 365 Task Standards**
+- [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
+- [Microsoft Planner API](https://learn.microsoft.com/en-us/graph/api/resources/planner-overview) - Team task planning
+- [Microsoft Project API](https://learn.microsoft.com/en-us/graph/api/resources/projectrome-overview) - Project task management
+
+**Strengths**
+- Office integration
+- Enterprise features
+- Team collaboration
+- Rich API set
+- Strong security
+
+**Limitations**
+- License required
+- Vendor lock-in
+- Complex setup
+- Microsoft-centric
+- Costly scaling
+
+**Best Used For**
+- Enterprise teams
+- Office users
+- Project management
+- Corporate tasks
+- Windows integration
+
+</TabItem>
+<TabItem value="google" label="Google Workspace">
+
+**Google Workspace Standards**
+- [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
+- [Google Calendar API](https://developers.google.com/calendar) - Calendar-based tasks
+
+**Strengths**
+- Gmail integration
+- Calendar sync
+- Mobile support
+- Simple interface
+- Cloud-based
+
+**Limitations**
+- Basic features
+- Google ecosystem
+- Limited views
+- Simple workflows
+- Consumer focus
+
+**Best Used For**
+- Gmail users
+- Calendar tasks
+- Personal use
+- Simple projects
+- Mobile tasks
+
+</TabItem>
+<TabItem value="trello" label="Trello">
+
+**Trello Standards**
+- [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/api-group-actions/) - Board and card management
+- [Trello Power-Ups API](https://developer.atlassian.com/cloud/trello/power-ups/) - Custom integrations and extensions
+- [Trello Webhooks](https://developer.atlassian.com/cloud/trello/guides/rest-api/webhooks/) - Real-time updates
+
+**Strengths**
+- Visual boards
+- Easy to use
+- Rich API
+- Power-Ups
+- Real-time updates
+
+**Limitations**
+- Board-only view
+- Limited reporting
+- Basic automation
+- Simple structure
+- Scaling costs
+
+**Best Used For**
+- Visual planning
+- Team boards
+- Agile projects
+- Simple tracking
+- Collaborative tasks
+
+</TabItem>
+</tabs>
