@@ -554,7 +554,9 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 
 ### Standards Comparison
   
-**iCalendar Standards**
+<Tabs>
+<TabItem value="icalendar" label="iCalendar Standards">
+
 - [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
 - [iCalendar Extensions (RFC 7986)](https://datatracker.ietf.org/doc/html/rfc7986) - Additional task properties
 
@@ -579,8 +581,10 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Mobile devices
 - Basic scheduling
 
+</TabItem>
 
-**Nextcloud Standards**
+<TabItem value="nextcloud" label="Nextcloud Standards">
+
 - [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
 - [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
 
@@ -605,8 +609,10 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Small teams
 - Personal productivity
 
+</TabItem>
 
-**Schema.org Task Standards**
+<TabItem value="schema" label="Schema.org Standards">
+
 - [Schema.org PlanAction](https://schema.org/PlanAction) - For general task/action representation
 - [Schema.org TodoAction](https://schema.org/TodoAction) - Specifically for to-do items
 - [Schema.org Task](https://schema.org/Task) - For project management tasks
@@ -632,8 +638,10 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Public tasks
 - Knowledge graphs
 
+</TabItem>
 
-**Microsoft 365 Task Standards**
+<TabItem value="microsoft" label="Microsoft 365 Standards">
+
 - [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
 - [Microsoft Planner API](https://learn.microsoft.com/en-us/graph/api/resources/planner-overview) - Team task planning
 - [Microsoft Project API](https://learn.microsoft.com/en-us/graph/api/resources/projectrome-overview) - Project task management
@@ -659,8 +667,10 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Corporate tasks
 - Windows integration
 
+</TabItem>
 
-**Google Workspace Standards**
+<TabItem value="google" label="Google Workspace Standards">
+
 - [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
 - [Google Calendar API](https://developers.google.com/calendar) - Calendar-based tasks
 
@@ -685,8 +695,10 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Simple projects
 - Mobile tasks
 
+</TabItem>
 
-**Trello Standards**
+<TabItem value="trello" label="Trello Standards">
+
 - [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/api-group-actions/) - Board and card management
 - [Trello Power-Ups API](https://developer.atlassian.com/cloud/trello/power-ups/) - Custom integrations and extensions
 - [Trello Webhooks](https://developer.atlassian.com/cloud/trello/guides/rest-api/webhooks/) - Real-time updates
@@ -711,6 +723,9 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Agile projects
 - Simple tracking
 - Collaborative tasks
+
+</TabItem>
+</Tabs>
 
 
 ### Property Comparison
@@ -771,7 +786,9 @@ For client messages, we'll create a schema inspired by email and messaging stand
 
 ### Standards Comparison
 
-**Schema.org Message Standards**
+<Tabs>
+<TabItem value="schema" label="Schema.org Message Standards">
+
 - [Schema.org Message](https://schema.org/Message) - Message schema definition
 - [Schema.org EmailMessage](https://schema.org/EmailMessage) - Email message type
 - [Schema.org Message Extensions](https://schema.org/messageAttachment) - Message attachments
@@ -797,7 +814,10 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - Basic messaging
 - SEO optimization
 
-**RFC 5322 Standards**
+</TabItem>
+
+<TabItem value="rfc" label="RFC 5322 Standards">
+
 - [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322) - Internet Message Format
 - [RFC 2045-2049](https://datatracker.ietf.org/doc/html/rfc2045) - MIME Extensions
 - [RFC 6854](https://datatracker.ietf.org/doc/html/rfc6854) - Update to Internet Message Format
@@ -823,7 +843,10 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - Internet mail
 - Standards compliance
 
-**JMAP Standards**
+</TabItem>
+
+<TabItem value="jmap" label="JMAP Standards">
+
 - [JMAP](https://jmap.io/spec.html) - JSON Meta Application Protocol
 - [JMAP Mail](https://jmap.io/spec-mail.html) - Email extensions
 - [JMAP Calendar](https://jmap.io/spec-calendars.html) - Calendar integration
@@ -849,7 +872,10 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - Real-time chat
 - Cloud messaging
 
-**UBL Communication Standards**
+</TabItem>
+
+<TabItem value="ubl" label="UBL Communication Standards">
+
 - [UBL Communication](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMUNICATION) - Universal Business Language
 - [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
 - [UBL Extensions](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-UBL-2.1-EXTENSIONS) - Custom extensions
@@ -874,6 +900,9 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - Legal records
 - Enterprise use
 - B2B messaging
+
+</TabItem>
+</Tabs>
 
 ### Proposal
 
@@ -902,7 +931,9 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 
 ### Standards Comparison
 
-**UBL Note Standards**
+<Tabs>
+<TabItem value="ubl" label="UBL Note Standards">
+
 - [UBL Note Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd) - Note element definition
 - [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
 
@@ -927,8 +958,10 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 - Compliance
 - Enterprise systems
 
+</TabItem>
 
-**Schema.org Standards**
+<TabItem value="schema" label="Schema.org Standards">
+
 - [Schema.org Comment](https://schema.org/Comment) - Comment type specification
 - [Schema.org CreativeWork](https://schema.org/CreativeWork) - Creative work type specification
 
@@ -953,8 +986,10 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 - Reviews
 - Social content
 
+</TabItem>
 
-**Microsoft Graph Standards**
+<TabItem value="microsoft" label="Microsoft Graph Standards">
+
 - [Microsoft Graph Notes API](https://learn.microsoft.com/en-us/graph/api/resources/onenote) - OneNote integration
 - [Microsoft 365 Notes](https://learn.microsoft.com/en-us/graph/api/resources/onenote-api-overview) - Notes platform
 
@@ -979,8 +1014,10 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 - Windows systems
 - Corporate docs
 
+</TabItem>
 
-**Google Keep Standards**
+<TabItem value="google" label="Google Keep Standards">
+
 - [Google Keep API](https://developers.google.com/keep) - Note taking platform
 - [Google Drive Integration](https://developers.google.com/drive) - Storage backend
 
@@ -1005,8 +1042,10 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 - Simple lists
 - Reminders
 
+</TabItem>
 
-**Nextcloud Standards**
+<TabItem value="nextcloud" label="Nextcloud Standards">
+
 - [Nextcloud Notes API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/Notes/index.html) - Notes integration
 - [Nextcloud Text](https://apps.nextcloud.com/apps/text) - Rich text editor
 
@@ -1030,6 +1069,9 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 - File storage
 - Personal cloud
 - Markdown docs
+
+</TabItem>
+</Tabs>
 
 The following table compares note properties across relevant standards and platforms:
 
