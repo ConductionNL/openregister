@@ -1,0 +1,667 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Client Management API",
+    "description": "API for managing clients, tasks, messages, and notes based on Schema.org and industry standards",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Open Register",
+      "url": "https://openregisters.app"
+    },
+    "license": {
+      "name": "EUPL-1.2",
+      "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.example.com/v1",
+      "description": "Staging server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "clients",
+      "description": "Client information based on Schema.org Person/Organization and vCard"
+    },
+    {
+      "name": "tasks",
+      "description": "Tasks based on Schema.org PlanAction and iCalendar VTODO"
+    },
+    {
+      "name": "messages",
+      "description": "Client communication messages based on Schema.org Message"
+    },
+    {
+      "name": "notes",
+      "description": "Notes about clients based on Schema.org Comment"
+    }
+  ],
+  "security": [
+    {
+      "oauth2": ["read", "write"]
+    }
+  ],
+  "paths": {},
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://auth.example.com/authorize",
+            "tokenUrl": "https://auth.example.com/token",
+            "scopes": {
+              "read": "Read access to API",
+              "write": "Write access to API"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Client": {
+        "type": "object",
+        "description": "Client information based on Schema.org Person/Organization and vCard standard",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the client"
+          },
+          "@type": {
+            "type": "string",
+            "enum": ["Person", "Organization"],
+            "description": "Schema.org type of the client",
+            "example": "Person"
+          },
+          "name": {
+            "type": "string",
+            "description": "Full name of the client (Schema.org name, vCard FN)",
+            "example": "John Smith"
+          },
+          "givenName": {
+            "type": "string",
+            "description": "First name (Schema.org givenName, part of vCard N)",
+            "example": "John"
+          },
+          "familyName": {
+            "type": "string",
+            "description": "Last name (Schema.org familyName, part of vCard N)",
+            "example": "Smith"
+          },
+          "additionalName": {
+            "type": "string",
+            "description": "Middle name (Schema.org additionalName, part of vCard N)",
+            "example": "Robert"
+          },
+          "honorificPrefix": {
+            "type": "string",
+            "description": "Title prefix (Schema.org honorificPrefix, part of vCard N)",
+            "example": "Dr."
+          },
+          "honorificSuffix": {
+            "type": "string",
+            "description": "Title suffix (Schema.org honorificSuffix, part of vCard N)",
+            "example": "Jr."
+          },
+          "jobTitle": {
+            "type": "string",
+            "description": "Job title (Schema.org jobTitle, vCard TITLE)",
+            "example": "Director"
+          },
+          "worksFor": {
+            "type": "string",
+            "description": "Organization the person works for (Schema.org worksFor, vCard ORG)",
+            "example": "Acme, Inc."
+          },
+          "department": {
+            "type": "string",
+            "description": "Department within organization (part of vCard ORG)",
+            "example": "Marketing"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to client photo/avatar (Schema.org image, vCard PHOTO)",
+            "example": "https://example.com/photos/john-smith.jpg"
+          },
+          "telephone": {
+            "type": "array",
+            "description": "Phone numbers (Schema.org telephone, vCard TEL)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "example": "+1-555-123-4567"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["work", "home", "mobile", "fax", "other"],
+                  "example": "work"
+                }
+              }
+            }
+          },
+          "email": {
+            "type": "array",
+            "description": "Email addresses (Schema.org email, vCard EMAIL)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.smith@example.com"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["work", "home", "other"],
+                  "example": "work"
+                }
+              }
+            }
+          },
+          "address": {
+            "type": "array",
+            "description": "Addresses (Schema.org address, vCard ADR)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "streetAddress": {
+                  "type": "string",
+                  "description": "Street address (Schema.org streetAddress)",
+                  "example": "123 Main St"
+                },
+                "addressLocality": {
+                  "type": "string",
+                  "description": "City/town (Schema.org addressLocality)",
+                  "example": "Anytown"
+                },
+                "addressRegion": {
+                  "type": "string",
+                  "description": "State/province (Schema.org addressRegion)",
+                  "example": "CA"
+                },
+                "postalCode": {
+                  "type": "string",
+                  "description": "Postal/ZIP code (Schema.org postalCode)",
+                  "example": "91921"
+                },
+                "addressCountry": {
+                  "type": "string",
+                  "description": "Country (Schema.org addressCountry)",
+                  "example": "USA"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["work", "home", "other"],
+                  "example": "work"
+                }
+              }
+            }
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Birth date (Schema.org birthDate, vCard BDAY)",
+            "example": "1973-04-22"
+          },
+          "url": {
+            "type": "array",
+            "description": "URLs/websites (Schema.org url, vCard URL)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "format": "uri",
+                  "example": "https://example.com"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["work", "home", "other"],
+                  "example": "work"
+                }
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Notes about the client (Schema.org description, vCard NOTE)",
+            "example": "Prefers email contact"
+          },
+          "identifier": {
+            "type": "array",
+            "description": "Official identifiers (EU Core Vocabulary identifier)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "12345678"
+                },
+                "type": {
+                  "type": "string",
+                  "example": "CompanyCode"
+                },
+                "schemeID": {
+                  "type": "string",
+                  "example": "BE:VAT"
+                }
+              }
+            }
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the client record was created (Schema.org dateCreated)"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the client record was last updated (Schema.org dateModified)"
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "Task": {
+        "type": "object",
+        "description": "Task information based on Schema.org PlanAction and iCalendar VTODO",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the task"
+          },
+          "@type": {
+            "type": "string",
+            "default": "PlanAction",
+            "description": "Schema.org type"
+          },
+          "name": {
+            "type": "string",
+            "description": "Task title/summary (Schema.org name, iCal SUMMARY)",
+            "example": "Call client about project"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the task (Schema.org description, iCal DESCRIPTION)",
+            "example": "Discuss timeline and requirements for the new website project"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start date/time of the task (Schema.org startTime, iCal DTSTART)",
+            "example": "2023-06-10T14:00:00Z"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Due date/time of the task (Schema.org endTime, iCal DUE)",
+            "example": "2023-06-15T16:00:00Z"
+          },
+          "completedTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the task was completed (Schema.org completedTime, iCal COMPLETED)",
+            "example": "2023-06-12T15:30:00Z"
+          },
+          "actionStatus": {
+            "type": "string",
+            "description": "Current status of the task (Schema.org actionStatus, iCal STATUS)",
+            "enum": ["PotentialActionStatus", "ActiveActionStatus", "CompletedActionStatus", "FailedActionStatus"],
+            "example": "ActiveActionStatus"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Priority level (1-9, 1 is highest) (Schema.org priority, iCal PRIORITY)",
+            "minimum": 1,
+            "maximum": 9,
+            "example": 2
+          },
+          "category": {
+            "type": "array",
+            "description": "Categories/tags for the task (Schema.org category, iCal CATEGORIES)",
+            "items": {
+              "type": "string"
+            },
+            "example": ["Client", "Sales", "Follow-up"]
+          },
+          "object": {
+            "type": "array",
+            "description": "Related tasks or objects (Schema.org object, iCal RELATED-TO)",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "agent": {
+            "type": "object",
+            "description": "Person responsible for the task (Schema.org agent, iCal ORGANIZER)",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Jane Doe"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "jane.doe@example.com"
+              },
+              "userId": {
+                "type": "string",
+                "description": "ID of the user in the system",
+                "example": "user-123"
+              }
+            }
+          },
+          "participant": {
+            "type": "array",
+            "description": "People involved in the task (Schema.org participant, iCal ATTENDEE)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "John Smith"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.smith@example.com"
+                },
+                "userId": {
+                  "type": "string",
+                  "description": "ID of the user in the system",
+                  "example": "user-456"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["requiredParticipant", "optionalParticipant", "informedParticipant"],
+                  "example": "requiredParticipant"
+                }
+              }
+            }
+          },
+          "percentComplete": {
+            "type": "integer",
+            "description": "Completion percentage (0-100) (iCal PERCENT-COMPLETE)",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 75
+          },
+          "recurrenceRule": {
+            "type": "string",
+            "description": "Recurrence rule for recurring tasks (iCal RRULE)",
+            "example": "FREQ=WEEKLY;BYDAY=MO"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the client this task is associated with"
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the task record was created (Schema.org dateCreated)"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the task record was last updated (Schema.org dateModified)"
+          }
+        },
+        "required": ["id", "name", "actionStatus", "clientId"]
+      },
+      "Message": {
+        "type": "object",
+        "description": "Message information based on Schema.org Message and email standards",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the message"
+          },
+          "@type": {
+            "type": "string",
+            "default": "Message",
+            "description": "Schema.org type"
+          },
+          "about": {
+            "type": "string",
+            "description": "Message subject (Schema.org about, email Subject)",
+            "example": "Project Update - June 2023"
+          },
+          "text": {
+            "type": "string",
+            "description": "Message content (Schema.org text, email Body)",
+            "example": "Dear John, I'm writing to update you on the progress of your website project..."
+          },
+          "sender": {
+            "type": "object",
+            "description": "Sender information (Schema.org sender, email From)",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Jane Doe"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "jane.doe@example.com"
+              },
+              "userId": {
+                "type": "string",
+                "description": "ID of the user in the system",
+                "example": "user-123"
+              }
+            }
+          },
+          "recipient": {
+            "type": "array",
+            "description": "Recipient information (Schema.org recipient, email To)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "John Smith"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.smith@example.com"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["to", "cc", "bcc"],
+                  "example": "to"
+                }
+              }
+            }
+          },
+          "dateSent": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When message was sent (Schema.org dateSent, email Date)",
+            "example": "2023-06-10T14:30:00Z"
+          },
+          "dateReceived": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When message was received (Schema.org dateReceived, email Received)",
+            "example": "2023-06-10T14:31:05Z"
+          },
+          "dateRead": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When message was read (custom extension)",
+            "example": "2023-06-10T15:45:22Z"
+          },
+          "attachment": {
+            "type": "array",
+            "description": "File attachments (Schema.org attachment, email Attachments)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "proposal.pdf"
+                },
+                "contentUrl": {
+                  "type": "string",
+                  "format": "uri",
+                  "example": "https://example.com/files/proposal.pdf"
+                },
+                "encodingFormat": {
+                  "type": "string",
+                  "example": "application/pdf"
+                },
+                "contentSize": {
+                  "type": "string",
+                  "example": "2.4 MB"
+                }
+              }
+            }
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Unique message identifier (email Message-ID)",
+            "example": "<1234567890@mail.example.com>"
+          },
+          "inReplyTo": {
+            "type": "string",
+            "description": "Message this is a reply to (email In-Reply-To)",
+            "example": "<0987654321@mail.example.com>"
+          },
+          "references": {
+            "type": "array",
+            "description": "Thread references (email References)",
+            "items": {
+              "type": "string"
+            },
+            "example": ["<0987654321@mail.example.com>", "<5678901234@mail.example.com>"]
+          },
+          "channel": {
+            "type": "string",
+            "description": "Communication channel (custom extension)",
+            "enum": ["email", "sms", "chat", "phone", "video", "social"],
+            "example": "email"
+          },
+          "direction": {
+            "type": "string",
+            "description": "Message direction (custom extension)",
+            "enum": ["inbound", "outbound"],
+            "example": "outbound"
+          },
+          "status": {
+            "type": "string",
+            "description": "Delivery status (custom extension)",
+            "enum": ["draft", "sending", "sent", "delivered", "read", "failed"],
+            "example": "delivered"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the client this message is associated with"
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the message record was created (Schema.org dateCreated)"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the message record was last updated (Schema.org dateModified)"
+          }
+        },
+        "required": ["id", "about", "text", "sender", "recipient", "channel", "direction", "clientId"]
+      },
+      "Note": {
+        "type": "object",
+        "description": "Note about a client based on Schema.org Comment",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the note"
+          },
+          "@type": {
+            "type": "string",
+            "default": "Comment",
+            "description": "Schema.org type"
+          },
+          "headline": {
+            "type": "string",
+            "description": "Note title (Schema.org headline)",
+            "example": "Meeting Summary - June 10"
+          },
+          "text": {
+            "type": "string",
+            "description": "Note content (Schema.org text)",
+            "example": "Met with client to discuss new requirements for the website project. They want to add an e-commerce section and integrate with their inventory system."
+          },
+          "author": {
+            "type": "object",
+            "description": "Author information (Schema.org author)",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "ID of the user in the system",
+                "example": "user-123"
+              },
+              "name": {
+                "type": "string",
+                "example": "Jane Doe"
+              }
+            }
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the note was created (Schema.org dateCreated)",
+            "example": "2023-06-10T16:30:00Z"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the note was last updated (Schema.org dateModified)",
+            "example": "2023-06-11T09:15:00Z"
+          },
+          "keywords": {
+            "type": "array",
+            "description": "Categorization tags (Schema.org keywords)",
+            "items": {
+              "type": "string"
+            },
+            "example": ["meeting", "requirements", "important"]
+          },
+          "visibility": {
+            "type": "string",
+            "description": "Who can see the note (custom extension)",
+            "enum": ["private", "team", "public"],
+            "example": "team"
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "Whether the note is pinned (custom extension)",
+            "example": true
+          },
+          "about": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the client this note is about (Schema.org about)"
+          }
+        },
+        "required": ["id", "text", "author", "dateCreated", "about"]
+      }
+    }
+  }
+} 
