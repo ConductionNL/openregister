@@ -77,18 +77,51 @@ This research and implementation guide draws upon the following standards and re
 - [Universal Business Language (UBL) 2.1](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html) - Business document schemas
 - [UBL Party Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-PARTY) - Business party representation
 
-### European Standards
+
+### EIDAS Regulation and Core Vocabularies
+
+The [eIDAS Regulation](https://digital-strategy.ec.europa.eu/en/policies/eidas-regulation) (Electronic Identification, Authentication and Trust Services) establishes a legal framework for electronic identification and trust services across EU member states. While the regulation itself doesn't mandate specific data models, implementations that support cross-border identification should align with the EU Core Vocabularies.
+
+The European Commission officially recommends the [Core Vocabularies](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/e-government-core-vocabularies) for public administrations and entities that interact with them. In many EU-funded projects and cross-border services, these vocabularies are effectively mandatory.
+
+**Key references:**
+- [eIDAS Regulation (EU) No 910/2014](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=uriserv:OJ.L_.2014.257.01.0073.01.ENG)
+- [ISA² Programme Decision](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32015D2240) - Establishing the program that developed Core Vocabularies
+- [European Interoperability Framework](https://ec.europa.eu/isa2/eif_en) - Recommends Core Vocabularies
+
+###  Mandatory Standards in European Context
+
+**Key references:**
 - [EU Core Vocabularies](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/e-government-core-vocabularies) - Simplified data models
 - [Core Person Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-person-vocabulary) - Person data model
 - [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-business-vocabulary) - Business data model
 - [Core Location Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-location-vocabulary) - Location data model
 - [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-organisation-vocabulary) - Public organization model
 - [DCAT Application Profile](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/dcat-application-profile-data-portals-europe) - Metadata specification
+- [DCAT-AP-NL on Forum Standaardisatie](https://www.forumstandaardisatie.nl/open-standaarden/dcat-ap-nl)
+- [DCAT-AP-NL Documentation](https://dcat-ap-nl.readthedocs.io/en/latest/)
+
 
 ### Commercial CRM Systems
 - [Salesforce API Documentation](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/data_model.htm) - Salesforce data model
 - [Microsoft Dynamics 365 Entity Reference](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/developer/entities/account) - Dynamics 365 entities
 - [Exact Online REST API](https://start.exactonline.nl/docs/HlpRestAPIResources.aspx?SourceAction=10) - Exact Online resources
+
+### Dutch standards and guidelines
+
+The [Nederlandse API Strategie](https://docs.geostandaarden.nl/api/API-Strategie/) (Dutch API Strategy) provides guidelines for REST APIs in the Dutch public sector. Our client register design aligns with these guidelines:
+
+- Use of JSON as the primary format
+- Consistent naming conventions
+- Support for filtering, sorting, and pagination
+- Proper error handling
+
+**Key references:**
+- [NL API Strategy on Forum Standaardisatie](https://www.forumstandaardisatie.nl/open-standaarden/rest-api-design-rules)
+- [API Design Rules](https://publicatie.centrumvoorstandaarden.nl/api/adr/)
+- [Forum Standaardisatie - UBL 2.1](https://www.forumstandaardisatie.nl/open-standaarden/ubl) - Official listing as a mandatory standard
+- [NLCIUS](https://www.nen.nl/en/nlcius-1-0-1) - Dutch implementation of UBL for e-invoicing
+- [Logius Digikoppeling](https://www.logius.nl/diensten/digikoppeling) - Dutch government service exchange that uses UBL
 
 ## Introduction
 
@@ -1234,294 +1267,10 @@ Using the European Core Vocabularies as our foundation provides several advantag
    - Support for public procurement processes
    - Alignment with public service vocabularies
 
-### Extensions for Commercial CRM Compatibility
-
-To bridge the gap with commercial CRM systems, we recommend the following extensions to our European-based client object:
-
-```json
-{
-  // Core properties as shown above
-  
-  "relationships": [
-    {
-      "relatedClientId": "uuid-98765432-10fe-dcba-9876-543210fedcba",
-      "type": "parent",
-      "description": "Parent company"
-    }
-  ],
-  
-  "teams": [
-    {
-      "userId": "user-12345",
-      "role": "accountManager",
-      "accessLevel": "edit"
-    }
-  ],
-  
-  "classification": {
-    "segment": "Enterprise",
-    "tier": "Platinum",
-    "industry": {
-      "code": "62.01",
-      "scheme": "NACE",
-      "label": "Computer programming activities"
-    },
-    "territory": "EMEA-North"
-  },
-  
-  "financials": {
-    "creditLimit": 50000,
-    "paymentTerms": "net30",
-    "vatExempt": false,
-    "currency": "EUR",
-    "fiscalYearEnd": "12-31"
-  },
-  
-  "marketing": {
-    "leadSource": "Website",
-    "campaignId": "camp-2023-q2-webinar",
-    "doNotContact": false,
-    "preferences": {
-      "channels": ["email", "phone"],
-      "frequency": "weekly",
-      "topics": ["product-updates", "events"]
-    }
-  },
-  
-  "serviceLevel": {
-    "agreement": "premium",
-    "responseTime": "4h",
-    "supportLevel": "24/7",
-    "expirationDate": "2024-12-31"
-  }
-}
-```
-
-### Implementation Recommendations
-
-When implementing this client object in Open Register:
-
-1. **Use a flexible schema**
-   - Core properties should be required
-   - Extensions should be optional
-   - Allow for custom fields
-
-2. **Implement validation rules**
-   - Validate identifiers against official schemes
-   - Enforce proper formatting of addresses
-   - Check consistency between person/organization fields
-
-3. **Support data transformations**
-   - Provide mappings to/from vCard format
-   - Support export to commercial CRM formats
-   - Enable Schema.org JSON-LD generation
-
-4. **Implement privacy controls**
-   - Mark fields containing personal data
-   - Support data minimization principles
-   - Enable purpose-based access control
-
-5. **Maintain audit trails**
-   - Track changes to client data
-   - Record purpose of data collection
-   - Document data sharing activities
-
-By basing our client object on European Core Vocabularies while accommodating other standards and commercial CRM features, we create a robust, interoperable foundation for client data management that works across borders and systems while meeting regulatory requirements.
 
 ## Regulatory and Standards Compliance
 
 When implementing client registers in European contexts, it's important to understand that certain standards are not merely recommendations but regulatory requirements or officially endorsed standards that must be applied in specific scenarios.
-
-### Mandatory Standards in European Context
-
-#### EIDAS Regulation and Core Vocabularies
-
-The [eIDAS Regulation](https://digital-strategy.ec.europa.eu/en/policies/eidas-regulation) (Electronic Identification, Authentication and Trust Services) establishes a legal framework for electronic identification and trust services across EU member states. While the regulation itself doesn't mandate specific data models, implementations that support cross-border identification should align with the EU Core Vocabularies.
-
-The European Commission officially recommends the [Core Vocabularies](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/e-government-core-vocabularies) for public administrations and entities that interact with them. In many EU-funded projects and cross-border services, these vocabularies are effectively mandatory.
-
-**Key references:**
-- [eIDAS Regulation (EU) No 910/2014](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=uriserv:OJ.L_.2014.257.01.0073.01.ENG)
-- [ISA² Programme Decision](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32015D2240) - Establishing the program that developed Core Vocabularies
-- [European Interoperability Framework](https://ec.europa.eu/isa2/eif_en) - Recommends Core Vocabularies
-
-#### UBL and Forum Standaardisatie
-
-In the Netherlands, the [Forum Standaardisatie](https://www.forumstandaardisatie.nl/) (Standardization Forum) maintains a list of mandatory and recommended standards for the public sector. UBL 2.1 is on the ["comply or explain" list](https://www.forumstandaardisatie.nl/open-standaarden/lijst/verplicht), making it effectively mandatory for Dutch public sector organizations.
-
-**Key references:**
-- [Forum Standaardisatie - UBL 2.1](https://www.forumstandaardisatie.nl/open-standaarden/ubl) - Official listing as a mandatory standard
-- [NLCIUS](https://www.nen.nl/en/nlcius-1-0-1) - Dutch implementation of UBL for e-invoicing
-- [Logius Digikoppeling](https://www.logius.nl/diensten/digikoppeling) - Dutch government service exchange that uses UBL
-
-### Integration with Other Mandatory Standards
-
-Our client object design also aligns with other mandatory standards in the Dutch and European context:
-
-#### DCAT-AP-NL
-
-The [DCAT-AP-NL](https://dcat-ap-nl.readthedocs.io/en/latest/) is the Dutch profile of the DCAT Application Profile for data portals in Europe. It's on the Forum Standaardisatie's mandatory list for describing datasets.
-
-By using Schema.org properties that align with DCAT-AP-NL, our client object facilitates integration with data catalogs and open data initiatives:
-
-```json
-{
-  "@context": "https://schema.org/",
-  "@type": "Organization",
-  "name": "Example Organization",
-  "identifier": {
-    "@type": "PropertyValue",
-    "propertyID": "KVK",
-    "value": "12345678"
-  },
-  "dataset": {
-    "@type": "Dataset",
-    "name": "Client Data",
-    "license": "http://creativecommons.org/licenses/by/4.0/"
-  }
-}
-```
-
-**Key references:**
-- [DCAT-AP-NL on Forum Standaardisatie](https://www.forumstandaardisatie.nl/open-standaarden/dcat-ap-nl)
-- [DCAT-AP-NL Documentation](https://dcat-ap-nl.readthedocs.io/en/latest/)
-
-#### NL API Strategy
-
-The [Nederlandse API Strategie](https://docs.geostandaarden.nl/api/API-Strategie/) (Dutch API Strategy) provides guidelines for REST APIs in the Dutch public sector. Our client register design aligns with these guidelines:
-
-- Use of JSON as the primary format
-- Consistent naming conventions
-- Support for filtering, sorting, and pagination
-- Proper error handling
-
-**Key references:**
-- [NL API Strategy on Forum Standaardisatie](https://www.forumstandaardisatie.nl/open-standaarden/rest-api-design-rules)
-- [API Design Rules](https://publicatie.centrumvoorstandaarden.nl/api/adr/)
-
-### Practical Implementation Approach
-
-Given these regulatory and standards requirements, we recommend the following approach for client registers in Open Register:
-
-1. **Base core structure on EU Core Vocabularies**
-   - Ensures compliance with European interoperability requirements
-   - Supports cross-border identification under eIDAS
-   - Facilitates public sector integration
-
-2. **Include UBL compatibility layer**
-   - Meets Dutch "comply or explain" requirements
-   - Supports e-procurement and e-invoicing scenarios
-   - Enables business document exchange
-
-3. **Add Schema.org annotations**
-   - Improves web discoverability
-   - Aligns with DCAT-AP-NL for data catalog integration
-   - Supports semantic web applications
-
-4. **Implement commercial CRM extensions**
-   - Addresses business requirements beyond standards
-   - Maintains compatibility with common CRM systems
-   - Provides practical functionality for users
-
-This approach ensures that client registers built with Open Register will meet both regulatory requirements and practical business needs.
-
-### Reference Implementation
-
-Here's a reference implementation that demonstrates compliance with these mandatory standards:
-
-```json
-{
-  "id": "uuid-12345678-90ab-cdef-1234-567890abcdef",
-  "@context": "https://schema.org/",
-  "@type": "Organization",
-  
-  "identifier": [
-    {
-      "schemeID": "NL:KVK",
-      "notation": "12345678",
-      "scheme": "http://publications.europa.eu/resource/authority/corporate-body"
-    },
-    {
-      "schemeID": "NL:RSIN",
-      "notation": "123456789",
-      "scheme": "http://data.europa.eu/eli/ontology#LegalResource"
-    }
-  ],
-  
-  "name": [
-    {
-      "text": "Example Organization B.V.",
-      "language": "nl"
-    },
-    {
-      "text": "Example Organization Ltd.",
-      "language": "en"
-    }
-  ],
-  
-  "legalEntity": {
-    "legalName": "Example Organization B.V.",
-    "companyType": "http://data.europa.eu/eiregistry/companyType#PrivateLimitedLiabilityCompany",
-    "companyStatus": "active",
-    "registrationDate": "2010-03-25",
-    "companyActivity": [
-      {
-        "code": "62.01",
-        "scheme": "NACE",
-        "label": "Computer programming activities"
-      }
-    ]
-  },
-  
-  "address": [
-    {
-      "type": "registered",
-      "fullAddress": "Voorbeeldstraat 123, 1234 AB Amsterdam, Nederland",
-      "thoroughfare": "Voorbeeldstraat 123",
-      "postName": "Amsterdam",
-      "postCode": "1234 AB",
-      "adminUnitL1": "NL",
-      "adminUnitL2": "Noord-Holland"
-    }
-  ],
-  
-  "contactPoint": [
-    {
-      "type": "primary",
-      "email": "info@example.org",
-      "telephone": "+31 20 123 4567",
-      "hoursAvailable": "Mo-Fr 09:00-17:00"
-    }
-  ],
-  
-  // UBL-compatible extensions
-  "partyTaxScheme": {
-    "companyID": "NL123456789B01",
-    "taxScheme": {
-      "id": "VAT",
-      "name": "Value Added Tax"
-    }
-  },
-  
-  // Schema.org extensions for DCAT-AP-NL compatibility
-  "url": "https://www.example.org",
-  "sameAs": [
-    "https://www.linkedin.com/company/example-organization",
-    "https://www.facebook.com/exampleorg"
-  ],
-  
-  // Commercial CRM extensions
-  "classification": {
-    "segment": "Enterprise",
-    "tier": "Gold",
-    "industry": {
-      "code": "62.01",
-      "scheme": "NACE",
-      "label": "Computer programming activities"
-    }
-  }
-}
-```
 
 ### Validation Resources
 
