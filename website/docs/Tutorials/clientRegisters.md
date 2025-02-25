@@ -140,8 +140,8 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Public procurement
 - Regulatory reporting
 
-  </TabItem>
-  <TabItem value="vcard" label="vCard (RFC 6350)">
+</TabItem>
+<TabItem value="vcard" label="vCard (RFC 6350)">
 
 ### Strengths
 - Widespread adoption
@@ -163,8 +163,8 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Personal contacts
 - Legacy integration
 
-  </TabItem>
-  <TabItem value="schema" label="Schema.org">
+</TabItem>
+<TabItem value="schema" label="Schema.org">
 
 ### Strengths
 - Web search optimization
@@ -186,8 +186,8 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Public directories
 - Semantic web applications
 
-  </TabItem>
-  <TabItem value="ubl" label="UBL Party">
+</TabItem>
+<TabItem value="ubl" label="UBL Party">
 
 ### Strengths
 - Business document focus
@@ -209,8 +209,8 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - E-invoicing
 - Formal business exchange
 
-  </TabItem>
-  <TabItem value="salesforce" label="Salesforce">
+</TabItem>
+<TabItem value="salesforce" label="Salesforce">
 
 ### Strengths
 - Business process integration
@@ -232,8 +232,8 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Customer service
 - Business intelligence
 
-  </TabItem>
-  <TabItem value="dynamics" label="Microsoft Dynamics">
+</TabItem>
+<TabItem value="dynamics" label="Microsoft Dynamics">
 
 ### Strengths
 - Microsoft ecosystem integration
@@ -255,8 +255,8 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Enterprise scenarios
 - Complex business processes
 
-  </TabItem>
-  <TabItem value="exact" label="Exact Online">
+</TabItem>
+<TabItem value="exact" label="Exact Online">
 
 ### Strengths
 - Financial integration
@@ -278,7 +278,7 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - SMB operations
 - Dutch/EU compliance
 
-  </TabItem>
+</TabItem>
 </Tabs>
 
 ### Comprehensive Property Comparison
@@ -1363,4 +1363,53 @@ To ensure compliance with these standards, the following validation resources ar
 - [Schema.org Validator](https://validator.schema.org/) - Validates Schema.org markup
 - [DCAT-AP Validator](https://www.itb.ec.europa.eu/shacl/dcat-ap/upload) - Validates DCAT-AP compliance
 
-By using these validation tools during implementation, you can ensure that your client register meets all applicable standards and regulatory requirements. 
+By using these validation tools during implementation, you can ensure that your client register meets all applicable standards and regulatory requirements.
+
+## API Specification
+
+To complement our standards-based client register design, we've created a comprehensive OpenAPI Specification (OAS) document that defines the API endpoints, request/response formats, and data schemas for implementing the client register.
+
+### OpenAPI Specification
+
+The complete API specification is available as an OpenAPI 3.0 document:
+
+- [Client Register API Specification](/static/openapi/clientRegister.oas.json)
+
+This specification includes detailed definitions for:
+
+- Client entities (Person and Organization)
+- Task management
+- Message handling
+- Note management
+- Relationship modeling
+- Search and filtering capabilities
+
+### Implementation Benefits
+
+Using this OpenAPI specification provides several benefits:
+
+1. **Standards Compliance**: The API design follows REST best practices and implements the standards described in this document
+2. **Code Generation**: Generate client libraries and server stubs automatically from the specification
+3. **Interactive Documentation**: Use tools like Swagger UI or ReDoc to create interactive API documentation
+4. **Validation**: Validate requests and responses against the schema definitions
+5. **Consistent Implementation**: Ensure consistent implementation across different systems
+
+### Integration with Open Register
+
+The specification is designed to work seamlessly with Open Register:
+
+```bash
+# Import the schema definitions
+openregister schema:import /path/to/clientRegister.oas.json
+
+# Create the registers
+openregister register:create clients
+openregister register:create tasks
+openregister register:create messages
+openregister register:create notes
+
+# Configure API endpoints
+openregister api:configure --spec=/path/to/clientRegister.oas.json
+```
+
+By using this specification as the foundation for your client register implementation, you ensure compliance with European standards while providing a robust, interoperable API for client data management. 
