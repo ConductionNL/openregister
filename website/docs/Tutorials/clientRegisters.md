@@ -162,7 +162,7 @@ This specification includes detailed definitions for:
 
 All these entities are interconnected in our client management system:
 
-![Entity Relationships](clientRegisters.svg)
+![Entity Relationships](clientRegisters_2.svg)
 
 The diagram above shows how:
 
