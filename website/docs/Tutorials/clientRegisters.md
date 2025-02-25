@@ -89,6 +89,7 @@ The European Commission officially recommends the [Core Vocabularies](https://jo
 - [ISA² Programme Decision](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32015D2240) - Establishing the program that developed Core Vocabularies
 - [European Interoperability Framework](https://ec.europa.eu/isa2/eif_en) - Recommends Core Vocabularies
 
+
 ###  Mandatory Standards in European Context
 
 **Key references:**
@@ -171,7 +172,92 @@ The diagram above shows how:
 4. **Notes** are attached to clients (observations and information)
 5. Tasks can be related to other tasks (for dependencies or subtasks)
 
-In the next sections, we'll define the API endpoints for each entity and show how to implement them in Open Register.
+## European Semantic Interoperability Standards
+
+In addition to the standards we've already discussed, the European Union has developed several semantic interoperability initiatives that provide relevant data models and vocabularies for our client management system.
+
+### Core Vocabularies
+
+The [EU Core Vocabularies](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/e-government-core-vocabularies) are simplified, reusable, and extensible data models that capture the fundamental characteristics of entities in a context-neutral way. Several of these are directly applicable to our client register:
+
+#### Core Person Vocabulary
+
+The [Core Person Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-person-vocabulary) defines a simplified, reusable data model for describing natural persons.
+
+| Our Property | Core Person Property | Notes |
+|--------------|----------------------|-------|
+| name | fullName | Full name of a person |
+| givenName | givenName | First name |
+| familyName | familyName | Last name |
+| birthDate | dateOfBirth | Date of birth |
+| address | registeredAddress | Official address |
+| identifier | identifier | Unique identifier |
+
+#### Core Business Vocabulary
+
+The [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-business-vocabulary) provides a simplified, reusable data model for describing legal entities (businesses).
+
+| Our Property | Core Business Property | Notes |
+|--------------|------------------------|-------|
+| name | legalName | Official name of the organization |
+| alternativeName | alternativeName | Trading or alternative name |
+| identifier | companyID | Official company registration ID |
+| address | registeredAddress | Official registered address |
+| status | status | Current status (active, inactive, etc.) |
+
+#### Core Location Vocabulary
+
+The [Core Location Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-location-vocabulary) provides a simplified model for describing locations, which is relevant for client addresses.
+
+| Our Property | Core Location Property | Notes |
+|--------------|------------------------|-------|
+| address.streetAddress | thoroughfare | Street name |
+| address.postalCode | postCode | Postal code |
+| address.locality | postName | City or town |
+| address.region | adminUnitL2 | Region, state, or province |
+| address.country | adminUnitL1 | Country |
+
+### ISA² Programme and SEMIC
+
+The [ISA² Programme](https://ec.europa.eu/isa2/home_en) (Interoperability Solutions for European Public Administrations, Businesses and Citizens) and its [SEMIC](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic) (Semantic Interoperability Community) initiative provide additional relevant standards:
+
+#### CPOV (Core Public Organization Vocabulary)
+
+The [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-organisation-vocabulary) is designed for describing public organizations in the European Union.
+
+| Our Property | CPOV Property | Notes |
+|--------------|---------------|-------|
+| name | prefLabel | Preferred name of the organization |
+| alternativeName | altLabel | Alternative name |
+| description | description | Textual description |
+| identifier | identifier | Unique identifier |
+| purpose | purpose | Organization's purpose or mission |
+
+#### CPSV (Core Public Service Vocabulary)
+
+The [Core Public Service Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-service-vocabulary) could be relevant for task management in public service contexts.
+
+| Our Task Property | CPSV Property | Notes |
+|-------------------|---------------|-------|
+| name | name | Name of the service |
+| description | description | Description of the service |
+| status | status | Current status |
+| type | type | Type of service |
+| language | language | Language(s) the service is available in |
+
+### DCAT-AP
+
+The [DCAT Application Profile for data portals in Europe](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/dcat-application-profile-data-portals-europe) (DCAT-AP) provides a specification for metadata records to meet the specific application needs of data portals in Europe.
+
+While primarily focused on dataset descriptions, some concepts are relevant for document management aspects of our client system:
+
+| Our Property | DCAT-AP Property | Notes |
+|--------------|------------------|-------|
+| document.title | title | Title of the document |
+| document.description | description | Description of the document |
+| document.created | issued | Date of formal issuance |
+| document.updated | modified | Most recent date of modification |
+| document.publisher | publisher | Entity responsible for making the document available |
 
 
 ## Client Object
