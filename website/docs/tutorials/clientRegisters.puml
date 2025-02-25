@@ -1,0 +1,88 @@
+@startuml Client Management System
+
+' Styling
+skinparam monochrome true
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+' Entities
+entity "Client" as client {
+  * id : UUID
+  --
+  * fn : String
+  n : StructuredName
+  org : String[]
+  title : String
+  photo : URI
+  tel : PhoneNumber[]
+  email : EmailAddress[]
+  adr : Address[]
+  bday : Date
+  url : Website[]
+  note : String
+  created : DateTime
+  updated : DateTime
+}
+
+entity "Task" as task {
+  * id : UUID
+  --
+  * summary : String
+  description : String
+  dtstart : DateTime
+  due : DateTime
+  completed : DateTime
+  * status : Enum
+  priority : Integer
+  categories : String[]
+  organizer : Person
+  attendees : Person[]
+  percentComplete : Integer
+  rrule : String
+  created : DateTime
+  updated : DateTime
+}
+
+entity "Message" as message {
+  * id : UUID
+  --
+  * subject : String
+  * body : String
+  * from : Person
+  * to : Person[]
+  cc : Person[]
+  sentAt : DateTime
+  receivedAt : DateTime
+  readAt : DateTime
+  attachments : File[]
+  thread : String
+  * channel : Enum
+  * direction : Enum
+  status : Enum
+  created : DateTime
+  updated : DateTime
+}
+
+entity "Note" as note {
+  * id : UUID
+  --
+  title : String
+  * content : String
+  * createdBy : Person
+  * createdAt : DateTime
+  updatedAt : DateTime
+  tags : String[]
+  visibility : Enum
+  pinned : Boolean
+}
+
+' Relationships
+client ||--o{ task : "has tasks"
+client ||--o{ message : "has messages"
+client ||--o{ note : "has notes"
+task }o--o{ task : "related to"
+
+@enduml 
