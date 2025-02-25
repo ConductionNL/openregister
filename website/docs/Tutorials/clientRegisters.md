@@ -116,9 +116,25 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 
 ### Standards Analysis
 
+While using EU Core Vocabularies as our primary standard, we maintain compatibility with other major person/client/organization standards:
+
+
+
+
+
+
+
+
+
+
 
 <Tabs>
   <TabItem value="eu-core" label="EU Core Vocabularies">
+
+### EU Standards
+- [Core Person Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-person-vocabulary) - Person data model
+- [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-business-vocabulary) - Business data model
+- [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-organisation-vocabulary) - Public organization model
 
 ### Strengths
 - Official EU standard
@@ -143,6 +159,11 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 </TabItem>
 <TabItem value="vcard" label="vCard (RFC 6350)">
 
+### Contact Standards
+- [vCard (RFC 6350)](https://datatracker.ietf.org/doc/html/rfc6350) - Contact information exchange
+- [jCard (RFC 7095)](https://datatracker.ietf.org/doc/html/rfc7095) - JSON format for vCard
+- [xCard (RFC 6351)](https://datatracker.ietf.org/doc/html/rfc6351) - XML format for vCard
+
 ### Strengths
 - Widespread adoption
 - Simple structure
@@ -166,6 +187,11 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 </TabItem>
 <TabItem value="schema" label="Schema.org">
 
+### Schema.org Standards
+- [Schema.org Person](https://schema.org/Person) - Person entity definition
+- [Schema.org Organization](https://schema.org/Organization) - Organization entity definition
+- [Schema.org LocalBusiness](https://schema.org/LocalBusiness) - Local business definition
+
 ### Strengths
 - Web search optimization
 - Rich property set
@@ -187,7 +213,13 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Semantic web applications
 
 </TabItem>
-<TabItem value="ubl" label="UBL Party">
+<TabItem value="ubl" label="UBL">
+
+### UBL Standards
+- [UBL Party Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-PARTY) - Party/organization model
+- [UBL Person Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-PERSON) - Person model
+- [UBL Address Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-ADDRESS) - Address model
+- [UBL Contact Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-CONTACT) - Contact information model
 
 ### Strengths
 - Business document focus
@@ -210,73 +242,29 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 - Formal business exchange
 
 </TabItem>
-<TabItem value="salesforce" label="Salesforce">
+<TabItem value="salesforce" label="Commercial CRM">
 
-### Strengths
-- Business process integration
-- Sales/marketing features
-- Extensive customization
-- Industry solutions
-- Ecosystem support
+### Commercial CRM Standards
+- [Salesforce Account Object](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm) - Account/organization model
+- [Microsoft Dynamics Account Entity](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/developer/entities/account) - Account/organization model
+- [Exact Online Account API](https://start.exactonline.nl/docs/HlpRestAPIResources.aspx?SourceAction=10) - Account/organization model
 
-### Limitations
-- Proprietary format
-- License requirements
-- Complex data model
-- Vendor lock-in
+### Commercial CRM Comparison
 
-### Best Used For
-- CRM processes
-- Sales automation
-- Marketing campaigns
-- Customer service
-- Business intelligence
+#### Salesforce
+- **Strengths**: Business process integration, sales/marketing features, extensive customization, industry solutions, ecosystem support
+- **Limitations**: Proprietary format, license requirements, complex data model, vendor lock-in
+- **Best Used For**: CRM processes, sales automation, marketing campaigns, customer service, business intelligence
 
-</TabItem>
-<TabItem value="dynamics" label="Microsoft Dynamics">
+#### Microsoft Dynamics
+- **Strengths**: Microsoft ecosystem integration, business process support, Office 365 integration, workflow automation, enterprise features
+- **Limitations**: Proprietary format, license requirements, Microsoft-centric, complex customization
+- **Best Used For**: Microsoft environments, ERP integration, Office integration, enterprise scenarios, complex business processes
 
-### Strengths
-- Microsoft ecosystem integration
-- Business process support
-- Office 365 integration
-- Workflow automation
-- Enterprise features
-
-### Limitations
-- Proprietary format
-- License requirements
-- Microsoft-centric
-- Complex customization
-
-### Best Used For
-- Microsoft environments
-- ERP integration
-- Office integration
-- Enterprise scenarios
-- Complex business processes
-
-</TabItem>
-<TabItem value="exact" label="Exact Online">
-
-### Strengths
-- Financial integration
-- European tax compliance
-- Accounting features
-- SMB focus
-- Dutch/EU market alignment
-
-### Limitations
-- Proprietary format
-- Limited global presence
-- Finance-centric model
-- Less extensible
-
-### Best Used For
-- Financial administration
-- European businesses
-- Accounting integration
-- SMB operations
-- Dutch/EU compliance
+#### Exact Online
+- **Strengths**: Financial integration, European tax compliance, accounting features, SMB focus, Dutch/EU market alignment
+- **Limitations**: Proprietary format, limited global presence, finance-centric model, less extensible
+- **Best Used For**: Financial administration, European businesses, accounting integration, SMB operations, Dutch/EU compliance
 
 </TabItem>
 </Tabs>
@@ -359,18 +347,53 @@ Based on this analysis, our client register uses a hybrid approach that:
 
 This approach ensures that our client register is both standards-compliant and practically useful in real-world government and business environments.
 
-## Tasks Based on iCalendar
+## Tasks Based on Multiple Standards
 
-For tasks, we'll use the [iCalendar standard](https://datatracker.ietf.org/doc/html/rfc5545) (RFC 5545), specifically the VTODO component, which is designed for task/to-do items.
+For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf.org/doc/html/rfc5545) (RFC 5545), specifically the VTODO component, as our foundational standard. This choice is driven by several key factors:
+
+1. **Widespread Industry Adoption**
+   - iCalendar is supported by major calendar and productivity platforms including Google Calendar, Microsoft Outlook, Apple Calendar, and Nextcloud
+   - The standard has been stable and actively used since 1998, demonstrating its longevity and reliability
+   - Extensive tooling and libraries exist across all major programming languages
+
+2. **Interoperability Benefits**
+   - Native support in CalDAV servers enables seamless synchronization between systems
+   - Built-in compatibility with email systems through .ics file attachments
+   - Standard format for calendar data exchange between enterprise systems
+
+3. **Technical Advantages**
+   - Rich set of standardized properties covering all common task management needs
+   - Support for recurring tasks through RRULE specifications
+   - Built-in timezone handling and date/time standardization
+   - Extensible through custom properties while maintaining compatibility
+
+4. **Enterprise Integration**
+   - Direct integration with Microsoft Exchange and Google Workspace
+   - Support in major CRM and project management systems
+   - Easy conversion to other task formats while preserving data fidelity
+
+While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
+
+### Schema.org Task Standards
+- [Schema.org PlanAction](https://schema.org/PlanAction) - For general task/action representation
+- [Schema.org TodoAction](https://schema.org/TodoAction) - Specifically for to-do items
+- [Schema.org Task](https://schema.org/Task) - For project management tasks
+
+### Microsoft 365 Task Standards
+- [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
+- [Microsoft Planner API](https://learn.microsoft.com/en-us/graph/api/resources/planner-overview) - Team task planning
+- [Microsoft Project API](https://learn.microsoft.com/en-us/graph/api/resources/projectrome-overview) - Project task management
+
+### Google Workspace Standards
+- [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
+- [Google Calendar API](https://developers.google.com/calendar) - Calendar-based tasks
+
+### Nextcloud Standards
+- [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
+- [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
 
 ### Why iCalendar?
 
-iCalendar is ideal for tasks because:
-1. It's an established international standard for calendar data
-2. It includes a dedicated VTODO component for tasks
-3. It supports scheduling, reminders, and recurrence
-4. It's compatible with many calendar applications
-5. It provides a comprehensive set of properties for task management
 
 ### Key iCalendar Properties for Tasks
 
