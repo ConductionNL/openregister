@@ -1301,3 +1301,6 @@ This specification includes detailed definitions for:
 - Note management
 - Relationship modeling
 - Search and filtering capabilities
+
+
+Dont enter on a list
