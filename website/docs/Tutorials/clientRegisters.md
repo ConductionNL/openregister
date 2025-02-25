@@ -673,17 +673,51 @@ Schema.org | Email (RFC 5322) | JMAP | UBL
 
 ## Note Object
 
-For client notes, we'll create a simple but flexible schema to capture important information and observations about clients.
+For client notes, we'll create a schema based on UBL's Note element, enhanced with properties from Schema.org's Comment and CreativeWork types to ensure broad compatibility with office productivity suites and cloud platforms.
+
+The following table compares note properties across relevant standards and platforms:
+
+### Property Comparison
+
+| Our Property | UBL Note | Schema.org | Office 365 | Google Docs | Nextcloud | Description |
+|--------------|----------|------------|------------|-------------|-----------|-------------|
+| id | ID | identifier | id | id | id | Unique identifier |
+| subject | Subject | name | subject | title | title | Note title/subject |
+| content | Note | text | body | content | content | Note content |
+| format | Format | encodingFormat | contentType | mimeType | contentType | Content format (text/html) |
+| language | Language | inLanguage | language | locale | locale | Content language |
+| creator | Author | creator | author | lastModifyingUser | userId | Note author |
+| created | IssueDate | dateCreated | createdDateTime | createdTime | createdAt | Creation timestamp |
+| modified | - | dateModified | lastModifiedDateTime | modifiedTime | updatedAt | Last modified timestamp |
+| version | - | version | eTag | version | etag | Version identifier |
+| parent | - | isPartOf | parentReference | parents | parentId | Parent container |
+| shared | - | sharedContent | shared | shared | shareTypes | Sharing status |
+| permissions | - | permissionType | permissions | capabilities | permissions | Access rights |
+
+This schema ensures notes can be:
+- Synchronized with Office 365 OneNote/SharePoint
+- Integrated with Google Keep/Docs
+- Shared via Nextcloud Notes
+- Embedded in UBL business documents
+- Indexed for semantic search
 
 ### Proposal
 
-| Property | Description | Example |
-|----------|-------------|---------|
-| title | Note title | "Meeting Summary - June 10" |
-| content | Note content | "Met with client to discuss new requirements..." |
-| createdBy | Author information | {"id": "user-123", "name": "Jane Doe"} |
-| createdAt | Creation timestamp | "2023-06-10T16:30:00Z" |
-| updatedAt | Last update timestamp | "2023-06-11T09:15:00Z" |
-| tags | Categorization tags | ["meeting", "requirements", "important"] |
-| visibility | Who can see the note | "private", "team", "public" |
-| pinned | Whether note is pinned | true/false |
+| Property | Description | Example | Type | Origin |
+|----------|-------------|---------|------|---------|
+| id | Unique identifier for the note | "note-123456" | string | UBL Note ID |
+| title | Note title | "Meeting Summary - June 10" | string | Schema.org name |
+| content | Note content | "Met with client to discuss new requirements..." | string | UBL Note text |
+| about | Reference to the object this note is about | 550e8400-e29b-41d4-a716-446655440000 | uuid/uri | Schema.org about |
+| format | Content format | "text/html" | string | UBL Format |
+| language | Content language | "en-US" | string | UBL Language |
+| createdBy | Author information | {"id": "user-123", "name": "Jane Doe"} | object | UBL Author |
+| createdAt | Creation timestamp | "2023-06-10T16:30:00Z" | string (ISO 8601) | UBL IssueDate |
+| updatedAt | Last update timestamp | "2023-06-11T09:15:00Z" | string (ISO 8601) | Schema.org dateModified |
+| version | Version number | "1.2" | string | Schema.org version |
+| parent | Parent container reference | "folder-789" | string | Schema.org isPartOf |
+| tags | Categorization tags | ["meeting", "requirements", "important"] | array[string] | Schema.org keywords |
+| visibility | Who can see the note | "private", "team", "public" | string (enum) | Schema.org permissionType |
+| pinned | Whether note is pinned | true/false | boolean | Office 365 extension |
+| shared | Sharing status | {"type": "team", "users": ["user-456"]} | object | Schema.org sharedContent |
+| permissions | Access rights | ["read", "write", "share"] | array[string] | Schema.org permissionType |
