@@ -123,6 +123,8 @@ The [Nederlandse API Strategie](https://docs.geostandaarden.nl/api/API-Strategie
 - [Forum Standaardisatie - UBL 2.1](https://www.forumstandaardisatie.nl/open-standaarden/ubl) - Official listing as a mandatory standard
 - [NLCIUS](https://www.nen.nl/en/nlcius-1-0-1) - Dutch implementation of UBL for e-invoicing
 - [Logius Digikoppeling](https://www.logius.nl/diensten/digikoppeling) - Dutch government service exchange that uses UBL
+- [Open Klant API](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/maykinmedia/open-klant/2.5.0/src/openklant/components/klantinteracties/openapi.yaml) - Dutch standard for client interactions
+- [Open Klant on GitHub](https://github.com/maykinmedia/open-klant) - Open source implementation of the Dutch client standard
 
 ## Regulatory and Standards Compliance
 
@@ -267,12 +269,29 @@ While primarily focused on dataset descriptions, some concepts are relevant for 
 | document.publisher | publisher | Entity responsible for making the document available |
 
 </TabItem>
+
+<TabItem value="open-klant" label="Open Klant API">
+
+The [Open Klant API](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/maykinmedia/open-klant/2.5.0/src/openklant/components/klantinteracties/openapi.yaml) is a Dutch standard for client interactions that provides a comprehensive model for managing client data and interactions in government contexts.
+
+| Our Property | Open Klant Property | Notes |
+|--------------|---------------------|-------|
+| id | uuid | Unique identifier for the client |
+| name | naam | Name of the client (person or organization) |
+| identifier | partijIdentificator | External identifier with type information |
+| contactPoint | digitaalAdres | Digital contact information |
+| address | correspondentieadres | Correspondence address |
+| type | soortPartij | Type of party (person, organization) |
+| status | indicatieActief | Whether the client is active |
+| contactHistory | klantcontacten | History of interactions with the client |
+
+</TabItem>
 </Tabs>
 
 
 ## Client Object
 
-For our client information, we'll use the European Core Vocabularies (Core Person and Core Business) as our primary foundation, while ensuring compatibility with other standards including vCard, Schema.org, and commercial CRM systems.
+For our client information, we'll use the European Core Vocabularies (Core Person and Core Business) as our primary foundation, while ensuring compatibility with other standards including vCard, Schema.org, Open Klant API, and commercial CRM systems.
 
 ### Historical Context
 
@@ -655,6 +674,11 @@ Based on this analysis, our client register uses a hybrid approach that:
    - Enables integration with existing systems
    - Provides practical functionality
 
+5. **Aligns with Open Klant API**
+   - Ensures compatibility with Dutch government systems
+   - Supports client interaction management
+   - Enables integration with existing Dutch government services
+
 This approach ensures that our client register is both standards-compliant and practically useful in real-world government and business environments.
 
 ### Proposal
@@ -678,6 +702,10 @@ This approach ensures that our client register is both standards-compliant and p
 | companyActivity | Industry classification | Manufacturing | string | EU Core |
 | dateCreated | Record creation date | 2023-01-01T12:00:00Z | datetime | System |
 | dateModified | Last modification date | 2023-06-15T09:30:00Z | datetime | System |
+| partyType | Type of party | natural_person | string | Internal |
+| isActive | Whether the client is active | true | boolean | Internal |
+| digitalAddress | Digital contact information | email, phone | object | Internal |
+| correspondenceAddress | Correspondence address | postal address | object | Internal |
 
 ## Task Object
 
