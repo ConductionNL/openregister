@@ -1,9 +1,57 @@
 ---
-title: Building Client Registers with Open Register
+title: European Client Register Standard
 sidebar_position: 1
 ---
 
-# Building Client Registers with Open Register
+# European Client Register Standard
+
+## Project Introduction
+
+The European Client Register Standard is a collaborative initiative between Open Register, Nextcloud, and government agencies from France and Germany. This project aims to transform European standards and definitions into a practical, interoperable register that can be used by governments throughout Europe to store and manage client data in a standardized way.
+
+### European Collaboration
+
+This project represents a cross-border effort to address common challenges in public administration:
+
+- **Nextcloud** contributes expertise in secure, open-source data storage and collaboration
+- **French government agencies** provide insights from their "État Plateforme" (State as a Platform) initiative
+- **German government agencies** share experience from their "Digitale Verwaltung" (Digital Administration) program
+- **Open Register** offers the technical framework for implementing standardized registers
+
+Together, we're working to create a reference implementation that demonstrates how European standards can be applied in practice to create interoperable, privacy-respecting client data management systems.
+
+### Common Ground Integration
+
+This project aligns with the [Common Ground](https://commonground.nl/) principles developed in the Netherlands, which promote:
+
+1. **Component-based architecture** - Building modular, reusable components
+2. **Data at the source** - Storing data once and using it multiple times
+3. **Standard APIs** - Using standardized interfaces for data exchange
+4. **Open standards** - Adopting open standards for interoperability
+
+The Client Register serves as a key building block in the Common Ground ecosystem, providing a standardized way to store and access client information across different government services and applications.
+
+### Connectivity through Standardization
+
+By implementing European standards in a practical register, this project contributes to the broader goal of "connectivity through standardization" - enabling different systems to work together seamlessly through shared standards and interfaces.
+
+Key standardization efforts we're building upon include:
+
+- **European Interoperability Framework (EIF)** - Providing guidelines for public administrations on how to improve interoperability
+- **ISA² Programme** - Developing digital solutions that enable public administrations to provide interoperable services
+- **Single Digital Gateway Regulation** - Establishing a single digital gateway to provide access to information and procedures across the EU
+- **Once-Only Principle** - Ensuring citizens and businesses provide data only once to public administrations
+
+## Purpose and Scope
+
+This document presents research and implementation guidance for building client registers based on European standards. It aims to:
+
+1. **Identify and analyze relevant standards** for client data management
+2. **Compare different approaches** to implementing these standards
+3. **Provide practical guidance** for implementing a standards-compliant client register
+4. **Demonstrate interoperability** with existing systems and standards
+
+The resulting client register design serves as a reference implementation that can be adapted by government agencies across Europe to meet their specific needs while maintaining interoperability with other systems.
 
 ## References and Standards
 
