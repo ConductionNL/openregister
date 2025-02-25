@@ -407,3 +407,27 @@ Based on this analysis, our client register uses a hybrid approach that:
 
 This approach ensures that our client register is both standards-compliant and practically useful in real-world government and business environments.
 
+### Proposal
+
+The following table compares our European-based client object with other standards and commercial CRM systems:
+
+| Our Property | EU Core | vCard | Schema.org | UBL | Salesforce | Dynamics 365 | Exact Online |
+|--------------|---------|-------|------------|-----|------------|--------------|--------------|
+| id | identifier | UID | identifier | ID | Id | accountid | ID |
+| @type | - | - | @type | - | RecordType | EntityType | - |
+| identifier | identifier | - | identifier | PartyIdentification | ExternalId | msdyn_externalaccountid | Code |
+| name | fullName/legalName | FN | name | Name | Name | name | Name |
+| alternativeName | alternativeName | NICKNAME | alternateName | TradingName | - | - | SearchCode |
+| givenName | givenName | N (part) | givenName | FirstName | FirstName | firstname | FirstName |
+| familyName | familyName | N (part) | familyName | FamilyName | LastName | lastname | LastName |
+| birthDate | dateOfBirth | BDAY | birthDate | BirthDate | Birthdate | birthdate | DateOfBirth |
+| gender | gender | GENDER | gender | GenderCode | - | gendercode | Gender |
+| address | registeredAddress | ADR | address | PostalAddress | Address | address1_* | Address |
+| contactPoint | contactPoint | TEL/EMAIL | contactPoint | Contact | - | - | - |
+| legalEntity | legalEntity | - | - | PartyLegalEntity | - | - | LegalEntity |
+| companyType | companyType | - | - | CompanyLegalFormCode | - | businesstypecode | LegalForm |
+| companyStatus | status | - | - | StatusCode | Status | statuscode | Status |
+| companyActivity | activity | - | - | IndustryClassificationCode | Industry | industrycode | SbiCode |
+| dateCreated | - | - | dateCreated | CreationDate | CreatedDate | createdon | Created |
+| dateModified | - | - | dateModified | LastModificationDate | LastModifiedDate | modifiedon | Modified |
+
