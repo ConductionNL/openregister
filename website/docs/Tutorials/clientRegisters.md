@@ -461,7 +461,7 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 ### Standards Comparison
 
 <Tabs>
-  <TabItem value="eu-core" label="iCalender">
+<TabItem value="eu-core" label="iCalender">
   
 **iCalendar Standards**
 - [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
