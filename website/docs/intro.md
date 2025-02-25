@@ -27,24 +27,24 @@ Open Register operates on two fundamental principles:
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
-| 💾 [Storing Objects](docs/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
-| 📝 [Audit Trails](docs/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
-| ⏰ [Time Travel](docs/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
-| 🔒 [Object Locking](docs/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
-| 🗑️ [Soft Deletes](docs/soft-deletes.md) | Safely remove objects with recovery options | Data safety, compliance, mistake recovery |
-| 🔗 [Object Relations](docs/object-relations.md) | Create and manage connections between objects | Complex data structures, linked information, dependencies |
-| 📎 [File Attachments](docs/file-attachments.md) | Manage files associated with objects | Document management, version control, previews |
-| 🔍 [Content Search](docs/content-search.md) | Full-text search across objects and files | Quick discovery, unified search, advanced filtering |
-| 🏷️ [Automatic Facets](docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
-| ✅ [Schema Validation](docs/schema-validation.md) | Validate objects against JSON schemas | Data quality, consistency, structure enforcement |
-| 📚 [Register Management](docs/register-management.md) | Organize collections of related objects | Logical grouping, access control, process automation |
-| 🔐 [Access Control](docs/access-control.md) | Fine-grained permissions management | Security, role management, granular control |
-| ⚡ [Elasticsearch](docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
-| 📋 [Schema Import & Sharing](docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
-| 🔔 [Events & Webhooks](docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
-| ✂️ [Data Filtering](docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
-| 🔍 [Advanced Search](docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
-| 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
+| 💾 [Storing Objects](Features/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
+| 📝 [Audit Trails](Features/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
+| ⏰ [Time Travel](Features/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
+| 🔒 [Object Locking](Features/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
+| 🗑️ [Soft Deletes](Features/soft-deletes.md) | Safely remove objects with recovery options | Data safety, compliance, mistake recovery |
+| 🔗 [Object Relations](Features/object-relations.md) | Create and manage connections between objects | Complex data structures, linked information, dependencies |
+| 📎 [File Attachments](Features/file-attachments.md) | Manage files associated with objects | Document management, version control, previews |
+| 🔍 [Content Search](Features/content-search.md) | Full-text search across objects and files | Quick discovery, unified search, advanced filtering |
+| 🏷️ [Automatic Facets](Features/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
+| ✅ [Schema Validation](Features/schema-validation.md) | Validate objects against JSON schemas | Data quality, consistency, structure enforcement |
+| 📚 [Register Management](Features/register-management.md) | Organize collections of related objects | Logical grouping, access control, process automation |
+| 🔐 [Access Control](Features/access-control.md) | Fine-grained permissions management | Security, role management, granular control |
+| ⚡ [Elasticsearch](Features/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
+| 📋 [Schema Import & Sharing](Features/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
+| 🔔 [Events & Webhooks](Features/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
+| ✂️ [Data Filtering](Features/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
+| 🔍 [Advanced Search](Features/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
+| 🗑️ [Object Deletion](Features/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
 
 ## Project Structure
 
