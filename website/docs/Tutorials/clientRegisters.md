@@ -648,58 +648,92 @@ The following table compares task properties across all relevant standards:
 | SEQUENCE | revision | - | - | - | versionnumber | Version number |
 | CLASS | class | - | - | IsPrivate | - | Privacy setting |
 
-## Message Object
-
-For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
-Schema.org | Email (RFC 5322) | JMAP | UBL
 
 ### Proposal
 
-| Property | Description | Example |
-|----------|-------------|---------|
-| subject | Message subject | "Project Update - June 2023" |
-| body | Message content | "Dear John, I'm writing to update you on..." |
-| from | Sender information | {"name": "Jane Doe", "email": "jane.doe@example.com"} |
-| to | Recipient information | [{"name": "John Smith", "email": "john.smith@example.com"}] |
-| cc | Carbon copy recipients | [{"name": "Alice Brown", "email": "alice@example.com"}] |
-| sentAt | When message was sent | "2023-06-10T14:30:00Z" |
-| receivedAt | When message was received | "2023-06-10T14:31:05Z" |
-| readAt | When message was read | "2023-06-10T15:45:22Z" |
-| attachments | File attachments | [{"name": "proposal.pdf", "url": "https://..."}] |
-| thread | Thread identifier | "thread-123456" |
-| channel | Communication channel | "email", "sms", "chat", "phone" |
-| direction | Message direction | "inbound", "outbound" |
-| status | Delivery status | "sent", "delivered", "read", "failed" |
+Based on this analysis, we propose the following task object structure that combines the best elements from each standard:
+
+| Property | Description | Example | Type | Origin |
+|----------|-------------|---------|------|---------|
+| id | Unique identifier for the task | "task-123456" | string | iCalendar UID |
+| title | Short descriptive name of the task | "Complete project proposal" | string | iCalendar SUMMARY |
+| description | Detailed explanation of the task | "Write up full proposal including timeline and budget" | string | iCalendar DESCRIPTION |
+| dueDate | When the task needs to be completed | "2023-12-31T23:59:59Z" | string (ISO 8601) | iCalendar DUE |
+| startDate | When work on the task should begin | "2023-12-01T09:00:00Z" | string (ISO 8601) | iCalendar DTSTART |
+| completedDate | When the task was finished | "2023-12-30T16:30:00Z" | string (ISO 8601) | iCalendar COMPLETED |
+| status | Current state of the task | "active" | enum (new, active, completed, cancelled) | iCalendar STATUS |
+| priority | Importance level of the task | 3 | integer (1-5) | iCalendar PRIORITY |
+| categories | Labels for organizing tasks | ["project", "proposal", "q4"] | array[string] | iCalendar CATEGORIES |
+| relatedItems | IDs of connected tasks | ["task-123", "task-456"] | array[string] | iCalendar RELATED-TO |
+| owner | ID of user who created the task | "user-789" | string | iCalendar ORGANIZER |
+| assignees | IDs of users responsible for task | ["user-123", "user-456"] | array[string] | iCalendar ATTENDEE |
+| progress | Percentage of task completion | 75 | integer (0-100) | iCalendar PERCENT-COMPLETE |
+| recurrence | Rule for recurring tasks | {"freq": "weekly", "count": 10} | object | iCalendar RRULE |
+| metadata | System tracking information | {"created": "2023-12-01T09:00:00Z"} | object | iCalendar CREATED/LAST-MODIFIED |
+| visibility | Access control setting | "public" | enum (public, private) | iCalendar CLASS |
+
+## Message Object
+
+For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
+
+**Key references:**
+- [Schema.org Message](https://schema.org/Message) - Message schema definition
+- [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322) - Internet Message Format
+- [JMAP](https://jmap.io/spec.html) - JSON Meta Application Protocol
+- [UBL Communication](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMUNICATION) - Universal Business Language
+
+### Proposal
+
+| Property | Description | Example | Type | Origin |
+|----------|-------------|---------|------|---------|
+| subject | Message subject | "Project Update - June 2023" | string | RFC 5322 Subject |
+| body | Message content | "Dear John, I'm writing to update you on..." | string | RFC 5322 Body |
+| from | Sender information | {"name": "Jane Doe", "email": "jane.doe@example.com"} | object | RFC 5322 From |
+| to | Recipient information | [{"name": "John Smith", "email": "john.smith@example.com"}] | array[object] | RFC 5322 To |
+| cc | Carbon copy recipients | [{"name": "Alice Brown", "email": "alice@example.com"}] | array[object] | RFC 5322 Cc |
+| sentAt | When message was sent | "2023-06-10T14:30:00Z" | string (ISO 8601) | RFC 5322 Date |
+| receivedAt | When message was received | "2023-06-10T14:31:05Z" | string (ISO 8601) | RFC 5322 Received |
+| readAt | When message was read | "2023-06-10T15:45:22Z" | string (ISO 8601) | JMAP ReadAt |
+| attachments | File attachments | [{"name": "proposal.pdf", "url": "https://..."}] | array[object] | MIME Attachments |
+| thread | Thread identifier | "thread-123456" | string | RFC 5322 References |
+| channel | Communication channel | "email", "sms", "chat", "phone" | string (enum) | UBL Channel Code |
+| direction | Message direction | "inbound", "outbound" | string (enum) | Schema.org MessageDirection |
+| status | Delivery status | "sent", "delivered", "read", "failed" | string (enum) | JMAP DeliveryStatus |
+
+:::note Thread Identifier
+A thread is a way to group related messages together in a conversation. In messaging systems, it acts like a conversation ID that links all messages in a back-and-forth exchange. For example, when someone replies to an email or chat message, all those messages share the same thread ID (usually the UUID of the first message in the conversation) to keep them connected.
+:::
 
 ## Note Object
+For client notes, we'll create a schema based on [UBL's Note element](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd), enhanced with properties from Schema.org's [Comment](https://schema.org/Comment) and [CreativeWork](https://schema.org/CreativeWork) types to ensure broad compatibility with office productivity suites and cloud platforms.
 
-For client notes, we'll create a schema based on UBL's Note element, enhanced with properties from Schema.org's Comment and CreativeWork types to ensure broad compatibility with office productivity suites and cloud platforms.
+**Key references:**
+- [UBL Note Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd) - UBL Note element definition
+- [Schema.org Comment](https://schema.org/Comment) - Comment type specification
+- [Schema.org CreativeWork](https://schema.org/CreativeWork) - Creative work type specification
+- [Microsoft Graph Notes API](https://learn.microsoft.com/en-us/graph/api/resources/onenote) - OneNote integration
+- [Google Keep API](https://developers.google.com/keep) - Google Keep integration
+- [Nextcloud Notes API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/Notes/index.html) - Nextcloud Notes integration
 
 The following table compares note properties across relevant standards and platforms:
 
 ### Property Comparison
 
-| Our Property | UBL Note | Schema.org | Office 365 | Google Docs | Nextcloud | Description |
-|--------------|----------|------------|------------|-------------|-----------|-------------|
-| id | ID | identifier | id | id | id | Unique identifier |
-| subject | Subject | name | subject | title | title | Note title/subject |
-| content | Note | text | body | content | content | Note content |
-| format | Format | encodingFormat | contentType | mimeType | contentType | Content format (text/html) |
-| language | Language | inLanguage | language | locale | locale | Content language |
-| creator | Author | creator | author | lastModifyingUser | userId | Note author |
-| created | IssueDate | dateCreated | createdDateTime | createdTime | createdAt | Creation timestamp |
-| modified | - | dateModified | lastModifiedDateTime | modifiedTime | updatedAt | Last modified timestamp |
-| version | - | version | eTag | version | etag | Version identifier |
-| parent | - | isPartOf | parentReference | parents | parentId | Parent container |
-| shared | - | sharedContent | shared | shared | shareTypes | Sharing status |
-| permissions | - | permissionType | permissions | capabilities | permissions | Access rights |
+| UBL Note | Schema.org | Office 365 | Google Docs | Nextcloud |
+|----------|------------|------------|-------------|-----------|
+| ID | identifier | id | id | id |
+| Subject | name | subject | title | title |
+| Note | text | body | content | content |
+| Format | encodingFormat | contentType | mimeType | contentType |
+| Language | inLanguage | language | locale | locale |
+| Author | creator | author | lastModifyingUser | userId |
+| IssueDate | dateCreated | createdDateTime | createdTime | createdAt |
+| - | dateModified | lastModifiedDateTime | modifiedTime | updatedAt |
+| - | version | eTag | version | etag |
+| - | isPartOf | parentReference | parents | parentId |
+| - | sharedContent | shared | shared | shareTypes |
+| - | permissionType | permissions | capabilities | permissions |
 
-This schema ensures notes can be:
-- Synchronized with Office 365 OneNote/SharePoint
-- Integrated with Google Keep/Docs
-- Shared via Nextcloud Notes
-- Embedded in UBL business documents
-- Indexed for semantic search
 
 ### Proposal
 
@@ -721,3 +755,16 @@ This schema ensures notes can be:
 | pinned | Whether note is pinned | true/false | boolean | Office 365 extension |
 | shared | Sharing status | {"type": "team", "users": ["user-456"]} | object | Schema.org sharedContent |
 | permissions | Access rights | ["read", "write", "share"] | array[string] | Schema.org permissionType |
+
+:::note About Property
+The 'about' property is based on Schema.org's [about](https://schema.org/about) property, which indicates the subject matter of the content. In our implementation, we use it to create a direct link between the note and the entity it refers to (like a client, task, or message). The value should be a UUID or URI that uniquely identifies the referenced object. This creates a semantic relationship that can be used for filtering, searching, and organizing notes by their subject matter.
+
+For example, a note with about: "550e8400-e29b-41d4-a716-446655440000" indicates this note is about that specific client record.
+:::
+
+This schema ensures notes can be:
+- Synchronized with Office 365 OneNote/SharePoint
+- Integrated with Google Keep/Docs
+- Shared via Nextcloud Notes
+- Embedded in UBL business documents
+- Indexed for semantic search
