@@ -633,3 +633,71 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 
 </TabItem>
 </tabs>
+
+### Property Comparison
+
+The following table compares task properties across all relevant standards:
+
+| iCalendar Property | Nextcloud | Trello | Google Tasks | Salesforce | Dynamics 365 | Description |
+|-------------------|-----------|--------|--------------|------------|--------------|-------------|
+| **Basic Properties** |
+| SUMMARY | title | name | title | Subject | subject | Task title |
+| DESCRIPTION | description | desc | notes | Description | description | Detailed description |
+| DUE | due | due | due | ActivityDate | scheduledend | Due date/time |
+| DTSTART | start | start | - | StartDateTime | scheduledstart | Start date/time |
+| COMPLETED | completed | dateLastActivity | completed | CompletedDateTime | actualend | Completion date |
+| STATUS | status | closed | status | Status | statecode | Current status |
+| PRIORITY | priority | - | - | Priority | prioritycode | Priority level |
+| **Categorization** |
+| CATEGORIES | categories | labels | - | Type | subcategory | Categories/tags |
+| RELATED-TO | related | idList | parent | WhatId | regardingobjectid | Related items |
+| **Assignment** |
+| ORGANIZER | owner | idMemberCreator | creator | OwnerId | ownerid | Task owner |
+| ATTENDEE | participants | idMembers | - | AssignedTo | new_assignedto | Assigned users |
+| **Progress** |
+| PERCENT-COMPLETE | complete | - | - | PercentComplete | percentcomplete | Completion % |
+| RRULE | repeat | - | - | IsRecurrence | isrecurrence | Recurrence rule |
+| **Metadata** |
+| CREATED | created | dateCreation | created | CreatedDate | createdon | Creation date |
+| LAST-MODIFIED | modified | dateLastActivity | updated | LastModifiedDate | modifiedon | Last update |
+| SEQUENCE | revision | - | - | - | versionnumber | Version number |
+| CLASS | class | - | - | IsPrivate | - | Privacy setting |
+
+## Message Object
+
+For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
+
+### Proposal
+
+| Property | Description | Example |
+|----------|-------------|---------|
+| subject | Message subject | "Project Update - June 2023" |
+| body | Message content | "Dear John, I'm writing to update you on..." |
+| from | Sender information | {"name": "Jane Doe", "email": "jane.doe@example.com"} |
+| to | Recipient information | [{"name": "John Smith", "email": "john.smith@example.com"}] |
+| cc | Carbon copy recipients | [{"name": "Alice Brown", "email": "alice@example.com"}] |
+| sentAt | When message was sent | "2023-06-10T14:30:00Z" |
+| receivedAt | When message was received | "2023-06-10T14:31:05Z" |
+| readAt | When message was read | "2023-06-10T15:45:22Z" |
+| attachments | File attachments | [{"name": "proposal.pdf", "url": "https://..."}] |
+| thread | Thread identifier | "thread-123456" |
+| channel | Communication channel | "email", "sms", "chat", "phone" |
+| direction | Message direction | "inbound", "outbound" |
+| status | Delivery status | "sent", "delivered", "read", "failed" |
+
+## Note Object
+
+For client notes, we'll create a simple but flexible schema to capture important information and observations about clients.
+
+### Proposal
+
+| Property | Description | Example |
+|----------|-------------|---------|
+| title | Note title | "Meeting Summary - June 10" |
+| content | Note content | "Met with client to discuss new requirements..." |
+| createdBy | Author information | {"id": "user-123", "name": "Jane Doe"} |
+| createdAt | Creation timestamp | "2023-06-10T16:30:00Z" |
+| updatedAt | Last update timestamp | "2023-06-11T09:15:00Z" |
+| tags | Categorization tags | ["meeting", "requirements", "important"] |
+| visibility | Who can see the note | "private", "team", "public" |
+| pinned | Whether note is pinned | true/false |
