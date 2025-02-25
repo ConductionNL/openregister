@@ -1556,3 +1556,575 @@ This schema ensures notes can be:
 - Shared via Nextcloud Notes
 - Embedded in UBL business documents
 - Indexed for semantic search
+
+## Order Object
+
+For orders associated with clients, we'll use the Universal Business Language (UBL) Order schema as our primary foundation, while incorporating elements from other standards to create a comprehensive order model suitable for government and business contexts.
+
+### Historical Context
+
+The concept of standardized order documents has evolved significantly from paper-based purchase orders to electronic data interchange (EDI) formats and modern XML/JSON-based standards. The Universal Business Language (UBL) Order schema represents one of the most comprehensive and widely adopted standards for electronic order documents in Europe.
+
+Developed by OASIS and adopted as an ISO standard (ISO/IEC 19845), UBL provides a rich set of elements for representing orders in both commercial and governmental contexts. The European Committee for Standardization (CEN) has further endorsed UBL as part of the European e-procurement standards.
+
+### Standards Comparison
+
+<Tabs>
+<TabItem value="ubl" label="UBL Standards">
+
+- [UBL Order Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-ORDER) - Order document schema
+- [UBL Order Response Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-ORDER-RESPONSE) - Order response schema
+- [UBL Order Change Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-ORDER-CHANGE) - Order change schema
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| ISO/EU standard | Complex structure | Government procurement |
+| Comprehensive | Steep learning curve | B2G transactions |
+| Legally recognized | Verbose XML format | Formal order processes |
+| Strong validation | Implementation cost | Regulatory compliance |
+| Cross-border support | Limited flexibility | Public sector orders |
+
+**UBL Order Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | Identifier | Order identifier |
+| SalesOrderID | Identifier | Sales order identifier |
+| UUID | Identifier | Universally unique identifier |
+| IssueDate | Date | Date when the order was issued |
+| IssueTime | Time | Time when the order was issued |
+| OrderTypeCode | Code | Order type code |
+| Note | Text | Note text |
+| RequestedInvoiceCurrencyCode | Code | Requested invoice currency |
+| DocumentCurrencyCode | Code | Document currency |
+| PricingCurrencyCode | Code | Pricing currency |
+| TaxCurrencyCode | Code | Tax currency |
+| CustomerReference | Text | Customer's reference |
+| AccountingCostCode | Code | Accounting cost code |
+| AccountingCost | Text | Accounting cost |
+| LineCountNumeric | Numeric | Number of lines in the order |
+| ValidityPeriod | Period | Validity period |
+| QuotationDocumentReference | Reference | Reference to quotation |
+| OrderDocumentReference | Reference | Reference to another order |
+| OriginatorDocumentReference | Reference | Reference to originator document |
+| BuyerCustomerParty | Party | Buyer information |
+| SellerSupplierParty | Party | Seller information |
+| OriginatorCustomerParty | Party | Originator information |
+| FreightForwarderParty | Party | Freight forwarder information |
+| AccountingCustomerParty | Party | Accounting customer information |
+| Delivery | Delivery | Delivery information |
+| DeliveryTerms | Terms | Delivery terms |
+| PaymentMeans | PaymentMeans | Payment means |
+| PaymentTerms | Terms | Payment terms |
+| AllowanceCharge | AllowanceCharge | Allowance or charge |
+| TaxTotal | TaxTotal | Tax total |
+| AnticipatedMonetaryTotal | MonetaryTotal | Anticipated monetary total |
+| OrderLine | OrderLine | Order line |
+
+</TabItem>
+
+<TabItem value="peppol" label="PEPPOL Standards">
+
+- [PEPPOL BIS Order](https://docs.peppol.eu/poacc/upgrade-3/profiles/28-ordering/) - PEPPOL Business Interoperability Specification for Orders
+- [PEPPOL BIS Order Response](https://docs.peppol.eu/poacc/upgrade-3/profiles/42-orderagreement/) - Order response specification
+- [PEPPOL Access Point](https://peppol.eu/what-is-peppol/peppol-transport-infrastructure/) - Transport infrastructure
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| European network | Requires access point | Cross-border procurement |
+| Standardized process | Implementation cost | EU public procurement |
+| Legal compliance | Limited customization | Pan-European trade |
+| Validated delivery | Formal onboarding | Government suppliers |
+| Secure transport | Technical complexity | Regulated industries |
+
+**PEPPOL Order Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| CustomizationID | Identifier | Specification identification |
+| ProfileID | Identifier | Process profile identification |
+| ID | Identifier | Order identifier |
+| IssueDate | Date | Order issue date |
+| DocumentCurrencyCode | Code | Document currency |
+| AccountingCost | Text | Buyer accounting reference |
+| ValidityPeriod | Period | Order validity period |
+| OrderReference | Reference | Reference to previous order |
+| OriginatorDocumentReference | Reference | Reference to originating document |
+| AdditionalDocumentReference | Reference | Additional document reference |
+| BuyerCustomerParty | Party | Buyer information |
+| SellerSupplierParty | Party | Seller information |
+| Delivery | Delivery | Delivery information |
+| DeliveryTerms | Terms | Delivery terms |
+| PaymentMeans | PaymentMeans | Payment means |
+| PaymentTerms | Terms | Payment terms |
+| AllowanceCharge | AllowanceCharge | Allowance or charge |
+| TaxTotal | TaxTotal | Tax total amount |
+| AnticipatedMonetaryTotal | MonetaryTotal | Order total amount |
+| OrderLine | OrderLine | Order line item |
+
+</TabItem>
+
+<TabItem value="schema" label="Schema.org Standards">
+
+- [Schema.org Order](https://schema.org/Order) - Order representation
+- [Schema.org OrderItem](https://schema.org/OrderItem) - Order item representation
+- [Schema.org OrderStatus](https://schema.org/OrderStatus) - Order status representation
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| SEO benefits | Limited validation | Web storefronts |
+| Simple structure | Basic properties | Online ordering |
+| Web integration | Limited business logic | Public-facing systems |
+| Search visibility | Few implementations | Service catalogs |
+| JSON-LD support | Consumer focus | Citizen services |
+
+**Schema.org Order Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| identifier | Text/URL | Order identifier |
+| orderNumber | Text | Order number |
+| orderStatus | OrderStatus | Status of the order |
+| orderDate | DateTime | Date order was placed |
+| paymentDueDate | DateTime | Date payment is due |
+| paymentMethod | PaymentMethod | Payment method |
+| paymentMethodId | Text | Payment method identifier |
+| paymentUrl | URL | URL for payment |
+| billingAddress | PostalAddress | Billing address |
+| customer | Organization/Person | Customer information |
+| merchant | Organization/Person | Merchant information |
+| seller | Organization/Person | Seller information |
+| orderedItem | OrderItem/Product | Items ordered |
+| discount | Number/Text | Discount applied |
+| discountCode | Text | Discount code used |
+| discountCurrency | Text | Currency of the discount |
+| tax | Number/MonetaryAmount | Tax applied |
+| taxSpec | TaxType | Tax specification |
+| confirmationNumber | Text | Confirmation number |
+| broker | Organization/Person | Broker information |
+| acceptedOffer | Offer | Accepted offer |
+| priceCurrency | Text | Currency used for prices |
+| totalPrice | Number/Text | Total price |
+| partOfInvoice | Invoice | Invoice this order is part of |
+| potentialAction | Action | Potential actions |
+
+</TabItem>
+
+<TabItem value="edifact" label="UN/EDIFACT Standards">
+
+- [EDIFACT ORDERS](https://service.unece.org/trade/untdid/d16b/trmd/orders_d.htm) - Purchase order message
+- [EDIFACT ORDRSP](https://service.unece.org/trade/untdid/d16b/trmd/ordrsp_d.htm) - Purchase order response message
+- [EDIFACT ORDCHG](https://service.unece.org/trade/untdid/d16b/trmd/ordchg_d.htm) - Purchase order change message
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Legacy support | Outdated syntax | Legacy systems |
+| Widespread adoption | Complex format | Large enterprises |
+| International standard | Limited readability | Global trade |
+| Mature implementations | Technical expertise | Supply chains |
+| Comprehensive | Maintenance cost | Established EDI |
+
+**EDIFACT ORDERS Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| BGM | Segment | Beginning of message |
+| DTM | Segment | Date/time/period |
+| PAI | Segment | Payment instructions |
+| ALI | Segment | Additional information |
+| IMD | Segment | Item description |
+| FTX | Segment | Free text |
+| RFF | Segment | Reference |
+| NAD | Segment | Name and address |
+| CTA | Segment | Contact information |
+| LOC | Segment | Location identification |
+| TOD | Segment | Terms of delivery |
+| PAT | Segment | Payment terms basis |
+| TDT | Segment | Transport information |
+| PAC | Segment | Package |
+| PRI | Segment | Price details |
+| TAX | Segment | Duty/tax/fee details |
+| MOA | Segment | Monetary amount |
+| LIN | Segment | Line item |
+| PIA | Segment | Additional product ID |
+| QTY | Segment | Quantity |
+| UNS | Segment | Section control |
+| CNT | Segment | Control total |
+| UNT | Segment | Message trailer |
+
+</TabItem>
+</Tabs>
+
+### Property Comparison
+
+The following table compares order properties across relevant standards:
+
+| Our Property | UBL | PEPPOL | Schema.org | UN/EDIFACT | Description |
+|--------------|-----|--------|------------|------------|-------------|
+| **Core Properties** |
+| id | ID | ID | identifier | BGM | Order identifier |
+| orderNumber | ID | ID | orderNumber | BGM | Order number |
+| issueDate | IssueDate | IssueDate | orderDate | DTM | Date order was issued |
+| orderType | OrderTypeCode | - | - | BGM | Type of order |
+| status | - | - | orderStatus | BGM | Order status |
+| currency | DocumentCurrencyCode | DocumentCurrencyCode | priceCurrency | CUX | Currency code |
+| note | Note | Note | - | FTX | Note text |
+| **Party Properties** |
+| buyer | BuyerCustomerParty | BuyerCustomerParty | customer | NAD | Buyer information |
+| seller | SellerSupplierParty | SellerSupplierParty | seller | NAD | Seller information |
+| originator | OriginatorCustomerParty | - | - | NAD | Originator information |
+| **Delivery Properties** |
+| deliveryTerms | DeliveryTerms | DeliveryTerms | - | TOD | Delivery terms |
+| deliveryLocation | Delivery | Delivery | - | LOC | Delivery location |
+| deliveryDate | Delivery/RequestedDeliveryPeriod | Delivery/RequestedDeliveryPeriod | - | DTM | Requested delivery date |
+| **Payment Properties** |
+| paymentTerms | PaymentTerms | PaymentTerms | paymentDueDate | PAT | Payment terms |
+| paymentMethod | PaymentMeans | PaymentMeans | paymentMethod | PAI | Payment method |
+| **Amount Properties** |
+| totalAmount | AnticipatedMonetaryTotal | AnticipatedMonetaryTotal | totalPrice | MOA | Total amount |
+| taxTotal | TaxTotal | TaxTotal | tax | TAX | Tax total |
+| **Line Items** |
+| orderLines | OrderLine | OrderLine | orderedItem | LIN | Order line items |
+| **Metadata Properties** |
+| reference | CustomerReference | - | - | RFF | Customer's reference |
+| accountingCode | AccountingCostCode | AccountingCost | - | - | Accounting code |
+| createdBy | - | - | - | - | User who created the order |
+| createdAt | IssueDate/IssueTime | IssueDate | orderDate | DTM | Creation timestamp |
+| updatedAt | - | - | - | - | Last update timestamp |
+
+### Our Hybrid Approach
+
+Based on this analysis, our order register uses a hybrid approach that:
+
+1. **Adopts UBL Order as the foundation**
+   - Ensures compliance with European procurement standards
+   - Provides a comprehensive order structure
+   - Supports legal and regulatory requirements
+
+2. **Simplifies the structure for government services**
+   - Reduces complexity for citizen-facing services
+   - Focuses on essential order properties
+   - Improves usability for non-commercial contexts
+
+3. **Incorporates Schema.org properties**
+   - Enhances web discoverability
+   - Supports online service catalogs
+   - Improves citizen service portals
+
+4. **Maintains PEPPOL compatibility**
+   - Enables cross-border procurement
+   - Supports European e-procurement network
+   - Ensures interoperability with existing systems
+
+This approach ensures that our order register works for both traditional procurement scenarios and modern government service delivery contexts.
+
+### Proposal
+
+| Property | Description | Example | Type | Origin |
+|----------|-------------|---------|------|---------|
+| id | Unique identifier | "order-12345" | string | UBL ID |
+| orderNumber | Human-readable order number | "ORD-2023-12345" | string | UBL ID |
+| issueDate | Date order was issued | "2023-06-15" | string (ISO 8601) | UBL IssueDate |
+| orderType | Type of order | "standard", "renewal", "amendment" | string (enum) | UBL OrderTypeCode |
+| status | Order status | "pending", "approved", "completed", "cancelled" | string (enum) | Schema.org orderStatus |
+| currency | Currency code | "EUR" | string | UBL DocumentCurrencyCode |
+| note | Additional notes | "Please deliver to reception desk" | string | UBL Note |
+| buyer | Buyer information | {"id": "client-789", "name": "John Smith"} | object | UBL BuyerCustomerParty |
+| seller | Seller information | {"id": "org-456", "name": "City Services Department"} | object | UBL SellerSupplierParty |
+| deliveryTerms | Delivery terms | "Free delivery" | string | UBL DeliveryTerms |
+| deliveryLocation | Delivery location | {"address": "123 Main St", "city": "Amsterdam"} | object | UBL Delivery |
+| deliveryDate | Requested delivery date | "2023-07-01" | string (ISO 8601) | UBL RequestedDeliveryPeriod |
+| paymentTerms | Payment terms | "30 days" | string | UBL PaymentTerms |
+| paymentMethod | Payment method | "credit_card", "bank_transfer", "direct_debit" | string (enum) | UBL PaymentMeans |
+| totalAmount | Total order amount | {"value": 125.50, "currency": "EUR"} | object | UBL AnticipatedMonetaryTotal |
+| taxTotal | Tax amount | {"value": 25.10, "currency": "EUR"} | object | UBL TaxTotal |
+| orderLines | Order line items | [{"id": "line-1", "product": "product-123", "quantity": 2, "unitPrice": 50.00}] | array[object] | UBL OrderLine |
+| reference | Customer reference | "REF-2023-001" | string | UBL CustomerReference |
+| accountingCode | Accounting code | "DEPT-123-456" | string | UBL AccountingCostCode |
+| createdBy | User who created the order | {"id": "user-123", "name": "Jane Doe"} | object | System extension |
+| createdAt | Creation timestamp | "2023-06-15T10:30:00Z" | string (ISO 8601) | UBL IssueDate/IssueTime |
+| updatedAt | Last update timestamp | "2023-06-16T14:15:00Z" | string (ISO 8601) | System extension |
+
+## Product Object
+
+For products and services offered to clients, we'll use the Universal Business Language (UBL) Item schema as our primary foundation, while incorporating elements from other standards to create a comprehensive product model suitable for government and business contexts.
+
+### Historical Context
+
+Product and service catalogs have evolved from paper catalogs to electronic formats, with various standards emerging to describe products and services in different contexts. The Universal Business Language (UBL) Item schema provides a comprehensive approach to representing products and services in formal business and government contexts.
+
+In the government context, products often represent permits, licenses, documents, and other tangible items that citizens and businesses can request. Having a standardized way to represent these products ensures consistency across different government services and improves interoperability between systems.
+
+### Standards Comparison
+
+<Tabs>
+<TabItem value="ubl" label="UBL Standards">
+
+- [UBL Item Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-ITEM) - Item definition
+- [UBL Catalogue Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-CATALOGUE) - Catalogue definition
+- [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| ISO/EU standard | Complex structure | Government catalogs |
+| Comprehensive | Steep learning curve | Formal procurement |
+| Legally recognized | Verbose XML format | Regulated products |
+| Strong validation | Implementation cost | Cross-border trade |
+| Multilingual support | Limited flexibility | Public sector catalogs |
+
+**UBL Item Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Description | Text | Item description |
+| PackQuantity | Quantity | Package quantity |
+| PackSizeNumeric | Numeric | Pack size |
+| CatalogueIndicator | Indicator | Catalogue indicator |
+| Name | Name | Item name |
+| HazardousRiskIndicator | Indicator | Hazardous risk indicator |
+| AdditionalInformation | Text | Additional information |
+| Keyword | Text | Keyword |
+| BrandName | Name | Brand name |
+| ModelName | Name | Model name |
+| ManufacturerParty | Party | Manufacturer information |
+| InformationContentProviderParty | Party | Information provider |
+| OriginCountry | Country | Country of origin |
+| CommodityClassification | Classification | Commodity classification |
+| TransactionConditions | Conditions | Transaction conditions |
+| HazardousItem | Item | Hazardous item information |
+| ClassifiedTaxCategory | TaxCategory | Tax category |
+| AdditionalItemProperty | ItemProperty | Additional item property |
+| ManufacturerItemIdentification | Identification | Manufacturer's item ID |
+| CatalogueItemIdentification | Identification | Catalogue item ID |
+| StandardItemIdentification | Identification | Standard item ID |
+| ItemSpecificationDocumentReference | Reference | Item specification document |
+| OriginAddress | Address | Origin address |
+| ItemInstance | ItemInstance | Item instance |
+
+</TabItem>
+
+<TabItem value="schema" label="Schema.org Standards">
+
+- [Schema.org Product](https://schema.org/Product) - Product representation
+- [Schema.org Service](https://schema.org/Service) - Service representation
+- [Schema.org Offer](https://schema.org/Offer) - Offer representation
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| SEO benefits | Limited validation | Web catalogs |
+| Simple structure | Basic properties | Online services |
+| Web integration | Limited business logic | Public-facing systems |
+| Search visibility | Consumer focus | Citizen services |
+| JSON-LD support | Few government examples | Service directories |
+
+**Schema.org Product Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| identifier | Text/URL | Product identifier |
+| name | Text | Product name |
+| description | Text | Product description |
+| image | URL/ImageObject | Product image |
+| brand | Brand/Organization | Brand |
+| manufacturer | Organization | Manufacturer |
+| model | Text/ProductModel | Model |
+| productID | Text | Product ID |
+| sku | Text | Stock keeping unit |
+| gtin | Text | Global Trade Item Number |
+| gtin8 | Text | GTIN-8 code |
+| gtin12 | Text | GTIN-12 code |
+| gtin13 | Text | GTIN-13 code |
+| mpn | Text | Manufacturer Part Number |
+| color | Text | Color |
+| material | Text/Product | Material |
+| weight | QuantitativeValue | Weight |
+| width | QuantitativeValue | Width |
+| height | QuantitativeValue | Height |
+| depth | QuantitativeValue | Depth |
+| additionalProperty | PropertyValue | Additional property |
+| category | Text/PhysicalActivityCategory | Category |
+| offers | Offer | Offers |
+| review | Review | Reviews |
+| aggregateRating | AggregateRating | Aggregate rating |
+| audience | Audience | Target audience |
+| award | Text | Awards |
+| hasMerchantReturnPolicy | MerchantReturnPolicy | Return policy |
+| isAccessoryOrSparePartFor | Product | Accessory or spare part for |
+| isConsumableFor | Product | Consumable for |
+| isRelatedTo | Product/Service | Related products |
+| isSimilarTo | Product/Service | Similar products |
+| itemCondition | OfferItemCondition | Item condition |
+| logo | ImageObject/URL | Logo |
+| productionDate | Date | Production date |
+| purchaseDate | Date | Purchase date |
+| releaseDate | Date | Release date |
+| url | URL | URL |
+
+</TabItem>
+
+<TabItem value="cpv" label="Common Procurement Vocabulary">
+
+- [CPV 2008](https://simap.ted.europa.eu/web/simap/cpv) - Common Procurement Vocabulary
+- [CPV Supplementary Vocabulary](https://simap.ted.europa.eu/documents/10184/36234/cpv_2008_guide_en.pdf) - Additional attributes
+- [CPV Explanatory Notes](https://simap.ted.europa.eu/documents/10184/36234/cpv_2008_explanatory_notes_en.pdf) - Explanatory notes
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| EU official standard | Classification only | Public procurement |
+| Comprehensive codes | No product properties | Tender notices |
+| Multilingual | Limited descriptive power | Procurement reporting |
+| Hierarchical structure | No technical specifications | Statistical analysis |
+| Mandatory for EU tenders | Regular updates needed | Procurement categorization |
+
+**CPV Structure**
+
+| Level | Format | Description |
+|-------|--------|-------------|
+| Division | XX000000-Y | Main divisions (first two digits) |
+| Group | XXX00000-Y | Groups (first three digits) |
+| Class | XXXX0000-Y | Classes (first four digits) |
+| Category | XXXXX000-Y | Categories (first five digits) |
+| Subcategory | XXXXXXXX-Y | Subcategories (first eight digits) |
+| Check digit | Y | Verification digit |
+
+**CPV Examples**
+
+| CPV Code | Description |
+|----------|-------------|
+| 03000000-1 | Agricultural, farming, fishing, forestry and related products |
+| 09000000-3 | Petroleum products, fuel, electricity and other sources of energy |
+| 45000000-7 | Construction work |
+| 50000000-5 | Repair and maintenance services |
+| 60000000-8 | Transport services |
+| 71000000-8 | Architectural, construction, engineering and inspection services |
+| 75000000-6 | Administration, defence and social security services |
+| 80000000-4 | Education and training services |
+| 85000000-9 | Health and social work services |
+| 92000000-1 | Recreational, cultural and sporting services |
+
+</TabItem>
+
+<TabItem value="unspsc" label="UNSPSC Standards">
+
+- [UNSPSC](https://www.unspsc.org/) - United Nations Standard Products and Services Code
+- [UNSPSC Codeset](https://www.unspsc.org/codeset-downloads) - Code downloads
+- [UNSPSC Guidelines](https://www.unspsc.org/faqs) - Implementation guidelines
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Global standard | Classification only | Global procurement |
+| Hierarchical | No product properties | Spend analysis |
+| Comprehensive | Limited descriptive power | Inventory management |
+| Industry-neutral | Regular updates needed | Supply chain |
+| Multilingual | Implementation complexity | Cross-border trade |
+
+**UNSPSC Structure**
+
+| Level | Format | Description |
+|-------|--------|-------------|
+| Segment | XX000000 | Logical aggregation of families (first two digits) |
+| Family | XXXX0000 | Commonly recognized group of categories (first four digits) |
+| Class | XXXXXX00 | Group of commodities with same use/function (first six digits) |
+| Commodity | XXXXXXXX | Group of substitutable products/services (all eight digits) |
+
+**UNSPSC Examples**
+
+| UNSPSC Code | Description |
+|-------------|-------------|
+| 43000000 | Information Technology, Broadcasting and Telecommunications |
+| 80000000 | Management and Business Professionals and Administrative Services |
+| 84000000 | Financial and Insurance Services |
+| 85000000 | Healthcare Services |
+| 90000000 | Travel, Food, Lodging and Entertainment Services |
+| 92000000 | National Defense and Public Order/Security and Safety Services |
+| 93000000 | Politics and Civic Affairs Services |
+| 94000000 | Organizations and Clubs |
+
+</TabItem>
+</Tabs>
+
+### Property Comparison
+
+The following table compares product properties across relevant standards:
+
+| Our Property | UBL | Schema.org | CPV | UNSPSC | Description |
+|--------------|-----|------------|-----|--------|-------------|
+| **Core Properties** |
+| id | ID | identifier | - | - | Product identifier |
+| name | Name | name | - | - | Product name |
+| description | Description | description | - | - | Product description |
+| type | - | '@type' | - | - | Product type |
+| category | CommodityClassification | category | CPV code | UNSPSC code | Product category |
+| **Classification Properties** |
+| classificationScheme | CommodityClassification/@listName | - | "CPV" | "UNSPSC" | Classification scheme |
+| classificationCode | CommodityClassification/ItemClassificationCode | - | Code value | Code value | Classification code |
+| classificationName | CommodityClassification/ItemClassificationCode/@name | - | Code description | Code description | Classification name |
+| **Identification Properties** |
+| productId | StandardItemIdentification | productID | - | - | Product ID |
+| sku | CatalogueItemIdentification | sku | - | - | Stock keeping unit |
+| **Descriptive Properties** |
+| brand | BrandName | brand | - | - | Brand name |
+| model | ModelName | model | - | - | Model name |
+| manufacturer | ManufacturerParty | manufacturer | - | - | Manufacturer |
+| origin | OriginCountry | - | - | - | Country of origin |
+| keywords | Keyword | - | - | - | Keywords |
+| **Physical Properties** |
+| dimensions | AdditionalItemProperty | width/height/depth | - | - | Dimensions |
+| weight | AdditionalItemProperty | weight | - | - | Weight |
+| color | AdditionalItemProperty | color | - | - | Color |
+| material | AdditionalItemProperty | material | - | - | Material |
+| **Commercial Properties** |
+| price | - | offers.price | - | - | Price |
+| currency | - | offers.priceCurrency | - | - | Currency |
+| availability | - | offers.availability | - | - | Availability |
+| validFrom | - | offers.validFrom | - | - | Valid from date |
+| validThrough | - | offers.validThrough | - | - | Valid through date |
+| **Metadata Properties** |
+| createdAt | - | - | - | - | Creation timestamp |
+| updatedAt | - | - | - | - | Last update timestamp |
+| createdBy | - | - | - | - | Creator |
+| status | - | - | - | - | Status |
+
+### Our Hybrid Approach
+
+Based on this analysis, our product register uses a hybrid approach that:
+
+1. **Adopts UBL Item as the foundation**
+   - Ensures compliance with European procurement standards
+   - Provides a comprehensive product structure
+   - Supports legal and regulatory requirements
+
+2. **Incorporates Schema.org properties**
+   - Enhances web discoverability
+   - Supports online service catalogs
+   - Improves citizen service portals
+
+3. **Uses standard classification systems**
+   - Integrates CPV for European procurement
+   - Supports UNSPSC for global compatibility
+   - Enables statistical analysis and reporting
+
+4. **Adds government-specific extensions**
+   - Supports permit and license products
+   - Includes administrative requirements
+   - Addresses citizen service needs
+
+This approach ensures that our product register works for both traditional procurement scenarios and modern government service delivery contexts.
+
+### Proposal
+
+| Property | Description | Example | Type | Origin |
+|----------|-------------|---------|------|---------|
+| id | Unique identifier | "product-12345" | string | UBL ID |
+| name | Product name | "Building Permit - Residential" | string | UBL Name |
+| description | Product description | "Permit for residential building construction" | string | UBL Description |
+| type | Product type | "permit", "license", "document", "service" | string (enum) | Schema.org '@type' |
+| category | Product category | "Construction permits" | string | UBL CommodityClassification |
+| classificationScheme | Classification scheme | "CPV" | string | UBL CommodityClassification/@listName |
+| classificationCode | Classification code | "45214400-4" | string | UBL ItemClassificationCode |
+| classificationName | Classification name | "Building construction work" | string | UBL ItemClassificationCode/@name |
+| productId | Product ID | "BLD-RES-001" | string | UBL StandardItemIdentification |
+| keywords | Keywords | ["permit", "construction", "residential"] | array[string] | UBL Keyword |
+| department | Responsible department | "Building and Housing Department" | string | UBL InformationContentProviderParty |
+| requirements | Requirements | ["ID proof", "Property documents", "Building plans"] | array[string] | UBL AdditionalItemProperty |
+| processingTime | Processing time | "10 business days" | string
