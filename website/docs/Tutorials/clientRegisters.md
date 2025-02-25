@@ -292,84 +292,136 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 - [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-business-vocabulary) - Business data model
 - [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-organisation-vocabulary) - Public organization model
 
-**Strengths**
-- Official EU standard
-- Strong identifier support  
-- Multilingual by design
-- Public sector alignment
-- Regulatory compliance
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Official EU standard | Less known outside EU | Government systems |
+| Strong identifier support | Fewer implementations | Cross-border exchange |
+| Multilingual by design | More complex structure | Official registrations |
+| Public sector alignment | Limited consumer support | Public procurement |
+| Regulatory compliance | | Regulatory reporting |
 
-**Limitations**
-- Less known outside EU
-- Fewer implementations
-- More complex structure 
-- Limited consumer support
+**Core Person Properties**
 
-**Best Used For**
-- Government systems
-- Cross-border exchange
-- Official registrations
-- Public procurement
-- Regulatory reporting
+| Property | Type | Description |
+|----------|------|-------------|
+| identifier | Object | Official identifiers with scheme information |
+| fullName | String | Complete name of the person |
+| givenName | String | First name |
+| familyName | String | Last name |
+| dateOfBirth | Date | Birth date |
+| gender | Code | Gender code |
+| citizenship | Code | Country of citizenship |
+| placeOfBirth | Object | Place of birth information |
+| registeredAddress | Object | Official address |
 
-</TabItem>
-<TabItem value="vcard" label="vCard (RFC 6350)">
+**Core Business Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| legalIdentifier | Object | Official business identifier |
+| legalName | String | Official registered name |
+| alternativeName | String | Trading or alternative name |
+| companyType | Code | Legal form of the company |
+| companyStatus | Code | Current status (active, inactive) |
+| companyActivity | Code | Business activity classification |
+| registeredAddress | Object | Official registered address |
+| foundingDate | Date | Date when company was established |
+
+  </TabItem>
+  <TabItem value="vcard" label="vCard (RFC 6350)">
 
 **Contact Standards**
 - [vCard (RFC 6350)](https://datatracker.ietf.org/doc/html/rfc6350) - Contact information exchange
 - [jCard (RFC 7095)](https://datatracker.ietf.org/doc/html/rfc7095) - JSON format for vCard
 - [xCard (RFC 6351)](https://datatracker.ietf.org/doc/html/rfc6351) - XML format for vCard
 
-**Strengths**
-- Widespread adoption
-- Simple structure
-- Device compatibility 
-- Email integration
-- Consumer familiarity
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Widespread adoption | Limited business fields | Contact exchange |
+| Simple structure | Weak identifier support | Mobile devices |
+| Device compatibility | Basic multilingual support | Email systems |
+| Email integration | Limited relationship modeling | Personal contacts |
+| Consumer familiarity | | Legacy integration |
 
-**Limitations**
-- Limited business fields
-- Weak identifier support
-- Basic multilingual support
-- Limited relationship modeling
+**vCard Properties**
 
-**Best Used For**
-- Contact exchange
-- Mobile devices
-- Email systems
-- Personal contacts
-- Legacy integration
+| Property | Type | Description |
+|----------|------|-------------|
+| FN | String | Formatted name |
+| N | String | Structured name components |
+| NICKNAME | String | Nickname or alias |
+| PHOTO | URI | Photo or avatar |
+| BDAY | Date | Birth date |
+| ADR | String | Structured address |
+| TEL | String | Telephone number |
+| EMAIL | String | Email address |
+| ORG | String | Organization name |
+| TITLE | String | Job title |
+| ROLE | String | Role within organization |
+| URL | URI | Website URL |
+| NOTE | String | Notes about the contact |
+| CATEGORIES | String | Categories/tags |
+| REV | DateTime | Last revision date |
 
-</TabItem>
-<TabItem value="schema" label="Schema.org">
+  </TabItem>
+  <TabItem value="schema" label="Schema.org">
 
 **Schema.org Standards**
 - [Schema.org Person](https://schema.org/Person) - Person entity definition
 - [Schema.org Organization](https://schema.org/Organization) - Organization entity definition
 - [Schema.org LocalBusiness](https://schema.org/LocalBusiness) - Local business definition
 
-**Strengths**
-- Web search optimization
-- Rich property set
-- Linked data support
-- Major search engine backing
-- Growing adoption
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Web search optimization | Web-centric design | Web content |
+| Rich property set | Less formal validation | SEO optimization |
+| Linked data support | Evolving specifications | Knowledge graphs |
+| Major search engine backing | Limited official status | Public directories |
+| Growing adoption | | Semantic web applications |
 
-**Limitations**
-- Web-centric design
-- Less formal validation
-- Evolving specifications
-- Limited official status
+**Schema.org Person Properties**
 
-**Best Used For**
-- Web content
-- SEO optimization
-- Knowledge graphs
-- Public directories
-- Semantic web applications
+| Property | Type | Description |
+|----------|------|-------------|
+| name | String | Full name |
+| givenName | String | First name |
+| familyName | String | Last name |
+| additionalName | String | Middle name |
+| birthDate | Date | Date of birth |
+| gender | String | Gender |
+| address | PostalAddress | Physical address |
+| email | String | Email address |
+| telephone | String | Phone number |
+| url | URL | Website |
+| jobTitle | String | Job title |
+| worksFor | Organization | Employer organization |
+| nationality | Country | Country of citizenship |
+| knowsLanguage | Language | Languages known |
+| identifier | PropertyValue | Identifiers |
 
-</TabItem>
-<TabItem value="ubl" label="UBL">
+**Schema.org Organization Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| name | String | Organization name |
+| legalName | String | Official name |
+| alternateName | String | Alternative name |
+| description | String | Description |
+| address | PostalAddress | Physical address |
+| email | String | Email address |
+| telephone | String | Phone number |
+| faxNumber | String | Fax number |
+| url | URL | Website |
+| logo | ImageObject | Logo |
+| foundingDate | Date | Date founded |
+| numberOfEmployees | QuantitativeValue | Employee count |
+| vatID | String | VAT identifier |
+| taxID | String | Tax identifier |
+| member | Organization/Person | Members |
+| parentOrganization | Organization | Parent organization |
+
+  </TabItem>
+  <TabItem value="ubl" label="UBL">
 
 **UBL Standards**
 - [UBL Party Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-PARTY) - Party/organization model
@@ -377,28 +429,54 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 - [UBL Address Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-ADDRESS) - Address model
 - [UBL Contact Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-CONTACT) - Contact information model
 
-**Strengths**
-- Business document focus
-- Procurement support
-- Legal entity details
-- International standard
-- XML validation
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Business document focus | Complex structure | E-procurement |
+| Procurement support | Verbose format | Business documents |
+| Legal entity details | Business-only focus | Supply chain |
+| International standard | Limited personal details | E-invoicing |
+| XML validation | | Formal business exchange |
 
-**Limitations**
-- Complex structure
-- Verbose format
-- Business-only focus
-- Limited personal details
+**UBL Party Properties**
 
-**Best Used For**
-- E-procurement
-- Business documents
-- Supply chain
-- E-invoicing
-- Formal business exchange
+| Property | Type | Description |
+|----------|------|-------------|
+| PartyIdentification | Complex | Party identifiers |
+| PartyName | Complex | Party name |
+| PostalAddress | Complex | Postal address |
+| PartyTaxScheme | Complex | Tax registration |
+| PartyLegalEntity | Complex | Legal entity information |
+| Contact | Complex | Contact information |
+| Person | Complex | Person information |
+| AgentParty | Complex | Agent information |
+| ServiceProviderParty | Complex | Service provider information |
+| PowerOfAttorney | Complex | Power of attorney |
+| PartyType | Code | Type of party |
+| Language | Code | Language |
+| IndustryClassificationCode | Code | Industry classification |
 
-</TabItem>
-<TabItem value="salesforce" label="Commercial CRM">
+**UBL Person Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | Identifier | Person identifier |
+| FirstName | String | First name |
+| FamilyName | String | Last name |
+| Title | String | Title |
+| MiddleName | String | Middle name |
+| OtherName | String | Other name |
+| NameSuffix | String | Name suffix |
+| JobTitle | String | Job title |
+| NationalityID | Identifier | Nationality |
+| GenderCode | Code | Gender |
+| BirthDate | Date | Birth date |
+| BirthplaceName | String | Birthplace |
+| Contact | Complex | Contact information |
+| FinancialAccount | Complex | Financial account |
+| IdentityDocumentReference | Complex | Identity document |
+
+  </TabItem>
+  <TabItem value="salesforce" label="Commercial CRM">
 
 **Commercial CRM Standards**
 - [Salesforce Account Object](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm) - Account/organization model
@@ -408,74 +486,150 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 **Commercial CRM Comparison**
 
 **Salesforce**
-- **Strengths**: Business process integration, sales/marketing features, extensive customization, industry solutions, ecosystem support
-- **Limitations**: Proprietary format, license requirements, complex data model, vendor lock-in
-- **Best Used For**: CRM processes, sales automation, marketing campaigns, customer service, business intelligence
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Business process integration | Proprietary format | CRM processes |
+| Sales/marketing features | License requirements | Sales automation |
+| Extensive customization | Complex data model | Marketing campaigns |
+| Industry solutions | Vendor lock-in | Customer service |
+| Ecosystem support | | Business intelligence |
+
+**Salesforce Account Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Id | ID | Unique identifier |
+| Name | String | Account name |
+| Type | Picklist | Account type |
+| ParentId | Reference | Parent account |
+| BillingAddress | Address | Billing address |
+| ShippingAddress | Address | Shipping address |
+| Phone | Phone | Main phone number |
+| Fax | Phone | Fax number |
+| Website | URL | Website URL |
+| Industry | Picklist | Industry type |
+| AnnualRevenue | Currency | Annual revenue |
+| NumberOfEmployees | Integer | Employee count |
+| Description | TextArea | Account description |
+| OwnerId | Reference | Account owner |
+| CreatedDate | DateTime | Creation date |
+| LastModifiedDate | DateTime | Last modified date |
 
 **Microsoft Dynamics**
-- **Strengths**: Microsoft ecosystem integration, business process support, Office 365 integration, workflow automation, enterprise features
-- **Limitations**: Proprietary format, license requirements, Microsoft-centric, complex customization
-- **Best Used For**: Microsoft environments, ERP integration, Office integration, enterprise scenarios, complex business processes
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Microsoft ecosystem integration | Proprietary format | Microsoft environments |
+| Business process support | License requirements | ERP integration |
+| Office 365 integration | Microsoft-centric | Office integration |
+| Workflow automation | Complex customization | Enterprise scenarios |
+| Enterprise features | | Complex business processes |
+
+**Microsoft Dynamics Account Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| accountid | GUID | Unique identifier |
+| name | String | Account name |
+| accountnumber | String | Account number |
+| parentaccountid | Lookup | Parent account |
+| address1_* | Complex | Primary address |
+| address2_* | Complex | Secondary address |
+| telephone1 | String | Main phone |
+| emailaddress1 | String | Email address |
+| websiteurl | String | Website URL |
+| industrycode | OptionSet | Industry |
+| revenue | Money | Annual revenue |
+| numberofemployees | Integer | Employee count |
+| description | String | Account description |
+| ownerid | Lookup | Account owner |
+| createdon | DateTime | Creation date |
+| modifiedon | DateTime | Last modified date |
 
 **Exact Online**
-- **Strengths**: Financial integration, European tax compliance, accounting features, SMB focus, Dutch/EU market alignment
-- **Limitations**: Proprietary format, limited global presence, finance-centric model, less extensible
-- **Best Used For**: Financial administration, European businesses, accounting integration, SMB operations, Dutch/EU compliance
 
-</TabItem>
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Financial integration | Proprietary format | Financial administration |
+| European tax compliance | Limited global presence | European businesses |
+| Accounting features | Finance-centric model | Accounting integration |
+| SMB focus | Less extensible | SMB operations |
+| Dutch/EU market alignment | | Dutch/EU compliance |
+
+**Exact Online Account Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | GUID | Unique identifier |
+| Name | String | Account name |
+| Code | String | Account code |
+| Parent | GUID | Parent account |
+| Address | Complex | Address information |
+| Phone | String | Phone number |
+| Email | String | Email address |
+| Website | String | Website URL |
+| Status | Enum | Account status |
+| VATNumber | String | VAT number |
+| ChamberOfCommerce | String | Chamber of Commerce number |
+| Created | DateTime | Creation date |
+| Modified | DateTime | Last modified date |
+| Creator | GUID | Creator |
+| Modifier | GUID | Last modifier |
+
+  </TabItem>
 </Tabs>
 
 ### Property Comparison
 
 The following table compares properties across all relevant standards:
 
-| EU Core Property | vCard | Schema.org | UBL | Salesforce | Dynamics 365 | Exact Online | Description |
-|------------------|-------|------------|-----|------------|--------------|--------------|-------------|
+| Our Property | EU Core | vCard | Schema.org | UBL | Salesforce | Dynamics | Exact | Description |
+|--------------|---------|-------|------------|-----|------------|----------|-------|-------------|
 | **Person Properties** |
-| identifier | UID | identifier | ID | Id | accountid | ID | Unique identifier |
-| fullName | FN | name | Name | Name | name | Name | Full name |
-| givenName | N (part) | givenName | FirstName | FirstName | firstname | FirstName | First name |
-| familyName | N (part) | familyName | FamilyName | LastName | lastname | LastName | Last name |
-| alternativeName | NICKNAME | alternateName | - | - | - | SearchCode | Alternative name |
-| gender | GENDER | gender | GenderCode | - | gendercode | Gender | Gender |
-| birthDate | BDAY | birthDate | BirthDate | Birthdate | birthdate | DateOfBirth | Birth date |
-| birthPlace | - | birthPlace | - | - | birthdate_city | - | Place of birth |
-| deathDate | - | deathDate | - | - | - | - | Date of death |
-| citizenship | - | nationality | CitizenshipCountry | - | - | - | Citizenship |
-| residency | - | - | ResidenceAddress | - | - | - | Country of residence |
-| jurisdiction | - | - | JurisdictionRegion | - | - | - | Legal jurisdiction |
+| id | identifier | UID | identifier | ID | Id | accountid | ID | Unique identifier |
+| name | fullName | FN | name | Name | Name | name | Name | Full name |
+| givenName | givenName | N (part) | givenName | FirstName | FirstName | firstname | FirstName | First name |
+| familyName | familyName | N (part) | familyName | FamilyName | LastName | lastname | LastName | Last name |
+| additionalName | - | N (part) | additionalName | MiddleName | - | middlename | - | Middle name |
+| honorificPrefix | - | N (part) | honorificPrefix | Title | Salutation | salutation | Title | Title prefix (Dr., Mr.) |
+| honorificSuffix | - | N (part) | honorificSuffix | NameSuffix | Suffix | suffix | - | Title suffix (Jr., PhD) |
+| gender | gender | GENDER | gender | GenderCode | - | gendercode | Gender | Gender |
+| birthDate | dateOfBirth | BDAY | birthDate | BirthDate | Birthdate | birthdate | DateOfBirth | Birth date |
+| birthPlace | placeOfBirth | - | birthPlace | BirthplaceName | - | birthdate_city | - | Place of birth |
 | **Organization Properties** |
-| legalName | ORG | legalName | RegistrationName | Name | name | Name | Official name |
-| alternativeName | - | alternateName | TradingName | - | - | SearchCode | Trading name |
-| companyActivity | - | - | IndustryClassificationCode | Industry | industrycode | SbiCode | Industry classification |
-| companyStatus | - | - | CorporateRegistrationStatus | Status | statuscode | Status | Company status |
-| companyType | - | - | CompanyLegalFormCode | - | businesstypecode | LegalForm | Legal form |
-| foundingDate | - | foundingDate | RegistrationDate | - | - | EstablishedDate | Founding date |
-| dissolutionDate | - | dissolutionDate | - | - | - | - | Dissolution date |
+| id | identifier | UID | identifier | ID | Id | accountid | ID | Unique identifier |
+| name | legalName | ORG | legalName | RegistrationName | Name | name | Name | Official name |
+| alternativeName | alternativeName | - | alternateName | TradingName | - | - | SearchCode | Trading name |
+| companyActivity | companyActivity | - | - | IndustryClassificationCode | Industry | industrycode | SbiCode | Industry classification |
+| companyStatus | companyStatus | - | - | CorporateRegistrationStatus | Status | statuscode | Status | Company status |
+| companyType | companyType | - | - | CompanyLegalFormCode | - | businesstypecode | LegalForm | Legal form |
+| foundingDate | foundingDate | - | foundingDate | RegistrationDate | - | - | EstablishedDate | Founding date |
+| dissolutionDate | - | - | dissolutionDate | - | - | - | - | Dissolution date |
 | **Contact Properties** |
-| address | ADR | address | PostalAddress | Address | address1_* | Address | Physical address |
-| email | EMAIL | email | ElectronicMail | Email | emailaddress1 | Email | Email address |
-| telephone | TEL | telephone | Telephone | Phone | telephone1 | Phone | Phone number |
-| faxNumber | - | faxNumber | Telefax | Fax | fax | Fax | Fax number |
-| website | URL | url | WebsiteURI | Website | websiteurl | Website | Website |
+| address | registeredAddress | ADR | address | PostalAddress | Address | address1_* | Address | Physical address |
+| email | - | EMAIL | email | ElectronicMail | Email | emailaddress1 | Email | Email address |
+| telephone | - | TEL | telephone | Telephone | Phone | telephone1 | Phone | Phone number |
+| faxNumber | - | - | faxNumber | Telefax | Fax | fax | Fax | Fax number |
+| website | - | URL | url | WebsiteURI | Website | websiteurl | Website | Website |
 | **Financial Properties** |
-| vatNumber | - | vatID | PartyTaxScheme | - | - | VATNumber | VAT registration |
-| taxReference | - | taxID | TaxReference | - | - | TaxReferenceNumber | Tax reference |
-| bankAccount | - | - | FinancialAccount | - | - | BankAccount | Bank account |
-| paymentTerms | - | - | PaymentTerms | - | - | PaymentTerms | Payment terms |
-| creditLimit | - | - | - | - | creditlimit | CreditLimit | Credit limit |
+| vatNumber | - | - | vatID | PartyTaxScheme | - | - | VATNumber | VAT registration |
+| taxReference | - | - | taxID | TaxReference | - | - | TaxReferenceNumber | Tax reference |
+| bankAccount | - | - | - | FinancialAccount | - | - | BankAccount | Bank account |
+| paymentTerms | - | - | - | PaymentTerms | - | - | PaymentTerms | Payment terms |
+| creditLimit | - | - | - | - | - | creditlimit | CreditLimit | Credit limit |
 | **Relationship Properties** |
-| memberOf | - | memberOf | PartyMember | - | parentaccountid | Parent | Parent organization |
-| hasMember | - | member | Party | - | - | - | Child organizations |
-| contactPerson | AGENT | employee | Contact | Contact | primarycontactid | Contact | Primary contact |
-| department | ORG (part) | department | Department | Department | - | - | Department |
-| role | ROLE | roleName | RoleCode | - | - | - | Role in organization |
+| memberOf | - | - | memberOf | PartyMember | - | parentaccountid | Parent | Parent organization |
+| hasMember | - | - | member | Party | - | - | - | Child organizations |
+| contactPerson | - | AGENT | employee | Contact | Contact | primarycontactid | Contact | Primary contact |
+| department | - | ORG (part) | department | Department | Department | - | - | Department |
+| role | - | ROLE | roleName | RoleCode | - | - | - | Role in organization |
 | **Metadata Properties** |
-| source | SOURCE | - | - | LeadSource | - | - | Information source |
-| dateCreated | - | dateCreated | CreationDate | CreatedDate | createdon | Created | Creation timestamp |
-| dateModified | REV | dateModified | LastModificationDate | LastModifiedDate | modifiedon | Modified | Last update timestamp |
-| creator | - | creator | Author | CreatedBy | createdby | Creator | Record creator |
-| lastModifier | - | - | - | LastModifiedBy | modifiedby | Modifier | Last modifier |
+| source | - | SOURCE | - | - | LeadSource | - | - | Information source |
+| dateCreated | - | - | dateCreated | CreationDate | CreatedDate | createdon | Created | Creation timestamp |
+| dateModified | - | REV | dateModified | LastModificationDate | LastModifiedDate | modifiedon | Modified | Last update timestamp |
+| creator | - | - | creator | Author | CreatedBy | createdby | Creator | Record creator |
+| lastModifier | - | - | - | - | LastModifiedBy | modifiedby | Modifier | Last modifier |
 
 ### Our Hybrid Approach
 
@@ -525,61 +679,55 @@ This approach ensures that our client register is both standards-compliant and p
 | dateCreated | Record creation date | 2023-01-01T12:00:00Z | datetime | System |
 | dateModified | Last modification date | 2023-06-15T09:30:00Z | datetime | System |
 
-## Tasks Object
+## Task Object
 
 For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf.org/doc/html/rfc5545) (RFC 5545), specifically the VTODO component, as our foundational standard. This choice is driven by several key factors:
 
-1. **Widespread Industry Adoption**
-   - iCalendar is supported by major calendar and productivity platforms including Google Calendar, Microsoft Outlook, Apple Calendar, and Nextcloud
-   - The standard has been stable and actively used since 1998, demonstrating its longevity and reliability
-   - Extensive tooling and libraries exist across all major programming languages
+### Historical Context
 
-2. **Interoperability Benefits**
-   - Native support in CalDAV servers enables seamless synchronization between systems
-   - Built-in compatibility with email systems through .ics file attachments
-   - Standard format for calendar data exchange between enterprise systems
+The iCalendar standard represents the most widely adopted format for calendar and task data exchange. Developed in the late 1990s and refined over time, it remains the foundation for most calendar systems, including those in major email clients, mobile devices, and dedicated calendar applications.
 
-3. **Technical Advantages**
-   - Rich set of standardized properties covering all common task management needs
-   - Support for recurring tasks through RRULE specifications
-   - Built-in timezone handling and date/time standardization
-   - Extensible through custom properties while maintaining compatibility
-
-4. **Enterprise Integration**
-   - Direct integration with Microsoft Exchange and Google Workspace
-   - Support in major CRM and project management systems
-   - Easy conversion to other task formats while preserving data fidelity
-
-While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
+While newer API-based approaches exist, iCalendar's VTODO component provides a comprehensive model for task management that balances simplicity with powerful features like recurrence, reminders, and multi-participant support.
 
 ### Standards Comparison
   
+While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
+
 <Tabs>
 <TabItem value="icalendar" label="iCalendar Standards">
 
 - [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
 - [iCalendar Extensions (RFC 7986)](https://datatracker.ietf.org/doc/html/rfc7986) - Additional task properties
 
-**Strengths**
-- Widespread adoption
-- Rich property set
-- Timezone support
-- Enterprise integration
-- Stable standard
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Widespread adoption | Complex recurrence rules | Calendar integration |
+| Rich property set | Limited custom fields | Personal tasks |
+| Stable standard | Text-only descriptions | Recurring tasks |
+| Cross-platform | Limited relationships | Deadline tracking |
+| Mature implementations | Basic workflow support | Basic scheduling |
 
-**Limitations**
-- Complex recurrence rules
-- Limited custom fields
-- No built-in sharing
-- Basic priority levels
-- Text-only descriptions
+**iCalendar VTODO Properties**
 
-**Best Used For**
-- Calendar integration
-- Personal tasks
-- Email systems
-- Mobile devices
-- Basic scheduling
+| Property | Type | Description |
+|----------|------|-------------|
+| UID | String | Unique identifier |
+| SUMMARY | String | Task summary/title |
+| DESCRIPTION | String | Task description |
+| DTSTART | DateTime | Start date/time |
+| DUE | DateTime | Due date/time |
+| COMPLETED | DateTime | Completion date/time |
+| STATUS | String | Task status (NEEDS-ACTION, IN-PROCESS, COMPLETED, CANCELLED) |
+| PRIORITY | Integer | Priority (0-9, 0=undefined, 1=highest, 9=lowest) |
+| PERCENT-COMPLETE | Integer | Percent complete (0-100) |
+| CATEGORIES | String | Categories/tags |
+| RRULE | String | Recurrence rule |
+| ORGANIZER | String | Task organizer |
+| ATTENDEE | String | Task participants |
+| ATTACH | URI | File attachments |
+| RELATED-TO | String | Related tasks |
+| CREATED | DateTime | Creation timestamp |
+| LAST-MODIFIED | DateTime | Last modification timestamp |
 
 </TabItem>
 
@@ -588,26 +736,34 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
 - [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
 
-**Strengths**
-- Open source
-- CalDAV compatible
-- Self-hosted option
-- Team collaboration
-- File integration
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Open source | Server requirement | Team collaboration |
+| CalDAV compatible | Limited integrations | Self-hosted systems |
+| Privacy-focused | Basic reporting | Open source environments |
+| Board view support | Limited automation | European organizations |
+| File attachments | Simple permissions | Personal productivity |
 
-**Limitations**
-- Server required
-- Limited mobile apps
-- Basic reporting
-- Simple workflows
-- Community support
+**Nextcloud Tasks Properties**
 
-**Best Used For**
-- Team tasks
-- File sharing
-- Private cloud
-- Small teams
-- Personal productivity
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| summary | String | Task title |
+| description | String | Task description |
+| start | DateTime | Start date/time |
+| due | DateTime | Due date/time |
+| completed | DateTime | Completion date/time |
+| status | String | Task status |
+| priority | Integer | Priority level |
+| completedPercentage | Integer | Percent complete |
+| categories | Array | Categories/tags |
+| recurrence | Object | Recurrence settings |
+| organizer | String | Task organizer |
+| attendees | Array | Task participants |
+| attachments | Array | File attachments |
+| created | DateTime | Creation timestamp |
+| modified | DateTime | Last modification timestamp |
 
 </TabItem>
 
@@ -617,26 +773,36 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - [Schema.org TodoAction](https://schema.org/TodoAction) - Specifically for to-do items
 - [Schema.org Task](https://schema.org/Task) - For project management tasks
 
-**Strengths**
-- SEO benefits
-- Semantic web ready
-- Flexible structure
-- Search integration
-- Growing adoption
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| SEO benefits | Limited task features | Web content |
+| Semantic relationships | Few task implementations | Public tasks |
+| Web integration | Basic scheduling | SEO optimization |
+| Search engine support | Limited recurrence | Knowledge graphs |
+| Flexible properties | Evolving specification | Semantic web |
 
-**Limitations**
-- Web-focused only
-- Loose validation
-- Basic task model
-- Limited tooling
-- Evolving standard
+**Schema.org PlanAction Properties**
 
-**Best Used For**
-- Web content
-- Search visibility
-- Data integration
-- Public tasks
-- Knowledge graphs
+| Property | Type | Description |
+|----------|------|-------------|
+| identifier | Text/URL | Unique identifier |
+| name | Text | Task name |
+| description | Text | Task description |
+| startTime | DateTime | Start time |
+| endTime | DateTime | End time |
+| scheduledTime | DateTime | Scheduled time |
+| actionStatus | ActionStatusType | Status of the action |
+| agent | Person/Organization | Person/org performing action |
+| participant | Person/Organization | Other participants |
+| result | Thing | Result of the action |
+| target | EntryPoint | Target of the action |
+| object | Thing | Object the action is performed on |
+| error | Thing | Error that occurred |
+| location | Place | Location of the action |
+| potentialAction | Action | Potential follow-up actions |
+| url | URL | URL for the action |
+| dateCreated | DateTime | Creation date |
+| dateModified | DateTime | Modification date |
 
 </TabItem>
 
@@ -644,28 +810,34 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 
 - [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
 - [Microsoft Planner API](https://learn.microsoft.com/en-us/graph/api/resources/planner-overview) - Team task planning
-- [Microsoft Project API](https://learn.microsoft.com/en-us/graph/api/resources/projectrome-overview) - Project task management
 
-**Strengths**
-- Office integration
-- Enterprise features
-- Team collaboration
-- Rich API set
-- Strong security
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Office integration | License requirements | Microsoft environments |
+| Team collaboration | Microsoft ecosystem | Enterprise users |
+| Rich UI | Proprietary format | Team planning |
+| Mobile apps | Limited external access | Office 365 users |
+| Outlook integration | Complex permissions | Windows integration |
 
-**Limitations**
-- License required
-- Vendor lock-in
-- Complex setup
-- Microsoft-centric
-- Costly scaling
+**Microsoft To Do Properties**
 
-**Best Used For**
-- Enterprise teams
-- Office users
-- Project management
-- Corporate tasks
-- Windows integration
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| title | String | Task title |
+| body | ItemBody | Task body/description |
+| importance | String | Importance (low, normal, high) |
+| isReminderOn | Boolean | Whether reminder is set |
+| status | String | Status (notStarted, inProgress, completed, waitingOnOthers, deferred) |
+| recurrence | PatternedRecurrence | Recurrence pattern |
+| reminderDateTime | DateTimeTimeZone | Reminder date/time |
+| completedDateTime | DateTimeTimeZone | Completion date/time |
+| dueDateTime | DateTimeTimeZone | Due date/time |
+| startDateTime | DateTimeTimeZone | Start date/time |
+| categories | String[] | Categories |
+| assignedTo | String | Assigned user |
+| createdDateTime | DateTimeOffset | Creation date/time |
+| lastModifiedDateTime | DateTimeOffset | Last modification date/time |
 
 </TabItem>
 
@@ -674,26 +846,32 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
 - [Google Calendar API](https://developers.google.com/calendar) - Calendar-based tasks
 
-**Strengths**
-- Gmail integration
-- Calendar sync
-- Mobile support
-- Simple interface
-- Cloud-based
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Gmail integration | Google ecosystem | Google Workspace users |
+| Calendar integration | Basic task model | Personal productivity |
+| Mobile support | Limited business features | Simple task tracking |
+| Cloud sync | Few enterprise features | Calendar-based tasks |
+| Widespread adoption | Limited customization | Mobile tasks |
 
-**Limitations**
-- Basic features
-- Google ecosystem
-- Limited views
-- Simple workflows
-- Consumer focus
+**Google Tasks Properties**
 
-**Best Used For**
-- Gmail users
-- Calendar tasks
-- Personal use
-- Simple projects
-- Mobile tasks
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| title | String | Task title |
+| notes | String | Task notes/description |
+| status | String | Status (needsAction, completed) |
+| due | DateTime | Due date/time |
+| completed | DateTime | Completion date/time |
+| deleted | Boolean | Whether task is deleted |
+| hidden | Boolean | Whether task is hidden |
+| parent | String | Parent task ID |
+| position | String | Sort position |
+| updated | DateTime | Last update timestamp |
+| links | Array | Related links |
+| etag | String | Entity tag |
+| selfLink | String | Self link |
 
 </TabItem>
 
@@ -703,86 +881,138 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - [Trello Power-Ups API](https://developer.atlassian.com/cloud/trello/power-ups/) - Custom integrations and extensions
 - [Trello Webhooks](https://developer.atlassian.com/cloud/trello/guides/rest-api/webhooks/) - Real-time updates
 
-**Strengths**
-- Visual boards
-- Easy to use
-- Rich API
-- Power-Ups
-- Real-time updates
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Visual board layout | Limited reporting | Project management |
+| Simple interface | Basic task model | Visual task tracking |
+| Team collaboration | Limited automation | Team coordination |
+| Card attachments | Proprietary format | Kanban workflows |
+| Flexible organization | Simple tracking | Collaborative tasks |
 
-**Limitations**
-- Board-only view
-- Limited reporting
-- Basic automation
-- Simple structure
-- Scaling costs
+**Trello Card Properties**
 
-**Best Used For**
-- Visual planning
-- Team boards
-- Agile projects
-- Simple tracking
-- Collaborative tasks
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| name | String | Card name/title |
+| desc | String | Card description |
+| closed | Boolean | Whether card is archived |
+| idBoard | String | Board ID |
+| idList | String | List ID |
+| idMembers | Array | Member IDs |
+| idLabels | Array | Label IDs |
+| url | String | Card URL |
+| shortUrl | String | Short URL |
+| due | DateTime | Due date/time |
+| dueComplete | Boolean | Whether due date is complete |
+| dateLastActivity | DateTime | Last activity timestamp |
+| checkItemStates | Array | Check item states |
+| attachments | Array | Attachments |
+| subscribed | Boolean | Whether user is subscribed |
+| pos | Number | Position in list |
+| cover | Object | Cover image |
+| customFields | Array | Custom fields |
 
 </TabItem>
 </Tabs>
 
-
 ### Property Comparison
 
-The following table compares task properties across all relevant standards:
+The following table compares task properties across relevant standards:
 
-| iCalendar Property | Nextcloud | Trello | Google Tasks | Salesforce | Dynamics 365 | Description |
-|-------------------|-----------|--------|--------------|------------|--------------|-------------|
-| **Basic Properties** |
-| SUMMARY | title | name | title | Subject | subject | Task title |
-| DESCRIPTION | description | desc | notes | Description | description | Detailed description |
-| DUE | due | due | due | ActivityDate | scheduledend | Due date/time |
-| DTSTART | start | start | - | StartDateTime | scheduledstart | Start date/time |
-| COMPLETED | completed | dateLastActivity | completed | CompletedDateTime | actualend | Completion date |
-| STATUS | status | closed | status | Status | statecode | Current status |
-| PRIORITY | priority | - | - | Priority | prioritycode | Priority level |
+| Our Property | iCalendar | Schema.org | Microsoft To Do | Google Tasks | Trello | Description |
+|--------------|-----------|------------|----------------|-------------|--------|-------------|
+| **Core Properties** |
+| id | UID | identifier | id | id | id | Unique identifier |
+| title | SUMMARY | name | title | title | name | Task title |
+| description | DESCRIPTION | description | body.content | notes | desc | Task description |
+| startTime | DTSTART | startTime | startDateTime | - | - | Start date/time |
+| dueTime | DUE | endTime | dueDateTime | due | due | Due date/time |
+| completedTime | COMPLETED | completedTime | completedDateTime | completed | - | Completion date/time |
+| **Status Properties** |
+| status | STATUS | actionStatus | status | status | - | Task status |
+| priority | PRIORITY | - | importance | - | pos | Priority level |
+| percentComplete | PERCENT-COMPLETE | percentComplete | - | - | - | Percent complete |
 | **Categorization** |
-| CATEGORIES | categories | labels | - | Type | subcategory | Categories/tags |
-| RELATED-TO | related | idList | parent | WhatId | regardingobjectid | Related items |
-| **Assignment** |
-| ORGANIZER | owner | idMemberCreator | creator | OwnerId | ownerid | Task owner |
-| ATTENDEE | participants | idMembers | - | AssignedTo | new_assignedto | Assigned users |
-| **Progress** |
-| PERCENT-COMPLETE | complete | - | - | PercentComplete | percentcomplete | Completion % |
-| RRULE | repeat | - | - | IsRecurrence | isrecurrence | Recurrence rule |
+| category | CATEGORIES | category | categories | - | idLabels | Categories/tags |
+| **People** |
+| assignee | ORGANIZER | agent | assignedTo | - | idMembers | Person assigned to task |
+| participants | ATTENDEE | participant | - | - | idMembers | Other participants |
+| **Relationships** |
+| parent | RELATED-TO | isPartOf | - | parent | - | Parent task |
+| subtasks | - | hasPart | - | - | - | Child tasks |
+| relatedTo | RELATED-TO | about | - | - | - | Related entities |
 | **Metadata** |
-| CREATED | created | dateCreation | created | CreatedDate | createdon | Creation date |
-| LAST-MODIFIED | modified | dateLastActivity | updated | LastModifiedDate | modifiedon | Last update |
-| SEQUENCE | revision | - | - | - | versionnumber | Version number |
-| CLASS | class | - | - | IsPrivate | - | Privacy setting |
+| createdAt | CREATED | dateCreated | createdDateTime | - | - | Creation timestamp |
+| updatedAt | LAST-MODIFIED | dateModified | lastModifiedDateTime | updated | dateLastActivity | Last update timestamp |
+| recurrence | RRULE | - | recurrence | - | - | Recurrence pattern |
+| attachments | ATTACH | - | - | - | attachments | File attachments |
+
+### Our Hybrid Approach
+
+Based on this analysis, our task register uses a hybrid approach that:
+
+1. **Adopts iCalendar VTODO as the foundation**
+   - Ensures compatibility with calendar systems
+   - Provides robust recurrence support
+   - Leverages a mature, widely-implemented standard
+
+2. **Incorporates Schema.org PlanAction properties**
+   - Improves web discoverability
+   - Adds semantic relationships
+   - Supports knowledge graph integration
+
+3. **Adds Microsoft and Google compatibility**
+   - Enables integration with popular productivity suites
+   - Supports enterprise workflows
+   - Provides mobile compatibility
+
+4. **Includes Trello-inspired visual elements**
+   - Supports kanban-style organization
+   - Enables visual task management
+   - Improves team collaboration
+
+This approach ensures that our task register works seamlessly with existing calendar systems while providing the rich features needed for business process management.
 
 ### Proposal
 
-Based on this analysis, we propose the following task object structure that combines the best elements from each standard:
-
 | Property | Description | Example | Type | Origin |
 |----------|-------------|---------|------|---------|
-| id | Unique identifier for the task | "task-123456" | string | iCalendar UID |
-| title | Short descriptive name of the task | "Complete project proposal" | string | iCalendar SUMMARY |
-| description | Detailed explanation of the task | "Write up full proposal including timeline and budget" | string | iCalendar DESCRIPTION |
-| dueDate | When the task needs to be completed | "2023-12-31T23:59:59Z" | string (ISO 8601) | iCalendar DUE |
-| startDate | When work on the task should begin | "2023-12-01T09:00:00Z" | string (ISO 8601) | iCalendar DTSTART |
-| completedDate | When the task was finished | "2023-12-30T16:30:00Z" | string (ISO 8601) | iCalendar COMPLETED |
-| status | Current state of the task | "active" | enum (new, active, completed, cancelled) | iCalendar STATUS |
-| priority | Importance level of the task | 3 | integer (1-5) | iCalendar PRIORITY |
-| categories | Labels for organizing tasks | ["project", "proposal", "q4"] | array[string] | iCalendar CATEGORIES |
-| relatedItems | IDs of connected tasks | ["task-123", "task-456"] | array[string] | iCalendar RELATED-TO |
-| owner | ID of user who created the task | "user-789" | string | iCalendar ORGANIZER |
-| assignees | IDs of users responsible for task | ["user-123", "user-456"] | array[string] | iCalendar ATTENDEE |
-| progress | Percentage of task completion | 75 | integer (0-100) | iCalendar PERCENT-COMPLETE |
-| recurrence | Rule for recurring tasks | {"freq": "weekly", "count": 10} | object | iCalendar RRULE |
-| metadata | System tracking information | {"created": "2023-12-01T09:00:00Z"} | object | iCalendar CREATED/LAST-MODIFIED |
-| visibility | Access control setting | "public" | enum (public, private) | iCalendar CLASS |
+| id | Unique identifier | "task-12345" | string | iCalendar UID |
+| title | Task title | "Complete client proposal" | string | iCalendar SUMMARY |
+| description | Task description | "Draft the proposal document including..." | string | iCalendar DESCRIPTION |
+| startTime | When task begins | "2023-06-15T09:00:00Z" | string (ISO 8601) | iCalendar DTSTART |
+| dueTime | When task is due | "2023-06-20T17:00:00Z" | string (ISO 8601) | iCalendar DUE |
+| completedTime | When task was completed | "2023-06-19T16:30:00Z" | string (ISO 8601) | iCalendar COMPLETED |
+| status | Current status | "in-progress" | string (enum) | iCalendar STATUS |
+| priority | Priority level | "high" | string (enum) | iCalendar PRIORITY |
+| percentComplete | Completion percentage | 75 | integer (0-100) | iCalendar PERCENT-COMPLETE |
+| category | Categories/tags | ["proposal", "sales"] | array[string] | iCalendar CATEGORIES |
+| assignee | Person assigned to task | {"id": "user-123", "name": "Jane Doe"} | object | iCalendar ORGANIZER |
+| participants | Other participants | [{"id": "user-456", "name": "John Smith", "role": "reviewer"}] | array[object] | iCalendar ATTENDEE |
+| parent | Parent task | "task-789" | string | iCalendar RELATED-TO |
+| subtasks | Child tasks | ["task-101", "task-102"] | array[string] | Schema.org hasPart |
+| relatedTo | Related entities | [{"id": "client-456", "type": "Client"}] | array[object] | iCalendar RELATED-TO |
+| recurrence | Recurrence pattern | "FREQ=WEEKLY;BYDAY=MO" | string (iCal RRULE) | iCalendar RRULE |
+| attachments | File attachments | [{"name": "draft.docx", "url": "https://..."}] | array[object] | iCalendar ATTACH |
+| createdAt | Creation timestamp | "2023-06-10T14:30:00Z" | string (ISO 8601) | iCalendar CREATED |
+| updatedAt | Last update timestamp | "2023-06-15T09:15:00Z" | string (ISO 8601) | iCalendar LAST-MODIFIED |
+| createdBy | Creator information | {"id": "user-789", "name": "Alice Brown"} | object | Schema.org creator |
+| updatedBy | Last modifier information | {"id": "user-123", "name": "Jane Doe"} | object | Schema.org editor |
+
+:::note Thread Identifier
+A thread is a way to group related messages together in a conversation. In messaging systems, it acts like a conversation ID that links all messages in a back-and-forth exchange. For example, when someone replies to an email or chat message, all those messages share the same thread ID (usually the UUID of the first message in the conversation) to keep them connected.
+:::
 
 ## Message Object
 
-For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
+For messages associated with clients, we'll use email standards (RFC 5322) as our primary foundation, while incorporating elements from JMAP and Schema.org to create a comprehensive message model.
+
+### Historical Context
+
+Email standards represent one of the oldest and most widely implemented digital communication formats. The Internet Message Format (RFC 5322, previously RFC 822) has been the foundation of email communication since the early days of the internet. This format has proven remarkably resilient, continuing to serve as the backbone of electronic communication despite the emergence of numerous messaging platforms.
+
+While email standards provide an excellent foundation for message structure, newer standards like JMAP (JSON Meta Application Protocol) offer more modern API approaches for message handling. By combining these standards with Schema.org's semantic web capabilities, we create a message model that works across traditional email, modern messaging platforms, and web applications.
 
 ### Standards Comparison
 
@@ -793,26 +1023,33 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - [Schema.org EmailMessage](https://schema.org/EmailMessage) - Email message type
 - [Schema.org Message Extensions](https://schema.org/messageAttachment) - Message attachments
 
-**Strengths**
-- SEO benefits
-- Web integration
-- Flexible schema
-- Growing adoption
-- Search friendly
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| SEO benefits | Limited messaging focus | Web content |
+| Semantic relationships | Basic properties only | Public messages |
+| Web integration | Loose validation | Search visibility |
+| Flexible properties | Web-centric design | Knowledge graphs |
+| Search engine support | | Semantic relationships |
 
-**Limitations**
-- Web focused
-- Basic validation
-- Simple model
-- Limited tooling
-- Evolving spec
+**Schema.org Message Properties**
 
-**Best Used For**
-- Web content
-- Search data
-- Public messages
-- Basic messaging
-- SEO optimization
+| Property | Type | Description |
+|----------|------|-------------|
+| identifier | Text/URL | Unique identifier |
+| name | Text | Message name/subject |
+| description | Text | Message description |
+| about | Thing | What the message is about |
+| text | Text | Message content |
+| dateCreated | DateTime | Creation date |
+| dateReceived | DateTime | Date received |
+| dateSent | DateTime | Date sent |
+| dateRead | DateTime | Date read |
+| sender | Person/Organization | Message sender |
+| recipient | Person/Organization | Message recipient |
+| messageAttachment | CreativeWork | Attached content |
+| inLanguage | Language | Message language |
+| potentialAction | Action | Potential actions |
+| url | URL | URL for the message |
 
 </TabItem>
 
@@ -822,26 +1059,34 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - [RFC 2045-2049](https://datatracker.ietf.org/doc/html/rfc2045) - MIME Extensions
 - [RFC 6854](https://datatracker.ietf.org/doc/html/rfc6854) - Update to Internet Message Format
 
-**Strengths**
-- Email standard
-- Wide support
-- Rich features
-- Proven format
-- MIME support
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Universal adoption | Complex header format | Formal communications |
+| Proven longevity | Limited metadata | Cross-platform messaging |
+| Rich feature set | Text-centric design | Document exchange |
+| Extensive tooling | Basic threading model | System notifications |
+| Platform independence | | Official records |
 
-**Limitations**
-- Email specific
-- Complex parsing
-- Text focused
-- Limited metadata
-- Fixed structure
+**RFC 5322 Properties**
 
-**Best Used For**
-- Email systems
-- Message exchange
-- MIME content
-- Internet mail
-- Standards compliance
+| Property | Type | Description |
+|----------|------|-------------|
+| Message-ID | String | Unique message identifier |
+| From | String | Sender address |
+| To | String | Primary recipient(s) |
+| Cc | String | Carbon copy recipient(s) |
+| Bcc | String | Blind carbon copy recipient(s) |
+| Reply-To | String | Reply address |
+| Subject | String | Message subject |
+| Date | DateTime | Sending date/time |
+| Received | DateTime | Receipt date/time |
+| In-Reply-To | String | Message being replied to |
+| References | String | Related messages |
+| Content-Type | String | Content MIME type |
+| Content-Transfer-Encoding | String | Content encoding |
+| MIME-Version | String | MIME version |
+| Content-Disposition | String | Content disposition |
+| Content-ID | String | Content identifier |
 
 </TabItem>
 
@@ -851,26 +1096,43 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - [JMAP Mail](https://jmap.io/spec-mail.html) - Email extensions
 - [JMAP Calendar](https://jmap.io/spec-calendars.html) - Calendar integration
 
-**Strengths**
-- Modern protocol
-- JSON based
-- Rich features
-- Real-time sync
-- Mobile ready
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Modern JSON format | Newer standard | Modern email clients |
+| Efficient synchronization | Fewer implementations | Mobile applications |
+| Batch operations | More complex model | Offline-first apps |
+| Consistent API design | Email-centric design | Multi-device sync |
+| Strong threading support | | Rich messaging apps |
 
-**Limitations**
-- New standard
-- Limited adoption
-- Complex setup
-- Learning curve
-- Few tools
+**JMAP Mail Properties**
 
-**Best Used For**
-- Modern apps
-- Mobile sync
-- Rich clients
-- Real-time chat
-- Cloud messaging
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| blobId | String | Content blob ID |
+| threadId | String | Thread identifier |
+| mailboxIds | Object | Mailbox IDs |
+| keywords | Object | Message keywords/flags |
+| size | Number | Message size in bytes |
+| receivedAt | DateTime | Receipt timestamp |
+| messageId | String | Message-ID header |
+| inReplyTo | String | In-Reply-To header |
+| references | String[] | References header |
+| sender | EmailAddress[] | Sender addresses |
+| from | EmailAddress[] | From addresses |
+| to | EmailAddress[] | To addresses |
+| cc | EmailAddress[] | Cc addresses |
+| bcc | EmailAddress[] | Bcc addresses |
+| replyTo | EmailAddress[] | Reply-To addresses |
+| subject | String | Message subject |
+| sentAt | DateTime | Sent timestamp |
+| hasAttachment | Boolean | Has attachments |
+| preview | String | Message preview |
+| bodyValues | Object | Message body values |
+| textBody | String[] | Text body part IDs |
+| htmlBody | String[] | HTML body part IDs |
+| attachments | String[] | Attachment part IDs |
+| headers | Object | Raw headers |
 
 </TabItem>
 
@@ -880,34 +1142,101 @@ For client messages, we'll create a schema inspired by email and messaging stand
 - [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
 - [UBL Extensions](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-UBL-2.1-EXTENSIONS) - Custom extensions
 
-**Strengths**
-- Business focused
-- XML validation
-- Enterprise ready
-- Standard schemas
-- Broad adoption
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Business document focus | Complex structure | Business communications |
+| Formal communication | Verbose format | Formal notifications |
+| Process integration | Business-only focus | Process documentation |
+| Structured metadata | Limited personal messaging | Regulatory communications |
+| XML validation | | Supply chain messaging |
 
-**Limitations**
-- Complex format
-- XML only
-- Business specific
-- Heavy structure
-- Limited flexibility
+**UBL Communication Properties**
 
-**Best Used For**
-- Business docs
-- Formal comms
-- Legal records
-- Enterprise use
-- B2B messaging
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | Identifier | Unique identifier |
+| UUID | Identifier | Universally unique identifier |
+| ChannelCode | Code | Communication channel code |
+| ChannelID | Identifier | Channel identifier |
+| Value | Text | Communication value (e.g., phone number, email) |
+| Note | Text | Additional notes |
+| StatusCode | Code | Status code |
+| IssueDate | Date | Issue date |
+| IssueTime | Time | Issue time |
+| EffectiveDate | Date | Effective date |
+| EffectiveTime | Time | Effective time |
+| SenderParty | Party | Sender information |
+| ReceiverParty | Party | Receiver information |
+| CopyIndicator | Indicator | Copy indicator |
+| AttachmentID | Identifier | Attachment identifier |
+| ExternalReference | Reference | External reference |
 
 </TabItem>
 </Tabs>
+
+### Property Comparison
+
+The following table compares message properties across relevant standards:
+
+| Our Property | RFC 5322 | JMAP | Schema.org | UBL | Description |
+|--------------|----------|------|------------|-----|-------------|
+| **Core Properties** |
+| id | Message-ID | id | identifier | ID | Unique identifier |
+| about | Subject | subject | about | Subject | Message subject |
+| text | Body | bodyValues | text | TextContent | Message content |
+| from | From | from | sender | SenderParty | Sender information |
+| recipient | To/Cc/Bcc | to/cc/bcc | recipient | ReceiverParty | Recipient information |
+| dateSent | Date | sentAt | dateSent | IssueDate | When message was sent |
+| dateReceived | Received | receivedAt | dateReceived | ReceivedDate | When message was received |
+| dateRead | - | - | dateRead | - | When message was read |
+| attachment | Attachment | attachments | messageAttachment | Attachment | File attachments |
+| **Threading Properties** |
+| thread | References/Thread-ID | threadId | - | - | Thread identifier |
+| inReplyTo | In-Reply-To | inReplyTo | - | - | Message being replied to |
+| references | References | references | - | - | Related messages |
+| **Metadata Properties** |
+| channel | - | - | - | ChannelCode | Communication channel |
+| direction | - | - | - | - | Message direction |
+| status | - | keywords | - | StatusCode | Delivery status |
+| language | Content-Language | - | inLanguage | - | Message language |
+| priority | Priority | - | - | - | Message priority |
+| **System Properties** |
+| createdAt | - | - | dateCreated | - | Creation timestamp |
+| updatedAt | - | - | dateModified | - | Last update timestamp |
+| createdBy | - | - | creator | - | Record creator |
+| updatedBy | - | - | editor | - | Last modifier |
+
+### Our Hybrid Approach
+
+Based on this analysis, our message register uses a hybrid approach that:
+
+1. **Adopts RFC 5322 as the foundation**
+   - Ensures compatibility with email systems
+   - Leverages a mature, widely-implemented standard
+   - Provides a comprehensive message structure
+
+2. **Incorporates JMAP concepts**
+   - Adds modern API capabilities
+   - Improves threading and synchronization
+   - Supports efficient client operations
+
+3. **Includes Schema.org properties**
+   - Enhances semantic relationships
+   - Improves web discoverability
+   - Supports knowledge graph integration
+
+4. **Adds UBL elements for business context**
+   - Supports formal business communications
+   - Enables process integration
+   - Provides structured metadata
+
+This approach ensures that our message register works with existing email systems while providing the rich features needed for business communication management.
 
 ### Proposal
 
 | Property | Description | Example | Type | Origin |
 |----------|-------------|---------|------|---------|
+| id | Unique identifier | "msg-12345" | string | RFC 5322 Message-ID |
 | subject | Message subject | "Project Update - June 2023" | string | RFC 5322 Subject |
 | body | Message content | "Dear John, I'm writing to update you on..." | string | RFC 5322 Body |
 | from | Sender information | {"name": "Jane Doe", "email": "jane.doe@example.com"} | object | RFC 5322 From |
@@ -918,6 +1247,8 @@ For client messages, we'll create a schema inspired by email and messaging stand
 | readAt | When message was read | "2023-06-10T15:45:22Z" | string (ISO 8601) | JMAP ReadAt |
 | attachments | File attachments | [{"name": "proposal.pdf", "url": "https://..."}] | array[object] | MIME Attachments |
 | thread | Thread identifier | "thread-123456" | string | RFC 5322 References |
+| inReplyTo | Message being replied to | "msg-12344" | string | RFC 5322 In-Reply-To |
+| references | Related messages | ["msg-12343", "msg-12344"] | array[string] | RFC 5322 References |
 | channel | Communication channel | "email", "sms", "chat", "phone" | string (enum) | UBL Channel Code |
 | direction | Message direction | "inbound", "outbound" | string (enum) | Schema.org MessageDirection |
 | status | Delivery status | "sent", "delivered", "read", "failed" | string (enum) | JMAP DeliveryStatus |
@@ -927,64 +1258,97 @@ A thread is a way to group related messages together in a conversation. In messa
 :::
 
 ## Note Object
-For client notes, we'll create a schema based on [UBL's Note element](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd), enhanced with properties from Schema.org's [Comment](https://schema.org/Comment) and [CreativeWork](https://schema.org/CreativeWork) types to ensure broad compatibility with office productivity suites and cloud platforms.
+
+For client notes, we'll create a schema based on Schema.org's [Comment](https://schema.org/Comment) type as our primary foundation, enhanced with properties from UBL's Note element and commercial note-taking platforms to ensure broad compatibility.
+
+### Historical Context
+
+Note-taking and comment systems have evolved significantly from simple text annotations to rich, collaborative content platforms. While early digital note systems were primarily text-based, modern note-taking applications support rich formatting, multimedia content, and collaborative features.
+
+The Schema.org Comment type provides a web-standard approach to representing notes and comments, with strong support for semantic relationships between the note and its subject. By combining this with UBL's more formal Note element structure and features from commercial platforms, we create a note system that works across different contexts from formal business documentation to collaborative team environments.
 
 ### Standards Comparison
 
 <Tabs>
-<TabItem value="ubl" label="UBL Note Standards">
-
-- [UBL Note Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd) - Note element definition
-- [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
-
-**Strengths**
-- Business focused
-- XML validation
-- Enterprise ready
-- Standard schemas
-- Broad adoption
-
-**Limitations** 
-- Complex structure
-- XML only
-- Limited features
-- Rigid format
-- Business specific
-
-**Best Used For**
-- Business docs
-- Formal notes
-- Legal records
-- Compliance
-- Enterprise systems
-
-</TabItem>
-
 <TabItem value="schema" label="Schema.org Standards">
 
 - [Schema.org Comment](https://schema.org/Comment) - Comment type specification
 - [Schema.org CreativeWork](https://schema.org/CreativeWork) - Creative work type specification
+- [Schema.org extensions](https://schema.org/docs/extension.html) - Schema extensions
 
-**Strengths**
-- SEO benefits
-- Flexible format
-- Web standards
-- Rich properties
-- Growing support
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| SEO benefits | Loose structure | Web content |
+| Flexible format | Web focused | Public notes |
+| Web standards | Basic validation | Blog comments |
+| Rich properties | Limited tooling | Reviews |
+| Growing support | Evolving spec | Social content |
 
-**Limitations**
-- Loose structure
-- Web focused
-- Basic validation
-- Limited tooling
-- Evolving spec
+**Schema.org Comment Properties**
 
-**Best Used For**
-- Web content
-- Public notes
-- Blog comments
-- Reviews
-- Social content
+| Property | Type | Description |
+|----------|------|-------------|
+| identifier | Text/URL | Unique identifier |
+| name | Text | Title or headline |
+| text | Text | The actual comment content |
+| about | Thing | The subject of the comment |
+| author | Person/Organization | Who created the comment |
+| dateCreated | DateTime | When the comment was created |
+| dateModified | DateTime | When the comment was last modified |
+| upvoteCount | Integer | Number of upvotes |
+| downvoteCount | Integer | Number of downvotes |
+| parentItem | Comment | Parent comment in a thread |
+| url | URL | URL of the comment |
+| version | Number/Text | Version of the comment |
+| contentLocation | Place | Location the comment is about |
+| contentRating | Rating | Rating given in the comment |
+| keywords | Text | Keywords or tags |
+| inLanguage | Language/Text | Language of the content |
+| encodingFormat | Text | Format of the content |
+| publisher | Person/Organization | Who published the comment |
+| isPartOf | CreativeWork | Larger work this is part of |
+| position | Integer/Text | Position in a series |
+| accessMode | Text | System of access |
+| accessModeSufficient | Text | Sufficient access mode |
+| accessibilityAPI | Text | Accessibility API used |
+| accessibilityControl | Text | Control methods |
+| accessibilityFeature | Text | Accessibility features |
+| accessibilityHazard | Text | Potential hazards |
+
+</TabItem>
+
+<TabItem value="ubl" label="UBL Note Standards">
+
+- [UBL Note Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd) - Note element definition
+- [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
+- [UBL Extensions](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-UBL-2.1-EXTENSIONS) - Custom extensions
+
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Business focused | Complex structure | Business docs |
+| XML validation | XML only | Formal notes |
+| Enterprise ready | Limited features | Legal records |
+| Standard schemas | Rigid format | Compliance |
+| Broad adoption | Business specific | Enterprise systems |
+
+**UBL Note Properties**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | Identifier | Unique identifier |
+| Note | Text | Note content |
+| Subject | Text | Note subject/title |
+| IssueDate | Date | Date of creation |
+| IssueTime | Time | Issue time |
+| NoteTypeCode | Code | Type of note |
+| LanguageID | Identifier | Language identifier |
+| Format | Text | Format of the note |
+| MimeCode | Code | MIME type |
+| EncodingCode | Code | Encoding method |
+| CharacterSetCode | Code | Character set |
+| VersionID | Identifier | Version identifier |
+| DocumentStatusCode | Code | Status of the note |
+| DocumentDescription | Text | Description of the note |
 
 </TabItem>
 
@@ -992,27 +1356,39 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 
 - [Microsoft Graph Notes API](https://learn.microsoft.com/en-us/graph/api/resources/onenote) - OneNote integration
 - [Microsoft 365 Notes](https://learn.microsoft.com/en-us/graph/api/resources/onenote-api-overview) - Notes platform
+- [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/overview) - Microsoft 365 API
 
-**Strengths**
-- Office integration
-- Rich features
-- Enterprise ready
-- Strong security
-- Team support
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Office integration | License costs | Office users |
+| Rich features | Vendor lock-in | Team notes |
+| Enterprise ready | Complex setup | Enterprise use |
+| Strong security | Microsoft focus | Windows systems |
+| Team support | Limited platforms | Corporate docs |
 
-**Limitations**
-- License costs
-- Vendor lock-in
-- Complex setup
-- Microsoft focus
-- Limited platforms
+**Microsoft OneNote Properties**
 
-**Best Used For**
-- Office users
-- Team notes
-- Enterprise use
-- Windows systems
-- Corporate docs
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| title | String | Note title |
+| createdDateTime | DateTimeOffset | Creation date/time |
+| lastModifiedDateTime | DateTimeOffset | Last modification date/time |
+| isDefault | Boolean | Whether this is the default notebook |
+| userRole | String | User's role for the notebook |
+| isShared | Boolean | Whether the notebook is shared |
+| sectionsUrl | URL | URL to the sections in the notebook |
+| sectionGroupsUrl | URL | URL to the section groups in the notebook |
+| links | ResourceLinks | Links for opening the notebook |
+| displayName | String | Display name |
+| contentUrl | URL | URL for the page content |
+| content | Stream | Page content |
+| lastModifiedBy | IdentitySet | Identity of the user who last modified the page |
+| level | Integer | Indentation level |
+| order | Integer | Order of the section |
+| self | URL | URL for the section |
+| parentNotebook | Notebook | Parent notebook |
+| parentSectionGroup | SectionGroup | Parent section group |
 
 </TabItem>
 
@@ -1020,27 +1396,38 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 
 - [Google Keep API](https://developers.google.com/keep) - Note taking platform
 - [Google Drive Integration](https://developers.google.com/drive) - Storage backend
+- [Google Docs API](https://developers.google.com/docs/api) - Document management
 
-**Strengths**
-- Simple interface
-- Mobile support
-- Cloud storage
-- Gmail integration
-- Collaboration
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Simple interface | Basic features | Personal notes |
+| Mobile support | Google ecosystem | Quick capture |
+| Cloud storage | Limited format | Mobile use |
+| Gmail integration | Simple structure | Simple lists |
+| Collaboration | Consumer focus | Reminders |
 
-**Limitations**
-- Basic features
-- Google ecosystem
-- Limited format
-- Simple structure
-- Consumer focus
+**Google Keep Properties**
 
-**Best Used For**
-- Personal notes
-- Quick capture
-- Mobile use
-- Simple lists
-- Reminders
+| Property | Type | Description |
+|----------|------|-------------|
+| id | String | Unique identifier |
+| title | String | Note title |
+| textContent | String | Text content |
+| listContent | List | List items |
+| isPinned | Boolean | Whether the note is pinned |
+| isArchived | Boolean | Whether the note is archived |
+| color | String | Note color |
+| labels | List | Labels/tags |
+| annotations | List | Annotations (URLs, places) |
+| reminders | List | Reminders |
+| collaborators | List | Collaborators |
+| createdTimestampUsec | Long | Creation timestamp |
+| userEditedTimestampUsec | Long | Last edit timestamp |
+| trashed | Boolean | Whether the note is in trash |
+| attachments | List | Attachments |
+| checklist | List | Checklist items |
+| shareState | String | Sharing state |
+| version | Long | Note version |
 
 </TabItem>
 
@@ -1048,71 +1435,114 @@ For client notes, we'll create a schema based on [UBL's Note element](https://do
 
 - [Nextcloud Notes API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/Notes/index.html) - Notes integration
 - [Nextcloud Text](https://apps.nextcloud.com/apps/text) - Rich text editor
+- [Nextcloud Files API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/index.html) - File management
 
-**Strengths**
-- Self hosted
-- Open source
-- File sync
-- Markdown support
-- Privacy focus
+| Strengths | Limitations | Best Used For |
+|-----------|-------------|---------------|
+| Self hosted | Server needed | Private notes |
+| Open source | Basic features | Team sharing |
+| File sync | Limited apps | File storage |
+| Markdown support | Simple format | Personal cloud |
+| Privacy focus | Community support | Markdown docs |
 
-**Limitations**
-- Server needed
-- Basic features
-- Limited apps
-- Simple format
-- Community support
+**Nextcloud Notes Properties**
 
-**Best Used For**
-- Private notes
-- Team sharing
-- File storage
-- Personal cloud
-- Markdown docs
+| Property | Type | Description |
+|----------|------|-------------|
+| id | Integer | Unique identifier |
+| title | String | Note title |
+| content | String | Note content |
+| category | String | Category/folder |
+| favorite | Boolean | Whether the note is favorited |
+| modified | Integer | Modification timestamp |
+| etag | String | Entity tag for caching |
+| shareTypes | Array | Types of shares |
+| shareWith | Array | Users/groups to share with |
+| permissions | Integer | Permission bitmask |
+| readonly | Boolean | Whether the note is read-only |
+| contentType | String | Content type (text/markdown) |
+| fileid | Integer | File ID in storage |
+| path | String | Path in storage |
+| userId | String | Owner user ID |
+| autotitle | Boolean | Auto-generate title from content |
+| attachments | Array | Attached files |
 
 </TabItem>
 </Tabs>
 
-The following table compares note properties across relevant standards and platforms:
-
 ### Property Comparison
 
-| UBL Note | Schema.org | Office 365 | Google Docs | Nextcloud |
-|----------|------------|------------|-------------|-----------|
-| ID | identifier | id | id | id |
-| Subject | name | subject | title | title |
-| Note | text | body | content | content |
-| Format | encodingFormat | contentType | mimeType | contentType |
-| Language | inLanguage | language | locale | locale |
-| Author | creator | author | lastModifyingUser | userId |
-| IssueDate | dateCreated | createdDateTime | createdTime | createdAt |
-| - | dateModified | lastModifiedDateTime | modifiedTime | updatedAt |
-| - | version | eTag | version | etag |
-| - | isPartOf | parentReference | parents | parentId |
-| - | sharedContent | shared | shared | shareTypes |
-| - | permissionType | permissions | capabilities | permissions |
+The following table compares note properties across relevant standards and platforms:
 
+| Our Property | Schema.org | UBL | Microsoft 365 | Google Docs | Nextcloud | Description |
+|--------------|------------|-----|---------------|------------|-----------|-------------|
+| **Core Properties** |
+| id | identifier | ID | id | id | id | Unique identifier |
+| title | name | Subject | title | title | title | Note title |
+| content | text | Note | content | textContent | content | Note content |
+| about | about | - | - | - | - | What the note is about |
+| format | encodingFormat | Format | contentType | - | contentType | Content format |
+| language | inLanguage | LanguageID | language | - | - | Content language |
+| **Metadata Properties** |
+| createdBy | author | IssuerParty | createdBy | - | userId | Author information |
+| createdAt | dateCreated | IssueDate | createdDateTime | - | - | Creation timestamp |
+| updatedAt | dateModified | - | lastModifiedDateTime | - | modified | Last update timestamp |
+| version | version | VersionID | - | - | etag | Version number |
+| parent | isPartOf | - | parentNotebook | - | category | Parent container |
+| **Organization Properties** |
+| tags | keywords | - | - | - | - | Categorization tags |
+| visibility | - | - | - | - | shareTypes | Visibility settings |
+| pinned | - | - | - | - | favorite | Whether note is pinned |
+| **Relationships** |
+| about | about | - | - | - | - | Associated client/entity |
+| references | - | - | - | - | - | Referenced content |
+
+### Our Hybrid Approach
+
+Based on this analysis, our note register uses a hybrid approach that:
+
+1. **Adopts Schema.org Comment as the foundation**
+   - Ensures web compatibility
+   - Provides simple, clear structure
+   - Supports semantic relationships
+
+2. **Adds rich content capabilities**
+   - Supports formatted text
+   - Enables multimedia content
+   - Provides flexible layout options
+
+3. **Includes organizational features**
+   - Supports categorization and tagging
+   - Enables pinning important notes
+   - Provides visibility controls
+
+4. **Incorporates CRM-inspired metadata**
+   - Links notes to business processes
+   - Tracks authorship and history
+   - Supports relationship modeling
+
+This approach ensures that our note register provides a flexible yet structured way to capture important client information that doesn't fit into other structured data models.
 
 ### Proposal
 
 | Property | Description | Example | Type | Origin |
 |----------|-------------|---------|------|---------|
-| id | Unique identifier for the note | "note-123456" | string | UBL Note ID |
+| id | Unique identifier for the note | "note-123456" | string | Schema.org identifier |
 | title | Note title | "Meeting Summary - June 10" | string | Schema.org name |
-| content | Note content | "Met with client to discuss new requirements..." | string | UBL Note text |
+| content | Note content | "Met with client to discuss new requirements..." | string | Schema.org text |
 | about | Reference to the object this note is about | 550e8400-e29b-41d4-a716-446655440000 | uuid/uri | Schema.org about |
-| format | Content format | "text/html" | string | UBL Format |
-| language | Content language | "en-US" | string | UBL Language |
-| createdBy | Author information | {"id": "user-123", "name": "Jane Doe"} | object | UBL Author |
-| createdAt | Creation timestamp | "2023-06-10T16:30:00Z" | string (ISO 8601) | UBL IssueDate |
+| format | Content format | "text/html" | string | Schema.org encodingFormat |
+| language | Content language | "en-US" | string | Schema.org inLanguage |
+| createdBy | Author information | {"id": "user-123", "name": "Jane Doe"} | object | Schema.org author |
+| createdAt | Creation timestamp | "2023-06-10T16:30:00Z" | string (ISO 8601) | Schema.org dateCreated |
 | updatedAt | Last update timestamp | "2023-06-11T09:15:00Z" | string (ISO 8601) | Schema.org dateModified |
 | version | Version number | "1.2" | string | Schema.org version |
 | parent | Parent container reference | "folder-789" | string | Schema.org isPartOf |
 | tags | Categorization tags | ["meeting", "requirements", "important"] | array[string] | Schema.org keywords |
-| visibility | Who can see the note | "private", "team", "public" | string (enum) | Schema.org permissionType |
-| pinned | Whether note is pinned | true/false | boolean | Office 365 extension |
-| shared | Sharing status | {"type": "team", "users": ["user-456"]} | object | Schema.org sharedContent |
-| permissions | Access rights | ["read", "write", "share"] | array[string] | Schema.org permissionType |
+| visibility | Who can see the note | "private", "team", "public" | string (enum) | Microsoft/Google extension |
+| pinned | Whether note is pinned | true/false | boolean | Google Keep isPinned |
+| shared | Sharing status | {"type": "team", "users": ["user-456"]} | object | Nextcloud shareTypes |
+| permissions | Access rights | ["read", "write", "share"] | array[string] | Nextcloud permissions |
 
 :::note About Property
 The 'about' property is based on Schema.org's [about](https://schema.org/about) property, which indicates the subject matter of the content. In our implementation, we use it to create a direct link between the note and the entity it refers to (like a client, task, or message). The value should be a UUID or URI that uniquely identifies the referenced object. This creates a semantic relationship that can be used for filtering, searching, and organizing notes by their subject matter.
