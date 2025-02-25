@@ -495,27 +495,25 @@ This approach ensures that our client register is both standards-compliant and p
 
 ### Proposal
 
-The following table compares our European-based client object with other standards and commercial CRM systems:
-
-| Our Property | EU Core | vCard | Schema.org | UBL | Salesforce | Dynamics 365 | Exact Online |
-|--------------|---------|-------|------------|-----|------------|--------------|--------------|
-| id | identifier | UID | identifier | ID | Id | accountid | ID |
-| @type | - | - | @type | - | RecordType | EntityType | - |
-| identifier | identifier | - | identifier | PartyIdentification | ExternalId | msdyn_externalaccountid | Code |
-| name | fullName/legalName | FN | name | Name | Name | name | Name |
-| alternativeName | alternativeName | NICKNAME | alternateName | TradingName | - | - | SearchCode |
-| givenName | givenName | N (part) | givenName | FirstName | FirstName | firstname | FirstName |
-| familyName | familyName | N (part) | familyName | FamilyName | LastName | lastname | LastName |
-| birthDate | dateOfBirth | BDAY | birthDate | BirthDate | Birthdate | birthdate | DateOfBirth |
-| gender | gender | GENDER | gender | GenderCode | - | gendercode | Gender |
-| address | registeredAddress | ADR | address | PostalAddress | Address | address1_* | Address |
-| contactPoint | contactPoint | TEL/EMAIL | contactPoint | Contact | - | - | - |
-| legalEntity | legalEntity | - | - | PartyLegalEntity | - | - | LegalEntity |
-| companyType | companyType | - | - | CompanyLegalFormCode | - | businesstypecode | LegalForm |
-| companyStatus | status | - | - | StatusCode | Status | statuscode | Status |
-| companyActivity | activity | - | - | IndustryClassificationCode | Industry | industrycode | SbiCode |
-| dateCreated | - | - | dateCreated | CreationDate | CreatedDate | createdon | Created |
-| dateModified | - | - | dateModified | LastModificationDate | LastModifiedDate | modifiedon | Modified |
+| Property | Description | Example | Type | Origin |
+|----------|-------------|---------|------|---------|
+| id | Unique identifier for the client | 12345 | string | Internal system |
+| @type | Type of client record | Organization | string | Schema.org |
+| identifier | External identifier | BE0123456789 | string | EU Core |
+| name | Official name | Acme Corporation | string | EU Core |
+| alternativeName | Trading or informal name | Acme Corp | string | EU Core |
+| givenName | First name for individuals | John | string | EU Core |
+| familyName | Last name for individuals | Smith | string | EU Core |
+| birthDate | Date of birth for individuals | 1970-01-01 | date | EU Core |
+| gender | Gender for individuals | Male | string | EU Core |
+| address | Physical location | 123 Main St | object | EU Core |
+| contactPoint | Contact information | phone, email | object | EU Core |
+| legalEntity | Legal entity information | registration details | object | EU Core |
+| companyType | Type of company | LLC | string | EU Core |
+| companyStatus | Current status | Active | string | EU Core |
+| companyActivity | Industry classification | Manufacturing | string | EU Core |
+| dateCreated | Record creation date | 2023-01-01T12:00:00Z | datetime | System |
+| dateModified | Last modification date | 2023-06-15T09:30:00Z | datetime | System |
 
 ## Tasks Object
 
@@ -734,7 +732,6 @@ The following table compares task properties across all relevant standards:
 | SEQUENCE | revision | - | - | - | versionnumber | Version number |
 | CLASS | class | - | - | IsPrivate | - | Privacy setting |
 
-
 ### Proposal
 
 Based on this analysis, we propose the following task object structure that combines the best elements from each standard:
@@ -762,11 +759,111 @@ Based on this analysis, we propose the following task object structure that comb
 
 For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
 
-**Key references:**
+### Standards Comparison
+
+**Schema.org Message Standards**
 - [Schema.org Message](https://schema.org/Message) - Message schema definition
+- [Schema.org EmailMessage](https://schema.org/EmailMessage) - Email message type
+- [Schema.org Message Extensions](https://schema.org/messageAttachment) - Message attachments
+
+**Strengths**
+- SEO benefits
+- Web integration
+- Flexible schema
+- Growing adoption
+- Search friendly
+
+**Limitations**
+- Web focused
+- Basic validation
+- Simple model
+- Limited tooling
+- Evolving spec
+
+**Best Used For**
+- Web content
+- Search data
+- Public messages
+- Basic messaging
+- SEO optimization
+
+**RFC 5322 Standards**
 - [RFC 5322](https://datatracker.ietf.org/doc/html/rfc5322) - Internet Message Format
+- [RFC 2045-2049](https://datatracker.ietf.org/doc/html/rfc2045) - MIME Extensions
+- [RFC 6854](https://datatracker.ietf.org/doc/html/rfc6854) - Update to Internet Message Format
+
+**Strengths**
+- Email standard
+- Wide support
+- Rich features
+- Proven format
+- MIME support
+
+**Limitations**
+- Email specific
+- Complex parsing
+- Text focused
+- Limited metadata
+- Fixed structure
+
+**Best Used For**
+- Email systems
+- Message exchange
+- MIME content
+- Internet mail
+- Standards compliance
+
+**JMAP Standards**
 - [JMAP](https://jmap.io/spec.html) - JSON Meta Application Protocol
+- [JMAP Mail](https://jmap.io/spec-mail.html) - Email extensions
+- [JMAP Calendar](https://jmap.io/spec-calendars.html) - Calendar integration
+
+**Strengths**
+- Modern protocol
+- JSON based
+- Rich features
+- Real-time sync
+- Mobile ready
+
+**Limitations**
+- New standard
+- Limited adoption
+- Complex setup
+- Learning curve
+- Few tools
+
+**Best Used For**
+- Modern apps
+- Mobile sync
+- Rich clients
+- Real-time chat
+- Cloud messaging
+
+**UBL Communication Standards**
 - [UBL Communication](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMUNICATION) - Universal Business Language
+- [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
+- [UBL Extensions](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-UBL-2.1-EXTENSIONS) - Custom extensions
+
+**Strengths**
+- Business focused
+- XML validation
+- Enterprise ready
+- Standard schemas
+- Broad adoption
+
+**Limitations**
+- Complex format
+- XML only
+- Business specific
+- Heavy structure
+- Limited flexibility
+
+**Best Used For**
+- Business docs
+- Formal comms
+- Legal records
+- Enterprise use
+- B2B messaging
 
 ### Proposal
 
@@ -793,13 +890,136 @@ A thread is a way to group related messages together in a conversation. In messa
 ## Note Object
 For client notes, we'll create a schema based on [UBL's Note element](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd), enhanced with properties from Schema.org's [Comment](https://schema.org/Comment) and [CreativeWork](https://schema.org/CreativeWork) types to ensure broad compatibility with office productivity suites and cloud platforms.
 
-**Key references:**
-- [UBL Note Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd) - UBL Note element definition
+### Standards Comparison
+
+**UBL Note Standards**
+- [UBL Note Schema](https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd) - Note element definition
+- [UBL Common Library](https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#T-COMMON) - Common components
+
+**Strengths**
+- Business focused
+- XML validation
+- Enterprise ready
+- Standard schemas
+- Broad adoption
+
+**Limitations** 
+- Complex structure
+- XML only
+- Limited features
+- Rigid format
+- Business specific
+
+**Best Used For**
+- Business docs
+- Formal notes
+- Legal records
+- Compliance
+- Enterprise systems
+
+
+**Schema.org Standards**
 - [Schema.org Comment](https://schema.org/Comment) - Comment type specification
 - [Schema.org CreativeWork](https://schema.org/CreativeWork) - Creative work type specification
+
+**Strengths**
+- SEO benefits
+- Flexible format
+- Web standards
+- Rich properties
+- Growing support
+
+**Limitations**
+- Loose structure
+- Web focused
+- Basic validation
+- Limited tooling
+- Evolving spec
+
+**Best Used For**
+- Web content
+- Public notes
+- Blog comments
+- Reviews
+- Social content
+
+
+**Microsoft Graph Standards**
 - [Microsoft Graph Notes API](https://learn.microsoft.com/en-us/graph/api/resources/onenote) - OneNote integration
-- [Google Keep API](https://developers.google.com/keep) - Google Keep integration
-- [Nextcloud Notes API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/Notes/index.html) - Nextcloud Notes integration
+- [Microsoft 365 Notes](https://learn.microsoft.com/en-us/graph/api/resources/onenote-api-overview) - Notes platform
+
+**Strengths**
+- Office integration
+- Rich features
+- Enterprise ready
+- Strong security
+- Team support
+
+**Limitations**
+- License costs
+- Vendor lock-in
+- Complex setup
+- Microsoft focus
+- Limited platforms
+
+**Best Used For**
+- Office users
+- Team notes
+- Enterprise use
+- Windows systems
+- Corporate docs
+
+
+**Google Keep Standards**
+- [Google Keep API](https://developers.google.com/keep) - Note taking platform
+- [Google Drive Integration](https://developers.google.com/drive) - Storage backend
+
+**Strengths**
+- Simple interface
+- Mobile support
+- Cloud storage
+- Gmail integration
+- Collaboration
+
+**Limitations**
+- Basic features
+- Google ecosystem
+- Limited format
+- Simple structure
+- Consumer focus
+
+**Best Used For**
+- Personal notes
+- Quick capture
+- Mobile use
+- Simple lists
+- Reminders
+
+
+**Nextcloud Standards**
+- [Nextcloud Notes API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/Notes/index.html) - Notes integration
+- [Nextcloud Text](https://apps.nextcloud.com/apps/text) - Rich text editor
+
+**Strengths**
+- Self hosted
+- Open source
+- File sync
+- Markdown support
+- Privacy focus
+
+**Limitations**
+- Server needed
+- Basic features
+- Limited apps
+- Simple format
+- Community support
+
+**Best Used For**
+- Private notes
+- Team sharing
+- File storage
+- Personal cloud
+- Markdown docs
 
 The following table compares note properties across relevant standards and platforms:
 
