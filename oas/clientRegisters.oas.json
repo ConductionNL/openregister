@@ -60,10 +60,586 @@
   ],
   "security": [
     {
-      "oauth2": ["read", "write"]
+      "oauth2": [
+        "read",
+        "write"
+      ]
     }
   ],
-  "paths": {},
+  "paths": {
+    "/clients": {
+      "get": {
+        "summary": "Retrieve a list of Client",
+        "operationId": "getClient",
+        "tags": [
+          "Client"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Client"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Client",
+        "operationId": "createClient",
+        "tags": [
+          "Client"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Client"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Client created successfully"
+          }
+        }
+      }
+    },
+    "/clients/{id}": {
+      "get": {
+        "summary": "Retrieve a Client by ID",
+        "operationId": "getClientById",
+        "tags": [
+          "Client"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Client"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Client by ID",
+        "operationId": "updateClient",
+        "tags": [
+          "Client"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Client"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Client updated successfully"
+          },
+          "404": {
+            "description": "Client not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Client by ID",
+        "operationId": "deleteClient",
+        "tags": [
+          "Client"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Client deleted successfully"
+          },
+          "404": {
+            "description": "Client not found"
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "Retrieve a list of Task",
+        "operationId": "getTask",
+        "tags": [
+          "Task"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Task",
+        "operationId": "createTask",
+        "tags": [
+          "Task"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Task"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created successfully"
+          }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "summary": "Retrieve a Task by ID",
+        "operationId": "getTaskById",
+        "tags": [
+          "Task"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Task by ID",
+        "operationId": "updateTask",
+        "tags": [
+          "Task"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Task"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Task by ID",
+        "operationId": "deleteTask",
+        "tags": [
+          "Task"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Task deleted successfully"
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      }
+    },
+    "/messages": {
+      "get": {
+        "summary": "Retrieve a list of Message",
+        "operationId": "getMessage",
+        "tags": [
+          "Message"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Message"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Message",
+        "operationId": "createMessage",
+        "tags": [
+          "Message"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message created successfully"
+          }
+        }
+      }
+    },
+    "/messages/{id}": {
+      "get": {
+        "summary": "Retrieve a Message by ID",
+        "operationId": "getMessageById",
+        "tags": [
+          "Message"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Message not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Message by ID",
+        "operationId": "updateMessage",
+        "tags": [
+          "Message"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message updated successfully"
+          },
+          "404": {
+            "description": "Message not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Message by ID",
+        "operationId": "deleteMessage",
+        "tags": [
+          "Message"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Message deleted successfully"
+          },
+          "404": {
+            "description": "Message not found"
+          }
+        }
+      }
+    },
+    "/notes": {
+      "get": {
+        "summary": "Retrieve a list of Note",
+        "operationId": "getNote",
+        "tags": [
+          "Note"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Note"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Note",
+        "operationId": "createNote",
+        "tags": [
+          "Note"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Note"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Note created successfully"
+          }
+        }
+      }
+    },
+    "/notes/{id}": {
+      "get": {
+        "summary": "Retrieve a Note by ID",
+        "operationId": "getNoteById",
+        "tags": [
+          "Note"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Note by ID",
+        "operationId": "updateNote",
+        "tags": [
+          "Note"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Note"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note updated successfully"
+          },
+          "404": {
+            "description": "Note not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Note by ID",
+        "operationId": "deleteNote",
+        "tags": [
+          "Note"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Note deleted successfully"
+          },
+          "404": {
+            "description": "Note not found"
+          }
+        }
+      }
+    }
+  },
   "components": {
     "securitySchemes": {
       "oauth2": {
@@ -92,7 +668,10 @@
           },
           "@type": {
             "type": "string",
-            "enum": ["Person", "Organization"],
+            "enum": [
+              "Person",
+              "Organization"
+            ],
             "description": "Schema.org type of the client",
             "example": "Person"
           },
@@ -159,7 +738,13 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["work", "home", "mobile", "fax", "other"],
+                  "enum": [
+                    "work",
+                    "home",
+                    "mobile",
+                    "fax",
+                    "other"
+                  ],
                   "example": "work"
                 }
               }
@@ -178,7 +763,11 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["work", "home", "other"],
+                  "enum": [
+                    "work",
+                    "home",
+                    "other"
+                  ],
                   "example": "work"
                 }
               }
@@ -217,7 +806,11 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["work", "home", "other"],
+                  "enum": [
+                    "work",
+                    "home",
+                    "other"
+                  ],
                   "example": "work"
                 }
               }
@@ -236,7 +829,11 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": ["work", "personal", "other"],
+                  "enum": [
+                    "work",
+                    "personal",
+                    "other"
+                  ],
                   "example": "work"
                 }
               }
@@ -264,7 +861,11 @@
             "description": "When the client record was last updated (Schema.org dateModified)"
           }
         },
-        "required": ["id", "@type", "name"]
+        "required": [
+          "id",
+          "@type",
+          "name"
+        ]
       },
       "Task": {
         "type": "object",
@@ -311,7 +912,13 @@
           "actionStatus": {
             "type": "string",
             "description": "Task status (Schema.org actionStatus, iCal STATUS)",
-            "enum": ["PotentialActionStatus", "ActiveActionStatus", "CompletedActionStatus", "FailedActionStatus", "CanceledActionStatus"],
+            "enum": [
+              "PotentialActionStatus",
+              "ActiveActionStatus",
+              "CompletedActionStatus",
+              "FailedActionStatus",
+              "CanceledActionStatus"
+            ],
             "example": "ActiveActionStatus"
           },
           "priority": {
@@ -334,7 +941,11 @@
             "items": {
               "type": "string"
             },
-            "example": ["proposal", "client", "website"]
+            "example": [
+              "proposal",
+              "client",
+              "website"
+            ]
           },
           "agent": {
             "type": "object",
@@ -394,7 +1005,12 @@
             "description": "When the task record was last updated (Schema.org dateModified, iCal LAST-MODIFIED)"
           }
         },
-        "required": ["id", "name", "actionStatus", "clientId"]
+        "required": [
+          "id",
+          "name",
+          "actionStatus",
+          "clientId"
+        ]
       },
       "Message": {
         "type": "object",
@@ -549,24 +1165,44 @@
             "items": {
               "type": "string"
             },
-            "example": ["<0987654321@mail.example.com>", "<5678901234@mail.example.com>"]
+            "example": [
+              "<0987654321@mail.example.com>",
+              "<5678901234@mail.example.com>"
+            ]
           },
           "channel": {
             "type": "string",
             "description": "Communication channel (custom extension)",
-            "enum": ["email", "sms", "chat", "phone", "video", "social"],
+            "enum": [
+              "email",
+              "sms",
+              "chat",
+              "phone",
+              "video",
+              "social"
+            ],
             "example": "email"
           },
           "direction": {
             "type": "string",
             "description": "Message direction (custom extension)",
-            "enum": ["inbound", "outbound"],
+            "enum": [
+              "inbound",
+              "outbound"
+            ],
             "example": "outbound"
           },
           "status": {
             "type": "string",
             "description": "Delivery status (custom extension)",
-            "enum": ["draft", "sending", "sent", "delivered", "read", "failed"],
+            "enum": [
+              "draft",
+              "sending",
+              "sent",
+              "delivered",
+              "read",
+              "failed"
+            ],
             "example": "delivered"
           },
           "clientId": {
@@ -585,11 +1221,20 @@
             "description": "When the message record was last updated (Schema.org dateModified)"
           }
         },
-        "required": ["id", "about", "text", "sender", "recipient", "channel", "direction", "clientId"]
+        "required": [
+          "id",
+          "about",
+          "text",
+          "sender",
+          "recipient",
+          "channel",
+          "direction",
+          "clientId"
+        ]
       },
       "Note": {
         "type": "object",
-        "description": "Note about a client based on Schema.org Comment",
+        "description": "Note based on Schema.org Comment and UBL Note",
         "properties": {
           "id": {
             "type": "string",
@@ -601,19 +1246,40 @@
             "default": "Comment",
             "description": "Schema.org type"
           },
-          "headline": {
+          "title": {
             "type": "string",
-            "description": "Note title (Schema.org headline)",
+            "description": "Note title (Schema.org name)",
             "example": "Meeting Summary - June 10"
           },
-          "text": {
+          "content": {
             "type": "string",
-            "description": "Note content (Schema.org text)",
+            "description": "Note content (Schema.org text, UBL Note)",
             "example": "Met with client to discuss new requirements for the website project. They want to add an e-commerce section and integrate with their inventory system."
           },
-          "author": {
+          "about": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the entity this note is about (Schema.org about)",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "format": {
+            "type": "string",
+            "description": "Content format (Schema.org encodingFormat)",
+            "enum": [
+              "text/plain",
+              "text/html",
+              "text/markdown"
+            ],
+            "example": "text/markdown"
+          },
+          "language": {
+            "type": "string",
+            "description": "Content language (Schema.org inLanguage, UBL LanguageID)",
+            "example": "en-US"
+          },
+          "createdBy": {
             "type": "object",
-            "description": "Author information (Schema.org author)",
+            "description": "Author information (Schema.org author, UBL IssuerParty)",
             "properties": {
               "id": {
                 "type": "string",
@@ -626,45 +1292,107 @@
               }
             }
           },
-          "dateCreated": {
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "description": "When the note was created (Schema.org dateCreated)",
+            "description": "When the note was created (Schema.org dateCreated, UBL IssueDate)",
             "example": "2023-06-10T16:30:00Z"
           },
-          "dateModified": {
+          "updatedAt": {
             "type": "string",
             "format": "date-time",
             "description": "When the note was last updated (Schema.org dateModified)",
             "example": "2023-06-11T09:15:00Z"
           },
-          "keywords": {
+          "version": {
+            "type": "string",
+            "description": "Version number (Schema.org version, UBL VersionID)",
+            "example": "1.2"
+          },
+          "parent": {
+            "type": "string",
+            "description": "Parent container reference (Schema.org isPartOf)",
+            "example": "folder-789"
+          },
+          "tags": {
             "type": "array",
             "description": "Categorization tags (Schema.org keywords)",
             "items": {
               "type": "string"
             },
-            "example": ["meeting", "requirements", "important"]
+            "example": [
+              "meeting",
+              "requirements",
+              "important"
+            ]
           },
           "visibility": {
             "type": "string",
             "description": "Who can see the note (custom extension)",
-            "enum": ["private", "team", "public"],
+            "enum": [
+              "private",
+              "team",
+              "public"
+            ],
             "example": "team"
           },
           "pinned": {
             "type": "boolean",
-            "description": "Whether the note is pinned (custom extension)",
+            "description": "Whether note is pinned (custom extension)",
             "example": true
           },
-          "about": {
-            "type": "string",
-            "format": "uuid",
-            "description": "ID of the client this note is about (Schema.org about)"
+          "shared": {
+            "type": "object",
+            "description": "Sharing status (custom extension)",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "user",
+                  "team",
+                  "public"
+                ],
+                "example": "team"
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "user-456"
+                ]
+              }
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "description": "Access rights (custom extension)",
+            "items": {
+              "type": "string",
+              "enum": [
+                "read",
+                "write",
+                "share",
+                "delete"
+              ]
+            },
+            "example": [
+              "read",
+              "write",
+              "share"
+            ]
           }
         },
-        "required": ["id", "text", "author", "dateCreated", "about"]
+        "required": [
+          "id",
+          "content",
+          "about",
+          "createdBy",
+          "createdAt"
+        ]
       }
     }
   }
-} 
+}
