@@ -1396,8 +1396,6 @@ To complement our standards-based client register design, we've created a compre
 
 The complete API specification is available as an OpenAPI 3.0 document:
 
-- [Client Register API Specification](clientRegister.oas.json)
-
 This specification includes detailed definitions for:
 
 - Client entities (Person and Organization)
@@ -1417,22 +1415,3 @@ Using this OpenAPI specification provides several benefits:
 4. **Validation**: Validate requests and responses against the schema definitions
 5. **Consistent Implementation**: Ensure consistent implementation across different systems
 
-### Integration with Open Register
-
-The specification is designed to work seamlessly with Open Register:
-
-```bash
-# Import the schema definitions
-openregister schema:import /path/to/clientRegister.oas.json
-
-# Create the registers
-openregister register:create clients
-openregister register:create tasks
-openregister register:create messages
-openregister register:create notes
-
-# Configure API endpoints
-openregister api:configure --spec=/path/to/clientRegister.oas.json
-```
-
-By using this specification as the foundation for your client register implementation, you ensure compliance with European standards while providing a robust, interoperable API for client data management. 
