@@ -3,6 +3,9 @@ title: European Client Register Standard
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # European Client Register Standard
 
 ## Project Introduction
@@ -101,36 +104,260 @@ We'll build a complete client management system with the following components:
 
 Each component will be implemented as a register in Open Register, with proper schemas and relationships.
 
-## Client Information Based on vCard
+## Client Information Based on European Core Vocabularies
 
-For our client information, we'll use the [vCard standard](https://datatracker.ietf.org/doc/html/rfc6350) (RFC 6350), which is an international standard for contact information exchange.
+For our client information, we'll use the European Core Vocabularies (Core Person and Core Business) as our primary foundation, while ensuring compatibility with other standards including vCard, Schema.org, and commercial CRM systems.
 
-### Why vCard?
+### Historical Context
 
-vCard is an ideal foundation for client data because:
-1. It's an established international standard
-2. It provides a comprehensive structure for contact information
-3. It supports both individuals and organizations
-4. It's extensible for custom requirements
-5. It's widely supported across systems
+The vCard standard (RFC 6350) represents one of the first industry-wide attempts to standardize person and organization information. Developed in the 1990s and still widely used today, vCard remains the dominant format for exchanging contact information between devices and applications, particularly in mobile phones, email clients, and contact management systems.
 
-### Key vCard Properties for Clients
+While vCard provides an excellent foundation for basic contact exchange, the European Core Vocabularies offer a more comprehensive approach specifically designed for government and business contexts, with stronger support for official identifiers, multilingual information, and regulatory compliance.
 
-The vCard standard includes many properties that are useful for client information:
+### Standards Analysis
 
-| Property | Description | Example |
-|----------|-------------|---------|
-| FN | Formatted Name | "John Smith" |
-| N | Structured Name | ["Smith", "John", "", "Dr.", "Jr."] |
-| ORG | Organization | ["Acme, Inc.", "Marketing"] |
-| TITLE | Title | "Director" |
-| PHOTO | Photo/Avatar | [Binary data or URL] |
-| TEL | Telephone | "+1-555-123-4567" |
-| EMAIL | Email | "john.smith@example.com" |
-| ADR | Address | ["", "", "123 Main St", "Anytown", "CA", "91921", "USA"] |
-| BDAY | Birthday | "1973-04-22" |
-| URL | Website | "https://example.com" |
-| NOTE | Notes | "Prefers email contact" |
+
+<Tabs>
+  <TabItem value="eu-core" label="EU Core Vocabularies">
+
+### Strengths
+- Official EU standard
+- Strong identifier support  
+- Multilingual by design
+- Public sector alignment
+- Regulatory compliance
+
+### Limitations
+- Less known outside EU
+- Fewer implementations
+- More complex structure 
+- Limited consumer support
+
+### Best Used For
+- Government systems
+- Cross-border exchange
+- Official registrations
+- Public procurement
+- Regulatory reporting
+
+  </TabItem>
+  <TabItem value="vcard" label="vCard (RFC 6350)">
+
+### Strengths
+- Widespread adoption
+- Simple structure
+- Device compatibility 
+- Email integration
+- Consumer familiarity
+
+### Limitations
+- Limited business fields
+- Weak identifier support
+- Basic multilingual support
+- Limited relationship modeling
+
+### Best Used For
+- Contact exchange
+- Mobile devices
+- Email systems
+- Personal contacts
+- Legacy integration
+
+  </TabItem>
+  <TabItem value="schema" label="Schema.org">
+
+### Strengths
+- Web search optimization
+- Rich property set
+- Linked data support
+- Major search engine backing
+- Growing adoption
+
+### Limitations
+- Web-centric design
+- Less formal validation
+- Evolving specifications
+- Limited official status
+
+### Best Used For
+- Web content
+- SEO optimization
+- Knowledge graphs
+- Public directories
+- Semantic web applications
+
+  </TabItem>
+  <TabItem value="ubl" label="UBL Party">
+
+### Strengths
+- Business document focus
+- Procurement support
+- Legal entity details
+- International standard
+- XML validation
+
+### Limitations
+- Complex structure
+- Verbose format
+- Business-only focus
+- Limited personal details
+
+### Best Used For
+- E-procurement
+- Business documents
+- Supply chain
+- E-invoicing
+- Formal business exchange
+
+  </TabItem>
+  <TabItem value="salesforce" label="Salesforce">
+
+### Strengths
+- Business process integration
+- Sales/marketing features
+- Extensive customization
+- Industry solutions
+- Ecosystem support
+
+### Limitations
+- Proprietary format
+- License requirements
+- Complex data model
+- Vendor lock-in
+
+### Best Used For
+- CRM processes
+- Sales automation
+- Marketing campaigns
+- Customer service
+- Business intelligence
+
+  </TabItem>
+  <TabItem value="dynamics" label="Microsoft Dynamics">
+
+### Strengths
+- Microsoft ecosystem integration
+- Business process support
+- Office 365 integration
+- Workflow automation
+- Enterprise features
+
+### Limitations
+- Proprietary format
+- License requirements
+- Microsoft-centric
+- Complex customization
+
+### Best Used For
+- Microsoft environments
+- ERP integration
+- Office integration
+- Enterprise scenarios
+- Complex business processes
+
+  </TabItem>
+  <TabItem value="exact" label="Exact Online">
+
+### Strengths
+- Financial integration
+- European tax compliance
+- Accounting features
+- SMB focus
+- Dutch/EU market alignment
+
+### Limitations
+- Proprietary format
+- Limited global presence
+- Finance-centric model
+- Less extensible
+
+### Best Used For
+- Financial administration
+- European businesses
+- Accounting integration
+- SMB operations
+- Dutch/EU compliance
+
+  </TabItem>
+</Tabs>
+
+### Comprehensive Property Comparison
+
+The following table compares properties across all relevant standards:
+
+| EU Core Property | vCard | Schema.org | UBL | Salesforce | Dynamics 365 | Exact Online | Description |
+|------------------|-------|------------|-----|------------|--------------|--------------|-------------|
+| **Person Properties** |
+| identifier | UID | identifier | ID | Id | accountid | ID | Unique identifier |
+| fullName | FN | name | Name | Name | name | Name | Full name |
+| givenName | N (part) | givenName | FirstName | FirstName | firstname | FirstName | First name |
+| familyName | N (part) | familyName | FamilyName | LastName | lastname | LastName | Last name |
+| alternativeName | NICKNAME | alternateName | - | - | - | SearchCode | Alternative name |
+| gender | GENDER | gender | GenderCode | - | gendercode | Gender | Gender |
+| birthDate | BDAY | birthDate | BirthDate | Birthdate | birthdate | DateOfBirth | Birth date |
+| birthPlace | - | birthPlace | - | - | birthdate_city | - | Place of birth |
+| deathDate | - | deathDate | - | - | - | - | Date of death |
+| citizenship | - | nationality | CitizenshipCountry | - | - | - | Citizenship |
+| residency | - | - | ResidenceAddress | - | - | - | Country of residence |
+| jurisdiction | - | - | JurisdictionRegion | - | - | - | Legal jurisdiction |
+| **Organization Properties** |
+| legalName | ORG | legalName | RegistrationName | Name | name | Name | Official name |
+| alternativeName | - | alternateName | TradingName | - | - | SearchCode | Trading name |
+| companyActivity | - | - | IndustryClassificationCode | Industry | industrycode | SbiCode | Industry classification |
+| companyStatus | - | - | CorporateRegistrationStatus | Status | statuscode | Status | Company status |
+| companyType | - | - | CompanyLegalFormCode | - | businesstypecode | LegalForm | Legal form |
+| foundingDate | - | foundingDate | RegistrationDate | - | - | EstablishedDate | Founding date |
+| dissolutionDate | - | dissolutionDate | - | - | - | - | Dissolution date |
+| **Contact Properties** |
+| address | ADR | address | PostalAddress | Address | address1_* | Address | Physical address |
+| email | EMAIL | email | ElectronicMail | Email | emailaddress1 | Email | Email address |
+| telephone | TEL | telephone | Telephone | Phone | telephone1 | Phone | Phone number |
+| faxNumber | - | faxNumber | Telefax | Fax | fax | Fax | Fax number |
+| website | URL | url | WebsiteURI | Website | websiteurl | Website | Website |
+| **Financial Properties** |
+| vatNumber | - | vatID | PartyTaxScheme | - | - | VATNumber | VAT registration |
+| taxReference | - | taxID | TaxReference | - | - | TaxReferenceNumber | Tax reference |
+| bankAccount | - | - | FinancialAccount | - | - | BankAccount | Bank account |
+| paymentTerms | - | - | PaymentTerms | - | - | PaymentTerms | Payment terms |
+| creditLimit | - | - | - | - | creditlimit | CreditLimit | Credit limit |
+| **Relationship Properties** |
+| memberOf | - | memberOf | PartyMember | - | parentaccountid | Parent | Parent organization |
+| hasMember | - | member | Party | - | - | - | Child organizations |
+| contactPerson | AGENT | employee | Contact | Contact | primarycontactid | Contact | Primary contact |
+| department | ORG (part) | department | Department | Department | - | - | Department |
+| role | ROLE | roleName | RoleCode | - | - | - | Role in organization |
+| **Metadata Properties** |
+| source | SOURCE | - | - | LeadSource | - | - | Information source |
+| dateCreated | - | dateCreated | CreationDate | CreatedDate | createdon | Created | Creation timestamp |
+| dateModified | REV | dateModified | LastModificationDate | LastModifiedDate | modifiedon | Modified | Last update timestamp |
+| creator | - | creator | Author | CreatedBy | createdby | Creator | Record creator |
+| lastModifier | - | - | - | LastModifiedBy | modifiedby | Modifier | Last modifier |
+
+### Our Hybrid Approach
+
+Based on this analysis, our client register uses a hybrid approach that:
+
+1. **Adopts the EU Core Vocabularies as the foundation**
+   - Ensures compliance with European standards
+   - Supports official identifiers and multilingual information
+   - Aligns with public sector requirements
+
+2. **Incorporates Schema.org properties**
+   - Improves web discoverability
+   - Uses widely recognized property names
+   - Supports semantic web integration
+
+3. **Maintains vCard compatibility**
+   - Enables contact exchange with mobile devices
+   - Supports email integration
+   - Leverages existing implementations
+
+4. **Adds commercial CRM extensions**
+   - Supports business processes
+   - Enables integration with existing systems
+   - Provides practical functionality
+
+This approach ensures that our client register is both standards-compliant and practically useful in real-world government and business environments.
 
 ## Tasks Based on iCalendar
 
