@@ -118,16 +118,6 @@ While vCard provides an excellent foundation for basic contact exchange, the Eur
 
 While using EU Core Vocabularies as our primary standard, we maintain compatibility with other major person/client/organization standards:
 
-
-
-
-
-
-
-
-
-
-
 <Tabs>
   <TabItem value="eu-core" label="EU Core Vocabularies">
 
@@ -374,46 +364,207 @@ For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf
 
 While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
 
+<Tabs>
+  <TabItem value="eu-core" label="iCalender">
+  
+### iCalendar Standards
+- [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
+- [iCalendar Extensions (RFC 7986)](https://datatracker.ietf.org/doc/html/rfc7986) - Additional task properties
+
+### Strengths
+- Widespread adoption
+- Rich property set
+- Timezone support
+- Enterprise integration
+- Stable standard
+
+### Limitations
+- Complex recurrence rules
+- Limited custom fields
+- No built-in sharing
+- Basic priority levels
+- Text-only descriptions
+
+### Best Used For
+- Calendar integration
+- Personal tasks
+- Email systems
+- Mobile devices
+- Basic scheduling
+
+</TabItem>
+<TabItem value="nextcloud" label="Nextcloud">
+
+### Nextcloud Standards
+- [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
+- [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
+
+### Strengths
+- Open source
+- CalDAV compatible
+- Self-hosted option
+- Team collaboration
+- File integration
+
+### Limitations
+- Server required
+- Limited mobile apps
+- Basic reporting
+- Simple workflows
+- Community support
+
+### Best Used For
+- Team tasks
+- File sharing
+- Private cloud
+- Small teams
+- Personal productivity
+
+</TabItem>
+<TabItem value="schema" label="Schema.org">
+
 ### Schema.org Task Standards
 - [Schema.org PlanAction](https://schema.org/PlanAction) - For general task/action representation
 - [Schema.org TodoAction](https://schema.org/TodoAction) - Specifically for to-do items
 - [Schema.org Task](https://schema.org/Task) - For project management tasks
+
+### Strengths
+- SEO benefits
+- Semantic web ready
+- Flexible structure
+- Search integration
+- Growing adoption
+
+### Limitations
+- Web-focused only
+- Loose validation
+- Basic task model
+- Limited tooling
+- Evolving standard
+
+### Best Used For
+- Web content
+- Search visibility
+- Data integration
+- Public tasks
+- Knowledge graphs
+
+</TabItem>
+<TabItem value="microsoft" label="Microsoft 365">
 
 ### Microsoft 365 Task Standards
 - [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
 - [Microsoft Planner API](https://learn.microsoft.com/en-us/graph/api/resources/planner-overview) - Team task planning
 - [Microsoft Project API](https://learn.microsoft.com/en-us/graph/api/resources/projectrome-overview) - Project task management
 
+### Strengths
+- Office integration
+- Enterprise features
+- Team collaboration
+- Rich API set
+- Strong security
+
+### Limitations
+- License required
+- Vendor lock-in
+- Complex setup
+- Microsoft-centric
+- Costly scaling
+
+### Best Used For
+- Enterprise teams
+- Office users
+- Project management
+- Corporate tasks
+- Windows integration
+
+</TabItem>
+<TabItem value="google" label="Google Workspace">
+
 ### Google Workspace Standards
 - [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
 - [Google Calendar API](https://developers.google.com/calendar) - Calendar-based tasks
 
-### Nextcloud Standards
-- [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
-- [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
+### Strengths
+- Gmail integration
+- Calendar sync
+- Mobile support
+- Simple interface
+- Cloud-based
 
-### Why iCalendar?
+### Limitations
+- Basic features
+- Google ecosystem
+- Limited views
+- Simple workflows
+- Consumer focus
 
+### Best Used For
+- Gmail users
+- Calendar tasks
+- Personal use
+- Simple projects
+- Mobile tasks
 
-### Key iCalendar Properties for Tasks
+</TabItem>
+<TabItem value="trello" label="Trello">
 
-The iCalendar VTODO component includes many properties useful for task management:
+### Trello Standards
+- [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/api-group-actions/) - Board and card management
+- [Trello Power-Ups API](https://developer.atlassian.com/cloud/trello/power-ups/) - Custom integrations and extensions
+- [Trello Webhooks](https://developer.atlassian.com/cloud/trello/guides/rest-api/webhooks/) - Real-time updates
 
-| Property | Description | Example |
-|----------|-------------|---------|
-| SUMMARY | Task title | "Call client about project" |
-| DESCRIPTION | Detailed description | "Discuss timeline and requirements" |
-| DUE | Due date/time | "20230615T160000Z" |
-| DTSTART | Start date/time | "20230610T140000Z" |
-| COMPLETED | Completion date/time | "20230612T153000Z" |
-| STATUS | Current status | "NEEDS-ACTION", "IN-PROCESS", "COMPLETED", "CANCELLED" |
-| PRIORITY | Priority level (1-9) | "1" (highest) |
-| CATEGORIES | Categories/tags | "Client", "Sales", "Follow-up" |
-| RELATED-TO | Related items | UUID of related task or client |
-| ORGANIZER | Person responsible | "mailto:jane.doe@example.com" |
-| ATTENDEE | People involved | "mailto:john.smith@example.com" |
-| PERCENT-COMPLETE | Completion percentage | "75" |
-| RRULE | Recurrence rule | "FREQ=WEEKLY;BYDAY=MO" |
+### Strengths
+- Visual boards
+- Easy to use
+- Rich API
+- Power-Ups
+- Real-time updates
+
+### Limitations
+- Board-only view
+- Limited reporting
+- Basic automation
+- Simple structure
+- Scaling costs
+
+### Best Used For
+- Visual planning
+- Team boards
+- Agile projects
+- Simple tracking
+- Collaborative tasks
+
+</TabItem>
+
+### Comprehensive Task Property Comparison
+
+The following table compares task properties across all relevant standards:
+
+| iCalendar Property | Nextcloud | Trello | Google Tasks | Salesforce | Dynamics 365 | Description |
+|-------------------|-----------|--------|--------------|------------|--------------|-------------|
+| **Basic Properties** |
+| SUMMARY | title | name | title | Subject | subject | Task title |
+| DESCRIPTION | description | desc | notes | Description | description | Detailed description |
+| DUE | due | due | due | ActivityDate | scheduledend | Due date/time |
+| DTSTART | start | start | - | StartDateTime | scheduledstart | Start date/time |
+| COMPLETED | completed | dateLastActivity | completed | CompletedDateTime | actualend | Completion date |
+| STATUS | status | closed | status | Status | statecode | Current status |
+| PRIORITY | priority | - | - | Priority | prioritycode | Priority level |
+| **Categorization** |
+| CATEGORIES | categories | labels | - | Type | subcategory | Categories/tags |
+| RELATED-TO | related | idList | parent | WhatId | regardingobjectid | Related items |
+| **Assignment** |
+| ORGANIZER | owner | idMemberCreator | creator | OwnerId | ownerid | Task owner |
+| ATTENDEE | participants | idMembers | - | AssignedTo | new_assignedto | Assigned users |
+| **Progress** |
+| PERCENT-COMPLETE | complete | - | - | PercentComplete | percentcomplete | Completion % |
+| RRULE | repeat | - | - | IsRecurrence | isrecurrence | Recurrence rule |
+| **Metadata** |
+| CREATED | created | dateCreation | created | CreatedDate | createdon | Creation date |
+| LAST-MODIFIED | modified | dateLastActivity | updated | LastModifiedDate | modifiedon | Last update |
+| SEQUENCE | revision | - | - | - | versionnumber | Version number |
+| CLASS | class | - | - | IsPrivate | - | Privacy setting |
 
 ## Messages
 
