@@ -123,9 +123,39 @@ The [Nederlandse API Strategie](https://docs.geostandaarden.nl/api/API-Strategie
 - [NLCIUS](https://www.nen.nl/en/nlcius-1-0-1) - Dutch implementation of UBL for e-invoicing
 - [Logius Digikoppeling](https://www.logius.nl/diensten/digikoppeling) - Dutch government service exchange that uses UBL
 
-## Introduction
+## Regulatory and Standards Compliance
 
-This tutorial walks through creating a comprehensive client management system using Open Register, with APIs for client information, tasks, messages, and notes.
+When implementing client registers in European contexts, it's important to understand that certain standards are not merely recommendations but regulatory requirements or officially endorsed standards that must be applied in specific scenarios.
+
+### Validation Resources
+
+To ensure compliance with these standards, the following validation resources are available:
+
+- [EU Core Vocabularies Validator](https://www.itb.ec.europa.eu/shacl/any/upload) - Validates against Core Vocabularies using SHACL
+- [UBL Validation Tool](https://validatie.stpe.nl/) - Dutch UBL validation service
+- [Schema.org Validator](https://validator.schema.org/) - Validates Schema.org markup
+- [DCAT-AP Validator](https://www.itb.ec.europa.eu/shacl/dcat-ap/upload) - Validates DCAT-AP compliance
+
+By using these validation tools during implementation, you can ensure that your client register meets all applicable standards and regulatory requirements.
+
+## API Specification
+
+To complement our standards-based client register design, we've created a comprehensive OpenAPI Specification (OAS) document that defines the API endpoints, request/response formats, and data schemas for implementing the client register.
+
+### OpenAPI Specification
+
+The complete API specification is available as an OpenAPI 3.0 document:
+
+[View API Documentation](https://redocly.github.io/redoc/?url=https://openregisters.app/oas/clientRegisters.oas.json)
+
+This specification includes detailed definitions for:
+
+- Client entities (Person and Organization)
+- Task management
+- Message handling
+- Note management
+- Relationship modeling
+- Search and filtering capabilities
 
 ## Overvieuw Relationships Between Entities
 
