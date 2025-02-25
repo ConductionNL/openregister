@@ -180,7 +180,8 @@ In addition to the standards we've already discussed, the European Union has dev
 
 The [EU Core Vocabularies](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/e-government-core-vocabularies) are simplified, reusable, and extensible data models that capture the fundamental characteristics of entities in a context-neutral way. Several of these are directly applicable to our client register:
 
-#### Core Person Vocabulary
+<Tabs>
+<TabItem value="core-person" label="Core Person Vocabulary">
 
 The [Core Person Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-person-vocabulary) defines a simplified, reusable data model for describing natural persons.
 
@@ -193,7 +194,9 @@ The [Core Person Vocabulary](https://joinup.ec.europa.eu/collection/semantic-int
 | address | registeredAddress | Official address |
 | identifier | identifier | Unique identifier |
 
-#### Core Business Vocabulary
+</TabItem>
+
+<TabItem value="core-business" label="Core Business Vocabulary">
 
 The [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-business-vocabulary) provides a simplified, reusable data model for describing legal entities (businesses).
 
@@ -205,7 +208,9 @@ The [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-i
 | address | registeredAddress | Official registered address |
 | status | status | Current status (active, inactive, etc.) |
 
-#### Core Location Vocabulary
+</TabItem>
+
+<TabItem value="core-location" label="Core Location Vocabulary">
 
 The [Core Location Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-location-vocabulary) provides a simplified model for describing locations, which is relevant for client addresses.
 
@@ -217,11 +222,9 @@ The [Core Location Vocabulary](https://joinup.ec.europa.eu/collection/semantic-i
 | address.region | adminUnitL2 | Region, state, or province |
 | address.country | adminUnitL1 | Country |
 
-### ISA² Programme and SEMIC
+</TabItem>
 
-The [ISA² Programme](https://ec.europa.eu/isa2/home_en) (Interoperability Solutions for European Public Administrations, Businesses and Citizens) and its [SEMIC](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic) (Semantic Interoperability Community) initiative provide additional relevant standards:
-
-#### CPOV (Core Public Organization Vocabulary)
+<TabItem value="cpov" label="CPOV">
 
 The [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-organisation-vocabulary) is designed for describing public organizations in the European Union.
 
@@ -233,7 +236,9 @@ The [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection
 | identifier | identifier | Unique identifier |
 | purpose | purpose | Organization's purpose or mission |
 
-#### CPSV (Core Public Service Vocabulary)
+</TabItem>
+
+<TabItem value="cpsv" label="CPSV">
 
 The [Core Public Service Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-service-vocabulary) could be relevant for task management in public service contexts.
 
@@ -245,7 +250,9 @@ The [Core Public Service Vocabulary](https://joinup.ec.europa.eu/collection/sema
 | type | type | Type of service |
 | language | language | Language(s) the service is available in |
 
-### DCAT-AP
+</TabItem>
+
+<TabItem value="dcat-ap" label="DCAT-AP">
 
 The [DCAT Application Profile for data portals in Europe](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/dcat-application-profile-data-portals-europe) (DCAT-AP) provides a specification for metadata records to meet the specific application needs of data portals in Europe.
 
@@ -258,6 +265,9 @@ While primarily focused on dataset descriptions, some concepts are relevant for 
 | document.created | issued | Date of formal issuance |
 | document.updated | modified | Most recent date of modification |
 | document.publisher | publisher | Entity responsible for making the document available |
+
+</TabItem>
+</Tabs>
 
 
 ## Client Object
