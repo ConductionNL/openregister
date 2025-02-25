@@ -459,9 +459,6 @@ For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf
 While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
 
 ### Standards Comparison
-
-<Tabs>
-<TabItem value="eu-core" label="iCalender">
   
 **iCalendar Standards**
 - [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
@@ -488,8 +485,6 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Mobile devices
 - Basic scheduling
 
-</TabItem>
-<TabItem value="nextcloud" label="Nextcloud">
 
 **Nextcloud Standards**
 - [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
@@ -516,8 +511,6 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Small teams
 - Personal productivity
 
-</TabItem>
-<TabItem value="schema" label="Schema.org">
 
 **Schema.org Task Standards**
 - [Schema.org PlanAction](https://schema.org/PlanAction) - For general task/action representation
@@ -545,8 +538,6 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Public tasks
 - Knowledge graphs
 
-</TabItem>
-<TabItem value="microsoft" label="Microsoft 365">
 
 **Microsoft 365 Task Standards**
 - [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
@@ -574,8 +565,6 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Corporate tasks
 - Windows integration
 
-</TabItem>
-<TabItem value="google" label="Google Workspace">
 
 **Google Workspace Standards**
 - [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
@@ -602,8 +591,6 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Simple projects
 - Mobile tasks
 
-</TabItem>
-<TabItem value="trello" label="Trello">
 
 **Trello Standards**
 - [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/api-group-actions/) - Board and card management
@@ -631,8 +618,6 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 - Simple tracking
 - Collaborative tasks
 
-</TabItem>
-</tabs>
 
 ### Property Comparison
 
@@ -666,6 +651,7 @@ The following table compares task properties across all relevant standards:
 ## Message Object
 
 For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
+Schema.org | Email (RFC 5322) | JMAP | UBL
 
 ### Proposal
 
