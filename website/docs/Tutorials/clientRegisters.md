@@ -1,16 +1,16 @@
 ---
-title: European Client Register Standard
+title: European Client Register
 sidebar_position: 1
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# European Client Register Standard
+# European Client Register
 
 ## Project Introduction
 
-The European Client Register Standard is a collaborative initiative between Open Register, Nextcloud, and government agencies from France and Germany. This project aims to transform European standards and definitions into a practical, interoperable register that can be used by governments throughout Europe to store and manage client data in a standardized way.
+The European Client Register is a collaborative initiative between Open Register, Nextcloud, and government agencies from France and Germany. This project aims to transform European standards and definitions into a practical, interoperable register that can be used by governments throughout Europe to store and manage client data in a standardized way.
 
 ### European Collaboration
 
@@ -94,17 +94,24 @@ This research and implementation guide draws upon the following standards and re
 
 This tutorial walks through creating a comprehensive client management system using Open Register, with APIs for client information, tasks, messages, and notes.
 
-## Overview
+## Overvieuw Relationships Between Entities
 
-We'll build a complete client management system with the following components:
-- Client information (based on vCard standard)
-- Tasks associated with clients
-- Messages for client communication
-- Notes for client records
+All these entities are interconnected in our client management system:
 
-Each component will be implemented as a register in Open Register, with proper schemas and relationships.
+![Entity Relationships](clientRegisters.svg)
 
-## Client Information Based on European Core Vocabularies
+The diagram above shows how:
+
+1. **Clients** are the central entity
+2. **Tasks** are associated with clients (one client can have many tasks)
+3. **Messages** are linked to clients (communication history)
+4. **Notes** are attached to clients (observations and information)
+5. Tasks can be related to other tasks (for dependencies or subtasks)
+
+In the next sections, we'll define the API endpoints for each entity and show how to implement them in Open Register.
+
+
+## Client Object
 
 For our client information, we'll use the European Core Vocabularies (Core Person and Core Business) as our primary foundation, while ensuring compatibility with other standards including vCard, Schema.org, and commercial CRM systems.
 
@@ -114,32 +121,32 @@ The vCard standard (RFC 6350) represents one of the first industry-wide attempts
 
 While vCard provides an excellent foundation for basic contact exchange, the European Core Vocabularies offer a more comprehensive approach specifically designed for government and business contexts, with stronger support for official identifiers, multilingual information, and regulatory compliance.
 
-### Standards Analysis
+### Standard Comparison
 
 While using EU Core Vocabularies as our primary standard, we maintain compatibility with other major person/client/organization standards:
 
 <Tabs>
   <TabItem value="eu-core" label="EU Core Vocabularies">
 
-### EU Standards
+**EU Standards**
 - [Core Person Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-person-vocabulary) - Person data model
 - [Core Business Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-business-vocabulary) - Business data model
 - [Core Public Organization Vocabulary](https://joinup.ec.europa.eu/collection/semantic-interoperability-community-semic/solution/core-public-organisation-vocabulary) - Public organization model
 
-### Strengths
+**Strengths**
 - Official EU standard
 - Strong identifier support  
 - Multilingual by design
 - Public sector alignment
 - Regulatory compliance
 
-### Limitations
+**Limitations**
 - Less known outside EU
 - Fewer implementations
 - More complex structure 
 - Limited consumer support
 
-### Best Used For
+**Best Used For**
 - Government systems
 - Cross-border exchange
 - Official registrations
@@ -149,25 +156,25 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 </TabItem>
 <TabItem value="vcard" label="vCard (RFC 6350)">
 
-### Contact Standards
+**Contact Standards**
 - [vCard (RFC 6350)](https://datatracker.ietf.org/doc/html/rfc6350) - Contact information exchange
 - [jCard (RFC 7095)](https://datatracker.ietf.org/doc/html/rfc7095) - JSON format for vCard
 - [xCard (RFC 6351)](https://datatracker.ietf.org/doc/html/rfc6351) - XML format for vCard
 
-### Strengths
+**Strengths**
 - Widespread adoption
 - Simple structure
 - Device compatibility 
 - Email integration
 - Consumer familiarity
 
-### Limitations
+**Limitations**
 - Limited business fields
 - Weak identifier support
 - Basic multilingual support
 - Limited relationship modeling
 
-### Best Used For
+**Best Used For**
 - Contact exchange
 - Mobile devices
 - Email systems
@@ -177,25 +184,25 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 </TabItem>
 <TabItem value="schema" label="Schema.org">
 
-### Schema.org Standards
+**Schema.org Standards**
 - [Schema.org Person](https://schema.org/Person) - Person entity definition
 - [Schema.org Organization](https://schema.org/Organization) - Organization entity definition
 - [Schema.org LocalBusiness](https://schema.org/LocalBusiness) - Local business definition
 
-### Strengths
+**Strengths**
 - Web search optimization
 - Rich property set
 - Linked data support
 - Major search engine backing
 - Growing adoption
 
-### Limitations
+**Limitations**
 - Web-centric design
 - Less formal validation
 - Evolving specifications
 - Limited official status
 
-### Best Used For
+**Best Used For**
 - Web content
 - SEO optimization
 - Knowledge graphs
@@ -205,26 +212,26 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 </TabItem>
 <TabItem value="ubl" label="UBL">
 
-### UBL Standards
+**UBL Standards**
 - [UBL Party Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-PARTY) - Party/organization model
 - [UBL Person Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-PERSON) - Person model
 - [UBL Address Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-ADDRESS) - Address model
 - [UBL Contact Schema](http://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html#S-CONTACT) - Contact information model
 
-### Strengths
+**Strengths**
 - Business document focus
 - Procurement support
 - Legal entity details
 - International standard
 - XML validation
 
-### Limitations
+**Limitations**
 - Complex structure
 - Verbose format
 - Business-only focus
 - Limited personal details
 
-### Best Used For
+**Best Used For**
 - E-procurement
 - Business documents
 - Supply chain
@@ -234,24 +241,24 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 </TabItem>
 <TabItem value="salesforce" label="Commercial CRM">
 
-### Commercial CRM Standards
+**Commercial CRM Standards**
 - [Salesforce Account Object](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_account.htm) - Account/organization model
 - [Microsoft Dynamics Account Entity](https://learn.microsoft.com/en-us/dynamics365/customerengagement/on-premises/developer/entities/account) - Account/organization model
 - [Exact Online Account API](https://start.exactonline.nl/docs/HlpRestAPIResources.aspx?SourceAction=10) - Account/organization model
 
-### Commercial CRM Comparison
+**Commercial CRM Comparison**
 
-#### Salesforce
+**Salesforce**
 - **Strengths**: Business process integration, sales/marketing features, extensive customization, industry solutions, ecosystem support
 - **Limitations**: Proprietary format, license requirements, complex data model, vendor lock-in
 - **Best Used For**: CRM processes, sales automation, marketing campaigns, customer service, business intelligence
 
-#### Microsoft Dynamics
+**Microsoft Dynamics**
 - **Strengths**: Microsoft ecosystem integration, business process support, Office 365 integration, workflow automation, enterprise features
 - **Limitations**: Proprietary format, license requirements, Microsoft-centric, complex customization
 - **Best Used For**: Microsoft environments, ERP integration, Office integration, enterprise scenarios, complex business processes
 
-#### Exact Online
+**Exact Online**
 - **Strengths**: Financial integration, European tax compliance, accounting features, SMB focus, Dutch/EU market alignment
 - **Limitations**: Proprietary format, limited global presence, finance-centric model, less extensible
 - **Best Used For**: Financial administration, European businesses, accounting integration, SMB operations, Dutch/EU compliance
@@ -259,7 +266,7 @@ While using EU Core Vocabularies as our primary standard, we maintain compatibil
 </TabItem>
 </Tabs>
 
-### Comprehensive Property Comparison
+### Property Comparison
 
 The following table compares properties across all relevant standards:
 
@@ -337,7 +344,7 @@ Based on this analysis, our client register uses a hybrid approach that:
 
 This approach ensures that our client register is both standards-compliant and practically useful in real-world government and business environments.
 
-## Tasks Based on Multiple Standards
+## Tasks Object
 
 For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf.org/doc/html/rfc5545) (RFC 5545), specifically the VTODO component, as our foundational standard. This choice is driven by several key factors:
 
@@ -364,28 +371,30 @@ For tasks, we'll primarily use the [iCalendar standard](https://datatracker.ietf
 
 While using iCalendar as our primary standard, we maintain compatibility with other major task standards:
 
+### Standards Comparison
+
 <Tabs>
   <TabItem value="eu-core" label="iCalender">
   
-### iCalendar Standards
+**iCalendar Standards**
 - [iCalendar VTODO (RFC 5545)](https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.2) - Task component specification
 - [iCalendar Extensions (RFC 7986)](https://datatracker.ietf.org/doc/html/rfc7986) - Additional task properties
 
-### Strengths
+**Strengths**
 - Widespread adoption
 - Rich property set
 - Timezone support
 - Enterprise integration
 - Stable standard
 
-### Limitations
+**Limitations**
 - Complex recurrence rules
 - Limited custom fields
 - No built-in sharing
 - Basic priority levels
 - Text-only descriptions
 
-### Best Used For
+**Best Used For**
 - Calendar integration
 - Personal tasks
 - Email systems
@@ -395,25 +404,25 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 </TabItem>
 <TabItem value="nextcloud" label="Nextcloud">
 
-### Nextcloud Standards
+**Nextcloud Standards**
 - [Nextcloud Tasks App](https://apps.nextcloud.com/apps/tasks) - CalDAV-based task management
 - [Nextcloud Deck API](https://deck.readthedocs.io/en/latest/API/) - Kanban-style task boards
 
-### Strengths
+**Strengths**
 - Open source
 - CalDAV compatible
 - Self-hosted option
 - Team collaboration
 - File integration
 
-### Limitations
+**Limitations**
 - Server required
 - Limited mobile apps
 - Basic reporting
 - Simple workflows
 - Community support
 
-### Best Used For
+**Best Used For**
 - Team tasks
 - File sharing
 - Private cloud
@@ -423,26 +432,26 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 </TabItem>
 <TabItem value="schema" label="Schema.org">
 
-### Schema.org Task Standards
+**Schema.org Task Standards**
 - [Schema.org PlanAction](https://schema.org/PlanAction) - For general task/action representation
 - [Schema.org TodoAction](https://schema.org/TodoAction) - Specifically for to-do items
 - [Schema.org Task](https://schema.org/Task) - For project management tasks
 
-### Strengths
+**Strengths**
 - SEO benefits
 - Semantic web ready
 - Flexible structure
 - Search integration
 - Growing adoption
 
-### Limitations
+**Limitations**
 - Web-focused only
 - Loose validation
 - Basic task model
 - Limited tooling
 - Evolving standard
 
-### Best Used For
+**Best Used For**
 - Web content
 - Search visibility
 - Data integration
@@ -452,26 +461,26 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 </TabItem>
 <TabItem value="microsoft" label="Microsoft 365">
 
-### Microsoft 365 Task Standards
+**Microsoft 365 Task Standards**
 - [Microsoft To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) - Personal task management
 - [Microsoft Planner API](https://learn.microsoft.com/en-us/graph/api/resources/planner-overview) - Team task planning
 - [Microsoft Project API](https://learn.microsoft.com/en-us/graph/api/resources/projectrome-overview) - Project task management
 
-### Strengths
+**Strengths**
 - Office integration
 - Enterprise features
 - Team collaboration
 - Rich API set
 - Strong security
 
-### Limitations
+**Limitations**
 - License required
 - Vendor lock-in
 - Complex setup
 - Microsoft-centric
 - Costly scaling
 
-### Best Used For
+**Best Used For**
 - Enterprise teams
 - Office users
 - Project management
@@ -481,25 +490,25 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 </TabItem>
 <TabItem value="google" label="Google Workspace">
 
-### Google Workspace Standards
+**Google Workspace Standards**
 - [Google Tasks API](https://developers.google.com/tasks/reference) - Task management integration
 - [Google Calendar API](https://developers.google.com/calendar) - Calendar-based tasks
 
-### Strengths
+**Strengths**
 - Gmail integration
 - Calendar sync
 - Mobile support
 - Simple interface
 - Cloud-based
 
-### Limitations
+**Limitations**
 - Basic features
 - Google ecosystem
 - Limited views
 - Simple workflows
 - Consumer focus
 
-### Best Used For
+**Best Used For**
 - Gmail users
 - Calendar tasks
 - Personal use
@@ -509,26 +518,26 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 </TabItem>
 <TabItem value="trello" label="Trello">
 
-### Trello Standards
+**Trello Standards**
 - [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/api-group-actions/) - Board and card management
 - [Trello Power-Ups API](https://developer.atlassian.com/cloud/trello/power-ups/) - Custom integrations and extensions
 - [Trello Webhooks](https://developer.atlassian.com/cloud/trello/guides/rest-api/webhooks/) - Real-time updates
 
-### Strengths
+**Strengths**
 - Visual boards
 - Easy to use
 - Rich API
 - Power-Ups
 - Real-time updates
 
-### Limitations
+**Limitations**
 - Board-only view
 - Limited reporting
 - Basic automation
 - Simple structure
 - Scaling costs
 
-### Best Used For
+**Best Used For**
 - Visual planning
 - Team boards
 - Agile projects
@@ -537,7 +546,7 @@ While using iCalendar as our primary standard, we maintain compatibility with ot
 
 </TabItem>
 
-### Comprehensive Task Property Comparison
+### Property Comparison
 
 The following table compares task properties across all relevant standards:
 
@@ -566,11 +575,11 @@ The following table compares task properties across all relevant standards:
 | SEQUENCE | revision | - | - | - | versionnumber | Version number |
 | CLASS | class | - | - | IsPrivate | - | Privacy setting |
 
-## Messages
+## Message Object
 
 For client messages, we'll create a schema inspired by email and messaging standards, designed to track all communications with clients.
 
-### Key Message Properties
+### Proposal
 
 | Property | Description | Example |
 |----------|-------------|---------|
@@ -588,11 +597,11 @@ For client messages, we'll create a schema inspired by email and messaging stand
 | direction | Message direction | "inbound", "outbound" |
 | status | Delivery status | "sent", "delivered", "read", "failed" |
 
-## Notes
+## Note Object
 
 For client notes, we'll create a simple but flexible schema to capture important information and observations about clients.
 
-### Key Note Properties
+### Proposal
 
 | Property | Description | Example |
 |----------|-------------|---------|
@@ -605,21 +614,7 @@ For client notes, we'll create a simple but flexible schema to capture important
 | visibility | Who can see the note | "private", "team", "public" |
 | pinned | Whether note is pinned | true/false |
 
-## Relationships Between Entities
 
-All these entities are interconnected in our client management system:
-
-![Entity Relationships](clientRegisters.svg)
-
-The diagram above shows how:
-
-1. **Clients** are the central entity
-2. **Tasks** are associated with clients (one client can have many tasks)
-3. **Messages** are linked to clients (communication history)
-4. **Notes** are attached to clients (observations and information)
-5. Tasks can be related to other tasks (for dependencies or subtasks)
-
-In the next sections, we'll define the API endpoints for each entity and show how to implement them in Open Register.
 
 ## Standards Comparison and Justification
 
@@ -1547,6 +1542,8 @@ To complement our standards-based client register design, we've created a compre
 
 The complete API specification is available as an OpenAPI 3.0 document:
 
+[View API Documentation](https://redocly.github.io/redoc/?url=https://openregisters.app/oas/clientRegisters.oas.json)
+
 This specification includes detailed definitions for:
 
 - Client entities (Person and Organization)
@@ -1565,4 +1562,3 @@ Using this OpenAPI specification provides several benefits:
 3. **Interactive Documentation**: Use tools like Swagger UI or ReDoc to create interactive API documentation
 4. **Validation**: Validate requests and responses against the schema definitions
 5. **Consistent Implementation**: Ensure consistent implementation across different systems
-
