@@ -1396,7 +1396,7 @@ To complement our standards-based client register design, we've created a compre
 
 The complete API specification is available as an OpenAPI 3.0 document:
 
-- [Client Register API Specification](/static/openapi/clientRegister.oas.json)
+- [Client Register API Specification](clientRegister.oas.json)
 
 This specification includes detailed definitions for:
 
