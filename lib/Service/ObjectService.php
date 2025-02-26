@@ -1973,9 +1973,6 @@ class ObjectService
 	 */
 	public function getPaginatedAuditTrail(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
-		// Get the object to get its URI and UUID
-		$object = $this->find($id);
-
 		// Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
@@ -2005,7 +2002,7 @@ class ObjectService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		// Lets force the object id to be the object id of the object we are getting the audit trail for
-		$filters['object'] = $object->getId();
+		$filters['object'] = $id;
 
 		// @todo this is not working, it fails to find the logs
 		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);		
@@ -2070,11 +2067,8 @@ class ObjectService
 	 */
 	public function getPaginatedRelations(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
-		$register = $register ?? $this->getRegister();
-		$schema = $schema ?? $this->getSchema();
-
 		// Get the object to get its URI and UUID
-		$object = $this->find($id);
+		$object = $this->objectEntityMapper->find($id);
 
 		// Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
@@ -2104,7 +2098,7 @@ class ObjectService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		// Filter out self-references if any
-		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend, ids: $object->getRelations());
+		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend, ids: $object->getRelations());
 
 		// Apply pagination
 		$total = count($objects);
