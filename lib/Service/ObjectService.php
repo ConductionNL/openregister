@@ -371,7 +371,9 @@ class ObjectService
 	{
 		$result = [];
 		foreach ($ids as $id) {
-			$result[] = $this->find($id);
+			if (is_string($id) === true || is_int($id) === true) {
+				$result[] = $this->find($id);
+			}
 		}
 
 		return $result;
