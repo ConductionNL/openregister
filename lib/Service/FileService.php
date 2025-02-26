@@ -461,19 +461,58 @@ class FileService
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param Node[] $files Array of Node files to format
+	 * @param array $requestParams Optional request parameters
+	 *
 	 * @return array Array of formatted file metadata arrays
 	 * @throws InvalidPathException
 	 * @throws NotFoundException
 	 */
-	public function formatFiles(array $files): array
+	public function formatFiles(array $files, ?array $requestParams = []): array
 	{
+		
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
 		$formattedFiles = [];
 
 		foreach($files as $file) {
 			$formattedFiles[] = $this->formatFile($file);
 		}
 
-		return $formattedFiles;
+		// @todo search
+		$total   = count($formattedFiles);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		return [
+			'results' => $formattedFiles,			
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
 	}
 
 	/**
