@@ -1436,6 +1436,42 @@ class ObjectService
 	}
 
 	/**
+	 * Publish a file by creating a public share link
+	 *
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to publish
+	 * @return string The public share link URL
+	 * @throws Exception If file publishing fails
+	 */
+	public function publishFile(ObjectEntity|string $object, string $filePath): string
+	{
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
+		return $this->fileService->createShareLink($fullPath);
+	}
+
+	/**
+	 * Unpublish a file by removing its public share link
+	 *
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to unpublish
+	 * @return bool True if successful
+	 * @throws Exception If file unpublishing fails
+	 */
+	public function unpublishFile(ObjectEntity|string $object, string $filePath): bool
+	{
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
+		return $this->fileService->deleteShare($fullPath);
+	}
+
+	/**
 	 * Formats an array of Node files into an array of metadata arrays.
 	 * Uses FileService formatFiles function, this function is here to be used by OpenCatalog or OpenConnector!
 	 *
@@ -1935,7 +1971,7 @@ class ObjectService
 	 * 
 	 * @return array The audit trail entries
 	 */
-	public function getAuditTrail(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
+	public function getPaginatedAuditTrail(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
 		// Get the object to get its URI and UUID
 		$object = $this->find($id);
