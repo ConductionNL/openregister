@@ -265,11 +265,18 @@ class ObjectsController extends Controller
 	 *
 	 * @param int $id The ID of the object to get AuditTrails for
 	 *
-	 * @return JSONResponse An empty JSON response
+	 * @return JSONResponse A JSON response containing the audit trail entries
 	 */
 	public function auditTrails(int $id): JSONResponse
 	{
-		return new JSONResponse($this->auditTrailMapper->findAll(filters: ['object' => $id]));
+		try {
+			$requestParams = $this->request->getParams();
+			return new JSONResponse($this->objectService->getPaginatedAuditTrail($id, null, null, $requestParams));
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
 	}
 
     /**
@@ -296,30 +303,48 @@ class ObjectsController extends Controller
     /**
      * Retrieves all objects that use a object
      *
-     * This method returns all the call logs associated with a object based on its ID.
+     * This method returns all objects that reference this object.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int $id The ID of the object to retrieve logs for
-	 *
-     * @return JSONResponse A JSON response containing the call logs
+     * @param int $id The ID of the object to retrieve relations for
+     *
+     * @return JSONResponse A JSON response containing the related objects
      */
     public function relations(int $id): JSONResponse
     {
         try {
-            // Lets grap the object to stablish an uri
-            $object = $this->objectEntityMapper->find($id);
-            $relations = $this->objectEntityMapper->findByRelationUri($object->getUri());
-
-            // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
-            foreach ($relations as $key => $relation) {
-                $relations[$key] = $relation->getObjectArray();
-            }
-
-            return new JSONResponse($relations);
+            $requestParams = $this->request->getParams();
+            return new JSONResponse($this->objectService->getPaginatedRelations($id, null, null, $requestParams));
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Relations not found'], 404);
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Retrieves all objects that this object references
+     *
+     * This method returns all objects that this object uses/references.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the object to retrieve uses for
+     *
+     * @return JSONResponse A JSON response containing the referenced objects
+     */
+    public function uses(int $id): JSONResponse
+    {
+        try {
+            $requestParams = $this->request->getParams();
+            return new JSONResponse($this->objectService->getPaginatedUses($id, null, null, $requestParams));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -562,10 +587,12 @@ class ObjectsController extends Controller
             // Get the object with files included
             $object = $this->objectEntityMapper->find((int) $id);
             $files = $objectService->getFiles($object);
-            $object = $objectService->hydrateFiles($object, $files);
             
-            // Return just the files array from the object
-            return new JSONResponse($object->getFiles());
+            // Format files with pagination support
+            $requestParams = $this->request->getParams();
+            $formattedFiles = $objectService->formatFiles($files, $requestParams);
+            
+            return new JSONResponse($formattedFiles);
             
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
