@@ -862,10 +862,7 @@ class FileService
         $tagIds = [];
 
 		// Get all existing tags for the file and build array of tag IDs
-		$existingTags = $this->systemTagMapper->getTagsByObjectId(objId: $fileId, objectType: $this::FILE_TAG_TYPE);
-		foreach ($existingTags as $existingTag) {
-			$oldTagIds[] = $existingTag->getId();
-		}
+		$oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objId: $fileId, objectType: $this::FILE_TAG_TYPE);
 
 		// Create new tags if they don't exist
 		foreach ($tags as $key => $tagName) {
