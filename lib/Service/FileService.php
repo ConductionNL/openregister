@@ -860,6 +860,14 @@ class FileService
 	private function attachTagsToFile(string $fileId, array $tags): void
 	{
         $tagIds = [];
+
+		// Get all existing tags for the file and build array of tag IDs
+		$existingTags = $this->systemTagMapper->getTagsByObjectId(objId: $fileId, objectType: $this::FILE_TAG_TYPE);
+		foreach ($existingTags as $existingTag) {
+			$oldTagIds[] = $existingTag->getId();
+		}
+
+		// Create new tags if they don't exist
 		foreach ($tags as $key => $tagName) {
             try {
                 $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
@@ -867,10 +875,21 @@ class FileService
                 $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
             }
 
-            $tagIds[] = $tag->getId();
+            $newTagIds[] = $tag->getId();
 		}
 
+		// Assign the new tags to the file
         $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagIds);
+		
+		// Find tags that exist in old tags but not in new tags (tags to be removed)
+		$tagsToRemove = array_diff($oldTagIds ?? [], $newTagIds ?? []);
+
+		// Remove old tags that aren't in new tags
+		if (empty($tagsToRemove) === false) {
+			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
+		}
+		
+		//@todo Let check if there are now esisitng tags without files (orpahns) that need to be deleted
 	}
 
 
