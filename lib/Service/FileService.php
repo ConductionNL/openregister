@@ -803,6 +803,12 @@ class FileService
 		}
 	}
 
+	public function getObjectFilePath(string|ObjectEntity $object, string $filePath)
+	{
+		return $object->getFolder().'/'.$filePath;
+	}
+
+
 	/**
 	 * Deletes a file from NextCloud.
 	 *
