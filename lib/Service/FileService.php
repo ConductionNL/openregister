@@ -783,12 +783,13 @@ class FileService
 					if (empty($tags) === false) {
 						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 					}
-					return true;
+
+					return $file;
 				} catch (NotFoundException $e) {
 					// File does not exist.
 					$this->logger->warning("File $filePath does not exist.");
 
-					return false;
+					throw new Exception("File $filePath does not exist");
 				}
 			} catch (NotPermittedException|InvalidPathException $e) {
 				$this->logger->error("Can't update file $filePath: " . $e->getMessage());
