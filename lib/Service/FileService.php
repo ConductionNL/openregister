@@ -752,7 +752,7 @@ class FileService
 	 * @return bool True if successful.
 	 * @throws Exception If neither content nor tags are provided, or if file operations fail
 	 */
-	public function updateFile(string $filePath, mixed $content = null, array $tags = []): bool
+	public function updateFile(string $filePath, mixed $content = null, array $tags = []): File
 	{
 		// Validate that either content or tags are provided
 		if ($content === null && empty($tags)) {
