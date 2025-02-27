@@ -471,8 +471,8 @@ class FileService
 	{
 		
 		// Extract specific parameters
-		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
-		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
 		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
 		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
 		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
@@ -498,6 +498,9 @@ class FileService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		$formattedFiles = [];
+
+		// Apply offset and limit to files array if specified
+		$files = array_slice($files, $offset, $limit);
 
 		foreach($files as $file) {
 			$formattedFiles[] = $this->formatFile($file);
