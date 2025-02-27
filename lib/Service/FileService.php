@@ -746,63 +746,59 @@ class FileService
 	/**
 	 * Overwrites an existing file in NextCloud.
 	 *
-	 * @param mixed $content The content of the file.
 	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
-	 * @param bool $createNew Default = false. If set to true this function will create a new file if it doesn't exist yet.
+	 * @param mixed|null $content Optional content of the file. If null, only metadata like tags will be updated.
 	 * @param array $tags Optional array of tags to attach to the file.
 	 * @return bool True if successful.
-	 * @throws Exception In case we can't write to file because it is not permitted.
+	 * @throws Exception If neither content nor tags are provided, or if file operations fail
 	 */
-	public function updateFile(mixed $content, string $filePath, bool $createNew = false, array $tags = []): bool
+	public function updateFile(string $filePath, mixed $content = null, array $tags = []): bool
 	{
+		// Validate that either content or tags are provided
+		if ($content === null && empty($tags)) {
+			throw new Exception('Either content or tags must be provided for file update');
+		}
+
 		$filePath = trim(string: $filePath, characters: '/');
 
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
-			// Check if file exists and overwrite it if it does.
+			// Check if file exists and delete it if it does.
 			try {
 				try {
 					$file = $userFolder->get(path: $filePath);
-
-					$file->putContent(data: $content);
+					
+					// If content is not null, update the file content
+					if ($content !== null) {
+						try {
+							$file->putContent(data: $content);
+						} catch (NotPermittedException $e) {
+							$this->logger->error("Can't write content to file: " . $e->getMessage());
+							throw new Exception("Can't write content to file: " . $e->getMessage());
+						}
+					}
 
 					// Add tags to the file if provided
 					if (empty($tags) === false) {
 						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 					}
-
 					return true;
 				} catch (NotFoundException $e) {
-					if ($createNew === true) {
-						$userFolder->newFile(path: $filePath);
-						$file = $userFolder->get(path: $filePath);
+					// File does not exist.
+					$this->logger->warning("File $filePath does not exist.");
 
-						$file->putContent(data: $content);
-
-						// Add tags to the file if provided
-						if (empty($tags) === false) {
-							$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-						}
-
-						$this->logger->info("File $filePath did not exist, created a new file for it.");
-						return true;
-					}
+					return false;
 				}
+			} catch (NotPermittedException|InvalidPathException $e) {
+				$this->logger->error("Can't update file $filePath: " . $e->getMessage());
 
-				// File already exists.
-				$this->logger->warning("File $filePath already exists.");
-				return false;
-
-			} catch (NotPermittedException|GenericFileException|LockedException $e) {
-				$this->logger->error("Can't create file $filePath: " . $e->getMessage());
-
-				throw new Exception("Can't write to file $filePath");
+				throw new Exception("Can't update file $filePath");
 			}
 		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't create file $filePath: " . $e->getMessage());
+			$this->logger->error("Can't update file $filePath: " . $e->getMessage());
 
-			throw new Exception("Can't write to file $filePath");
+			throw new Exception("Can't update file $filePath");
 		}
 	}
 

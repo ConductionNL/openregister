@@ -1398,13 +1398,14 @@ class ObjectService
 	 *
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to update
-	 * @param string $content New file content
+	 * @param string|null $content Optional new file content
 	 * @param array $tags Optional tags to update
-	 * @return bool True if successful
+	 * @return \OCP\Files\File The updated file
 	 * @throws Exception If file update fails
 	 */
-	public function updateFile(ObjectEntity|string $object, string $filePath, string $content, array $tags = []): bool
+	public function updateFile(ObjectEntity|string $object, string $filePath, ?string $content = null, array $tags = []): \OCP\Files\File
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
@@ -1426,6 +1427,7 @@ class ObjectService
 	 */
 	public function deleteFile(ObjectEntity|string $object, string $filePath): bool
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
