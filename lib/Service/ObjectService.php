@@ -1974,7 +1974,7 @@ class ObjectService
 	public function getPaginatedAuditTrail(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
 		// Extract specific parameters
-		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
 		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
 		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
@@ -2005,7 +2005,7 @@ class ObjectService
 		$filters['object'] = $id;
 
 		// @todo this is not working, it fails to find the logs
-		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);		
+		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);		
 
 		// Format the audit trails
 		$total   = count($auditTrails);
@@ -2071,7 +2071,7 @@ class ObjectService
 		$object = $this->objectEntityMapper->find($id);
 
 		// Extract specific parameters
-		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
 		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
 		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
@@ -2098,7 +2098,7 @@ class ObjectService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		// Filter out self-references if any
-		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend, ids: $object->getRelations());
+		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, ids: $object->getRelations());
 
 		// Apply pagination
 		$total = count($objects);
@@ -2135,7 +2135,7 @@ class ObjectService
 		//$relations = $object->getRelations() ?? [];				
 
 		// Extract specific parameters
-		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
 		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
 		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;

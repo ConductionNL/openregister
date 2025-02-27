@@ -79,22 +79,55 @@ class ObjectsController extends Controller
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
-        $filters = $this->request->getParams();
-        $fieldsToSearch = ['uuid', 'register', 'schema'];
-        $extend = ['schema', 'register'];
+        
+        $requestParams = $this->request->getParams();
 
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        // Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
 
-        // @todo: figure out how to use extend here
-        $results = $objectService->getObjects(objectType: 'objectEntity', filters: $filters);
-//        $results = $this->objectEntityMapper->findAll(filters: $filters);
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+        // Lets support extend
+		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
+		$total   = $this->objectEntityMapper->countAll($filters);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
-        foreach ($results as $key => $result) {
-            $results[$key] = $result->getObjectArray();
+        foreach ($objects as $key => $object) {
+            $objects[$key] = $object->getObjectArray();
         }
+
+		$results =  [
+			'results' => $objects,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
+
 
         return new JSONResponse(['results' => $results]);
     }

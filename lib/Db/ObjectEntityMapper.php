@@ -21,6 +21,9 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\LockedException;
 
 /**
  * The ObjectEntityMapper class
@@ -360,8 +363,8 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		// Set current user as owner if not already set
-		if ($obj->getOwner() === null && $this->userSession->isLoggedIn()) {
-			$obj->setOwner($this->userSession->getUser()->getUID());
+		if ($newObject->getOwner() === null && $this->userSession->isLoggedIn()) {
+			$newObject->setOwner($this->userSession->getUser()->getUID());
 		}
 
 		return $newObject;
