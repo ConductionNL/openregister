@@ -129,7 +129,7 @@ class ObjectsController extends Controller
 		];
 
 
-        return new JSONResponse(['results' => $results]);
+        return new JSONResponse($results);
     }
 
     /**

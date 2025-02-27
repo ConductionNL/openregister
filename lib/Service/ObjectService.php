@@ -2102,12 +2102,6 @@ class ObjectService
 
 		// Apply pagination
 		$total = count($objects);
-		
-		if ($limit !== null) {
-			$offset = $offset ?? 0;
-			$referencingObjects = array_slice($referencingObjects, $offset, $limit);
-		}
-
 		$pages = $limit !== null ? ceil($total/$limit) : 1;
 
 		return [
