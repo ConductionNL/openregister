@@ -675,8 +675,7 @@ class FileService
 				'path' => $path,
 				'file' => $file,
 				'shareType' => $shareType,
-				'permissions' => $permissions,
-				'sharedWith' => self::APP_GROUP
+				'permissions' => $permissions
 			]);
 			return $this->getShareLink($share);
 		} catch (Exception $exception) {
