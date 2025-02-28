@@ -869,6 +869,9 @@ class FileService
 
 		// Get all existing tags for the file and build array of tag IDs
 		$oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
+		
+		
+
 		// Create new tags if they don't exist
 		foreach ($tags as $key => $tagName) {
 			// Skip empty tag names
@@ -878,7 +881,7 @@ class FileService
 			
             try {
                 $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
-            } catch (TagNotFoundException $exception) {
+            } catch (Exception $exception) {
                 $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
             }
 
