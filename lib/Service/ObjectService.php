@@ -1418,6 +1418,23 @@ class ObjectService
 	}
 
 	/**
+	 * Retrieves all available tags in the system.
+	 * 
+	 * This method fetches all tags that are visible and assignable by users
+	 * from the system tag manager.
+	 *
+	 * @return array An array of tag names
+	 * @throws \Exception If there's an error retrieving the tags
+	 * 
+	 * @psalm-return array<int, string>
+	 * @phpstan-return array<int, string>
+	 */
+	public function getAllTags(): array
+	{
+		return $this->fileService->getAllTags();
+	}
+
+	/**
 	 * Delete a file from an object
 	 *
 	 * @param ObjectEntity|string $object The object or object ID

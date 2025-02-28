@@ -955,4 +955,36 @@ class FileService
 			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
 		}
 	}
+
+	/**
+	 * Retrieves all available tags in the system.
+	 * 
+	 * This method fetches all tags that are visible and assignable by users
+	 * from the system tag manager.
+	 *
+	 * @return array An array of tag names
+	 * @throws \Exception If there's an error retrieving the tags
+	 * 
+	 * @psalm-return array<int, string>
+	 * @phpstan-return array<int, string>
+	 */
+	public function getAllTags(): array
+	{
+		try {
+			// Get all tags that are visible and assignable by users
+			$tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
+			
+			// Extract just the tag names
+			$tagNames = array_map(static function ($tag) {
+				return $tag->getName();
+			}, $tags);
+			
+			// Return sorted array of tag names
+			sort($tagNames);
+			return array_values($tagNames);
+		} catch (\Exception $e) {
+			$this->logger->error('Failed to retrieve tags: ' . $e->getMessage());
+			throw new \Exception('Failed to retrieve tags: ' . $e->getMessage());
+		}
+	}
 }
