@@ -376,7 +376,7 @@ class FileService
 	/**
 	 * Gets a NextCloud Node object for the given file or folder path.
 	 */
-	private function getNode(string $path): ?Node
+	public function getNode(string $path): ?Node
 	{
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());

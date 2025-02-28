@@ -1457,37 +1457,59 @@ class ObjectService
 	/**
 	 * Publish a file by creating a public share link
 	 *
+	 * @todo Should be in file service
+	 * 
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to publish
-	 * @return string The public share link URL
+	 * @return \OCP\Files\File The published file
 	 * @throws Exception If file publishing fails
 	 */
-	public function publishFile(ObjectEntity|string $object, string $filePath): string
+	public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
 	{
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
 		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
-		return $this->fileService->createShareLink($fullPath);
+		$shareLink = $this->fileService->createShareLink($fullPath);
+				
+		// Get the file node after creating share link
+		$node = $this->fileService->getNode($fullPath);
+		
+		if (!$node instanceof \OCP\Files\File) {
+			throw new Exception('Node is not a file');
+		}
+		
+		return $node;
 	}
 
 	/**
 	 * Unpublish a file by removing its public share link
+	 * 
+	 * @todo Should be in file service
 	 *
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to unpublish
-	 * @return bool True if successful
+	 * @return \OCP\Files\File The unpublished file
 	 * @throws Exception If file unpublishing fails
 	 */
-	public function unpublishFile(ObjectEntity|string $object, string $filePath): bool
+	public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
 	{
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
 		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
-		return $this->fileService->deleteShare($fullPath);
+		$shareLink = $this->fileService->createShareLink($fullPath);
+
+		// Get the file node after creating share link
+		$node = $this->fileService->getNode($fullPath);
+		
+		if (!$node instanceof \OCP\Files\File) {
+			throw new Exception('Node is not a file');
+		}
+		
+		return $node;		
 	}
 
 	/**
