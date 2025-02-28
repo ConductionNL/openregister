@@ -754,11 +754,6 @@ class FileService
 	 */
 	public function updateFile(string $filePath, mixed $content = null, array $tags = []): File
 	{
-		// Validate that either content or tags are provided
-		if ($content === null && empty($tags)) {
-			throw new Exception('Either content or tags must be provided for file update');
-		}
-
 		$filePath = trim(string: $filePath, characters: '/');
 
 		try {
@@ -779,10 +774,7 @@ class FileService
 						}
 					}
 
-					// Add tags to the file if provided
-					if (empty($tags) === false) {
-						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-					}
+					$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 
 					return $file;
 				} catch (NotFoundException $e) {
@@ -858,18 +850,15 @@ class FileService
 	 * @param array $tags Tags to associate with the file.
 	 * @return void
 	 */
-	private function attachTagsToFile(string $fileId, array $tags): void
+	private function attachTagsToFile(string $fileId, array $tags = []): void
 	{
-		// Return early if no tags provided
-		if (empty($tags)) {
-			return;
-		}
-		
-        $tagIds = [];
-
-		// Get all existing tags for the file and build array of tag IDs
+		// Get all existing tags for the file and convert to array of just the IDs
 		$oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
-		
+		if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
+            $oldTagIds = [];
+        } else {
+			$oldTagIds = $oldTagIds[$fileId];
+		}
 		
 
 		// Create new tags if they don't exist
@@ -888,17 +877,23 @@ class FileService
             $newTagIds[] = $tag->getId();
 		}
 
-		// Assign the new tags to the file
-        $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagIds);
+		// Only assign new tags if we have any
+		if (empty($newTagIds) === false) {
+			$this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $newTagIds);
+		}
 		
 		// Find tags that exist in old tags but not in new tags (tags to be removed)
 		$tagsToRemove = array_diff($oldTagIds ?? [], $newTagIds ?? []);
+		// Remove any keys with value 0 from tags to remove array
+		$tagsToRemove = array_filter($tagsToRemove, function($value) {
+			return $value !== 0;
+		});
 
 		// Remove old tags that aren't in new tags
 		if (empty($tagsToRemove) === false) {
-			// $this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
+			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
 		}
-		
+				
 		//@todo Let check if there are now esisitng tags without files (orpahns) that need to be deleted
 	}
 
