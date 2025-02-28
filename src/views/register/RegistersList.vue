@@ -5,7 +5,7 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 <template>
 	<NcAppContentList>
 		<ul>
-			<div class="listHeader">
+			<div class="searchListHeader">
 				<NcTextField
 					:value.sync="searchStore.search"
 					:show-trailing-button="searchStore.search !== ''"

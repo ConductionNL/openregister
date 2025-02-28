@@ -1,43 +1,52 @@
 <script setup>
-import { objectStore, navigationStore, searchStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppContentList>
 		<ul>
 			<div class="listHeader">
-				<NcTextField
-					:value.sync="searchStore.search"
-					:show-trailing-button="searchStore.search !== ''"
-					label="Search"
-					class="searchField"
-					trailing-button-icon="close"
-					@trailing-button-click="objectStore.refreshObjectList()">
-					<Magnify :size="20" />
-				</NcTextField>
-				<NcActions>
-					<NcActionButton @click="objectStore.refreshObjectList()">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						Refresh
-					</NcActionButton>
-					<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						Upload
-					</NcActionButton>
-					<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						Add Object
-					</NcActionButton>
-				</NcActions>
+				<div class="searchListHeader">
+					<NcTextField
+						:value.sync="search"
+						:show-trailing-button="search !== ''"
+						label="Search"
+						class="searchField"
+						trailing-button-icon="close"
+						@trailing-button-click="search = ''">
+						<Magnify :size="20" />
+					</NcTextField>
+					<NcActions>
+						<NcActionButton @click="objectStore.refreshObjectList({ search: search, page: 1 })">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							Refresh
+						</NcActionButton>
+						<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
+							<template #icon>
+								<Upload :size="20" />
+							</template>
+							Upload
+						</NcActionButton>
+						<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
+							<template #icon>
+								<Plus :size="20" />
+							</template>
+							Add Object
+						</NcActionButton>
+					</NcActions>
+				</div>
+				<div v-if="objectStore.objectList.results?.length > 0 && objectStore.objectList.total > limit">
+					<span>Page {{ currentPage }} of {{ objectStore.objectList.pages }}</span>
+					<BPagination v-model="currentPage"
+						class="listPagination"
+						:total-rows="objectStore.objectList.total"
+						:per-page="limit" />
+				</div>
 			</div>
-			<div v-if="objectStore.objectList && objectStore.objectList.length > 0">
-				<NcListItem v-for="(object, i) in objectStore.objectList"
+			<div v-if="objectStore.objectList.results && objectStore.objectList.results.length > 0 && !loading">
+				<NcListItem v-for="(object, i) in objectStore.objectList.results"
 					:key="`${object}${i}`"
 					:name="object.id?.toString()"
 					:active="objectStore.objectItem?.id === object?.id"
@@ -83,13 +92,13 @@ import { objectStore, navigationStore, searchStore } from '../../store/store.js'
 			</div>
 		</ul>
 
-		<NcLoadingIcon v-if="!objectStore.objectList"
+		<NcLoadingIcon v-if="loading"
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
 			name="Loading Objects" />
 
-		<div v-if="objectStore.objectList.length === 0">
+		<div v-if="objectStore.objectList.results?.length === 0">
 			No objects have been defined yet.
 		</div>
 	</NcAppContentList>
@@ -106,6 +115,7 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
+import { BPagination } from 'bootstrap-vue'
 
 export default {
 	name: 'ObjectsList',
@@ -125,8 +135,38 @@ export default {
 		LockOutline,
 		LockOpenOutline,
 	},
+	data() {
+		return {
+			limit: 200,
+			currentPage: 1,
+			loading: false,
+			search: '',
+			searchTimeout: null,
+
+		}
+	},
+	watch: {
+		currentPage(newVal) {
+			this.loading = true
+			objectStore.refreshObjectList({ limit: this.limit, page: newVal, search: this.search }).finally(() => {
+				this.loading = false
+			})
+		},
+		search(newVal) {
+			clearTimeout(this.searchTimeout)
+			this.searchTimeout = setTimeout(() => {
+				this.loading = true
+				objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: newVal }).finally(() => {
+					this.loading = false
+				})
+			}, 700)
+		},
+	},
 	mounted() {
-		objectStore.refreshObjectList()
+		this.loading = true
+		objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: this.search }).finally(() => {
+			this.loading = false
+		})
 	},
 }
 </script>
