@@ -629,7 +629,7 @@ class FileService
 		$share->setStatus(status: $share::STATUS_ACCEPTED);
 
 		return $this->shareManager->createShare(share: $share);
-	}
+	}	
 
 	/**
 	 * Creates and returns a share link for a file (or folder).
@@ -676,13 +676,49 @@ class FileService
 				'file' => $file,
 				'shareType' => $shareType,
 				'permissions' => $permissions,
-				'userId' => $userId
+				'sharedWith' => self::APP_GROUP
 			]);
 			return $this->getShareLink($share);
 		} catch (Exception $exception) {
 			$this->logger->error("Can't create share link for $path: " . $exception->getMessage());
 
 			throw new Exception('Can\'t create share link');
+		}
+	}
+
+	/**
+	 * Deletes a share link for a file or folder.
+	 *
+	 * @param string $path Path (from root) to the file/folder whose share should be deleted
+	 * @param int|null $shareType The type of share to delete (default: 3 for public link)
+	 *
+	 * @return bool True if the share was successfully deleted
+	 * @throws Exception If the share cannot be found or deleted
+	 * 
+	 * @psalm-return bool
+	 * @phpstan-return bool
+	 */
+	public function deleteShareLink(string $path, ?int $shareType = 3): bool
+	{
+		//$path = trim(string: $path, characters: '/');
+		$userId = $this->getUser()->getUID();
+
+		// Find the share for the given path
+		$share = $this->findShare(path: $path, shareType: $shareType);
+		
+		if ($share === null) {
+			$this->logger->warning("No share found for path: $path");
+			throw new Exception("No share found for path: $path");
+		}
+		
+		try {
+			// Delete the share
+			$this->shareManager->deleteShare($share);
+			$this->logger->info("Successfully deleted share for path: $path");
+			return true;
+		} catch (Exception $e) {
+			$this->logger->error("Failed to delete share for path $path: " . $e->getMessage());
+			throw new Exception("Failed to delete share for path $path: " . $e->getMessage());
 		}
 	}
 
@@ -719,7 +755,6 @@ class FileService
 					'nodeType' => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
 					'shareType' => 1,
 					'permissions' => 31,
-					'userId' => $this->userSession->getUser()->getUID(),
 					'sharedWith' => self::APP_GROUP
 				]);
 			}
