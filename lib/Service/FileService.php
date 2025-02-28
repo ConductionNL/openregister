@@ -698,28 +698,22 @@ class FileService
 	 * @psalm-return bool
 	 * @phpstan-return bool
 	 */
-	public function deleteShareLink(string $path, ?int $shareType = 3): bool
+	public function deleteShareLinks(Node $file): Node
 	{
-		//$path = trim(string: $path, characters: '/');
-		$userId = $this->getUser()->getUID();
+		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+		$shares = $this->findShares($file);
 
-		// Find the share for the given path
-		$share = $this->findShare(path: $path, shareType: $shareType);
-		
-		if ($share === null) {
-			$this->logger->warning("No share found for path: $path");
-			throw new Exception("No share found for path: $path");
+		foreach ($shares as $share) {
+			try {
+				$this->shareManager->deleteShare($share);
+				$this->logger->info("Successfully deleted share for path: $share->getPath()");
+			} catch (Exception $e) {
+				$this->logger->error("Failed to delete share for path $share->getPath(): " . $e->getMessage());
+				throw new Exception("Failed to delete share for path $share->getPath(): " . $e->getMessage());
+			}
 		}
-		
-		try {
-			// Delete the share
-			$this->shareManager->deleteShare($share);
-			$this->logger->info("Successfully deleted share for path: $path");
-			return true;
-		} catch (Exception $e) {
-			$this->logger->error("Failed to delete share for path $path: " . $e->getMessage());
-			throw new Exception("Failed to delete share for path $path: " . $e->getMessage());
-		}
+
+		return $file;
 	}
 
 	/**

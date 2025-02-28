@@ -1504,12 +1504,13 @@ class ObjectService
 		// Get the file node
 		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
 		$file = $this->fileService->getNode($fullPath);
+		
 
 		if (!$file instanceof \OCP\Files\File) {
 			throw new Exception('File not found');
 		}
 
-		$this->fileService->deleteShareLink(path: $file->getPath());			
+		$this->fileService->deleteShareLinks(file: $file);			
 		
 		return $file;
 	}
