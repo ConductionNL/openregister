@@ -1466,21 +1466,22 @@ class ObjectService
 	 */
 	public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
+		// Get the file node
 		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
-		$shareLink = $this->fileService->createShareLink($fullPath);
-				
-		// Get the file node after creating share link
-		$node = $this->fileService->getNode($fullPath);
-		
-		if (!$node instanceof \OCP\Files\File) {
-			throw new Exception('Node is not a file');
+		$file = $this->fileService->getNode($fullPath);
+
+		if (!$file instanceof \OCP\Files\File) {
+			throw new Exception('File not found');
 		}
+
+		$shareLink = $this->fileService->createShareLink(path: $file->getPath());			
 		
-		return $node;
+		return $file;
 	}
 
 	/**
@@ -1495,21 +1496,22 @@ class ObjectService
 	 */
 	public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
+		// Get the file node
 		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
-		$shareLink = $this->fileService->createShareLink($fullPath);
+		$file = $this->fileService->getNode($fullPath);
 
-		// Get the file node after creating share link
-		$node = $this->fileService->getNode($fullPath);
-		
-		if (!$node instanceof \OCP\Files\File) {
-			throw new Exception('Node is not a file');
+		if (!$file instanceof \OCP\Files\File) {
+			throw new Exception('File not found');
 		}
+
+		$this->fileService->deleteShareLink(path: $file->getPath());			
 		
-		return $node;		
+		return $file;
 	}
 
 	/**
