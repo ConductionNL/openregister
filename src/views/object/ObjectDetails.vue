@@ -129,6 +129,11 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										{{ relation.uri }}
 									</template>
 								</NcListItem>
+								<BPagination v-if="!relationsLoading && objectStore.relations.total > pagination.relations.limit"
+									v-model="pagination.relations.currentPage"
+									class="tabPagination"
+									:total-rows="objectStore.relations.total"
+									:per-page="pagination.relations.limit" />
 							</div>
 							<div v-else class="tabPanel">
 								No relations found
@@ -142,8 +147,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								Open folder
 							</NcButton>
 
-							<div v-if="objectStore.files?.length > 0">
-								<NcListItem v-for="(attachment, i) in objectStore.files"
+							<div v-if="objectStore.files.results?.length > 0">
+								<NcListItem v-for="(attachment, i) in objectStore.files.results"
 									:key="`${attachment}${i}`"
 									:name="attachment.name ?? attachment?.title"
 									:bold="false"
@@ -183,14 +188,20 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</NcActionButton>
 									</template>
 								</NcListItem>
+
+								<BPagination v-if="!fileLoading && objectStore.files.total > pagination.files.limit"
+									v-model="pagination.files.currentPage"
+									class="tabPagination"
+									:total-rows="objectStore.files.total"
+									:per-page="pagination.files.limit" />
 							</div>
 
-							<div v-if="objectStore.files?.length === 0">
+							<div v-if="objectStore.files.results?.length === 0">
 								Nog geen bijlage toegevoegd
 							</div>
 
 							<div
-								v-if="objectStore.files?.length !== 0 && !objectStore.files?.length > 0">
+								v-if="objectStore.files.results?.length !== 0 && !objectStore.files.results?.length > 0 && fileLoading">
 								<NcLoadingIcon :size="64"
 									class="loadingIcon"
 									appearance="dark"
@@ -203,8 +214,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab title="Audit Trails">
-							<div v-if="objectStore.auditTrails.length">
-								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails"
+							<div v-if="objectStore.auditTrails.results?.length">
+								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails.results"
 									:key="key"
 									:name="new Date(auditTrail.created).toLocaleString()"
 									:bold="false"
@@ -227,8 +238,13 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</NcActionButton>
 									</template>
 								</NcListItem>
+								<BPagination v-if="!auditTrailLoading && objectStore.auditTrails.total > pagination.auditTrails.limit"
+									v-model="pagination.auditTrails.currentPage"
+									class="tabPagination"
+									:total-rows="objectStore.auditTrails.total"
+									:per-page="pagination.auditTrails.limit" />
 							</div>
-							<div v-if="!objectStore.auditTrails.length">
+							<div v-if="!objectStore.auditTrails.results?.length">
 								No audit trails found
 							</div>
 						</BTab>
@@ -249,7 +265,7 @@ import {
 	NcCounterBubble,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import { BTabs, BTab, BPagination } from 'bootstrap-vue'
 
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -294,11 +310,47 @@ export default {
 			relationsLoading: false,
 			relations: [],
 			activeAttachment: null,
+			fileLoading: false,
+			pagination: {
+				files: {
+					limit: 200,
+					currentPage: objectStore.files.page || 1,
+					totalPages: objectStore.files.total || 1,
+				},
+				auditTrails: {
+					limit: 200,
+					currentPage: objectStore.auditTrails.page || 1,
+					totalPages: objectStore.auditTrails.total || 1,
+				},
+				relations: {
+					limit: 200,
+					currentPage: objectStore.relations.page || 1,
+					totalPages: objectStore.relations.total || 1,
+				},
+			},
 		}
+	},
+	watch: {
+		'pagination.files.currentPage': {
+			handler() {
+				this.getFiles()
+			},
+		},
+		'pagination.auditTrails.currentPage': {
+			handler() {
+				this.getAuditTrails()
+			},
+		},
+		'pagination.relations.currentPage': {
+			handler() {
+				this.getRelations()
+			},
+		},
 	},
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
+			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
 		}
@@ -306,26 +358,49 @@ export default {
 	updated() {
 		if (this.currentActiveObject !== objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
+			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
 		}
 	},
 	methods: {
+		getFiles() {
+			this.fileLoading = true
+
+			objectStore.getFiles(objectStore.objectItem.id, {
+				limit: this.pagination.files.limit,
+				page: this.pagination.files.currentPage,
+			}).finally(() => {
+				this.fileLoading = false
+			})
+		},
 		getAuditTrails() {
 			this.auditTrailLoading = true
 
-			objectStore.getAuditTrails(objectStore.objectItem.id)
+			objectStore.getAuditTrails(objectStore.objectItem.id, {
+				limit: this.pagination.auditTrails.limit,
+				page: this.pagination.auditTrails.currentPage,
+			})
 				.then(({ data }) => {
 					this.auditTrails = data
+					this.auditTrailLoading = false
+				})
+				.finally(() => {
 					this.auditTrailLoading = false
 				})
 		},
 		getRelations() {
 			this.relationsLoading = true
 
-			objectStore.getRelations(objectStore.objectItem.id)
+			objectStore.getRelations(objectStore.objectItem.id, {
+				limit: this.pagination.relations.limit,
+				page: this.pagination.relations.currentPage,
+			})
 				.then(({ data }) => {
 					this.relations = data
+					this.relationsLoading = false
+				})
+				.finally(() => {
 					this.relationsLoading = false
 				})
 		},

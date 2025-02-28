@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { AuditTrail, ObjectEntity } from '../../entities/index.js'
 
@@ -16,26 +15,23 @@ export const useObjectStore = defineStore('object', {
 	actions: {
 		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
-			console.log('Active object item set to ' + objectItem)
-
-			// Get files when object is set
-			if (objectItem && objectItem.id) {
-				await this.getFiles(objectItem.id)
-			}
+			console.info('Active object item set to ' + objectItem)
 		},
 		setObjectList(objectList) {
-			this.objectList = objectList.map(
-				(objectItem) => new ObjectEntity(objectItem),
-			)
-			console.log('Object list set to ' + objectList.length + ' items')
+			this.objectList = {
+				...objectList,
+				results: objectList.results.map(
+					(objectItem) => new ObjectEntity(objectItem),
+				),
+			}
+
+			console.info('Object list set to ' + objectList.length + ' items')
 		},
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
 		},
 		setAuditTrails(auditTrails) {
-			this.auditTrails = auditTrails.map(
-				(auditTrail) => new AuditTrail(auditTrail),
-			)
+			this.auditTrails = auditTrails
 		},
 		setRelationItem(relationItem) {
 			this.relationItem = relationItem && new ObjectEntity(relationItem)
@@ -52,12 +48,25 @@ export const useObjectStore = defineStore('object', {
 			this.files = files
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshObjectList(search = null) {
+		async refreshObjectList(options = {}) {
 			// @todo this might belong in a service?
 			let endpoint = '/index.php/apps/openregister/api/objects'
-			if (search !== null && search !== '') {
-				endpoint = endpoint + '?_search=' + search
+			const params = []
+
+			if (options.search && options.search !== '') {
+				params.push('_search=' + options.search)
 			}
+			if (options.limit && options.limit !== '') {
+				params.push('_limit=' + options.limit)
+			}
+			if (options.page && options.page !== '') {
+				params.push('_page=' + options.page)
+			}
+
+			if (params.length > 0) {
+				endpoint += '?' + params.join('&')
+			}
+
 			return fetch(endpoint, {
 				method: 'GET',
 			})
@@ -65,7 +74,7 @@ export const useObjectStore = defineStore('object', {
 					(response) => {
 						response.json().then(
 							(data) => {
-								this.setObjectList(data.results)
+								this.setObjectList(data)
 							},
 						)
 					},
@@ -100,7 +109,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object item to delete')
 			}
 
-			console.log('Deleting object...')
+			console.info('Deleting object...')
 
 			const endpoint = `/index.php/apps/openregister/api/objects/${objectItem.id}`
 
@@ -134,7 +143,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object item to save')
 			}
 
-			console.log('Saving object...')
+			console.info('Saving object...')
 
 			const isNewObject = !objectItem.id
 			const endpoint = isNewObject
@@ -170,31 +179,64 @@ export const useObjectStore = defineStore('object', {
 			return { response, data }
 		},
 		// AUDIT TRAILS
-		async getAuditTrails(id) {
+		async getAuditTrails(id, options = {}) {
 			if (!id) {
 				throw new Error('No object id to get audit trails for')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/audit-trails/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/audit-trails/${id}`
+			const params = []
+
+			if (options.search && options.search !== '') {
+				params.push('_search=' + options.search)
+			}
+			if (options.limit && options.limit !== '') {
+				params.push('_limit=' + options.limit)
+			}
+			if (options.page && options.page !== '') {
+				params.push('_page=' + options.page)
+			}
+
+			if (params.length > 0) {
+				endpoint += '?' + params.join('&')
+			}
 
 			const response = await fetch(endpoint, {
 				method: 'GET',
 			})
 
 			const responseData = await response.json()
-			const data = responseData.map((auditTrail) => new AuditTrail(auditTrail))
+			const data = {
+				...responseData,
+				results: responseData.results.map((auditTrail) => new AuditTrail(auditTrail)),
+			}
 
 			this.setAuditTrails(data)
 
 			return { response, data }
 		},
 		// RELATIONS
-		async getRelations(id) {
+		async getRelations(id, options = {}) {
 			if (!id) {
 				throw new Error('No object id to get relations for')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/relations/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/relations/${id}`
+			const params = []
+
+			if (options.search && options.search !== '') {
+				params.push('_search=' + options.search)
+			}
+			if (options.limit && options.limit !== '') {
+				params.push('_limit=' + options.limit)
+			}
+			if (options.page && options.page !== '') {
+				params.push('_page=' + options.page)
+			}
+
+			if (params.length > 0) {
+				endpoint += '?' + params.join('&')
+			}
 
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -212,14 +254,30 @@ export const useObjectStore = defineStore('object', {
 		 * Get files for an object
 		 *
 		 * @param {number} id Object ID
+		 * @param options Pagination options
 		 * @return {Promise} Promise that resolves with the object's files
 		 */
-		async getFiles(id) {
+		async getFiles(id, options = {}) {
 			if (!id) {
 				throw new Error('No object id to get files for')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/files/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/files/${id}`
+			const params = []
+
+			if (options.search && options.search !== '') {
+				params.push('_search=' + options.search)
+			}
+			if (options.limit && options.limit !== '') {
+				params.push('_limit=' + options.limit)
+			}
+			if (options.page && options.page !== '') {
+				params.push('_page=' + options.page)
+			}
+
+			if (params.length > 0) {
+				endpoint += '?' + params.join('&')
+			}
 
 			try {
 				const response = await fetch(endpoint, {
