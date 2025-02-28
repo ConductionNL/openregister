@@ -1313,7 +1313,9 @@ class ObjectService
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param ObjectEntity|string $object The object or object ID to fetch files for
+	 * 
 	 * @return Node[] The files found
+	 * 
 	 * @throws NotFoundException If the folder is not found
 	 * @throws DoesNotExistException If the object ID is not found
 	 */
@@ -1323,13 +1325,14 @@ class ObjectService
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
-
+		
 		$folder = $this->fileService->getObjectFolder(
 			objectEntity: $object,
 			register: $object->getRegister(),
 			schema: $object->getSchema()
 		);
 
+		$files = [];
 		if ($folder instanceof Folder === true) {
 			$files = $folder->getDirectoryListing();
 		}
@@ -1397,13 +1400,14 @@ class ObjectService
 	 *
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to update
-	 * @param string $content New file content
+	 * @param string|null $content Optional new file content
 	 * @param array $tags Optional tags to update
-	 * @return bool True if successful
+	 * @return \OCP\Files\File The updated file
 	 * @throws Exception If file update fails
 	 */
-	public function updateFile(ObjectEntity|string $object, string $filePath, string $content, array $tags = []): bool
+	public function updateFile(ObjectEntity|string $object, string $filePath, ?string $content = null, array $tags = []): \OCP\Files\File
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
@@ -1416,6 +1420,23 @@ class ObjectService
 	}
 
 	/**
+	 * Retrieves all available tags in the system.
+	 * 
+	 * This method fetches all tags that are visible and assignable by users
+	 * from the system tag manager.
+	 *
+	 * @return array An array of tag names
+	 * @throws \Exception If there's an error retrieving the tags
+	 * 
+	 * @psalm-return array<int, string>
+	 * @phpstan-return array<int, string>
+	 */
+	public function getAllTags(): array
+	{
+		return $this->fileService->getAllTags();
+	}
+
+	/**
 	 * Delete a file from an object
 	 *
 	 * @param ObjectEntity|string $object The object or object ID
@@ -1425,6 +1446,7 @@ class ObjectService
 	 */
 	public function deleteFile(ObjectEntity|string $object, string $filePath): bool
 	{
+		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
@@ -1435,6 +1457,67 @@ class ObjectService
 	}
 
 	/**
+	 * Publish a file by creating a public share link
+	 *
+	 * @todo Should be in file service
+	 * 
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to publish
+	 * @return \OCP\Files\File The published file
+	 * @throws Exception If file publishing fails
+	 */
+	public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		// Get the file node
+		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
+		$file = $this->fileService->getNode($fullPath);
+
+		if (!$file instanceof \OCP\Files\File) {
+			throw new Exception('File not found');
+		}
+
+		$shareLink = $this->fileService->createShareLink(path: $file->getPath());			
+		
+		return $file;
+	}
+
+	/**
+	 * Unpublish a file by removing its public share link
+	 * 
+	 * @todo Should be in file service
+	 *
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to unpublish
+	 * @return \OCP\Files\File The unpublished file
+	 * @throws Exception If file unpublishing fails
+	 */
+	public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		// Get the file node
+		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
+		$file = $this->fileService->getNode($fullPath);
+		
+
+		if (!$file instanceof \OCP\Files\File) {
+			throw new Exception('File not found');
+		}
+
+		$this->fileService->deleteShareLinks(file: $file);			
+		
+		return $file;
+	}
+
+	/**
 	 * Formats an array of Node files into an array of metadata arrays.
 	 * Uses FileService formatFiles function, this function is here to be used by OpenCatalog or OpenConnector!
 	 *
@@ -1442,14 +1525,15 @@ class ObjectService
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param Node[] $files Array of Node files to format
+	 * @param array $requestParams Optional request parameters
 	 *
 	 * @return array Array of formatted file metadata arrays
 	 * @throws InvalidPathException
 	 * @throws NotFoundException
 	 */
-	public function formatFiles(array $files): array
+	public function formatFiles(array $files, ?array $requestParams = []): array
 	{
-		return $this->fileService->formatFiles($files);
+		return $this->fileService->formatFiles($files, $requestParams);
 	}
 
 	/**
@@ -1929,15 +2013,56 @@ class ObjectService
 	 * @param string $id The object ID
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
+	 * @param array $requestParams Optional request parameters
+	 * 
 	 * @return array The audit trail entries
 	 */
-	public function getAuditTrail(string $id, ?int $register = null, ?int $schema = null): array
+	public function getPaginatedAuditTrail(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
-		// Get the object to get its URI and UUID
-		$object = $this->find($id);
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+		// Lets force the object id to be the object id of the object we are getting the audit trail for
+		$filters['object'] = $id;
 
 		// @todo this is not working, it fails to find the logs
-		$auditTrails = $this->auditTrailMapper->findAll(filters: ['object' => $object->getId()]);
+		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);		
+
+		// Format the audit trails
+		$total   = count($auditTrails);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		return [
+			'results' => $auditTrails,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
 
 		return $auditTrails;
 	}
@@ -1949,9 +2074,11 @@ class ObjectService
 	 * @param string $id The object ID
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
+	 * @param array $requestParams Optional request parameters
+	 * 
 	 * @return array The objects that reference this object
 	 */
-	public function getRelations(string $id, ?int $register = null, ?int $schema = null): array
+	public function getRelations(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
 		$register = $register ?? $this->getRegister();
 		$schema = $schema ?? $this->getSchema();
@@ -1966,9 +2093,69 @@ class ObjectService
 		);
 
 		// Filter out self-references if any
-		return array_filter($referencingObjects, function($referencingObject) use ($id) {
+		$referencingObjects = array_filter($referencingObjects, function($referencingObject) use ($id) {
 			return $referencingObject->getUuid() !== $id;
-		});
+		});			
+
+		return $referencingObjects;
+	}
+
+	/**
+	 * Get paginated relations for a specific object
+	 * Returns a paginated list of objects that link to this object (incoming references)
+	 *
+	 * @param string $id The object ID
+	 * @param int|null $register Optional register ID to override current register
+	 * @param int|null $schema Optional schema ID to override current schema
+	 * @param array $requestParams Optional request parameters for pagination, filtering and sorting
+	 * 
+	 * @return array The paginated list of objects that reference this object, with metadata
+	 */
+	public function getPaginatedRelations(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
+	{
+		// Get the object to get its URI and UUID
+		$object = $this->objectEntityMapper->find($id);
+
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+		// Filter out self-references if any
+		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, ids: $object->getRelations());
+
+		// Apply pagination
+		$total = count($objects);
+		$pages = $limit !== null ? ceil($total/$limit) : 1;
+
+		return [
+			'results' => $referencingObjects,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
 	}
 
 	/**
@@ -1978,24 +2165,84 @@ class ObjectService
 	 * @param string $id The object ID
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
-	 *
+	 * @param array $requestParams Optional request parameters
 	 * @return array The objects this object references
 	 */
-	public function getUses(string $id, ?int $register = null, ?int $schema = null): array
+	public function getPaginatedUses(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
 	{
 		// First get the object to access its relations
-		$object = $this->find($id);
-		$relations = $object->getRelations() ?? [];
+		//$object = $this->find($id);
+		//$relations = $object->getRelations() ?? [];				
+
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+		// Lets force the object id to be the object id of the object we are getting the audit trail for
+		//$filters['object'] = $object->getId();
+
+		// @todo this is not working, it fails to find the logs
+		//$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
 
 		// Get all referenced objects
-		$referencedObjects = [];
-		foreach ($relations as $path => $relationId) {
-			$referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
+		//$referencedObjects = [];
+		//foreach ($relations as $path => $relationId) {
+		//	$referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
+		//	if ($referencedObjects[$path] === null){
+		//		$referencedObjects[$path] = $relationId;
+		//	}
+		//}		
+		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend, uses: $id);
+		$total   = $this->count($filters);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
 
-			if ($referencedObjects[$path] === null){
-				$referencedObjects[$path] = $relationId;
-			}
-		}
+		$facets  = $this->getAggregations(
+			filters: $filters,
+			search: $search
+		);
+
+		return [
+			'results' => $objects,
+			'facets' => $facets,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
+
+		// Format the audit trails
+		$total   = count($referencingObjects);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		return [
+			'results' => $referencingObjects,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
 
 		return $referencedObjects;
 	}

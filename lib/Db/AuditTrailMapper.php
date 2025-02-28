@@ -58,9 +58,11 @@ class AuditTrailMapper extends QBMapper
      * @param array|null $filters The filters to apply
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams The search parameters to apply
+     * @param array|null $sort The sort parameters to apply
+     * @param string|null $search Optional search term to filter by ext fields
      * @return array The audit trails
      */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], ?array $sort = [], ?string $search = null): array
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -83,6 +85,21 @@ class AuditTrailMapper extends QBMapper
             $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
+            }
+        }
+
+        // Add search on ext fields if search term provided
+        if ($search !== null) {
+            $qb->andWhere(
+                $qb->expr()->like('ext', $qb->createNamedParameter('%' . $search . '%'))
+            );
+        }
+
+        // Add sorting if specified
+        if (!empty($sort)) {
+            foreach ($sort as $field => $direction) {
+                $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                $qb->addOrderBy($field, $direction);
             }
         }
 

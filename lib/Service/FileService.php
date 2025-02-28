@@ -376,7 +376,7 @@ class FileService
 	/**
 	 * Gets a NextCloud Node object for the given file or folder path.
 	 */
-	private function getNode(string $path): ?Node
+	public function getNode(string $path): ?Node
 	{
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
@@ -461,19 +461,61 @@ class FileService
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param Node[] $files Array of Node files to format
+	 * @param array $requestParams Optional request parameters
+	 *
 	 * @return array Array of formatted file metadata arrays
 	 * @throws InvalidPathException
 	 * @throws NotFoundException
 	 */
-	public function formatFiles(array $files): array
+	public function formatFiles(array $files, ?array $requestParams = []): array
 	{
+		
+		// Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
+
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
 		$formattedFiles = [];
+
+		// Apply offset and limit to files array if specified
+		$files = array_slice($files, $offset, $limit);
 
 		foreach($files as $file) {
 			$formattedFiles[] = $this->formatFile($file);
 		}
 
-		return $formattedFiles;
+		// @todo search
+		$total   = count($formattedFiles);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		return [
+			'results' => $formattedFiles,			
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
 	}
 
 	/**
@@ -587,7 +629,7 @@ class FileService
 		$share->setStatus(status: $share::STATUS_ACCEPTED);
 
 		return $this->shareManager->createShare(share: $share);
-	}
+	}	
 
 	/**
 	 * Creates and returns a share link for a file (or folder).
@@ -633,8 +675,7 @@ class FileService
 				'path' => $path,
 				'file' => $file,
 				'shareType' => $shareType,
-				'permissions' => $permissions,
-				'userId' => $userId
+				'permissions' => $permissions
 			]);
 			return $this->getShareLink($share);
 		} catch (Exception $exception) {
@@ -642,6 +683,36 @@ class FileService
 
 			throw new Exception('Can\'t create share link');
 		}
+	}
+
+	/**
+	 * Deletes a share link for a file or folder.
+	 *
+	 * @param string $path Path (from root) to the file/folder whose share should be deleted
+	 * @param int|null $shareType The type of share to delete (default: 3 for public link)
+	 *
+	 * @return bool True if the share was successfully deleted
+	 * @throws Exception If the share cannot be found or deleted
+	 * 
+	 * @psalm-return bool
+	 * @phpstan-return bool
+	 */
+	public function deleteShareLinks(Node $file): Node
+	{
+		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+		$shares = $this->findShares($file);
+
+		foreach ($shares as $share) {
+			try {
+				$this->shareManager->deleteShare($share);
+				$this->logger->info("Successfully deleted share for path: $share->getPath()");
+			} catch (Exception $e) {
+				$this->logger->error("Failed to delete share for path $share->getPath(): " . $e->getMessage());
+				throw new Exception("Failed to delete share for path $share->getPath(): " . $e->getMessage());
+			}
+		}
+
+		return $file;
 	}
 
 	/**
@@ -677,7 +748,6 @@ class FileService
 					'nodeType' => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
 					'shareType' => 1,
 					'permissions' => 31,
-					'userId' => $this->userSession->getUser()->getUID(),
 					'sharedWith' => self::APP_GROUP
 				]);
 			}
@@ -704,65 +774,60 @@ class FileService
 	/**
 	 * Overwrites an existing file in NextCloud.
 	 *
-	 * @param mixed $content The content of the file.
 	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
-	 * @param bool $createNew Default = false. If set to true this function will create a new file if it doesn't exist yet.
+	 * @param mixed|null $content Optional content of the file. If null, only metadata like tags will be updated.
 	 * @param array $tags Optional array of tags to attach to the file.
 	 * @return bool True if successful.
-	 * @throws Exception In case we can't write to file because it is not permitted.
+	 * @throws Exception If neither content nor tags are provided, or if file operations fail
 	 */
-	public function updateFile(mixed $content, string $filePath, bool $createNew = false, array $tags = []): bool
+	public function updateFile(string $filePath, mixed $content = null, array $tags = []): File
 	{
 		$filePath = trim(string: $filePath, characters: '/');
 
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
-			// Check if file exists and overwrite it if it does.
+			// Check if file exists and delete it if it does.
 			try {
 				try {
 					$file = $userFolder->get(path: $filePath);
-
-					$file->putContent(data: $content);
-
-					// Add tags to the file if provided
-					if (empty($tags) === false) {
-						$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-					}
-
-					return true;
-				} catch (NotFoundException $e) {
-					if ($createNew === true) {
-						$userFolder->newFile(path: $filePath);
-						$file = $userFolder->get(path: $filePath);
-
-						$file->putContent(data: $content);
-
-						// Add tags to the file if provided
-						if (empty($tags) === false) {
-							$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+					
+					// If content is not null, update the file content
+					if ($content !== null) {
+						try {
+							$file->putContent(data: $content);
+						} catch (NotPermittedException $e) {
+							$this->logger->error("Can't write content to file: " . $e->getMessage());
+							throw new Exception("Can't write content to file: " . $e->getMessage());
 						}
-
-						$this->logger->info("File $filePath did not exist, created a new file for it.");
-						return true;
 					}
+
+					$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+
+					return $file;
+				} catch (NotFoundException $e) {
+					// File does not exist.
+					$this->logger->warning("File $filePath does not exist.");
+
+					throw new Exception("File $filePath does not exist");
 				}
+			} catch (NotPermittedException|InvalidPathException $e) {
+				$this->logger->error("Can't update file $filePath: " . $e->getMessage());
 
-				// File already exists.
-				$this->logger->warning("File $filePath already exists.");
-				return false;
-
-			} catch (NotPermittedException|GenericFileException|LockedException $e) {
-				$this->logger->error("Can't create file $filePath: " . $e->getMessage());
-
-				throw new Exception("Can't write to file $filePath");
+				throw new Exception("Can't update file $filePath");
 			}
 		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't create file $filePath: " . $e->getMessage());
+			$this->logger->error("Can't update file $filePath: " . $e->getMessage());
 
-			throw new Exception("Can't write to file $filePath");
+			throw new Exception("Can't update file $filePath");
 		}
 	}
+
+	public function getObjectFilePath(string|ObjectEntity $object, string $filePath)
+	{
+		return $object->getFolder().'/'.$filePath;
+	}
+
 
 	/**
 	 * Deletes a file from NextCloud.
@@ -811,21 +876,53 @@ class FileService
 	 *
 	 * @param string $fileId The fileId.
 	 * @param array $tags Tags to associate with the file.
+	 * @return void
 	 */
-	private function attachTagsToFile(string $fileId, array $tags): void
+	private function attachTagsToFile(string $fileId, array $tags = []): void
 	{
-        $tagIds = [];
+		// Get all existing tags for the file and convert to array of just the IDs
+		$oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
+		if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
+            $oldTagIds = [];
+        } else {
+			$oldTagIds = $oldTagIds[$fileId];
+		}
+		
+
+		// Create new tags if they don't exist
 		foreach ($tags as $key => $tagName) {
+			// Skip empty tag names
+			if (empty($tagName)) {
+				continue;
+			}
+			
             try {
                 $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
-            } catch (TagNotFoundException $exception) {
+            } catch (Exception $exception) {
                 $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
             }
 
-            $tagIds[] = $tag->getId();
+            $newTagIds[] = $tag->getId();
 		}
 
-        $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagIds);
+		// Only assign new tags if we have any
+		if (empty($newTagIds) === false) {
+			$this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $newTagIds);
+		}
+		
+		// Find tags that exist in old tags but not in new tags (tags to be removed)
+		$tagsToRemove = array_diff($oldTagIds ?? [], $newTagIds ?? []);
+		// Remove any keys with value 0 from tags to remove array
+		$tagsToRemove = array_filter($tagsToRemove, function($value) {
+			return $value !== 0;
+		});
+
+		// Remove old tags that aren't in new tags
+		if (empty($tagsToRemove) === false) {
+			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
+		}
+				
+		//@todo Let check if there are now esisitng tags without files (orpahns) that need to be deleted
 	}
 
 
@@ -884,6 +981,38 @@ class FileService
 		} catch (\Exception $e) {
 			$this->logger->error("Failed to create file $fileName: " . $e->getMessage());
 			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Retrieves all available tags in the system.
+	 * 
+	 * This method fetches all tags that are visible and assignable by users
+	 * from the system tag manager.
+	 *
+	 * @return array An array of tag names
+	 * @throws \Exception If there's an error retrieving the tags
+	 * 
+	 * @psalm-return array<int, string>
+	 * @phpstan-return array<int, string>
+	 */
+	public function getAllTags(): array
+	{
+		try {
+			// Get all tags that are visible and assignable by users
+			$tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
+			
+			// Extract just the tag names
+			$tagNames = array_map(static function ($tag) {
+				return $tag->getName();
+			}, $tags);
+			
+			// Return sorted array of tag names
+			sort($tagNames);
+			return array_values($tagNames);
+		} catch (\Exception $e) {
+			$this->logger->error('Failed to retrieve tags: ' . $e->getMessage());
+			throw new \Exception('Failed to retrieve tags: ' . $e->getMessage());
 		}
 	}
 }
