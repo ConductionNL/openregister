@@ -1,5 +1,6 @@
 <script setup>
 import { searchStore, registerStore, schemaStore } from '../../store/store.js'
+import { EventBus } from '../../eventBus.js'
 </script>
 
 <template>
@@ -20,6 +21,24 @@ import { searchStore, registerStore, schemaStore } from '../../store/store.js'
 				input-label="Schema"
 				:loading="schemaLoading"
 				:disabled="!selectedRegister?.id" />
+
+			<div>
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId">
+					ObjectID
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.created">
+					Created
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.updated">
+					Updated
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.files">
+					Files
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.schemaProperties">
+					Schema properties
+				</NcCheckboxRadioSwitch>
+			</div>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
@@ -43,7 +62,7 @@ import { searchStore, registerStore, schemaStore } from '../../store/store.js'
 </template>
 <script>
 
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -62,6 +81,13 @@ export default {
 			selectedRegister: null,
 			schemaLoading: false,
 			selectedSchema: null,
+			columnFilter: {
+				objectId: true,
+				created: true,
+				updated: true,
+				files: true,
+				schemaProperties: true,
+			},
 		}
 	},
 	computed: {
@@ -102,6 +128,12 @@ export default {
 					schema: this.selectedSchema?.id,
 				})
 			}
+		},
+		columnFilter: {
+			handler() {
+				EventBus.$emit('object-search-set-column-filter', this.columnFilter)
+			},
+			deep: true,
 		},
 	},
 	mounted() {

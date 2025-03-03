@@ -133,6 +133,8 @@ export const useSearchStore = defineStore('search', () => {
 		searchObjectsError.value = ''
 	}
 
+    
+
 	return {
 		// LEGACY
 		// state
