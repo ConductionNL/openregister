@@ -23,19 +23,24 @@ import { EventBus } from '../../eventBus.js'
 				:disabled="!selectedRegister?.id" />
 
 			<div>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId">
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
+					@update:checked="(status) => emitUpdatedColumnFilter(status, 'objectId')">
 					ObjectID
 				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.created">
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.created"
+					@update:checked="(status) => emitUpdatedColumnFilter(status, 'created')">
 					Created
 				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.updated">
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.updated"
+					@update:checked="(status) => emitUpdatedColumnFilter(status, 'updated')">
 					Updated
 				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.files">
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.files"
+					@update:checked="(status) => emitUpdatedColumnFilter(status, 'files')">
 					Files
 				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.schemaProperties">
+				<NcCheckboxRadioSwitch :checked.sync="columnFilter.schemaProperties"
+					@update:checked="(status) => emitUpdatedColumnFilter(status, 'schemaProperties')">
 					Schema properties
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -129,18 +134,20 @@ export default {
 				})
 			}
 		},
-		columnFilter: {
-			handler() {
-				EventBus.$emit('object-search-set-column-filter', this.columnFilter)
-			},
-			deep: true,
-		},
 	},
 	mounted() {
 		this.registerLoading = true
 		this.schemaLoading = true
 		registerStore.refreshRegisterList().finally(() => (this.registerLoading = false))
 		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
+	},
+	methods: {
+		emitUpdatedColumnFilter(status, id) {
+			EventBus.$emit('object-search-set-column-filter', {
+				id,
+				enabled: status,
+			})
+		},
 	},
 }
 </script>
