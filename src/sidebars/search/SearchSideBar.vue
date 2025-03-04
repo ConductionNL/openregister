@@ -22,7 +22,7 @@ import { EventBus } from '../../eventBus.js'
 				:loading="schemaLoading"
 				:disabled="!selectedRegister?.id" />
 
-			<div>
+			<div v-if="searchStore.searchObjectsResult?.length">
 				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
 					@update:checked="(status) => emitUpdatedColumnFilter(status, 'objectId')">
 					ObjectID
