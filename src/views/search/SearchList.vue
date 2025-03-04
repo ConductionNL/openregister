@@ -5,14 +5,14 @@ import { EventBus } from '../../eventBus.js'
 
 <template>
 	<div>
-		<VueDraggable v-model="workingHeaders"
+		<VueDraggable v-model="activeHeaders"
 			target=".sort-target"
 			animation="150"
 			draggable="> *:not(:last-child)">
 			<table class="table">
 				<thead>
 					<tr class="table-row sort-target">
-						<template v-for="header in workingHeaders">
+						<template v-for="header in activeHeaders">
 							<th v-if="header.enabled" :key="header.id">
 								{{ header.label }}
 							</th>
@@ -21,7 +21,7 @@ import { EventBus } from '../../eventBus.js'
 				</thead>
 				<tbody>
 					<tr v-for="(result) in searchStore.searchObjectsResult" :key="result.uuid" class="table-row">
-						<template v-for="header in workingHeaders">
+						<template v-for="header in activeHeaders">
 							<td v-if="header.enabled" :key="header.id">
 								<span v-if="header.id === 'files'">
 									<NcCounterBubble :count="result.files ? result.files.length : 0" />
@@ -121,7 +121,7 @@ export default {
 			 *
 			 * This array is a copy of the headers array but with the disabled headers filtered out.
 			 */
-			workingHeaders: [],
+			activeHeaders: [],
 		}
 	},
 	computed: {
@@ -135,7 +135,7 @@ export default {
 	watch: {
 		headers: {
 			handler() {
-				this.setWorkingHeaders()
+				this.setActiveHeaders()
 			},
 			deep: true,
 		},
@@ -151,11 +151,11 @@ export default {
 	},
 	mounted() {
 		// something
-		this.setWorkingHeaders()
+		this.setActiveHeaders()
 	},
 	methods: {
-		setWorkingHeaders() {
-			this.workingHeaders = _.cloneDeep(this.headers.filter((header) => header.enabled))
+		setActiveHeaders() {
+			this.activeHeaders = _.cloneDeep(this.headers.filter((header) => header.enabled))
 		},
 		openLink(link, type = '') {
 			window.open(link, type)
