@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, objectStore, searchStore } from '../../store/store.js'
+import { navigationStore, objectStore, schemaStore, searchStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -11,15 +11,17 @@ import { navigationStore, objectStore, searchStore } from '../../store/store.js'
 					<th>Created</th>
 					<th>Updated</th>
 					<th>Amount of files</th>
+					<th>Schema properties</th>
 					<th>Actions</th>
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="(result, i) in searchStore.searchObjectsResult" :key="i.id" class="table-row">
+				<tr v-for="(result) in searchStore.searchObjectsResult" :key="result.uuid" class="table-row">
 					<td>{{ result.uuid }}</td>
 					<td>{{ getValidISOstring(result.created) ? new Date(result.created).toLocaleString() : 'N/A' }}</td>
 					<td>{{ getValidISOstring(result.updated) ? new Date(result.updated).toLocaleString() : 'N/A' }}</td>
-					<td>{{ result.files ? result.files.length : 0 }}</td>
+					<td><NcCounterBubble :count="result.files ? result.files.length : 0" /></td>
+					<td><NcCounterBubble :count="schemaProperties.length" /></td>
 					<td>
 						<NcActions>
 							<NcActionButton @click="navigationStore.setSelected('objects'); objectStore.setObjectItem(result)">
@@ -42,7 +44,7 @@ import { navigationStore, objectStore, searchStore } from '../../store/store.js'
 	</div>
 </template>
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import getValidISOstring from '../../services/getValidISOstring.js'
 
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -53,6 +55,14 @@ export default {
 	components: {
 		NcActions,
 		NcActionButton,
+	},
+	computed: {
+		selectedSchema() {
+			return schemaStore.schemaList.find((schema) => schema.id.toString() === searchStore.searchObjectsResult?.[0]?.schema?.toString())
+		},
+		schemaProperties() {
+			return Object.values(this.selectedSchema.properties) || []
+		},
 	},
 	mounted() {
 		// something
