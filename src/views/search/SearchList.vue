@@ -5,7 +5,10 @@ import { EventBus } from '../../eventBus.js'
 
 <template>
 	<div>
-		<VueDraggable v-model="workingHeaders" target=".sort-target" draggable="> *:not(:last-child)">
+		<VueDraggable v-model="workingHeaders"
+			target=".sort-target"
+			animation="150"
+			draggable="> *:not(:last-child)">
 			<table class="table">
 				<thead>
 					<tr class="table-row sort-target">
@@ -178,5 +181,9 @@ export default {
 }
 .table-row > th {
     padding: 0 10px;
+}
+
+.sort-target > th {
+    cursor: move;
 }
 </style>
