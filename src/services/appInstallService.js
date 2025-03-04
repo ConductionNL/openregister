@@ -5,7 +5,8 @@
  * ## AppInstallService Developer Documentation
  *
  * This file provides a robust service class, `AppInstallService`, that manages the installation,
- * uninstallation, and retrieval of Nextcloud apps. It leverages the Nextcloud request token
+ * uninstallation, and retrieval of Nextcloud apps.  
+ * It leverages official nextcloud APIs.
  *
  * ### Basic Usage
  *
@@ -117,7 +118,7 @@
  *
  * ### Prerequisites
  *
- * - The `<head>` of your Nextcloud HTML must contain a valid `data-requesttoken`. If the token
+ * - `window.OC.requestToken` must be set. If the token
  *   is not found, the constructor will throw an error.
  * - This class is intended to run in a browser-based environment with `fetch` available.
  *
@@ -188,7 +189,6 @@ class AppInstallService {
 		if (!this.#appList) {
 			this.#appList = await this.#fetchAppList()
 		}
-		await this.#appList
 	}
 
 	/**

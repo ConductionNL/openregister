@@ -78,7 +78,7 @@ export default {
 			selectedRegister: null,
 			schemaLoading: false,
 			selectedSchema: null,
-			appInstallService: null,
+			appInstallService: new AppInstallService(),
 			openConnectorInstalled: true,
 			openConnectorInstallError: false,
 		}
@@ -133,7 +133,6 @@ export default {
 	},
 	methods: {
 		async initAppInstallService() {
-			this.appInstallService = new AppInstallService()
 			await this.appInstallService.init()
 
 			this.openConnectorInstalled = await this.appInstallService.isAppInstalled('openconnector')
