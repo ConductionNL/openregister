@@ -27,6 +27,12 @@ The file attachment system provides:
    - Metadata tracking
    - Relationship management
 
+## **Setup**
+
+[!WARNING] 
+Before adding files, check that all users that should have access to the OpenRegister folder are in the openregister user group.
+Upload the first file and verify that users of the openregister user group have access to the created 'Open Registers' folder that has now been created and shared.
+
 ## Related Features
 
 - [Content Search](content-search.md) - Search file contents
