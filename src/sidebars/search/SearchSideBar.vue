@@ -182,8 +182,6 @@ export default {
 				this.openConnectorInstallError = true
 			}
 		},
-	},
-	methods: {
 		emitUpdatedColumnFilter(status, id) {
 			EventBus.$emit('object-search-set-column-filter', {
 				id,
