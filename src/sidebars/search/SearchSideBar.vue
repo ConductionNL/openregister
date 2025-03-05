@@ -1,5 +1,6 @@
 <script setup>
 import { searchStore, registerStore, schemaStore } from '../../store/store.js'
+import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
 </script>
 
@@ -50,24 +51,38 @@ import { EventBus } from '../../eventBus.js'
 			<template #icon>
 				<Upload :size="20" />
 			</template>
-			<NcButton type="primary">
-				Upload
-			</NcButton>
+
+			<NcNoteCard type="info">
+				OpenConnector is required for this feature.
+				<NcButton v-if="!openConnectorInstalled && !openConnectorInstallError" type="secondary" @click="installApp('openconnector')">
+					Install OpenConnector
+				</NcButton>
+			</NcNoteCard>
+			<NcNoteCard v-if="openConnectorInstallError" type="error">
+				Failed to install OpenConnector. Check console for more details.
+			</NcNoteCard>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="download-tab" name="Download" :order="3">
 			<template #icon>
 				<Download :size="20" />
 			</template>
-			<NcButton type="primary">
-				Download
-			</NcButton>
+
+			<NcNoteCard type="info">
+				OpenConnector is required for this feature.
+				<NcButton v-if="!openConnectorInstalled && !openConnectorInstallError" type="secondary" @click="installApp('openconnector')">
+					Install OpenConnector
+				</NcButton>
+			</NcNoteCard>
+			<NcNoteCard v-if="openConnectorInstallError" type="error">
+				Failed to install OpenConnector. Check console for more details.
+			</NcNoteCard>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
-<script>
 
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+<script>
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -79,6 +94,7 @@ export default {
 		NcAppSidebarTab,
 		NcSelect,
 		NcButton,
+		NcNoteCard,
 	},
 	data() {
 		return {
@@ -86,6 +102,9 @@ export default {
 			selectedRegister: null,
 			schemaLoading: false,
 			selectedSchema: null,
+			appInstallService: new AppInstallService(),
+			openConnectorInstalled: true,
+			openConnectorInstallError: false,
 			columnFilter: {
 				objectId: true,
 				created: true,
@@ -140,8 +159,29 @@ export default {
 		this.schemaLoading = true
 		registerStore.refreshRegisterList().finally(() => (this.registerLoading = false))
 		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
+
+		this.initAppInstallService()
 	},
 	methods: {
+		async initAppInstallService() {
+			await this.appInstallService.init()
+
+			this.openConnectorInstalled = await this.appInstallService.isAppInstalled('openconnector')
+		},
+		async installApp(appId) {
+			try {
+				await this.appInstallService.forceInstallApp(appId)
+				this.openConnectorInstalled = true
+			} catch (error) {
+				// gracefully show error to user and remove the button
+				if (error.status === 403 && error.data?.message === 'Password confirmation is required') {
+					console.error('Password confirmation needed before installing apps')
+				} else {
+					console.error('Failed to install app:', error)
+				}
+				this.openConnectorInstallError = true
+			}
+		},
 		emitUpdatedColumnFilter(status, id) {
 			EventBus.$emit('object-search-set-column-filter', {
 				id,
