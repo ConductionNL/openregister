@@ -5,6 +5,7 @@ import { EventBus } from '../../eventBus.js'
 
 <template>
 	<div>
+		<pre>{{ JSON.stringify(activeHeaders, null, 2) }}</pre>
 		<VueDraggable v-model="activeHeaders"
 			target=".sort-target"
 			animation="150"
@@ -15,7 +16,10 @@ import { EventBus } from '../../eventBus.js'
 						<template v-for="header in activeHeaders">
 							<th v-if="header.enabled" :key="header.id" :class="{ 'static-column': header.static }">
 								<span v-if="header.id === 'select-checkbox'">
-									<input type="checkbox">
+									<input v-model="selectAllObjects"
+										type="checkbox"
+										class="cursor-pointer"
+										@change="toggleSelectAllObjects()">
 								</span>
 								<span v-else>
 									{{ header.label }}
@@ -29,7 +33,11 @@ import { EventBus } from '../../eventBus.js'
 						<template v-for="header in activeHeaders">
 							<td v-if="header.enabled" :key="header.id" :class="{ 'static-column': header.static }">
 								<span v-if="header.id === 'select-checkbox'">
-									<input type="checkbox">
+									<input v-model="selectedObjects"
+										:value="result.id"
+										type="checkbox"
+										class="cursor-pointer"
+										@change="() => selectAllObjects = false">
 								</span>
 								<span v-if="header.id === 'files'">
 									<NcCounterBubble :count="result.files ? result.files.length : 0" />
@@ -143,6 +151,9 @@ export default {
 			 * This array is a copy of the headers array but with the disabled headers filtered out.
 			 */
 			activeHeaders: [],
+			// select boxes
+			selectAllObjects: false,
+			selectedObjects: [],
 		}
 	},
 	computed: {
@@ -171,7 +182,6 @@ export default {
 		EventBus.$off('object-search-set-column-filter')
 	},
 	mounted() {
-		// something
 		this.setActiveHeaders()
 	},
 	methods: {
@@ -180,6 +190,13 @@ export default {
 		},
 		openLink(link, type = '') {
 			window.open(link, type)
+		},
+		toggleSelectAllObjects() {
+			if (this.selectAllObjects) {
+				this.selectedObjects = searchStore.searchObjectsResult.map((result) => result.id)
+			} else {
+				this.selectedObjects = []
+			}
 		},
 	},
 }
@@ -206,5 +223,9 @@ export default {
 
 .sort-target > th {
     cursor: move;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
 }
 </style>
