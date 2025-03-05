@@ -23,7 +23,7 @@ import { EventBus } from '../../eventBus.js'
 				:loading="schemaLoading"
 				:disabled="!selectedRegister?.id" />
 
-			<div v-if="searchStore.searchObjectsResult?.length">
+			<div v-if="searchStore.searchObjectsResult?.results?.length">
 				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
 					@update:checked="(status) => emitUpdatedColumnFilter(status, 'objectId')">
 					ObjectID
@@ -147,12 +147,19 @@ export default {
 		// when selectedSchema changes, search for objects with the selected register and schema as filters
 		selectedSchema(newValue) {
 			if (newValue?.id) {
-				searchStore.searchObjects({
-					register: this.selectedRegister?.id,
-					schema: this.selectedSchema?.id,
-				})
+				this.searchObjects()
+				EventBus.$emit('reset-page')
 			}
 		},
+	},
+	created() {
+		EventBus.$on('page-change', (page) => {
+			this.searchObjects(page)
+		})
+	},
+	beforeDestroy() {
+		// Clean up the event listener
+		EventBus.$off('page-change')
 	},
 	mounted() {
 		this.registerLoading = true
@@ -163,6 +170,14 @@ export default {
 		this.initAppInstallService()
 	},
 	methods: {
+		searchObjects(page = 1) {
+			searchStore.searchObjects({
+				register: this.selectedRegister?.id,
+				schema: this.selectedSchema?.id,
+				_limit: 14,
+				_page: page,
+			})
+		},
 		async initAppInstallService() {
 			await this.appInstallService.init()
 

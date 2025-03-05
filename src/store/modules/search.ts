@@ -77,9 +77,6 @@ export const useSearchStore = defineStore('search', () => {
 
 		console.group('search objects')
 
-		console.info('clearing old result')
-		searchObjectsResult.value = []
-
 		console.group('Fetching search results with params:')
 		Object.entries(searchQuery).forEach(([key, value]) => {
 			console.info(`${key}: ${value}`)
@@ -95,9 +92,9 @@ export const useSearchStore = defineStore('search', () => {
 				// Clear any previous errors
 				searchObjectsError.value = ''
 
-				const data = (await response.json()).results
+				const data = await response.json()
 
-				console.info(`${data.length} objects found`)
+				console.info(`${data.results.length} objects found`)
 
 				if (!response.ok && response.statusText) {
 					searchObjectsError.value = response.statusText
