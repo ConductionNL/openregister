@@ -8,13 +8,18 @@ import { EventBus } from '../../eventBus.js'
 		<VueDraggable v-model="activeHeaders"
 			target=".sort-target"
 			animation="150"
-			draggable="> *:not(:last-child)">
+			draggable="> *:not(.static-column)">
 			<table class="table">
 				<thead>
 					<tr class="table-row sort-target">
 						<template v-for="header in activeHeaders">
-							<th v-if="header.enabled" :key="header.id">
-								{{ header.label }}
+							<th v-if="header.enabled" :key="header.id" :class="{ 'static-column': header.static }">
+								<span v-if="header.id === 'select-checkbox'">
+									<input type="checkbox">
+								</span>
+								<span v-else>
+									{{ header.label }}
+								</span>
 							</th>
 						</template>
 					</tr>
@@ -22,7 +27,10 @@ import { EventBus } from '../../eventBus.js'
 				<tbody>
 					<tr v-for="(result) in searchStore.searchObjectsResult" :key="result.uuid" class="table-row">
 						<template v-for="header in activeHeaders">
-							<td v-if="header.enabled" :key="header.id">
+							<td v-if="header.enabled" :key="header.id" :class="{ 'static-column': header.static }">
+								<span v-if="header.id === 'select-checkbox'">
+									<input type="checkbox">
+								</span>
 								<span v-if="header.id === 'files'">
 									<NcCounterBubble :count="result.files ? result.files.length : 0" />
 								</span>
@@ -79,40 +87,53 @@ export default {
 		return {
 			headers: [
 				{
+					id: 'select-checkbox',
+					label: '',
+					key: null,
+					enabled: true,
+					static: true,
+				},
+				{
 					id: 'objectId',
 					label: 'ObjectID',
 					key: 'uuid',
 					enabled: true,
+					static: false,
 				},
 				{
 					id: 'created',
 					label: 'Created',
 					key: 'created',
 					enabled: true,
+					static: false,
 				},
 				{
 					id: 'updated',
 					label: 'Updated',
 					key: 'updated',
 					enabled: true,
+					static: false,
 				},
 				{
 					id: 'files',
 					label: 'Amount of files',
 					key: 'files',
 					enabled: true,
+					static: false,
 				},
 				{
 					id: 'schemaProperties',
 					label: 'Schema properties',
 					key: null,
 					enabled: true,
+					static: false,
 				},
 				{
 					id: 'actions',
 					label: 'Actions',
 					key: null,
 					enabled: true,
+					static: true,
 				},
 			],
 			/**
