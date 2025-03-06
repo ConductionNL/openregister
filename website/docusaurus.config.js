@@ -32,7 +32,7 @@ const config = {
         specs: [
           {
             spec: 'static/oas/open-register.json',
-            route: '/api/reference',
+            route: '/api',
           },
         ],
         // Theme options for Redocusaurus
