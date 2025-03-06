@@ -5,11 +5,11 @@ import { searchStore } from '../../store/store.js'
 <template>
 	<NcAppContent>
 		<h2 class="pageHeader">
-			Search objects
+			Objects table
 		</h2>
 
 		<NcNoteCard v-if="!searchStore.searchObjectsResult?.length && !searchStore.searchObjectsLoading" type="info">
-			<p>There are no objects that match your search</p>
+			<p>There are no objects that match this filter</p>
 		</NcNoteCard>
 
 		<NcLoadingIcon v-if="searchStore.searchObjectsLoading"
