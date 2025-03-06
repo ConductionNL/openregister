@@ -1,0 +1,11 @@
+/**
+ * API Documentation Page
+ * 
+ * @category Pages
+ * @package Conduction Docs
+ * @author Claude AI
+ * @copyright 2023 Conduction
+ * @license EUPL-1.2
+ * @version 1.0.0
+ * @link https://conduction.nl
+ */
