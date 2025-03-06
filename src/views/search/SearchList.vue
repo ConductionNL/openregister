@@ -9,10 +9,16 @@ import { EventBus } from '../../eventBus.js'
 			<VueDraggable v-model="activeHeaders"
 				target=".sort-target"
 				animation="150"
-				draggable="> *:not(:last-child)">
+				draggable="> *:not(.static-column)">
 				<table class="table">
 					<thead>
 						<tr class="table-row sort-target">
+							<th class="static-column">
+								<input v-model="selectAllObjects"
+									type="checkbox"
+									class="cursor-pointer"
+									@change="toggleSelectAllObjects()">
+							</th>
 							<template v-for="header in activeHeaders">
 								<th v-if="header.enabled" :key="header.id">
 									<span class="sticky-header">
@@ -20,10 +26,20 @@ import { EventBus } from '../../eventBus.js'
 									</span>
 								</th>
 							</template>
+							<th class="static-column">
+								Actions
+							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(result) in searchStore.searchObjectsResult?.results" :key="result.uuid" class="table-row">
+						<tr v-for="(result) in searchStore.searchObjectsResult.results" :key="result.uuid" class="table-row">
+							<td class="static-column">
+								<input v-model="selectedObjects"
+									:value="result.id"
+									type="checkbox"
+									class="cursor-pointer"
+									@change="() => selectAllObjects = false">
+							</td>
 							<template v-for="header in activeHeaders">
 								<td v-if="header.enabled" :key="header.id">
 									<span v-if="header.id === 'files'">
@@ -35,27 +51,27 @@ import { EventBus } from '../../eventBus.js'
 									<span v-else-if="header.id === 'created' || header.id === 'updated'">
 										{{ getValidISOstring(result[header.key]) ? new Date(result[header.key]).toLocaleString() : 'N/A' }}
 									</span>
-									<span v-else-if="header.id === 'actions'">
-										<NcActions>
-											<NcActionButton @click="navigationStore.setSelected('objects'); objectStore.setObjectItem(result)">
-												<template #icon>
-													<Eye :size="20" />
-												</template>
-												View
-											</NcActionButton>
-											<NcActionButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Edit
-											</NcActionButton>
-										</NcActions>
-									</span>
 									<span v-else>
 										{{ result[header.key] }}
 									</span>
 								</td>
 							</template>
+							<td class="static-column">
+								<NcActions>
+									<NcActionButton @click="navigationStore.setSelected('objects'); objectStore.setObjectItem(result)">
+										<template #icon>
+											<Eye :size="20" />
+										</template>
+										View
+									</NcActionButton>
+									<NcActionButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+										Edit
+									</NcActionButton>
+								</NcActions>
+							</td>
 						</tr>
 					</tbody>
 				</table>
@@ -125,12 +141,6 @@ export default {
 					key: null,
 					enabled: true,
 				},
-				{
-					id: 'actions',
-					label: 'Actions',
-					key: null,
-					enabled: true,
-				},
 			],
 			/**
 			 * To ensure complete compatibility between the toggle and the drag function,
@@ -139,6 +149,9 @@ export default {
 			 * This array is a copy of the headers array but with the disabled headers filtered out.
 			 */
 			activeHeaders: [],
+			// select boxes
+			selectAllObjects: false,
+			selectedObjects: [],
 			// pagination
 			currentPage: 1,
 		}
@@ -173,7 +186,6 @@ export default {
 		EventBus.$off('reset-page')
 	},
 	mounted() {
-		// something
 		this.setActiveHeaders()
 	},
 	methods: {
@@ -182,6 +194,13 @@ export default {
 		},
 		openLink(link, type = '') {
 			window.open(link, type)
+		},
+		toggleSelectAllObjects() {
+			if (this.selectAllObjects) {
+				this.selectedObjects = searchStore.searchObjectsResult.results.map((result) => result.id)
+			} else {
+				this.selectedObjects = []
+			}
 		},
 	},
 }
@@ -216,6 +235,14 @@ export default {
 
 .sort-target > th {
     cursor: move;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+input[type="checkbox"] {
+    box-shadow: none !important;
 }
 
 .pagination {

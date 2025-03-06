@@ -10,22 +10,22 @@ export const useSearchStore = defineStore('search', () => {
 	*/
 
 	// LEGACY!!!
-	const search = ref('')
-	const searchResults = ref('')
-	const searchError = ref('')
+	const search = ref<any>('')
+	const searchResults = ref<any>('')
+	const searchError = ref<any>('')
 
-	function setSearch(search: string) {
-		this.search = search
-		console.info('Active search set to ' + search)
+	function setSearch(_search: string) {
+		search.value = _search
+		console.info('Active search set to ' + search.value)
 	}
-	function setSearchResults(searchResults: string) {
-		this.searchResults = searchResults
-		console.info('Active search set to ' + searchResults)
+	function setSearchResults(_searchResults: string) {
+		searchResults.value = _searchResults
+		console.info('Active search set to ' + searchResults.value)
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
 	function getSearchResults() {
 		fetch(
-			'/index.php/apps/openregister/api/search?_search=' + this.search,
+			'/index.php/apps/openregister/api/search?_search=' + search.value,
 			{
 				method: 'GET',
 			},
@@ -35,19 +35,19 @@ export const useSearchStore = defineStore('search', () => {
 					response.json().then(
 						(data) => {
 							if (data?.code === 403 && data?.message) {
-								this.searchError = data.message
-								console.info(this.searchError)
+								searchError.value = data.message
+								console.info(searchError.value)
 							} else {
-								this.searchError = '' // Clear any previous errors
+								searchError.value = '' // Clear any previous errors
 							}
-							this.searchResults = data
+							searchResults.value = data
 						},
 					)
 				},
 			)
 			.catch(
 				(err) => {
-					this.searchError = err.message || 'An error occurred'
+					searchError.value = err.message || 'An error occurred'
 					console.error(err.message ?? err)
 				},
 			)
