@@ -5,6 +5,21 @@ import { EventBus } from '../../eventBus.js'
 
 <template>
 	<div class="search-list">
+        <div class="search-list-header">
+            <NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
+				:size="24"
+				class="loadingIcon"
+				appearance="dark"
+				name="Objects loading" />
+
+            <NcButton :disabled="selectedObjects.length === 0" type="error" @click="() => massDeleteObjectModal = true">
+                <template #icon>
+                    <Delete :size="20" />
+                </template>
+                Delete {{ selectedObjects.length }} object{{ selectedObjects.length > 1 ? 's' : '' }}
+            </NcButton>
+        </div>
+
 		<div class="search-list-table">
 			<VueDraggable v-model="activeHeaders"
 				target=".sort-target"
@@ -88,11 +103,15 @@ import { EventBus } from '../../eventBus.js'
 				:last-number="true"
 				@change="(page) => EventBus.$emit('page-change', page)" />
 		</div>
+
+        {{ massDeleteObjectModal }}
+        <MassDeleteObject v-if="massDeleteObjectModal" :selectedObjects="selectedObjects"
+            @close="([success, waitTillClosed]) => waitTillClosed(() => massDeleteObjectModal = false)" />
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcCounterBubble, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
@@ -100,6 +119,9 @@ import _ from 'lodash'
 
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+
+import MassDeleteObject from '../../modals/object/MassDeleteObject.vue';
 
 export default {
 	name: 'SearchList',
@@ -154,6 +176,8 @@ export default {
 			selectedObjects: [],
 			// pagination
 			currentPage: 1,
+            // modal state
+            massDeleteObjectModal: false,
 		}
 	},
 	computed: {
@@ -207,6 +231,13 @@ export default {
 </script>
 
 <style scoped>
+.search-list-header {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-inline-end: 10px;
+}
+
 .search-list-table {
     overflow-x: auto;
 }
