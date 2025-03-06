@@ -23,25 +23,25 @@ const config = {
     locales: ['en'],
   },
 
+  
   plugins: [
     [
-      redocusaurus.plugin,
+      'redocusaurus',
       {
+        // Plugin options
         specs: [
           {
-            id: 'open-register-api',
-            spec: 'static/oas/open-register.yaml',
-            route: '/api/',
+            spec: 'static/oas/open-register.json',
+            route: '/api/reference',
           },
         ],
-        theme: theme,
+        // Theme options for Redocusaurus
+        theme: {
+          // Change with your site colors
+          primaryColor: '#34c4a7',
+        },
       },
     ],
-  ],
-  
-  themes: [
-    // ... existing themes
-    'redocusaurus/dist/theme',
   ],
 
   presets: [
