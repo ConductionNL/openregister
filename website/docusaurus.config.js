@@ -23,6 +23,27 @@ const config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      redocusaurus.plugin,
+      {
+        specs: [
+          {
+            id: 'open-register-api',
+            spec: 'static/oas/open-register.yaml',
+            route: '/api/',
+          },
+        ],
+        theme: theme,
+      },
+    ],
+  ],
+  
+  themes: [
+    // ... existing themes
+    'redocusaurus/dist/theme',
+  ],
+
   presets: [
     [
       'classic',
@@ -56,6 +77,11 @@ const config = {
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Documentation',
+          },
+          {
+            to: '/api',
+            label: 'API Specificatie',
+            position: 'right',
           },
           {
             href: 'https://github.com/conductionnl/openregister',
