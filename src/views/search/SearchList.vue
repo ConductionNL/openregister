@@ -61,28 +61,22 @@ import { EventBus } from '../../eventBus.js'
 				</table>
 			</VueDraggable>
 		</div>
-		<NcButton>
-			Previous
-		</NcButton>
-		<NcButton :disabled="true">
-			Previous
-		</NcButton>
-		<NcButton type="primary">
-			Previous
-		</NcButton>
 
-		<div class="pagination">
+		<div class="pagination-container">
 			<BPagination
 				v-model="currentPage"
+				:loading="searchStore.searchObjectsLoading"
 				:total-rows="searchStore.searchObjectsResult.total"
 				:per-page="14"
+				:first-number="true"
+				:last-number="true"
 				@change="(page) => EventBus.$emit('page-change', page)" />
 		</div>
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcCounterBubble, NcButton } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
@@ -229,13 +223,32 @@ export default {
     display: flex;
 }
 .pagination :deep(.page-item > .page-link) {
+    width: 35px !important;
+    height: 35px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--color-primary-element-light-text) !important;
     background-color: var(--color-primary-element-light) !important;
-    padding: calc((var(--default-clickable-area) - 1lh)/2) calc(3*var(--default-grid-baseline)) !important;
+    padding: 0 !important;
     font-size: var(--default-font-size) !important;
     min-height: var(--default-clickable-area) !important;
     margin: 3px !important;
     margin-inline-start: 0 !important;
     border-radius: var(--border-radius-element) !important;
+    line-height: 18.75px !important;
+    vertical-align: middle !important;
+    font-weight: bold !important;
+    font-family: var(--font-face) !important;
+}
+.pagination :deep(.page-item.active > .page-link) {
+    color: var(--color-primary-element-text) !important;
+    background-color: var(--color-primary-element) !important;
+}
+.pagination :deep(.page-item.disabled > .page-link) {
+    color: var(--color-primary-element-light-text) !important;
+    background-color: var(--color-primary-element-light) !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
 }
 </style>
