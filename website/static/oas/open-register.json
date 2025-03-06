@@ -1,20 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Open Register API",
+    "title": "Nextcloud OpenRegister API",
     "version": "1.0",
-    "summary": "API for managing registers, schemas, sources, and objects",
-    "contact": {
-      "name": "Open Register Team", 
-      "url": "https://github.com/OpenWebconcept/open-register",
-      "email": "info@openwebconcept.nl"
-    },
-    "description": "Open Register is an application for managing data registers, schemas, and objects according to defined schemas",
-    "license": {
-      "name": "EUPL 1.2",
-      "url": "https://opensource.org/licenses/EUPL-1.2"
-    },
-    "termsOfService": "https://www.softwarecatalogus.nl/Privacyverklaring%20softwarecatalogus"
+    "description": "API for managing registers, schemas, sources, objects, and audit trails in a Nextcloud environment."
   },
   "servers": [
     {
@@ -22,1348 +11,133 @@
       "description": "Base URL for API endpoints"
     }
   ],
-  "components": {
-    "schemas": {
-      "Register": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the register"
-          },
-          "name": {
-            "type": "string",
-            "description": "Name of the register"
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of the register"
-          },
-          "schemas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Schema"
-            },
-            "description": "List of schemas associated with this register"
-          }
-        }
-      },
-      "Schema": {
-        "type": "object", 
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the schema"
-          },
-          "name": {
-            "type": "string",
-            "description": "Name of the schema"
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of the schema"
-          },
-          "definition": {
-            "type": "object",
-            "description": "JSON Schema definition"
-          }
-        }
-      },
-      "Source": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the source"
-          },
-          "name": {
-            "type": "string", 
-            "description": "Name of the source"
-          },
-          "type": {
-            "type": "string",
-            "description": "Type of source (e.g. API, file, database)"
-          },
-          "configuration": {
-            "type": "object",
-            "description": "Source-specific configuration"
-          }
-        }
-      },
-      "Object": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the object"
-          },
-          "schema": {
-            "type": "string",
-            "description": "ID of the schema this object conforms to"
-          },
-          "data": {
-            "type": "object",
-            "description": "Object data conforming to the schema"
-          },
-          "metadata": {
-            "type": "object",
-            "properties": {
-              "created": {
-                "type": "string",
-                "format": "date-time"
-              },
-              "modified": {
-                "type": "string", 
-                "format": "date-time"
-              },
-              "owner": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
-      "AuditTrail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier for the audit trail entry"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the action occurred"
-          },
-          "action": {
-            "type": "string",
-            "description": "Type of action performed"
-          },
-          "user": {
-            "type": "string",
-            "description": "User who performed the action"
-          },
-          "details": {
-            "type": "object",
-            "description": "Additional details about the action"
-          }
-        }
-      }
-    }
-  },
   "paths": {
-    "/": {
-      "get": {
-        "summary": "Dashboard page",
-        "tags": [
-          "Dashboard"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        },
-        "operationId": "get-dashboard",
-        "description": "Returns the dashboard page"
-      }
-    },
     "/api/registers": {
       "get": {
         "summary": "Get all registers",
-        "tags": [
-          "Registers"
-        ],
+        "operationId": "getRegisters",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of registers",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Register"
-                  }
+                  "items": { "$ref": "#/components/schemas/Register" }
                 }
               }
             }
           }
-        },
-        "operationId": "get-registers",
-        "description": "Get all available registers"
-      },
-      "post": {
-        "summary": "Create a new register",
-        "tags": [
-          "Registers"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Register"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "create-register",
-        "description": "Create a new register"
-      }
-    },
-    "/api/registers/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Register ID"
         }
-      ],
-      "get": {
-        "summary": "Get a single register",
-        "tags": [
-          "Registers"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Register not found"
-          }
-        },
-        "operationId": "get-register",
-        "description": "Get a specific register by ID"
-      },
-      "put": {
-        "summary": "Update a register",
-        "tags": [
-          "Registers"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Register"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Register not found"
-          }
-        },
-        "operationId": "update-register",
-        "description": "Update a specific register by ID"
-      },
-      "delete": {
-        "summary": "Delete a register",
-        "tags": [
-          "Registers"
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "404": {
-            "description": "Register not found"
-          }
-        },
-        "operationId": "delete-register",
-        "description": "Delete a specific register by ID"
-      }
-    },
-    "/api/registers/upload": {
-      "post": {
-        "summary": "Upload a register",
-        "tags": [
-          "Registers"
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "Register file to upload"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "upload-register",
-        "description": "Upload a register file"
-      }
-    },
-    "/api/registers/{id}/upload": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Register ID"
-        }
-      ],
-      "put": {
-        "summary": "Update a register via upload",
-        "tags": [
-          "Registers"
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "Register file to upload"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Register not found"
-          }
-        },
-        "operationId": "upload-update-register",
-        "description": "Update a register by uploading a file"
-      }
-    },
-    "/api/registers/{id}/download": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Register ID"
-        }
-      ],
-      "get": {
-        "summary": "Download a register",
-        "tags": [
-          "Registers"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "download-register",
-        "description": "Download a register file"
-      }
-    },
-    "/api/registers-objects/{register}/{schema}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "register",
-          "in": "path",
-          "required": true,
-          "description": "Register ID"
-        },
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "schema",
-          "in": "path",
-          "required": true,
-          "description": "Schema ID"
-        }
-      ],
-      "get": {
-        "summary": "Get objects for a register and schema",
-        "tags": [
-          "Registers"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Object"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "operationId": "get-register-objects",
-        "description": "Get all objects for a specific register and schema"
       }
     },
     "/api/schemas": {
       "get": {
         "summary": "Get all schemas",
-        "tags": [
-          "Schemas"
-        ],
+        "operationId": "getSchemas",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of schemas",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Schema"
-                  }
+                  "items": { "$ref": "#/components/schemas/Schema" }
                 }
               }
             }
           }
-        },
-        "operationId": "get-schemas",
-        "description": "Get all available schemas"
-      },
-      "post": {
-        "summary": "Create a new schema",
-        "tags": [
-          "Schemas"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Schema"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "create-schema",
-        "description": "Create a new schema"
-      }
-    },
-    "/api/schemas/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Schema ID"
         }
-      ],
-      "get": {
-        "summary": "Get a single schema",
-        "tags": [
-          "Schemas"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Schema not found"
-          }
-        },
-        "operationId": "get-schema",
-        "description": "Get a specific schema by ID"
-      },
-      "put": {
-        "summary": "Update a schema",
-        "tags": [
-          "Schemas"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Schema"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Schema not found"
-          }
-        },
-        "operationId": "update-schema",
-        "description": "Update a specific schema by ID"
-      },
-      "delete": {
-        "summary": "Delete a schema",
-        "tags": [
-          "Schemas"
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "404": {
-            "description": "Schema not found"
-          }
-        },
-        "operationId": "delete-schema",
-        "description": "Delete a specific schema by ID"
-      }
-    },
-    "/api/schemas/upload": {
-      "post": {
-        "summary": "Upload a schema",
-        "tags": [
-          "Schemas"
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "Schema file to upload"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "upload-schema",
-        "description": "Upload a schema file"
-      }
-    },
-    "/api/schemas/{id}/upload": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Schema ID"
-        }
-      ],
-      "put": {
-        "summary": "Update a schema via upload",
-        "tags": [
-          "Schemas"
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "Schema file to upload"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Schema not found"
-          }
-        },
-        "operationId": "upload-update-schema",
-        "description": "Update a schema by uploading a file"
-      }
-    },
-    "/api/schemas/{id}/download": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Schema ID"
-        }
-      ],
-      "get": {
-        "summary": "Download a schema",
-        "tags": [
-          "Schemas"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "download-schema",
-        "description": "Download a schema file"
       }
     },
     "/api/sources": {
       "get": {
         "summary": "Get all sources",
-        "tags": [
-          "Sources"
-        ],
+        "operationId": "getSources",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of sources",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Source"
-                  }
+                  "items": { "$ref": "#/components/schemas/Source" }
                 }
               }
             }
           }
-        },
-        "operationId": "get-sources",
-        "description": "Get all available sources"
-      },
-      "post": {
-        "summary": "Create a new source",
-        "tags": [
-          "Sources"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Source"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "create-source",
-        "description": "Create a new source"
-      }
-    },
-    "/api/sources/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Source ID"
         }
-      ],
-      "get": {
-        "summary": "Get a single source",
-        "tags": [
-          "Sources"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Source not found"
-          }
-        },
-        "operationId": "get-source",
-        "description": "Get a specific source by ID"
-      },
-      "put": {
-        "summary": "Update a source",
-        "tags": [
-          "Sources"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Source"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Source not found"
-          }
-        },
-        "operationId": "update-source",
-        "description": "Update a specific source by ID"
-      },
-      "delete": {
-        "summary": "Delete a source",
-        "tags": [
-          "Sources"
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "404": {
-            "description": "Source not found"
-          }
-        },
-        "operationId": "delete-source",
-        "description": "Delete a specific source by ID"
       }
     },
     "/api/objects": {
       "get": {
         "summary": "Get all objects",
-        "tags": [
-          "Objects"
-        ],
+        "operationId": "getObjects",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of objects",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Object"
-                  }
+                  "items": { "$ref": "#/components/schemas/ObjectEntity" }
                 }
               }
             }
           }
-        },
-        "operationId": "get-objects",
-        "description": "Get all available objects"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Register": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "schemas": { "type": "array", "items": { "type": "string" } }
+        }
       },
-      "post": {
-        "summary": "Create a new object",
-        "tags": [
-          "Objects"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Object"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Object"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "create-object",
-        "description": "Create a new object"
-      }
-    },
-    "/api/objects/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
+      "Schema": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "properties": { "type": "object" }
         }
-      ],
-      "get": {
-        "summary": "Get a single object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "get-object",
-        "description": "Get a specific object by ID"
       },
-      "put": {
-        "summary": "Update an object",
-        "tags": [
-          "Objects"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Object"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "update-object",
-        "description": "Update a specific object by ID"
+      "Source": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "title": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "databaseUrl": { "type": "string" },
+          "type": { "type": "string" }
+        }
       },
-      "delete": {
-        "summary": "Delete an object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "delete-object",
-        "description": "Delete a specific object by ID"
-      }
-    },
-    "/api/objects-logs/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
+      "ObjectEntity": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "uri": { "type": "string" },
+          "version": { "type": "string" },
+          "register": { "type": "string" },
+          "schema": { "type": "string" },
+          "object": { "type": "object" },
+          "files": { "type": "array", "items": { "type": "string" } },
+          "relations": { "type": "array", "items": { "type": "string" } },
+          "textRepresentation": { "type": "string" },
+          "locked": { "type": "object" },
+          "owner": { "type": "string" }
         }
-      ],
-      "get": {
-        "summary": "Get logs for an object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "timestamp": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "action": {
-                        "type": "string"
-                      },
-                      "user": {
-                        "type": "string"
-                      },
-                      "details": {
-                        "type": "object"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "get-object-logs",
-        "description": "Get logs for a specific object"
       }
-    },
-    "/api/objects/mappings": {
-      "get": {
-        "summary": "Get object mappings",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "object"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "operationId": "get-object-mappings",
-        "description": "Get mappings for objects"
-      }
-    },
-    "/api/objects/audit-trails/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
-        }
-      ],
-      "get": {
-        "summary": "Get audit trails for an object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AuditTrail"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "get-object-audit-trails",
-        "description": "Get audit trails for a specific object"
-      }
-    },
-    "/api/objects/relations/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
-        }
-      ],
-      "get": {
-        "summary": "Get relations for an object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "type": {
-                        "type": "string"
-                      },
-                      "target": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "get-object-relations",
-        "description": "Get relations for a specific object"
-      }
-    },
-    "/api/objects/files/{id}": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
-        }
-      ],
-      "get": {
-        "summary": "Get files for an object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "size": {
-                        "type": "integer"
-                      },
-                      "type": {
-                        "type": "string"
-                      },
-                      "url": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          }
-        },
-        "operationId": "get-object-files",
-        "description": "Get files for a specific object"
-      }
-    },
-    "/api/objects/{id}/lock": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
-        }
-      ],
-      "post": {
-        "summary": "Lock an object",
-        "tags": [
-          "Objects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "lockToken": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          },
-          "409": {
-            "description": "Object already locked"
-          }
-        },
-        "operationId": "lock-object",
-        "description": "Lock a specific object to prevent concurrent editing"
-      }
-    },
-    "/api/objects/{id}/unlock": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
-        }
-      ],
-      "post": {
-        "summary": "Unlock an object",
-        "tags": [
-          "Objects"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "lockToken": {
-                    "type": "string",
-                    "description": "Token received when locking the object"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Object not found"
-          },
-          "403": {
-            "description": "Invalid lock token"
-          }
-        },
-        "operationId": "unlock-object",
-        "description": "Unlock a specific object"
-      }
-    },
-    "/api/objects/{id}/revert": {
-      "parameters": [
-        {
-          "schema": {
-            "type": "string"
-          },
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Object ID"
-        }
-      ],
-      "post": {
-        "summary": "Revert an object to a previous version",
-        "tags": [
-          "Objects"
+    }
+  }
+}
