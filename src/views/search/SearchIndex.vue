@@ -4,21 +4,29 @@ import { searchStore } from '../../store/store.js'
 
 <template>
 	<NcAppContent>
-		<h2 class="pageHeader">
-			Objects table
-		</h2>
+		<span class="pageHeaderContainer">
+			<h2 class="pageHeader">
+				Objects table
+			</h2>
 
-		<NcNoteCard v-if="!searchStore.searchObjectsResult?.length && !searchStore.searchObjectsLoading" type="info">
+			<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
+				:size="24"
+				class="loadingIcon"
+				appearance="dark"
+				name="Objects loading" />
+		</span>
+
+		<NcNoteCard v-if="!searchStore.searchObjectsResult?.results?.length && !searchStore.searchObjectsLoading" type="info">
 			<p>There are no objects that match this filter</p>
 		</NcNoteCard>
 
-		<NcLoadingIcon v-if="searchStore.searchObjectsLoading"
+		<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !searchStore.searchObjectsResult?.results?.length"
 			:size="64"
 			class="loadingIcon"
 			appearance="dark"
 			name="Objects loading" />
 
-		<SearchList v-if="searchStore.searchObjectsResult?.length" />
+		<SearchList v-if="searchStore.searchObjectsResult?.results?.length" />
 	</NcAppContent>
 </template>
 
@@ -36,3 +44,14 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+.pageHeaderContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.pageHeaderContainer > .loadingIcon {
+    margin-inline-end: 1rem;
+}
+</style>
