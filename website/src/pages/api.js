@@ -23,7 +23,7 @@ function ApiPage() {
   return (
     <Layout
       title="API Documentation"
-      description="GEMMA API Documentation"
+      description="API Documentation"
     >
       <div style={{ height: 'calc(100vh - 60px)' }}>
         <RedocStandalone

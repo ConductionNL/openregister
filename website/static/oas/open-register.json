@@ -5,7 +5,7 @@
     "version": "1.0",
     "summary": "API for managing registers, schemas, sources, and objects",
     "contact": {
-      "name": "Open Register Team",
+      "name": "Open Register Team", 
       "url": "https://github.com/OpenWebconcept/open-register",
       "email": "info@openwebconcept.nl"
     },
@@ -22,6 +22,135 @@
       "description": "Base URL for API endpoints"
     }
   ],
+  "components": {
+    "schemas": {
+      "Register": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the register"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the register"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the register"
+          },
+          "schemas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Schema"
+            },
+            "description": "List of schemas associated with this register"
+          }
+        }
+      },
+      "Schema": {
+        "type": "object", 
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the schema"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the schema"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the schema"
+          },
+          "definition": {
+            "type": "object",
+            "description": "JSON Schema definition"
+          }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the source"
+          },
+          "name": {
+            "type": "string", 
+            "description": "Name of the source"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of source (e.g. API, file, database)"
+          },
+          "configuration": {
+            "type": "object",
+            "description": "Source-specific configuration"
+          }
+        }
+      },
+      "Object": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the object"
+          },
+          "schema": {
+            "type": "string",
+            "description": "ID of the schema this object conforms to"
+          },
+          "data": {
+            "type": "object",
+            "description": "Object data conforming to the schema"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "modified": {
+                "type": "string", 
+                "format": "date-time"
+              },
+              "owner": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "AuditTrail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the audit trail entry"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the action occurred"
+          },
+          "action": {
+            "type": "string",
+            "description": "Type of action performed"
+          },
+          "user": {
+            "type": "string",
+            "description": "User who performed the action"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional details about the action"
+          }
+        }
+      }
+    }
+  },
   "paths": {
     "/": {
       "get": {
