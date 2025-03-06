@@ -29,10 +29,12 @@ The file attachment system provides:
 
 ## **Setup**
 
-[!WARNING] 
-Before adding files, check that all users that should have access to the OpenRegister folder are in the openregister user group.
-Upload the first file and verify that users of the openregister user group have access to the created 'Open Registers' folder that has now been created and shared.
+[!NOTE] 
+If you press the button 'view files' and a screen shows up that there are no files in the folder, while you actually have uploaded a file, you probably have not been added to the openregister share properly. Please check if you are in the openregister user group.
+![img.png](images/no-files.png)
 
+[!WARNING]
+Under no circumstances you should add files in an Open Registers folder if the Open Registers is not shown in your file app natively. This would trigger that the file is created in your own user folder, making reconciling the shared folder and your user folder quite difficult.
 ## Related Features
 
 - [Content Search](content-search.md) - Search file contents
