@@ -211,4 +211,8 @@ export default {
 .cursor-pointer {
     cursor: pointer !important;
 }
+
+input[type="checkbox"] {
+    box-shadow: none !important;
+}
 </style>
