@@ -112,8 +112,8 @@ export default {
 				schemaProperties: true,
 			},
 			/**
-			 * This is used to prevent another search from being triggered when the page is reset.
-			 * This is needed because the pagination is set to 1 when the search is re-done.
+			 * This is used to prevent another search from being triggered when schema is changed.
+			 * This is needed because the pagination is set to 1 when switching schema.
 			 * Which will trigger another search.
 			 */
 			ignoreNextPageWatch: false,
@@ -170,7 +170,6 @@ export default {
 						}
 					},
 				)
-
 			}
 		},
 		page() {
