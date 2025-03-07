@@ -1,12 +1,11 @@
-# Open Register Documentation
+# Introduction
 
-Open Register is a storage-independent system for managing and validating structured data objects. It provides a flexible and robust way to store, validate, and manage data across different storage backends.
+Open Register is a versatile system for creating and managing domain-specific or organizational data registers. Whether you need to build a social security database, manage client information, or create any other structured data repository, Open Register provides a storage-independent solution for managing and validating data objects.
 
 ## Core Concepts
 
-![Core Concepts](diagrams/core-concept.svg)
 
-Open Register operates on two fundamental principles:
+Open Register operates on three fundamental principles:
 
 1. **JSON Schema Validation**: All data objects are validated against predefined [JSON Schema](https://json-schema.org/) definitions. This ensures data integrity and consistency across your application.
 
@@ -16,12 +15,12 @@ Open Register operates on two fundamental principles:
    - Document stores (MongoDB)
    - *More backends can be added through the storage adapter interface*
 
-### Basic Workflow
+3. **Flexible Schema Sources**: Register schemas can be:
+   - Defined manually for custom requirements
+   - Imported from Schema.org for standardized data structures
+   - Imported from Dutch GGM (Gemeentelijk Gegevensmodel) for government data
+   - Created from other sources and standards
 
-1. Client sends a JSON object via API
-2. Open Register validates it against the corresponding JSON Schema
-3. If valid, the object is stored in the configured backend
-4. The object can be retrieved later, regardless of the storage backend
 
 ## Key Features
 
@@ -46,20 +45,59 @@ Open Register operates on two fundamental principles:
 | 🔍 [Advanced Search](Features/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
 | 🗑️ [Object Deletion](Features/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
 
+### Basic Workflow
+
+1. Define or import your register schema (e.g., client database, social security records)
+2. Client sends a JSON object via API
+3. Open Register validates it against the corresponding JSON Schema
+4. If valid, the object is stored in the configured backend
+5. The object can be retrieved later, regardless of the storage backend
+
+![Core Concepts](diagrams/core-concept.svg)
+
 ## Project Structure
 
-    website/
-    ├── docs/              # Documentation markdown files
-    ├── src/               # React components and pages
-    ├── static/            # Static files (images, etc)
-    ├── docusaurus.config.js   # Site configuration
-    ├── package.json       # Project dependencies
-    ├── README.md         # This file
-    └── sidebars.js       # Sidebar configuration
+    ```plantuml
+    @startuml
+    
+    package "Open Register" {
+      [Register] o-- [Schema]
+      [Register] o-- [Object]
+      [Object] o-- [File]
+      [Object] o-- [Relation]
+      [Object] o-- [AuditTrail]
+      [Object] o-- [Lock]
+      
+      database "Storage" {
+        [SQL Database]
+        [MongoDB]
+        [Nextcloud DB]
+      }
+      
+      [Object] --> [Storage]
+    }
+    
+    note right of [Register]
+      Manages collections of related objects
+      with shared schemas and permissions
+    end note
+    
+    note right of [Schema] 
+      JSON Schema definition that validates
+      object structure and data types
+    end note
+    
+    note right of [Object]
+      Core entity containing the actual data,
+      validated against its schema
+    end note
+    
+    @enduml
+    ```
 
 ## Contributing
 
-1. Create a new branch from `documentation`
+1. Create a new branch from 'documentation'
 2. Make your changes
-3. Test locally using `npm start`
-4. Create a Pull Request to the `documentation` branch
+3. Test locally using 'npm start'
+4. Create a Pull Request to the 'documentation' branch
