@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /* eslint-disable no-console */
 import { Ref, ref } from 'vue'
 import { defineStore } from 'pinia'
@@ -59,10 +60,19 @@ export const useSearchStore = defineStore('search', () => {
 	// END OF LEGACY CODE
 
 	// new, used by search page
+	// search data
+	const searchObjects_register = ref<{ label: string, id: string } | null>(null)
+	const searchObjects_schema = ref<{ label: string, id: string } | null>(null)
+	const searchObjects_pagination = ref<number>(1)
+	const searchObjects_limit = ref<number>(14)
+
+	// search objects
 	const searchObjectsSuccess = ref(false)
 	const searchObjectsLoading = ref(false)
 	const searchObjectsResult = ref<Record<string, any>[]>([])
 	const searchObjectsError = ref('')
+
+	const oldSearchQuery = ref<Record<string, any>>({})
 
 	/**
 	 * Search for objects in the database.
@@ -74,6 +84,8 @@ export const useSearchStore = defineStore('search', () => {
 	function searchObjects(searchQuery: Record<string, string> = {}): {success: Ref<boolean>, loading: Ref<boolean>, result: Ref<Record<string, any>[]>, error: Ref<string>} {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
+
+		oldSearchQuery.value = searchQuery
 
 		console.group('search objects')
 
@@ -123,7 +135,13 @@ export const useSearchStore = defineStore('search', () => {
 		}
 	}
 
-	function clearObjectSearch() {
+	function reDoSearch() {
+		return searchObjects({
+			...oldSearchQuery.value,
+		})
+	}
+
+	function clearObjectSearchResults() {
 		searchObjectsSuccess.value = false
 		searchObjectsLoading.value = false
 		searchObjectsResult.value = []
@@ -150,8 +168,14 @@ export const useSearchStore = defineStore('search', () => {
 		searchObjectsResult,
 		searchObjectsError,
 
+		searchObjects_register,
+		searchObjects_schema,
+		searchObjects_pagination,
+		searchObjects_limit,
+
 		// functions
 		searchObjects,
-		clearObjectSearch,
+		reDoSearch,
+		clearObjectSearchResults,
 	}
 })

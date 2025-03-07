@@ -95,13 +95,11 @@ import { EventBus } from '../../eventBus.js'
 
 		<div class="pagination-container">
 			<BPagination
-				v-model="currentPage"
-				:loading="searchStore.searchObjectsLoading"
+				v-model="searchStore.searchObjects_pagination"
 				:total-rows="searchStore.searchObjectsResult.total"
-				:per-page="14"
+				:per-page="searchStore.searchObjects_limit"
 				:first-number="true"
-				:last-number="true"
-				@change="(page) => EventBus.$emit('page-change', page)" />
+				:last-number="true" />
 		</div>
 
 		<MassDeleteObject v-if="massDeleteObjectModal"
@@ -174,8 +172,6 @@ export default {
 			// select boxes
 			selectAllObjects: false,
 			selectedObjects: [],
-			// pagination
-			currentPage: 1,
 			// modal state
 			massDeleteObjectModal: false,
 		}
@@ -208,14 +204,10 @@ export default {
 		EventBus.$on('object-search-set-column-filter', (payload) => {
 			this.headers.find((header) => header.id === payload.id).enabled = payload.enabled
 		})
-		EventBus.$on('reset-page', () => {
-			this.currentPage = 1
-		})
 	},
 	beforeDestroy() {
 		// Clean up the event listener
 		EventBus.$off('object-search-set-column-filter')
-		EventBus.$off('reset-page')
 	},
 	mounted() {
 		this.setActiveHeaders()
@@ -253,9 +245,17 @@ export default {
 			}
 		},
 		onMassDeleteSuccess() {
-			EventBus.$emit('page-change', this.currentPage)
-			this.selectedObjects = []
-			this.setSelectAllObjects()
+			const unwatch = this.$watch(
+				() => searchStore.searchObjectsLoading,
+				(newVal) => {
+					if (newVal === false) {
+						this.selectedObjects = []
+						this.setSelectAllObjects()
+						unwatch() // Remove the watcher once we're done
+					}
+				},
+			)
+			searchStore.reDoSearch()
 		},
 	},
 }
