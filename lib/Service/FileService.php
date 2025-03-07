@@ -5,6 +5,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -63,6 +64,7 @@ class FileService
         private readonly IGroupManager   		$groupManager,
         private readonly ISystemTagManager      $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
+        private readonly ObjectEntityMapper     $objectEntityMapper,
 	)
 	{
 	}
@@ -469,7 +471,7 @@ class FileService
 	 */
 	public function formatFiles(array $files, ?array $requestParams = []): array
 	{
-		
+
 		// Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
@@ -511,7 +513,7 @@ class FileService
 		$pages   = $limit !== null ? ceil($total/$limit) : 1;
 
 		return [
-			'results' => $formattedFiles,			
+			'results' => $formattedFiles,
 			'total' => $total,
 			'page' => $page ?? 1,
 			'pages' => $pages,
@@ -629,7 +631,7 @@ class FileService
 		$share->setStatus(status: $share::STATUS_ACCEPTED);
 
 		return $this->shareManager->createShare(share: $share);
-	}	
+	}
 
 	/**
 	 * Creates and returns a share link for a file (or folder).
@@ -693,7 +695,7 @@ class FileService
 	 *
 	 * @return bool True if the share was successfully deleted
 	 * @throws Exception If the share cannot be found or deleted
-	 * 
+	 *
 	 * @psalm-return bool
 	 * @phpstan-return bool
 	 */
@@ -791,7 +793,7 @@ class FileService
 			try {
 				try {
 					$file = $userFolder->get(path: $filePath);
-					
+
 					// If content is not null, update the file content
 					if ($content !== null) {
 						try {
@@ -887,7 +889,7 @@ class FileService
         } else {
 			$oldTagIds = $oldTagIds[$fileId];
 		}
-		
+
 
 		// Create new tags if they don't exist
 		foreach ($tags as $key => $tagName) {
@@ -895,7 +897,7 @@ class FileService
 			if (empty($tagName)) {
 				continue;
 			}
-			
+
             try {
                 $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
             } catch (Exception $exception) {
@@ -909,7 +911,7 @@ class FileService
 		if (empty($newTagIds) === false) {
 			$this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $newTagIds);
 		}
-		
+
 		// Find tags that exist in old tags but not in new tags (tags to be removed)
 		$tagsToRemove = array_diff($oldTagIds ?? [], $newTagIds ?? []);
 		// Remove any keys with value 0 from tags to remove array
@@ -921,7 +923,7 @@ class FileService
 		if (empty($tagsToRemove) === false) {
 			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
 		}
-				
+
 		//@todo Let check if there are now esisitng tags without files (orpahns) that need to be deleted
 	}
 
@@ -986,13 +988,13 @@ class FileService
 
 	/**
 	 * Retrieves all available tags in the system.
-	 * 
+	 *
 	 * This method fetches all tags that are visible and assignable by users
 	 * from the system tag manager.
 	 *
 	 * @return array An array of tag names
 	 * @throws \Exception If there's an error retrieving the tags
-	 * 
+	 *
 	 * @psalm-return array<int, string>
 	 * @phpstan-return array<int, string>
 	 */
@@ -1001,12 +1003,12 @@ class FileService
 		try {
 			// Get all tags that are visible and assignable by users
 			$tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
-			
+
 			// Extract just the tag names
 			$tagNames = array_map(static function ($tag) {
 				return $tag->getName();
 			}, $tags);
-			
+
 			// Return sorted array of tag names
 			sort($tagNames);
 			return array_values($tagNames);

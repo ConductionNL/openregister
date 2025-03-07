@@ -679,9 +679,24 @@ class ObjectService
 			$objectEntity->getId()
 		];
 
+        // Find property names that are objects (and thus, relations)
+        $validRelationProperties = [];
+        $schema = $this->schemaMapper->find($objectEntity->getSchema());
+        foreach ($schema->getProperties() as $propertyName => $property) {
+            if (isset($property['type']) === true && (
+                $property['type'] === 'object' || 
+                ($property['type'] === 'array') && isset($property['items']['type']) === true && $property['items']['type'] === 'object')) {
+                $validRelationProperties[] = $propertyName;
+            }
+        }
+
 		// Function to recursively find links/UUIDs and build dot notation paths
-		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
+		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers, $validRelationProperties) {
 			foreach ($data as $key => $value) {
+                if (in_array($key, $validRelationProperties) === false) {
+                    continue;
+                }
+
 				$currentPath = $path ? "$path.$key" : $key;
 
 				if (is_array($value) === true) {
