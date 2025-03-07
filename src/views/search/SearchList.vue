@@ -5,20 +5,20 @@ import { EventBus } from '../../eventBus.js'
 
 <template>
 	<div class="search-list">
-        <div class="search-list-header">
-            <NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
+		<div class="search-list-header">
+			<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
 				:size="24"
 				class="loadingIcon"
 				appearance="dark"
 				name="Objects loading" />
 
-            <NcButton :disabled="selectedObjects.length === 0" type="error" @click="() => massDeleteObjectModal = true">
-                <template #icon>
-                    <Delete :size="20" />
-                </template>
-                Delete {{ selectedObjects.length }} object{{ selectedObjects.length > 1 ? 's' : '' }}
-            </NcButton>
-        </div>
+			<NcButton :disabled="selectedObjects.length === 0" type="error" @click="() => massDeleteObjectModal = true">
+				<template #icon>
+					<Delete :size="20" />
+				</template>
+				Delete {{ selectedObjects.length }} {{ selectedObjects.length > 1 ? 'objects' : 'object' }}
+			</NcButton>
+		</div>
 
 		<div class="search-list-table">
 			<VueDraggable v-model="activeHeaders"
@@ -53,7 +53,7 @@ import { EventBus } from '../../eventBus.js'
 									:value="result.id"
 									type="checkbox"
 									class="cursor-pointer"
-									@change="() => selectAllObjects = false">
+									@change="onSelectObject(result.id)">
 							</td>
 							<template v-for="header in activeHeaders">
 								<td v-if="header.enabled" :key="header.id">
@@ -104,9 +104,10 @@ import { EventBus } from '../../eventBus.js'
 				@change="(page) => EventBus.$emit('page-change', page)" />
 		</div>
 
-        {{ massDeleteObjectModal }}
-        <MassDeleteObject v-if="massDeleteObjectModal" :selectedObjects="selectedObjects"
-            @close="([success, waitTillClosed]) => waitTillClosed(() => massDeleteObjectModal = false)" />
+		<MassDeleteObject v-if="massDeleteObjectModal"
+			:selected-objects="selectedObjects"
+			@close-modal="() => massDeleteObjectModal = false"
+			@success="onMassDeleteSuccess" />
 	</div>
 </template>
 
@@ -121,7 +122,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
-import MassDeleteObject from '../../modals/object/MassDeleteObject.vue';
+import MassDeleteObject from '../../modals/object/MassDeleteObject.vue'
 
 export default {
 	name: 'SearchList',
@@ -131,7 +132,6 @@ export default {
 	},
 	data() {
 		return {
-			console,
 			headers: [
 				{
 					id: 'objectId',
@@ -176,11 +176,12 @@ export default {
 			selectedObjects: [],
 			// pagination
 			currentPage: 1,
-            // modal state
-            massDeleteObjectModal: false,
+			// modal state
+			massDeleteObjectModal: false,
 		}
 	},
 	computed: {
+		objectsLoading: () => searchStore.searchObjectsLoading,
 		selectedSchema() {
 			return schemaStore.schemaList.find((schema) => schema.id.toString() === searchStore.searchObjectsResult?.results?.[0]?.schema?.toString())
 		},
@@ -192,6 +193,13 @@ export default {
 		headers: {
 			handler() {
 				this.setActiveHeaders()
+			},
+			deep: true,
+		},
+		objectsLoading: {
+			handler(newVal) {
+				// if loading finished, run setSelectAllObjects
+				newVal === false && this.setSelectAllObjects()
 			},
 			deep: true,
 		},
@@ -216,15 +224,38 @@ export default {
 		setActiveHeaders() {
 			this.activeHeaders = _.cloneDeep(this.headers.filter((header) => header.enabled))
 		},
+		/**
+		 * This function sets the selectAllObjects state to true if all object ids from the searchObjectsResult are in the selectedObjects array.
+		 *
+		 * This is used to ensure that the selectAllObjects state is always in sync with the selectedObjects array.
+		 */
+		setSelectAllObjects() {
+			const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result.id) || []
+			this.selectAllObjects = allObjectIds.every(id => this.selectedObjects.includes(id))
+		},
+		onSelectObject(id) {
+			this.setSelectAllObjects()
+		},
 		openLink(link, type = '') {
 			window.open(link, type)
 		},
 		toggleSelectAllObjects() {
 			if (this.selectAllObjects) {
-				this.selectedObjects = searchStore.searchObjectsResult.results.map((result) => result.id)
+				// add all ids from searchObjectsResult to selectedObjects
+				this.selectedObjects = [
+					...this.selectedObjects,
+					...searchStore.searchObjectsResult.results.map((result) => result.id).filter((id) => !this.selectedObjects.includes(id)),
+				]
 			} else {
-				this.selectedObjects = []
+				// remove all ids from searchObjectsResult in selectedObjects
+				const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result.id) || []
+				this.selectedObjects = this.selectedObjects.filter((id) => !allObjectIds.includes(id))
 			}
+		},
+		onMassDeleteSuccess() {
+			EventBus.$emit('page-change', this.currentPage)
+			this.selectedObjects = []
+			this.setSelectAllObjects()
 		},
 	},
 }
