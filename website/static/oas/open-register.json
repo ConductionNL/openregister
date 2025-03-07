@@ -1,0 +1,143 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nextcloud OpenRegister API",
+    "version": "1.0",
+    "description": "API for managing registers, schemas, sources, objects, and audit trails in a Nextcloud environment."
+  },
+  "servers": [
+    {
+      "url": "/apps/openregister/api",
+      "description": "Base URL for API endpoints"
+    }
+  ],
+  "paths": {
+    "/api/registers": {
+      "get": {
+        "summary": "Get all registers",
+        "operationId": "getRegisters",
+        "responses": {
+          "200": {
+            "description": "List of registers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Register" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schemas": {
+      "get": {
+        "summary": "Get all schemas",
+        "operationId": "getSchemas",
+        "responses": {
+          "200": {
+            "description": "List of schemas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Schema" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "summary": "Get all sources",
+        "operationId": "getSources",
+        "responses": {
+          "200": {
+            "description": "List of sources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Source" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects": {
+      "get": {
+        "summary": "Get all objects",
+        "operationId": "getObjects",
+        "responses": {
+          "200": {
+            "description": "List of objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ObjectEntity" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Register": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "schemas": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Schema": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "properties": { "type": "object" }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "title": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "databaseUrl": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      },
+      "ObjectEntity": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string" },
+          "uri": { "type": "string" },
+          "version": { "type": "string" },
+          "register": { "type": "string" },
+          "schema": { "type": "string" },
+          "object": { "type": "object" },
+          "files": { "type": "array", "items": { "type": "string" } },
+          "relations": { "type": "array", "items": { "type": "string" } },
+          "textRepresentation": { "type": "string" },
+          "locked": { "type": "object" },
+          "owner": { "type": "string" }
+        }
+      }
+    }
+  }
+}

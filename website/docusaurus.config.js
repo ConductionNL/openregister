@@ -5,8 +5,8 @@
 const config = {
   title: 'Open Register',
   tagline: 'Flexible object management for Nextcloud',
-  url: 'https://conductionnl.github.io',
-  baseUrl: '/openregister/',
+  url: 'https://openregisters.app',
+  baseUrl: '/',
   
   // GitHub pages deployment config
   organizationName: 'conductionnl',
@@ -22,6 +22,27 @@ const config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  
+  plugins: [
+    [
+      'redocusaurus',
+      {
+        // Plugin options
+        specs: [
+          {
+            spec: 'static/oas/open-register.json',
+            route: '/api/reference',
+          },
+        ],
+        // Theme options for Redocusaurus
+        theme: {
+          // Change with your site colors
+          primaryColor: '#34c4a7',
+        },
+      },
+    ],
+  ],
 
   presets: [
     [
@@ -58,6 +79,11 @@ const config = {
             label: 'Documentation',
           },
           {
+            to: '/api',
+            label: 'API Specificatie',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/conductionnl/openregister',
             label: 'GitHub',
             position: 'right',
@@ -86,7 +112,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Open Register. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a>`,
       },
       prism: {
         theme: require('prism-react-renderer/themes/github'),
