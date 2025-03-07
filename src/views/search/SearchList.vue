@@ -95,9 +95,9 @@ import { EventBus } from '../../eventBus.js'
 
 		<div class="pagination-container">
 			<BPagination
-				v-model="searchStore.searchObjects_pagination"
+				v-model="searchStore.searchObjectsDataPagination"
 				:total-rows="searchStore.searchObjectsResult.total"
-				:per-page="searchStore.searchObjects_limit"
+				:per-page="searchStore.searchObjectsDataPaginationLimit"
 				:first-number="true"
 				:last-number="true" />
 		</div>

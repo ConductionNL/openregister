@@ -14,12 +14,12 @@ import { EventBus } from '../../eventBus.js'
 				<Magnify :size="20" />
 			</template>
 			<NcSelect v-bind="registerOptions"
-				v-model="searchStore.searchObjects_register"
+				v-model="searchStore.searchObjectsDataRegister"
 				input-label="Registratie"
 				:loading="registerLoading"
 				:disabled="registerLoading" />
 			<NcSelect v-bind="schemaOptions"
-				v-model="searchStore.searchObjects_schema"
+				v-model="searchStore.searchObjectsDataSchema"
 				input-label="Schema"
 				:loading="schemaLoading"
 				:disabled="!selectedRegister?.id || schemaLoading" />
@@ -143,19 +143,19 @@ export default {
 					})),
 			}
 		},
-		selectedRegister: () => searchStore.searchObjects_register,
-		selectedSchema: () => searchStore.searchObjects_schema,
-		page: () => searchStore.searchObjects_pagination,
+		selectedRegister: () => searchStore.searchObjectsDataRegister,
+		selectedSchema: () => searchStore.searchObjectsDataSchema,
+		page: () => searchStore.searchObjectsDataPagination,
 	},
 	watch: {
 		// when the selected register changes clear the selected schema
 		selectedRegister(newValue) {
-			searchStore.searchObjects_schema = null
+			searchStore.searchObjectsDataSchema = null
 		},
 		// when selectedSchema changes, search for objects with the selected register and schema as filters
 		selectedSchema(newValue) {
 			if (newValue?.id) {
-				searchStore.searchObjects_pagination = 1
+				searchStore.searchObjectsDataPagination = 1
 				this.ignoreNextPageWatch = true
 
 				this.searchObjects()
@@ -190,10 +190,10 @@ export default {
 	methods: {
 		searchObjects() {
 			searchStore.searchObjects({
-				register: searchStore.searchObjects_register?.id,
-				schema: searchStore.searchObjects_schema?.id,
-				_limit: searchStore.searchObjects_limit,
-				_page: searchStore.searchObjects_pagination,
+				register: searchStore.searchObjectsDataRegister?.id,
+				schema: searchStore.searchObjectsDataSchema?.id,
+				_limit: searchStore.searchObjectsDataPaginationLimit,
+				_page: searchStore.searchObjectsDataPagination,
 			})
 		},
 		async initAppInstallService() {

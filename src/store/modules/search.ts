@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 /* eslint-disable no-console */
 import { Ref, ref } from 'vue'
 import { defineStore } from 'pinia'
@@ -61,10 +60,10 @@ export const useSearchStore = defineStore('search', () => {
 
 	// new, used by search page
 	// search data
-	const searchObjects_register = ref<{ label: string, id: string } | null>(null)
-	const searchObjects_schema = ref<{ label: string, id: string } | null>(null)
-	const searchObjects_pagination = ref<number>(1)
-	const searchObjects_limit = ref<number>(14)
+	const searchObjectsDataRegister = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataSchema = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataPagination = ref<number>(1)
+	const searchObjectsDataPaginationLimit = ref<number>(14)
 
 	// search objects
 	const searchObjectsSuccess = ref(false)
@@ -168,10 +167,10 @@ export const useSearchStore = defineStore('search', () => {
 		searchObjectsResult,
 		searchObjectsError,
 
-		searchObjects_register,
-		searchObjects_schema,
-		searchObjects_pagination,
-		searchObjects_limit,
+		searchObjectsDataRegister,
+		searchObjectsDataSchema,
+		searchObjectsDataPagination,
+		searchObjectsDataPaginationLimit,
 
 		// functions
 		searchObjects,
