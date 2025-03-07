@@ -951,10 +951,6 @@ class FileService
 				schema: $objectEntity->getSchema()
 			);
 
-			// Set the OpenCatalogi user as the current user
-			$currentUser = $this->userSession->getUser();
-			$this->userSession->setUser($this->getUser());
-
             /**
              * @var File $file
              */
@@ -972,8 +968,6 @@ class FileService
 			if (empty($tags) === false) {
 				$this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
 			}
-
-			$this->userSession->setUser($currentUser);
 
 			return $file;
 
