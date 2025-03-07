@@ -13,6 +13,18 @@
         "paths": {
             "@/*": ["src/*"]
         },
+        "importHelpers": true,
+        "strict": true,
+        "allowSyntheticDefaultImports": true,
+        "types": [
+            "node"
+        ],
+        "lib": [
+            "esnext",
+            "dom",
+            "dom.iterable",
+            "scripthost"
+        ]
     },
     "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
     "exclude": ["node_modules"]

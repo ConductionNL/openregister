@@ -48,7 +48,7 @@ class DownloadService
 		$objectArray = $object->jsonSerialize();
 		$filename = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
 
-		if (str_contains(haystack: $accept, needle: 'application/json') === true) {
+		if (str_contains(haystack: $accept, needle: 'application/json') === true || $accept === '*/*') {
 			$url = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()]));
 
 			$objArray['title'] = $objectArray['title'];
