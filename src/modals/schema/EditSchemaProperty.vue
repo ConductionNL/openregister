@@ -273,6 +273,16 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 				<!-- type array and sub type object only -->
 				<div v-if="properties.items.type === 'object'">
+					<div class="objectConfigurationTitle">
+						Object Configuration:
+					</div>
+					<NcSelect
+						v-model="properties.objectConfiguration.handling"
+						v-bind="objectConfiguration.handling" />
+				</div>
+
+				<!-- type array and sub type object only -->
+				<div v-if="properties.items.type === 'object'">
 					<NcInputField :disabled="loading"
 						type="text"
 						label="Schema reference of object ($ref)"
