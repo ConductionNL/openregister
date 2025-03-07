@@ -59,10 +59,19 @@ export const useSearchStore = defineStore('search', () => {
 	// END OF LEGACY CODE
 
 	// new, used by search page
+	// search data
+	const searchObjectsDataRegister = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataSchema = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataPagination = ref<number>(1)
+	const searchObjectsDataPaginationLimit = ref<number>(14)
+
+	// search objects
 	const searchObjectsSuccess = ref(false)
 	const searchObjectsLoading = ref(false)
 	const searchObjectsResult = ref<Record<string, any>[]>([])
 	const searchObjectsError = ref('')
+
+	const oldSearchQuery = ref<Record<string, any>>({})
 
 	/**
 	 * Search for objects in the database.
@@ -74,6 +83,8 @@ export const useSearchStore = defineStore('search', () => {
 	function searchObjects(searchQuery: Record<string, string> = {}): {success: Ref<boolean>, loading: Ref<boolean>, result: Ref<Record<string, any>[]>, error: Ref<string>} {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
+
+		oldSearchQuery.value = searchQuery
 
 		console.group('search objects')
 
@@ -123,7 +134,13 @@ export const useSearchStore = defineStore('search', () => {
 		}
 	}
 
-	function clearObjectSearch() {
+	function reDoSearch() {
+		return searchObjects({
+			...oldSearchQuery.value,
+		})
+	}
+
+	function clearObjectSearchResults() {
 		searchObjectsSuccess.value = false
 		searchObjectsLoading.value = false
 		searchObjectsResult.value = []
@@ -150,8 +167,14 @@ export const useSearchStore = defineStore('search', () => {
 		searchObjectsResult,
 		searchObjectsError,
 
+		searchObjectsDataRegister,
+		searchObjectsDataSchema,
+		searchObjectsDataPagination,
+		searchObjectsDataPaginationLimit,
+
 		// functions
 		searchObjects,
-		clearObjectSearch,
+		reDoSearch,
+		clearObjectSearchResults,
 	}
 })

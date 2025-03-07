@@ -14,14 +14,15 @@ import { EventBus } from '../../eventBus.js'
 				<Magnify :size="20" />
 			</template>
 			<NcSelect v-bind="registerOptions"
-				v-model="selectedRegister"
+				v-model="searchStore.searchObjectsDataRegister"
 				input-label="Registratie"
-				:loading="registerLoading" />
+				:loading="registerLoading"
+				:disabled="registerLoading" />
 			<NcSelect v-bind="schemaOptions"
-				v-model="selectedSchema"
+				v-model="searchStore.searchObjectsDataSchema"
 				input-label="Schema"
 				:loading="schemaLoading"
-				:disabled="!selectedRegister?.id" />
+				:disabled="!selectedRegister?.id || schemaLoading" />
 
 			<div v-if="searchStore.searchObjectsResult?.results?.length">
 				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
@@ -99,9 +100,7 @@ export default {
 	data() {
 		return {
 			registerLoading: false,
-			selectedRegister: null,
 			schemaLoading: false,
-			selectedSchema: null,
 			appInstallService: new AppInstallService(),
 			openConnectorInstalled: true,
 			openConnectorInstallError: false,
@@ -112,6 +111,12 @@ export default {
 				files: true,
 				schemaProperties: true,
 			},
+			/**
+			 * This is used to prevent another search from being triggered when schema is changed.
+			 * This is needed because the pagination is set to 1 when switching schema.
+			 * Which will trigger another search.
+			 */
+			ignoreNextPageWatch: false,
 		}
 	},
 	computed: {
@@ -138,28 +143,41 @@ export default {
 					})),
 			}
 		},
+		selectedRegister: () => searchStore.searchObjectsDataRegister,
+		selectedSchema: () => searchStore.searchObjectsDataSchema,
+		page: () => searchStore.searchObjectsDataPagination,
 	},
 	watch: {
 		// when the selected register changes clear the selected schema
 		selectedRegister(newValue) {
-			this.selectedSchema = null
+			searchStore.searchObjectsDataSchema = null
 		},
 		// when selectedSchema changes, search for objects with the selected register and schema as filters
 		selectedSchema(newValue) {
 			if (newValue?.id) {
+				searchStore.searchObjectsDataPagination = 1
+				this.ignoreNextPageWatch = true
+
 				this.searchObjects()
-				EventBus.$emit('reset-page')
+
+				// wait for loading to finish, then allow watching on page to continue
+				const unwatch = this.$watch(
+					() => searchStore.searchObjectsLoading,
+					(newVal) => {
+						if (newVal === false) {
+							this.ignoreNextPageWatch = false
+							unwatch() // Remove the watcher once we're done
+						}
+					},
+				)
 			}
 		},
-	},
-	created() {
-		EventBus.$on('page-change', (page) => {
-			this.searchObjects(page)
-		})
-	},
-	beforeDestroy() {
-		// Clean up the event listener
-		EventBus.$off('page-change')
+		page() {
+			if (this.ignoreNextPageWatch) {
+				return
+			}
+			this.searchObjects()
+		},
 	},
 	mounted() {
 		this.registerLoading = true
@@ -170,12 +188,12 @@ export default {
 		this.initAppInstallService()
 	},
 	methods: {
-		searchObjects(page = 1) {
+		searchObjects() {
 			searchStore.searchObjects({
-				register: this.selectedRegister?.id,
-				schema: this.selectedSchema?.id,
-				_limit: 14,
-				_page: page,
+				register: searchStore.searchObjectsDataRegister?.id,
+				schema: searchStore.searchObjectsDataSchema?.id,
+				_limit: searchStore.searchObjectsDataPaginationLimit,
+				_page: searchStore.searchObjectsDataPagination,
 			})
 		},
 		async initAppInstallService() {

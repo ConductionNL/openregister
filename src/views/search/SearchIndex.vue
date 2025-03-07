@@ -8,12 +8,6 @@ import { searchStore } from '../../store/store.js'
 			<h2 class="pageHeader">
 				Objects table
 			</h2>
-
-			<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
-				:size="24"
-				class="loadingIcon"
-				appearance="dark"
-				name="Objects loading" />
 		</span>
 
 		<NcNoteCard v-if="!searchStore.searchObjectsResult?.results?.length && !searchStore.searchObjectsLoading" type="info">
