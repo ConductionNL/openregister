@@ -21,6 +21,9 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\LockedException;
 
 /**
  * The ObjectEntityMapper class
@@ -191,21 +194,55 @@ class ObjectEntityMapper extends QBMapper
 	/**
 	 * Find all ObjectEntitys
 	 *
-	 * @param int $limit The number of objects to return
-	 * @param int $offset The offset of the objects to return
-	 * @param array $filters The filters to apply to the objects
-	 * @param array $searchConditions The search conditions to apply to the objects
-	 * @param array $searchParams The search parameters to apply to the objects
+	 * @param int|null $limit The number of objects to return
+	 * @param int|null $offset The offset of the objects to return
+	 * @param array|null $filters The filters to apply to the objects
+	 * @param array|null $searchConditions The search conditions to apply to the objects
+	 * @param array|null $searchParams The search parameters to apply to the objects
+	 * @param array $sort The sort order to apply
+	 * @param string|null $search The search string to apply
+	 * @param array|null $ids Array of IDs or UUIDs to filter by
+	 * @param string|null $uses Value that must be present in relations
 	 * @return array An array of ObjectEntitys
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], array $sort = [], ?string $search = null): array
-	{
+	public function findAll(
+		?int $limit = null,
+		?int $offset = null,
+		?array $filters = [],
+		?array $searchConditions = [],
+		?array $searchParams = [],
+		array $sort = [],
+		?string $search = null,
+		?array $ids = null,
+		?string $uses = null
+	): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_objects')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
+
+		// Handle filtering by IDs/UUIDs if provided
+		if ($ids !== null && !empty($ids)) {
+			$orX = $qb->expr()->orX();
+			$orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+			$orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+			$qb->andWhere($orX);
+		}
+
+		// Handle filtering by uses in relations if provided
+		if ($uses !== null) {
+			$qb->andWhere(
+				$qb->expr()->isNotNull(
+					$qb->createFunction(
+						"JSON_SEARCH(relations, 'one', " .
+						$qb->createNamedParameter($uses) .
+						", NULL, '$')"
+					)
+				)
+			);
+		}
 
         foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
@@ -326,8 +363,8 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		// Set current user as owner if not already set
-		if ($obj->getOwner() === null && $this->userSession->isLoggedIn()) {
-			$obj->setOwner($this->userSession->getUser()->getUID());
+		if ($newObject->getOwner() === null && $this->userSession->isLoggedIn()) {
+			$newObject->setOwner($this->userSession->getUser()->getUID());
 		}
 
 		return $newObject;

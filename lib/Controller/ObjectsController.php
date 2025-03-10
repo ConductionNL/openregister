@@ -79,24 +79,57 @@ class ObjectsController extends Controller
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
-        $filters = $this->request->getParams();
-        $fieldsToSearch = ['uuid', 'register', 'schema'];
-        $extend = ['schema', 'register'];
+        
+        $requestParams = $this->request->getParams();
 
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        // Extract specific parameters
+		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+		$search = $requestParams['_search'] ?? null;
 
-        // @todo: figure out how to use extend here
-        $results = $objectService->getObjects(objectType: 'objectEntity', filters: $filters);
-//        $results = $this->objectEntityMapper->findAll(filters: $filters);
+		if ($page !== null && isset($limit)) {
+			$page = (int) $page;
+			$offset = $limit * ($page - 1);
+		}
+
+		// Ensure order and extend are arrays
+		if (is_string($order) === true) {
+			$order = array_map('trim', explode(',', $order));
+		}
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		// Remove unnecessary parameters from filters
+		$filters = $requestParams;
+		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+        // Lets support extend
+		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
+		$total   = $this->objectEntityMapper->countAll($filters);
+		$pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+		
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
-        foreach ($results as $key => $result) {
-            $results[$key] = $result->getObjectArray();
+        foreach ($objects as $key => $object) {
+            $objects[$key] = $object->getObjectArray();
         }
 
-        return new JSONResponse(['results' => $results]);
+		$results =  [
+			'results' => $objects,
+			'total' => $total,
+			'page' => $page ?? 1,
+			'pages' => $pages,
+		];
+
+
+        return new JSONResponse($results);
     }
 
     /**
@@ -265,11 +298,18 @@ class ObjectsController extends Controller
 	 *
 	 * @param int $id The ID of the object to get AuditTrails for
 	 *
-	 * @return JSONResponse An empty JSON response
+	 * @return JSONResponse A JSON response containing the audit trail entries
 	 */
 	public function auditTrails(int $id): JSONResponse
 	{
-		return new JSONResponse($this->auditTrailMapper->findAll(filters: ['object' => $id]));
+		try {
+			$requestParams = $this->request->getParams();
+			return new JSONResponse($this->objectService->getPaginatedAuditTrail($id, null, null, $requestParams));
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
 	}
 
     /**
@@ -296,30 +336,48 @@ class ObjectsController extends Controller
     /**
      * Retrieves all objects that use a object
      *
-     * This method returns all the call logs associated with a object based on its ID.
+     * This method returns all objects that reference this object.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int $id The ID of the object to retrieve logs for
-	 *
-     * @return JSONResponse A JSON response containing the call logs
+     * @param int $id The ID of the object to retrieve relations for
+     *
+     * @return JSONResponse A JSON response containing the related objects
      */
     public function relations(int $id): JSONResponse
     {
         try {
-            // Lets grap the object to stablish an uri
-            $object = $this->objectEntityMapper->find($id);
-            $relations = $this->objectEntityMapper->findByRelationUri($object->getUri());
-
-            // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
-            foreach ($relations as $key => $relation) {
-                $relations[$key] = $relation->getObjectArray();
-            }
-
-            return new JSONResponse($relations);
+            $requestParams = $this->request->getParams();
+            return new JSONResponse($this->objectService->getPaginatedRelations($id, null, null, $requestParams));
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Relations not found'], 404);
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Retrieves all objects that this object references
+     *
+     * This method returns all objects that this object uses/references.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int $id The ID of the object to retrieve uses for
+     *
+     * @return JSONResponse A JSON response containing the referenced objects
+     */
+    public function uses(int $id): JSONResponse
+    {
+        try {
+            $requestParams = $this->request->getParams();
+            return new JSONResponse($this->objectService->getPaginatedUses($id, null, null, $requestParams));
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -562,10 +620,12 @@ class ObjectsController extends Controller
             // Get the object with files included
             $object = $this->objectEntityMapper->find((int) $id);
             $files = $objectService->getFiles($object);
-            $object = $objectService->hydrateFiles($object, $files);
             
-            // Return just the files array from the object
-            return new JSONResponse($object->getFiles());
+            // Format files with pagination support
+            $requestParams = $this->request->getParams();
+            $formattedFiles = $objectService->formatFiles($files, $requestParams);
+            
+            return new JSONResponse($formattedFiles);
             
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);

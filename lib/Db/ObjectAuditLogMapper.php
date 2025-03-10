@@ -29,7 +29,7 @@ class ObjectAuditLogMapper extends QBMapper
 		return $this->findEntity(query: $qb);
 	}
 
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], ?array $sort = []): array
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -54,6 +54,12 @@ class ObjectAuditLogMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
+
+		// Add sorting if specified
+		foreach ($sort as $field => $direction) {
+			$dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+			$qb->addOrderBy($field, $dir);
+		}
 
 		return $this->findEntities(query: $qb);
 	}
