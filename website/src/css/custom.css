@@ -4,27 +4,74 @@
  * work well for content-first websites.
  */
 
+/* Import Poppins font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
+  /* Primary color: Open Webconcept green */
+  --ifm-color-primary: #2fb298;
+  /* 15% darker than primary */
+  --ifm-color-primary-dark: #28a088;
+  /* 25% darker than primary */
+  --ifm-color-primary-darker: #248e79;
+  /* 40% darker than primary */
+  --ifm-color-primary-darkest: #1d7563;
+  /* 15% lighter than primary */
+  --ifm-color-primary-light: #34c4a7;
+  /* 25% lighter than primary */
+  --ifm-color-primary-lighter: #3dd1b3;
+  /* 40% lighter than primary */
+  --ifm-color-primary-lightest: #5ad9c1;
+  
+  /* Typography settings */
+  --ifm-font-family-base: 'Poppins', system-ui, -apple-system, sans-serif;
+  --ifm-heading-font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  --ifm-font-weight-semibold: 600;
+  --ifm-heading-font-weight: 600;
+  --ifm-h1-font-size: 2.5rem;
+  --ifm-h2-font-size: 2rem;
+  --ifm-h3-font-size: 1.5rem;
+  --ifm-h4-font-size: 1.25rem;
+  
+  /* Code settings */
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
+  /* Brighter version of the primary color for dark mode */
+  --ifm-color-primary: #34c4a7;
+  --ifm-color-primary-dark: #2fb298;
+  --ifm-color-primary-darker: #2ba68d;
+  --ifm-color-primary-darkest: #248e79;
+  --ifm-color-primary-light: #47cbb1;
+  --ifm-color-primary-lighter: #54cfb7;
+  --ifm-color-primary-lightest: #71d8c4;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Additional typography adjustments */
+.markdown {
+  /* Improve readability of main content */
+  font-weight: 400;
+  line-height: 1.8;
+}
+
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 {
+  /* Add some breathing room to headings */
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+/* Navbar adjustments */
+.navbar {
+  font-weight: 500;
+}
+
+/* Sidebar adjustments */
+.menu {
+  font-weight: 400;
 } 

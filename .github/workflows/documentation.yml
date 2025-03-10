@@ -37,6 +37,7 @@ jobs:
       - name: Deploy Docusaurus
         id: deploy
         uses: redkubes/docusaurus-deploy-action@v1.2
+        timeout-minutes: 3
         with:
           source-folder: website
           git-user: ${{ github.actor }}
