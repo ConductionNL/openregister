@@ -10,22 +10,22 @@ export const useSearchStore = defineStore('search', () => {
 	*/
 
 	// LEGACY!!!
-	const search = ref('')
-	const searchResults = ref('')
-	const searchError = ref('')
+	const search = ref<any>('')
+	const searchResults = ref<any>('')
+	const searchError = ref<any>('')
 
-	function setSearch(search: string) {
-		this.search = search
-		console.info('Active search set to ' + search)
+	function setSearch(_search: string) {
+		search.value = _search
+		console.info('Active search set to ' + search.value)
 	}
-	function setSearchResults(searchResults: string) {
-		this.searchResults = searchResults
-		console.info('Active search set to ' + searchResults)
+	function setSearchResults(_searchResults: string) {
+		searchResults.value = _searchResults
+		console.info('Active search set to ' + searchResults.value)
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
 	function getSearchResults() {
 		fetch(
-			'/index.php/apps/openregister/api/search?_search=' + this.search,
+			'/index.php/apps/openregister/api/search?_search=' + search.value,
 			{
 				method: 'GET',
 			},
@@ -35,19 +35,19 @@ export const useSearchStore = defineStore('search', () => {
 					response.json().then(
 						(data) => {
 							if (data?.code === 403 && data?.message) {
-								this.searchError = data.message
-								console.info(this.searchError)
+								searchError.value = data.message
+								console.info(searchError.value)
 							} else {
-								this.searchError = '' // Clear any previous errors
+								searchError.value = '' // Clear any previous errors
 							}
-							this.searchResults = data
+							searchResults.value = data
 						},
 					)
 				},
 			)
 			.catch(
 				(err) => {
-					this.searchError = err.message || 'An error occurred'
+					searchError.value = err.message || 'An error occurred'
 					console.error(err.message ?? err)
 				},
 			)
@@ -59,10 +59,19 @@ export const useSearchStore = defineStore('search', () => {
 	// END OF LEGACY CODE
 
 	// new, used by search page
+	// search data
+	const searchObjectsDataRegister = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataSchema = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataPagination = ref<number>(1)
+	const searchObjectsDataPaginationLimit = ref<number>(14)
+
+	// search objects
 	const searchObjectsSuccess = ref(false)
 	const searchObjectsLoading = ref(false)
 	const searchObjectsResult = ref<Record<string, any>[]>([])
 	const searchObjectsError = ref('')
+
+	const oldSearchQuery = ref<Record<string, any>>({})
 
 	/**
 	 * Search for objects in the database.
@@ -75,10 +84,9 @@ export const useSearchStore = defineStore('search', () => {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
 
-		console.group('search objects')
+		oldSearchQuery.value = searchQuery
 
-		console.info('clearing old result')
-		searchObjectsResult.value = []
+		console.group('search objects')
 
 		console.group('Fetching search results with params:')
 		Object.entries(searchQuery).forEach(([key, value]) => {
@@ -95,9 +103,9 @@ export const useSearchStore = defineStore('search', () => {
 				// Clear any previous errors
 				searchObjectsError.value = ''
 
-				const data = (await response.json()).results
+				const data = await response.json()
 
-				console.info(`${data.length} objects found`)
+				console.info(`${data.results.length} objects found`)
 
 				if (!response.ok && response.statusText) {
 					searchObjectsError.value = response.statusText
@@ -126,7 +134,13 @@ export const useSearchStore = defineStore('search', () => {
 		}
 	}
 
-	function clearObjectSearch() {
+	function reDoSearch() {
+		return searchObjects({
+			...oldSearchQuery.value,
+		})
+	}
+
+	function clearObjectSearchResults() {
 		searchObjectsSuccess.value = false
 		searchObjectsLoading.value = false
 		searchObjectsResult.value = []
@@ -153,8 +167,14 @@ export const useSearchStore = defineStore('search', () => {
 		searchObjectsResult,
 		searchObjectsError,
 
+		searchObjectsDataRegister,
+		searchObjectsDataSchema,
+		searchObjectsDataPagination,
+		searchObjectsDataPaginationLimit,
+
 		// functions
 		searchObjects,
-		clearObjectSearch,
+		reDoSearch,
+		clearObjectSearchResults,
 	}
 })
