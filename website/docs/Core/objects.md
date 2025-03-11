@@ -32,10 +32,10 @@ An object in Open Register consists of the following key components:
 | `relations` | Relations data (JSON string) |
 | `files` | Files data (JSON string) |
 | `folder` | Folder path |
-| `updated` | Timestamp of last update |
-| `created` | Timestamp of creation |
 | `locked` | Array of lock tokens or null if not locked |
 | `owner` | Owner of the object |
+| `updated` | Timestamp of last update |
+| `created` | Timestamp of creation |
 
 ## Example Object
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Nextcloud OpenRegister API",
-    "version": "1.0",
+    "version": "1.0", 
     "description": "API for managing registers, schemas, sources, objects, and audit trails in a Nextcloud environment."
   },
   "servers": [
@@ -86,7 +86,7 @@
       },
       "put": {
         "summary": "Update a register",
-        "operationId": "updateRegister",
+        "operationId": "updateRegister", 
         "parameters": [
           {
             "name": "uuid",
@@ -125,7 +125,7 @@
         "operationId": "deleteRegister",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "uuid", 
             "in": "path",
             "required": true,
             "schema": {
@@ -192,7 +192,7 @@
         "parameters": [
           {
             "name": "uuid",
-            "in": "path",
+            "in": "path", 
             "required": true,
             "schema": {
               "type": "string"
@@ -264,6 +264,212 @@
         "responses": {
           "204": {
             "description": "Schema deleted successfully"
+          }
+        }
+      }
+    },
+    "/api/schemas/{uuid}/properties": {
+      "get": {
+        "summary": "Get schema properties",
+        "operationId": "getSchemaProperties",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schema properties",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add schema property",
+        "operationId": "addSchemaProperty",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Property added successfully"
+          }
+        }
+      }
+    },
+    "/api/schemas/{uuid}/properties/{propertyName}": {
+      "get": {
+        "summary": "Get schema property",
+        "operationId": "getSchemaProperty",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "propertyName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Property details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update schema property",
+        "operationId": "updateSchemaProperty",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "propertyName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Property updated successfully"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete schema property",
+        "operationId": "deleteSchemaProperty",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "propertyName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Property deleted successfully"
+          }
+        }
+      }
+    },
+    "/api/schemas/{uuid}/validate": {
+      "post": {
+        "summary": "Validate data against schema",
+        "operationId": "validateSchema",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -572,6 +778,44 @@
           "textRepresentation": { "type": "string" },
           "locked": { "type": "object" },
           "owner": { "type": "string" }
+        }
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uuid": { "type": "string" },
+          "filename": { "type": "string" },
+          "downloadUrl": { "type": "string", "format": "uri" },
+          "shareUrl": { "type": "string", "format": "uri" },
+          "accessUrl": { "type": "string", "format": "uri" },
+          "extension": { "type": "string" },
+          "checksum": { "type": "string" },
+          "source": { "type": "integer" },
+          "userId": { "type": "string" },
+          "base64": { "type": "string" },
+          "filePath": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" },
+          "updated": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AuditTrail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uuid": { "type": "string" },
+          "schema": { "type": "integer" },
+          "register": { "type": "integer" },
+          "object": { "type": "integer" },
+          "action": { "type": "string" },
+          "changed": { "type": "object" },
+          "user": { "type": "string" },
+          "userName": { "type": "string" },
+          "session": { "type": "string" },
+          "request": { "type": "string" },
+          "ipAddress": { "type": "string" },
+          "version": { "type": "string" },
+          "created": { "type": "string", "format": "date-time" }
         }
       }
     }
