@@ -235,7 +235,6 @@ The complete API specifications are available as OpenAPI 3.0 documents:
 
 The ZGW components are interconnected as shown in this diagram:
 
-![ZGW Relationships](zgw_relationships.svg)
 
 The diagram shows how:
 
