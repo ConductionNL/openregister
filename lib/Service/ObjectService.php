@@ -403,7 +403,16 @@ class ObjectService
 	public function findSubObjects(array $ids, string $property): array
 	{
 		$schemaObject = $this->schemaMapper->find($this->schema);
+
+		$properties = $schemaObject->getProperties();
+		if (empty($properties) === true) {
+			return [];
+		}
+
 		$property = $schemaObject->getProperties()[$property];
+		if ($property === null) {
+			return [];
+		}
 
 		if (isset($property['items']) === true) {
 			$ref = explode('/', $property['items']['$ref']);
