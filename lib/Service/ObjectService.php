@@ -409,7 +409,7 @@ class ObjectService
 			return [];
 		}
 
-		$property = $schemaObject->getProperties()[$property];
+		$property = $properties[$property];
 		if ($property === null) {
 			return [];
 		}
