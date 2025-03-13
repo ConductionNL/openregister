@@ -178,6 +178,42 @@ export const useObjectStore = defineStore('object', {
 
 			return { response, data }
 		},
+		// mass delete objects
+		async massDeleteObject(objectIds) {
+			if (!objectIds.length) {
+				throw new Error('No object ids to delete')
+			}
+
+			console.info('Deleting objects...')
+
+			const result = {
+				successfulIds: [],
+				failedIds: [],
+			}
+
+			await Promise.all(objectIds.map(async (objectId) => {
+				const endpoint = `/index.php/apps/openregister/api/objects/${objectId}`
+
+				try {
+					const response = await fetch(endpoint, {
+						method: 'DELETE',
+					})
+
+					if (response.ok) {
+						result.successfulIds.push(objectId)
+					} else {
+						result.failedIds.push(objectId)
+					}
+				} catch (error) {
+					console.error('Error deleting object:', error)
+					result.failedIds.push(objectId)
+				}
+			}))
+
+			this.refreshObjectList()
+
+			return result
+		},
 		// AUDIT TRAILS
 		async getAuditTrails(id, options = {}) {
 			if (!id) {
