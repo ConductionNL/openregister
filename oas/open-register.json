@@ -11,9 +11,28 @@
       "description": "Base URL for API endpoints"
     }
   ],
+  "tags": [
+    {
+      "name": "registers",
+      "description": "Operations related to registers"
+    },
+    {
+      "name": "schemas",
+      "description": "Operations related to schemas and their properties"
+    },
+    {
+      "name": "sources",
+      "description": "Operations related to data sources"
+    },
+    {
+      "name": "objects",
+      "description": "Operations related to objects, including files, relationships, audit trails, and time travel"
+    }
+  ],
   "paths": {
     "/api/registers": {
       "get": {
+        "tags": ["registers"],
         "summary": "Get all registers",
         "operationId": "getRegisters",
         "responses": {
@@ -31,6 +50,7 @@
         }
       },
       "post": {
+        "tags": ["registers"],
         "summary": "Create a new register",
         "operationId": "createRegister",
         "requestBody": {
@@ -59,6 +79,7 @@
     },
     "/api/registers/{uuid}": {
       "get": {
+        "tags": ["registers"],
         "summary": "Get a register by UUID",
         "operationId": "getRegister",
         "parameters": [
@@ -85,6 +106,7 @@
         }
       },
       "put": {
+        "tags": ["registers"],
         "summary": "Update a register",
         "operationId": "updateRegister", 
         "parameters": [
@@ -121,6 +143,7 @@
         }
       },
       "delete": {
+        "tags": ["registers"],
         "summary": "Delete a register",
         "operationId": "deleteRegister",
         "parameters": [
@@ -142,6 +165,7 @@
     },
     "/api/schemas": {
       "get": {
+        "tags": ["schemas"],
         "summary": "Get all schemas",
         "operationId": "getSchemas",
         "responses": {
@@ -159,6 +183,7 @@
         }
       },
       "post": {
+        "tags": ["schemas"],
         "summary": "Create a new schema",
         "operationId": "createSchema",
         "requestBody": {
@@ -187,6 +212,7 @@
     },
     "/api/schemas/{uuid}": {
       "get": {
+        "tags": ["schemas"],
         "summary": "Get a schema by UUID",
         "operationId": "getSchema",
         "parameters": [
@@ -213,6 +239,7 @@
         }
       },
       "put": {
+        "tags": ["schemas"],
         "summary": "Update a schema",
         "operationId": "updateSchema",
         "parameters": [
@@ -249,6 +276,7 @@
         }
       },
       "delete": {
+        "tags": ["schemas"],
         "summary": "Delete a schema",
         "operationId": "deleteSchema",
         "parameters": [
@@ -270,6 +298,7 @@
     },
     "/api/schemas/{uuid}/properties": {
       "get": {
+        "tags": ["schemas"],
         "summary": "Get schema properties",
         "operationId": "getSchemaProperties",
         "parameters": [
@@ -296,6 +325,7 @@
         }
       },
       "post": {
+        "tags": ["schemas"],
         "summary": "Add schema property",
         "operationId": "addSchemaProperty",
         "parameters": [
@@ -327,6 +357,7 @@
     },
     "/api/schemas/{uuid}/properties/{propertyName}": {
       "get": {
+        "tags": ["schemas"],
         "summary": "Get schema property",
         "operationId": "getSchemaProperty",
         "parameters": [
@@ -361,6 +392,7 @@
         }
       },
       "put": {
+        "tags": ["schemas"],
         "summary": "Update schema property",
         "operationId": "updateSchemaProperty",
         "parameters": [
@@ -398,6 +430,7 @@
         }
       },
       "delete": {
+        "tags": ["schemas"],
         "summary": "Delete schema property",
         "operationId": "deleteSchemaProperty",
         "parameters": [
@@ -427,6 +460,7 @@
     },
     "/api/schemas/{uuid}/validate": {
       "post": {
+        "tags": ["schemas"],
         "summary": "Validate data against schema",
         "operationId": "validateSchema",
         "parameters": [
@@ -476,6 +510,7 @@
     },
     "/api/sources": {
       "get": {
+        "tags": ["sources"],
         "summary": "Get all sources",
         "operationId": "getSources",
         "responses": {
@@ -493,6 +528,7 @@
         }
       },
       "post": {
+        "tags": ["sources"],
         "summary": "Create a new source",
         "operationId": "createSource",
         "requestBody": {
@@ -521,6 +557,7 @@
     },
     "/api/sources/{uuid}": {
       "get": {
+        "tags": ["sources"],
         "summary": "Get a source by UUID",
         "operationId": "getSource",
         "parameters": [
@@ -547,6 +584,7 @@
         }
       },
       "put": {
+        "tags": ["sources"],
         "summary": "Update a source",
         "operationId": "updateSource",
         "parameters": [
@@ -583,6 +621,7 @@
         }
       },
       "delete": {
+        "tags": ["sources"],
         "summary": "Delete a source",
         "operationId": "deleteSource",
         "parameters": [
@@ -604,6 +643,7 @@
     },
     "/api/objects": {
       "get": {
+        "tags": ["objects"],
         "summary": "Get all objects",
         "operationId": "getObjects",
         "responses": {
@@ -621,6 +661,7 @@
         }
       },
       "post": {
+        "tags": ["objects"],
         "summary": "Create a new object",
         "operationId": "createObject",
         "requestBody": {
@@ -649,6 +690,7 @@
     },
     "/api/objects/{uuid}": {
       "get": {
+        "tags": ["objects"],
         "summary": "Get an object by UUID",
         "operationId": "getObject",
         "parameters": [
@@ -675,6 +717,7 @@
         }
       },
       "put": {
+        "tags": ["objects"],
         "summary": "Update an object",
         "operationId": "updateObject",
         "parameters": [
@@ -711,6 +754,7 @@
         }
       },
       "delete": {
+        "tags": ["objects"],
         "summary": "Delete an object",
         "operationId": "deleteObject",
         "parameters": [
@@ -726,6 +770,463 @@
         "responses": {
           "204": {
             "description": "Object deleted successfully"
+          }
+        }
+      },
+      "/api/objects/{uuid}/relations": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Get object relations",
+          "operationId": "getObjectRelations",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object relations",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string" },
+                        "target": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": ["objects"],
+          "summary": "Add object relation",
+          "operationId": "addObjectRelation",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "target": { "type": "string" }
+                  },
+                  "required": ["type", "target"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Relation added successfully"
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/files": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Get object files",
+          "operationId": "getObjectFiles",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object files",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/File" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": ["objects"],
+          "summary": "Add file to object",
+          "operationId": "addObjectFile",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "File added successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/lock": {
+        "post": {
+          "tags": ["objects"],
+          "summary": "Lock an object",
+          "operationId": "lockObject",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object locked successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "lockToken": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/unlock": {
+        "post": {
+          "tags": ["objects"],
+          "summary": "Unlock an object",
+          "operationId": "unlockObject",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lockToken": { "type": "string" }
+                  },
+                  "required": ["lockToken"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Object unlocked successfully"
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/audit-trails": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Get object audit trails",
+          "operationId": "getObjectAuditTrails",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object audit trails",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/AuditTrail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/history": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Get object version history",
+          "operationId": "getObjectHistory",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object version history",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "versions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "version": { "type": "string" },
+                            "timestamp": { "type": "string", "format": "date-time" },
+                            "user": { "type": "string" },
+                            "action": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/versions/{version}": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Get specific object version",
+          "operationId": "getObjectVersion",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "version",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object version details",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ObjectEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/at/{timestamp}": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Get object at specific point in time",
+          "operationId": "getObjectAtTimestamp",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "timestamp",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Object at specified time",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ObjectEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/compare": {
+        "get": {
+          "tags": ["objects"],
+          "summary": "Compare object versions",
+          "operationId": "compareObjectVersions",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "version1",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "version2",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Version comparison results",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "changes": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/objects/{uuid}/restore": {
+        "post": {
+          "tags": ["objects"],
+          "summary": "Restore object to previous version",
+          "operationId": "restoreObject",
+          "parameters": [
+            {
+              "name": "uuid",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string" },
+                    "timestamp": { "type": "string", "format": "date-time" }
+                  },
+                  "oneOf": [
+                    { "required": ["version"] },
+                    { "required": ["timestamp"] }
+                  ]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Object restored successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ObjectEntity"
+                  }
+                }
+              }
+            }
           }
         }
       }
