@@ -112,9 +112,3 @@ The file attachment system is implemented through two main service classes:
 - ObjectService: Provides high-level methods for attaching, retrieving, and managing files in the context of objects
 
 These services work together to provide a seamless file management experience within the OpenRegister application.
-
-## Related Features
-
-- [Content Search](content-search.md) - Search file contents
-- [Object Relations](object-relations.md) - Link files to objects
-- [Audit Trail](audit-trails.md) - Track file changes over time
