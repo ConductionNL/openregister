@@ -202,6 +202,19 @@ class ObjectService
 	}
 
 	/**
+	 * Finds an object by UUID.
+	 *
+	 * @param string $id The object UUID.
+	 *
+	 * @return ObjectEntity|null The found object or null if not found
+	 * @throws Exception If the object is not found.
+	 */
+    public function findByUuid(string $uuid): ?ObjectEntity
+	{
+		return $this->objectEntityMapper->findByUuidOnly(uuid: $uuid);
+	}
+
+	/**
 	 * Creates a new object from provided data.
 	 *
 	 * @param array $object The object data.
@@ -390,7 +403,16 @@ class ObjectService
 	public function findSubObjects(array $ids, string $property): array
 	{
 		$schemaObject = $this->schemaMapper->find($this->schema);
-		$property = $schemaObject->getProperties()[$property];
+
+		$properties = $schemaObject->getProperties();
+		if (empty($properties) === true) {
+			return [];
+		}
+
+		$property = $properties[$property];
+		if ($property === null) {
+			return [];
+		}
 
 		if (isset($property['items']) === true) {
 			$ref = explode('/', $property['items']['$ref']);
@@ -679,9 +701,24 @@ class ObjectService
 			$objectEntity->getId()
 		];
 
+        // Find property names that are objects (and thus, relations)
+        $validRelationProperties = [];
+        $schema = $this->schemaMapper->find($objectEntity->getSchema());
+        foreach ($schema->getProperties() as $propertyName => $property) {
+            if (isset($property['type']) === true && (
+                $property['type'] === 'object' || 
+                ($property['type'] === 'array') && isset($property['items']['type']) === true && $property['items']['type'] === 'object')) {
+                $validRelationProperties[] = $propertyName;
+            }
+        }
+
 		// Function to recursively find links/UUIDs and build dot notation paths
-		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers) {
+		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers, $validRelationProperties) {
 			foreach ($data as $key => $value) {
+                if (in_array($key, $validRelationProperties) === false) {
+                    continue;
+                }
+
 				$currentPath = $path ? "$path.$key" : $key;
 
 				if (is_array($value) === true) {

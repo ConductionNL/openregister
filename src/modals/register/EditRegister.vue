@@ -157,11 +157,11 @@ export default {
 						label: schema.title,
 					}))
 
-					this.schemas.value = activeSchemas.map((schema) => ({
+					this.schemas.value = activeSchemas?.map((schema) => ({
 						id: schema.id,
 						label: schema.title,
 					}))
-
+				}).finally(() => {
 					this.schemasLoading = false
 				})
 		},
