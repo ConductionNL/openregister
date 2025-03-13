@@ -15,11 +15,11 @@ In Open Register, a **Schema** defines the structure, validation rules, and rela
 - Any **constraints** on field values (min/max, patterns, enums)
 - **Relationships** between different objects
 
-Open Register uses JSON Schema as its schema definition language, providing a powerful and standardized way to describe data structures.
+Open Register uses [JSON Schema](https://json-schema.org/) as its schema definition language, providing a powerful and standardized way to describe data structures.
 
 ## Schema Structure
 
-A schema in Open Register consists of the following key components:
+A schema in Open Register follows the JSON Schema specification (see [JSON Schema Core](https://json-schema.org/understanding-json-schema) and [JSON Schema Validation](https://json-schema.org/draft/2020-12/json-schema-validation.html)) and consists of the following key components defined in the specification:
 
 | Property | Description |
 |----------|-------------|
@@ -33,6 +33,25 @@ A schema in Open Register consists of the following key components:
 | `archive` | Archive of previous schema versions |
 | `updated` | Timestamp of last update |
 | `created` | Timestamp of creation |
+
+## Property Structure
+
+Before diving into schema examples, let's understand the key components of a property definition. These components are primarily derived from JSON Schema specifications (see [JSON Schema Validation](https://json-schema.org/draft/2020-12/json-schema-validation.html)) with some additional extensions required for storage and validation purposes:
+
+| Property | Description | Example |
+|----------|-------------|---------|
+| [`type`](https://json-schema.org/understanding-json-schema/reference/type#type-specific-keywords) | Data type of the property (string, number, boolean, object, array) | `"type": "string"` |
+| [`description`](https://json-schema.org/understanding-json-schema/keywords#description) | Human-readable explanation of the property's purpose | `"description": "Person's full name"` |
+| [`format`](https://json-schema.org/understanding-json-schema/reference/type#format) | Specific for the type (date, email, uri, etc) | `"format": "date-time"` |
+| `pattern` | Regular expression pattern the value must match | `"pattern": "^[A-Z][a-z]+$"` |
+| `enum` | Array of allowed values | `"enum": ["active", "inactive"]` |
+| `minimum`/`maximum` | Numeric range constraints | `"minimum": 0, "maximum": 100` |
+| `minLength`/`maxLength` | String length constraints | `"minLength": 3, "maxLength": 50` |
+| `required` | Whether the property is mandatory | `"required": true` |
+| `default` | Default value if none provided | `"default": "pending"` |
+| `examples` | Sample valid values | `"examples": ["John Smith"]` |
+
+Properties can also have nested objects and arrays with their own validation rules, allowing for complex data structures while maintaining strict validation. See the [Nesting schema's](#nesting-schemas) section below for more details.
 
 ## Example Schema
 
@@ -209,6 +228,8 @@ PUT /api/schemas/{id}
   }
 }
 ```
+### Nesting schema's
+
 
 ### Schema Versioning
 
