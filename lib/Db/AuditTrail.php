@@ -38,6 +38,17 @@ class AuditTrail extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
+	/**
+	 * Get the changed data
+	 *
+	 * @return array The changed data or empty array if null
+	 */
+	public function getChanged(): array
+	{
+		return $this->changed ?? [];
+	}
+	
+
 	public function getJsonFields(): array
 	{
 		return array_keys(

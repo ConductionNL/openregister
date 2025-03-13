@@ -47,6 +47,16 @@ class Register extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}
 
+	/**
+	 * Get the schemas data
+	 *
+	 * @return array The schemas data or empty array if null
+	 */
+	public function getSchemas(): array
+	{
+		return $this->schemas ?? [];
+	}
+
 	public function getJsonFields(): array
 	{
 		return array_keys(

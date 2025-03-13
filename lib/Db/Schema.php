@@ -41,6 +41,36 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
 	}
 
+	/**
+	 * Get the required data
+	 *
+	 * @return array The required data or empty array if null
+	 */
+	public function getRequired(): array
+	{
+		return $this->required ?? [];
+	}
+
+	/**
+	 * Get the properties data
+	 *
+	 * @return array The properties data or empty array if null
+	 */
+	public function getProperties(): array
+	{
+		return $this->properties ?? [];
+	}
+
+	/**
+	 * Get the archive data
+	 *
+	 * @return array The archive data or empty array if null
+	 */
+	public function getArchive(): array
+	{
+		return $this->archive ?? [];
+	}
+
 	public function getJsonFields(): array
 	{
 		return array_keys(
