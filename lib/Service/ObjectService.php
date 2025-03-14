@@ -39,6 +39,9 @@ use Symfony\Component\Uid\Uuid;
 use GuzzleHttp\Client;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Exception\CustomValidationException;
+use OCP\AppFramework\Http\JSONResponse;
+use Opis\JsonSchema\Errors\ErrorFormatter;
 
 /**
  * Service class for handling object operations.
@@ -58,6 +61,8 @@ class ObjectService
 
 	/** @var int The current schema ID */
 	private int $schema;
+
+    public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
 	/**
 	 * Constructor for ObjectService.
@@ -168,7 +173,7 @@ class ObjectService
 		}
 
 		// if there are no properties we dont have to validate
-		if ($schemaObject instanceof stdClass || !method_exists($schemaObject, 'getProperties')) {
+		if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
 			// Return a default ValidationResult indicating success
 			return new ValidationResult(null);
 		}
@@ -221,6 +226,7 @@ class ObjectService
 	 *
 	 * @return ObjectEntity The created object entity.
 	 * @throws ValidationException If validation fails.
+	 * @throws CustomValidationException If custom validation fails.
 	 * @throws GuzzleException If there is an error during file upload.
 	 */
     public function createFromArray(array $object, ?array $extend = []): array
@@ -253,6 +259,7 @@ class ObjectService
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 * @throws ValidationException If validation fails.
+	 * @throws CustomValidationException If custom validation fails.
 	 * @throws GuzzleException If there is an error during file upload.
 	 */
     public function updateFromArray(string $id, array $object, bool $updateVersion, bool $patch = false, ?array $extend = []): array
@@ -574,7 +581,62 @@ class ObjectService
         }, $objects);
 
         return $objects;
+    }
 
+    /**
+     * Validate custom rules on the object.
+     * 
+	 * @param array  $object The data of the object.
+	 * @param Schema $schema The schema of the object.
+     * 
+	 * @throws CustomValidationException If the object fails custom validation.
+     * 
+     * @return array Custom errors.
+     */
+    private function validateCustomRules(array $object, Schema $schema): void
+    {
+        $properties = $schema->getProperties();
+        if ($properties === null || empty($properties) === true) {
+            return;
+        }
+
+        $errors = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            // Validate immutable
+            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true && isset($object['id'])) {
+                $errors[sprintf("/%s", $propertyName)][] = "The property is immutable and may not be overwritten";
+            }
+
+            // @todo do something for object properties because the validator will always expect a object instead off uri (string) or id
+        }
+
+        if (empty($errors) === false) {
+            throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
+        }
+    }
+
+    /**
+     * Handles the exception and creates a JSONResponse for errors.
+     * 
+     * @param ValidationException|CustomValidationException $exception
+     * 
+     * @return JSONResponse A response with error messages
+     */
+    public function handleValidationException(ValidationException|CustomValidationException $exception): JSONResponse
+    {
+        $formatter = new ErrorFormatter();
+        switch (get_class($exception)) {
+            case 'OCA\OpenRegister\Exception\ValidationException':
+                $validationErrors = $formatter->format($exception->getErrors());
+                break;
+            case 'OCA\OpenRegister\Exception\CustomValidationException':
+            default:
+                $validationErrors = $exception->getErrors();
+                break;
+            
+        }
+        
+        return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $validationErrors], 400);
     }
 
 	/**
@@ -587,6 +649,7 @@ class ObjectService
 	 * @return ObjectEntity The saved object entity.
 	 * @throws ValidationException If the object fails validation.
 	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
+	 * @throws CustomValidationException If the object fails custom validation.
 	 */
 	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
 	{
@@ -599,34 +662,37 @@ class ObjectService
         if (is_string($register) === true) {
             $register = $this->registerMapper->find($register);
         }
-
-		if (is_string($schema) === true) {
-			$schema = $this->schemaMapper->find($schema);
-		}
-
-		if ($depth === null && $schema instanceof Schema) {
+			
+        $schema = $this->schemaMapper->find($schema);
+        if ($schema === null) {
+            throw new Exception('Schema not found');
+        }
+		
+        if ($depth === null) {
 			$depth = $schema->getMaxDepth();;
-		} else if ($depth === null) {
-			$schemaObject = $this->schemaMapper->find($schema);
-			$depth = $schemaObject->getMaxDepth();
 		}
 
 		// Check if object already exists
 		if (isset($object['id']) === true) {
 			$objectEntity = $this->objectEntityMapper->findByUuid(
 				$this->registerMapper->find($register),
-				$this->schemaMapper->find($schema),
+				$schema,
 				$object['id']
 			);
 		}
 
-		$validationResult = $this->validateObject(object: $object, schemaId: $schema);
+        $this->validateCustomRules(object: $object, schema: $schema);
+		
+        $validationResult = $this->validateObject(object: $object, schemaId: $schema->getId());
 
+		if ($validationResult->isValid() === false) {
+			throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
+		}
 		// Create new entity if none exists
 		if (isset($object['id']) === false || $objectEntity === null) {
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register);
-			$objectEntity->setSchema($schema);
+			$objectEntity->setSchema($schema->getId());
 		}
 
 		// Handle UUID assignment
@@ -654,27 +720,21 @@ class ObjectService
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
-        $schemaObject = $this->schemaMapper->find($schema);
-
 		// Handle object properties that are either nested objects or files
-		if ($schemaObject->getProperties() !== null && is_array($schemaObject->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schemaObject->getProperties(), $register, $schema, depth: $depth);
+		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register, $schema->getId(), depth: $depth);
 		}
 
 		$this->setDefaults($objectEntity);
 
-		if ($objectEntity->getId() && ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true)) {
+		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			// Create audit trail for update
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-		} else if ($schemaObject->getHardValidation() === false || $validationResult->isValid() === true) {
+		} else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
 			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
 			// Create audit trail for creation
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity);
-		}
-
-		if ($validationResult->isValid() === false) {
-			throw new ValidationException(message: 'The object could not be validated', errors: $validationResult->error());
 		}
 
 		return $objectEntity;
