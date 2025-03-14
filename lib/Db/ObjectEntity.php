@@ -87,9 +87,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 *
 	 * @return array The locked data or empty array if null
 	 */
-	public function getlocked(): array
+	public function getlocked(): ?array
 	{
-		return $this->locked ?? [];
+		return $this->locked;
 	}
 
 	/**
@@ -97,9 +97,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 *
 	 * @return array The authorization data or empty array if null
 	 */
-	public function getAuthorization(): array
+	public function getAuthorization(): ?array
 	{
-		return $this->authorization ?? [];
+		return $this->authorization;
 	}
 
 	/**
