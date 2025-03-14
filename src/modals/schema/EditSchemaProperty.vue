@@ -218,6 +218,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
+				:checked.sync="properties.immutable">
+				Immutable
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
 				:checked.sync="properties.deprecated">
 				Deprecated
 			</NcCheckboxRadioSwitch>
@@ -416,6 +422,7 @@ export default {
 				minLength: 0,
 				maxLength: 0,
 				example: '',
+				immutable: false,
 				minimum: 0,
 				maximum: 0,
 				multipleOf: 0,
