@@ -1,3 +1,9 @@
+# Version: 0.1.55
+
+* [#250](https://github.com/ConductionNL/openregister/pull/250): Added getters for all json fields that return [] when DB value = null
+* [#251](https://github.com/ConductionNL/openregister/pull/251): Added getters for all json fields that return [] when DB value = null
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
