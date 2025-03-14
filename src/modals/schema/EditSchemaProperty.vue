@@ -218,6 +218,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
+				:checked.sync="properties.immutable">
+				Immutable
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
 				:checked.sync="properties.deprecated">
 				Deprecated
 			</NcCheckboxRadioSwitch>
