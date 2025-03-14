@@ -34,6 +34,16 @@ class ObjectAuditLog extends Entity implements JsonSerializable
 		$this->addType(fieldName:'userId', type: 'string');
 	}
 
+	/**
+	 * Get the changes data
+	 *
+	 * @return array The changes data or empty array if null
+	 */
+	public function getChanges(): array
+	{
+		return $this->changes ?? [];
+	}
+
 	public function getJsonFields(): array
 	{
 		return array_keys(
