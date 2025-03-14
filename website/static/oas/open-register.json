@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Nextcloud OpenRegister API",
-    "version": "1.0", 
+    "version": "1.0",
     "description": "API for managing registers, schemas, sources, objects, and audit trails in a Nextcloud environment."
   },
   "servers": [
@@ -57,9 +57,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Register"
-              }
+              "schema": { "$ref": "#/components/schemas/RegisterInput" }
             }
           }
         },
@@ -68,9 +66,7 @@
             "description": "Register created successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
+                "schema": { "$ref": "#/components/schemas/Register" }
               }
             }
           }
@@ -87,9 +83,7 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -97,9 +91,7 @@
             "description": "Register details",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
+                "schema": { "$ref": "#/components/schemas/Register" }
               }
             }
           }
@@ -108,24 +100,20 @@
       "put": {
         "tags": ["registers"],
         "summary": "Update a register",
-        "operationId": "updateRegister", 
+        "operationId": "updateRegister",
         "parameters": [
           {
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Register"
-              }
+              "schema": { "$ref": "#/components/schemas/RegisterInput" }
             }
           }
         },
@@ -134,9 +122,7 @@
             "description": "Register updated successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Register"
-                }
+                "schema": { "$ref": "#/components/schemas/Register" }
               }
             }
           }
@@ -148,18 +134,14 @@
         "operationId": "deleteRegister",
         "parameters": [
           {
-            "name": "uuid", 
+            "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Register deleted successfully"
-          }
+          "204": { "description": "Register deleted successfully" }
         }
       }
     },
@@ -190,9 +172,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Schema"
-              }
+              "schema": { "$ref": "#/components/schemas/SchemaInput" }
             }
           }
         },
@@ -201,9 +181,7 @@
             "description": "Schema created successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
+                "schema": { "$ref": "#/components/schemas/Schema" }
               }
             }
           }
@@ -218,11 +196,9 @@
         "parameters": [
           {
             "name": "uuid",
-            "in": "path", 
+            "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -230,9 +206,7 @@
             "description": "Schema details",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
+                "schema": { "$ref": "#/components/schemas/Schema" }
               }
             }
           }
@@ -247,18 +221,14 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Schema"
-              }
+              "schema": { "$ref": "#/components/schemas/SchemaInput" }
             }
           }
         },
@@ -267,9 +237,7 @@
             "description": "Schema updated successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Schema"
-                }
+                "schema": { "$ref": "#/components/schemas/Schema" }
               }
             }
           }
@@ -284,15 +252,11 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Schema deleted successfully"
-          }
+          "204": { "description": "Schema deleted successfully" }
         }
       }
     },
@@ -306,9 +270,7 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -316,9 +278,7 @@
             "description": "Schema properties",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object"
-                }
+                "schema": { "type": "object" }
               }
             }
           }
@@ -333,25 +293,19 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object"
-              }
+              "schema": { "type": "object" }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Property added successfully"
-          }
+          "201": { "description": "Property added successfully" }
         }
       }
     },
@@ -365,17 +319,13 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           },
           {
             "name": "propertyName",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -383,9 +333,7 @@
             "description": "Property details",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object"
-                }
+                "schema": { "type": "object" }
               }
             }
           }
@@ -400,33 +348,25 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           },
           {
             "name": "propertyName",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object"
-              }
+              "schema": { "type": "object" }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Property updated successfully"
-          }
+          "200": { "description": "Property updated successfully" }
         }
       },
       "delete": {
@@ -438,23 +378,17 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           },
           {
             "name": "propertyName",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Property deleted successfully"
-          }
+          "204": { "description": "Property deleted successfully" }
         }
       }
     },
@@ -468,18 +402,14 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object"
-              }
+              "schema": { "type": "object" }
             }
           }
         },
@@ -491,14 +421,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "valid": {
-                      "type": "boolean"
-                    },
+                    "valid": { "type": "boolean" },
                     "errors": {
                       "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
+                      "items": { "type": "string" }
                     }
                   }
                 }
@@ -535,9 +461,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Source"
-              }
+              "schema": { "$ref": "#/components/schemas/SourceInput" }
             }
           }
         },
@@ -546,9 +470,7 @@
             "description": "Source created successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
+                "schema": { "$ref": "#/components/schemas/Source" }
               }
             }
           }
@@ -565,9 +487,7 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -575,9 +495,7 @@
             "description": "Source details",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
+                "schema": { "$ref": "#/components/schemas/Source" }
               }
             }
           }
@@ -592,18 +510,14 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Source"
-              }
+              "schema": { "$ref": "#/components/schemas/SourceInput" }
             }
           }
         },
@@ -612,9 +526,7 @@
             "description": "Source updated successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
+                "schema": { "$ref": "#/components/schemas/Source" }
               }
             }
           }
@@ -629,15 +541,11 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Source deleted successfully"
-          }
+          "204": { "description": "Source deleted successfully" }
         }
       }
     },
@@ -668,9 +576,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ObjectEntity"
-              }
+              "schema": { "$ref": "#/components/schemas/ObjectEntityInput" }
             }
           }
         },
@@ -679,9 +585,7 @@
             "description": "Object created successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObjectEntity"
-                }
+                "schema": { "$ref": "#/components/schemas/ObjectEntity" }
               }
             }
           }
@@ -698,9 +602,7 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -708,9 +610,7 @@
             "description": "Object details",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObjectEntity"
-                }
+                "schema": { "$ref": "#/components/schemas/ObjectEntity" }
               }
             }
           }
@@ -725,18 +625,14 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ObjectEntity"
-              }
+              "schema": { "$ref": "#/components/schemas/ObjectEntityInput" }
             }
           }
         },
@@ -745,9 +641,7 @@
             "description": "Object updated successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObjectEntity"
-                }
+                "schema": { "$ref": "#/components/schemas/ObjectEntity" }
               }
             }
           }
@@ -762,293 +656,267 @@
             "name": "uuid",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Object deleted successfully"
-          }
+          "204": { "description": "Object deleted successfully" }
         }
-      },
-      "/api/objects/{uuid}/relations": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object relations",
-          "operationId": "getObjectRelations",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object relations",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "type": { "type": "string" },
-                        "target": { "type": "string" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "post": {
-          "tags": ["objects"],
-          "summary": "Add object relation",
-          "operationId": "addObjectRelation",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
+      }
+    },
+    "/api/objects/{uuid}/relations": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object relations",
+        "operationId": "getObjectRelations",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
             "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object relations",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "type": { "type": "string" },
-                    "target": { "type": "string" }
-                  },
-                  "required": ["type", "target"]
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": { "type": "string" },
+                      "target": { "type": "string" }
+                    }
+                  }
                 }
               }
-            }
-          },
-          "responses": {
-            "201": {
-              "description": "Relation added successfully"
             }
           }
         }
       },
-      "/api/objects/{uuid}/files": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object files",
-          "operationId": "getObjectFiles",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
+      "post": {
+        "tags": ["objects"],
+        "summary": "Add object relation",
+        "operationId": "addObjectRelation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
               "schema": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "target": { "type": "string" }
+                },
+                "required": ["type", "target"]
               }
             }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object files",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/File" }
+          }
+        },
+        "responses": {
+          "201": { "description": "Relation added successfully" }
+        }
+      }
+    },
+    "/api/objects/{uuid}/files": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object files",
+        "operationId": "getObjectFiles",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/File" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["objects"],
+        "summary": "Add file to object",
+        "operationId": "addObjectFile",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
                   }
                 }
               }
             }
           }
         },
-        "post": {
-          "tags": ["objects"],
-          "summary": "Add file to object",
-          "operationId": "addObjectFile",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
-            "required": true,
+        "responses": {
+          "201": {
+            "description": "File added successfully",
             "content": {
-              "multipart/form-data": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "file": {
-                      "type": "string",
-                      "format": "binary"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "responses": {
-            "201": {
-              "description": "File added successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/File"
-                  }
-                }
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/File" }
               }
             }
           }
         }
-      },
-      "/api/objects/{uuid}/lock": {
-        "post": {
-          "tags": ["objects"],
-          "summary": "Lock an object",
-          "operationId": "lockObject",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object locked successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "lockToken": { "type": "string" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/unlock": {
-        "post": {
-          "tags": ["objects"],
-          "summary": "Unlock an object",
-          "operationId": "unlockObject",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
+      }
+    },
+    "/api/objects/{uuid}/lock": {
+      "post": {
+        "tags": ["objects"],
+        "summary": "Lock an object",
+        "operationId": "lockObject",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
             "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "lockToken": { "type": "string" }
-                  },
-                  "required": ["lockToken"]
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Object unlocked successfully"
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/audit-trails": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object audit trails",
-          "operationId": "getObjectAuditTrails",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object audit trails",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/AuditTrail" }
                   }
                 }
               }
             }
           }
         }
-      },
-      "/api/objects/{uuid}/history": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object version history",
-          "operationId": "getObjectHistory",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
+      }
+    },
+    "/api/objects/{uuid}/unlock": {
+      "post": {
+        "tags": ["objects"],
+        "summary": "Unlock an object",
+        "operationId": "unlockObject",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
               "schema": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "lockToken": { "type": "string" }
+                },
+                "required": ["lockToken"]
               }
             }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object version history",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "id": { "type": "string" },
-                      "versions": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "version": { "type": "string" },
-                            "timestamp": { "type": "string", "format": "date-time" },
-                            "user": { "type": "string" },
-                            "action": { "type": "string" }
-                          }
+          }
+        },
+        "responses": {
+          "200": { "description": "Object unlocked successfully" }
+        }
+      }
+    },
+    "/api/objects/{uuid}/audit-trails": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object audit trails",
+        "operationId": "getObjectAuditTrails",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object audit trails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AuditTrail" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/history": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object version history",
+        "operationId": "getObjectHistory",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object version history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "version": { "type": "string" },
+                          "timestamp": { "type": "string", "format": "date-time" },
+                          "user": { "type": "string" },
+                          "action": { "type": "string" }
                         }
                       }
                     }
@@ -1058,173 +926,150 @@
             }
           }
         }
-      },
-      "/api/objects/{uuid}/versions/{version}": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get specific object version",
-          "operationId": "getObjectVersion",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "version",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object version details",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ObjectEntity"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/at/{timestamp}": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object at specific point in time",
-          "operationId": "getObjectAtTimestamp",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "timestamp",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string",
-                "format": "date-time"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object at specified time",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ObjectEntity"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/compare": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Compare object versions",
-          "operationId": "compareObjectVersions",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "version1",
-              "in": "query",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "version2",
-              "in": "query",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Version comparison results",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "id": { "type": "string" },
-                      "changes": { "type": "object" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/restore": {
-        "post": {
-          "tags": ["objects"],
-          "summary": "Restore object to previous version",
-          "operationId": "restoreObject",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
+      }
+    },
+    "/api/objects/{uuid}/versions/{version}": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get specific object version",
+        "operationId": "getObjectVersion",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
             "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object version details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ObjectEntity" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/at/{timestamp}": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object at specific point in time",
+        "operationId": "getObjectAtTimestamp",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "timestamp",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "date-time" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object at specified time",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ObjectEntity" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/compare": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Compare object versions",
+        "operationId": "compareObjectVersions",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "version1",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "version2",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version comparison results",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "version": { "type": "string" },
-                    "timestamp": { "type": "string", "format": "date-time" }
-                  },
-                  "oneOf": [
-                    { "required": ["version"] },
-                    { "required": ["timestamp"] }
-                  ]
+                    "id": { "type": "string" },
+                    "changes": { "type": "object" }
+                  }
                 }
               }
             }
-          },
-          "responses": {
-            "200": {
-              "description": "Object restored successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ObjectEntity"
-                  }
-                }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/restore": {
+      "post": {
+        "tags": ["objects"],
+        "summary": "Restore object to previous version",
+        "operationId": "restoreObject",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": { "type": "string" },
+                  "timestamp": { "type": "string", "format": "date-time" }
+                },
+                "oneOf": [
+                  { "required": ["version"] },
+                  { "required": ["timestamp"] }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object restored successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ObjectEntity" }
               }
             }
           }
@@ -1237,55 +1082,124 @@
       "Register": {
         "type": "object",
         "properties": {
-          "uuid": { "type": "string" },
+          "uuid": { "type": "string", "readOnly": true },
           "title": { "type": "string" },
           "description": { "type": "string" },
           "version": { "type": "string" },
-          "schemas": { "type": "array", "items": { "type": "string" } }
-        }
+          "schemas": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["title", "version"]
+      },
+      "RegisterInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "schemas": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["title", "version"]
       },
       "Schema": {
         "type": "object",
         "properties": {
-          "uuid": { "type": "string" },
+          "uuid": { "type": "string", "readOnly": true },
           "title": { "type": "string" },
           "description": { "type": "string" },
           "version": { "type": "string" },
           "properties": { "type": "object" }
-        }
+        },
+        "required": ["title", "version"]
+      },
+      "SchemaInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "properties": { "type": "object" }
+        },
+        "required": ["title", "version"]
       },
       "Source": {
         "type": "object",
         "properties": {
-          "uuid": { "type": "string" },
+          "uuid": { "type": "string", "readOnly": true },
           "title": { "type": "string" },
           "version": { "type": "string" },
           "description": { "type": "string" },
           "databaseUrl": { "type": "string" },
           "type": { "type": "string" }
-        }
+        },
+        "required": ["title", "version"]
+      },
+      "SourceInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "databaseUrl": { "type": "string" },
+          "type": { "type": "string" }
+        },
+        "required": ["title", "version"]
       },
       "ObjectEntity": {
         "type": "object",
         "properties": {
-          "uuid": { "type": "string" },
+          "uuid": { "type": "string", "readOnly": true },
           "uri": { "type": "string" },
           "version": { "type": "string" },
           "register": { "type": "string" },
           "schema": { "type": "string" },
           "object": { "type": "object" },
-          "files": { "type": "array", "items": { "type": "string" } },
-          "relations": { "type": "array", "items": { "type": "string" } },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "relations": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "textRepresentation": { "type": "string" },
           "locked": { "type": "object" },
           "owner": { "type": "string" }
-        }
+        },
+        "required": ["uri", "version", "register", "schema", "object"]
+      },
+      "ObjectEntityInput": {
+        "type": "object",
+        "properties": {
+          "uri": { "type": "string" },
+          "version": { "type": "string" },
+          "register": { "type": "string" },
+          "schema": { "type": "string" },
+          "object": { "type": "object" },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "relations": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "textRepresentation": { "type": "string" },
+          "locked": { "type": "object" },
+          "owner": { "type": "string" }
+        },
+        "required": ["uri", "version", "register", "schema", "object"]
       },
       "File": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "uuid": { "type": "string" },
+          "id": { "type": "integer", "readOnly": true },
+          "uuid": { "type": "string", "readOnly": true },
           "filename": { "type": "string" },
           "downloadUrl": { "type": "string", "format": "uri" },
           "shareUrl": { "type": "string", "format": "uri" },
@@ -1296,15 +1210,15 @@
           "userId": { "type": "string" },
           "base64": { "type": "string" },
           "filePath": { "type": "string" },
-          "created": { "type": "string", "format": "date-time" },
-          "updated": { "type": "string", "format": "date-time" }
+          "created": { "type": "string", "format": "date-time", "readOnly": true },
+          "updated": { "type": "string", "format": "date-time", "readOnly": true }
         }
       },
       "AuditTrail": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "uuid": { "type": "string" },
+          "id": { "type": "integer", "readOnly": true },
+          "uuid": { "type": "string", "readOnly": true },
           "schema": { "type": "integer" },
           "register": { "type": "integer" },
           "object": { "type": "integer" },
@@ -1316,7 +1230,7 @@
           "request": { "type": "string" },
           "ipAddress": { "type": "string" },
           "version": { "type": "string" },
-          "created": { "type": "string", "format": "date-time" }
+          "created": { "type": "string", "format": "date-time", "readOnly": true }
         }
       }
     }
