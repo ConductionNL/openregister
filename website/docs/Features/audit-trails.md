@@ -41,7 +41,7 @@ The system only logs read actions when accessing individual objects (e.g., GET /
 | register | Register ID of the modified object | 123 | From object's register reference |
 | object | Object ID that was modified | 456 | From modified object's ID |
 | action | Type of change that occurred | create, read, update, delete | Determined by system operation |
-| changed | Array of modified fields with old/new values | {"name": {"old": "John", "new": "Jane"}} | Diff between object states |
+| changed | Array of modified fields with old/new values | `{"name": {"old": "John", "new": "Jane"}}` | Diff between object states |
 | user | ID of the user who made the change | admin | From authenticated user session |
 | userName | Display name of the user | Administrator | From user profile |
 | session | Session ID when change occurred | sess_89d7h2 | From current session |

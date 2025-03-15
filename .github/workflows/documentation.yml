@@ -32,16 +32,26 @@ jobs:
           message: "Render PlantUML files"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # https://github.com/marketplace/actions/docusaurus-builddeploy-action
-      - name: Deploy Docusaurus
-        id: deploy
-        uses: redkubes/docusaurus-deploy-action@v1.2
+          
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v3
         with:
-          source-folder: website
-          git-user: ${{ github.actor }}
-          git-password: ${{ secrets.GITHUB_TOKEN }}
-          deployment-branch: gh-pages
+          node-version: '18'
+
+      - name: Install dependencies and build
+        timeout-minutes: 3
+        run: |
+          cd website
+          npm run ci
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./website/build
+          user_name: ${{ github.actor }}
+          user_email: ${{ github.event.pusher.email || github.actor }}
 
       # https://github.com/marketplace/actions/create-an-issue
       - name: Create issue on failure

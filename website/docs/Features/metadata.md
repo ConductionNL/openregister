@@ -37,6 +37,7 @@ The metadata system supports:
 ## Lock Information Structure
 When an object is locked, the following metadata is stored:
 
+```json
 {
     'user': 'user_id',
     'process': 'optional_process_name',
@@ -44,6 +45,7 @@ When an object is locked, the following metadata is stored:
     'duration': 'seconds',
     'expiration': 'timestamp'
 }
+```
 
 You can read more about locking objects [here](object-locking.md).
 
