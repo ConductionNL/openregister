@@ -1006,27 +1006,27 @@ This approach ensures that our task register works seamlessly with existing cale
 
 | Property | Description | Example | Type | Origin |
 |----------|-------------|---------|------|---------|
-| id | Unique identifier | "task-12345" | string | iCalendar UID |
-| title | Task title | "Complete client proposal" | string | iCalendar SUMMARY |
-| description | Task description | "Draft the proposal document including..." | string | iCalendar DESCRIPTION |
-| startTime | When task begins | "2023-06-15T09:00:00Z" | string (ISO 8601) | iCalendar DTSTART |
-| dueTime | When task is due | "2023-06-20T17:00:00Z" | string (ISO 8601) | iCalendar DUE |
-| completedTime | When task was completed | "2023-06-19T16:30:00Z" | string (ISO 8601) | iCalendar COMPLETED |
-| status | Current status | "in-progress" | string (enum) | iCalendar STATUS |
-| priority | Priority level | "high" | string (enum) | iCalendar PRIORITY |
+| id | Unique identifier | `task-12345` | string | iCalendar UID |
+| title | Task title | `Complete client proposal` | string | iCalendar SUMMARY |
+| description | Task description | `Draft the proposal document including...` | string | iCalendar DESCRIPTION |
+| startTime | When task begins | `2023-06-15T09:00:00Z` | string (ISO 8601) | iCalendar DTSTART |
+| dueTime | When task is due | `2023-06-20T17:00:00Z` | string (ISO 8601) | iCalendar DUE |
+| completedTime | When task was completed | `2023-06-19T16:30:00Z` | string (ISO 8601) | iCalendar COMPLETED |
+| status | Current status | `in-progress` | string (enum) | iCalendar STATUS |
+| priority | Priority level | `high` | string (enum) | iCalendar PRIORITY |
 | percentComplete | Completion percentage | 75 | integer (0-100) | iCalendar PERCENT-COMPLETE |
-| category | Categories/tags | '["proposal", "sales"]' | array[string] | iCalendar CATEGORIES |
-| assignee | Person assigned to task | '{"id": "user-123", "name": "Jane Doe"}' | object | iCalendar ORGANIZER |
-| participants | Other participants | '[{"id": "user-456", "name": "John Smith", "role": "reviewer"}]' | array[object] | iCalendar ATTENDEE |
-| parent | Parent task | "task-789" | string | iCalendar RELATED-TO |
-| subtasks | Child tasks | '["task-101", "task-102"]' | array[string] | Schema.org hasPart |
-| relatedTo | Related entities | '[{"id": "client-456", "type": "Client"}]' | array[object] | iCalendar RELATED-TO |
-| recurrence | Recurrence pattern | "FREQ=WEEKLY;BYDAY=MO" | string (iCal RRULE) | iCalendar RRULE |
-| attachments | File attachments | '[{"name": "draft.docx", "url": "https://..."}]' | array[object] | iCalendar ATTACH |
-| createdAt | Creation timestamp | "2023-06-10T14:30:00Z" | string (ISO 8601) | iCalendar CREATED |
-| updatedAt | Last update timestamp | "2023-06-15T09:15:00Z" | string (ISO 8601) | iCalendar LAST-MODIFIED |
-| createdBy | Creator information | {"id": "user-789", "name": "Alice Brown"} | object | Schema.org creator |
-| updatedBy | Last modifier information | {"id": "user-123", "name": "Jane Doe"} | object | Schema.org editor |
+| category | Categories/tags | `["proposal", "sales"]` | array[string] | iCalendar CATEGORIES |
+| assignee | Person assigned to task | `{"id": "user-123", "name": "Jane Doe"}` | object | iCalendar ORGANIZER |
+| participants | Other participants | `[{"id": "user-456", "name": "John Smith", "role": "reviewer"}]` | array[object] | iCalendar ATTENDEE |
+| parent | Parent task | `task-789` | string | iCalendar RELATED-TO |
+| subtasks | Child tasks | `[`task-101`, `task-102`]` | array[string] | Schema.org hasPart |
+| relatedTo | Related entities | `[{"id": "client-456", "type": "Client"}]` | array[object] | iCalendar RELATED-TO |
+| recurrence | Recurrence pattern | `FREQ=WEEKLY;BYDAY=MO` | string (iCal RRULE) | iCalendar RRULE |
+| attachments | File attachments | `[{"name": "draft.docx", "url": "https://..."}]` | array[object] | iCalendar ATTACH |
+| createdAt | Creation timestamp | `2023-06-10T14:30:00Z` | string (ISO 8601) | iCalendar CREATED |
+| updatedAt | Last update timestamp | `2023-06-15T09:15:00Z` | string (ISO 8601) | iCalendar LAST-MODIFIED |
+| createdBy | Creator information | `{"id": "user-789", "name": "Alice Brown"}` | object | Schema.org creator |
+| updatedBy | Last modifier information | `{"id": "user-123", "name": "Jane Doe"}` | object | Schema.org editor |
 
 :::note Thread Identifier
 A thread is a way to group related messages together in a conversation. In messaging systems, it acts like a conversation ID that links all messages in a back-and-forth exchange. For example, when someone replies to an email or chat message, all those messages share the same thread ID (usually the UUID of the first message in the conversation) to keep them connected.
@@ -1267,13 +1267,13 @@ This approach ensures that our message register works with existing email system
 | id | Unique identifier | "msg-12345" | string | RFC 5322 Message-ID |
 | subject | Message subject | "Project Update - June 2023" | string | RFC 5322 Subject |
 | body | Message content | "Dear John, I'm writing to update you on..." | string | RFC 5322 Body |
-| from | Sender information | {"name": "Jane Doe", "email": "jane.doe@example.com"} | object | RFC 5322 From |
-| to | Recipient information | [{"name": "John Smith", "email": "john.smith@example.com"}] | array[object] | RFC 5322 To |
-| cc | Carbon copy recipients | [{"name": "Alice Brown", "email": "alice@example.com"}] | array[object] | RFC 5322 Cc |
+| from | Sender information | `{"name": "Jane Doe", "email": "jane.doe@example.com"}` | object | RFC 5322 From |
+| to | Recipient information | `[{"name": "John Smith", "email": "john.smith@example.com"}]` | array[object] | RFC 5322 To |
+| cc | Carbon copy recipients | `[{"name": "Alice Brown", "email": "alice@example.com"}]` | array[object] | RFC 5322 Cc |
 | sentAt | When message was sent | "2023-06-10T14:30:00Z" | string (ISO 8601) | RFC 5322 Date |
 | receivedAt | When message was received | "2023-06-10T14:31:05Z" | string (ISO 8601) | RFC 5322 Received |
 | readAt | When message was read | "2023-06-10T15:45:22Z" | string (ISO 8601) | JMAP ReadAt |
-| attachments | File attachments | [{"name": "proposal.pdf", "url": "https://..."}] | array[object] | MIME Attachments |
+| attachments | File attachments | `[{"name": "proposal.pdf", "url": "https://..."}]` | array[object] | MIME Attachments |
 | thread | Thread identifier | "thread-123456" | string | RFC 5322 References |
 | inReplyTo | Message being replied to | "msg-12344" | string | RFC 5322 In-Reply-To |
 | references | Related messages | ["msg-12343", "msg-12344"] | array[string] | RFC 5322 References |
@@ -1561,15 +1561,15 @@ This approach ensures that our note register provides a flexible yet structured 
 | about | Reference to the object this note is about | 550e8400-e29b-41d4-a716-446655440000 | uuid/uri | Schema.org about |
 | format | Content format | "text/html" | string | Schema.org encodingFormat |
 | language | Content language | "en-US" | string | Schema.org inLanguage |
-| createdBy | Author information | {"id": "user-123", "name": "Jane Doe"} | object | Schema.org author |
+| createdBy | Author information | `{"id": "user-123", "name": "Jane Doe"}` | object | Schema.org author |
 | createdAt | Creation timestamp | "2023-06-10T16:30:00Z" | string (ISO 8601) | Schema.org dateCreated |
 | updatedAt | Last update timestamp | "2023-06-11T09:15:00Z" | string (ISO 8601) | Schema.org dateModified |
 | version | Version number | "1.2" | string | Schema.org version |
 | parent | Parent container reference | "folder-789" | string | Schema.org isPartOf |
-| tags | Categorization tags | ["meeting", "requirements", "important"] | array[string] | Schema.org keywords |
+| tags | Categorization tags | `["meeting", "requirements", "important"]` | array[string] | Schema.org keywords |
 | visibility | Who can see the note | "private", "team", "public" | string (enum) | Microsoft/Google extension |
 | pinned | Whether note is pinned | true/false | boolean | Google Keep isPinned |
-| shared | Sharing status | {"type": "team", "users": ["user-456"]} | object | Nextcloud shareTypes |
+| shared | Sharing status | `{"type": "team", "users": ["user-456"]}` | object | Nextcloud shareTypes |
 | permissions | Access rights | ["read", "write", "share"] | array[string] | Nextcloud permissions |
 
 :::note About Property
@@ -1864,12 +1864,12 @@ This approach ensures that our order register works for both traditional procure
 | deliveryDate | Requested delivery date | "2023-07-01" | string (ISO 8601) | UBL RequestedDeliveryPeriod |
 | paymentTerms | Payment terms | "30 days" | string | UBL PaymentTerms |
 | paymentMethod | Payment method | "credit_card", "bank_transfer", "direct_debit" | string (enum) | UBL PaymentMeans |
-| totalAmount | Total order amount | {"value": 125.50, "currency": "EUR"} | object | UBL AnticipatedMonetaryTotal |
+| totalAmount | Total order amount | `{"value": 125.50, "currency": "EUR"}` | object | UBL AnticipatedMonetaryTotal |
 | taxTotal | Tax amount | {"value": 25.10, "currency": "EUR"} | object | UBL TaxTotal |
-| orderLines | Order line items | [{"id": "line-1", "product": "product-123", "quantity": 2, "unitPrice": 50.00}] | array[object] | UBL OrderLine |
+| orderLines | Order line items | `[{"id": "line-1", "product": "product-123", "quantity": 2, "unitPrice": 50.00}]` | array[object] | UBL OrderLine |
 | reference | Customer reference | "REF-2023-001" | string | UBL CustomerReference |
 | accountingCode | Accounting code | "DEPT-123-456" | string | UBL AccountingCostCode |
-| createdBy | User who created the order | {"id": "user-123", "name": "Jane Doe"} | object | System extension |
+| createdBy | User who created the order | `{"id": "user-123", "name": "Jane Doe"}` | object | System extension |
 | createdAt | Creation timestamp | "2023-06-15T10:30:00Z" | string (ISO 8601) | UBL IssueDate/IssueTime |
 | updatedAt | Last update timestamp | "2023-06-16T14:15:00Z" | string (ISO 8601) | System extension |
 
