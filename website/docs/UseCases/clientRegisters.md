@@ -1015,14 +1015,14 @@ This approach ensures that our task register works seamlessly with existing cale
 | status | Current status | "in-progress" | string (enum) | iCalendar STATUS |
 | priority | Priority level | "high" | string (enum) | iCalendar PRIORITY |
 | percentComplete | Completion percentage | 75 | integer (0-100) | iCalendar PERCENT-COMPLETE |
-| category | Categories/tags | ["proposal", "sales"] | array[string] | iCalendar CATEGORIES |
-| assignee | Person assigned to task | {"id": "user-123", "name": "Jane Doe"} | object | iCalendar ORGANIZER |
-| participants | Other participants | [{"id": "user-456", "name": "John Smith", "role": "reviewer"}] | array[object] | iCalendar ATTENDEE |
+| category | Categories/tags | '["proposal", "sales"]' | array[string] | iCalendar CATEGORIES |
+| assignee | Person assigned to task | '{"id": "user-123", "name": "Jane Doe"}' | object | iCalendar ORGANIZER |
+| participants | Other participants | '[{"id": "user-456", "name": "John Smith", "role": "reviewer"}]' | array[object] | iCalendar ATTENDEE |
 | parent | Parent task | "task-789" | string | iCalendar RELATED-TO |
-| subtasks | Child tasks | ["task-101", "task-102"] | array[string] | Schema.org hasPart |
-| relatedTo | Related entities | [{"id": "client-456", "type": "Client"}] | array[object] | iCalendar RELATED-TO |
+| subtasks | Child tasks | '["task-101", "task-102"]' | array[string] | Schema.org hasPart |
+| relatedTo | Related entities | '[{"id": "client-456", "type": "Client"}]' | array[object] | iCalendar RELATED-TO |
 | recurrence | Recurrence pattern | "FREQ=WEEKLY;BYDAY=MO" | string (iCal RRULE) | iCalendar RRULE |
-| attachments | File attachments | [{"name": "draft.docx", "url": "https://..."}] | array[object] | iCalendar ATTACH |
+| attachments | File attachments | '[{"name": "draft.docx", "url": "https://..."}]' | array[object] | iCalendar ATTACH |
 | createdAt | Creation timestamp | "2023-06-10T14:30:00Z" | string (ISO 8601) | iCalendar CREATED |
 | updatedAt | Last update timestamp | "2023-06-15T09:15:00Z" | string (ISO 8601) | iCalendar LAST-MODIFIED |
 | createdBy | Creator information | {"id": "user-789", "name": "Alice Brown"} | object | Schema.org creator |
