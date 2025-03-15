@@ -20,19 +20,19 @@ In the meantime, here are the available search capabilities using URL parameters
 
 | Operator | Description | Example |
 |----------|-------------|---------|
-| = | Equals (case insensitive) | `name=nemo` |
-| != | Not equals (case insensitive) | `name[!=]=nemo` |
-| > | Greater than | `age[>]=5` |
-| < | Less than | `weight[<]=10` |
-| >= | Greater than or equal | `age[>=]=2` |
-| <= | Less than or equal | `age[<=]=10` |
-| ~ | Contains (case insensitive) | `name[~]=ne` |
-| ^ | Starts with (case insensitive) | `name[^]=ne` |
-| $ | Ends with (case insensitive) | `name[$]=mo` |
-| === | Equals (case sensitive) | `name[===]=Nemo` |
-| exists | Property exists check | `microchip[exists]=true` |
-| empty | Empty value check | `notes[empty]=true` |
-| null | Null value check | `owner[null]=true` |
+| `=` | Equals (case insensitive) | `name=nemo` |
+| `!=` | Not equals (case insensitive) | `name[!=]=nemo` |
+| `>` | Greater than | `age[>]=5` |
+| `<` | Less than | `weight[<]=10` |
+| `>=` | Greater than or equal | `age[>=]=2` |
+| `<=` | Less than or equal | `age[<=]=10` |
+| `~` | Contains (case insensitive) | `name[~]=ne` |
+| `^` | Starts with (case insensitive) | `name[^]=ne` |
+| `$` | Ends with (case insensitive) | `name[$]=mo` |
+| `===` | Equals (case sensitive) | `name[===]=Nemo` |
+| `exists` | Property exists check | `microchip[exists]=true` |
+| `empty` | Empty value check | `notes[empty]=true` |
+| `null` | Null value check | `owner[null]=true` |
 
 ## Full Text Search
 

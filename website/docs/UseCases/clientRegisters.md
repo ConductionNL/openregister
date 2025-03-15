@@ -1857,15 +1857,15 @@ This approach ensures that our order register works for both traditional procure
 | status | Order status | "pending", "approved", "completed", "cancelled" | string (enum) | Schema.org orderStatus |
 | currency | Currency code | "EUR" | string | UBL DocumentCurrencyCode |
 | note | Additional notes | "Please deliver to reception desk" | string | UBL Note |
-| buyer | Buyer information | {"id": "client-789", "name": "John Smith"} | object | UBL BuyerCustomerParty |
-| seller | Seller information | {"id": "org-456", "name": "City Services Department"} | object | UBL SellerSupplierParty |
+| buyer | Buyer information | `{"id": "client-789", "name": "John Smith"}` | object | UBL BuyerCustomerParty |
+| seller | Seller information | `{"id": "org-456", "name": "City Services Department"}` | object | UBL SellerSupplierParty |
 | deliveryTerms | Delivery terms | "Free delivery" | string | UBL DeliveryTerms |
-| deliveryLocation | Delivery location | {"address": "123 Main St", "city": "Amsterdam"} | object | UBL Delivery |
+| deliveryLocation | Delivery location | `{"address": "123 Main St", "city": "Amsterdam"}` | object | UBL Delivery |
 | deliveryDate | Requested delivery date | "2023-07-01" | string (ISO 8601) | UBL RequestedDeliveryPeriod |
 | paymentTerms | Payment terms | "30 days" | string | UBL PaymentTerms |
 | paymentMethod | Payment method | "credit_card", "bank_transfer", "direct_debit" | string (enum) | UBL PaymentMeans |
 | totalAmount | Total order amount | `{"value": 125.50, "currency": "EUR"}` | object | UBL AnticipatedMonetaryTotal |
-| taxTotal | Tax amount | {"value": 25.10, "currency": "EUR"} | object | UBL TaxTotal |
+| taxTotal | Tax amount | `{"value": 25.10, "currency": "EUR"}` | object | UBL TaxTotal |
 | orderLines | Order line items | `[{"id": "line-1", "product": "product-123", "quantity": 2, "unitPrice": 50.00}]` | array[object] | UBL OrderLine |
 | reference | Customer reference | "REF-2023-001" | string | UBL CustomerReference |
 | accountingCode | Accounting code | "DEPT-123-456" | string | UBL AccountingCostCode |
