@@ -97,49 +97,49 @@ This returns only pets named exactly "Nemo".
 
 ## Comparison Operators
 
-### Not Equals (!=)
+### Not Equals `!=`
 ```
 GET /api/pets?name[!=]=nemo
 ```
 Returns all pets NOT named "nemo" (case insensitive)
 
-### Greater Than (>)
+### Greater Than `>`
 ```
 GET /api/pets?age[>]=5
 ```
 Returns pets older than 5 years
 
-### Less Than (<)
+### Less Than `<`
 ```
 GET /api/pets?weight[<]=10
 ```
 Returns pets weighing less than 10kg
 
-### Greater Than or Equal (>=)
+### Greater Than or Equal `>=`
 ```
 GET /api/pets?age[>=]=2
 ```
 Returns pets 2 years or older
 
-### Less Than or Equal (<=)
+### Less Than or Equal `<=`
 ```
 GET /api/pets?age[<=]=10
 ```
 Returns pets 10 years or younger
 
-### Contains (~)
+### Contains `~`
 ```
 GET /api/pets?name[~]=ne
 ```
 Returns pets with "ne" in their name (like "nemo", "nero", "Nemo", etc) - case insensitive
 
-### Starts With (^)
+### Starts With `^`
 ```
 GET /api/pets?name[^]=ne
 ```
 Returns pets whose names start with "ne" (case insensitive)
 
-### Ends With ($)
+### Ends With `$`
 ```
 GET /api/pets?name[$]=mo
 ```
