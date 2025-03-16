@@ -1,3 +1,8 @@
+# Version: 0.1.45
+
+* [#186](https://github.com/ConductionNL/openregister/pull/186): Hotfix: base64 decode before calling function to write decoded data
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
