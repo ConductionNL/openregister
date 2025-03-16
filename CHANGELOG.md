@@ -1,3 +1,9 @@
+# Version: 0.1.46
+
+* [#188](https://github.com/ConductionNL/openregister/pull/188): feature/IBOC-151/search-sidebar
+* [#189](https://github.com/ConductionNL/openregister/pull/189): Hotfix: also look for reshares
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
