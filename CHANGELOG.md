@@ -1,3 +1,9 @@
+# Version: 0.1.47
+
+* [#191](https://github.com/ConductionNL/openregister/pull/191): Fix objecttype for tags
+* [#192](https://github.com/ConductionNL/openregister/pull/192): Development to main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
