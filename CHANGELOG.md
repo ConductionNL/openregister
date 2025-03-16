@@ -1,3 +1,9 @@
+# Version: 0.1.53
+
+* [#236](https://github.com/ConductionNL/openregister/pull/236): Config array object property
+* [#237](https://github.com/ConductionNL/openregister/pull/237): Dev to main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
