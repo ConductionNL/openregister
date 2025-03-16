@@ -1,3 +1,9 @@
+# Version: 0.1.49
+
+* [#197](https://github.com/ConductionNL/openregister/pull/197): Add fille taging
+* [#200](https://github.com/ConductionNL/openregister/pull/200): Development to main 
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
