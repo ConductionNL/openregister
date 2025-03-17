@@ -422,6 +422,7 @@ export default {
 				minLength: 0,
 				maxLength: 0,
 				example: '',
+				immutable: false,
 				minimum: 0,
 				maximum: 0,
 				multipleOf: 0,
