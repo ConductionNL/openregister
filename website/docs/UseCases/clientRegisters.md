@@ -22,8 +22,20 @@ This project represents a cross-border effort to address common challenges in pu
 - **French government agencies** provide insights from their "État Plateforme" (State as a Platform) initiative
 - **German government agencies** share experience from their "Digitale Verwaltung" (Digital Administration) program
 - **Open Register** offers the technical framework for implementing standardized registers
+- **Digital Decade** aligns with the European Commission's program to accelerate digital transformation toward a more human-centered, sustainable, inclusive and prosperous society by 2030
 
 Together, we're working to create a reference implementation that demonstrates how European standards can be applied in practice to create interoperable, privacy-respecting client data management systems.
+
+### Digital Decade Integration
+
+The European Client Register is designed to support the goals of the [Digital Decade](https://vng.nl/rubrieken/onderwerpen/digital-decade), the European Commission's vision for Europe's digital transformation by 2030. This program includes:
+
+1. **Comprehensive legislation** - A package of laws and regulations that impact how local governments structure their digital infrastructure and services
+2. **Standardization** - Common standards to ensure interoperability across member states
+3. **Digital infrastructure** - Shared digital infrastructure components that enable cross-border services
+4. **Adaptability** - Creating flexible IT landscapes that can adapt to changing requirements
+
+By implementing the European Client Register in accordance with Digital Decade principles, local governments can ensure their client data management systems are future-proof and aligned with European digital strategy.
 
 ### Common Ground Integration
 
