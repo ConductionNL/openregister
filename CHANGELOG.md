@@ -1,3 +1,9 @@
+# Version: 0.1.56
+
+* [#253](https://github.com/ConductionNL/openregister/pull/253): Immutable validation
+* [#262](https://github.com/ConductionNL/openregister/pull/262): Dev to main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
