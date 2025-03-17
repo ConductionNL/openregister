@@ -50,6 +50,11 @@ const config = {
             spec: 'static/oas/open-register.json',
             route: '/api',
           },
+          {
+            // Redocusaurus will automatically bundle your spec into a single file during the build
+            spec: 'static/oas/clientRegister.json',
+            route: '/api/clientRegister',
+          },
         ],
         // Theme Options for modifying how redoc renders them
         theme: {

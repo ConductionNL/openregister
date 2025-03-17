@@ -12,6 +12,8 @@ import TabItem from '@theme/TabItem';
 
 The European Client Register is a collaborative initiative between Open Register, Nextcloud, and government agencies from France and Germany. This project aims to transform European standards and definitions into a practical, interoperable register that can be used by governments throughout Europe to store and manage client data in a standardized way.
 
+You can also skip the context and dive right into the [api](/api/clientRegister).
+
 ### European Collaboration
 
 This project represents a cross-border effort to address common challenges in public administration:
