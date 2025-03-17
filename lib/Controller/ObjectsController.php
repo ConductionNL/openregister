@@ -20,6 +20,7 @@ use Psr\Container\NotFoundExceptionInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Symfony\Component\Uid\Uuid;
 use Psr\Container\ContainerInterface;
+use OCA\OpenConnector\Exception\CustomValidationException;
 
 class ObjectsController extends Controller
 {
@@ -203,9 +204,8 @@ class ObjectsController extends Controller
 			} catch (\Exception $e) {
 				// Ignore unlock errors since the save was successful
 			}
-		} catch (ValidationException $exception) {
-			$formatter = new ErrorFormatter();
-			return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
+		} catch (ValidationException|CustomValidationException $exception) {
+            return $objectService->handleValidationException(exception: $exception);
 		}
 
         return new JSONResponse($objectEntity->getObjectArray());
@@ -256,9 +256,8 @@ class ObjectsController extends Controller
             } catch (\Exception $e) {
                 // Ignore unlock errors since the save was successful
             }
-        } catch (ValidationException $exception) {
-            $formatter = new ErrorFormatter();
-            return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $formatter->format($exception->getErrors())], 400);
+        } catch (ValidationException|CustomValidationException $exception) {
+            return $objectService->handleValidationException(exception: $exception);
         }
 
         return new JSONResponse($objectEntity->getObjectArray());
