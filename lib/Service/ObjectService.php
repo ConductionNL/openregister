@@ -1893,20 +1893,22 @@ class ObjectService
 	 *
 	 * @param array $entity The entity data to render.
 	 * @param array|null $extend Optional properties to expand within the entity.
+	 * @param int $depth The depth to which relations should be expanded.
+	 * @param array|null $filter Optional filter to apply to the properties.
 	 *
 	 * @return array The rendered entity with expanded properties.
 	 * @throws Exception If rendering or extending fails.
+	 * 
+	 * @phpstan-param array<string, mixed> $entity
+	 * @phpstan-param array<string>|null $extend
+	 * @phpstan-param array<string>|null $filter
 	 */
-	public function renderEntity(array $entity, ?array $extend = []): array
+	public function renderEntity(array $entity, ?array $extend = [], int $depth = 0, ?array $filter = []): array
 	{
-		// check if entity has files or relations and if not just return the entity
-		if (array_key_exists(key: 'files', array: $entity) === false && array_key_exists(key: 'relations', array: $entity) === false) {
-			return $entity;
-		}
+		// LLets setup a placeholder for our related objects, could be quite a lot and w dont want to refatch them
+		$relatedObjects = [];
 
-		// Lets create a dot array of the entity
-		$dotEntity = new Dot($entity);
-
+		// @todo does this do anything? should we remove it?
 		// loop through the files and replace the file ids with the file objects)
 		if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
 			// Loop through the files array where key is dot notation path and value is file id
@@ -1917,20 +1919,7 @@ class ObjectService
 			}
 		}
 
-		// Loop through the relations and replace the relation ids with the relation objects if extended
-		if (array_key_exists(key: 'relations', array: $entity) === true && empty($entity['relations']) === false) {
-			// loop through the relations and replace the relation ids with the relation objects
-			foreach ($entity['relations'] as $path => $relationId) {
-				// if the relation is not in the extend array, skip it
-				if (in_array(needle: $path, haystack: $extend) === false) {
-					continue;
-				}
-				// Replace the value at the dot notation path with the relation object
-				// @todo: does not work
-                // $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
-			}
-		}
-
+		
 		/**
 		 * Processes inverted relations for the entity.
 		 * 
@@ -1940,7 +1929,6 @@ class ObjectService
 		 * 
 		 * This function only sets the uuid of the referencing objects in the entity. (exendt is defined at another point)
 		 * 
-		 * @todo: We should keep het usedByobjects in memmory so that when the are extended (and the logically wil be) we dont have to fetch them again
 		 */
 		
 		// Get the schema for this entity
@@ -1972,9 +1960,14 @@ class ObjectService
 				);
 				
 				// Set only the UUIDs in the entity property
-				$dotEntity->set($property['name'], $referencingUuids);
+				$entity[$property['name']] = $referencingUuids;
 			}
+			// Store the referenced objects in the related objects array for potential later extension
+			$relatedObjects = array_merge($relatedObjects, $usedByObjects);
+			unset($usedByObjects);			
 		}
+
+
 
 
 		// Update the entity with modified values
