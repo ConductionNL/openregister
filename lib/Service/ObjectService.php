@@ -1913,7 +1913,7 @@ class ObjectService
 			foreach ($entity['files'] as $path => $fileId) {
 				// Replace the value at the dot notation path with the file URL
 				// @todo: does not work
-//                $dotEntity->set($path, $filesById[$fileId]->getUrl());
+				// $dotEntity->set($path, $filesById[$fileId]->getUrl());
 			}
 		}
 
@@ -1927,9 +1927,55 @@ class ObjectService
 				}
 				// Replace the value at the dot notation path with the relation object
 				// @todo: does not work
-//                $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
+                // $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
 			}
 		}
+
+		/**
+		 * Processes inverted relations for the entity.
+		 * 
+		 * This core functionality handles properties marked as 'inverted' in the schema.
+		 * It finds objects that reference this entity and adds them to the appropriate
+		 * properties in the entity based on the inverted relation configuration.
+		 * 
+		 * This function only sets the uuid of the referencing objects in the entity. (exendt is defined at another point)
+		 * 
+		 * @todo: We should keep het usedByobjects in memmory so that when the are extended (and the logically wil be) we dont have to fetch them again
+		 */
+		
+		// Get the schema for this entity
+		$schema = $this->schemaMapper->find($entity['schema']);
+
+		// Get all properties from the schema that have inverted=true
+		$invertedProperties = array_filter(
+			$schema->getProperties(),
+			fn($property) => isset($property['inverted']) && empty($property['inverted']) === false
+		);
+
+		// Only process inverted relations if we have inverted properties
+		if (empty($invertedProperties) === false) {
+			// Get objects that reference this entity
+			$usedByObjects = $this->getUsedBy($entity['uuid']);
+
+			// Loop through inverted properties and add referenced objects
+			foreach ($invertedProperties as $property) {
+				// Filter objects that reference this entity through the specified inverted property
+				$referencingObjects = array_filter(
+					$usedByObjects,
+					fn($obj) => isset($obj['relations'][$property['inverted']]) && $obj['relations'][$property['inverted']] === $entity['uuid']
+				);
+				
+				// Extract only the UUIDs from the referencing objects instead of the entire objects
+				$referencingUuids = array_map(
+					fn($obj) => $obj['uuid'],
+					$referencingObjects
+				);
+				
+				// Set only the UUIDs in the entity property
+				$dotEntity->set($property['name'], $referencingUuids);
+			}
+		}
+
 
 		// Update the entity with modified values
 		$entity = $dotEntity->all();
