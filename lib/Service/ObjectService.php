@@ -1908,7 +1908,17 @@ class ObjectService
 		// LLets setup a placeholder for our related objects, could be quite a lot and w dont want to refatch them
 		$relatedObjects = [];
 
-		// @todo does this do anything? should we remove it?
+		// Lets use filter to remove properties that we dont want to extend
+		if (empty($filter) === false) {
+			$entity = array_filter($entity, function($key) use ($filter) {
+				return !in_array($key, $filter);
+			}, ARRAY_FILTER_USE_KEY);
+		}
+		
+		// Get the schema for this entity
+		$schema = $this->schemaMapper->find($entity['schema']);
+
+		// Htis needs to be done before we start extending the entitymade operational
 		// loop through the files and replace the file ids with the file objects)
 		if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
 			// Loop through the files array where key is dot notation path and value is file id
@@ -1931,8 +1941,6 @@ class ObjectService
 		 * 
 		 */
 		
-		// Get the schema for this entity
-		$schema = $this->schemaMapper->find($entity['schema']);
 
 		// Get all properties from the schema that have inverted=true
 		$invertedProperties = array_filter(
@@ -1967,7 +1975,24 @@ class ObjectService
 			unset($usedByObjects);			
 		}
 
+		// If extending is asked for we kan get the related objects and extend them
+		// Check if the entity has relations and is not empty
+		if (isset($entity['relations']) && !empty($entity['relations'])) {
+			// Extract all the related object IDs from the relations array
+			$objectIds = array_values($entity['relations']);
+			
+			// Use the getMany function from the mapper to retrieve all related objects
+			$objects = $this->objectEntityMapper->getMany($objectIds);
+			
+			// Serialize the related objects to cast them to arrays
+			$objects = array_map(fn($obj) => $obj->jsonSerialize(), $objects);
 
+			// lets at them to the related objects array
+			$relatedObjects = array_merge($relatedObjects, $objects);
+			unset($objects);
+		}
+
+		// Now we kan use extend to get the properties that we want to extend
 
 
 		// Update the entity with modified values
