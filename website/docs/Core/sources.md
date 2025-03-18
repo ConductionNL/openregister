@@ -3,6 +3,10 @@ title: Sources
 sidebar_position: 5
 ---
 
+import ApiSchema from '@theme/ApiSchema';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Sources
 
 ## What is a Source?

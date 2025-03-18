@@ -3,6 +3,10 @@ title: Objects
 sidebar_position: 4
 ---
 
+import ApiSchema from '@theme/ApiSchema';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Objects
 
 ## What is an Object?
@@ -63,6 +67,31 @@ An object in Open Register consists of the following key components:
 
 All objects are validated against their schema before being stored, ensuring data quality and consistency.
 
+### Serialisation
+All objects are stored as object entities, or json objects holding both the metadata and data of the actual object. These object entities are available trought the `objects api`. Object enties are a way of storing objects theym might be seen as an envelope for the actual object. When serialization happens the objects is changed to the actual object (and the envelope moved to @self see (metadata)[#metadata].
+
+
+
+### Metadata
+Open Register keeps tabs on the metadata of objects, it always keeps tabs on the following feelds wherte or not if they ara part of the object. This data is stored in object entity but transfered to the @self property when the objects is serialized.
+
+| Field | Type | Description | Purpose |
+|-------|------|-------------|----------|
+| uuid | string | Unique universal identifier | Globally unique object identification |
+| uri | string | Uniform Resource Identifier | Unique addressable location |
+| version | string | Semantic version number | Track object versions |
+| register | string | Register identifier | Object categorization/grouping |
+| schema | string | Schema identifier | Data validation reference |
+| textRepresentation | text | Text representation of object | Search and display optimization |
+| locked | json | Lock information object | Concurrent access control |
+| owner | string | Nextcloud user identifier | Object ownership |
+| authorization | json | Authorization rules | Access control configuration |
+| updated | datetime | Last modification timestamp | Change tracking |
+| created | datetime | Creation timestamp | Lifecycle management |
+| folder | string | Storage folder path | File organization |
+| relations | json | Related object IDs | Track object relationships |
+| files | json | Related file IDs | Track associated files |
+
 ### 2. Relationships
 
 Objects can have relationships with other objects, creating a network of connected data. Relationships are stored in the `relations` property and can represent various types of connections:
@@ -79,6 +108,13 @@ Objects can have relationships with other objects, creating a network of connect
   }
 ]
 ```
+
+### Extension
+Objects van ce extended 
+
+### Inversion
+inversedBy
+
 
 ### 3. File Attachments
 

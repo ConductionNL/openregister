@@ -3,6 +3,10 @@ title: Schemas
 sidebar_position: 3
 ---
 
+import ApiSchema from '@theme/ApiSchema';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Schemas
 
 ## What is a Schema?

@@ -3,6 +3,11 @@ title: Concept Relationships
 sidebar_position: 8
 ---
 
+import ApiSchema from '@theme/ApiSchema';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+
 # Relationships Between Core Concepts
 
 One of the most powerful aspects of Open Register is how its core concepts interact with each other. Understanding these relationships is key to effectively designing and using the system.

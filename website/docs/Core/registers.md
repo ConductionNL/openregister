@@ -3,6 +3,10 @@ title: Registers
 sidebar_position: 2
 ---
 
+import ApiSchema from '@theme/ApiSchema';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Registers
 
 ## What is a Register?

@@ -3,6 +3,10 @@ title: Files
 sidebar_position: 6
 ---
 
+import ApiSchema from '@theme/ApiSchema';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Files
 
 ## What are Files in Open Register?
