@@ -53,6 +53,56 @@ class ObjectEntity extends Entity implements JsonSerializable
 	}
 
 	/**
+	 * Get the object data
+	 *
+	 * @return array The object data or empty array if null
+	 */
+	public function getObject(): array
+	{
+		return $this->object ?? [];
+	}	
+
+	/**
+	 * Get the files data
+	 *
+	 * @return array The files data or empty array if null
+	 */
+	public function getFiles(): array
+	{
+		return $this->files ?? [];
+	}	
+
+	/**
+	 * Get the relations data
+	 *
+	 * @return array The relations data or empty array if null
+	 */
+	public function getRelations(): array
+	{
+		return $this->relations ?? [];
+	}
+
+	/**
+	 * Get the locked data
+	 *
+	 * @return array The locked data or empty array if null
+	 */
+	public function getlocked(): ?array
+	{
+		return $this->locked;
+	}
+
+	/**
+	 * Get the authorization data
+	 *
+	 * @return array The authorization data or empty array if null
+	 */
+	public function getAuthorization(): ?array
+	{
+		return $this->authorization;
+	}
+
+	/**
 	 * Get array of field names that are JSON type
 	 *
 	 * @return array List of field names that are JSON type
