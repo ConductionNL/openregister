@@ -1,1 +1,0 @@
-(self.webpackChunkopen_catalogi_docs=self.webpackChunkopen_catalogi_docs||[]).push([[2969],{2441:()=>{},3290:()=>{},7411:()=>{},7992:()=>{},8825:()=>{}}]);
