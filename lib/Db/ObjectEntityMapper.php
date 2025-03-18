@@ -542,4 +542,16 @@ class ObjectEntityMapper extends QBMapper
 		$object = $this->find($identifier);
 		return $object->isLocked();
 	}
+
+    public function findMultiple(array $ids): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->orWhere($qb->expr()->in('id',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uuid',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+
+        return $this->findEntities($qb);
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
@@ -20,7 +21,6 @@ use Psr\Container\NotFoundExceptionInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Symfony\Component\Uid\Uuid;
 use Psr\Container\ContainerInterface;
-use OCA\OpenConnector\Exception\CustomValidationException;
 
 class ObjectsController extends Controller
 {
@@ -80,7 +80,7 @@ class ObjectsController extends Controller
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
-        
+
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters
@@ -115,7 +115,7 @@ class ObjectsController extends Controller
 		$total   = $this->objectEntityMapper->countAll($filters);
 		$pages   = $limit !== null ? ceil($total/$limit) : 1;
 
-		
+
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($objects as $key => $object) {
@@ -148,7 +148,7 @@ class ObjectsController extends Controller
     public function show(string $id): JSONResponse
     {
         try {
-            return new JSONResponse($this->objectEntityMapper->find((int) $id)->getObjectArray());
+            return new JSONResponse($this->objectService->renderEntity($this->objectEntityMapper->find((int) $id)->getObjectArray()));
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
@@ -368,15 +368,16 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the referenced objects
      */
-    public function uses(int $id): JSONResponse
+    public function uses(string $id): JSONResponse
     {
         try {
             $requestParams = $this->request->getParams();
+            unset($requestParams['id']);
             return new JSONResponse($this->objectService->getPaginatedUses($id, null, null, $requestParams));
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(['ERROR' => $e->getMessage(), 'trace' => $e->getTrace()], 500);
         }
     }
 
@@ -619,13 +620,13 @@ class ObjectsController extends Controller
             // Get the object with files included
             $object = $this->objectEntityMapper->find((int) $id);
             $files = $objectService->getFiles($object);
-            
+
             // Format files with pagination support
             $requestParams = $this->request->getParams();
             $formattedFiles = $objectService->formatFiles($files, $requestParams);
-            
+
             return new JSONResponse($formattedFiles);
-            
+
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {
