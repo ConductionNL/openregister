@@ -23,23 +23,18 @@ Each object:
 
 ## Object Structure
 
-An object in Open Register consists of the following key components:
+All objects are stored as object entities, or json objects holding both the metadata and data of the actual object. These object entities are available trought the `objects api`. Object enties are a way of storing objects theym might be seen as an envelope for the actual object. When serialization happens the objects is changed to the actual object (and the envelope moved to @self see (metadata)[#metadata].
 
-| Property | Description |
-|----------|-------------|
-| `id` | Unique identifier for the object |
-| `uuid` | Universally unique identifier |
-| `uri` | URI to access this object |
-| `register` | Register identifier |
-| `schema` | Schema identifier |
-| `object` | Object data (JSON string) |
-| `relations` | Relations data (JSON string) |
-| `files` | Files data (JSON string) |
-| `folder` | Folder path |
-| `locked` | Array of lock tokens or null if not locked |
-| `owner` | Owner of the object |
-| `updated` | Timestamp of last update |
-| `created` | Timestamp of creation |
+<Tabs>
+  <TabItem value="stored_object" label="Specificaties" default>
+    <ApiSchema id="open-register" example   pointer="#/components/schemas/ObjectEntity" />
+  </TabItem>
+  <TabItem value="serialized_object" label="Serialized Object" >
+    <ApiSchema id="open-register" example   pointer="#/components/schemas/SerializeEntity" />
+  </TabItem>
+</Tabs>
+
+
 
 ## Example Object
 
@@ -68,7 +63,7 @@ An object in Open Register consists of the following key components:
 All objects are validated against their schema before being stored, ensuring data quality and consistency.
 
 ### Serialisation
-All objects are stored as object entities, or json objects holding both the metadata and data of the actual object. These object entities are available trought the `objects api`. Object enties are a way of storing objects theym might be seen as an envelope for the actual object. When serialization happens the objects is changed to the actual object (and the envelope moved to @self see (metadata)[#metadata].
+
 
 
 

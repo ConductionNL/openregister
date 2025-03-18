@@ -1268,17 +1268,127 @@
       "ObjectEntity": {
         "type": "object",
         "properties": {
-          "uuid": { "type": "string" },
-          "uri": { "type": "string" },
-          "version": { "type": "string" },
-          "register": { "type": "string" },
-          "schema": { "type": "string" },
+          "id": { 
+            "type": "integer",
+            "example": 123
+          },
+          "uuid": { 
+            "type": "string",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "uri": { 
+            "type": "string",
+            "example": "/api/objects/123e4567-e89b-12d3-a456-426614174000"
+          },
+          "version": { 
+            "type": "string",
+            "example": "1.0"
+          },
+          "register": { 
+            "type": "integer",
+            "example": 123
+          },
+          "schema": { 
+            "type": "integer",
+            "example": 123
+          },
+          "object": { 
+            "type": "object",
+            "example": {
+              "firstName": "John",
+              "lastName": "Doe",
+              "birthDate": "1980-01-15",
+              "email": "john.doe@example.com",
+              "address": {
+                "street": "123 Main St",
+                "city": "Anytown",
+                "postalCode": "12345",
+                "country": "USA"
+              },
+              "phoneNumbers": [
+                {
+                  "type": "mobile",
+                  "number": "555-123-4567"
+                }
+              ],
+              "spouse":"123e4567-e89b-12d3-a456-426614174000" 
+            }
+          },
+          "files": { 
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["123", "124"]
+          },
+          "relations": { 
+            "type": "array",
+            "items": { "type": "string" },
+            "example": {
+              "spouse": "123e4567-e89b-12d3-a456-426614174000"
+            }
+          },
+          "locked": { 
+            "type": "object",
+            "example": null
+          },
+          "owner": { 
+            "type": "string",
+            "example": "user-12345"
+          }
+        }
+      },
+      "SerializeEntity": {
+        "type": "object",
+        "properties": {
           "object": { "type": "object" },
-          "files": { "type": "array", "items": { "type": "string" } },
-          "relations": { "type": "array", "items": { "type": "string" } },
-          "textRepresentation": { "type": "string" },
-          "locked": { "type": "object" },
-          "owner": { "type": "string" }
+          "@self": {
+            "type": "object",
+            "properties": {
+              "id": { 
+                "type": "integer",
+                "example": 123
+              },
+              "uuid": { 
+                "type": "string",
+                "example": "123e4567-e89b-12d3-a456-426614174000"
+              },
+              "uri": { 
+                "type": "string",
+                "example": "/api/objects/123e4567-e89b-12d3-a456-426614174000"
+              },
+              "version": { 
+                "type": "string",
+                "example": "1.0"
+              },
+              "register": { 
+                "type": "integer",
+                "example": 123
+              },
+              "schema": { 
+                "type": "integer",
+                "example": 123
+              },
+              "files": { 
+                "type": "array", 
+                "items": { "type": "string" },
+                "example": ["123", "124"]
+              },
+              "relations": { 
+                "type": "array", 
+                "items": { "type": "string" },
+                "example": {
+                  "spouse": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              },
+              "locked": { 
+                "type": "object",
+                "example": null
+              },
+              "owner": { 
+                "type": "string",
+                "example": "user-12345"
+              }
+            }
+          }
         }
       },
       "File": {

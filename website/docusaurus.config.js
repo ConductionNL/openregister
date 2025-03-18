@@ -47,11 +47,13 @@ const config = {
           // Pass it a path to a local OpenAPI YAML file
           {
             // Redocusaurus will automatically bundle your spec into a single file during the build
+            id: 'open-register',
             spec: 'static/oas/open-register.json',
             route: '/api',
           },
           {
             // Redocusaurus will automatically bundle your spec into a single file during the build
+            id: 'client-registers',
             spec: 'static/oas/clientRegisters.json',
             route: '/api/clientRegister',
           },
