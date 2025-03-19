@@ -772,283 +772,283 @@
             "description": "Object deleted successfully"
           }
         }
-      },
-      "/api/objects/{uuid}/relations": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object relations",
-          "operationId": "getObjectRelations",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object relations",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "type": { "type": "string" },
-                        "target": { "type": "string" }
-                      }
-                    }
-                  }
-                }
-              }
+      }
+    },
+    "/api/objects/{uuid}/relations": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object relations",
+        "operationId": "getObjectRelations",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
-        },
-        "post": {
-          "tags": ["objects"],
-          "summary": "Add object relation",
-          "operationId": "addObjectRelation",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
-            "required": true,
+        ],
+        "responses": {
+          "200": {
+            "description": "Object relations",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "type": { "type": "string" },
-                    "target": { "type": "string" }
-                  },
-                  "required": ["type", "target"]
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": { "type": "string" },
+                      "target": { "type": "string" }
+                    }
+                  }
                 }
               }
-            }
-          },
-          "responses": {
-            "201": {
-              "description": "Relation added successfully"
             }
           }
         }
       },
-      "/api/objects/{uuid}/files": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object files",
-          "operationId": "getObjectFiles",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
+      "post": {
+        "tags": ["objects"],
+        "summary": "Add object relation",
+        "operationId": "addObjectRelation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
               "schema": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "target": { "type": "string" }
+                },
+                "required": ["type", "target"]
               }
             }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object files",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/File" }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Relation added successfully"
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/files": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object files",
+        "operationId": "getObjectFiles",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/File" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["objects"],
+        "summary": "Add file to object",
+        "operationId": "addObjectFile",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
                   }
                 }
               }
             }
           }
         },
-        "post": {
-          "tags": ["objects"],
-          "summary": "Add file to object",
-          "operationId": "addObjectFile",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
-            "required": true,
+        "responses": {
+          "201": {
+            "description": "File added successfully",
             "content": {
-              "multipart/form-data": {
+              "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "file": {
-                      "type": "string",
-                      "format": "binary"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "responses": {
-            "201": {
-              "description": "File added successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/File"
-                  }
+                  "$ref": "#/components/schemas/File"
                 }
               }
             }
           }
         }
-      },
-      "/api/objects/{uuid}/lock": {
-        "post": {
-          "tags": ["objects"],
-          "summary": "Lock an object",
-          "operationId": "lockObject",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object locked successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "lockToken": { "type": "string" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/unlock": {
-        "post": {
-          "tags": ["objects"],
-          "summary": "Unlock an object",
-          "operationId": "unlockObject",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
+      }
+    },
+    "/api/objects/{uuid}/lock": {
+      "post": {
+        "tags": ["objects"],
+        "summary": "Lock an object",
+        "operationId": "lockObject",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "lockToken": { "type": "string" }
-                  },
-                  "required": ["lockToken"]
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Object unlocked successfully"
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/audit-trails": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object audit trails",
-          "operationId": "getObjectAuditTrails",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object audit trails",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/AuditTrail" }
                   }
                 }
               }
             }
           }
         }
-      },
-      "/api/objects/{uuid}/history": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object version history",
-          "operationId": "getObjectHistory",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
+      }
+    },
+    "/api/objects/{uuid}/unlock": {
+      "post": {
+        "tags": ["objects"],
+        "summary": "Unlock an object",
+        "operationId": "unlockObject",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
               "schema": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "lockToken": { "type": "string" }
+                },
+                "required": ["lockToken"]
               }
             }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object version history",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "id": { "type": "string" },
-                      "versions": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "version": { "type": "string" },
-                            "timestamp": { "type": "string", "format": "date-time" },
-                            "user": { "type": "string" },
-                            "action": { "type": "string" }
-                          }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/audit-trails": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object audit trails",
+        "operationId": "getObjectAuditTrails",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object audit trails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AuditTrail" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/history": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object version history",
+        "operationId": "getObjectHistory",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object version history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "version": { "type": "string" },
+                          "timestamp": { "type": "string", "format": "date-time" },
+                          "user": { "type": "string" },
+                          "action": { "type": "string" }
                         }
                       }
                     }
@@ -1058,172 +1058,172 @@
             }
           }
         }
-      },
-      "/api/objects/{uuid}/versions/{version}": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get specific object version",
-          "operationId": "getObjectVersion",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "version",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object version details",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ObjectEntity"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/at/{timestamp}": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Get object at specific point in time",
-          "operationId": "getObjectAtTimestamp",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "timestamp",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string",
-                "format": "date-time"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Object at specified time",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ObjectEntity"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/compare": {
-        "get": {
-          "tags": ["objects"],
-          "summary": "Compare object versions",
-          "operationId": "compareObjectVersions",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "version1",
-              "in": "query",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            },
-            {
-              "name": "version2",
-              "in": "query",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Version comparison results",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "id": { "type": "string" },
-                      "changes": { "type": "object" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/api/objects/{uuid}/restore": {
-        "post": {
-          "tags": ["objects"],
-          "summary": "Restore object to previous version",
-          "operationId": "restoreObject",
-          "parameters": [
-            {
-              "name": "uuid",
-              "in": "path",
-              "required": true,
-              "schema": {
-                "type": "string"
-              }
-            }
-          ],
-          "requestBody": {
+      }
+    },
+    "/api/objects/{uuid}/versions/{version}": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get specific object version",
+        "operationId": "getObjectVersion",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object version details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectEntity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/at/{timestamp}": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Get object at specific point in time",
+        "operationId": "getObjectAtTimestamp",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timestamp",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object at specified time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectEntity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/compare": {
+      "get": {
+        "tags": ["objects"],
+        "summary": "Compare object versions",
+        "operationId": "compareObjectVersions",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version1",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version2",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version comparison results",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "version": { "type": "string" },
-                    "timestamp": { "type": "string", "format": "date-time" }
-                  },
-                  "oneOf": [
-                    { "required": ["version"] },
-                    { "required": ["timestamp"] }
-                  ]
+                    "id": { "type": "string" },
+                    "changes": { "type": "object" }
+                  }
                 }
               }
             }
-          },
-          "responses": {
-            "200": {
-              "description": "Object restored successfully",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/ObjectEntity"
-                  }
+          }
+        }
+      }
+    },
+    "/api/objects/{uuid}/restore": {
+      "post": {
+        "tags": ["objects"],
+        "summary": "Restore object to previous version",
+        "operationId": "restoreObject",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": { "type": "string" },
+                  "timestamp": { "type": "string", "format": "date-time" }
+                },
+                "oneOf": [
+                  { "required": ["version"] },
+                  { "required": ["timestamp"] }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Object restored successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectEntity"
                 }
               }
             }
@@ -1408,9 +1408,44 @@
           },
           "files": { 
             "type": "array",
-            "description": "Array of related file IDs to track associated files",
-            "items": { "type": "string" },
-            "example": ["123", "124"]
+            "description": "Array of related files to track associated files",
+            "items": { 
+              "$ref": "#/components/schemas/File" 
+            },
+            "example": [
+              {
+                "id": 123,
+                "uuid": "123e4567-e89b-12d3-a456-426614174000",
+                "filename": "profile.jpg",
+                "downloadUrl": "https://example.com/download/123",
+                "shareUrl": "https://example.com/share/123",
+                "accessUrl": "https://example.com/access/123",
+                "extension": "jpg",
+                "checksum": "abc123",
+                "source": 1,
+                "userId": "user-12345",
+                "base64": "base64encodedstring",
+                "filePath": "/files/profile.jpg",
+                "created": "2023-02-15T14:30:00Z",
+                "updated": "2023-05-20T10:15:00Z"
+              },
+              {
+                "id": 124,
+                "uuid": "123e4567-e89b-12d3-a456-426614174001",
+                "filename": "resume.pdf",
+                "downloadUrl": "https://example.com/download/124",
+                "shareUrl": "https://example.com/share/124",
+                "accessUrl": "https://example.com/access/124",
+                "extension": "pdf",
+                "checksum": "def456",
+                "source": 1,
+                "userId": "user-12345",
+                "base64": "base64encodedstring",
+                "filePath": "/files/resume.pdf",
+                "created": "2023-02-16T14:30:00Z",
+                "updated": "2023-05-21T10:15:00Z"
+              }
+            ]
           },
           "relations": { 
             "type": "array",
@@ -1428,7 +1463,6 @@
           "object": { "type": "object" },
           "@self": {
             "$ref": "#/components/schemas/@self"
-          }
           }
         }
       },
