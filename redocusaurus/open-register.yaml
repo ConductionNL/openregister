@@ -519,145 +519,124 @@ paths:
       responses:
         '204':
           description: Object deleted successfully
-    /api/objects/{uuid}/relations:
-      get:
-        tags:
-          - objects
-        summary: Get object relations
-        operationId: getObjectRelations
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Object relations
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                      target:
-                        type: string
-      post:
-        tags:
-          - objects
-        summary: Add object relation
-        operationId: addObjectRelation
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        requestBody:
+  /api/objects/{uuid}/relations:
+    get:
+      tags:
+        - objects
+      summary: Get object relations
+      operationId: getObjectRelations
+      parameters:
+        - name: uuid
+          in: path
           required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object relations
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  target:
-                    type: string
-                required:
-                  - type
-                  - target
-        responses:
-          '201':
-            description: Relation added successfully
-    /api/objects/{uuid}/files:
-      get:
-        tags:
-          - objects
-        summary: Get object files
-        operationId: getObjectFiles
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Object files
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/File'
-      post:
-        tags:
-          - objects
-        summary: Add file to object
-        operationId: addObjectFile
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        requestBody:
-          required: true
-          content:
-            multipart/form-data:
-              schema:
-                type: object
-                properties:
-                  file:
-                    type: string
-                    format: binary
-        responses:
-          '201':
-            description: File added successfully
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/File'
-    /api/objects/{uuid}/lock:
-      post:
-        tags:
-          - objects
-        summary: Lock an object
-        operationId: lockObject
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Object locked successfully
-            content:
-              application/json:
-                schema:
+                type: array
+                items:
                   type: object
                   properties:
-                    lockToken:
+                    type:
                       type: string
-    /api/objects/{uuid}/unlock:
-      post:
-        tags:
-          - objects
-        summary: Unlock an object
-        operationId: unlockObject
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        requestBody:
+                    target:
+                      type: string
+    post:
+      tags:
+        - objects
+      summary: Add object relation
+      operationId: addObjectRelation
+      parameters:
+        - name: uuid
+          in: path
           required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                target:
+                  type: string
+              required:
+                - type
+                - target
+      responses:
+        '201':
+          description: Relation added successfully
+  /api/objects/{uuid}/files:
+    get:
+      tags:
+        - objects
+      summary: Get object files
+      operationId: getObjectFiles
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/File'
+    post:
+      tags:
+        - objects
+      summary: Add file to object
+      operationId: addObjectFile
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: File added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+  /api/objects/{uuid}/lock:
+    post:
+      tags:
+        - objects
+      summary: Lock an object
+      operationId: lockObject
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object locked successfully
           content:
             application/json:
               schema:
@@ -665,187 +644,208 @@ paths:
                 properties:
                   lockToken:
                     type: string
-                required:
-                  - lockToken
-        responses:
-          '200':
-            description: Object unlocked successfully
-    /api/objects/{uuid}/audit-trails:
-      get:
-        tags:
-          - objects
-        summary: Get object audit trails
-        operationId: getObjectAuditTrails
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Object audit trails
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/AuditTrail'
-    /api/objects/{uuid}/history:
-      get:
-        tags:
-          - objects
-        summary: Get object version history
-        operationId: getObjectHistory
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Object version history
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    versions:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          version:
-                            type: string
-                          timestamp:
-                            type: string
-                            format: date-time
-                          user:
-                            type: string
-                          action:
-                            type: string
-    /api/objects/{uuid}/versions/{version}:
-      get:
-        tags:
-          - objects
-        summary: Get specific object version
-        operationId: getObjectVersion
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-          - name: version
-            in: path
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Object version details
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ObjectEntity'
-    /api/objects/{uuid}/at/{timestamp}:
-      get:
-        tags:
-          - objects
-        summary: Get object at specific point in time
-        operationId: getObjectAtTimestamp
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-          - name: timestamp
-            in: path
-            required: true
-            schema:
-              type: string
-              format: date-time
-        responses:
-          '200':
-            description: Object at specified time
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ObjectEntity'
-    /api/objects/{uuid}/compare:
-      get:
-        tags:
-          - objects
-        summary: Compare object versions
-        operationId: compareObjectVersions
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-          - name: version1
-            in: query
-            required: true
-            schema:
-              type: string
-          - name: version2
-            in: query
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: Version comparison results
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    changes:
-                      type: object
-    /api/objects/{uuid}/restore:
-      post:
-        tags:
-          - objects
-        summary: Restore object to previous version
-        operationId: restoreObject
-        parameters:
-          - name: uuid
-            in: path
-            required: true
-            schema:
-              type: string
-        requestBody:
+  /api/objects/{uuid}/unlock:
+    post:
+      tags:
+        - objects
+      summary: Unlock an object
+      operationId: unlockObject
+      parameters:
+        - name: uuid
+          in: path
           required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lockToken:
+                  type: string
+              required:
+                - lockToken
+      responses:
+        '200':
+          description: Object unlocked successfully
+  /api/objects/{uuid}/audit-trails:
+    get:
+      tags:
+        - objects
+      summary: Get object audit trails
+      operationId: getObjectAuditTrails
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object audit trails
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditTrail'
+  /api/objects/{uuid}/history:
+    get:
+      tags:
+        - objects
+      summary: Get object version history
+      operationId: getObjectHistory
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object version history
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  version:
+                  id:
                     type: string
-                  timestamp:
+                  versions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        user:
+                          type: string
+                        action:
+                          type: string
+  /api/objects/{uuid}/versions/{version}:
+    get:
+      tags:
+        - objects
+      summary: Get specific object version
+      operationId: getObjectVersion
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object version details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectEntity'
+  /api/objects/{uuid}/at/{timestamp}:
+    get:
+      tags:
+        - objects
+      summary: Get object at specific point in time
+      operationId: getObjectAtTimestamp
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: timestamp
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Object at specified time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectEntity'
+  /api/objects/{uuid}/compare:
+    get:
+      tags:
+        - objects
+      summary: Compare object versions
+      operationId: compareObjectVersions
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version1
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: version2
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Version comparison results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
                     type: string
-                    format: date-time
-                oneOf:
-                  - required:
-                      - version
-                  - required:
-                      - timestamp
-        responses:
-          '200':
-            description: Object restored successfully
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ObjectEntity'
+                  changes:
+                    type: object
+  /api/objects/{uuid}/restore:
+    post:
+      tags:
+        - objects
+      summary: Restore object to previous version
+      operationId: restoreObject
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                timestamp:
+                  type: string
+                  format: date-time
+              oneOf:
+                - required:
+                    - version
+                - required:
+                    - timestamp
+      responses:
+        '200':
+          description: Object restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectEntity'
 components:
   schemas:
     Register:
@@ -947,51 +947,115 @@ components:
         owner:
           type: string
           example: user-12345
+    '@self':
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the object
+          example: 123
+        uuid:
+          type: string
+          description: >-
+            Unique universal identifier for globally unique object
+            identification
+          example: 123e4567-e89b-12d3-a456-426614174000
+        uri:
+          type: string
+          description: Uniform Resource Identifier for unique addressable location
+          example: /api/objects/123e4567-e89b-12d3-a456-426614174000
+        version:
+          type: string
+          description: Semantic version number to track object versions
+          example: '1.0'
+        register:
+          type: integer
+          description: Register identifier for object categorization/grouping
+          example: 123
+        schema:
+          type: integer
+          description: Schema identifier for data validation reference
+          example: 123
+        textRepresentation:
+          type: string
+          description: Text representation of object for search and display optimization
+          example: 'John Doe, born 1980-01-15, email: john.doe@example.com'
+        locked:
+          type: object
+          description: Lock information object for concurrent access control
+          example: null
+        owner:
+          type: string
+          description: Nextcloud user identifier for object ownership
+          example: user-12345
+        authorization:
+          type: object
+          description: Authorization rules for access control configuration
+          example:
+            read: true
+            write: false
+        updated:
+          type: string
+          format: date-time
+          description: Last modification timestamp for change tracking
+          example: '2023-05-20T10:15:00Z'
+        created:
+          type: string
+          format: date-time
+          description: Creation timestamp for lifecycle management
+          example: '2023-02-15T14:30:00Z'
+        folder:
+          type: string
+          description: Storage folder path for file organization
+          example: /persons/john-doe
+        files:
+          type: array
+          description: Array of related files to track associated files
+          items:
+            $ref: '#/components/schemas/File'
+          example:
+            - id: 123
+              uuid: 123e4567-e89b-12d3-a456-426614174000
+              filename: profile.jpg
+              downloadUrl: https://example.com/download/123
+              shareUrl: https://example.com/share/123
+              accessUrl: https://example.com/access/123
+              extension: jpg
+              checksum: abc123
+              source: 1
+              userId: user-12345
+              base64: base64encodedstring
+              filePath: /files/profile.jpg
+              created: '2023-02-15T14:30:00Z'
+              updated: '2023-05-20T10:15:00Z'
+            - id: 124
+              uuid: 123e4567-e89b-12d3-a456-426614174001
+              filename: resume.pdf
+              downloadUrl: https://example.com/download/124
+              shareUrl: https://example.com/share/124
+              accessUrl: https://example.com/access/124
+              extension: pdf
+              checksum: def456
+              source: 1
+              userId: user-12345
+              base64: base64encodedstring
+              filePath: /files/resume.pdf
+              created: '2023-02-16T14:30:00Z'
+              updated: '2023-05-21T10:15:00Z'
+        relations:
+          type: array
+          description: Array of related object IDs to track object relationships
+          items:
+            type: string
+          example:
+            spouse: 123e4567-e89b-12d3-a456-426614174000
     SerializeEntity:
       type: object
       properties:
         object:
           type: object
         '@self':
-          type: object
-          properties:
-            id:
-              type: integer
-              example: 123
-            uuid:
-              type: string
-              example: 123e4567-e89b-12d3-a456-426614174000
-            uri:
-              type: string
-              example: /api/objects/123e4567-e89b-12d3-a456-426614174000
-            version:
-              type: string
-              example: '1.0'
-            register:
-              type: integer
-              example: 123
-            schema:
-              type: integer
-              example: 123
-            files:
-              type: array
-              items:
-                type: string
-              example:
-                - '123'
-                - '124'
-            relations:
-              type: array
-              items:
-                type: string
-              example:
-                spouse: 123e4567-e89b-12d3-a456-426614174000
-            locked:
-              type: object
-              example: null
-            owner:
-              type: string
-              example: user-12345
+          $ref: '#/components/schemas/@self'
     File:
       type: object
       properties:
