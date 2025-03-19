@@ -1948,7 +1948,7 @@ class ObjectService
 		// Get all properties from the schema that have inverted=true
 		$invertedProperties = array_filter(
 			$schema->getProperties(),
-			fn($property) => isset($property['inverted']) && empty($property['inverted']) === false
+			fn($property) => isset($property['inversedBy']) && empty($property['inversedBy']) === false
 		);
 
         $dotEntity = new Dot($entity['object']);
@@ -1964,7 +1964,7 @@ class ObjectService
 				// Filter objects that reference this entity through the specified inverted property
 				$referencingObjects = array_filter(
 					$usedByObjects,
-					fn($obj) => isset($obj->getRelations()[$property['inverted']]) && $obj->getRelations()[$property['inverted']] === $entity['uuid']
+					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $entity['uuid']
 				);
 
 				// Extract only the UUIDs from the referencing objects instead of the entire objects
@@ -1987,7 +1987,7 @@ class ObjectService
 
 		// If extending is asked for we kan get the related objects and extend them
 		// Check if the entity has relations and is not empty
-		if (isset($entity['relations']) && !empty($entity['relations'])) {
+		if (isset($entity['relations']) === true && empty($entity['relations']) === false) {
 			// Extract all the related object IDs from the relations array
 			$objectIds = array_values($entity['relations']);
 
