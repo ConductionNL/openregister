@@ -7,8 +7,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		name="Lock Object"
 		size="normal"
 		:can-close="false">
-		<p v-if="success === null">
-			Do you want to lock <b>{{ objectStore.objectItem?.uuid }}</b>? Locking an object prevents other users from modifying it until it is unlocked. You can specify an optional process name to indicate why it's locked and a duration after which it will automatically unlock. Only the user who locked the object or an administrator can unlock it before the duration expires.
+		<p v-if="success === null" class="lockP">
+			Do you want to lock <b>{{ objectStore.objectItem?.uuid }}</b>?<br/><br/>Locking an object prevents other users from modifying it until it is unlocked. You can specify an optional process name to indicate why it's locked and a duration after which it will automatically unlock. Only the user who locked the object or an administrator can unlock it before the duration expires.
 		</p>
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully locked</p>
@@ -18,25 +18,27 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				:disabled="loading || success"
-				type="primary"
-				@click="lockObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<LockOutline v-else :size="20" />
-				</template>
-				Lock
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton
+					:disabled="loading || success"
+					type="primary"
+					@click="lockObject()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<LockOutline v-else :size="20" />
+					</template>
+					Lock
+				</NcButton>
+			</div>
 		</template>
 
-		<div v-if="!success" class="formContainer">
+		<div v-if="!success" class="formContainer modalSpacing10">
 			<NcTextField
 				:value.sync="process"
 				label="Process Name (optional)"
@@ -114,3 +116,14 @@ export default {
 	},
 }
 </script>
+
+<style>
+.lockP {
+	margin-bottom: 15px;
+}
+.modalSpacing10 {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+</style>

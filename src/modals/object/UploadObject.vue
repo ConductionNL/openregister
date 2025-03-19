@@ -14,6 +14,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		</NcNoteCard>
 
 		<template #actions>
+		<div class="buttonContainer">
 			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
 				:disabled="loading"
 				@click="registers.value = null">
@@ -47,6 +48,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				</template>
 				Upload
 			</NcButton>
+		</div>
 		</template>
 
 		<div v-if="!success" class="formContainer">

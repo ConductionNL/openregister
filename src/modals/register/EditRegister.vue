@@ -14,13 +14,15 @@ import { registerStore, schemaStore, sourceStore, navigationStore } from '../../
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div v-if="!success" class="formContainer">
+		<div v-if="!success" class="formContainer modalSpacing">
 			<NcTextField :disabled="loading"
 				label="Title *"
-				:value.sync="registerItem.title" />
+				:value.sync="registerItem.title"
+				style="margin-top: 12px;" />
 			<NcTextArea :disabled="loading"
 				label="Description"
-				:value.sync="registerItem.description" />
+				:value.sync="registerItem.description"
+				resize="none" />
 			<NcTextField :disabled="loading"
 				label="Table Prefix"
 				:value.sync="registerItem.tablePrefix" />
@@ -37,23 +39,25 @@ import { registerStore, schemaStore, sourceStore, navigationStore } from '../../
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
-			</NcButton>
-			<NcButton v-if="!success"
-				:disabled="loading || !registerItem.title"
-				type="primary"
-				@click="editRegister()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && registerStore.registerItem?.id" :size="20" />
-					<Plus v-if="!loading && !registerStore.registerItem?.id" :size="20" />
-				</template>
-				{{ registerStore.registerItem?.id ? 'Opslaan' : 'Aanmaken' }}
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Sluiten' : 'Annuleer' }}
+				</NcButton>
+				<NcButton v-if="!success"
+					:disabled="loading || !registerItem.title"
+					type="primary"
+					@click="editRegister()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading && registerStore.registerItem?.id" :size="20" />
+						<Plus v-if="!loading && !registerStore.registerItem?.id" :size="20" />
+					</template>
+					{{ registerStore.registerItem?.id ? 'Opslaan' : 'Aanmaken' }}
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
@@ -230,3 +234,16 @@ export default {
 	},
 }
 </script>
+
+<style>
+.modalSpacing {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+.buttonContainer {
+    display: flex;
+    gap: 10px;
+	margin-top: 15px;
+}
+</style>

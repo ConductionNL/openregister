@@ -14,13 +14,15 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div v-if="!success" class="formContainer">
+		<div v-if="!success" class="formContainer modalSpacing">
 			<NcTextField :disabled="loading"
 				label="Title *"
-				:value.sync="sourceItem.title" />
+				:value.sync="sourceItem.title"
+				style="margin-top: 12px;" />
 			<NcTextArea :disabled="loading"
 				label="Description"
-				:value.sync="sourceItem.description" />
+				:value.sync="sourceItem.description"
+				resize="none" />
 			<NcTextField :disabled="loading"
 				label="Database URL"
 				:value.sync="sourceItem.databaseUrl" />
@@ -31,7 +33,8 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -48,6 +51,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ sourceStore.sourceItem?.id ? 'Save' : 'Create' }}
 			</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>

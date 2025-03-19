@@ -19,7 +19,8 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
+			<div class="buttonContainer">
+				<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -36,6 +37,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				</template>
 				Delete
 			</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
