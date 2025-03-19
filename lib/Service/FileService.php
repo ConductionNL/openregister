@@ -4,6 +4,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\Files_Versions\Versions\VersionManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -65,6 +66,7 @@ class FileService
         private readonly ISystemTagManager      $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly ObjectEntityMapper     $objectEntityMapper,
+        private readonly VersionManager $versionManager,
 	)
 	{
 	}
@@ -1011,4 +1013,32 @@ class FileService
 			throw new \Exception('Failed to retrieve tags: ' . $e->getMessage());
 		}
 	}
+
+    /**
+     * Return a file by its path for building download responses. Takes a version for versioned downloads.
+     *
+     * @param string $path The path of the file to download.
+     * @param string|null $version The version of the file to download.
+     *
+     * @return File The file found
+     * @throws NotFoundException
+     */
+    public function getFile(string $path, ?string $version = null): File
+    {
+        /** @var File $file */
+        $file = $this->rootFolder->get($path);
+
+        $shares = $this->findShares($file);
+
+        if(empty($shares) === true) {
+            throw new Exception('File not shared');
+        }
+
+        if($version === null) {
+            return $file;
+        }
+
+        return $this->versionManager->getVersionFile($this->getUser(), $file, $version);
+
+    }
 }
