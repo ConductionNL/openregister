@@ -6,6 +6,7 @@ sidebar_position: 8
 import ApiSchema from '@theme/ApiSchema';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Mermaid from '@theme/Mermaid';
 
 
 # Relationships Between Core Concepts
@@ -16,7 +17,8 @@ One of the most powerful aspects of Open Register is how its core concepts inter
 
 The core entities in Open Register - Registers, Schemas, Objects, Files, Sources, and Events - form an interconnected system:
 
-```mermaid
+<Mermaid
+  value={`
 graph TD
     Register[Registers] -->|contain| Object[Objects]
     Register -->|support| Schema[Schemas]
@@ -31,8 +33,8 @@ graph TD
     Object -->|trigger| Event[Events]
     Register -->|trigger| Event
     Schema -->|trigger| Event
-    File -->|trigger| Event
-```
+    File -->|trigger| Event`}
+/>
 
 ## Register-Schema Relationship
 

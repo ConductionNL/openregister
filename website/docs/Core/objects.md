@@ -65,34 +65,77 @@ All objects are validated against their schema before being stored, ensuring dat
 ### Serialisation
 
 
-
-
 ### Metadata
 Open Register keeps tabs on the metadata of objects, it always keeps tabs on the following feelds wherte or not if they ara part of the object. This data is stored in object entity but transfered to the @self property when the objects is serialized.
 
 <ApiSchema id="open-register" example pointer="#/components/schemas/@self" />
 
 ### 2. Relationships
+Object Relations enable the creation and management of connections between objects, supporting complex data structures and relationships.
 
-Objects can have relationships with other objects, creating a network of connected data. Relationships are stored in the `relations` property and can represent various types of connections:
+The relations system provides:
+- Multiple relationship types
+- Bi-directional relationships
+- Relationship metadata
+- Integrity management
 
-```json
-[
-  {
-    "type": "spouse",
-    "target": "person-67890"
-  },
-  {
-    "type": "employer",
-    "target": "organization-12345"
+## Key Benefits
+
+1. **Data Organization**
+   - Model complex relationships
+   - Maintain data connections
+   - Support hierarchical structures
+
+2. **Data Integration**
+   - Link related information
+   - Create data networks
+   - Support cross-referencing
+
+3. **Process Management**
+   - Track dependencies
+   - Manage workflows
+   - Support business processes
+
+Objects can have relationships with other objects, creating a network of connected data. Relationships are stored in the `relations` property as an array where the keys are dot notations referring to properties in the object, and the values are references to external objects. References can be either an id, uuid, or URL to an extended object. In this way, the relationship metadata property forms a quick index of all the objects that an object is related to. For more information on dot notation, please refer to this [dot notation explanation](https://en.wikipedia.org/wiki/Dot_notation).
+
+```json{
+    {
+    "@self": {
+      "relations":{
+        "user":"1",
+        "user":"1",
+      }
+    }
+  .... The actual object  
   }
-]
 ```
 
-### Extension
+#### Extending
+Data Extension allows you to automatically include related entities in API responses, reducing the need for multiple API calls and providing complete context in a single request. This is useful when you need to retrieve related data for a specific object or collection an lowers the number of API calls needed therby reducing the load on the server and improving performence client side.
+
+The extend patern is based was orginally developed for the [Open Catalogi](https://opencatalogi.org) project and is now available in the ObjectStore API. Its baed on the extend functionality of [Zaak gericht werken](https://github.com/VNG-Realisatie/gemma-zaken) but brought in line with p[NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) by adding a _ prefix to the parameter
+
+Extention patern is suported trough the objects api
+
+Extend a single property:
+- `?_extend=author` - Include full author object
+- `?_extend=category` - Include full category object
+- `?_extend=files` - Include file metadata
+
+Extend nested properties:
+- `?_extend=author.organization` - Include author with their organization
+- `?_extend=department.employees` - Include department with all employees
+- `?_extend=project.tasks.assignee` - Include project with tasks and their assignees
+
+Combine multiple extensions:
+- `?_extend=author,category,comments` - Include multiple related objects
+- `?_extend=files,metadata,relations` - Include all related data
+- `?_extend=all` - Include all possible relations on the root object
+
+#### reverdedBy
 Objects van ce extended 
 
-### Inversion
+#### Inversion
 inversedBy
 
 
