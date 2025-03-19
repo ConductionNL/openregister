@@ -70,22 +70,7 @@ All objects are validated against their schema before being stored, ensuring dat
 ### Metadata
 Open Register keeps tabs on the metadata of objects, it always keeps tabs on the following feelds wherte or not if they ara part of the object. This data is stored in object entity but transfered to the @self property when the objects is serialized.
 
-| Field | Type | Description | Purpose |
-|-------|------|-------------|----------|
-| uuid | string | Unique universal identifier | Globally unique object identification |
-| uri | string | Uniform Resource Identifier | Unique addressable location |
-| version | string | Semantic version number | Track object versions |
-| register | string | Register identifier | Object categorization/grouping |
-| schema | string | Schema identifier | Data validation reference |
-| textRepresentation | text | Text representation of object | Search and display optimization |
-| locked | json | Lock information object | Concurrent access control |
-| owner | string | Nextcloud user identifier | Object ownership |
-| authorization | json | Authorization rules | Access control configuration |
-| updated | datetime | Last modification timestamp | Change tracking |
-| created | datetime | Creation timestamp | Lifecycle management |
-| folder | string | Storage folder path | File organization |
-| relations | json | Related object IDs | Track object relationships |
-| files | json | Related file IDs | Track associated files |
+<ApiSchema id="open-register" example pointer="#/components/schemas/@self" />
 
 ### 2. Relationships
 

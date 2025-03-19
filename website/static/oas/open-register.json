@@ -1336,58 +1336,99 @@
           }
         }
       },
+      "@self": {
+        "type": "object",
+        "properties": {
+          "id": { 
+            "type": "integer",
+            "description": "Unique identifier for the object",
+            "example": 123
+          },
+          "uuid": { 
+            "type": "string",
+            "description": "Unique universal identifier for globally unique object identification",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "uri": { 
+            "type": "string",
+            "description": "Uniform Resource Identifier for unique addressable location",
+            "example": "/api/objects/123e4567-e89b-12d3-a456-426614174000"
+          },
+          "version": { 
+            "type": "string",
+            "description": "Semantic version number to track object versions",
+            "example": "1.0"
+          },
+          "register": { 
+            "type": "integer",
+            "description": "Register identifier for object categorization/grouping",
+            "example": 123
+          },
+          "schema": { 
+            "type": "integer",
+            "description": "Schema identifier for data validation reference",
+            "example": 123
+          },
+          "textRepresentation": { 
+            "type": "string",
+            "description": "Text representation of object for search and display optimization",
+            "example": "John Doe, born 1980-01-15, email: john.doe@example.com"
+          },
+          "locked": { 
+            "type": "object",
+            "description": "Lock information object for concurrent access control",
+            "example": null
+          },
+          "owner": { 
+            "type": "string",
+            "description": "Nextcloud user identifier for object ownership",
+            "example": "user-12345"
+          },
+          "authorization": { 
+            "type": "object",
+            "description": "Authorization rules for access control configuration",
+            "example": { "read": true, "write": false }
+          },
+          "updated": { 
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp for change tracking",
+            "example": "2023-05-20T10:15:00Z"
+          },
+          "created": { 
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp for lifecycle management",
+            "example": "2023-02-15T14:30:00Z"
+          },
+          "folder": { 
+            "type": "string",
+            "description": "Storage folder path for file organization",
+            "example": "/persons/john-doe"
+          },
+          "files": { 
+            "type": "array",
+            "description": "Array of related file IDs to track associated files",
+            "items": { "type": "string" },
+            "example": ["123", "124"]
+          },
+          "relations": { 
+            "type": "array",
+            "description": "Array of related object IDs to track object relationships",
+            "items": { "type": "string" },
+            "example": {
+              "spouse": "123e4567-e89b-12d3-a456-426614174000"
+            }
+          }
+        }
+      },
       "SerializeEntity": {
         "type": "object",
         "properties": {
           "object": { "type": "object" },
           "@self": {
-            "type": "object",
-            "properties": {
-              "id": { 
-                "type": "integer",
-                "example": 123
-              },
-              "uuid": { 
-                "type": "string",
-                "example": "123e4567-e89b-12d3-a456-426614174000"
-              },
-              "uri": { 
-                "type": "string",
-                "example": "/api/objects/123e4567-e89b-12d3-a456-426614174000"
-              },
-              "version": { 
-                "type": "string",
-                "example": "1.0"
-              },
-              "register": { 
-                "type": "integer",
-                "example": 123
-              },
-              "schema": { 
-                "type": "integer",
-                "example": 123
-              },
-              "files": { 
-                "type": "array", 
-                "items": { "type": "string" },
-                "example": ["123", "124"]
-              },
-              "relations": { 
-                "type": "array", 
-                "items": { "type": "string" },
-                "example": {
-                  "spouse": "123e4567-e89b-12d3-a456-426614174000"
-                }
-              },
-              "locked": { 
-                "type": "object",
-                "example": null
-              },
-              "owner": { 
-                "type": "string",
-                "example": "user-12345"
-              }
-            }
+            "$ref": "#/components/schemas/@self"
+          }
           }
         }
       },
