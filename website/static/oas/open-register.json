@@ -11,28 +11,32 @@
       "description": "Base URL for API endpoints"
     }
   ],
+  "security": [
+    { "basicAuth": [] },
+    { "oauth2": ["read", "write"] }
+  ],
   "tags": [
     {
-      "name": "registers",
+      "name": "Registers",
       "description": "Operations related to registers"
     },
     {
-      "name": "schemas",
+      "name": "Schemas",
       "description": "Operations related to schemas and their properties"
     },
     {
-      "name": "sources",
+      "name": "Sources",
       "description": "Operations related to data sources"
     },
     {
-      "name": "objects",
+      "name": "Objects",
       "description": "Operations related to objects, including files, relationships, audit trails, and time travel"
     }
   ],
   "paths": {
     "/api/registers": {
       "get": {
-        "tags": ["registers"],
+        "tags": ["Registers"],
         "summary": "Get all registers",
         "operationId": "getRegisters",
         "responses": {
@@ -50,7 +54,7 @@
         }
       },
       "post": {
-        "tags": ["registers"],
+        "tags": ["Registers"],
         "summary": "Create a new register",
         "operationId": "createRegister",
         "requestBody": {
@@ -79,7 +83,7 @@
     },
     "/api/registers/{uuid}": {
       "get": {
-        "tags": ["registers"],
+        "tags": ["Registers"],
         "summary": "Get a register by UUID",
         "operationId": "getRegister",
         "parameters": [
@@ -106,7 +110,7 @@
         }
       },
       "put": {
-        "tags": ["registers"],
+        "tags": ["Registers"],
         "summary": "Update a register",
         "operationId": "updateRegister", 
         "parameters": [
@@ -143,7 +147,7 @@
         }
       },
       "delete": {
-        "tags": ["registers"],
+        "tags": ["Registers"],
         "summary": "Delete a register",
         "operationId": "deleteRegister",
         "parameters": [
@@ -165,7 +169,7 @@
     },
     "/api/schemas": {
       "get": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Get all schemas",
         "operationId": "getSchemas",
         "responses": {
@@ -183,7 +187,7 @@
         }
       },
       "post": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Create a new schema",
         "operationId": "createSchema",
         "requestBody": {
@@ -212,7 +216,7 @@
     },
     "/api/schemas/{uuid}": {
       "get": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Get a schema by UUID",
         "operationId": "getSchema",
         "parameters": [
@@ -239,7 +243,7 @@
         }
       },
       "put": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Update a schema",
         "operationId": "updateSchema",
         "parameters": [
@@ -276,7 +280,7 @@
         }
       },
       "delete": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Delete a schema",
         "operationId": "deleteSchema",
         "parameters": [
@@ -298,7 +302,7 @@
     },
     "/api/schemas/{uuid}/properties": {
       "get": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Get schema properties",
         "operationId": "getSchemaProperties",
         "parameters": [
@@ -325,7 +329,7 @@
         }
       },
       "post": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Add schema property",
         "operationId": "addSchemaProperty",
         "parameters": [
@@ -357,7 +361,7 @@
     },
     "/api/schemas/{uuid}/properties/{propertyName}": {
       "get": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Get schema property",
         "operationId": "getSchemaProperty",
         "parameters": [
@@ -392,7 +396,7 @@
         }
       },
       "put": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Update schema property",
         "operationId": "updateSchemaProperty",
         "parameters": [
@@ -430,7 +434,7 @@
         }
       },
       "delete": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Delete schema property",
         "operationId": "deleteSchemaProperty",
         "parameters": [
@@ -460,7 +464,7 @@
     },
     "/api/schemas/{uuid}/validate": {
       "post": {
-        "tags": ["schemas"],
+        "tags": ["Schemas"],
         "summary": "Validate data against schema",
         "operationId": "validateSchema",
         "parameters": [
@@ -510,7 +514,7 @@
     },
     "/api/sources": {
       "get": {
-        "tags": ["sources"],
+        "tags": ["Sources"],
         "summary": "Get all sources",
         "operationId": "getSources",
         "responses": {
@@ -528,7 +532,7 @@
         }
       },
       "post": {
-        "tags": ["sources"],
+        "tags": ["Sources"],
         "summary": "Create a new source",
         "operationId": "createSource",
         "requestBody": {
@@ -557,7 +561,7 @@
     },
     "/api/sources/{uuid}": {
       "get": {
-        "tags": ["sources"],
+        "tags": ["Sources"],
         "summary": "Get a source by UUID",
         "operationId": "getSource",
         "parameters": [
@@ -584,7 +588,7 @@
         }
       },
       "put": {
-        "tags": ["sources"],
+        "tags": ["Sources"],
         "summary": "Update a source",
         "operationId": "updateSource",
         "parameters": [
@@ -621,7 +625,7 @@
         }
       },
       "delete": {
-        "tags": ["sources"],
+        "tags": ["Sources"],
         "summary": "Delete a source",
         "operationId": "deleteSource",
         "parameters": [
@@ -643,7 +647,7 @@
     },
     "/api/objects": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get all objects",
         "operationId": "getObjects",
         "responses": {
@@ -661,7 +665,7 @@
         }
       },
       "post": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Create a new object",
         "operationId": "createObject",
         "requestBody": {
@@ -690,7 +694,7 @@
     },
     "/api/objects/{uuid}": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get an object by UUID",
         "operationId": "getObject",
         "parameters": [
@@ -717,7 +721,7 @@
         }
       },
       "put": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Update an object",
         "operationId": "updateObject",
         "parameters": [
@@ -754,7 +758,7 @@
         }
       },
       "delete": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Delete an object",
         "operationId": "deleteObject",
         "parameters": [
@@ -776,7 +780,7 @@
     },
     "/api/objects/{uuid}/relations": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get object relations",
         "operationId": "getObjectRelations",
         "parameters": [
@@ -810,7 +814,7 @@
         }
       },
       "post": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Add object relation",
         "operationId": "addObjectRelation",
         "parameters": [
@@ -847,7 +851,7 @@
     },
     "/api/objects/{uuid}/files": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get object files",
         "operationId": "getObjectFiles",
         "parameters": [
@@ -875,7 +879,7 @@
         }
       },
       "post": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Add file to object",
         "operationId": "addObjectFile",
         "parameters": [
@@ -920,7 +924,7 @@
     },
     "/api/objects/{uuid}/lock": {
       "post": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Lock an object",
         "operationId": "lockObject",
         "parameters": [
@@ -952,7 +956,7 @@
     },
     "/api/objects/{uuid}/unlock": {
       "post": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Unlock an object",
         "operationId": "unlockObject",
         "parameters": [
@@ -988,7 +992,7 @@
     },
     "/api/objects/{uuid}/audit-trails": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get object audit trails",
         "operationId": "getObjectAuditTrails",
         "parameters": [
@@ -1018,7 +1022,7 @@
     },
     "/api/objects/{uuid}/versions/{version}": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get specific object version",
         "operationId": "getObjectVersion",
         "parameters": [
@@ -1055,7 +1059,7 @@
     },
     "/api/objects/{uuid}/at/{timestamp}": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Get object at specific point in time",
         "operationId": "getObjectAtTimestamp",
         "parameters": [
@@ -1093,7 +1097,7 @@
     },
     "/api/objects/{uuid}/compare": {
       "get": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Compare object versions",
         "operationId": "compareObjectVersions",
         "parameters": [
@@ -1142,7 +1146,7 @@
     },
     "/api/objects/{uuid}/restore": {
       "post": {
-        "tags": ["objects"],
+        "tags": ["Objects"],
         "summary": "Restore object to previous version",
         "operationId": "restoreObject",
         "parameters": [
@@ -1189,6 +1193,28 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using username and password. Not recommended for production use."
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth2 authentication using Nextcloud's authentication server.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "/apps/oauth2/authorize",
+            "tokenUrl": "/apps/oauth2/api/v1/token",
+            "refreshUrl": "/apps/oauth2/api/v1/token",
+            "scopes": {
+              "read": "Read access to all resources",
+              "write": "Write access to all resources"
+            }
+          }
+        }
+      }
+    },
     "schemas": {
       "Register": {
         "type": "object",

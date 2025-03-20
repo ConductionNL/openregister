@@ -1,5 +1,5 @@
 ---
-title: Regsiters
+title: Register
 sidebar_position: 1
 description: An overview of how core concepts in Open Register interact with each other.
 keywords:
@@ -21,40 +21,15 @@ In Open Register, a **Register** is a specialized container that holds objects c
 - A **collection** of related data objects
 - A **domain-specific database** focused on a particular subject area
 - A **logical grouping** of information with common validation rules
+- A **database** for structured data storage
+- A **object store** for unstructured data
+- A **data lake** for large-scale data storage and analysis
 
 Registers provide a way to organize data by purpose, domain, or function, making it easier to manage and retrieve related information.
 
 ## Register Structure
 
-A register consists of the following key components:
-
-| Property | Description |
-|----------|-------------|
-| `id` | Unique identifier for the register |
-| `title` | Human-readable name of the register |
-| `description` | Detailed explanation of the register's purpose |
-| `schemas` | Array of schema IDs that this register supports |
-| `source` | The data source identifier for storage |
-| `databaseId` | Database identifier where register data is stored |
-| `tablePrefix` | Prefix for database tables used by this register |
-| `updated` | Timestamp of last update |
-| `created` | Timestamp of creation |
-
-## Example Register
-
-```json
-{
-  "id": "person-register",
-  "title": "Person Register",
-  "description": "Central register for person data across the organization",
-  "schemas": ["person", "address", "contact-details"],
-  "source": "primary-source",
-  "databaseId": "main-db",
-  "tablePrefix": "person_",
-  "updated": "2023-05-15T14:30:00Z",
-  "created": "2023-01-10T09:15:00Z"
-}
-```
+<ApiSchema id="open-register" example   pointer="#/components/schemas/Register" />
 
 ## Register Use Cases
 
@@ -76,6 +51,12 @@ Organize data by business domains such as:
 Use registers as integration points between different systems, providing a standardized way to exchange data.
 
 ## Working with Registers
+## Introduction
+
+Registers in Open Register can be maintained through both the user interface (UI) and the API. This flexibility allows users to manage registers in a way that best suits their workflow and technical capabilities. 
+
+For detailed information on the API endpoints and how to use them, please refer to the [API documentation for registers](https://openregisters.app/api#tag/Registers).
+
 
 ### Creating a Register
 
