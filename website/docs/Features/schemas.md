@@ -242,6 +242,95 @@ PUT /api/schemas/{id}
 
 ### Schema Versioning
 
+Open Register supports schema versioning to manage changes over time:
+
+1. **Minor Updates**: Adding optional fields or relaxing constraints
+2. **Major Updates**: Adding required fields, removing fields, or changing field types
+3. **Archive**: Previous versions are stored in the schema's archive property
+
+### Schema Relationships
+
+Open Register supports two powerful relationship mechanisms: inversion and revertedBy. These features enable complex data modeling and version control capabilities.
+
+#### Inversion
+
+Inversion is a powerful feature that enables bidirectional relationships between objects. When you define an inverse relationship in a schema, changes in one object automatically propagate to related objects, maintaining data consistency across your system.
+
+**Key Features of Inversion:**
+
+1. **Bidirectional Updates**
+   - Changes in the source object reflect in the target object
+   - Updates are automatically synchronized
+   - Maintains referential integrity
+
+2. **Schema Definition**
+   ```json
+   {
+     "properties": {
+       "manager": {
+         "type": "object",
+         "inversedBy": "subordinates",
+         "description": "The person's manager"
+       },
+       "subordinates": {
+         "type": "array",
+         "items": {
+           "type": "object"
+         },
+         "description": "People reporting to this person"
+       }
+     }
+   }
+   ```
+
+3. **Use Cases**
+   - Parent-child relationships
+   - Manager-subordinate hierarchies
+   - Document-revision chains
+   - Project-task dependencies
+
+4. **Benefits**
+   - Automatic relationship maintenance
+   - Reduced manual synchronization
+   - Improved data consistency
+   - Simplified relationship management
+
+#### RevertedBy
+
+The revertedBy property is a crucial part of Open Register's version control system. It enables tracking of object reversions, allowing you to maintain a complete history of changes and their reversions.
+
+**Key Features of RevertedBy:**
+
+1. **Version Control**
+   - Tracks which object this version was reverted from
+   - Maintains reversion history
+   - Enables rollback capabilities
+
+2. **Schema Definition**
+   ```json
+   {
+     "properties": {
+       "revertedBy": {
+         "type": "string",
+         "description": "UUID of the object this version was reverted from",
+         "format": "uuid"
+       }
+     }
+   }
+   ```
+
+3. **Use Cases**
+   - Undoing changes
+   - Restoring previous versions
+   - Audit trail maintenance
+   - Compliance requirements
+
+4. **Benefits**
+   - Complete change history
+   - Audit trail preservation
+   - Compliance support
+   - Data recovery options
+
 ### Schema Import & Sharing
 
 Open Register provides powerful schema import capabilities, allowing organizations to leverage existing standards and share their own schemas through Open Catalogi.
@@ -310,12 +399,6 @@ Organizations can share their schemas through Open Catalogi:
    - Version management
    - Change tracking
    - Documentation
-
-Open Register supports schema versioning to manage changes over time:
-
-1. **Minor Updates**: Adding optional fields or relaxing constraints
-2. **Major Updates**: Adding required fields, removing fields, or changing field types
-3. **Archive**: Previous versions are stored in the schema's archive property
 
 ## Schema Design Best Practices
 

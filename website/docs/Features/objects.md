@@ -39,43 +39,54 @@ All objects are stored as object entities, or json objects holding both the meta
   </TabItem>
 </Tabs>
 
+## Creating objects
 
+### Creating Objects
 
-## Example Object
+To create an object in Open Register, you need to ensure that both the register and schema are in place. An object always refers to a specific register and conforms to a defined schema. 
 
-```json
-{
-  "id": "person-12345",
-  "uuid": "123e4567-e89b-12d3-a456-426614174000",
-  "uri": "/api/objects/person-12345",
-  "register": "person-register",
-  "schema": "person",
-  "object": "{\"firstName\":\"John\",\"lastName\":\"Doe\",\"birthDate\":\"1980-01-15\",\"email\":\"john.doe@example.com\",\"address\":{\"street\":\"123 Main St\",\"city\":\"Anytown\",\"postalCode\":\"12345\",\"country\":\"USA\"},\"phoneNumbers\":[{\"type\":\"mobile\",\"number\":\"555-123-4567\"}]}",
-  "relations": "[{\"type\":\"spouse\",\"target\":\"person-67890\"}]",
-  "files": "[{\"id\":\"file-12345\",\"name\":\"profile.jpg\",\"contentType\":\"image/jpeg\",\"size\":24680,\"url\":\"/api/files/file-12345\"}]",
-  "folder": "/persons/john-doe",
-  "updated": "2023-05-20T10:15:00Z",
-  "created": "2023-02-15T14:30:00Z",
-  "locked": null,
-  "owner": "user-12345"
-}
-```
+Objects can be created using the 'POST /api/objects' endpoint. This endpoint allows you to submit a new object that adheres to the schema associated with the specified register.
+
+Here is a brief overview of the steps to create an object:
+
+1. **Ensure Register and Schema are in Place**:
+   - Before creating an object, make sure that the register and schema you want to use are already created and available in the system.
+
+2. **Prepare the Object Data**:
+   - Structure your object data according to the schema defined for the register. This ensures that the object will be validated and stored correctly.
+
+3. **Make the API Request**:
+   - Use the 'POST /api/objects' endpoint to submit your object data. The request should include the necessary information to identify the register and conform to the schema.
+
+For detailed information on the API endpoint and how to use it, please refer to the [API documentation for creating objects](https://openregisters.app/api#tag/objects/operation/createObject).
+
+Right now objects can be added from the Objects menu item and then the "Add object option". Afhter selecting a Register and Schema an object can be added in pure json format
+
+![Add Object](../immages/add_object.png)
+
 
 ## Object Features
 
-### 1. Schema Validation
+### Schema Validation
 
-All objects are validated against their schema before being stored, ensuring data quality and consistency.
+All objects are validated against their schema before being stored, ensuring data quality and consistency. You can read more about schema validation under [schema](#schema).
 
 ### Serialisation
 
+In Open Register, objects or lists of objects can be serialized based on the header request. This means that all responses are available in both JSON and XML formats. The serialization format is determined by the `Accept` header in the request. 
+
+For example:
+- To receive the response in JSON format, set the `Accept` header to `application/json`.
+- To receive the response in XML format, set the `Accept` header to `application/xml`.
+
+This flexibility allows clients to choose the most suitable format for their needs, ensuring compatibility with various systems and applications.
 
 ### Metadata
 Open Register keeps track of the metadata of objects, it always keeps track of the following fields whether or not they are part of the object. This data is stored in object entity but transferred to the @self property when the object is serialized.
 
 <ApiSchema id="open-register" example pointer="#/components/schemas/@self" />
 
-### 2. Relationships
+### Relationships
 Object Relations enable the creation and management of connections between objects, supporting complex data structures and relationships.
 
 The relations system provides:
@@ -84,7 +95,7 @@ The relations system provides:
 - Relationship metadata
 - Integrity management
 
-## Key Benefits
+** Key Benefits **
 
 1. **Data Organization**
    - Model complex relationships
@@ -115,10 +126,38 @@ Objects can have relationships with other objects, creating a network of connect
   }
 ```
 
-#### Extending
+### Extending
 Data Extension allows you to automatically include related entities in API responses, reducing the need for multiple API calls and providing complete context in a single request. This is useful when you need to retrieve related data for a specific object or collection an lowers the number of API calls needed therby reducing the load on the server and improving performence client side.
 
 The extend patern is based was orginally developed for the [Open Catalogi](https://opencatalogi.org) project and is now available in the ObjectStore API. Its baed on the extend functionality of [Zaak gericht werken](https://github.com/VNG-Realisatie/gemma-zaken) but brought in line with p[NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) by adding a _ prefix to the parameter
+
+**Key Benefits of Extending**
+
+1. **Efficiency**
+   - Reduce the number of API calls
+   - Minimize server load
+   - Improve client-side performance
+
+2. **Contextual Data**
+   - Provide complete context in a single request
+   - Include related entities automatically
+   - Simplify data retrieval
+
+3. **Flexibility**
+   - Extend single or multiple properties
+   - Support nested property extensions
+   - Combine multiple extensions in one request
+
+4. **Consistency**
+   - Ensure consistent data representation
+   - Maintain data integrity across related entities
+   - Simplify data management and integration
+
+5. **Scalability**
+   - Handle complex data structures efficiently
+   - Support large-scale data operations
+   - Enhance overall system scalability
+
 
 Extention patern is suported trough the objects api
 
@@ -137,11 +176,11 @@ Combine multiple extensions:
 - `?_extend=files,metadata,relations` - Include all related data
 - `?_extend=all` - Include all possible relations on the root object
 
-#### reverdedBy
-Objects van ce extended 
+### revertedBy
+The `revertedBy` property indicates which object this object was reverted from. This is part of Open Register's version control system, allowing you to track the history of object changes and reversions. For more details about how this works with schemas, see [Schema Relationships](Features/schemas.md#schema-relationships).
 
-#### Inversion
-inversedBy
+### inversedBy
+The `inversedBy` property represents inverse relationships between objects. It's used to maintain bidirectional relationships, where changes in one object automatically reflect in related objects. For more information about inverse relationships and how they work with schemas, see [Schema Relationships](Features/schemas.md#schema-relationships).
 
 ### Locking
 
@@ -169,22 +208,26 @@ Locks are by default created for five minutes but can be created for any duratio
    - Transparent lock status
    - Managed access control
 
+The Lock object is a crucial component in Open Register's locking mechanism. It is used to manage and enforce locks on objects, ensuring data integrity and preventing concurrent modifications. The Lock object contains information about the lock, such as the user who created it, the duration of the lock, and the timestamp when the lock was created.
+
 <ApiSchema id="open-register" example pointer="#/components/schemas/Lock" />
 
-### 3. File Attachments
+### File Attachments
 
-File Attachments allow objects to include and manage associated files and documents. Open Register leverages Nextcloud's powerful file storage capabilities to provide a robust and secure file management system. By building on top of Nextcloud's proven infrastructure, Open Register inherits all the benefits of Nextcloud's file handling including:
+File Attachments enable objects to incorporate and manage associated files and documents seamlessly. Open Register utilizes Nextcloud's advanced file storage capabilities to offer a comprehensive and secure file management system. By integrating with Nextcloud's established infrastructure, Open Register benefits from various file handling features, including:
 
 - Secure file storage and encryption
 - File versioning and history
-- Collaborative features like sharing and commenting
+- Collaborative features such as sharing and commenting
 - Preview generation for supported file types
 - Automated virus scanning
-- Flexible storage backend support
+- Support for flexible storage backends
 
-When a register is created in Open Register, a share is also automatically created in Nextcloud. Then when a schema is created, a folder is created within that share, and when an object is created, a folder is created (using the UUID of the object) in the folder of the schema. This means that every object has a corresponding folder. Files present in that folder are assumed to be attached to the object. This gives a simple and intuitive system of coupling files to objects.
+Upon the creation of a register in Open Register, a corresponding share is automatically established in Nextcloud. Subsequently, when a schema is created, a folder is generated within that share. As objects are created, folders are established (using the UUID of the object) within the schema's folder. This structure ensures that each object has a dedicated folder, facilitating a straightforward and intuitive method for associating files with objects.
 
-Alternatively, users can also relate (existing) files to an object by using the Nextcloud file system and tagging the file 'object:[uuid]' where '[uuid]' is the UUID of the object. In neither case is there a relation between the file and a property in the object. The files are however available through the object API because file objects are returned in the object metadata under the files array.
+Alternatively, users can associate existing files with an object by utilizing the Nextcloud file system and tagging the file with 'object:[uuid]', where '[uuid]' represents the object's UUID. In both scenarios, there is no direct relationship between the file and a property within the object. However, the files are accessible through the object API, as file objects are included in the object metadata under the files array.
+
+For more detailed information on file management and integration, please refer to the [Files Documentation](Features/files.md).
 
 <ApiSchema id="open-register" example pointer="#/components/schemas/File" />
 
@@ -209,7 +252,38 @@ The deletion system provides:
 6. Deleted objects can be restored until purge date
 7. Objects are only permanently deleted after retention period
 
-## Key Benefits
+```mermaid
+sequenceDiagram
+    participant User
+    participant OpenRegister
+    participant Nextcloud
+
+    User->>OpenRegister: Create Register
+    OpenRegister->>Nextcloud: Create Share
+    Nextcloud-->>OpenRegister: Share Created
+
+    User->>OpenRegister: Create Schema
+    OpenRegister->>Nextcloud: Create Folder in Share
+    Nextcloud-->>OpenRegister: Folder Created
+
+    User->>OpenRegister: Create Object
+    OpenRegister->>Nextcloud: Create Folder in Schema Folder
+    Nextcloud-->>OpenRegister: Folder Created
+
+    User->>Nextcloud: Upload File
+    Nextcloud-->>User: File Uploaded
+
+    User->>Nextcloud: Tag File with 'object:[uuid]'
+    Nextcloud-->>User: File Tagged
+
+    User->>OpenRegister: Retrieve Object
+    OpenRegister->>Nextcloud: Retrieve Files for Object
+    Nextcloud-->>OpenRegister: Files Retrieved
+    OpenRegister-->>User: Object with Files Metadata
+
+```
+
+**Key Benefits**
 
 1. **Data Safety**
    - Prevent accidental data loss
