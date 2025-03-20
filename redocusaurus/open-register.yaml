@@ -691,42 +691,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AuditTrail'
-  /api/objects/{uuid}/history:
-    get:
-      tags:
-        - objects
-      summary: Get object version history
-      operationId: getObjectHistory
-      parameters:
-        - name: uuid
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Object version history
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  versions:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        version:
-                          type: string
-                        timestamp:
-                          type: string
-                          format: date-time
-                        user:
-                          type: string
-                        action:
-                          type: string
   /api/objects/{uuid}/versions/{version}:
     get:
       tags:
@@ -1117,6 +1081,15 @@ components:
             type: string
           example:
             spouse: 123e4567-e89b-12d3-a456-426614174000
+        errors:
+          type: array
+          description: >-
+            Array of error messages encounterd during the rendering process of
+            this object
+          items:
+            type: string
+          example:
+            - Property 'spouse' could not be extended because it does not exist.
     SerializeEntity:
       type: object
       properties:
