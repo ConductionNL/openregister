@@ -6,67 +6,28 @@ on:
       - documentation
 
 jobs:
-  generate-docs:
+  docs:
     runs-on: ubuntu-latest
     
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: dom, mbstring
-          
-      - name: Install phpDocumentor
-        run: |
-          wget https://phpdoc.org/phpDocumentor.phar
-          chmod +x phpDocumentor.phar
-          mv phpDocumentor.phar /usr/local/bin/phpDocumentor
-          
-      - name: Install Pandoc
-        run: sudo apt-get install -y pandoc
+          extensions: dom, mbstring, intl
+          coverage: none
+          tools: phpdoc-to-markdown
 
-      - name: Generate Documentation
-        run: |
-          mkdir -p website/docs/Development/Services
-          for file in lib/Service/*.php; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file" .php)
-              # Generate HTML documentation
-              phpDocumentor \
-                --directory="lib/Service" \
-                --target="temp_docs" \
-                --filename="$file" \
-                --template="default" \
-                --title="${filename} Service Documentation" \
-                --defaultpackagename="OpenRegister" \
-                --force
-              
-              # Find the generated HTML file for this class
-              html_file=$(find temp_docs -type f -name "${filename}.html")
-              
-              if [ -f "$html_file" ]; then
-                # Convert HTML to Markdown
-                pandoc \
-                  --from html \
-                  --to markdown_strict \
-                  --wrap=none \
-                  --standalone \
-                  "$html_file" \
-                  -o "website/docs/Development/Services/${filename}.md"
-                
-                # Add frontmatter
-                sed -i.bak "1i---\ntitle: ${filename} Service\nsidebar_position: 1\ndescription: Documentation for the ${filename} Service\n---\n\n" \
-                  "website/docs/Development/Services/${filename}.md"
-                rm "website/docs/Development/Services/${filename}.md.bak"
-              fi
-            fi
-          done
-          
-          # Cleanup temporary files
-          rm -rf temp_docs
-          
+      - name: Generate Markdown Documentation
+        uses: DamienHarper/phpdoc-to-markdown-action@v1
+        with:
+          input: lib/Service
+          output: website/docs/Development/Services
+          exclude: 'tests,vendor'
+          check: false
+
       - name: Create Index File
         run: |
           echo "---" > website/docs/Development/Services/index.md
@@ -87,7 +48,7 @@ jobs:
               echo "- [${filename}](./${filename})" >> website/docs/Development/Services/index.md
             fi
           done
-          
+
       - name: Commit and Push Changes
         run: |
           git config --local user.email "action@github.com"
