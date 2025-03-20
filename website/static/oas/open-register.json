@@ -1016,50 +1016,6 @@
         }
       }
     },
-    "/api/objects/{uuid}/history": {
-      "get": {
-        "tags": ["objects"],
-        "summary": "Get object version history",
-        "operationId": "getObjectHistory",
-        "parameters": [
-          {
-            "name": "uuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Object version history",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": { "type": "string" },
-                    "versions": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "version": { "type": "string" },
-                          "timestamp": { "type": "string", "format": "date-time" },
-                          "user": { "type": "string" },
-                          "action": { "type": "string" }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/objects/{uuid}/versions/{version}": {
       "get": {
         "tags": ["objects"],

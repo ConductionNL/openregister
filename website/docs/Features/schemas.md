@@ -43,6 +43,168 @@ A schema in Open Register follows the JSON Schema specification (see [JSON Schem
 | `updated` | Timestamp of last update |
 | `created` | Timestamp of creation |
 
+## Schema Validation
+
+Open Register provides robust schema validation capabilities to ensure data integrity and quality. The validation system is built on top of JSON Schema validation and includes additional custom validation rules.
+
+### Validation Types
+
+1. **Type Validation**
+   - Ensures data types match schema definitions
+   - Validates string, number, boolean, object, and array types
+   - Checks format specifications (email, date, URI, etc.)
+
+2. **Required Fields**
+   - Validates presence of mandatory fields
+   - Supports conditional requirements
+   - Handles nested required fields
+
+3. **Constraints**
+   - Minimum/maximum values for numbers
+   - String length limits
+   - Pattern matching for strings
+   - Array size limits
+   - Custom validation rules
+
+4. **Relationships**
+   - Validates object references
+   - Checks relationship integrity
+   - Ensures bidirectional relationships
+
+### Custom Validation Rules
+
+Open Register supports custom validation rules through PHP classes. These rules can be defined in your schema:
+
+```json
+{
+  "properties": {
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 150,
+      "customValidation": {
+        "class": "OCA\\OpenRegister\\Validation\\AgeValidator",
+        "method": "validate"
+      }
+    }
+  }
+}
+```
+
+### Validation Process
+
+1. **Pre-validation**
+   - Schema structure validation
+   - Custom rule registration
+   - Relationship validation setup
+
+2. **Data Validation**
+   - Type checking
+   - Required field verification
+   - Constraint validation
+   - Custom rule execution
+
+3. **Post-validation**
+   - Relationship integrity check
+   - Cross-field validation
+   - Business rule validation
+
+### Error Handling
+
+The validation system provides detailed error messages:
+
+```json
+{
+  "valid": false,
+  "errors": [
+    {
+      "field": "email",
+      "message": "Invalid email format",
+      "code": "INVALID_EMAIL"
+    },
+    {
+      "field": "age",
+      "message": "Age must be between 0 and 150",
+      "code": "INVALID_AGE"
+    }
+  ]
+}
+```
+
+### Best Practices
+
+1. **Validation Design**
+   - Define clear validation rules
+   - Use appropriate constraints
+   - Consider performance impact
+   - Document custom rules
+
+2. **Error Messages**
+   - Provide clear error descriptions
+   - Include helpful suggestions
+   - Use consistent error codes
+   - Support multiple languages
+
+3. **Performance**
+   - Optimize validation rules
+   - Cache validation results
+   - Batch validate when possible
+   - Monitor validation times
+
+### Example Schema with Validation
+
+```json
+{
+  "title": "Person",
+  "version": "1.0.0",
+  "required": ["firstName", "lastName", "email", "age"],
+  "properties": {
+    "firstName": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50,
+      "pattern": "^[A-Za-z\\s-]+$",
+      "description": "Person's first name"
+    },
+    "lastName": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50,
+      "pattern": "^[A-Za-z\\s-]+$",
+      "description": "Person's last name"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Person's email address"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 150,
+      "description": "Person's age"
+    },
+    "phoneNumbers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "number"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["home", "work", "mobile"]
+          },
+          "number": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{1,14}$"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## Property Structure
 
 Before diving into schema examples, let's understand the key components of a property definition. These components are primarily derived from JSON Schema specifications (see [JSON Schema Validation](https://json-schema.org/draft/2020-12/json-schema-validation.html)) with some additional extensions required for storage and validation purposes:
