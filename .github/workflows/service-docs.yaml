@@ -2,8 +2,6 @@ name: Generate Service Documentation
 
 on:
   push:
-    paths:
-      - 'lib/Service/**/*.php'
     branches:
       - documentation
 
