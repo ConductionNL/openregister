@@ -6,7 +6,6 @@ on:
       - 'lib/Service/**/*.php'
     branches:
       - documentation
-  workflow_dispatch:
 
 jobs:
   generate-docs:
