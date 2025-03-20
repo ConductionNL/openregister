@@ -10,7 +10,6 @@ keywords:
 import ApiSchema from '@theme/ApiSchema';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import Mermaid from '@theme/Mermaid';
 
 
 # Core Features
@@ -21,24 +20,19 @@ One of the most powerful aspects of Open Register is how its core concepts inter
 
 The core entities in Open Register - Registers, Schemas, Objects, Files, Sources, and Events - form an interconnected system:
 
-<Mermaid
-  value={`
-graph TD
-    Register[Registers] -->|contain| Object[Objects]
-    Register -->|support| Schema[Schemas]
-    Object -->|conform to| Schema
-    Register -->|stored in| Source[Sources]
-    Object -->|stored in| Source
-    Schema -->|stored in| Source
-    Object -->|relate to| Object
-    Object -->|has| File[Files]
-    File -->|stored in| Source
-    Schema -->|defines| File
-    Object -->|trigger| Event[Events]
-    Register -->|trigger| Event
-    Schema -->|trigger| Event
-    File -->|trigger| Event`}
-/>
+```mermaid
+architecture-beta
+    group api(cloud)[API]
+
+    service db(database)[Database] in api
+    service disk1(disk)[Storage] in api
+    service disk2(disk)[Storage] in api
+    service server(server)[Server] in api
+
+    db:L -- R:server
+    disk1:T -- B:server
+    disk2:T -- B:db
+ ```
 
 ## Register-Schema Relationship
 
