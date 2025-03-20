@@ -8,14 +8,19 @@ info:
 servers:
   - url: /apps/openregister/api
     description: Base URL for API endpoints
+security:
+  - basicAuth: []
+  - oauth2:
+      - read
+      - write
 tags:
-  - name: registers
+  - name: Registers
     description: Operations related to registers
-  - name: schemas
+  - name: Schemas
     description: Operations related to schemas and their properties
-  - name: sources
+  - name: Sources
     description: Operations related to data sources
-  - name: objects
+  - name: Objects
     description: >-
       Operations related to objects, including files, relationships, audit
       trails, and time travel
@@ -23,7 +28,7 @@ paths:
   /api/registers:
     get:
       tags:
-        - registers
+        - Registers
       summary: Get all registers
       operationId: getRegisters
       responses:
@@ -37,7 +42,7 @@ paths:
                   $ref: '#/components/schemas/Register'
     post:
       tags:
-        - registers
+        - Registers
       summary: Create a new register
       operationId: createRegister
       requestBody:
@@ -56,7 +61,7 @@ paths:
   /api/registers/{uuid}:
     get:
       tags:
-        - registers
+        - Registers
       summary: Get a register by UUID
       operationId: getRegister
       parameters:
@@ -74,7 +79,7 @@ paths:
                 $ref: '#/components/schemas/Register'
     put:
       tags:
-        - registers
+        - Registers
       summary: Update a register
       operationId: updateRegister
       parameters:
@@ -98,7 +103,7 @@ paths:
                 $ref: '#/components/schemas/Register'
     delete:
       tags:
-        - registers
+        - Registers
       summary: Delete a register
       operationId: deleteRegister
       parameters:
@@ -113,7 +118,7 @@ paths:
   /api/schemas:
     get:
       tags:
-        - schemas
+        - Schemas
       summary: Get all schemas
       operationId: getSchemas
       responses:
@@ -127,7 +132,7 @@ paths:
                   $ref: '#/components/schemas/Schema'
     post:
       tags:
-        - schemas
+        - Schemas
       summary: Create a new schema
       operationId: createSchema
       requestBody:
@@ -146,7 +151,7 @@ paths:
   /api/schemas/{uuid}:
     get:
       tags:
-        - schemas
+        - Schemas
       summary: Get a schema by UUID
       operationId: getSchema
       parameters:
@@ -164,7 +169,7 @@ paths:
                 $ref: '#/components/schemas/Schema'
     put:
       tags:
-        - schemas
+        - Schemas
       summary: Update a schema
       operationId: updateSchema
       parameters:
@@ -188,7 +193,7 @@ paths:
                 $ref: '#/components/schemas/Schema'
     delete:
       tags:
-        - schemas
+        - Schemas
       summary: Delete a schema
       operationId: deleteSchema
       parameters:
@@ -203,7 +208,7 @@ paths:
   /api/schemas/{uuid}/properties:
     get:
       tags:
-        - schemas
+        - Schemas
       summary: Get schema properties
       operationId: getSchemaProperties
       parameters:
@@ -221,7 +226,7 @@ paths:
                 type: object
     post:
       tags:
-        - schemas
+        - Schemas
       summary: Add schema property
       operationId: addSchemaProperty
       parameters:
@@ -242,7 +247,7 @@ paths:
   /api/schemas/{uuid}/properties/{propertyName}:
     get:
       tags:
-        - schemas
+        - Schemas
       summary: Get schema property
       operationId: getSchemaProperty
       parameters:
@@ -265,7 +270,7 @@ paths:
                 type: object
     put:
       tags:
-        - schemas
+        - Schemas
       summary: Update schema property
       operationId: updateSchemaProperty
       parameters:
@@ -290,7 +295,7 @@ paths:
           description: Property updated successfully
     delete:
       tags:
-        - schemas
+        - Schemas
       summary: Delete schema property
       operationId: deleteSchemaProperty
       parameters:
@@ -310,7 +315,7 @@ paths:
   /api/schemas/{uuid}/validate:
     post:
       tags:
-        - schemas
+        - Schemas
       summary: Validate data against schema
       operationId: validateSchema
       parameters:
@@ -342,7 +347,7 @@ paths:
   /api/sources:
     get:
       tags:
-        - sources
+        - Sources
       summary: Get all sources
       operationId: getSources
       responses:
@@ -356,7 +361,7 @@ paths:
                   $ref: '#/components/schemas/Source'
     post:
       tags:
-        - sources
+        - Sources
       summary: Create a new source
       operationId: createSource
       requestBody:
@@ -375,7 +380,7 @@ paths:
   /api/sources/{uuid}:
     get:
       tags:
-        - sources
+        - Sources
       summary: Get a source by UUID
       operationId: getSource
       parameters:
@@ -393,7 +398,7 @@ paths:
                 $ref: '#/components/schemas/Source'
     put:
       tags:
-        - sources
+        - Sources
       summary: Update a source
       operationId: updateSource
       parameters:
@@ -417,7 +422,7 @@ paths:
                 $ref: '#/components/schemas/Source'
     delete:
       tags:
-        - sources
+        - Sources
       summary: Delete a source
       operationId: deleteSource
       parameters:
@@ -432,7 +437,7 @@ paths:
   /api/objects:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get all objects
       operationId: getObjects
       responses:
@@ -446,7 +451,7 @@ paths:
                   $ref: '#/components/schemas/ObjectEntity'
     post:
       tags:
-        - objects
+        - Objects
       summary: Create a new object
       operationId: createObject
       requestBody:
@@ -465,7 +470,7 @@ paths:
   /api/objects/{uuid}:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get an object by UUID
       operationId: getObject
       parameters:
@@ -483,7 +488,7 @@ paths:
                 $ref: '#/components/schemas/ObjectEntity'
     put:
       tags:
-        - objects
+        - Objects
       summary: Update an object
       operationId: updateObject
       parameters:
@@ -507,7 +512,7 @@ paths:
                 $ref: '#/components/schemas/ObjectEntity'
     delete:
       tags:
-        - objects
+        - Objects
       summary: Delete an object
       operationId: deleteObject
       parameters:
@@ -522,7 +527,7 @@ paths:
   /api/objects/{uuid}/relations:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get object relations
       operationId: getObjectRelations
       parameters:
@@ -547,7 +552,7 @@ paths:
                       type: string
     post:
       tags:
-        - objects
+        - Objects
       summary: Add object relation
       operationId: addObjectRelation
       parameters:
@@ -576,7 +581,7 @@ paths:
   /api/objects/{uuid}/files:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get object files
       operationId: getObjectFiles
       parameters:
@@ -596,7 +601,7 @@ paths:
                   $ref: '#/components/schemas/File'
     post:
       tags:
-        - objects
+        - Objects
       summary: Add file to object
       operationId: addObjectFile
       parameters:
@@ -625,7 +630,7 @@ paths:
   /api/objects/{uuid}/lock:
     post:
       tags:
-        - objects
+        - Objects
       summary: Lock an object
       operationId: lockObject
       parameters:
@@ -647,7 +652,7 @@ paths:
   /api/objects/{uuid}/unlock:
     post:
       tags:
-        - objects
+        - Objects
       summary: Unlock an object
       operationId: unlockObject
       parameters:
@@ -673,7 +678,7 @@ paths:
   /api/objects/{uuid}/audit-trails:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get object audit trails
       operationId: getObjectAuditTrails
       parameters:
@@ -694,7 +699,7 @@ paths:
   /api/objects/{uuid}/versions/{version}:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get specific object version
       operationId: getObjectVersion
       parameters:
@@ -718,7 +723,7 @@ paths:
   /api/objects/{uuid}/at/{timestamp}:
     get:
       tags:
-        - objects
+        - Objects
       summary: Get object at specific point in time
       operationId: getObjectAtTimestamp
       parameters:
@@ -743,7 +748,7 @@ paths:
   /api/objects/{uuid}/compare:
     get:
       tags:
-        - objects
+        - Objects
       summary: Compare object versions
       operationId: compareObjectVersions
       parameters:
@@ -777,7 +782,7 @@ paths:
   /api/objects/{uuid}/restore:
     post:
       tags:
-        - objects
+        - Objects
       summary: Restore object to previous version
       operationId: restoreObject
       parameters:
@@ -811,6 +816,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObjectEntity'
 components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: >-
+        Basic authentication using username and password. Not recommended for
+        production use.
+    oauth2:
+      type: oauth2
+      description: OAuth2 authentication using Nextcloud's authentication server.
+      flows:
+        authorizationCode:
+          authorizationUrl: /apps/oauth2/authorize
+          tokenUrl: /apps/oauth2/api/v1/token
+          refreshUrl: /apps/oauth2/api/v1/token
+          scopes:
+            read: Read access to all resources
+            write: Write access to all resources
   schemas:
     Register:
       type: object
