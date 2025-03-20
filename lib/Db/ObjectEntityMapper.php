@@ -550,7 +550,8 @@ class ObjectEntityMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_objects')
             ->orWhere($qb->expr()->in('id',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uuid',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            ->orWhere($qb->expr()->in('uuid',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uri',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
         return $this->findEntities($qb);
     }

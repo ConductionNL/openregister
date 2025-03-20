@@ -121,7 +121,7 @@ class ObjectsController extends Controller
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($objects as $key => $object) {
-            $objects[$key] = $this->objectService->renderEntity(entity: $object->getObjectArray(), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+            $objects[$key] = $this->objectService->renderEntity(entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         }
 
 		$results =  [
@@ -155,7 +155,14 @@ class ObjectsController extends Controller
 		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
 
         try {
-            return new JSONResponse($this->objectService->renderEntity(entity: $this->objectEntityMapper->find((int) $id)->getObjectArray()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+            return new JSONResponse(
+                $this->objectService->renderEntity(
+                    entity: $this->objectEntityMapper->find($id)->jsonSerialize(),
+                    extend: $extend,
+                    filter: $filter,
+                    fields:  $fields
+                )
+            );
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
