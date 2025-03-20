@@ -1,0 +1,89 @@
+name: Generate Service Documentation
+
+on:
+  push:
+    paths:
+      - 'lib/Service/**/*.php'
+    branches:
+      - documentation
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, mbstring
+          
+      - name: Install phpDocumentor
+        run: |
+          wget https://phpdoc.org/phpDocumentor.phar
+          chmod +x phpDocumentor.phar
+          mv phpDocumentor.phar /usr/local/bin/phpDocumentor
+          
+      - name: Generate Documentation
+        run: |
+          mkdir -p website/docs/Development/Services
+          for file in lib/Service/*.php; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .php)
+              phpDocumentor run \
+                --template=markdown \
+                --source="$file" \
+                --target="website/docs/Development/Services/${filename}.md" \
+                --title="${filename} Service Documentation" \
+                --defaultpackagename="OpenRegister" \
+                --force
+            fi
+          done
+          
+      - name: Add Frontmatter
+        run: |
+          for file in website/docs/Development/Services/*.md; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .md)
+              # Create temporary file
+              echo "---" > temp.md
+              echo "title: ${filename} Service" >> temp.md
+              echo "sidebar_position: 1" >> temp.md
+              echo "description: Documentation for the ${filename} Service" >> temp.md
+              echo "---" >> temp.md
+              cat "$file" >> temp.md
+              mv temp.md "$file"
+            fi
+          done
+          
+      - name: Create Index File
+        run: |
+          echo "---" > website/docs/Development/Services/index.md
+          echo "title: Services" >> website/docs/Development/Services/index.md
+          echo "sidebar_position: 1" >> website/docs/Development/Services/index.md
+          echo "description: Overview of all OpenRegister Services" >> website/docs/Development/Services/index.md
+          echo "---" >> website/docs/Development/Services/index.md
+          echo "" >> website/docs/Development/Services/index.md
+          echo "# OpenRegister Services" >> website/docs/Development/Services/index.md
+          echo "" >> website/docs/Development/Services/index.md
+          echo "This section contains documentation for all OpenRegister services." >> website/docs/Development/Services/index.md
+          echo "" >> website/docs/Development/Services/index.md
+          echo "## Available Services" >> website/docs/Development/Services/index.md
+          echo "" >> website/docs/Development/Services/index.md
+          for file in website/docs/Development/Services/*.md; do
+            if [ -f "$file" ] && [ "$(basename "$file")" != "index.md" ]; then
+              filename=$(basename "$file" .md)
+              echo "- [${filename}](./${filename})" >> website/docs/Development/Services/index.md
+            fi
+          done
+          
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add website/docs/Development/Services/
+          git commit -m "docs: Update service documentation" || echo "No changes to commit"
+          git push
