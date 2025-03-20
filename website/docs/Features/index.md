@@ -22,16 +22,16 @@ The core entities in Open Register - Registers, Schemas, Objects, Files, Sources
 
 ```mermaid
 architecture-beta
-    group api(cloud)[API]
+    group nexctcloud(cloud)[NextCloud]
 
-    service db(database)[Database] in api
-    service disk1(disk)[Storage] in api
-    service disk2(disk)[Storage] in api
-    service server(server)[Server] in api
+    service object(object)[Object] in nexctcloud
+    service schema(object)[Schema] in nexctcloud
+    service validation(server)[Valiation] in nexctcloud
+    service register(database)[Register] in nexctcloud
 
-    db:L -- R:server
-    disk1:T -- B:server
-    disk2:T -- B:db
+    object:B --> T:validation
+    schema:L -- R:validation
+    validation:B --> T:register
  ```
 
 ## Register-Schema Relationship
