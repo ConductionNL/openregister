@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkopen_catalogi_docs=self.webpackChunkopen_catalogi_docs||[]).push([[7546],{6212:e=>{e.exports=JSON.parse('{"name":"docusaurus-plugin-redoc","id":"client-registers"}')}}]);
