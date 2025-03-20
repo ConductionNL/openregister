@@ -24,64 +24,48 @@ jobs:
           chmod +x phpDocumentor.phar
           mv phpDocumentor.phar /usr/local/bin/phpDocumentor
           
-      - name: Create phpdoc.xml
-        run: |
-          cat > phpdoc.xml << 'EOF'
-          <?xml version="1.0" encoding="UTF-8" ?>
-          <phpdocumentor
-              configVersion="3"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xmlns="https://www.phpdoc.org/schema/3.0">
-              <title>OpenRegister Services Documentation</title>
-              <paths>
-                  <output>website/docs/Development/Services</output>
-                  <cache>build/cache</cache>
-              </paths>
-              <version number="1.0.0">
-                  <api>
-                      <source dsn="./lib/Service">
-                          <path>.</path>
-                      </source>
-                      <output>api</output>
-                      <ignore hidden="true" symlinks="true">
-                          <path>tests/**/*</path>
-                          <path>vendor/**/*</path>
-                      </ignore>
-                      <extensions>
-                          <extension>php</extension>
-                      </extensions>
-                      <default-package-name>OpenRegister</default-package-name>
-                  </api>
-              </version>
-              <template name="clean"/>
-          </phpdocumentor>
-          EOF
-
       - name: Install Pandoc
         run: sudo apt-get install -y pandoc
 
       - name: Generate Documentation
         run: |
           mkdir -p website/docs/Development/Services
-          phpDocumentor --config phpdoc.xml --force
-          
-      - name: Add Frontmatter
-        run: |
-          for file in website/docs/Development/Services/api/*.html; do
+          for file in lib/Service/*.php; do
             if [ -f "$file" ]; then
-              filename=$(basename "$file" .html)
-              # Convert HTML to Markdown
-              pandoc -f html -t markdown "$file" -o "website/docs/Development/Services/${filename}.md"
-              # Create temporary file with frontmatter
-              echo "---" > temp.md
-              echo "title: ${filename} Service" >> temp.md
-              echo "sidebar_position: 1" >> temp.md
-              echo "description: Documentation for the ${filename} Service" >> temp.md
-              echo "---" >> temp.md
-              cat "website/docs/Development/Services/${filename}.md" >> temp.md
-              mv temp.md "website/docs/Development/Services/${filename}.md"
+              filename=$(basename "$file" .php)
+              # Generate HTML documentation
+              phpDocumentor \
+                --directory="lib/Service" \
+                --target="temp_docs" \
+                --filename="$file" \
+                --template="default" \
+                --title="${filename} Service Documentation" \
+                --defaultpackagename="OpenRegister" \
+                --force
+              
+              # Find the generated HTML file for this class
+              html_file=$(find temp_docs -type f -name "${filename}.html")
+              
+              if [ -f "$html_file" ]; then
+                # Convert HTML to Markdown
+                pandoc \
+                  --from html \
+                  --to markdown_strict \
+                  --wrap=none \
+                  --standalone \
+                  "$html_file" \
+                  -o "website/docs/Development/Services/${filename}.md"
+                
+                # Add frontmatter
+                sed -i.bak "1i---\ntitle: ${filename} Service\nsidebar_position: 1\ndescription: Documentation for the ${filename} Service\n---\n\n" \
+                  "website/docs/Development/Services/${filename}.md"
+                rm "website/docs/Development/Services/${filename}.md.bak"
+              fi
             fi
           done
+          
+          # Cleanup temporary files
+          rm -rf temp_docs
           
       - name: Create Index File
         run: |
@@ -103,9 +87,6 @@ jobs:
               echo "- [${filename}](./${filename})" >> website/docs/Development/Services/index.md
             fi
           done
-          
-      - name: Cleanup API Directory
-        run: rm -rf website/docs/Development/Services/api
           
       - name: Commit and Push Changes
         run: |
