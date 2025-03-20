@@ -62,7 +62,7 @@ For detailed information on the API endpoint and how to use it, please refer to 
 
 Right now objects can be added from the Objects menu item and then the "Add object option". Afhter selecting a Register and Schema an object can be added in pure json format
 
-![Add Object](../immages/add_object.png)
+![Add Object](../images/add_object.png)
 
 
 ## Object Features
