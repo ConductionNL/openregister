@@ -1942,6 +1942,7 @@ class ObjectService
 		// Use the filter array to remove specified properties from the entity.
         $dotEntity->delete(keys: $filter);
 
+        // @TODO make this more usable with dot filters.
 		if (empty($filter) === false) {
 			$dotEntity = new Dot(array_filter($dotEntity->flatten(), function($key) use ($filter) {
 				return !in_array($key, $filter);
