@@ -17,7 +17,8 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
 				label="Url"
-				:value.sync="schema.url" />
+				:value.sync="schema.url"
+				style="margin-top: 12px;" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
 				<p>Schema</p>
@@ -37,22 +38,24 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success"
-				:disabled="loading || !schema || !validateJson(schema.json)"
-				type="primary"
-				@click="uploadSchema()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Upload :size="20" />
-				</template>
-				Upload
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="!success"
+					:disabled="loading || !schema || !validateJson(schema.json)"
+					type="primary"
+					@click="uploadSchema()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<Upload :size="20" />
+					</template>
+					Upload
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>

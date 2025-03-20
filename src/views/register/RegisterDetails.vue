@@ -40,7 +40,7 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
 						<b>Table Prefix:</b>
-						<p>{{ registerStore.registerItem.tablePrefix }}</p>
+						<p>{{ registerStore.registerItem.tablePrefix || "-" }}</p>
 					</div>
 				</div>
 				<!-- Add more register-specific details here -->
@@ -79,7 +79,9 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 								</NcListItem>
 							</div>
 							<div v-if="!filterSchemas.length" class="tabPanel">
-								No schemas found
+								<h5 class="notFoundText">
+									No schemas found
+								</h5>
 							</div>
 						</BTab>
 						<BTab title="Logs">
@@ -99,7 +101,9 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 								</NcListItem>
 							</div>
 							<div v-if="true || !logs.length" class="tabPanel">
-								No logs found
+								<h5 class="notFoundText">
+									No logs found
+								</h5>
 							</div>
 						</BTab>
 					</BTabs>
@@ -197,5 +201,10 @@ h4 {
 .gridContent {
   display: flex;
   gap: 25px;
+}
+
+.notFoundText {
+	width: 100%;
+	text-align: center;
 }
 </style>

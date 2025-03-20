@@ -24,24 +24,26 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</p>
 
 		<template #actions>
-			<NcButton :disabled="loading" icon="" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				icon="Delete"
-				type="error"
-				@click="DeleteProperty()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-if="!loading" :size="20" />
-				</template>
-				Delete
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton :disabled="loading" icon="" @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success !== null ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton
+					v-if="success === null"
+					:disabled="loading"
+					icon="Delete"
+					type="error"
+					@click="DeleteProperty()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<Delete v-if="!loading" :size="20" />
+					</template>
+					Delete
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>

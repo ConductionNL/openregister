@@ -3,8 +3,11 @@
 		<h2 class="pageHeader">
 			Dashboard
 		</h2>
-
-		Welkom!
+		<div class="welcome-container">
+			<h1 class="welcome-text">
+				Welkom!
+			</h1>
+		</div>
 	</NcAppContent>
 </template>
 
@@ -126,5 +129,59 @@ body[data-theme-dark] .dashboard-content > .most-searched-terms > div {
 }
 .dashboard-content > .graphs .dashboard-small-list > li:not(:last-child) {
     border-bottom: 1px solid grey;
+}
+/* New welcome styling */
+.welcome-container {
+  width: 100%;
+  text-align: center;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.welcome-text {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-primary, #0082c9);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  display: inline-block;
+  position: relative;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.welcome-text::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 3px;
+  background-color: var(--color-primary, #0082c9);
+  transform: scaleX(0);
+  animation: underlineIn 1s ease-in-out forwards;
+  animation-delay: 0.5s;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes underlineIn {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .welcome-text {
+    font-size: 2.5rem;
+  }
+}
+
+/* Theme adaptations */
+body[data-theme-dark] .welcome-text {
+  text-shadow: 0 0 10px rgba(0, 130, 201, 0.5);
 }
 </style>

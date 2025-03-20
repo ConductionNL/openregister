@@ -19,23 +19,25 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading"
-				type="error"
-				@click="deleteRegister()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Verwijderen
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeDialog">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Sluiten' : 'Annuleer' }}
+				</NcButton>
+				<NcButton
+					v-if="!success"
+					:disabled="loading"
+					type="error"
+					@click="deleteRegister()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<TrashCanOutline v-if="!loading" :size="20" />
+					</template>
+					Verwijderen
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>

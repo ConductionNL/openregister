@@ -74,7 +74,9 @@ import { sourceStore, navigationStore, registerStore } from '../../store/store.j
 								</NcListItem>
 							</div>
 							<div v-if="!filterRegisters.length" class="tabPanel">
-								Geen registers gevonden
+								<h5 class="notFoundText">
+									Geen registers gevonden
+								</h5>
 							</div>
 						</BTab>
 						<BTab title="Logs">
@@ -94,7 +96,9 @@ import { sourceStore, navigationStore, registerStore } from '../../store/store.j
 								</NcListItem>
 							</div>
 							<div v-if="true || !logs.length" class="tabPanel">
-								No logs found
+								<h5 class="notFoundText">
+									No logs found
+								</h5>
 							</div>
 						</BTab>
 					</BTabs>
