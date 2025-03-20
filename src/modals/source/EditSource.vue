@@ -35,22 +35,22 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		<template #actions>
 			<div class="buttonContainer">
 				<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success"
-				:disabled="loading || !sourceItem.title"
-				type="primary"
-				@click="editSource()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && sourceStore.sourceItem?.id" :size="20" />
-					<Plus v-if="!loading && !sourceStore.sourceItem?.id" :size="20" />
-				</template>
-				{{ sourceStore.sourceItem?.id ? 'Save' : 'Create' }}
-			</NcButton>
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="!success"
+					:disabled="loading || !sourceItem.title"
+					type="primary"
+					@click="editSource()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading && sourceStore.sourceItem?.id" :size="20" />
+						<Plus v-if="!loading && !sourceStore.sourceItem?.id" :size="20" />
+					</template>
+					{{ sourceStore.sourceItem?.id ? 'Save' : 'Create' }}
+				</NcButton>
 			</div>
 		</template>
 	</NcDialog>

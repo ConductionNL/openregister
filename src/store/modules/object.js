@@ -290,7 +290,7 @@ export const useObjectStore = defineStore('object', {
 		 * Get files for an object
 		 *
 		 * @param {number} id Object ID
-		 * @param options Pagination options
+		 * @param  {object} options Pagination options
 		 * @return {Promise} Promise that resolves with the object's files
 		 */
 		async getFiles(id, options = {}) {

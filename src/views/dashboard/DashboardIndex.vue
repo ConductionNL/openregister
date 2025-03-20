@@ -4,8 +4,10 @@
 			Dashboard
 		</h2>
 		<div class="welcome-container">
-            <h1 class="welcome-text">Welkom!</h1>
-        </div>
+			<h1 class="welcome-text">
+				Welkom!
+			</h1>
+		</div>
 	</NcAppContent>
 </template>
 

@@ -21,22 +21,22 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		<template #actions>
 			<div class="buttonContainer">
 				<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading"
-				type="error"
-				@click="deleteSource()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Delete
-			</NcButton>
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton
+					v-if="!success"
+					:disabled="loading"
+					type="error"
+					@click="deleteSource()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<TrashCanOutline v-if="!loading" :size="20" />
+					</template>
+					Delete
+				</NcButton>
 			</div>
 		</template>
 	</NcDialog>

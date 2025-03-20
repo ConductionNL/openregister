@@ -14,41 +14,41 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		</NcNoteCard>
 
 		<template #actions>
-		<div class="buttonContainer">
-			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
-				:disabled="loading"
-				@click="registers.value = null">
-				<template #icon>
-					<ArrowLeft :size="20" />
-				</template>
-				Back to Register
-			</NcButton>
-			<NcButton v-if="registers.value?.id && schemas.value?.id"
-				:disabled="loading"
-				@click="schemas.value = null">
-				<template #icon>
-					<ArrowLeft :size="20" />
-				</template>
-				Back to Schema
-			</NcButton>
-			<NcButton
-				@click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object)"
-				type="primary"
-				@click="uploadObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Upload v-if="!loading" :size="20" />
-				</template>
-				Upload
-			</NcButton>
-		</div>
+			<div class="buttonContainer">
+				<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
+					:disabled="loading"
+					@click="registers.value = null">
+					<template #icon>
+						<ArrowLeft :size="20" />
+					</template>
+					Back to Register
+				</NcButton>
+				<NcButton v-if="registers.value?.id && schemas.value?.id"
+					:disabled="loading"
+					@click="schemas.value = null">
+					<template #icon>
+						<ArrowLeft :size="20" />
+					</template>
+					Back to Schema
+				</NcButton>
+				<NcButton
+					@click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="success === null"
+					:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object)"
+					type="primary"
+					@click="uploadObject()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<Upload v-if="!loading" :size="20" />
+					</template>
+					Upload
+				</NcButton>
+			</div>
 		</template>
 
 		<div v-if="!success" class="formContainer">

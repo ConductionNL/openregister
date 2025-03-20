@@ -52,15 +52,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				<div class="detailGrid">
 					<div class="gridContent ">
 						<b>Id:</b>
-						<p>{{ schemaStore.schemaItem?.id || "-"}}</p>
+						<p>{{ schemaStore.schemaItem?.id || "-" }}</p>
 					</div>
 					<div class="gridContent ">
 						<b>Uuid:</b>
-						<p>{{ schemaStore.schemaItem?.uuid || "-"}}</p>
+						<p>{{ schemaStore.schemaItem?.uuid || "-" }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Version:</b>
-						<p>{{ schemaStore.schemaItem?.version || "-"}}</p>
+						<p>{{ schemaStore.schemaItem?.version || "-" }}</p>
 					</div>
 				</div>
 				<!-- Add more schema-specific details here -->

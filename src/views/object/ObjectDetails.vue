@@ -83,7 +83,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Created:</b>
-						<p>{{ new Date(objectStore.objectItem.created).toLocaleString() || "-"  }}</p>
+						<p>{{ new Date(objectStore.objectItem.created).toLocaleString() || "-" }}</p>
 					</div>
 				</div>
 
