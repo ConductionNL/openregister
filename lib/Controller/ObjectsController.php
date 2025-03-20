@@ -69,19 +69,22 @@ class ObjectsController extends Controller
     }
 
     /**
-     * Retrieves a list of all objects
-     *
-     * This method returns a JSON response containing an array of all objects in the system.
+     * Retrieves a list of all objects for a specific register and schema
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @param string $register The register slug
+     * @param string $schema The schema identifier
      * @return JSONResponse A JSON response containing the list of objects
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(string $register, string $schema, ObjectService $objectService, SearchService $searchService): JSONResponse
     {
-
         $requestParams = $this->request->getParams();
+        
+        // Add register and schema to filters
+        $requestParams['register'] = $register;
+        $requestParams['schema'] = $schema;
 
         // Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
@@ -136,49 +139,55 @@ class ObjectsController extends Controller
     }
 
     /**
-     * Retrieves a single object by its ID
-     *
-     * This method returns a JSON response containing the details of a specific object.
+     * Shows a specific object
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the object to retrieve
-	 *
-     * @return JSONResponse A JSON response containing the object details
+     * @param string $register The register slug
+     * @param string $schema The schema identifier
+     * @param string $id The object ID
+     * @return JSONResponse A JSON response containing the object
      */
-    public function show(string $id): JSONResponse
+    public function show(string $register, string $schema, string $id): JSONResponse
     {
-        $requestParams = $this->request->getParams();
-		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
-		$filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
-		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
-
+        // Add validation that object belongs to specified register and schema
         try {
-            return new JSONResponse($this->objectService->renderEntity(entity: $this->objectEntityMapper->find((int) $id)->getObjectArray()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+            $object = $this->objectEntityMapper->find((int) $id);
+            if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
+                return new JSONResponse(['error' => 'Object not found in specified register/schema'], 404);
+            }
+            
+            $requestParams = $this->request->getParams();
+            $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+            $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+            $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
+
+            return new JSONResponse($this->objectService->renderEntity(entity: $object->getObjectArray()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(['error' => 'Not Found'], 404);
         }
     }
 
-	/**
-	 * Creates a new object
-	 *
-	 * This method creates a new object based on POST data.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse A JSON response containing the created object
-	 * @throws Exception
-	 */
-    public function create(ObjectService $objectService): JSONResponse
+    /**
+     * Creates a new object in the specified register and schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The register slug
+     * @param string $schema The schema identifier
+     * @return JSONResponse A JSON response containing the created object
+     */
+    public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         $data = $this->request->getParams();
+        // Override register and schema from URL parameters
+        $data['register'] = $register;
+        $data['schema'] = $schema;
+        
         $object = $data['object'];
         $mapping = $data['mapping'] ?? null;
-        $register = $data['register'];
-        $schema = $data['schema'];
 
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
@@ -409,57 +418,6 @@ class ObjectsController extends Controller
             return new JSONResponse(['error' => 'Logs not found'], 404);
         }
     }
-
-    /**
-     * Retrieves all available mappings
-     *
-     * This method returns a JSON response containing all available mappings in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of mappings
-     */
-    public function mappings(): JSONResponse
-    {
-        // Get mapping service, which will return null based on implementation
-        $mappingService = $this->getOpenConnectorMappingService();
-
-        // Initialize results array
-        $results = [];
-
-        // If mapping service exists, get all mappings using find() method
-        if ($mappingService !== null) {
-            $results = $mappingService->getMappings();
-        }
-
-        // Return response with results array and total count
-        return new JSONResponse([
-            'results' => $results,
-            'total' => count($results)
-        ]);
-    }
-
-    	/**
-	 * Attempts to retrieve the OpenRegister service from the container.
-	 *
-	 * @return mixed|null The OpenRegister service if available, null otherwise.
-	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
-	 */
-	public function getOpenConnectorMappingService(): ?\OCA\OpenConnector\Service\MappingService
-	{
-		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
-			try {
-				// Attempt to get the OpenRegister service from the container
-				return $this->container->get('OCA\OpenConnector\Service\MappingService');
-			} catch (Exception $e) {
-				// If the service is not available, return null
-				return null;
-			}
-		}
-
-		return null;
-	}
 
 	/**
 	 * Lock an object
