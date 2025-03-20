@@ -6,27 +6,45 @@ on:
       - documentation
 
 jobs:
-  docs:
+  generate-docs:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v4
-
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: dom, mbstring, intl
+          extensions: dom, mbstring, json
           coverage: none
-          tools: phpdoc-to-markdown
-
-      - name: Generate Markdown Documentation
-        uses: DamienHarper/phpdoc-to-markdown-action@v1
+          tools: composer:v2
+          
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+          
+      - name: Generate Documentation
+        uses: impresscms-dev/generate-phpdocs-with-clean-phpdoc-md-action@v1.0.4
         with:
-          input: lib/Service
-          output: website/docs/Development/Services
-          exclude: 'tests,vendor'
-          check: false
+          class_root_namespace: OpenRegister\Service\
+          included_classes: OpenRegister\Service\**
+          output_path: website/docs/Development/Services
+          
+      - name: Add Frontmatter to Files
+        run: |
+          for file in website/docs/Development/Services/*.md; do
+            if [ -f "$file" ] && [ "$(basename "$file")" != "index.md" ]; then
+              filename=$(basename "$file" .md)
+              # Create temporary file
+              echo "---" > temp.md
+              echo "title: ${filename}" >> temp.md
+              echo "sidebar_position: 1" >> temp.md
+              echo "description: Documentation for the ${filename}" >> temp.md
+              echo "---" >> temp.md
+              cat "$file" >> temp.md
+              mv temp.md "$file"
+            fi
+          done
 
       - name: Create Index File
         run: |
