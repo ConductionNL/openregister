@@ -155,7 +155,7 @@ class ObjectsController extends Controller
 		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
 
         try {
-            return new JSONResponse($this->objectService->renderEntity(entity: $this->objectEntityMapper->find((int) $id)->getObjectArray(), extend: $extend, depth: 0, filter: $filter, fields:  $fields));
+            return new JSONResponse($this->objectService->renderEntity(entity: $this->objectEntityMapper->find((int) $id)->getObjectArray()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
