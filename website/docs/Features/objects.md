@@ -28,14 +28,14 @@ Each object:
 
 ## Object Structure
 
-All objects are stored as object entities, or json objects holding both the metadata and data of the actual object. These object entities are available trought the `objects api`. Object enties are a way of storing objects theym might be seen as an envelope for the actual object. When serialization happens the objects is changed to the actual object (and the envelope moved to @self see (metadata)[#metadata].
+All objects are stored as object entities, or json objects holding both the metadata and data of the actual object. These object entities are available through the `objects api`. Object entities are a way of storing objects - they might be seen as an envelope for the actual object. When serialization happens the object is changed to the actual object (and the envelope moved to @self see [metadata](#metadata)).
 
 <Tabs>
-  <TabItem value="stored_object" label="Specificaties" default>
-    <ApiSchema id="open-register" example   pointer="#/components/schemas/ObjectEntity" />
+  <TabItem value="stored_object" label="Specifications" default>
+    <ApiSchema id="open-register" example pointer="#/components/schemas/ObjectEntity" />
   </TabItem>
-  <TabItem value="serialized_object" label="Serialized Object" >
-    <ApiSchema id="open-register" example   pointer="#/components/schemas/SerializeEntity" />
+  <TabItem value="serialized_object" label="Serialized Object">
+    <ApiSchema id="open-register" example pointer="#/components/schemas/SerializeEntity" />
   </TabItem>
 </Tabs>
 
@@ -71,7 +71,7 @@ All objects are validated against their schema before being stored, ensuring dat
 
 
 ### Metadata
-Open Register keeps tabs on the metadata of objects, it always keeps tabs on the following feelds wherte or not if they ara part of the object. This data is stored in object entity but transfered to the @self property when the objects is serialized.
+Open Register keeps track of the metadata of objects, it always keeps track of the following fields whether or not they are part of the object. This data is stored in object entity but transferred to the @self property when the object is serialized.
 
 <ApiSchema id="open-register" example pointer="#/components/schemas/@self" />
 
@@ -169,7 +169,7 @@ Locks are by default created for five minutes but can be created for any duratio
    - Transparent lock status
    - Managed access control
 
-<ApiSchema id="open-register" example pointer="#/components/schemas/lock" />
+<ApiSchema id="open-register" example pointer="#/components/schemas/Lock" />
 
 ### 3. File Attachments
 
@@ -186,7 +186,7 @@ When a register is created in Open Register, a share is also automatically creat
 
 Alternatively, users can also relate (existing) files to an object by using the Nextcloud file system and tagging the file 'object:[uuid]' where '[uuid]' is the UUID of the object. In neither case is there a relation between the file and a property in the object. The files are however available through the object API because file objects are returned in the object metadata under the files array.
 
-<ApiSchema id="open-register" example pointer="#/components/schemas/file" />
+<ApiSchema id="open-register" example pointer="#/components/schemas/File" />
 
 ### Soft Deleting
 
@@ -200,7 +200,6 @@ The deletion system provides:
 - Configurable retention periods
 - Recovery capabilities
 - Audit trail preservation
-
 
 1. Objects are never immediately deleted from the database
 2. Deletion sets the 'deleted' timestamp and related metadata
@@ -230,7 +229,7 @@ The deletion system provides:
    - Recovery options
    - Clean data lifecycle
 
-<ApiSchema id="open-register" example pointer="#/components/schemas/deletion" />
+<ApiSchema id="open-register" example pointer="#/components/schemas/Deletion" />
 
 ### 4. Version History
 

@@ -1326,9 +1326,19 @@
               "spouse": "123e4567-e89b-12d3-a456-426614174000"
             }
           },
-          "locked": { 
-            "type": "object",
-            "example": null
+          "locked": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/Lock" },
+              { "type": "null" }
+            ],
+            "description": "Contains either a lock object or the value null"
+          },
+          "deleted": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/Deletion" },
+              { "type": "null" }
+            ],
+            "description": "Contains either a deletion object or the value null"
           },
           "owner": { 
             "type": "string",
@@ -1336,7 +1346,7 @@
           }
         }
       },
-      "lock": {
+      "Lock": {
         "type": "object",
         "description": "Lock information object for concurrent access control. Objects can be locked to prevent concurrent editing, ensuring data integrity in multi-user environments.",
         "properties": {
@@ -1369,7 +1379,7 @@
           }
         }
       },
-      "deletion": {
+      "Deletion": {
         "type": "object",
         "properties": {
           "deleted": {
@@ -1442,14 +1452,14 @@
           },
           "locked": {
             "oneOf": [
-              { "$ref": "#/components/schemas/lock" },
+              { "$ref": "#/components/schemas/Lock" },
               { "type": "null" }
             ],
             "description": "Contains either a lock object or the value null"
           },
           "deleted": {
             "oneOf": [
-              { "$ref": "#/components/schemas/deletion" },
+              { "$ref": "#/components/schemas/Deletion" },
               { "type": "null" }
             ],
             "description": "Contains either a deletion object or the value null"
