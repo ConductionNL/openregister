@@ -280,10 +280,3 @@ Returns pets with vaccinations after January 1st, 2023
 3. Use pagination for large result sets
 4. Consider URL length limitations
 5. Break complex queries into multiple requests if needed
-
-## Related Features
-
-- [Automatic Facets](automatic-facets.md) - Combine with faceted search
-- [Elasticsearch](elasticsearch.md) - Advanced search capabilities 
-- [Content Search](content-search.md) - Full-text search integration
-- [Access Control](access-control.md) - Security for search results

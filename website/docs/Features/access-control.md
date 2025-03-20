@@ -61,7 +61,3 @@ Access control is implemented through:
    - Integration with verwerkingen registers for process tracking
    - Application-specific permission contracts
 
-## Related Features
-
-- [Register Management](register-management.md) - Manage register access
-- [Object Locking](object-locking.md) - Control modifications
