@@ -1893,30 +1893,63 @@ class ObjectService
 	 * Renders an entity by replacing file and relation IDs with their respective objects.
 	 *
 	 * Expands files and relations within the entity based on the provided extend array.
+	 * Optionally filters out specified properties from the entity and returns only specified fields.
 	 *
 	 * @param array $entity The entity data to render.
 	 * @param array|null $extend Optional properties to expand within the entity.
 	 * @param int $depth The depth to which relations should be expanded.
-	 * @param array|null $filter Optional filter to apply to the properties.
+	 * @param array|null $filter Optional array of property names to be excluded from the entity.
+	 * @param array|null $fields Optional array of property names to be included in the result.
 	 *
 	 * @return array The rendered entity with expanded properties.
+	 * @throws InvalidArgumentException If both filters and fields are used simultaneously or if extend and fields/filters conflict.
 	 * @throws Exception If rendering or extending fails.
 	 *
 	 * @phpstan-param array<string, mixed> $entity
 	 * @phpstan-param array<string>|null $extend
 	 * @phpstan-param array<string>|null $filter
+	 * @phpstan-param array<string>|null $fields
 	 */
-	public function renderEntity(array $entity, ?array $extend = [], int $depth = 0, ?array $filter = []): array
+	public function renderEntity(array $entity, ?array $extend = [], int $depth = 0, ?array $filter = [], ?array $fields = []): array
 	{
-		// LLets setup a placeholder for our related objects, could be quite a lot and w dont want to refatch them
+		// Check for simultaneous use of filters and fields
+		if (!empty($filter) && !empty($fields)) {
+			throw new InvalidArgumentException("Cannot use both filters and fields simultaneously.");
+		}
+
+		// Check for conflicts between extend and fields/filters
+		if (!empty($extend)) {
+			if (!empty($fields)) {
+				$missingFields = array_diff($extend, $fields);
+				if (!empty($missingFields)) {
+					throw new InvalidArgumentException("Properties in extend must also be in fields: " . implode(', ', $missingFields));
+				}
+			}
+			if (!empty($filter)) {
+				$conflictingFilters = array_intersect($extend, $filter);
+				if (!empty($conflictingFilters)) {
+					throw new InvalidArgumentException("Properties in extend must not be in filters: " . implode(', ', $conflictingFilters));
+				}
+			}
+		}
+
+		// Setup a placeholder for related objects to avoid refetching them
 		$relatedObjects = [];
 
-		// Lets use filter to remove properties that we dont want to extend
+		// Use the filter array to remove specified properties from the entity
 		if (empty($filter) === false) {
 			$entity = array_filter($entity, function($key) use ($filter) {
 				return !in_array($key, $filter);
 			}, ARRAY_FILTER_USE_KEY);
 		}
+
+		// If fields are specified, filter the entity to include only those fields
+		if (empty($fields) === false) {
+			$entity = array_filter($entity, function($key) use ($fields) {
+				return in_array($key, $fields);
+			}, ARRAY_FILTER_USE_KEY);
+		}
+		
 
 		// Get the schema for this entity
 		$schema = $this->schemaMapper->find($entity['schema']);
@@ -1951,7 +1984,7 @@ class ObjectService
 			fn($property) => isset($property['inversedBy']) && empty($property['inversedBy']) === false
 		);
 
-        $dotEntity = new Dot($entity['object']);
+		$dotEntity = new Dot($entity['object']);
 
 		// Only process inverted relations if we have inverted properties
 		if (empty($invertedProperties) === false) {
@@ -1974,18 +2007,18 @@ class ObjectService
 				);
 
 				// Set only the UUIDs in the entity property
-                if($property['type'] !== 'array') {
-                    $dotEntity[$key] = end($referencingUuids);
-                } else {
-                    $dot[$key] = $referencingUuids;
-                }
+				if ($property['type'] !== 'array') {
+					$dotEntity[$key] = end($referencingUuids);
+				} else {
+					$dotEntity[$key] = $referencingUuids;
+				}
 			}
 			// Store the referenced objects in the related objects array for potential later extension
 			$relatedObjects = array_merge($relatedObjects, $usedByObjects);
 			unset($usedByObjects);
 		}
 
-		// If extending is asked for we kan get the related objects and extend them
+		// If extending is asked for we can get the related objects and extend them
 		// Check if the entity has relations and is not empty
 		if (isset($entity['relations']) === true && empty($entity['relations']) === false) {
 			// Extract all the related object IDs from the relations array
@@ -1997,13 +2030,12 @@ class ObjectService
 			// Serialize the related objects to cast them to arrays
 			$objects = array_map(fn($obj) => $obj->jsonSerialize(), $objects);
 
-			// lets at them to the related objects array
+			// Add them to the related objects array
 			$relatedObjects = array_merge($relatedObjects, $objects);
 			unset($objects);
 		}
 
-		// Now we kan use extend to get the properties that we want to extend
-
+		// Now we can use extend to get the properties that we want to extend
 
 		// Update the entity with modified values
 		$entity['object'] = $dotEntity->all();
