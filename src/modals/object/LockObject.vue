@@ -10,7 +10,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		<p v-if="success === null" class="lockP">
 			Do you want to lock <b>{{ objectStore.objectItem?.uuid }}</b>?
 		</p>
-		<p class="lockP">
+		<p v-if="success === null" class="lockP">
 			Locking an object prevents other users from modifying it until it is unlocked.
 			You can specify an optional process name to indicate why it's locked and a duration after which it will automatically unlock.
 			Only the user who locked the object or an administrator can unlock it before the duration expires.
