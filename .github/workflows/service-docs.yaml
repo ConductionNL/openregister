@@ -34,7 +34,7 @@ jobs:
                 --target="website/docs/Development/Services" \
                 --directory="lib/Service" \
                 --filename="$file" \
-                --template="markdown" \
+                --template=".github/workflows/templates/markdown" \
                 --title="${filename} Service Documentation" \
                 --defaultpackagename="OpenRegister" \
                 --force
