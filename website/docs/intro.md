@@ -24,26 +24,16 @@ Open Register operates on three fundamental principles:
 
 ## Key Features
 
-| Feature | Description | Benefits |
-|---------|-------------|-----------|
-| 💾 [Storing Objects](Features/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
-| 📝 [Audit Trails](Features/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
-| ⏰ [Time Travel](Features/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
-| 🔒 [Object Locking](Features/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
-| 🗑️ [Soft Deletes](Features/soft-deletes.md) | Safely remove objects with recovery options | Data safety, compliance, mistake recovery |
-| 🔗 [Object Relations](Features/object-relations.md) | Create and manage connections between objects | Complex data structures, linked information, dependencies |
-| 📎 [File Attachments](Features/file-attachments.md) | Manage files associated with objects | Document management, version control, previews |
-| 🔍 [Content Search](Features/content-search.md) | Full-text search across objects and files | Quick discovery, unified search, advanced filtering |
-| 🏷️ [Automatic Facets](Features/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
-| ✅ [Schema Validation](Features/schema-validation.md) | Validate objects against JSON schemas | Data quality, consistency, structure enforcement |
-| 📚 [Register Management](Features/register-management.md) | Organize collections of related objects | Logical grouping, access control, process automation |
-| 🔐 [Access Control](Features/access-control.md) | Fine-grained permissions management | Security, role management, granular control |
-| ⚡ [Elasticsearch](Features/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
-| 📋 [Schema Import & Sharing](Features/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
-| 🔔 [Events & Webhooks](Features/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
-| ✂️ [Data Filtering](Features/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
-| 🔍 [Advanced Search](Features/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
-| 🗑️ [Object Deletion](Features/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
+| Feature | Description | Benefits | Sub-features |
+|---------|-------------|-----------|--------------|
+| 💾 [Storing Objects](Features/objects.md) | Core entity containing validated data with metadata, relationships, and file attachments | Data integrity, structured storage, rich metadata | • Schema validation<br/>• Object relationships<br/>• Object locking<br/>• Soft deletion<br/>• Version history<br/>• Audit trails |
+| 📝 [Schema Management](Features/schemas.md) | Define and validate data structures using JSON Schema | Data validation, documentation, API contracts | • JSON Schema validation<br/>• Schema versioning<br/>• Schema import/export<br/>• Schema.org integration<br/>• GGM integration<br/>• Custom schema creation |
+| ⏰ [Register Management](Features/registers.md) | Organize collections of related objects with shared schemas | Logical grouping, domain organization, data management | • Domain organization<br/>• Schema grouping<br/>• Access control<br/>• Process automation<br/>• Data segregation<br/>• Register versioning |
+| 🔒 [Access Control](Features/access-control.md) | Enterprise-grade permissions with Nextcloud RBAC and Keycloak integration | Security, compliance, role management | • Role-based access<br/>• ADFS integration<br/>• Keycloak integration<br/>• FCS compliance<br/>• Verwerkingen registers<br/>• Multi-level permissions |
+| 🗑️ [File Management](Features/files.md) | Secure file storage and management with Nextcloud integration | Document handling, versioning, previews | • File versioning<br/>• File previews<br/>• Metadata extraction<br/>• Content indexing<br/>• Secure storage<br/>• File relationships |
+| 🔍 [Search & Facets](Features/search.md) | Advanced search capabilities with automatic faceting | Quick discovery, pattern recognition, efficient filtering | • Full-text search<br/>• Automatic faceting<br/>• Advanced filtering<br/>• Pattern matching<br/>• Wildcard search<br/>• Phrase search |
+| 🔔 [Events & Webhooks](Features/events.md) | Event-driven architecture for system integration | Extensibility, automation, real-time updates | • Schema events<br/>• Register events<br/>• Object events<br/>• File events<br/>• Validation events<br/>• Webhook support |
+| 📦 [Storage Sources](Features/sources.md) | Flexible storage backends with source configuration | Scalability, performance, data segregation | • Multiple backends<br/>• Connection pooling<br/>• Read/write separation<br/>• Sharding support<br/>• Performance optimization<br/>• Data segregation |
 
 ### Basic Workflow
 
