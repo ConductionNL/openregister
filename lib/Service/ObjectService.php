@@ -2035,12 +2035,81 @@ class ObjectService
 			unset($objects);
 		}
 
-		// Now we can use extend to get the properties that we want to extend
+		/**
+		 * Extend the entity with related properties.
+		 * 
+		 * This section checks if there are properties specified in the 'extend' array.
+		 * For each property, it verifies if the property exists in the dotEntity.
+		 * If the property exists, it attempts to find a related object from the relatedObjects array.
+		 * If a related object is found, it sets the property in the dotEntity with the related object.
+		 * If no related object is found, it logs an error for that property.
+		 * Finally, if there are any errors, they are set in the dotEntity.
+		 */
+		// Check if there are properties specified in the 'extend' array
+		if (!empty($extend)) {
+			$errors = []; // Initialize an array to store any errors encountered during the process
 
-		// Update the entity with modified values
+			// Iterate over each property in the 'extend' array
+			foreach ($extend as $property) {
+				// Check if the current property exists in the dotEntity
+				if ($dotEntity->has($property)) {
+					// Retrieve the value of the property from the dotEntity
+					$value = $dotEntity->get($property);
+
+					// Filter the relatedObjects array to find the object that matches the value
+					$relatedObject = array_filter($relatedObjects, function($obj) use ($value) {
+						// Check if the object's id, uuid, or url matches the value
+						return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
+					});
+
+					// Check if a related object was found
+					if (!empty($relatedObject)) {
+						// Get the first related object from the filtered results
+						$relatedObject = reset($relatedObject);
+						
+						// Check if the property is a nested property (contains a dot)
+						if (strpos($property, '.') !== false) {
+							// Split the property into main and sub-properties
+							$subProperties = explode('.', $property);
+							$mainProperty = array_shift($subProperties);
+							$subPropertyPath = implode('.', $subProperties);
+
+							// Render the related object with the specified extensions
+							$relatedObject = $this->renderEntity(
+								$relatedObject,
+								$extend,
+								$depth + 1,
+								$filter,
+								$fields
+							);
+
+							// Set the rendered related object in the dotEntity under the main property
+							$dotEntity->set($mainProperty, $relatedObject);
+						} else {
+							// Set the related object directly in the dotEntity for non-nested properties
+							$dotEntity->set($property, $relatedObject);
+						}
+					} else {
+						// Add an error message if the related object could not be found
+						$errors[] = "Property '$property' could not be extended.";
+					}
+				} else {
+					// Add an error message if the property does not exist in the dotEntity
+					$errors[] = "Property '$property' could not be extended because it does not exist.";
+				}
+			}
+
+			// If there are any errors, set them in the dotEntity under '@self.errors'
+			if (!empty($errors)) {
+				$dotEntity->set('@self.errors', $errors);
+			}
+		}
+
+		// Update the entity with all modified values from the dotEntity
 		$entity['object'] = $dotEntity->all();
 
-		return $this->extendEntity(entity: $entity, extend: $extend);
+		// Lets return the entity with the extended properties
+		return $entity;
 	}
 
 	/**
