@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <template>
     <name>markdown</name>
-    <author>Your Name</author>
+    <author>Ruben van der Linde</author>
     <version>1.0.0</version>
-    <copyright>Your Copyright</copyright>
+    <copyright>OpenRegister</copyright>
     <description>Markdown template for OpenRegister service documentation</description>
     
     <transformations>

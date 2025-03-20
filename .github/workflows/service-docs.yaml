@@ -24,38 +24,71 @@ jobs:
           chmod +x phpDocumentor.phar
           mv phpDocumentor.phar /usr/local/bin/phpDocumentor
           
+      - name: Create phpdoc.xml
+        run: |
+          cat > phpdoc.xml << 'EOF'
+          <?xml version="1.0" encoding="UTF-8" ?>
+          <phpdocumentor
+              configVersion="3"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="https://www.phpdoc.org/schema/3.0">
+              <title>OpenRegister Services Documentation</title>
+              <paths>
+                  <output>website/docs/Development/Services</output>
+                  <cache>build/cache</cache>
+              </paths>
+              <version number="1.0.0">
+                  <api>
+                      <source dsn="./lib/Service">
+                          <path>.</path>
+                      </source>
+                      <output>api</output>
+                      <ignore hidden="true" symlinks="true">
+                          <path>tests/**/*</path>
+                          <path>vendor/**/*</path>
+                      </ignore>
+                      <extensions>
+                          <extension>php</extension>
+                      </extensions>
+                      <default-package-name>OpenRegister</default-package-name>
+                  </api>
+                  <guide>
+                      <source dsn=".">
+                          <path>docs</path>
+                      </source>
+                  </guide>
+              </version>
+              <template name="clean"/>
+          </phpdocumentor>
+          EOF
+
       - name: Generate Documentation
         run: |
           mkdir -p website/docs/Development/Services
-          for file in lib/Service/*.php; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file" .php)
-              phpDocumentor project:run \
-                --target="website/docs/Development/Services" \
-                --directory="lib/Service" \
-                --filename="$file" \
-                --template=".github/workflows/templates/markdown" \
-                --title="${filename} Service Documentation" \
-                --defaultpackagename="OpenRegister" \
-                --force
-            fi
-          done
+          phpDocumentor --config phpdoc.xml
           
       - name: Add Frontmatter
         run: |
-          for file in website/docs/Development/Services/*.md; do
+          for file in website/docs/Development/Services/*.html; do
             if [ -f "$file" ]; then
-              filename=$(basename "$file" .md)
-              # Create temporary file
+              filename=$(basename "$file" .html)
+              # Convert HTML to Markdown
+              pandoc -f html -t markdown "$file" -o "${file%.html}.md"
+              # Remove the original HTML file
+              rm "$file"
+              # Create temporary file with frontmatter
               echo "---" > temp.md
               echo "title: ${filename} Service" >> temp.md
               echo "sidebar_position: 1" >> temp.md
               echo "description: Documentation for the ${filename} Service" >> temp.md
               echo "---" >> temp.md
-              cat "$file" >> temp.md
-              mv temp.md "$file"
+              cat "${file%.html}.md" >> temp.md
+              mv temp.md "${file%.html}.md"
             fi
           done
+          
+      - name: Install Pandoc
+        run: sudo apt-get install -y pandoc
           
       - name: Create Index File
         run: |
