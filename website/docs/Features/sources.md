@@ -24,29 +24,7 @@ Sources allow Open Register to support multiple storage technologies, giving you
 
 A source in Open Register consists of the following key components:
 
-| Property | Description |
-|----------|-------------|
-| `id` | Unique identifier for the source |
-| `title` | Human-readable name of the source |
-| `description` | Detailed explanation of the source's purpose |
-| `databaseUrl` | URL of the database |
-| `type` | Type of the source (e.g., 'internal', 'mongodb') |
-| `updated` | Timestamp of last update |
-| `created` | Timestamp of creation |
-
-## Example Source
-
-```json
-{
-  "id": "primary-source",
-  "title": "Primary Database",
-  "description": "Main database for production data",
-  "databaseUrl": "mongodb://localhost:27017/openregister",
-  "type": "mongodb",
-  "updated": "2023-03-10T16:45:00Z",
-  "created": "2023-01-01T00:00:00Z"
-}
-```
+<ApiSchema id="open-register" example   pointer="#/components/schemas/Source" />
 
 ## Supported Source Types
 

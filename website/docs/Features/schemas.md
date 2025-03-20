@@ -30,18 +30,8 @@ Open Register uses [JSON Schema](https://json-schema.org/) as its schema definit
 
 A schema in Open Register follows the JSON Schema specification (see [JSON Schema Core](https://json-schema.org/understanding-json-schema) and [JSON Schema Validation](https://json-schema.org/draft/2020-12/json-schema-validation.html)) and consists of the following key components defined in the specification:
 
-| Property | Description |
-|----------|-------------|
-| `id` | Unique identifier for the schema |
-| `title` | Human-readable name of the schema |
-| `version` | Schema version in semantic versioning format |
-| `description` | Detailed explanation of what the schema represents |
-| `summary` | Brief summary of the schema's purpose |
-| `required` | Array of property names that are required |
-| `properties` | Object defining the properties and their types |
-| `archive` | Archive of previous schema versions |
-| `updated` | Timestamp of last update |
-| `created` | Timestamp of creation |
+
+<ApiSchema id="open-register" example   pointer="#/components/schemas/Schema" />
 
 ## Schema Validation
 
