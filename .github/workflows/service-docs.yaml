@@ -30,10 +30,11 @@ jobs:
           for file in lib/Service/*.php; do
             if [ -f "$file" ]; then
               filename=$(basename "$file" .php)
-              phpDocumentor run \
-                --template=markdown \
-                --source="$file" \
-                --target="website/docs/Development/Services/${filename}.md" \
+              phpDocumentor project:run \
+                --target="website/docs/Development/Services" \
+                --directory="lib/Service" \
+                --filename="$file" \
+                --template="markdown" \
                 --title="${filename} Service Documentation" \
                 --defaultpackagename="OpenRegister" \
                 --force
