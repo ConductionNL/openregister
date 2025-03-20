@@ -88,6 +88,8 @@ class ObjectsController extends Controller
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
 		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
 		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
 		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
 		$search = $requestParams['_search'] ?? null;
 
@@ -119,7 +121,7 @@ class ObjectsController extends Controller
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($objects as $key => $object) {
-            $objects[$key] = $object->getObjectArray();
+            $objects[$key] = $this->objectService->renderEntity(entity: $object->getObjectArray(), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         }
 
 		$results =  [
@@ -147,8 +149,13 @@ class ObjectsController extends Controller
      */
     public function show(string $id): JSONResponse
     {
+        $requestParams = $this->request->getParams();
+		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+		$filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
+
         try {
-            return new JSONResponse($this->objectService->renderEntity($this->objectEntityMapper->find((int) $id)->getObjectArray()));
+            return new JSONResponse($this->objectService->renderEntity(entity: $this->objectEntityMapper->find((int) $id)->getObjectArray(), extend: $extend, depth: 0, filter: $filter, fields:  $fields));
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
