@@ -1,3 +1,13 @@
+---
+title: Search
+sidebar_position: 5
+description: An overview of how core concepts in Open Register interact with each other.
+keywords:
+  - Open Register
+  - Core Concepts
+  - Relationships
+---
+
 # Advanced Search
 
 Open Register provides powerful search capabilities that allow filtering objects based on their properties using a flexible query syntax.

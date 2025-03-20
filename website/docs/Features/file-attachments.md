@@ -1,19 +1,6 @@
 # File Attachments
 
-File Attachments allow objects to include and manage associated files and documents. Open Register leverages Nextcloud's powerful file storage capabilities to provide a robust and secure file management system. By building on top of Nextcloud's proven infrastructure, Open Register inherits all the benefits of Nextcloud's file handling including:
 
-- Secure file storage and encryption
-- File versioning and history
-- Collaborative features like sharing and commenting
-- Preview generation for supported file types
-- Automated virus scanning
-- Flexible storage backend support
-
-## Overview
-
-When a register is created in Open Register, a share is also automatically created in Nextcloud. Then when a schema is created, a folder is created within that share, and when an object is created, a folder is created (using the UUID of the object) in the folder of the schema. This means that every object has a corresponding folder. Files present in that folder are assumed to be attached to the object. This gives a simple and intuitive system of coupling files to objects.
-
-Alternatively, users can also relate (existing) files to an object by using the Nextcloud file system and tagging the file 'object:[uuid]' where '[uuid]' is the UUID of the object. In neither case is there a relation between the file and a property in the object. The files are however available through the object API because file objects are returned in the object metadata under the files array.
 
 ## File Object Structure
 

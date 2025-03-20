@@ -1,6 +1,11 @@
 ---
 title: Objects
-sidebar_position: 4
+sidebar_position: 3
+description: An overview of how core concepts in Open Register interact with each other.
+keywords:
+  - Open Register
+  - Core Concepts
+  - Relationships
 ---
 
 import ApiSchema from '@theme/ApiSchema';
@@ -138,29 +143,94 @@ Objects van ce extended
 #### Inversion
 inversedBy
 
+### Locking
+
+Locking is a mechanism used to prevent concurrent editing of objects, ensuring data integrity in multi-user environments. A user (or a process on behalf of a user) might lock an object to prevent other users or processes from performing changes or deletions. This is particularly useful in scenarios such as:
+
+- When a user is editing an object in a form, and you want to prevent use collisions.
+- For BPMN processes that might take some time and cannot have their underlying data altered. However, keep in mind that for the latter example, a BPMN process could also use a specific version of an object and might run into trouble if it tries to update it later.
+
+Locks are by default created for five minutes but can be created for any duration by supplying the duration period. Locks can be extended, but only by the user that created the lock. Locks can also be removed, but only by the user that created the lock. Locks are automatically removed if the user that created the lock performs an update or delete operation.
+
+**Key Benefits**
+
+1. **Data Integrity**
+   - Prevent concurrent modifications
+   - Avoid data conflicts
+   - Maintain consistency
+
+2. **Process Management**
+   - Support long-running operations
+   - Coordinate multi-step updates
+   - Manage workflow dependencies
+
+3. **User Coordination**
+   - Clear ownership indication
+   - Transparent lock status
+   - Managed access control
+
+<ApiSchema id="open-register" example pointer="#/components/schemas/lock" />
 
 ### 3. File Attachments
 
-Objects can have files attached to them, such as documents, images, or other binary data. File metadata is stored in the `files` property:
+File Attachments allow objects to include and manage associated files and documents. Open Register leverages Nextcloud's powerful file storage capabilities to provide a robust and secure file management system. By building on top of Nextcloud's proven infrastructure, Open Register inherits all the benefits of Nextcloud's file handling including:
 
-```json
-[
-  {
-    "id": "file-12345",
-    "name": "profile.jpg",
-    "contentType": "image/jpeg",
-    "size": 24680,
-    "url": "/api/files/file-12345"
-  },
-  {
-    "id": "file-67890",
-    "name": "resume.pdf",
-    "contentType": "application/pdf",
-    "size": 123456,
-    "url": "/api/files/file-67890"
-  }
-]
-```
+- Secure file storage and encryption
+- File versioning and history
+- Collaborative features like sharing and commenting
+- Preview generation for supported file types
+- Automated virus scanning
+- Flexible storage backend support
+
+When a register is created in Open Register, a share is also automatically created in Nextcloud. Then when a schema is created, a folder is created within that share, and when an object is created, a folder is created (using the UUID of the object) in the folder of the schema. This means that every object has a corresponding folder. Files present in that folder are assumed to be attached to the object. This gives a simple and intuitive system of coupling files to objects.
+
+Alternatively, users can also relate (existing) files to an object by using the Nextcloud file system and tagging the file 'object:[uuid]' where '[uuid]' is the UUID of the object. In neither case is there a relation between the file and a property in the object. The files are however available through the object API because file objects are returned in the object metadata under the files array.
+
+<ApiSchema id="open-register" example pointer="#/components/schemas/file" />
+
+### Soft Deleting
+
+Open Register implements a soft deletion strategy for objects, ensuring data can be recovered and maintaining referential integrity.
+
+**Overview**
+
+The deletion system provides:
+- Soft deletion of objects
+- Retention of relationships
+- Configurable retention periods
+- Recovery capabilities
+- Audit trail preservation
+
+
+1. Objects are never immediately deleted from the database
+2. Deletion sets the 'deleted' timestamp and related metadata
+3. Deleted objects are excluded from normal queries
+4. Relations to deleted objects are preserved
+5. Files linked to deleted objects are moved to a trash folder
+6. Deleted objects can be restored until purge date
+7. Objects are only permanently deleted after retention period
+
+## Key Benefits
+
+1. **Data Safety**
+   - Prevent accidental data loss
+   - Maintain data relationships
+   - Support data recovery
+   - Preserve audit history
+
+2. **Compliance**
+   - Meet retention requirements
+   - Support legal holds
+   - Track deletion reasons
+   - Document deletion process
+
+3. **Management**
+   - Flexible retention policies
+   - Controlled purge process
+   - Recovery options
+   - Clean data lifecycle
+
+<ApiSchema id="open-register" example pointer="#/components/schemas/deletion" />
 
 ### 4. Version History
 
@@ -171,9 +241,6 @@ Open Register maintains a complete history of changes to objects, allowing you t
 - Restore objects to previous states
 - Analyze the evolution of data over time
 
-### 5. Locking Mechanism
-
-Objects can be locked to prevent concurrent editing, ensuring data integrity in multi-user environments.
 
 ## Working with Objects
 

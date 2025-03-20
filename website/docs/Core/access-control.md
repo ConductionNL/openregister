@@ -1,3 +1,13 @@
+---
+title: Acces Control
+sidebar_position: 7
+description: An overview of how core concepts in Open Register interact with each other.
+keywords:
+  - Open Register
+  - Core Concepts
+  - Relationships
+---
+
 # Access Control
 
 Access Control provides enterprise-grade permissions management through integration with Nextcloud RBAC (Role-Based Access Control) and Keycloak.

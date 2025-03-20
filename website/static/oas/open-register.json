@@ -1336,6 +1336,72 @@
           }
         }
       },
+      "lock": {
+        "type": "object",
+        "description": "Lock information object for concurrent access control. Objects can be locked to prevent concurrent editing, ensuring data integrity in multi-user environments.",
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "User ID that created the lock",
+            "example": "user_id"
+          },
+          "process": {
+            "type": "string",
+            "description": "Optional process name associated with the lock",
+            "example": "optional_process_name"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the lock was created",
+            "example": "timestamp"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration of the lockin seconds",
+            "example": "seconds"
+          },
+          "expiration": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the object expires (is autmaticly removed)",
+            "example": "timestamp"
+          }
+        }
+      },
+      "deletion": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the object was marked as deleted",
+            "example": "2023-01-01T00:00:00Z"
+          },
+          "deletedBy": {
+            "type": "string",
+            "description": "User ID who performed the deletion",
+            "example": "user-12345"
+          },
+          "deletedReason": {
+            "type": "string",
+            "description": "Optional reason for deletion",
+            "example": "No longer needed"
+          },
+          "retentionPeriod": {
+            "type": "integer",
+            "description": "How long to keep the deleted object (in days)",
+            "example": 30,
+            "default": 30
+          },
+          "purgeDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the object will be permanently deleted",
+            "example": "2023-01-31T00:00:00Z"
+          }
+        }
+      },
       "@self": {
         "type": "object",
         "properties": {
@@ -1374,10 +1440,19 @@
             "description": "Text representation of object for search and display optimization",
             "example": "John Doe, born 1980-01-15, email: john.doe@example.com"
           },
-          "locked": { 
-            "type": "object",
-            "description": "Lock information object for concurrent access control",
-            "example": null
+          "locked": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/lock" },
+              { "type": "null" }
+            ],
+            "description": "Contains either a lock object or the value null"
+          },
+          "deleted": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/deletion" },
+              { "type": "null" }
+            ],
+            "description": "Contains either a deletion object or the value null"
           },
           "owner": { 
             "type": "string",

@@ -1,6 +1,10 @@
 ---
-title: Concept Relationships
-sidebar_position: 8
+title: Core Features
+description: An overview of how core concepts in Open Register interact with each other.
+keywords:
+  - Open Register
+  - Core Concepts
+  - Relationships
 ---
 
 import ApiSchema from '@theme/ApiSchema';
@@ -9,7 +13,7 @@ import TabItem from '@theme/TabItem';
 import Mermaid from '@theme/Mermaid';
 
 
-# Relationships Between Core Concepts
+# Core Features
 
 One of the most powerful aspects of Open Register is how its core concepts interact with each other. Understanding these relationships is key to effectively designing and using the system.
 

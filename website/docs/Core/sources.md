@@ -1,6 +1,11 @@
 ---
 title: Sources
-sidebar_position: 5
+sidebar_position: 4
+description: An overview of how core concepts in Open Register interact with each other.
+keywords:
+  - Open Register
+  - Core Concepts
+  - Relationships
 ---
 
 import ApiSchema from '@theme/ApiSchema';
