@@ -20,43 +20,86 @@ Files in Open Register are:
 - Accessible through a consistent API
 - Integrated with Nextcloud's file management capabilities
 
+## Attaching Files to Objects
+
+Files can be attached to objects in several ways:
+
+1. Schema-defined file properties: When a schema includes properties of type 'file', these are automatically handled during object creation or updates
+2. Direct API attachment: Files can be added to an object after creation using the file attachment API endpoints
+3. Base64 encoded content: Files can be included in object data as base64-encoded strings
+4. URL references: External files can be referenced by URL and will be downloaded and stored locally
+
+## File Metadata and Tagging
+
+Each file attachment includes rich metadata:
+
+- Basic properties (name, size, type, extension)
+- Creation and modification timestamps
+- Access and download URLs
+- Checksum for integrity verification
+- Custom tags for categorization
+
+### Tagging System
+
+Files can be tagged with both simple labels and key-value pairs:
+- Tags with a colon (':') are treated as key-value pairs and can be used for advanced filtering and organization
+
+## Version Control
+
+The system maintains file versions by:
+
+- Tracking file modifications with timestamps
+- Preserving checksums to detect changes
+- Integrating with the object audit trail system
+- Supporting file restoration from previous versions
+
+## Security and Access Control
+
+File attachments inherit the security model of their parent objects:
+
+- Files are stored in NextCloud with appropriate permissions
+- Share links can be generated for controlled external access
+- Access is managed through the OpenRegister user and group system
+- Files are associated with the OpenRegister application user for consistent permissions
+
+## File Operations
+
+The system supports the following operations on file attachments:
+
+- Retrieving Files
+- Updating Files
+- Deleting Files
+
+## File Preview and Rendering
+
+The system leverages NextCloud's preview capabilities for supported file types:
+
+- Images are displayed as thumbnails
+- PDFs can be previewed in-browser
+- Office documents can be viewed with compatible apps
+- Preview URLs are generated for easy embedding
+
+## Integration with Object Lifecycle
+
+File attachments are fully integrated with the object lifecycle:
+
+- When objects are created, their file folders are automatically provisioned
+- When objects are updated, file references are maintained
+- When objects are deleted, associated files can be optionally preserved or removed
+- File operations are recorded in the object's audit trail
+
+## Technical Implementation
+
+The file attachment system is implemented through two main service classes:
+
+- FileService: Handles low-level file operations, folder management, and NextCloud integration
+- ObjectService: Provides high-level methods for attaching, retrieving, and managing files in the context of objects
+
+These services work together to provide a seamless file management experience within the OpenRegister application.
+
 ## File Structure
 
-A file in Open Register consists of the following key components:
-
-| Property | Description |
-|----------|-------------|
-| `id` | Unique identifier for the file |
-| `name` | Original filename |
-| `contentType` | MIME type of the file |
-| `size` | File size in bytes |
-| `url` | URL to access the file |
-| `objectId` | ID of the object this file is attached to |
-| `created` | Timestamp of creation |
-| `updated` | Timestamp of last update |
-| `version` | Version identifier |
-| `metadata` | Additional metadata about the file (optional) |
-
-## Example File Metadata
-
-```json
-{
-  "id": "file-12345",
-  "name": "contract.pdf",
-  "contentType": "application/pdf",
-  "size": 1245678,
-  "url": "/api/files/file-12345",
-  "objectId": "agreement-78901",
-  "created": "2023-03-15T09:45:00Z",
-  "updated": "2023-03-15T09:45:00Z",
-  "version": "1.0",
-  "metadata": {
-    "author": "Legal Department",
-    "securityLevel": "confidential",
-    "expiryDate": "2024-03-15"
-  }
-}
-```
+<ApiSchema id="open-register" example   pointer="#/components/schemas/File" />
 
 ## How Files are Stored
 

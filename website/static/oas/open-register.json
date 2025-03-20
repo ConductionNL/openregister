@@ -1544,39 +1544,184 @@
       "File": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "uuid": { "type": "string" },
-          "filename": { "type": "string" },
-          "downloadUrl": { "type": "string", "format": "uri" },
-          "shareUrl": { "type": "string", "format": "uri" },
-          "accessUrl": { "type": "string", "format": "uri" },
-          "extension": { "type": "string" },
-          "checksum": { "type": "string" },
-          "source": { "type": "integer" },
-          "userId": { "type": "string" },
-          "base64": { "type": "string" },
-          "filePath": { "type": "string" },
-          "created": { "type": "string", "format": "date-time" },
-          "updated": { "type": "string", "format": "date-time" }
+          "id": { 
+            "type": "integer",
+            "description": "Unique identifier of the file in Nextcloud",
+            "example": 123
+          },
+          "uuid": { 
+            "type": "string",
+            "description": "Unique identifier for the file",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "filename": { 
+            "type": "string",
+            "description": "Name of the file",
+            "example": "profile.jpg"
+          },
+          "downloadUrl": { 
+            "type": "string", 
+            "format": "uri",
+            "description": "Direct download URL for the file",
+            "example": "https://example.com/download/123"
+          },
+          "shareUrl": { 
+            "type": "string", 
+            "format": "uri",
+            "description": "URL to access the file via share link",
+            "example": "https://example.com/share/123"
+          },
+          "accessUrl": { 
+            "type": "string", 
+            "format": "uri",
+            "description": "URL to access the file",
+            "example": "https://example.com/access/123"
+          },
+          "extension": { 
+            "type": "string",
+            "description": "File extension",
+            "example": "jpg"
+          },
+          "checksum": { 
+            "type": "string",
+            "description": "ETag hash for file versioning",
+            "example": "abc123"
+          },
+          "source": { 
+            "type": "integer",
+            "description": "Source identifier",
+            "example": 1
+          },
+          "userId": { 
+            "type": "string",
+            "description": "ID of the user who owns the file",
+            "example": "user-12345"
+          },
+          "base64": { 
+            "type": "string",
+            "description": "Base64 encoded content of the file",
+            "example": "base64encodedstring"
+          },
+          "filePath": { 
+            "type": "string",
+            "description": "Full path to the file in Nextcloud",
+            "example": "/files/profile.jpg"
+          },
+          "created": { 
+            "type": "string", 
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when file was first shared",
+            "example": "2023-02-15T14:30:00Z"
+          },
+          "updated": { 
+            "type": "string", 
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of last modification",
+            "example": "2023-05-20T10:15:00Z"
+          }
         }
       },
       "AuditTrail": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "uuid": { "type": "string" },
-          "schema": { "type": "integer" },
-          "register": { "type": "integer" },
-          "object": { "type": "integer" },
-          "action": { "type": "string" },
-          "changed": { "type": "object" },
-          "user": { "type": "string" },
-          "userName": { "type": "string" },
-          "session": { "type": "string" },
-          "request": { "type": "string" },
-          "ipAddress": { "type": "string" },
-          "version": { "type": "string" },
-          "created": { "type": "string", "format": "date-time" }
+          "uuid": { 
+            "type": "string",
+            "description": "Unique identifier for the audit entry",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "schema": { 
+            "type": "integer",
+            "description": "Schema ID of the modified object",
+            "example": 42
+          },
+          "register": { 
+            "type": "integer",
+            "description": "Register ID of the modified object",
+            "example": 123
+          },
+          "object": { 
+            "type": "integer",
+            "description": "Object ID that was modified",
+            "example": 456
+          },
+          "action": { 
+            "type": "string",
+            "description": "Type of change that occurred",
+            "example": "create"
+          },
+          "changed": { 
+            "type": "object",
+            "description": "Array of modified fields with old/new values",
+            "example": {"name": {"old": "John", "new": "Jane"}}
+          },
+          "user": { 
+            "type": "string",
+            "description": "ID of the user who made the change",
+            "example": "admin"
+          },
+          "userName": { 
+            "type": "string",
+            "description": "Display name of the user",
+            "example": "Administrator"
+          },
+          "session": { 
+            "type": "string",
+            "description": "Session ID when change occurred",
+            "example": "sess_89d7h2"
+          },
+          "request": { 
+            "type": "string",
+            "description": "Request ID for tracing",
+            "example": "req_7d8h3j"
+          },
+          "ipAddress": { 
+            "type": "string",
+            "description": "IP address of the request",
+            "example": "192.168.1.1"
+          },
+          "version": { 
+            "type": "string",
+            "description": "Object version after change",
+            "example": "1.0.0"
+          },
+          "created": { 
+            "type": "string", 
+            "format": "date-time",
+            "description": "Timestamp of the change",
+            "example": "2024-03-15T14:30:00Z"
+          },
+          "processingActivity": { 
+            "type": "string",
+            "description": "The processing activity from the registry"
+          },
+          "processing": { 
+            "type": "string",
+            "description": "The specific task being performed"
+          },
+          "operation": { 
+            "type": "string",
+            "description": "The step in the processing task"
+          },
+          "legalBasis": { 
+            "type": "string",
+            "description": "Legal basis for the processing"
+          },
+          "retentionPeriod": { 
+            "type": "string",
+            "description": "Retention period for the data"
+          },
+          "executor": { 
+            "type": "string",
+            "description": "The system or person executing the action"
+          },
+          "system": { 
+            "type": "string",
+            "description": "The system where the action occurred"
+          },
+          "dataSource": { 
+            "type": "string",
+            "description": "The source of the data"
+          }
         }
       }
     }

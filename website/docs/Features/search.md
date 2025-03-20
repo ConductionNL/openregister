@@ -12,6 +12,67 @@ keywords:
 
 Open Register provides powerful search capabilities that allow filtering objects based on their properties using a flexible query syntax.
 
+## Automatic Facets
+Automatic Facets provide dynamic filtering options based on object properties and metadata.
+
+## Content Search
+
+Content Search provides powerful search capabilities across objects and their associated files.
+
+## Elasticsearch Integration
+
+Elasticsearch Integration provides advanced search and analytics capabilities for objects and their content.
+
+## Overview
+
+The search system enables:
+- Full-text search
+- Metadata search
+- File content search
+- Advanced query options
+
+## Key Benefits
+
+1. **Discovery**
+   - Find relevant content
+   - Explore relationships
+   - Discover patterns
+
+2. **Integration**
+   - Combined search results
+   - Unified interface
+   - Rich filtering
+
+3. **Performance**
+   - Optimized indexing
+   - Fast results
+   - Scalable search
+
+## Overview
+
+The faceting system:
+- Generates filters automatically
+- Updates in real-time
+- Supports multiple filter types
+- Provides count information
+
+## Key Benefits
+
+1. **User Experience**
+   - Intuitive filtering
+   - Dynamic updates
+   - Clear navigation
+
+2. **Data Discovery**
+   - Quick filtering
+   - Pattern recognition
+   - Data exploration
+
+3. **Integration**
+   - Automatic generation
+   - Custom configuration
+   - Search integration
+
 ## Overview
 
 The search system enables you to filter objects using query parameters. However, it's important to note that this approach is limited by the maximum URL length supported by browsers and servers (typically 2,048 characters for most browsers).

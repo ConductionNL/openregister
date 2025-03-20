@@ -547,6 +547,40 @@ POST /api/objects/{id}/restore
 }
 ```
 
+# Audit Trails
+
+Audit trails provide a complete history of all changes made to objects in Open Register. This feature ensures transparency and accountability by tracking who made what changes and when. The implementation follows the [GEMMA Processing Logging standard](https://vng-realisatie.github.io/gemma-verwerkingenlogging/gegevensmodel/basisterminologie.html).
+
+## Overview
+
+The audit trail system automatically records:
+- All modifications to objects
+- Individual object reads (but not collection reads)
+- Who made the changes
+- When changes occurred
+- What specific data was changed
+- The reason for changes (when provided)
+- Processing activities
+
+## Read Action Logging
+
+The system only logs read actions when accessing individual objects (e.g., GET /api/objects/123). Collection reads and search operations (e.g., GET /api/objects?name=test) are intentionally not logged for several important reasons:
+
+1. **Performance Impact**
+   - Collection reads can return hundreds or thousands of objects
+   - Logging each object view would create massive amounts of audit data
+   - Database performance would degrade significantly
+
+2. **Storage Concerns**
+   - The audit log would grow exponentially
+   - Storage costs would increase dramatically
+   - Valuable audit data would be diluted with less meaningful entries
+
+3. **Meaningful Tracking**
+   - Individual object reads indicate specific interest in that object
+   - Collection reads are often exploratory or part of routine operations
+   - Focus on logging deliberate access to specific objects
+
 ### Key Benefits of Time Travel
 
 1. **Data Recovery**
@@ -563,6 +597,9 @@ POST /api/objects/{id}/restore
    - Meet regulatory requirements
    - Support audit processes
    - Maintain data lineage
+
+   
+<ApiSchema id="open-register" example   pointer="#/components/schemas/AuditTrail" />
 
 ## Best Practices
 
