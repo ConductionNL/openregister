@@ -848,22 +848,30 @@ class ObjectService
 		int $depth = 0,
 	): string|array
 	{
-		$itemAlreadyExists = false;
-		if (is_string($item) === true) {
+        // By default item does not already exist.
+		$itemIsID = false;
+
+        if (is_string($item) === true && Uuid::isValid($item) === true) {
+            $itemIsID = true;
+        }
+
+        // If item is string but not a uuid it might be a uri.
+        if (is_string($item) === true && Uuid::isValid($item) === false) {
 			$lastSlashPos = strrpos($item, '/');
-			if (Uuid::isValid($item) === true) {
-				$itemAlreadyExists = true;
-			} else if ($lastSlashPos !== false) {
-				$id = substr($item, $lastSlashPos + 1);
-				if (Uuid::isValid($id) === true) {
-					$itemAlreadyExists = true;
-					$item = $id;
-				}
-			} else {
-				$error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
-				throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: [$error]);
-			}
-		}
+        }
+        if ($lastSlashPos !== false) {
+            $id = substr($item, $lastSlashPos + 1);
+            if (Uuid::isValid($id) === true) {
+                $itemIsID = true;
+                $item = $id;
+            }
+        }
+        
+        // If item is string but we could not get a uuid we return a error. 
+        if (is_string($item) === true && $itemIsID === false) {
+            $error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
+            throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: [$error]);
+        }
 
 		$subSchema = $schema;
 		if (is_int($property['$ref']) === true) {
@@ -875,7 +883,7 @@ class ObjectService
 		}
 
 		// Handle nested object in array
-		if ($itemAlreadyExists === true) {
+		if ($itemIsID === true) {
 			$nestedObject = $this->getObject(
 				register: $this->registerMapper->find((int) $register),
 				schema: $this->schemaMapper->find((int) $subSchema),
