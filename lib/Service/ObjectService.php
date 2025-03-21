@@ -1909,7 +1909,7 @@ class ObjectService
 	 * Expands files and relations within the entity based on the provided extend array.
 	 * Optionally filters out specified properties from the entity and returns only specified fields.
 	 *
-	 * @param array $entity The entity data to render.
+	 * @param array $entity The serialized entity.
 	 * @param array|null $extend Optional properties to expand within the entity.
 	 * @param int $depth The depth to which relations should be expanded.
 	 * @param array|null $filter Optional array of property names to be excluded from the entity.
@@ -1926,6 +1926,9 @@ class ObjectService
 	 */
 	public function renderEntity(array $entity, ?array $extend = [], int $depth = 0, ?array $filter = [], ?array $fields = []): array
 	{
+        $dotEntity = new Dot($entity);
+
+
 		// Check for simultaneous use of filters and fields
 		if (!empty($filter) && !empty($fields)) {
 			throw new InvalidArgumentException("Cannot use both filters and fields simultaneously.");
@@ -1950,29 +1953,32 @@ class ObjectService
 		// Setup a placeholder for related objects to avoid refetching them
 		$relatedObjects = [];
 
-		// Use the filter array to remove specified properties from the entity
+		// Use the filter array to remove specified properties from the entity.
+        $dotEntity->delete(keys: $filter);
+
+        // @TODO make this more usable with dot filters.
 		if (empty($filter) === false) {
-			$entity = array_filter($entity, function($key) use ($filter) {
+			$dotEntity = new Dot(array_filter($dotEntity->flatten(), function($key) use ($filter) {
 				return !in_array($key, $filter);
-			}, ARRAY_FILTER_USE_KEY);
+			}, ARRAY_FILTER_USE_KEY), parse: true);
 		}
 
 		// If fields are specified, filter the entity to include only those fields
 		if (empty($fields) === false) {
-			$entity = array_filter($entity, function($key) use ($fields) {
+			$dotEntity = new Dot(array_filter($dotEntity->flatten(), function($key) use ($fields) {
 				return in_array($key, $fields);
-			}, ARRAY_FILTER_USE_KEY);
+			}, ARRAY_FILTER_USE_KEY), parse: true);
 		}
-		
+
 
 		// Get the schema for this entity
-		$schema = $this->schemaMapper->find($entity['schema']);
+		$schema = $this->schemaMapper->find($dotEntity->get('@self.schema'));
 
 		// Htis needs to be done before we start extending the entitymade operational
 		// loop through the files and replace the file ids with the file objects)
-		if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
+		if ($dotEntity->has('@self.files') && empty($dotEntity->get('@self.files')) === false) {
 			// Loop through the files array where key is dot notation path and value is file id
-			foreach ($entity['files'] as $path => $fileId) {
+			foreach ($dotEntity->get('@self.files')->all() as $path => $fileId) {
 				// Replace the value at the dot notation path with the file URL
 				// @todo: does not work
 				// $dotEntity->set($path, $filesById[$fileId]->getUrl());
@@ -1997,8 +2003,6 @@ class ObjectService
 			$schema->getProperties(),
 			fn($property) => isset($property['inversedBy']) && empty($property['inversedBy']) === false
 		);
-
-		$dotEntity = new Dot($entity['object']);
 
 		// Only process inverted relations if we have inverted properties
 		if (empty($invertedProperties) === false) {
@@ -2034,9 +2038,9 @@ class ObjectService
 
 		// If extending is asked for we can get the related objects and extend them
 		// Check if the entity has relations and is not empty
-		if (isset($entity['relations']) === true && empty($entity['relations']) === false) {
+		if ($dotEntity->has('@self.relations') && empty($dotEntity->get('@self.relations')) === false) {
 			// Extract all the related object IDs from the relations array
-			$objectIds = array_values($entity['relations']);
+			$objectIds = array_values($dotEntity->get('@self.relations'));
 
 			// Use the getMany function from the mapper to retrieve all related objects
 			$objects = $this->objectEntityMapper->findMultiple($objectIds);
@@ -2051,7 +2055,7 @@ class ObjectService
 
 		/**
 		 * Extend the entity with related properties.
-		 * 
+		 *
 		 * This section checks if there are properties specified in the 'extend' array.
 		 * For each property, it verifies if the property exists in the dotEntity.
 		 * If the property exists, it attempts to find a related object from the relatedObjects array.
@@ -2080,7 +2084,7 @@ class ObjectService
 					if (!empty($relatedObject)) {
 						// Get the first related object from the filtered results
 						$relatedObject = reset($relatedObject);
-						
+
 						// Check if the property is a nested property (contains a dot)
 						if (strpos($property, '.') !== false) {
 							// Split the property into main and sub-properties
@@ -2120,10 +2124,8 @@ class ObjectService
 		}
 
 		// Update the entity with all modified values from the dotEntity
-		$entity['object'] = $dotEntity->all();
-
-		// Lets return the entity with the extended properties
-		return $entity;
+        // Lets return the entity with the extended properties
+		return $dotEntity->all();
 	}
 
 	/**
