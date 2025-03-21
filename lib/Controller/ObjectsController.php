@@ -82,10 +82,6 @@ class ObjectsController extends Controller
     {
         $requestParams = $this->request->getParams();
 
-        // Add register and schema to filters
-        $requestParams['register'] = $register;
-        $requestParams['schema'] = $schema;
-
         // Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
@@ -95,6 +91,26 @@ class ObjectsController extends Controller
 		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
 		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
 		$search = $requestParams['_search'] ?? null;
+
+		// Check if $register is not an integer and look it up
+		if (!is_numeric($register)) {
+			$registerEntity = $this->registerMapper->find($register);
+			if ($registerEntity === null) {
+				return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
+			}
+			$register = $registerEntity->getId();
+            $filters['register'] = $register;
+		}
+
+		// Check if $schema is not an integer and look it up
+		if (!is_numeric($schema)) {
+			$schemaEntity = $this->schemaMapper->find($schema);
+			if ($schemaEntity === null) {
+				return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+			}
+			$schema = $schemaEntity->getId();
+            $filters['schema'] = $schema;    
+		}
 
 		if ($page !== null && isset($limit)) {
 			$page = (int) $page;
@@ -151,17 +167,36 @@ class ObjectsController extends Controller
      */
     public function show(string $register, string $schema, string $id): JSONResponse
     {
+        $requestParams = $this->request->getParams();
+        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+        $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
+        
+		// Check if $register is not an integer and look it up
+		if (!is_numeric($register)) {
+			$registerEntity = $this->registerMapper->find($register);
+			if ($registerEntity === null) {
+				return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
+			}
+			$register = $registerEntity->getId();
+		}
+
+		// Check if $schema is not an integer and look it up
+		if (!is_numeric($schema)) {
+			$schemaEntity = $this->schemaMapper->find($schema);
+			if ($schemaEntity === null) {
+				return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+			}
+			$schema = $schemaEntity->getId();
+		}
+
+
         // Add validation that object belongs to specified register and schema
         try {
             $object = $this->objectEntityMapper->find((int) $id);
             if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
                 return new JSONResponse(['error' => 'Object not found in specified register/schema'], 404);
             }
-            
-            $requestParams = $this->request->getParams();
-            $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
-            $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
-            $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
 
             return new JSONResponse($this->objectService->renderEntity(entity: $object->jsonSerialize()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         } catch (DoesNotExistException $exception) {
