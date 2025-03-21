@@ -856,6 +856,7 @@ class ObjectService
         }
 
         // If item is string but not a uuid it might be a uri.
+        $lastSlashPos = false;
         if (is_string($item) === true && Uuid::isValid($item) === false) {
 			$lastSlashPos = strrpos($item, '/');
         }
