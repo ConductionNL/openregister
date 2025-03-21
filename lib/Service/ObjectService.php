@@ -2312,7 +2312,7 @@ class ObjectService
 		$pages = $limit !== null ? ceil($total/$limit) : 1;
 
 		return [
-			'results' => $referencingObjects,
+			'results' => $objects,
 			'total' => $total,
 			'page' => $page ?? 1,
 			'pages' => $pages,
