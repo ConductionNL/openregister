@@ -9,6 +9,33 @@ use OCP\DB\Types;
 use OCP\IURLGenerator;
 use stdClass;
 
+/**
+ * Class Schema
+ * 
+ * Entity class representing a Schema
+ * 
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ * @author   Nextcloud GmbH and Nextcloud contributors
+ * @license  AGPL-3.0-or-later
+ * @link     https://github.com/ConductionNL/OpenRegister
+ * @version  0.1.48
+ * 
+ * @property string|null $uuid Unique identifier for the schema
+ * @property string|null $slug Slug of the schema
+ * @property string|null $title Title of the schema
+ * @property string|null $version Version of the schema
+ * @property string|null $description Description of the schema
+ * @property string|null $summary Summary of the schema
+ * @property array|null $required Required fields of the schema
+ * @property array|null $properties Properties of the schema
+ * @property array|null $archive Archive data of the schema
+ * @property string|null $source Source of the schema
+ * @property bool $hardValidation Whether hard validation is enabled
+ * @property DateTime|null $updated Last update timestamp
+ * @property DateTime|null $created Creation timestamp
+ * @property int $maxDepth Maximum depth of the schema
+ */
 class Schema extends Entity implements JsonSerializable
 {
 	protected ?string $uuid 	   = null;

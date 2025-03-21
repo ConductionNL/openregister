@@ -326,19 +326,6 @@ class ObjectEntityMapper extends QBMapper
 			$obj->setOwner($this->userSession->getUser()->getUID());
 		}
 
-		// Ensure the object has a slug
-		if (empty($objecobjtEntity->getSlug()) === true) {
-			// Convert to lowercase and replace spaces with dashes
-			$slug = strtolower(trim($string));
-			// Remove special characters
-			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-			// Remove multiple dashes
-			$slug = preg_replace('/-+/', '-', $slug);
-			// Remove leading/trailing dashes
-			$slug = trim($slug, '-');
-
-			$obj->setSlug($slug);
-		}
 
 		return $this->insert($obj);
 	}

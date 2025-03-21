@@ -15,7 +15,7 @@ export const useObjectStore = defineStore('object', {
 	actions: {
 		// Helper method to build endpoint path
 		_buildObjectPath({ register, schema, objectId = '' }) {
-			return `/index.php/apps/openregister/api/registers/${register}/schemas/${schema}/objects${objectId ? '/' + objectId : ''}`
+			return `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 		},
 		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
@@ -144,7 +144,7 @@ export const useObjectStore = defineStore('object', {
 			}
 
 			await Promise.all(objectIds.map(async (objectId) => {
-				const endpoint = `/index.php/apps/openregister/api/objects/${objectId}`
+				const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 
 				try {
 					const response = await fetch(endpoint, {
@@ -172,7 +172,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get audit trails for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/audit-trails/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/audit-trails}`
 			const params = []
 
 			if (options.search && options.search !== '') {
@@ -209,7 +209,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get relations for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/relations/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/relations`
 			const params = []
 
 			if (options.search && options.search !== '') {
@@ -250,7 +250,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get files for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/files/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files`
 			const params = []
 
 			if (options.search && options.search !== '') {
@@ -306,7 +306,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise} Promise that resolves when the object is locked
 		 */
 		async lockObject(id, process = null, duration = null) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}/lock`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/lock`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -341,7 +341,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise} Promise that resolves when the object is unlocked
 		 */
 		async unlockObject(id) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}/unlock`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/${id}/unlock`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -374,7 +374,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise} Promise that resolves when the object is reverted
 		 */
 		async revertObject(id, options) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}/revert`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/${id}/revert`
 
 			try {
 				const response = await fetch(endpoint, {

@@ -41,7 +41,7 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		// Update the openregister_objects table
-		$table = $schema->getTable('openregister_objects');
+		$table = $schema->getTable('openregister_schemas');
 		
 		// Add slug column to store unique identifier for objects
 		if ($table->hasColumn('slug') === false) {
@@ -52,11 +52,11 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 		}
 
 		// Update the openregister_registers table
-		$registersTable = $schema->getTable('openregister_registers');
+		$table = $schema->getTable('openregister_registers');
 
 		// Add slug column to store unique identifier for registers
-		if ($registersTable->hasColumn('slug') === false) {
-			$registersTable->addColumn('slug', Types::STRING, [
+		if ($table->hasColumn('slug') === false) {
+			$table->addColumn('slug', Types::STRING, [
 				'notnull' => false,
 				'length' => 255,
 			]);

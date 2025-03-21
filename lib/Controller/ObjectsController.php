@@ -74,8 +74,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $register The register slug
-     * @param string $schema The schema identifier
+     * @param string $register The register slug or identiefer
+     * @param string $schema The schema slug or identiefer
      * @return JSONResponse A JSON response containing the list of objects
      */
     public function index(string $register, string $schema, ObjectService $objectService, SearchService $searchService): JSONResponse
@@ -160,8 +160,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $register The register slug
-     * @param string $schema The schema identifier
+     * @param string $register The register slug or identiefer
+     * @param string $schema The schema slug or identiefer
      * @param string $id The object ID
      * @return JSONResponse A JSON response containing the object
      */
@@ -210,8 +210,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $register The register slug
-     * @param string $schema The schema identifier
+     * @param string $register The register slug or identiefer
+     * @param string $schema The schema slug or identiefer
      * @return JSONResponse A JSON response containing the created object
      */
     public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
