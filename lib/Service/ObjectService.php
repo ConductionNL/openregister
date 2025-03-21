@@ -719,6 +719,20 @@ class ObjectService
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
+		// Ensure the object has a slug
+		if (empty($objectEntity->getSlug()) === true) {
+			// Convert to lowercase and replace spaces with dashes
+			$slug = strtolower(trim($string));
+			// Remove special characters
+			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+			// Remove multiple dashes
+			$slug = preg_replace('/-+/', '-', $slug);
+			// Remove leading/trailing dashes
+			$slug = trim($slug, '-');
+
+			$objectEntity->setSlug($slug);
+		}
+
 		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
 
 		// Let grap any links that we can

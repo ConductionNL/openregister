@@ -12,6 +12,7 @@ use stdClass;
 class Schema extends Entity implements JsonSerializable
 {
 	protected ?string $uuid 	   = null;
+	protected ?string $slug        = null;
 	protected ?string $title       = null;
 	protected ?string $description = null;
 	protected ?string $version     = null;
@@ -27,6 +28,7 @@ class Schema extends Entity implements JsonSerializable
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'slug', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
@@ -128,6 +130,7 @@ class Schema extends Entity implements JsonSerializable
 		$array = [
 			'id'          => $this->id,
 			'uuid' 		  => $this->uuid,
+			'slug' 		  => $this->slug,
 			'title'       => $this->title,
 			'description' => $this->description,
 			'version'     => $this->version,

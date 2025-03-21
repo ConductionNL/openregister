@@ -81,7 +81,7 @@ class ObjectsController extends Controller
     public function index(string $register, string $schema, ObjectService $objectService, SearchService $searchService): JSONResponse
     {
         $requestParams = $this->request->getParams();
-        
+
         // Add register and schema to filters
         $requestParams['register'] = $register;
         $requestParams['schema'] = $schema;
@@ -124,7 +124,7 @@ class ObjectsController extends Controller
 
         // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
         foreach ($objects as $key => $object) {
-            $objects[$key] = $this->objectService->renderEntity(entity: $object->getObjectArray(), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+            $objects[$key] = $this->objectService->renderEntity(entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         }
 
 		$results =  [
@@ -163,7 +163,7 @@ class ObjectsController extends Controller
             $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
             $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
 
-            return new JSONResponse($this->objectService->renderEntity(entity: $object->getObjectArray()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+            return new JSONResponse($this->objectService->renderEntity(entity: $object->jsonSerialize()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Not Found'], 404);
         }
@@ -182,6 +182,7 @@ class ObjectsController extends Controller
     public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         $data = $this->request->getParams();
+        
         // Override register and schema from URL parameters
         $data['register'] = $register;
         $data['schema'] = $schema;
@@ -189,11 +190,10 @@ class ObjectsController extends Controller
         $object = $data['object'];
         $mapping = $data['mapping'] ?? null;
 
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
+         // lets remove all the _ and @ prefixed keys (prevent injection)
+         $data = array_filter($data, function($key) {
+            return !str_starts_with($key, '_') && !str_starts_with($key, '@');
+        }, ARRAY_FILTER_USE_KEY);
 
         if (isset($data['id'])) {
             unset($data['id']);
@@ -245,11 +245,12 @@ class ObjectsController extends Controller
         $object = $data['object'];
         $mapping = $data['mapping'] ?? null;
 
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
+        // lets remove all the _ and @ prefixed keys (prevent injection)
+        $data = array_filter($data, function($key) {
+            return !str_starts_with($key, '_') && !str_starts_with($key, '@');
+        }, ARRAY_FILTER_USE_KEY);
+        
+
         if (isset($data['id'])) {
             unset($data['id']);
         }

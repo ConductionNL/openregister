@@ -49,7 +49,11 @@ class SchemaMapper extends QBMapper
 		$qb->select('*')
 			->from('openregister_schemas')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->orX(
+					$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+				)
 			);
 
 		return $this->findEntity(query: $qb);
@@ -139,6 +143,20 @@ class SchemaMapper extends QBMapper
 			$schema->setUuid(Uuid::v4());
 		}
 
+		// Ensure the object has a slug
+		if (empty($schema->getSlug()) === true) {
+			// Convert to lowercase and replace spaces with dashes
+			$slug = strtolower(trim($string));
+			// Remove special characters
+			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+			// Remove multiple dashes
+			$slug = preg_replace('/-+/', '-', $slug);
+			// Remove leading/trailing dashes
+			$slug = trim($slug, '-');
+
+			$schema->setSlug($slug);
+		}
+		
 		$schema = $this->insert(entity: $schema);
 
 		return $schema;

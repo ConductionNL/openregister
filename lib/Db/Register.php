@@ -10,6 +10,7 @@ use OCP\AppFramework\Db\Entity;
  * Entity class representing a Register
  * 
  * @property string|null $uuid Unique identifier for the register
+ * @property string|null $slug Slug of the register
  * @property string|null $title Title of the register
  * @property string|null $version Version of the register
  * @property string|null $description Description of the register
@@ -23,6 +24,7 @@ use OCP\AppFramework\Db\Entity;
 class Register extends Entity implements JsonSerializable
 {
 	protected ?string $uuid = null;
+	protected ?string $slug = null;
 	protected ?string $title = null;
 	protected ?string $version = null;
 	protected ?string $description = null;
@@ -35,10 +37,10 @@ class Register extends Entity implements JsonSerializable
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'slug', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
 		$this->addType(fieldName: 'schemas', type: 'json');
 		$this->addType(fieldName: 'source', type: 'string');
 		$this->addType(fieldName: 'tablePrefix', type: 'string');
@@ -96,6 +98,7 @@ class Register extends Entity implements JsonSerializable
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
+			'slug' => $this->slug,
 			'title' => $this->title,
 			'version'     => $this->version,
 			'description' => $this->description,

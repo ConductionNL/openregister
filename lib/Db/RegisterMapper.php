@@ -55,7 +55,11 @@ class RegisterMapper extends QBMapper
 		$qb->select('*')
 			->from('openregister_registers')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->orX(
+					$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+				)
 			);
 
 		// Execute the query and return the result
@@ -131,6 +135,20 @@ class RegisterMapper extends QBMapper
 
 		if ($register->getUuid() === null) {
 			$register->setUuid(Uuid::v4());
+		}		
+
+		// Ensure the object has a slug
+		if (empty($register->getSlug()) === true) {
+			// Convert to lowercase and replace spaces with dashes
+			$slug = strtolower(trim($string));
+			// Remove special characters
+			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+			// Remove multiple dashes
+			$slug = preg_replace('/-+/', '-', $slug);
+			// Remove leading/trailing dashes
+			$slug = trim($slug, '-');
+
+			$register->setSlug($slug);
 		}
 
 		$register = $this->insert(entity: $register);
