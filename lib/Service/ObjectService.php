@@ -818,6 +818,40 @@ class ObjectService
 		return $objectEntity;
 	}
 
+    /**
+     * Extracts and validates a UUID from a given string or URI.
+     *
+     * @param string $item The item to validate (UUID or URL containing a UUID).
+     * @param string $propertyName The property name for error messages.
+     * 
+     * @return string The validated UUID.
+     * 
+     * @throws CustomValidationException If the item is not a valid UUID.
+     */
+    private function getIdFromString(string $item, string $propertyName): string {
+        // Check if item is a valid UUID.
+        if (Uuid::isValid($item) === true) {
+            return $item;
+        }
+
+        // If item is a string but not a UUID, check if it is a URI.
+        $lastSlashPos = false;
+        if (filter_var($item, FILTER_VALIDATE_URL) !== false) {
+            $lastSlashPos = strrpos($item, '/');
+        }
+        
+        // Extract the ID from the URI and validate it as a UUID.
+        if ($lastSlashPos !== false) {
+            $id = substr($item, $lastSlashPos + 1);
+            if (Uuid::isValid($id)) {
+                return $id;
+            }
+        }
+
+        $error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
+        throw new CustomValidationException(message: self::VALIDATION_ERROR_MESSAGE, errors: [$error]);
+    }
+
 	/**
 	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
@@ -848,30 +882,10 @@ class ObjectService
 		int $depth = 0,
 	): string|array
 	{
-        // By default item does not already exist.
-		$itemIsID = false;
-
-        if (is_string($item) === true && Uuid::isValid($item) === true) {
+        $itemIsID = false;
+        if (is_string($item) === true) {
+            $item = $this->getIdFromString($item, $propertyName);
             $itemIsID = true;
-        }
-
-        // If item is string but not a uuid it might be a uri.
-        $lastSlashPos = false;
-        if (is_string($item) === true && Uuid::isValid($item) === false && filter_var($item, FILTER_VALIDATE_URL) !== false) {
-			$lastSlashPos = strrpos($item, '/');
-        }
-        if ($lastSlashPos !== false) {
-            $id = substr($item, $lastSlashPos + 1);
-            if (Uuid::isValid($id) === true) {
-                $itemIsID = true;
-                $item = $id;
-            }
-        }
-        
-        // If item is string but we could not get a uuid we return a error. 
-        if (is_string($item) === true && $itemIsID === false) {
-            $error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
-            throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: [$error]);
         }
 
 		$subSchema = $schema;
