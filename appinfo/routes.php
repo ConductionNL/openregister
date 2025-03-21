@@ -29,5 +29,7 @@ return [
 		['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
 		['name' => 'registers#uploadUpdate', 'url' => '/api/registers/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		// Search
+		['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
 	],
 ];
