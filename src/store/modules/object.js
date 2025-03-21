@@ -13,6 +13,10 @@ export const useObjectStore = defineStore('object', {
 		files: [], // List of files
 	}),
 	actions: {
+		// Helper method to build endpoint path
+		_buildObjectPath({ register, schema, objectId = '' }) {
+			return `/index.php/apps/openregister/api/registers/${register}/schemas/${schema}/objects${objectId ? '/' + objectId : ''}`
+		},
 		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
 			console.info('Active object item set to ' + objectItem)
@@ -47,136 +51,84 @@ export const useObjectStore = defineStore('object', {
 		setFiles(files) {
 			this.files = files
 		},
-		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshObjectList(options = {}) {
-			// @todo this might belong in a service?
-			let endpoint = '/index.php/apps/openregister/api/objects'
+			if (!options.register || !options.schema) {
+				throw new Error('Register and schema are required')
+			}
+
+			let endpoint = this._buildObjectPath({
+				register: options.register,
+				schema: options.schema
+			})
+			
 			const params = []
 
-			if (options.search && options.search !== '') {
-				params.push('_search=' + options.search)
-			}
-			if (options.limit && options.limit !== '') {
-				params.push('_limit=' + options.limit)
-			}
-			if (options.page && options.page !== '') {
-				params.push('_page=' + options.page)
-			}
+			if (options.search) params.push('_search=' + options.search)
+			if (options.limit) params.push('_limit=' + options.limit)
+			if (options.page) params.push('_page=' + options.page)
 
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')
 			}
 
-			return fetch(endpoint, {
-				method: 'GET',
-			})
-				.then(
-					(response) => {
-						response.json().then(
-							(data) => {
-								this.setObjectList(data)
-							},
-						)
-					},
-				)
-				.catch(
-					(err) => {
-						console.error(err)
-					},
-				)
-		},
-		// New function to get a single object
-		async getObject(id) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
+				const response = await fetch(endpoint)
+				const data = await response.json()
+				this.setObjectList(data)
+				return { response, data }
+			} catch (err) {
+				console.error(err)
+				throw err
+			}
+		},
+		async getObject({ register, schema, objectId }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Register, schema and objectId are required')
+			}
+
+			const endpoint = this._buildObjectPath({ register, schema, objectId })
+
+			try {
+				const response = await fetch(endpoint)
 				const data = await response.json()
 				this.setObjectItem(data)
-				this.getAuditTrails(data.id)
-				this.getRelations(data.id)
-
+				this.getAuditTrails({ register, schema, objectId })
+				this.getRelations({ register, schema, objectId })
 				return data
 			} catch (err) {
 				console.error(err)
 				throw err
 			}
 		},
-		// Delete an object
-		async deleteObject(objectItem) {
-			if (!objectItem.id) {
-				throw new Error('No object item to delete')
+		async saveObject(objectItem, { register, schema }) {
+			if (!objectItem || !register || !schema) {
+				throw new Error('Object item, register and schema are required')
 			}
 
-			console.info('Deleting object...')
+			const isNewObject = !objectItem['@self'].id
+			const endpoint = this._buildObjectPath({
+				register,
+				schema,
+				objectId: isNewObject ? '' : objectItem['@self'].id
+			})
 
-			const endpoint = `/index.php/apps/openregister/api/objects/${objectItem.id}`
+			objectItem['@self'].updated = new Date().toISOString()
 
 			try {
 				const response = await fetch(endpoint, {
-					method: 'DELETE',
+					method: isNewObject ? 'POST' : 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(objectItem)
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				this.refreshObjectList()
-				this.setObjectItem(null)
-
-				return { response, data: responseData }
+				const data = new ObjectEntity(await response.json())
+				this.setObjectItem(data)
+				await this.refreshObjectList({ register, schema })
+				return { response, data }
 			} catch (error) {
-				console.error('Error deleting object:', error)
-				throw new Error(`Failed to delete object: ${error.message}`)
+				console.error('Error saving object:', error)
+				throw error
 			}
-		},
-		// Create or save an object from store
-		async saveObject(objectItem) {
-			if (!objectItem) {
-				throw new Error('No object item to save')
-			}
-
-			console.info('Saving object...')
-
-			const isNewObject = !objectItem.id
-			const endpoint = isNewObject
-				? '/index.php/apps/openregister/api/objects'
-				: `/index.php/apps/openregister/api/objects/${objectItem.id}`
-			const method = isNewObject ? 'POST' : 'PUT'
-
-			// change updated to current date as a singular iso date string
-			objectItem.updated = new Date().toISOString()
-
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(objectItem),
-				},
-			)
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const data = new ObjectEntity(await response.json())
-
-			this.refreshObjectList()
-			this.setObjectItem(data)
-			this.getAuditTrails(data.id)
-			this.getRelations(data.id)
-
-			return { response, data }
 		},
 		// mass delete objects
 		async massDeleteObject(objectIds) {
