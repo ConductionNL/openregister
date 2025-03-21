@@ -63,15 +63,15 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					until {{ new Date(objectStore.objectItem.locked.expiration).toLocaleString() }}
 				</NcNoteCard>
 
-				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
+				<span><b>Uri:</b> {{ objectStore.objectItem?.uri || "-" }}</span>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
 						<b>Register:</b>
-						<p>{{ objectStore.objectItem.register }}</p>
+						<p>{{ objectStore.objectItem?.register || "-" }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Schema:</b>
-						<p>{{ objectStore.objectItem.schema }}</p>
+						<p>{{ objectStore.objectItem?.schema || "-" }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Folder:</b>
@@ -79,11 +79,11 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Updated:</b>
-						<p>{{ objectStore.objectItem.updated }}</p>
+						<p>{{ new Date(objectStore.objectItem.updated).toLocaleString() || "-" }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Created:</b>
-						<p>{{ objectStore.objectItem.created }}</p>
+						<p>{{ new Date(objectStore.objectItem.created).toLocaleString() || "-" }}</p>
 					</div>
 				</div>
 
@@ -111,7 +111,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								</NcListItem>
 							</div>
 							<div v-else class="tabPanel">
-								No relations found
+								<h5 class="notFoundText">
+									No relations found
+								</h5>
 							</div>
 						</BTab>
 						<BTab title="Used by">
@@ -136,7 +138,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									:per-page="pagination.relations.limit" />
 							</div>
 							<div v-else class="tabPanel">
-								No relations found
+								<h5 class="notFoundText">
+									No relations found
+								</h5>
 							</div>
 						</BTab>
 						<BTab title="Files">
@@ -197,7 +201,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 
 							<div v-if="objectStore.files.results?.length === 0">
-								Nog geen bijlage toegevoegd
+								<h5 class="notFoundText">
+									Nog geen bijlage toegevoegd
+								</h5>
 							</div>
 
 							<div
@@ -210,7 +216,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						</BTab>
 						<BTab title="Syncs">
 							<div v-if="true || !syncs.length" class="tabPanel">
-								No synchronizations found
+								<h5 class="notFoundText">
+									No synchronizations found
+								</h5>
 							</div>
 						</BTab>
 						<BTab title="Audit Trails">
@@ -245,7 +253,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									:per-page="pagination.auditTrails.limit" />
 							</div>
 							<div v-if="!objectStore.auditTrails.results?.length">
-								No audit trails found
+								<h5 class="notFoundText">
+									No audit trails found
+								</h5>
 							</div>
 						</BTab>
 					</BTabs>
@@ -495,5 +505,8 @@ h4 {
 .fileLabelsContainer {
 	display: inline-flex;
 	gap: 3px;
+}
+.gridContent {
+	margin-top: 10px;
 }
 </style>

@@ -16,40 +16,42 @@ import { getTheme } from '../../services/getTheme.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
-				:disabled="loading"
-				@click="registers.value = null">
-				<template #icon>
-					<ArrowLeft :size="20" />
-				</template>
-				Back to Register
-			</NcButton>
-			<NcButton v-if="registers.value?.id && schemas.value?.id"
-				:disabled="loading"
-				@click="schemas.value = null">
-				<template #icon>
-					<ArrowLeft :size="20" />
-				</template>
-				Back to Schema
-			</NcButton>
-			<NcButton
-				@click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !isValidJson(objectItem.object)"
-				type="primary"
-				@click="editObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && objectStore.objectItem?.id" :size="20" />
-					<Plus v-if="!loading && !objectStore.objectItem?.id" :size="20" />
-				</template>
-				{{ objectStore.objectItem?.id ? 'Save' : 'Add' }}
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
+					:disabled="loading"
+					@click="registers.value = null">
+					<template #icon>
+						<ArrowLeft :size="20" />
+					</template>
+					Back to Register
+				</NcButton>
+				<NcButton v-if="registers.value?.id && schemas.value?.id"
+					:disabled="loading"
+					@click="schemas.value = null">
+					<template #icon>
+						<ArrowLeft :size="20" />
+					</template>
+					Back to Schema
+				</NcButton>
+				<NcButton
+					@click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="success === null"
+					:disabled="!registers.value?.id || !schemas.value?.id || loading || !isValidJson(objectItem.object)"
+					type="primary"
+					@click="editObject()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading && objectStore.objectItem?.id" :size="20" />
+						<Plus v-if="!loading && !objectStore.objectItem?.id" :size="20" />
+					</template>
+					{{ objectStore.objectItem?.id ? 'Save' : 'Add' }}
+				</NcButton>
+			</div>
 		</template>
 
 		<div v-if="!success" class="formContainer">
@@ -333,11 +335,9 @@ export default {
 
 .json-editor .format-json-button {
 	position: absolute;
-	bottom: 0;
-	right: 0;
-    transform: translateY(100%);
+	bottom: -33px;
+	left: 0;
 }
-
 /* Add styles for the code editor */
 .code-editor {
 	font-family: monospace;

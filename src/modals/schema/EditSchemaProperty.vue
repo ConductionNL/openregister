@@ -19,12 +19,13 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 			</NcNoteCard>
 		</div>
 
-		<div v-if="success === null" class="form-group">
+		<div v-if="success === null" class="form-group modalSpacing">
 			<NcTextField :disabled="loading"
 				label="Title*"
 				:error="keyExists()"
 				:helper-text="keyExists() ? 'This key already exists on this schema' : ''"
-				:value.sync="propertyTitle" />
+				:value.sync="propertyTitle"
+				style="margin-top: 12px;" />
 
 			<NcTextField :disabled="loading"
 				label="Description"
@@ -182,7 +183,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:value.sync="properties.default"
 					:loading="loading"
 					:error="!verifyJsonValidity(properties.default)"
-					:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''" />
+					:helper-text="!verifyJsonValidity(properties.default) ? 'This is not valid JSON' : ''"
+					resize="none" />
 
 				<NcCheckboxRadioSwitch
 					:disabled="loading"
@@ -196,7 +198,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				:disabled="loading"
 				label="Value list (split on ,)"
 				:value.sync="properties.default"
-				:loading="loading" />
+				:loading="loading"
+				resize="none" />
 			<!-- TYPE : BOOLEAN -->
 			<NcCheckboxRadioSwitch v-else-if="properties.type === 'boolean'"
 				:disabled="loading"
@@ -350,26 +353,27 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
-			</NcButton>
-
-			<NcButton v-if="success === null"
-				:disabled="!propertyTitle || !properties.type || loading || keyExists()"
-				type="primary"
-				@click="addSchemaProperty()">
-				<template #icon>
-					<span>
-						<NcLoadingIcon v-if="loading" :size="20" />
-						<ContentSaveOutline v-if="!loading && schemaStore.schemaPropertyKey" :size="20" />
-						<Plus v-if="!loading && !schemaStore.schemaPropertyKey" :size="20" />
-					</span>
-				</template>
-				{{ schemaStore.schemaPropertyKey ? 'Save' : 'Add' }}
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success !== null ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="success === null"
+					:disabled="!propertyTitle || !properties.type || loading || keyExists()"
+					type="primary"
+					@click="addSchemaProperty()">
+					<template #icon>
+						<span>
+							<NcLoadingIcon v-if="loading" :size="20" />
+							<ContentSaveOutline v-if="!loading && schemaStore.schemaPropertyKey" :size="20" />
+							<Plus v-if="!loading && !schemaStore.schemaPropertyKey" :size="20" />
+						</span>
+					</template>
+					{{ schemaStore.schemaPropertyKey ? 'Save' : 'Add' }}
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
