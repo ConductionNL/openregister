@@ -2,7 +2,33 @@
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
+// Add search input ref and debounce function
+const searchQuery = ref('')
+let searchTimeout = null
+
+// Debounced search function
+const handleSearch = (value) => {
+	if (searchTimeout) {
+		clearTimeout(searchTimeout)
+	}
+
+	searchTimeout = setTimeout(() => {
+		// Update the filters object with the search query
+		objectStore.setFilters({
+			_search: value || ''  // Set as object property instead of array
+		})
+
+		// Only refresh if we have both register and schema selected
+		if (registerStore.registerItem && schemaStore.schemaItem) {
+			objectStore.refreshObjectList({
+				register: registerStore.registerItem.id,
+				schema: schemaStore.schemaItem.id
+			})
+		}
+	}, 1000) // 3 second delay
+}
 
 // Computed properties to handle the false values
 const selectedRegisterValue = computed({
@@ -57,6 +83,16 @@ const selectedSchemaValue = computed({
 				:loading="schemaLoading"
 				:disabled="!selectedRegister || schemaLoading" />
 
+			<!-- Add search input -->
+			<NcTextField
+				v-model="searchQuery"
+				@update:modelValue="handleSearch"
+				label="Text search"
+				type="search"
+				:disabled="!selectedRegister || !selectedSchema"
+				placeholder="Type to search..."
+				class="search-input" />
+
 			<div v-if="objectStore.objectList?.results?.length">
 				<NcCheckboxRadioSwitch 
 					v-for="(enabled, id) in objectStore.columnFilters" 
@@ -103,7 +139,7 @@ const selectedSchemaValue = computed({
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -117,6 +153,7 @@ export default {
 		NcButton,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
+		NcTextField,
 		Magnify,
 		Upload,
 		Download,
@@ -231,3 +268,11 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+/* Add some spacing for the search input */
+.search-input {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+}
+</style>

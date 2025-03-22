@@ -13,6 +13,7 @@ export const useObjectStore = defineStore('object', {
 		relations: [],
 		fileItem: false, // Single file item
 		files: [], // List of files
+		filters: {}, // List of query paramters
 		pagination: {
 			page: 1,
 			limit: 20
@@ -67,9 +68,26 @@ export const useObjectStore = defineStore('object', {
 			this.files = files
 			console.info('Files set to', files) // Logging the files
 		},
+		/**
+		 * Set pagination details
+		 *
+		 * @param {number} page
+		 * @param {number} [limit=14]
+		 * @return {void}
+		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
 			console.info('Pagination set to', { page, limit }) // Logging the pagination
+		},
+		/**
+		 * Set query filters for object list
+		 *
+		 * @param {Object} filters
+		 * @return {void}
+		 */
+		setFilters(filters) {
+			this.filters = { ...this.filters, ...filters }
+			console.info('Query filters set to', this.filters) // Logging the filters
 		},
 		async refreshObjectList(options = {}) {
 			const registerStore = useRegisterStore()
@@ -88,7 +106,14 @@ export const useObjectStore = defineStore('object', {
 			})
 			
 			const params = []
-			if (options.search) params.push('_search=' + options.search)
+
+			// Handle filters as an object
+			Object.entries(this.filters).forEach(([key, value]) => {
+				if (value !== undefined && value !== '') {
+					params.push(`${key}=${encodeURIComponent(value)}`)
+				}
+			})
+			
 			if (options.limit || this.pagination.limit) params.push('_limit=' + (options.limit || this.pagination.limit))
 			if (options.page || this.pagination.page) params.push('_page=' + (options.page || this.pagination.page))
 

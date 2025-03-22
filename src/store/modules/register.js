@@ -6,6 +6,11 @@ export const useRegisterStore = defineStore('register', {
 	state: () => ({
 		registerItem: false,
 		registerList: [],
+		filters: [], // List of query
+		pagination: {
+			page: 1,
+			limit: 20
+		},
 	}),
 	actions: {
 		setRegisterItem(registerItem) {
@@ -17,6 +22,27 @@ export const useRegisterStore = defineStore('register', {
 				(registerItem) => new Register(registerItem),
 			)
 			console.log('Register list set to ' + registerList.length + ' items')
+		},
+		/**
+		 * Set pagination details
+		 *
+		 * @param {number} page
+		 * @param {number} [limit=14]
+		 * @return {void}
+		 */
+		setPagination(page, limit = 14) {
+			this.pagination = { page, limit }
+			console.info('Pagination set to', { page, limit }) // Logging the pagination
+		},
+		/**
+		 * Set query filters for object list
+		 *
+		 * @param {Object} filters
+		 * @return {void}
+		 */
+		setFilters(filters) {
+			this.filters = { ...this.filters, ...filters }
+			console.info('Query filters set to', this.filters) // Logging the filters
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
