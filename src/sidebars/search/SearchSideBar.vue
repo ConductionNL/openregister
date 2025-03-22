@@ -7,23 +7,28 @@ import { computed } from 'vue'
 // Computed properties to handle the false values
 const selectedRegisterValue = computed({
 	get: () => {
-		// Return the full register object for the select
-		return registerStore.registerItem || null
+		if (!registerStore.registerItem) return null
+		// Return in the same format as the options
+		return {
+			value: registerStore.registerItem,
+			label: registerStore.registerItem.title
+		}
 	},
 	set: (value) => {
-		// value will be the full register object from the options
-		// because we set it as the value in registerOptions
 		registerStore.setRegisterItem(value?.value || null)
 	}
 })
 
 const selectedSchemaValue = computed({
 	get: () => {
-		// Return the full schema object for the select
-		return schemaStore.schemaItem || null
+		if (!schemaStore.schemaItem) return null
+		// Return in the same format as the options
+		return {
+			value: schemaStore.schemaItem,
+			label: schemaStore.schemaItem.title
+		}
 	},
 	set: (value) => {
-		// value will be the full schema object from the options
 		schemaStore.setSchemaItem(value?.value || null)
 	}
 })
