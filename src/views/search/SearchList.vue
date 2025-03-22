@@ -1,6 +1,17 @@
 <script setup>
 import { navigationStore, objectStore, schemaStore, searchStore } from '../../store/store.js'
 import { EventBus } from '../../eventBus.js'
+import { computed } from 'vue'
+
+const selectedSchema = computed(() => {
+	return schemaStore.schemaList.find(
+		schema => schema.id.toString() === objectStore.activeSchema?.id?.toString()
+	)
+})
+
+const schemaProperties = computed(() => {
+	return Object.values(selectedSchema.value?.properties || {}) || []
+})
 </script>
 
 <template>
@@ -47,27 +58,27 @@ import { EventBus } from '../../eventBus.js'
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(result) in searchStore.searchObjectsResult.results" :key="result.uuid" class="table-row">
+						<tr v-for="(result) in objectStore.objectList.results" :key="result['@self'].uuid" class="table-row">
 							<td class="static-column">
 								<input v-model="selectedObjects"
-									:value="result.id"
+									:value="result['@self'].id"
 									type="checkbox"
 									class="cursor-pointer"
-									@change="onSelectObject(result.id)">
+									@change="onSelectObject(result['@self'].id)">
 							</td>
 							<template v-for="header in activeHeaders">
 								<td v-if="header.enabled" :key="header.id">
 									<span v-if="header.id === 'files'">
-										<NcCounterBubble :count="result.files ? result.files.length : 0" />
+										<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
 									</span>
 									<span v-else-if="header.id === 'schemaProperties'">
 										<NcCounterBubble :count="schemaProperties.length" />
 									</span>
 									<span v-else-if="header.id === 'created' || header.id === 'updated'">
-										{{ getValidISOstring(result[header.key]) ? new Date(result[header.key]).toLocaleString() : 'N/A' }}
+										{{ getValidISOstring(result['@self'][header.key]) ? new Date(result['@self'][header.key]).toLocaleString() : 'N/A' }}
 									</span>
 									<span v-else>
-										{{ result[header.key] }}
+										{{ result['@self'][header.key] }}
 									</span>
 								</td>
 							</template>
@@ -85,6 +96,12 @@ import { EventBus } from '../../eventBus.js'
 										</template>
 										Edit
 									</NcActionButton>
+									<NcActionButton @click="deleteObject(result['@self'].id)">
+										<template #icon>
+											<Delete :size="20" />
+										</template>
+										Delete
+									</NcActionButton>
 								</NcActions>
 							</td>
 						</tr>
@@ -95,11 +112,12 @@ import { EventBus } from '../../eventBus.js'
 
 		<div class="pagination-container">
 			<BPagination
-				v-model="searchStore.searchObjectsDataPagination"
-				:total-rows="searchStore.searchObjectsResult.total"
-				:per-page="searchStore.searchObjectsDataPaginationLimit"
+				v-model="objectStore.pagination.page"
+				:total-rows="objectStore.objectList.total"
+				:per-page="objectStore.pagination.limit"
 				:first-number="true"
-				:last-number="true" />
+				:last-number="true"
+				@change="onPageChange" />
 		</div>
 
 		<MassDeleteObject v-if="massDeleteObjectModal"
@@ -178,12 +196,6 @@ export default {
 	},
 	computed: {
 		objectsLoading: () => searchStore.searchObjectsLoading,
-		selectedSchema() {
-			return schemaStore.schemaList.find((schema) => schema.id.toString() === searchStore.searchObjectsResult?.results?.[0]?.schema?.toString())
-		},
-		schemaProperties() {
-			return Object.values(this.selectedSchema.properties) || []
-		},
 	},
 	watch: {
 		headers: {
@@ -222,7 +234,7 @@ export default {
 		 * This is used to ensure that the selectAllObjects state is always in sync with the selectedObjects array.
 		 */
 		setSelectAllObjects() {
-			const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result.id) || []
+			const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result['@self'].id) || []
 			this.selectAllObjects = allObjectIds.every(id => this.selectedObjects.includes(id))
 		},
 		onSelectObject(id) {
@@ -236,27 +248,29 @@ export default {
 				// add all ids from searchObjectsResult to selectedObjects
 				this.selectedObjects = [
 					...this.selectedObjects,
-					...searchStore.searchObjectsResult.results.map((result) => result.id).filter((id) => !this.selectedObjects.includes(id)),
+					...searchStore.searchObjectsResult.results.map((result) => result['@self'].id).filter((id) => !this.selectedObjects.includes(id)),
 				]
 			} else {
 				// remove all ids from searchObjectsResult in selectedObjects
-				const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result.id) || []
+				const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result['@self'].id) || []
 				this.selectedObjects = this.selectedObjects.filter((id) => !allObjectIds.includes(id))
 			}
 		},
 		onMassDeleteSuccess() {
-			const unwatch = this.$watch(
-				() => searchStore.searchObjectsLoading,
-				(newVal) => {
-					if (newVal === false) {
-						this.selectedObjects = []
-						this.setSelectAllObjects()
-						unwatch() // Remove the watcher once we're done
-					}
-				},
-			)
-			searchStore.reDoSearch()
+			objectStore.refreshObjectList()
 		},
+		async deleteObject(id) {
+			try {
+				await objectStore.deleteObject(id)
+				objectStore.refreshObjectList()
+			} catch (error) {
+				console.error('Failed to delete object:', error)
+			}
+		},
+		onPageChange(page) {
+			objectStore.setPagination(page)
+			objectStore.refreshObjectList()
+		}
 	},
 }
 </script>

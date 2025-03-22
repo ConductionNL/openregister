@@ -11,6 +11,12 @@ export const useObjectStore = defineStore('object', {
 		relations: [],
 		fileItem: false, // Single file item
 		files: [], // List of files
+		activeRegister: null,
+		activeSchema: null,
+		pagination: {
+			page: 1,
+			limit: 20
+		}
 	}),
 	actions: {
 		// Helper method to build endpoint path
@@ -47,25 +53,41 @@ export const useObjectStore = defineStore('object', {
 		},
 		setFileItem(fileItem) {
 			this.fileItem = fileItem
+			console.info('File item set to', fileItem) // Logging the file item
 		},
 		setFiles(files) {
 			this.files = files
+			console.info('Files set to', files) // Logging the files
+		},
+		setActiveRegister(register) {
+			this.activeRegister = register
+			console.info('Active register set to', register) // Logging the active register
+		},
+		setActiveSchema(schema) {
+			this.activeSchema = schema
+			console.info('Active schema set to', schema) // Logging the active schema
+		},
+		setPagination(page, limit = 14) {
+			this.pagination = { page, limit }
+			console.info('Pagination set to', { page, limit }) // Logging the pagination
 		},
 		async refreshObjectList(options = {}) {
-			if (!options.register || !options.schema) {
+			const register = options.register || this.activeRegister?.id
+			const schema = options.schema || this.activeSchema?.id
+			
+			if (!register || !schema) {
 				throw new Error('Register and schema are required')
 			}
 
 			let endpoint = this._buildObjectPath({
-				register: options.register,
-				schema: options.schema
+				register,
+				schema
 			})
 			
 			const params = []
-
 			if (options.search) params.push('_search=' + options.search)
-			if (options.limit) params.push('_limit=' + options.limit)
-			if (options.page) params.push('_page=' + options.page)
+			if (options.limit || this.pagination.limit) params.push('_limit=' + (options.limit || this.pagination.limit))
+			if (options.page || this.pagination.page) params.push('_page=' + (options.page || this.pagination.page))
 
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')

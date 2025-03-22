@@ -1,30 +1,30 @@
 <script setup>
-import { searchStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
 </script>
 
 <template>
 	<NcAppSidebar
-		name="Zoek opdracht"
-		subtitle="baldie"
-		subname="Binnen het federatieve netwerk">
-		<NcAppSidebarTab id="search-tab" name="Zoeken" :order="1">
+		name="Object selection"
+		subtitle="Select register and schema"
+		subname="Within the federative network">
+		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
 			<NcSelect v-bind="registerOptions"
-				v-model="searchStore.searchObjectsDataRegister"
-				input-label="Registratie"
+				v-model="objectStore.activeRegister"
+				input-label="Register"
 				:loading="registerLoading"
 				:disabled="registerLoading" />
 			<NcSelect v-bind="schemaOptions"
-				v-model="searchStore.searchObjectsDataSchema"
+				v-model="objectStore.activeSchema"
 				input-label="Schema"
 				:loading="schemaLoading"
 				:disabled="!selectedRegister?.id || schemaLoading" />
 
-			<div v-if="searchStore.searchObjectsResult?.results?.length">
+			<div v-if="objectStore.objectList?.results?.length">
 				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
 					@update:checked="(status) => emitUpdatedColumnFilter(status, 'objectId')">
 					ObjectID
@@ -96,6 +96,10 @@ export default {
 		NcSelect,
 		NcButton,
 		NcNoteCard,
+		NcCheckboxRadioSwitch,
+		Magnify,
+		Upload,
+		Download,
 	},
 	data() {
 		return {
@@ -111,16 +115,10 @@ export default {
 				files: true,
 				schemaProperties: true,
 			},
-			/**
-			 * This is used to prevent another search from being triggered when schema is changed.
-			 * This is needed because the pagination is set to 1 when switching schema.
-			 * Which will trigger another search.
-			 */
 			ignoreNextPageWatch: false,
 		}
 	},
 	computed: {
-		// when registerList is filled, make a options object for NcSelect
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -129,10 +127,11 @@ export default {
 				})),
 			}
 		},
-		// when schemaList is filled, make a options object for NcSelect based on the selected register
 		schemaOptions() {
-			const fullSelectedRegister = registerStore.registerList.find(register => register.id === (this.selectedRegister?.id || Symbol('no selected register')))
-			if (!fullSelectedRegister) return []
+			const fullSelectedRegister = registerStore.registerList.find(
+				register => register.id === (this.selectedRegister?.id || Symbol('no selected register'))
+			)
+			if (!fullSelectedRegister) return { options: [] }
 
 			return {
 				options: schemaStore.schemaList
@@ -143,62 +142,51 @@ export default {
 					})),
 			}
 		},
-		selectedRegister: () => searchStore.searchObjectsDataRegister,
-		selectedSchema: () => searchStore.searchObjectsDataSchema,
-		page: () => searchStore.searchObjectsDataPagination,
+		selectedRegister() {
+			return objectStore.activeRegister
+		},
+		selectedSchema() {
+			return objectStore.activeSchema
+		},
 	},
 	watch: {
-		// when the selected register changes clear the selected schema
 		selectedRegister(newValue) {
-			searchStore.searchObjectsDataSchema = null
+			objectStore.setActiveSchema(null)
 		},
-		// when selectedSchema changes, search for objects with the selected register and schema as filters
 		selectedSchema(newValue) {
 			if (newValue?.id) {
-				searchStore.searchObjectsDataPagination = 1
+				objectStore.setPagination(1)
 				this.ignoreNextPageWatch = true
 
-				this.searchObjects()
+				objectStore.refreshObjectList()
 
-				// wait for loading to finish, then allow watching on page to continue
 				const unwatch = this.$watch(
-					() => searchStore.searchObjectsLoading,
+					() => objectStore.loading,
 					(newVal) => {
 						if (newVal === false) {
 							this.ignoreNextPageWatch = false
-							unwatch() // Remove the watcher once we're done
+							unwatch()
 						}
 					},
 				)
 			}
 		},
-		page() {
-			if (this.ignoreNextPageWatch) {
-				return
-			}
-			this.searchObjects()
-		},
 	},
 	mounted() {
 		this.registerLoading = true
 		this.schemaLoading = true
-		registerStore.refreshRegisterList().finally(() => (this.registerLoading = false))
-		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
+		
+		registerStore.refreshRegisterList()
+			.finally(() => (this.registerLoading = false))
+		
+		schemaStore.refreshSchemaList()
+			.finally(() => (this.schemaLoading = false))
 
 		this.initAppInstallService()
 	},
 	methods: {
-		searchObjects() {
-			searchStore.searchObjects({
-				register: searchStore.searchObjectsDataRegister?.id,
-				schema: searchStore.searchObjectsDataSchema?.id,
-				_limit: searchStore.searchObjectsDataPaginationLimit,
-				_page: searchStore.searchObjectsDataPagination,
-			})
-		},
 		async initAppInstallService() {
 			await this.appInstallService.init()
-
 			this.openConnectorInstalled = await this.appInstallService.isAppInstalled('openconnector')
 		},
 		async installApp(appId) {
@@ -206,7 +194,6 @@ export default {
 				await this.appInstallService.forceInstallApp(appId)
 				this.openConnectorInstalled = true
 			} catch (error) {
-				// gracefully show error to user and remove the button
 				if (error.status === 403 && error.data?.message === 'Password confirmation is required') {
 					console.error('Password confirmation needed before installing apps')
 				} else {
