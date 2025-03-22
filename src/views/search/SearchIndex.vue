@@ -109,13 +109,13 @@ export default {
 
 /* Add styles for the delete button container */
 :deep(.button-vue) {
-    margin-top: 12px;
-    margin-right: 12px;
-    padding-right: 12px;
+    margin-top: 15px;
+    margin-right: 15px;
+    padding-right: 15px;
 }
 
 /* Add styles for note cards */
-:deep(.note-card) {
+:deep(.notecard) {
     margin-left: 15px;
     margin-right: 15px;
 }
