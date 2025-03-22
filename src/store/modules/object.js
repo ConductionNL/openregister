@@ -16,7 +16,15 @@ export const useObjectStore = defineStore('object', {
 		pagination: {
 			page: 1,
 			limit: 20
-		}
+		},
+		selectedObjects: [],
+		columnFilters: {
+			objectId: true,
+			created: true,
+			updated: true,
+			files: true,
+		},
+		loading: false
 	}),
 	actions: {
 		// Helper method to build endpoint path
@@ -421,5 +429,27 @@ export const useObjectStore = defineStore('object', {
 				throw new Error(`Failed to revert object: ${error.message}`)
 			}
 		},
+		setSelectedObjects(objects) {
+			this.selectedObjects = objects
+		},
+		toggleSelectAllObjects() {
+			if (this.isAllSelected) {
+				// Clear selection
+				this.selectedObjects = []
+			} else {
+				// Select all current objects
+				this.selectedObjects = this.objectList.results.map(result => result['@self'].id)
+			}
+		},
+		updateColumnFilter(id, enabled) {
+			this.columnFilters[id] = enabled
+		},
 	},
+	getters: {
+		isAllSelected() {
+			if (!this.objectList?.results?.length) return false
+			const currentIds = this.objectList.results.map(result => result['@self'].id)
+			return currentIds.every(id => this.selectedObjects.includes(id))
+		}
+	}
 })

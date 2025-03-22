@@ -25,25 +25,12 @@ import { EventBus } from '../../eventBus.js'
 				:disabled="!selectedRegister?.id || schemaLoading" />
 
 			<div v-if="objectStore.objectList?.results?.length">
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'objectId')">
-					ObjectID
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.created"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'created')">
-					Created
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.updated"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'updated')">
-					Updated
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.files"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'files')">
-					Files
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.schemaProperties"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'schemaProperties')">
-					Schema properties
+				<NcCheckboxRadioSwitch 
+					v-for="(enabled, id) in objectStore.columnFilters" 
+					:key="id"
+					:checked="enabled"
+					@update:checked="(status) => objectStore.updateColumnFilter(id, status)">
+					{{ getColumnLabel(id) }}
 				</NcCheckboxRadioSwitch>
 			</div>
 		</NcAppSidebarTab>
@@ -108,14 +95,6 @@ export default {
 			appInstallService: new AppInstallService(),
 			openConnectorInstalled: true,
 			openConnectorInstallError: false,
-			columnFilter: {
-				objectId: true,
-				created: true,
-				updated: true,
-				files: true,
-				schemaProperties: true,
-			},
-			ignoreNextPageWatch: false,
 		}
 	},
 	computed: {
@@ -202,11 +181,14 @@ export default {
 				this.openConnectorInstallError = true
 			}
 		},
-		emitUpdatedColumnFilter(status, id) {
-			EventBus.$emit('object-search-set-column-filter', {
-				id,
-				enabled: status,
-			})
+		getColumnLabel(id) {
+			const labels = {
+				objectId: 'ObjectID',
+				created: 'Created',
+				updated: 'Updated',
+				files: 'Files',
+			}
+			return labels[id] || id
 		},
 	},
 }

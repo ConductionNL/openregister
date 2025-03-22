@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, objectStore, schemaStore, searchStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 import { EventBus } from '../../eventBus.js'
 import { computed } from 'vue'
 
@@ -15,22 +15,7 @@ const schemaProperties = computed(() => {
 </script>
 
 <template>
-	<div class="search-list">
-		<div class="search-list-header">
-			<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
-				:size="24"
-				class="loadingIcon"
-				appearance="dark"
-				name="Objects loading" />
-
-			<NcButton :disabled="selectedObjects.length === 0" type="error" @click="() => massDeleteObjectModal = true">
-				<template #icon>
-					<Delete :size="20" />
-				</template>
-				Delete {{ selectedObjects.length }} {{ selectedObjects.length > 1 ? 'objects' : 'object' }}
-			</NcButton>
-		</div>
-
+	<div class="search-list">				
 		<div class="search-list-table">
 			<VueDraggable v-model="activeHeaders"
 				target=".sort-target"
@@ -40,19 +25,20 @@ const schemaProperties = computed(() => {
 					<thead>
 						<tr class="table-row sort-target">
 							<th class="static-column">
-								<input v-model="selectAllObjects"
+								<input 
+									:checked="objectStore.isAllSelected"
 									type="checkbox"
 									class="cursor-pointer"
-									@change="toggleSelectAllObjects()">
+									@change="objectStore.toggleSelectAllObjects">
 							</th>
 							<template v-for="header in activeHeaders">
 								<th v-if="header.enabled" :key="header.id">
-									<span class="sticky-header">
+									<span class="sticky-header column-title">
 										{{ header.label }}
 									</span>
 								</th>
 							</template>
-							<th class="static-column">
+							<th class="static-column column-title">
 								Actions
 							</th>
 						</tr>
@@ -60,19 +46,16 @@ const schemaProperties = computed(() => {
 					<tbody>
 						<tr v-for="(result) in objectStore.objectList.results" :key="result['@self'].uuid" class="table-row">
 							<td class="static-column">
-								<input v-model="selectedObjects"
+								<input 
+									v-model="objectStore.selectedObjects"
 									:value="result['@self'].id"
 									type="checkbox"
-									class="cursor-pointer"
-									@change="onSelectObject(result['@self'].id)">
+									class="cursor-pointer">
 							</td>
 							<template v-for="header in activeHeaders">
 								<td v-if="header.enabled" :key="header.id">
 									<span v-if="header.id === 'files'">
 										<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
-									</span>
-									<span v-else-if="header.id === 'schemaProperties'">
-										<NcCounterBubble :count="schemaProperties.length" />
 									</span>
 									<span v-else-if="header.id === 'created' || header.id === 'updated'">
 										{{ getValidISOstring(result['@self'][header.key]) ? new Date(result['@self'][header.key]).toLocaleString() : 'N/A' }}
@@ -121,7 +104,7 @@ const schemaProperties = computed(() => {
 		</div>
 
 		<MassDeleteObject v-if="massDeleteObjectModal"
-			:selected-objects="selectedObjects"
+			:selected-objects="objectStore.selectedObjects"
 			@close-modal="() => massDeleteObjectModal = false"
 			@success="onMassDeleteSuccess" />
 	</div>
@@ -169,14 +152,8 @@ export default {
 				},
 				{
 					id: 'files',
-					label: 'Amount of files',
+					label: 'Files',
 					key: 'files',
-					enabled: true,
-				},
-				{
-					id: 'schemaProperties',
-					label: 'Schema properties',
-					key: null,
 					enabled: true,
 				},
 			],
@@ -187,24 +164,23 @@ export default {
 			 * This array is a copy of the headers array but with the disabled headers filtered out.
 			 */
 			activeHeaders: [],
-			// select boxes
-			selectAllObjects: false,
-			selectedObjects: [],
 			// modal state
 			massDeleteObjectModal: false,
 		}
 	},
 	computed: {
-		objectsLoading: () => searchStore.searchObjectsLoading,
+		loading() {
+			return objectStore.loading
+		},
 	},
 	watch: {
-		headers: {
+		'objectStore.columnFilters': {
 			handler() {
 				this.setActiveHeaders()
 			},
-			deep: true,
+			deep: true
 		},
-		objectsLoading: {
+		loading: {
 			handler(newVal) {
 				// if loading finished, run setSelectAllObjects
 				newVal === false && this.setSelectAllObjects()
@@ -226,7 +202,8 @@ export default {
 	},
 	methods: {
 		setActiveHeaders() {
-			this.activeHeaders = _.cloneDeep(this.headers.filter((header) => header.enabled))
+			this.activeHeaders = this.headers
+				.filter(header => objectStore.columnFilters[header.id])
 		},
 		/**
 		 * This function sets the selectAllObjects state to true if all object ids from the searchObjectsResult are in the selectedObjects array.
@@ -234,27 +211,11 @@ export default {
 		 * This is used to ensure that the selectAllObjects state is always in sync with the selectedObjects array.
 		 */
 		setSelectAllObjects() {
-			const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result['@self'].id) || []
+			const allObjectIds = objectStore.objectList?.results?.map(result => result['@self'].id) || []
 			this.selectAllObjects = allObjectIds.every(id => this.selectedObjects.includes(id))
-		},
-		onSelectObject(id) {
-			this.setSelectAllObjects()
 		},
 		openLink(link, type = '') {
 			window.open(link, type)
-		},
-		toggleSelectAllObjects() {
-			if (this.selectAllObjects) {
-				// add all ids from searchObjectsResult to selectedObjects
-				this.selectedObjects = [
-					...this.selectedObjects,
-					...searchStore.searchObjectsResult.results.map((result) => result['@self'].id).filter((id) => !this.selectedObjects.includes(id)),
-				]
-			} else {
-				// remove all ids from searchObjectsResult in selectedObjects
-				const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result['@self'].id) || []
-				this.selectedObjects = this.selectedObjects.filter((id) => !allObjectIds.includes(id))
-			}
 		},
 		onMassDeleteSuccess() {
 			objectStore.refreshObjectList()
@@ -278,9 +239,16 @@ export default {
 <style scoped>
 .search-list-header {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
-    gap: 10px;
-    margin-inline-end: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.search-list-header h2 {
+    margin: 0;
+    font-size: var(--default-font-size);
+    font-weight: bold;
 }
 
 .search-list-table {
@@ -353,5 +321,10 @@ input[type="checkbox"] {
     background-color: var(--color-primary-element-light) !important;
     opacity: 0.5 !important;
     cursor: not-allowed !important;
+}
+
+/* Make column titles bold */
+.column-title {
+    font-weight: bold;
 }
 </style>

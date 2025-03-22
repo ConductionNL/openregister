@@ -1,20 +1,24 @@
 <script setup>
 import { objectStore } from '../../store/store.js'
 import { computed } from 'vue'
+import { NcButton } from '@nextcloud/vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 
 const pageTitle = computed(() => {
 	if (!objectStore.activeRegister) {
 		return 'No register selected'
 	}
 	
-	const registerName = objectStore.activeRegister.label || objectStore.activeRegister.title
+	const registerName = (objectStore.activeRegister.label || objectStore.activeRegister.title).toUpperCase()
+	const objectCount = objectStore.objectList?.results?.length || 0
+	const objectTotal = objectStore.objectList?.total || 0
 	
 	if (!objectStore.activeSchema) {
 		return `${registerName} / No schema selected`
 	}
 	
-	const schemaName = objectStore.activeSchema.label || objectStore.activeSchema.title
-	return `${registerName} / ${schemaName}`
+	const schemaName = (objectStore.activeSchema.label || objectStore.activeSchema.title).toUpperCase()
+	return `${registerName} / ${schemaName} (${objectCount} of ${objectTotal})`
 })
 
 const showNoRegisterWarning = computed(() => !objectStore.activeRegister)
@@ -30,9 +34,19 @@ const showNoObjectsMessage = computed(() => {
 <template>
 	<NcAppContent>
 		<span class="pageHeaderContainer">
-			<h2 class="pageHeader">
+			<h1 class="pageHeader">
 				{{ pageTitle }}
-			</h2>
+			</h1>
+			<NcButton 
+				:disabled="!objectStore.selectedObjects.length" 
+				type="error" 
+				@click="() => massDeleteObjectModal = true">
+				<template #icon>
+					<Delete :size="20" />
+				</template>
+				Delete {{ objectStore.selectedObjects.length }} 
+				{{ objectStore.selectedObjects.length > 1 ? 'objects' : 'object' }}
+			</NcButton>
 		</span>
 
 		<!-- Warning when no register is selected -->
@@ -50,13 +64,13 @@ const showNoObjectsMessage = computed(() => {
 			<p>There are no objects that match this filter</p>
 		</NcNoteCard>
 
-		<NcLoadingIcon v-if="objectStore.loading && !objectStore.objectList?.results?.length"
+		<NcLoadingIcon v-if="objectStore.loading"
 			:size="64"
 			class="loadingIcon"
 			appearance="dark"
 			name="Objects loading" />
 
-		<SearchList v-if="objectStore.objectList?.results?.length" />
+		<SearchList v-if="!objectStore.loading && objectStore.objectList?.results?.length && objectStore.activeRegister && objectStore.activeSchema" />
 	</NcAppContent>
 </template>
 
@@ -71,6 +85,8 @@ export default {
 		NcNoteCard,
 		NcLoadingIcon,
 		SearchList,
+		NcButton,
+		Delete,
 	},
 }
 </script>
@@ -80,8 +96,31 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0;
 }
-.pageHeaderContainer > .loadingIcon {
+
+.pageHeader {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Oxygen-Sans, Cantarell, Ubuntu, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-size: 30px;
+	font-weight: 600;
+    margin-left: 50px;
+    text-transform: capitalize;
+}
+
+/* Add styles for the delete button container */
+:deep(.button-vue) {
+    margin-top: 12px;
+    margin-right: 12px;
+    padding-right: 12px;
+}
+
+/* Add styles for note cards */
+:deep(.note-card) {
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
+.loadingIcon {
     margin-inline-end: 1rem;
 }
 </style>
