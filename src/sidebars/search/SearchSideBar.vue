@@ -2,7 +2,7 @@
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 
 // Add search input ref and debounce function
 const searchQuery = ref('')
@@ -70,6 +70,16 @@ const metadataColumns = computed(() => {
 		...meta
 	}))
 })
+
+// Watch for schema changes to initialize properties
+watch(() => schemaStore.schemaItem, (newSchema) => {
+	if (newSchema) {
+		objectStore.initializeProperties(newSchema)
+	} else {
+		objectStore.properties = {}
+		objectStore.initializeColumnFilters()
+	}
+}, { immediate: true })
 </script>
 
 <template>
@@ -118,6 +128,27 @@ const metadataColumns = computed(() => {
 				<FormatColumns :size="20" />
 			</template>
 
+			<!-- Custom Columns Section -->
+			<div class="section">
+				<h3 class="section-title">Properties</h3>
+				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
+					No schema selected. Please select a schema to view properties.
+				</NcNoteCard>
+				<NcNoteCard v-else-if="!Object.keys(objectStore.properties || {}).length" type="warning">
+					Selected schema has no properties. Please add properties to the schema.
+				</NcNoteCard>
+				<div v-else class="column-switches">
+					<NcCheckboxRadioSwitch 
+						v-for="(property, propertyName) in objectStore.properties" 
+						:key="`prop_${propertyName}`"
+						:checked="objectStore.columnFilters[`prop_${propertyName}`]"
+						@update:checked="(status) => objectStore.updateColumnFilter(`prop_${propertyName}`, status)"
+						:title="property.description">
+						{{ property.label }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</div>
+
 			<!-- Default Columns Section -->
 			<div class="section">
 				<h3 class="section-title">Metadata</h3>
@@ -127,67 +158,14 @@ const metadataColumns = computed(() => {
 				<div class="column-switches" v-if="schemaStore.schemaItem">
 					<NcCheckboxRadioSwitch 
 						v-for="meta in metadataColumns" 
-						:key="meta.id"
-						:checked="objectStore.columnFilters[meta.id]"
-						@update:checked="(status) => objectStore.updateColumnFilter(meta.id, status)"
+						:key="`meta_${meta.id}`"
+						:checked="objectStore.columnFilters[`meta_${meta.id}`]"
+						@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)"
 						:title="meta.description">
 						{{ meta.label }}
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
-
-			<!-- Custom Columns Section -->
-			<div class="section" >
-				<h3 class="section-title">Properties</h3>
-				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
-					No schema selected. Please select a schema to view custom columns.
-				</NcNoteCard>
-				<NcNoteCard v-else-if="!Object.keys(schemaStore.schemaItem.properties || {}).length" type="warning">
-					Selected schema has no properties. Please add properties to the schema.
-				</NcNoteCard>
-				<div v-else class="column-switches">
-					<NcCheckboxRadioSwitch 
-						v-for="(property, propertyName) in schemaStore.schemaItem.properties" 
-						:key="propertyName"
-						:checked="objectStore.columnFilters[propertyName]"
-						@update:checked="(status) => objectStore.updateColumnFilter(propertyName, status)"
-						:title="property.description || propertyName">
-						{{ propertyName }}
-					</NcCheckboxRadioSwitch>
-				</div>
-			</div>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
-			<template #icon>
-				<Upload :size="20" />
-			</template>
-
-			<NcNoteCard type="info">
-				OpenConnector is required for this feature.
-				<NcButton v-if="!openConnectorInstalled && !openConnectorInstallError" type="secondary" @click="installApp('openconnector')">
-					Install OpenConnector
-				</NcButton>
-			</NcNoteCard>
-			<NcNoteCard v-if="openConnectorInstallError" type="error">
-				Failed to install OpenConnector. Check console for more details.
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="download-tab" name="Download" :order="3">
-			<template #icon>
-				<Download :size="20" />
-			</template>
-
-			<NcNoteCard type="info">
-				OpenConnector is required for this feature.
-				<NcButton v-if="!openConnectorInstalled && !openConnectorInstallError" type="secondary" @click="installApp('openconnector')">
-					Install OpenConnector
-				</NcButton>
-			</NcNoteCard>
-			<NcNoteCard v-if="openConnectorInstallError" type="error">
-				Failed to install OpenConnector. Check console for more details.
-			</NcNoteCard>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>

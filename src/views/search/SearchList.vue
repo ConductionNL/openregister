@@ -31,10 +31,10 @@ const schemaProperties = computed(() => {
 									class="cursor-pointer"
 									@change="objectStore.toggleSelectAllObjects">
 							</th>
-							<th v-for="meta in objectStore.enabledMetadata" 
-								:key="meta.id">
-								<span class="sticky-header column-title" :title="meta.description">
-									{{ meta.label }}
+							<th v-for="column in objectStore.enabledColumns" 
+								:key="column.id">
+								<span class="sticky-header column-title" :title="column.description">
+									{{ column.label }}
 								</span>
 							</th>
 							<th class="static-column column-title">
@@ -53,17 +53,22 @@ const schemaProperties = computed(() => {
 									type="checkbox"
 									class="cursor-pointer">
 							</td>
-							<td v-for="meta in objectStore.enabledMetadata" 
-								:key="meta.id">
-								<span v-if="meta.id === 'files'">
-									<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
-								</span>
-								<span v-else-if="meta.id === 'created' || meta.id === 'updated'">
-									{{ getValidISOstring(result['@self'][meta.key]) ? new Date(result['@self'][meta.key]).toLocaleString() : 'N/A' }}
-								</span>
-								<span v-else>
-									{{ result['@self'][meta.key] }}
-								</span>
+							<td v-for="column in objectStore.enabledColumns" 
+								:key="column.id">
+								<template v-if="column.id.startsWith('meta_')">
+									<span v-if="column.id === 'meta_files'">
+										<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
+									</span>
+									<span v-else-if="column.id === 'meta_created' || column.id === 'meta_updated'">
+										{{ getValidISOstring(result['@self'][column.key]) ? new Date(result['@self'][column.key]).toLocaleString() : 'N/A' }}
+									</span>
+									<span v-else>
+										{{ result['@self'][column.key] }}
+									</span>
+								</template>
+								<template v-else>
+									<span>{{ result[column.key] ?? 'N/A' }}</span>
+								</template>
 							</td>
 							<td class="static-column">
 								<NcActions>

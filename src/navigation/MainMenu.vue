@@ -19,8 +19,13 @@ import { navigationStore } from '../store/store.js'
 				<template #icon>
 					<FileTreeOutline :size="20" />
 				</template>
+			</NcAppNavigationItem> 
+			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Tables" @click="navigationStore.setSelected('search')">
+				<template #icon>
+					<TableMultiple :size="20" />
+				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Objects table" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
 				<template #icon>
 					<LayersSearchOutline :size="20" />
 				</template>
@@ -52,6 +57,7 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
+import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
 
 export default {
 	name: 'MainMenu',
@@ -65,6 +71,8 @@ export default {
 		DatabaseOutline,
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
+		TableMultiple,
+		LayersSearchOutline,
 	},
 	methods: {
 		openLink(url, type = '') {

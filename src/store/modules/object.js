@@ -111,7 +111,8 @@ export const useObjectStore = defineStore('object', {
 				enabled: true  // Enabled by default
 			}
 		},
-		columnFilters: {},  // This will now be populated from metadata
+		properties: {}, // Will be populated based on schema
+		columnFilters: {},  // Will contain both metadata and property filters
 		loading: false
 	}),
 	actions: {
@@ -549,21 +550,71 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		updateColumnFilter(id, enabled) {
-			console.log('Updating column filter:', id, enabled) // Debug log
-			if (this.metadata[id]) {
-				this.metadata[id].enabled = enabled
-				this.columnFilters[id] = enabled
-				// Force a refresh of the table
-				this.objectList = { ...this.objectList }
+			console.log('Updating column filter:', id, enabled)
+			console.log('Current columnFilters:', this.columnFilters)
+			
+			if (id.startsWith('meta_')) {
+				const metaId = id.replace('meta_', '')
+				if (this.metadata[metaId]) {
+					this.metadata[metaId].enabled = enabled
+					this.columnFilters[id] = enabled
+					console.log('Updated metadata filter:', metaId, enabled)
+				}
+			} else if (id.startsWith('prop_')) {
+				const propId = id.replace('prop_', '')
+				if (this.properties[propId]) {
+					this.properties[propId].enabled = enabled
+					this.columnFilters[id] = enabled
+					console.log('Updated property filter:', propId, enabled)
+				}
 			}
+			
+			console.log('Updated columnFilters:', this.columnFilters)
+			// Force a refresh of the table
+			this.objectList = { ...this.objectList }
 		},
-		// Initialize columnFilters from metadata enabled states
+		// Initialize properties based on schema
+		initializeProperties(schema) {
+			if (!schema?.properties) return
+
+			console.log('Initializing properties from schema:', schema.properties)
+
+			// Reset properties
+			this.properties = {}
+
+			// Create property entries similar to metadata structure
+			Object.entries(schema.properties).forEach(([propertyName, property]) => {
+				this.properties[propertyName] = {
+					// Capitalize first letter and replace underscores/hyphens with spaces
+					label: propertyName
+						.split(/[-_]/)
+						.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+						.join(' '),
+					key: propertyName,
+					description: property.description || '',
+					enabled: false,
+					type: property.type
+				}
+			})
+
+			console.log('Properties initialized:', this.properties)
+
+			// Reinitialize column filters to include new properties
+			this.initializeColumnFilters()
+		},
+		// Update to handle both metadata and properties
 		initializeColumnFilters() {
-			this.columnFilters = Object.entries(this.metadata).reduce((acc, [id, meta]) => {
-				acc[id] = meta.enabled
-				return acc
-			}, {})
-			console.log('Initialized column filters:', this.columnFilters) // Debug log
+			this.columnFilters = {
+				...Object.entries(this.metadata).reduce((acc, [id, meta]) => {
+					acc[`meta_${id}`] = meta.enabled
+					return acc
+				}, {}),
+				...Object.entries(this.properties).reduce((acc, [id, prop]) => {
+					acc[`prop_${id}`] = prop.enabled
+					return acc
+				}, {})
+			}
+			console.log('Initialized column filters:', this.columnFilters)
 		},
 	},
 	getters: {
@@ -575,11 +626,53 @@ export const useObjectStore = defineStore('object', {
 		// Add getter for enabled metadata columns
 		enabledMetadata() {
 			return Object.entries(this.metadata)
-				.filter(([id]) => this.columnFilters[id])
+				.filter(([id]) => this.columnFilters[`meta_${id}`])
 				.map(([id, meta]) => ({
-					id,
+					id: `meta_${id}`,
 					...meta
 				}))
+		},
+		// Add getter for enabled property columns
+		enabledProperties() {
+			return Object.entries(this.properties)
+				.filter(([id]) => this.columnFilters[`prop_${id}`])
+				.map(([id, prop]) => ({
+					id: `prop_${id}`,
+					...prop
+				}))
+		},
+		// Separate getter for ID/UUID metadata
+		enabledIdentifierMetadata() {
+			return Object.entries(this.metadata)
+				.filter(([id]) => 
+					(id === 'objectId' || id === 'uuid') && 
+					this.columnFilters[`meta_${id}`]
+				)
+				.map(([id, meta]) => ({
+					id: `meta_${id}`,
+					...meta
+				}))
+		},
+		// Separate getter for other metadata
+		enabledOtherMetadata() {
+			return Object.entries(this.metadata)
+				.filter(([id]) => 
+					id !== 'objectId' && 
+					id !== 'uuid' && 
+					this.columnFilters[`meta_${id}`]
+				)
+				.map(([id, meta]) => ({
+					id: `meta_${id}`,
+					...meta
+				}))
+		},
+		// Combined enabled columns in the desired order
+		enabledColumns() {
+			return [
+				...this.enabledIdentifierMetadata,  // ID/UUID first
+				...this.enabledProperties,          // Then properties
+				...this.enabledOtherMetadata        // Then other metadata
+			]
 		}
 	}
 })
