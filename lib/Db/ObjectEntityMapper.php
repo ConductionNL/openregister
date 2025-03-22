@@ -311,16 +311,27 @@ class ObjectEntityMapper extends QBMapper
 	}
 
 	/**
-	 * @inheritDoc
+	 * Inserts a new entity into the database.
+	 *
+	 * @param Entity $entity The entity to insert.
+	 * @return Entity The inserted entity.
 	 */
 	public function insert(Entity $entity): Entity
 	{
+		// Set the owner to the current user if logged in
+		if ($this->userSession->isLoggedIn()) {
+			$entity->setOwner($this->userSession->getUser()->getUID());
+		}
+
+		// Set the application to the current application
+		$currentApp = \OC::$server->getAppManager()->getCurrentApp();
+		$entity->setApplication($currentApp);
+
 		$entity = parent::insert($entity);
 		// Dispatch creation event
 		$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
 		return $entity;
-
 	}
 
 	/**
