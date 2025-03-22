@@ -6,13 +6,26 @@ import { computed } from 'vue'
 
 // Computed properties to handle the false values
 const selectedRegisterValue = computed({
-	get: () => registerStore.registerItem || null,
-	set: (value) => registerStore.setRegisterItem(value)
+	get: () => {
+		// Return the full register object for the select
+		return registerStore.registerItem || null
+	},
+	set: (value) => {
+		// value will be the full register object from the options
+		// because we set it as the value in registerOptions
+		registerStore.setRegisterItem(value?.value || null)
+	}
 })
 
 const selectedSchemaValue = computed({
-	get: () => schemaStore.schemaItem || null,
-	set: (value) => schemaStore.setSchemaItem(value)
+	get: () => {
+		// Return the full schema object for the select
+		return schemaStore.schemaItem || null
+	},
+	set: (value) => {
+		// value will be the full schema object from the options
+		schemaStore.setSchemaItem(value?.value || null)
+	}
 })
 </script>
 
@@ -30,7 +43,8 @@ const selectedSchemaValue = computed({
 				@update:model-value="selectedRegisterValue = $event"
 				input-label="Register"
 				:loading="registerLoading"
-				:disabled="registerLoading" />
+				:disabled="registerLoading"
+				placeholder="Select a register" />
 			<NcSelect v-bind="schemaOptions"
 				:model-value="selectedSchemaValue"
 				@update:model-value="selectedSchemaValue = $event"
@@ -115,8 +129,8 @@ export default {
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
+					value: register,  // The full object goes in value
 					label: register.title,
-					id: register.id,
 				})),
 			}
 		},
@@ -130,8 +144,8 @@ export default {
 				options: schemaStore.schemaList
 					.filter(schema => fullSelectedRegister.schemas.includes(schema.id))
 					.map(schema => ({
+						value: schema,  // The full object goes in value
 						label: schema.title,
-						id: schema.id,
 					})),
 			}
 		},

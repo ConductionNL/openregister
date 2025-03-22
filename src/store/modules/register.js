@@ -10,7 +10,7 @@ export const useRegisterStore = defineStore('register', {
 	actions: {
 		setRegisterItem(registerItem) {
 			this.registerItem = registerItem && new Register(registerItem)
-			console.log('Active register item set to ' + registerItem)
+			console.log('Active register item set to ' + registerItem.name)
 		},
 		setRegisterList(registerList) {
 			this.registerList = registerList.map(
