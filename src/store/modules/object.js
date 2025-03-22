@@ -19,12 +19,93 @@ export const useObjectStore = defineStore('object', {
 			limit: 20
 		},
 		selectedObjects: [],
-		columnFilters: {
-			objectId: true,
-			created: true,
-			updated: true,
-			files: true,
+		metadata: {
+			objectId: {
+				label: 'ID',
+				key: 'id',
+				description: 'Unique identifier of the object',
+				enabled: true  // Enabled by default
+			},
+			uuid: {
+				label: 'UUID',
+				key: 'uuid',
+				description: 'Universal unique identifier',
+				enabled: false
+			},
+			uri: {
+				label: 'URI',
+				key: 'uri',
+				description: 'Uniform resource identifier',
+				enabled: false
+			},
+			version: {
+				label: 'Version',
+				key: 'version',
+				description: 'Version number of the object',
+				enabled: false
+			},
+			register: {
+				label: 'Register',
+				key: 'register',
+				description: 'Register the object belongs to',
+				enabled: false
+			},
+			schema: {
+				label: 'Schema',
+				key: 'schema',
+				description: 'Schema the object follows',
+				enabled: false
+			},
+			files: {
+				label: 'Files',
+				key: 'files',
+				description: 'Attached files count',
+				enabled: true  // Enabled by default
+			},
+			relations: {
+				label: 'Relations',
+				key: 'relations',
+				description: 'Related objects count',
+				enabled: false
+			},
+			locked: {
+				label: 'Locked',
+				key: 'locked',
+				description: 'Lock status of the object',
+				enabled: false
+			},
+			owner: {
+				label: 'Owner',
+				key: 'owner',
+				description: 'Owner of the object',
+				enabled: false
+			},
+			folder: {
+				label: 'Folder',
+				key: 'folder',
+				description: 'Storage folder location',
+				enabled: false
+			},
+			files: {
+				label: 'File',
+				key: 'files',
+				description: 'The files attached to the object',
+				enabled: false
+			},
+			created: {
+				label: 'Created',
+				key: 'created',
+				description: 'Creation date and time',
+				enabled: true  // Enabled by default
+			},
+			updated: {
+				label: 'Updated',
+				key: 'updated',
+				description: 'Last update date and time',
+				enabled: true  // Enabled by default
+			}
 		},
+		columnFilters: {},  // This will now be populated from metadata
 		loading: false
 	}),
 	actions: {
@@ -462,7 +543,21 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		updateColumnFilter(id, enabled) {
-			this.columnFilters[id] = enabled
+			console.log('Updating column filter:', id, enabled) // Debug log
+			if (this.metadata[id]) {
+				this.metadata[id].enabled = enabled
+				this.columnFilters[id] = enabled
+				// Force a refresh of the table
+				this.objectList = { ...this.objectList }
+			}
+		},
+		// Initialize columnFilters from metadata enabled states
+		initializeColumnFilters() {
+			this.columnFilters = Object.entries(this.metadata).reduce((acc, [id, meta]) => {
+				acc[id] = meta.enabled
+				return acc
+			}, {})
+			console.log('Initialized column filters:', this.columnFilters) // Debug log
 		},
 	},
 	getters: {
@@ -470,6 +565,15 @@ export const useObjectStore = defineStore('object', {
 			if (!this.objectList?.results?.length) return false
 			const currentIds = this.objectList.results.map(result => result['@self'].id)
 			return currentIds.every(id => this.selectedObjects.includes(id))
+		},
+		// Add getter for enabled metadata columns
+		enabledMetadata() {
+			return Object.entries(this.metadata)
+				.filter(([id]) => this.columnFilters[id])
+				.map(([id, meta]) => ({
+					id,
+					...meta
+				}))
 		}
 	}
 })

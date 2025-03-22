@@ -2,7 +2,7 @@
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 
 // Add search input ref and debounce function
 const searchQuery = ref('')
@@ -58,6 +58,18 @@ const selectedSchemaValue = computed({
 		schemaStore.setSchemaItem(value?.value || null)
 	}
 })
+
+// Initialize column filters when component mounts
+onMounted(() => {
+	objectStore.initializeColumnFilters()
+})
+
+const metadataColumns = computed(() => {
+	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+		id,
+		...meta
+	}))
+})
 </script>
 
 <template>
@@ -99,15 +111,16 @@ const selectedSchemaValue = computed({
 			</div>
 
 			<!-- Default Columns Section -->
-			<div class="section" v-if="objectStore.objectList?.results?.length">
+			<div class="section">
 				<h3 class="section-title">Metadata</h3>
 				<div class="column-switches">
 					<NcCheckboxRadioSwitch 
-						v-for="(enabled, id) in objectStore.columnFilters" 
-						:key="id"
-						:checked="enabled"
-						@update:checked="(status) => objectStore.updateColumnFilter(id, status)">
-						{{ getColumnLabel(id) }}
+						v-for="meta in metadataColumns" 
+						:key="meta.id"
+						:checked="objectStore.columnFilters[meta.id]"
+						@update:checked="(status) => objectStore.updateColumnFilter(meta.id, status)"
+						:title="meta.description">
+						{{ meta.label }}
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
@@ -228,6 +241,12 @@ export default {
 		selectedSchema() {
 			return schemaStore.schemaItem || false
 		},
+		metadataColumns() {
+			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+				id,
+				...meta
+			}))
+		}
 	},
 	watch: {
 		selectedRegister(newValue) {
@@ -286,15 +305,6 @@ export default {
 				}
 				this.openConnectorInstallError = true
 			}
-		},
-		getColumnLabel(id) {
-			const labels = {
-				objectId: 'ObjectID',
-				created: 'Created',
-				updated: 'Updated',
-				files: 'Files',
-			}
-			return labels[id] || id
 		},
 	},
 }

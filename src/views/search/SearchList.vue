@@ -31,20 +31,21 @@ const schemaProperties = computed(() => {
 									class="cursor-pointer"
 									@change="objectStore.toggleSelectAllObjects">
 							</th>
-							<template v-for="header in activeHeaders">
-								<th v-if="header.enabled" :key="header.id">
-									<span class="sticky-header column-title">
-										{{ header.label }}
-									</span>
-								</th>
-							</template>
+							<th v-for="meta in objectStore.enabledMetadata" 
+								:key="meta.id">
+								<span class="sticky-header column-title" :title="meta.description">
+									{{ meta.label }}
+								</span>
+							</th>
 							<th class="static-column column-title">
 								Actions
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(result) in objectStore.objectList.results" :key="result['@self'].uuid" class="table-row">
+						<tr v-for="result in objectStore.objectList.results" 
+							:key="result['@self'].uuid" 
+							class="table-row">
 							<td class="static-column">
 								<input 
 									v-model="objectStore.selectedObjects"
@@ -52,19 +53,18 @@ const schemaProperties = computed(() => {
 									type="checkbox"
 									class="cursor-pointer">
 							</td>
-							<template v-for="header in activeHeaders">
-								<td v-if="header.enabled" :key="header.id">
-									<span v-if="header.id === 'files'">
-										<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
-									</span>
-									<span v-else-if="header.id === 'created' || header.id === 'updated'">
-										{{ getValidISOstring(result['@self'][header.key]) ? new Date(result['@self'][header.key]).toLocaleString() : 'N/A' }}
-									</span>
-									<span v-else>
-										{{ result['@self'][header.key] }}
-									</span>
-								</td>
-							</template>
+							<td v-for="meta in objectStore.enabledMetadata" 
+								:key="meta.id">
+								<span v-if="meta.id === 'files'">
+									<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
+								</span>
+								<span v-else-if="meta.id === 'created' || meta.id === 'updated'">
+									{{ getValidISOstring(result['@self'][meta.key]) ? new Date(result['@self'][meta.key]).toLocaleString() : 'N/A' }}
+								</span>
+								<span v-else>
+									{{ result['@self'][meta.key] }}
+								</span>
+							</td>
 							<td class="static-column">
 								<NcActions>
 									<NcActionButton @click="navigationStore.setSelected('objects'); objectStore.setObjectItem(result)">
@@ -135,8 +135,62 @@ export default {
 				{
 					id: 'objectId',
 					label: 'ObjectID',
-					key: 'uuid',
+					key: 'id',
 					enabled: true,
+				},
+				{
+					id: 'uuid',
+					label: 'UUID',
+					key: 'uuid',
+					enabled: false,
+				},
+				{
+					id: 'uri',
+					label: 'URI',
+					key: 'uri',
+					enabled: false,
+				},
+				{
+					id: 'version',
+					label: 'Version',
+					key: 'version',
+					enabled: false,
+				},
+				{
+					id: 'register',
+					label: 'Register',
+					key: 'register',
+					enabled: false,
+				},
+				{
+					id: 'schema',
+					label: 'Schema',
+					key: 'schema',
+					enabled: false,
+				},
+				{
+					id: 'files',
+					label: 'Files',
+					key: 'files',
+					enabled: true,
+				},
+				{
+					id: 'relations',
+					label: 'Relations',
+					key: 'relations',
+					enabled: false,
+				},
+				{
+					id: 'locked',
+					label: 'Locked',
+					key: 'locked',
+					enabled: false,
+				},
+				{
+					id: 'owner',
+					label: 'Owner',
+					key: 'owner',
+					enabled: false,
 				},
 				{
 					id: 'created',
@@ -151,11 +205,11 @@ export default {
 					enabled: true,
 				},
 				{
-					id: 'files',
-					label: 'Files',
-					key: 'files',
-					enabled: true,
-				},
+					id: 'folder',
+					label: 'Folder',
+					key: 'folder',
+					enabled: false,
+				}
 			],
 			/**
 			 * To ensure complete compatibility between the toggle and the drag function,
