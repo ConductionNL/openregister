@@ -2,7 +2,6 @@
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { computed } from 'vue'
 import { NcButton } from '@nextcloud/vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 
 const pageTitle = computed(() => {
 	if (!registerStore.registerItem) {
@@ -39,17 +38,34 @@ const showNoObjectsMessage = computed(() => {
 			<h1 class="pageHeader">
 				{{ pageTitle }}
 			</h1>
-			<NcButton 
-				:disabled="!objectStore.selectedObjects.length" 
-				type="error" 
-				@click="() => massDeleteObjectModal = true">
-				<template #icon>
-					<Delete :size="20" />
-				</template>
-				Delete {{ objectStore.selectedObjects.length }} 
-				{{ objectStore.selectedObjects.length > 1 ? 'objects' : 'object' }}
-			</NcButton>
+
+			<NcActions 
+			:force-name="true" 
+			:inline="1"
+			:primary="true" 
+			:menu-name="`Bulk action for ${objectStore.selectedObjects?.length || 0} objects`">
+				<NcActionButton >
+					<template #icon>
+						<Upload :size="20" />
+					</template>
+					Upload
+				</NcActionButton>
+				<NcActionButton >
+					<template #icon>
+						<Download :size="20" />
+					</template>
+					Download
+				</NcActionButton>
+				<NcActionButton @click="() => massDeleteObjectModal = true">
+					<template #icon>
+						<Delete :size="20" />
+					</template>
+					Delete
+				</NcActionButton>
+			</NcActions>
 		</span>
+
+		
 
 		<!-- Warning when no register is selected -->
 		<NcNoteCard v-if="showNoRegisterWarning" type="warning">
@@ -77,8 +93,14 @@ const showNoObjectsMessage = computed(() => {
 </template>
 
 <script>
-import { NcAppContent, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcNoteCard, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import SearchList from './SearchList.vue'
+import LightningBolt from 'vue-material-design-icons/LightningBolt.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'SearchIndex',
@@ -89,6 +111,12 @@ export default {
 		SearchList,
 		NcButton,
 		Delete,
+		LightningBolt,
+		ArrowRight,
+		Download,
+		Pencil,
+		Upload,
+		
 	},
 }
 </script>

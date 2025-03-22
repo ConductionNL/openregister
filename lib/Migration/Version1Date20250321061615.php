@@ -40,7 +40,33 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		// Update the openregister_objects table
+		// Update the openregister_schemas table
+		$table = $schema->getTable('openregister_objects');
+		
+		// Add organisation column to store organisation name
+		if ($table->hasColumn('organisation') === false) {
+			$table->addColumn('organisation', Types::STRING, [
+				'notnull' => false,
+				'length' => 255,
+			]);
+		}
+
+		// Add application column to store application name
+		if ($table->hasColumn('application') === false) {
+			$table->addColumn('application', Types::STRING, [
+				'notnull' => false,
+				'length' => 255,
+			]);
+		}
+
+		// Add validation column to store validation rules in JSON format
+		if ($table->hasColumn('validation') === false) {
+			$table->addColumn('validation', Types::JSON, [
+				'notnull' => false,
+			]);
+		}
+
+		// Update the openregister_schemas table
 		$table = $schema->getTable('openregister_schemas');
 		
 		// Add slug column to store unique identifier for objects

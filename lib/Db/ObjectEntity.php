@@ -27,9 +27,12 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?array $locked = null; // Contains the locked object if the object is locked
 	protected ?string $owner = null; // The Nextcloud user that owns this object
 	protected ?array $authorization = []; // JSON object describing authorizations
+	protected ?string $folder = null; // The folder path where this object is stored
+	protected ?string $application = null; // The application name
+	protected ?string $organisation = null; // The organisation name
+	protected ?array $validation = []; // JSON object describing validation rules
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
-	protected ?string $folder = null; // The folder path where this object is stored
 
 	/**
 	 * Initialize the entity and define field types
@@ -47,9 +50,12 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'locked', type: 'json');
 		$this->addType(fieldName:'owner', type: 'string');
 		$this->addType(fieldName:'authorization', type: 'json');
+		$this->addType(fieldName:'folder', type: 'string');
+		$this->addType(fieldName:'application', type: 'string');
+		$this->addType(fieldName:'organisation', type: 'string');
+		$this->addType(fieldName:'validation', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
-		$this->addType(fieldName:'folder', type: 'string');
 	}
 
 	/**
@@ -186,9 +192,12 @@ class ObjectEntity extends Entity implements JsonSerializable
 			'locked' => $this->locked,
 			'owner' => $this->owner,
 			'authorization' => $this->authorization,
+			'folder' => $this->folder,
+			'application' => $this->application,
+			'organisation' => $this->organisation,
+			'validation' => $this->validation,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-			'created' => isset($this->created) ? $this->created->format('c') : null,
-			'folder' => $this->folder
+			'created' => isset($this->created) ? $this->created->format('c') : null
 		];
 	}
 

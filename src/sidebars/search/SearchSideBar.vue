@@ -84,6 +84,7 @@ watch(() => schemaStore.schemaItem, (newSchema) => {
 
 <template>
 	<NcAppSidebar
+		ref="sidebar"
 		name="Object selection"
 		subtitle="Select register and schema"
 		subname="Within the federative network">
@@ -118,6 +119,15 @@ watch(() => schemaStore.schemaItem, (newSchema) => {
 					:disabled="!selectedRegister || !selectedSchema"
 					placeholder="Type to search..."
 					class="search-input" />
+
+				<NcNoteCard type="info" class="column-hint">
+					You can customize visible columns in the 
+					<NcButton type="tertiary" 
+							 @click="$refs.sidebar.showTab('columns-tab')" 
+							 class="inline-button">
+						Columns tab
+					</NcButton>
+				</NcNoteCard>
 			</div>
 
 			
@@ -357,5 +367,23 @@ export default {
 :deep(.empty-content__icon) {
 	width: 32px;
 	height: 32px;
+}
+
+.column-hint {
+	margin: 8px 16px;
+}
+
+.inline-button {
+	display: inline;
+	padding: 0;
+	margin: 0;
+	text-decoration: underline;
+	height: auto;
+	min-height: auto;
+	color: var(--color-primary);
+}
+
+.inline-button:hover {
+	text-decoration: none;
 }
 </style>
