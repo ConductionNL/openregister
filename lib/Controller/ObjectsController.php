@@ -332,11 +332,20 @@ class ObjectsController extends Controller
     {
         // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject);
-
-        $this->objectEntityMapper->delete($this->objectEntityMapper->find($id));
-
-        return new JSONResponse([]);
+        
+        // Clone the object to pass as the new state
+        $newObject = clone $oldObject;
+        $newObject->delete();
+        
+        // Update the object in the mapper instead of deleting
+        $this->objectEntityMapper->update($newObject);
+        
+        // Create an audit trail with both old and new states
+        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
+        
+        
+        // Return the deleted object
+        return new JSONResponse($newObject->jsonSerialize());
     }
 
 	/**

@@ -164,15 +164,23 @@ class ObjectEntityMapper extends QBMapper
 	 * Counts all objects
 	 *
 	 * @param array|null $filters The filters to apply
-	 * @param string|null $search The search string to apply
+	 * @param string|null $search The search string to apply	 * 
+	 * @param bool $includeDeleted Whether to include deleted objects
+	 * 
 	 * @return int The number of objects
 	 */
-	public function countAll(?array $filters = [], ?string $search = null): int
+	public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
 			->from(from: 'openregister_objects');
+
+		// Conditionally count objects based on $includeDeleted
+		if ($includeDeleted === false) {
+			$qb->andWhere($qb->expr()->isNull('deleted'));
+		}
+
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
@@ -203,6 +211,8 @@ class ObjectEntityMapper extends QBMapper
 	 * @param string|null $search The search string to apply
 	 * @param array|null $ids Array of IDs or UUIDs to filter by
 	 * @param string|null $uses Value that must be present in relations
+	 * @param bool $includeDeleted Whether to include deleted objects
+	 * 
 	 * @return array An array of ObjectEntitys
 	 */
 	public function findAll(
@@ -214,7 +224,8 @@ class ObjectEntityMapper extends QBMapper
 		array $sort = [],
 		?string $search = null,
 		?array $ids = null,
-		?string $uses = null
+		?string $uses = null,
+		bool $includeDeleted = false
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -222,6 +233,11 @@ class ObjectEntityMapper extends QBMapper
 			->from('openregister_objects')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
+
+		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+		if (!$includeDeleted) {
+			$qb->andWhere($qb->expr()->isNull('deleted'));
+		}
 
 		// Handle filtering by IDs/UUIDs if provided
 		if ($ids !== null && !empty($ids)) {

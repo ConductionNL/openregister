@@ -65,6 +65,12 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 				'notnull' => false,
 			]);
 		}
+		// Add validation column to store validation rules in JSON format
+		if ($table->hasColumn('deleted') === false) {
+			$table->addColumn('deleted', Types::JSON, [
+				'notnull' => false,
+			]);
+		}
 
 		// Update the openregister_schemas table
 		$table = $schema->getTable('openregister_schemas');

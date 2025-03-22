@@ -30,7 +30,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?string $folder = null; // The folder path where this object is stored
 	protected ?string $application = null; // The application name
 	protected ?string $organisation = null; // The organisation name
-	protected ?array $validation = []; // JSON object describing validation rules
+	protected ?array $validation = []; // array describing validation rules
+	protected ?array $deleted = []; // array describing deletion details
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
@@ -56,6 +57,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'validation', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
+		$this->addType(fieldName:'deleted', type: 'json');
 	}
 
 	/**
@@ -107,6 +109,28 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		return $this->authorization;
 	}
+
+	/**
+	 * Get the deleted data
+	 *
+	 * @return array The deleted data or null if not deleted
+	 */
+	public function getDeleted(): ?array
+	{
+		return $this->deleted;
+	}
+
+	/**
+	 * Get the deleted data
+	 *
+	 * @return array The deleted data or null if not deleted
+	 */
+	public function getValidation(): ?array
+	{
+		return $this->validation;
+	}
+
+	
 
 	/**
 	 * Get array of field names that are JSON type
@@ -165,7 +189,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		$metadata = [
 			'@self' => array_filter($this->getObjectArray(), function($key) {
-				return in_array($key, ['object', 'textRepresentation', 'authorization']) === false;
+				return in_array($key, ['object', 'textRepresentation', 'authorization', 'validation', 'deleted']) === false;
 			}, ARRAY_FILTER_USE_KEY)
 		];
 		return array_merge($metadata, $this->object);
@@ -197,7 +221,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 			'organisation' => $this->organisation,
 			'validation' => $this->validation,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-			'created' => isset($this->created) ? $this->created->format('c') : null
+			'created' => isset($this->created) ? $this->created->format('c') : null,
+			'deleted' => $this->deleted
 		];
 	}
 
@@ -317,5 +342,37 @@ class ObjectEntity extends Entity implements JsonSerializable
 		}
 
 		return $this->locked;
+	}
+
+	/**
+	 * Delete the object
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string $deletedReason Reason for deletion
+	 * @param int $retentionPeriod Retention period in days (default: 30 days)
+	 * @return bool True if delete was successful
+	 * @throws \Exception If no user is logged in
+	 */
+	public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod = 30): bool
+	{
+		$currentUser = $userSession->getUser();
+		if (!$currentUser) {
+			throw new \Exception('No user logged in');
+		}
+
+		$userId = $currentUser->getUID();
+		$now = new \DateTime();
+		$purgeDate = clone $now;
+		$purgeDate->add(new \DateInterval('P' . $retentionPeriod . 'D'));
+
+		$this->deleted = [
+			'deleted' => $now->format('c'),
+			'deletedBy' => $userId,
+			'deletedReason' => $deletedReason,
+			'retentionPeriod' => $retentionPeriod,
+			'purgeDate' => $purgeDate->format('c')
+		];
+
+		return true;
 	}
 }
