@@ -2,6 +2,18 @@
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
+import { computed } from 'vue'
+
+// Computed properties to handle the false values
+const selectedRegisterValue = computed({
+	get: () => registerStore.registerItem || null,
+	set: (value) => registerStore.setRegisterItem(value)
+})
+
+const selectedSchemaValue = computed({
+	get: () => schemaStore.schemaItem || null,
+	set: (value) => schemaStore.setSchemaItem(value)
+})
 </script>
 
 <template>
@@ -14,15 +26,17 @@ import { EventBus } from '../../eventBus.js'
 				<Magnify :size="20" />
 			</template>
 			<NcSelect v-bind="registerOptions"
-				v-model="objectStore.activeRegister"
+				:model-value="selectedRegisterValue"
+				@update:model-value="selectedRegisterValue = $event"
 				input-label="Register"
 				:loading="registerLoading"
 				:disabled="registerLoading" />
 			<NcSelect v-bind="schemaOptions"
-				v-model="objectStore.activeSchema"
+				:model-value="selectedSchemaValue"
+				@update:model-value="selectedSchemaValue = $event"
 				input-label="Schema"
 				:loading="schemaLoading"
-				:disabled="!selectedRegister?.id || schemaLoading" />
+				:disabled="!selectedRegister || schemaLoading" />
 
 			<div v-if="objectStore.objectList?.results?.length">
 				<NcCheckboxRadioSwitch 
@@ -122,22 +136,27 @@ export default {
 			}
 		},
 		selectedRegister() {
-			return objectStore.activeRegister
+			return registerStore.registerItem || false
 		},
 		selectedSchema() {
-			return objectStore.activeSchema
+			return schemaStore.schemaItem || false
 		},
 	},
 	watch: {
 		selectedRegister(newValue) {
-			objectStore.setActiveSchema(null)
+			if (!newValue) {
+				schemaStore.setSchemaItem(false)
+			}
 		},
 		selectedSchema(newValue) {
-			if (newValue?.id) {
+			if (newValue) {
 				objectStore.setPagination(1)
 				this.ignoreNextPageWatch = true
 
-				objectStore.refreshObjectList()
+				objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id
+				})
 
 				const unwatch = this.$watch(
 					() => objectStore.loading,

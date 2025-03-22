@@ -1,31 +1,33 @@
 <script setup>
-import { objectStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { computed } from 'vue'
 import { NcButton } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
 const pageTitle = computed(() => {
-	if (!objectStore.activeRegister) {
+	if (!registerStore.registerItem) {
 		return 'No register selected'
 	}
 	
-	const registerName = (objectStore.activeRegister.label || objectStore.activeRegister.title).toUpperCase()
+	const registerName = (registerStore.registerItem.label || registerStore.registerItem.title).charAt(0).toUpperCase() + 
+		(registerStore.registerItem.label || registerStore.registerItem.title).slice(1)
 	const objectCount = objectStore.objectList?.results?.length || 0
 	const objectTotal = objectStore.objectList?.total || 0
 	
-	if (!objectStore.activeSchema) {
+	if (!schemaStore.schemaItem) {
 		return `${registerName} / No schema selected`
 	}
 	
-	const schemaName = (objectStore.activeSchema.label || objectStore.activeSchema.title).toUpperCase()
+	const schemaName = (schemaStore.schemaItem.label || schemaStore.schemaItem.title).charAt(0).toUpperCase() + 
+		(schemaStore.schemaItem.label || schemaStore.schemaItem.title).slice(1)
 	return `${registerName} / ${schemaName} (${objectCount} of ${objectTotal})`
 })
 
-const showNoRegisterWarning = computed(() => !objectStore.activeRegister)
-const showNoSchemaWarning = computed(() => objectStore.activeRegister && !objectStore.activeSchema)
+const showNoRegisterWarning = computed(() => !registerStore.registerItem)
+const showNoSchemaWarning = computed(() => registerStore.registerItem && !schemaStore.schemaItem)
 const showNoObjectsMessage = computed(() => {
-	return objectStore.activeRegister 
-		&& objectStore.activeSchema 
+	return registerStore.registerItem 
+		&& schemaStore.schemaItem 
 		&& !objectStore.loading 
 		&& !objectStore.objectList?.results?.length
 })
@@ -70,7 +72,7 @@ const showNoObjectsMessage = computed(() => {
 			appearance="dark"
 			name="Objects loading" />
 
-		<SearchList v-if="!objectStore.loading && objectStore.objectList?.results?.length && objectStore.activeRegister && objectStore.activeSchema" />
+		<SearchList v-if="!objectStore.loading && objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" />
 	</NcAppContent>
 </template>
 

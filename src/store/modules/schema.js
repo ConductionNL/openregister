@@ -4,7 +4,7 @@ import { Schema } from '../../entities/index.js'
 
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
-		schemaItem: null,
+		schemaItem: false,
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
 	}),

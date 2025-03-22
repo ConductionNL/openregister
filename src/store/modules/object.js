@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { AuditTrail, ObjectEntity } from '../../entities/index.js'
+import { useRegisterStore } from '../../store/modules/register.js'
+import { useSchemaStore } from '../../store/modules/schema.js'
 
 export const useObjectStore = defineStore('object', {
 	state: () => ({
@@ -11,8 +13,6 @@ export const useObjectStore = defineStore('object', {
 		relations: [],
 		fileItem: false, // Single file item
 		files: [], // List of files
-		activeRegister: null,
-		activeSchema: null,
 		pagination: {
 			page: 1,
 			limit: 20
@@ -67,21 +67,16 @@ export const useObjectStore = defineStore('object', {
 			this.files = files
 			console.info('Files set to', files) // Logging the files
 		},
-		setActiveRegister(register) {
-			this.activeRegister = register
-			console.info('Active register set to', register) // Logging the active register
-		},
-		setActiveSchema(schema) {
-			this.activeSchema = schema
-			console.info('Active schema set to', schema) // Logging the active schema
-		},
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
 			console.info('Pagination set to', { page, limit }) // Logging the pagination
 		},
 		async refreshObjectList(options = {}) {
-			const register = options.register || this.activeRegister?.id
-			const schema = options.schema || this.activeSchema?.id
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+			
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
 			
 			if (!register || !schema) {
 				throw new Error('Register and schema are required')
