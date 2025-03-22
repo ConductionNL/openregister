@@ -24,13 +24,13 @@ export const useObjectStore = defineStore('object', {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true  // Enabled by default
+				enabled: false  // Enabled by default
 			},
 			uuid: {
 				label: 'UUID',
 				key: 'uuid',
 				description: 'Universal unique identifier',
-				enabled: false
+				enabled: true
 			},
 			uri: {
 				label: 'URI',
@@ -78,6 +78,12 @@ export const useObjectStore = defineStore('object', {
 				label: 'Owner',
 				key: 'owner',
 				description: 'Owner of the object',
+				enabled: false
+			},
+			application: {
+				label: 'Application',
+				key: 'application',
+				description: 'Application that created the object',
 				enabled: false
 			},
 			folder: {

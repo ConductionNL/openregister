@@ -110,10 +110,21 @@ const metadataColumns = computed(() => {
 					class="search-input" />
 			</div>
 
+			
+		</NcAppSidebarTab>
+
+		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
+			<template #icon>
+				<FormatColumns :size="20" />
+			</template>
+
 			<!-- Default Columns Section -->
 			<div class="section">
 				<h3 class="section-title">Metadata</h3>
-				<div class="column-switches">
+				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
+					No schema selected. Please select a schema to view metadata columns.
+				</NcNoteCard>
+				<div class="column-switches" v-if="schemaStore.schemaItem">
 					<NcCheckboxRadioSwitch 
 						v-for="meta in metadataColumns" 
 						:key="meta.id"
@@ -126,22 +137,22 @@ const metadataColumns = computed(() => {
 			</div>
 
 			<!-- Custom Columns Section -->
-			<div class="section" v-if="schemaStore.schemaItem">
+			<div class="section" >
 				<h3 class="section-title">Properties</h3>
 				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
 					No schema selected. Please select a schema to view custom columns.
 				</NcNoteCard>
-				<NcNoteCard v-else-if="!schemaStore.schemaItem.properties?.length" type="warning">
+				<NcNoteCard v-else-if="!Object.keys(schemaStore.schemaItem.properties || {}).length" type="warning">
 					Selected schema has no properties. Please add properties to the schema.
 				</NcNoteCard>
 				<div v-else class="column-switches">
 					<NcCheckboxRadioSwitch 
-						v-for="(property, index) in schemaStore.schemaItem.properties" 
-						:key="index"
-						:checked="objectStore.columnFilters[property.name]"
-						@update:checked="(status) => objectStore.updateColumnFilter(property.name, status)"
-						:title="property.name || ''">
-						{{ property.name }}
+						v-for="(property, propertyName) in schemaStore.schemaItem.properties" 
+						:key="propertyName"
+						:checked="objectStore.columnFilters[propertyName]"
+						@update:checked="(status) => objectStore.updateColumnFilter(propertyName, status)"
+						:title="property.description || propertyName">
+						{{ propertyName }}
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
@@ -186,6 +197,7 @@ import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckb
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -198,9 +210,11 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcTextField,
 		NcEmptyContent,
+		// Icons
 		Magnify,
 		Upload,
 		Download,
+		FormatColumns,
 	},
 	data() {
 		return {
