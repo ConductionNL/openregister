@@ -69,38 +69,68 @@ const selectedSchemaValue = computed({
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
-			<NcSelect v-bind="registerOptions"
-				:model-value="selectedRegisterValue"
-				@update:model-value="selectedRegisterValue = $event"
-				input-label="Register"
-				:loading="registerLoading"
-				:disabled="registerLoading"
-				placeholder="Select a register" />
-			<NcSelect v-bind="schemaOptions"
-				:model-value="selectedSchemaValue"
-				@update:model-value="selectedSchemaValue = $event"
-				input-label="Schema"
-				:loading="schemaLoading"
-				:disabled="!selectedRegister || schemaLoading" />
 
-			<!-- Add search input -->
-			<NcTextField
-				v-model="searchQuery"
-				@update:modelValue="handleSearch"
-				label="Text search"
-				type="search"
-				:disabled="!selectedRegister || !selectedSchema"
-				placeholder="Type to search..."
-				class="search-input" />
+			<!-- Search Section -->
+			<div class="section">
+				<h3 class="section-title">Search</h3>
+				<NcSelect v-bind="registerOptions"
+					:model-value="selectedRegisterValue"
+					@update:model-value="selectedRegisterValue = $event"
+					input-label="Register"
+					:loading="registerLoading"
+					:disabled="registerLoading"
+					placeholder="Select a register" />
+				
+				<NcSelect v-bind="schemaOptions"
+					:model-value="selectedSchemaValue"
+					@update:model-value="selectedSchemaValue = $event"
+					input-label="Schema"
+					:loading="schemaLoading"
+					:disabled="!selectedRegister || schemaLoading" />
 
-			<div v-if="objectStore.objectList?.results?.length">
-				<NcCheckboxRadioSwitch 
-					v-for="(enabled, id) in objectStore.columnFilters" 
-					:key="id"
-					:checked="enabled"
-					@update:checked="(status) => objectStore.updateColumnFilter(id, status)">
-					{{ getColumnLabel(id) }}
-				</NcCheckboxRadioSwitch>
+				<NcTextField
+					v-model="searchQuery"
+					@update:modelValue="handleSearch"
+					label="Search objects"
+					type="search"
+					:disabled="!selectedRegister || !selectedSchema"
+					placeholder="Type to search..."
+					class="search-input" />
+			</div>
+
+			<!-- Default Columns Section -->
+			<div class="section" v-if="objectStore.objectList?.results?.length">
+				<h3 class="section-title">Metadata</h3>
+				<div class="column-switches">
+					<NcCheckboxRadioSwitch 
+						v-for="(enabled, id) in objectStore.columnFilters" 
+						:key="id"
+						:checked="enabled"
+						@update:checked="(status) => objectStore.updateColumnFilter(id, status)">
+						{{ getColumnLabel(id) }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</div>
+
+			<!-- Custom Columns Section -->
+			<div class="section" v-if="schemaStore.schemaItem">
+				<h3 class="section-title">Properties</h3>
+				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
+					No schema selected. Please select a schema to view custom columns.
+				</NcNoteCard>
+				<NcNoteCard v-else-if="!schemaStore.schemaItem.properties?.length" type="warning">
+					Selected schema has no properties. Please add properties to the schema.
+				</NcNoteCard>
+				<div v-else class="column-switches">
+					<NcCheckboxRadioSwitch 
+						v-for="(property, index) in schemaStore.schemaItem.properties" 
+						:key="index"
+						:checked="objectStore.columnFilters[property.name]"
+						@update:checked="(status) => objectStore.updateColumnFilter(property.name, status)"
+						:title="property.name || ''">
+						{{ property.name }}
+					</NcCheckboxRadioSwitch>
+				</div>
 			</div>
 		</NcAppSidebarTab>
 
@@ -139,7 +169,7 @@ const selectedSchemaValue = computed({
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcEmptyContent } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -154,6 +184,7 @@ export default {
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcTextField,
+		NcEmptyContent,
 		Magnify,
 		Upload,
 		Download,
@@ -270,9 +301,59 @@ export default {
 </script>
 
 <style scoped>
-/* Add some spacing for the search input */
+.section {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section:last-child {
+	border-bottom: none;
+}
+
+.section-title {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	padding: 0 16px;
+	margin: 0 0 12px 0;
+}
+
+.column-switches {
+	padding: 0 16px;
+}
+
+.column-switches :deep(.checkbox-radio-switch) {
+	margin: 8px 0;
+}
+
 .search-input {
-	margin-top: 1rem;
-	margin-bottom: 1rem;
+	margin: 12px 16px;
+}
+
+.empty-state {
+	color: var(--color-text-maxcontrast);
+	text-align: center;
+	padding: 12px;
+	font-style: italic;
+}
+
+/* Add some spacing between select inputs */
+:deep(.v-select) {
+	margin: 0 16px 12px 16px;
+}
+
+/* Style for the last select to maintain consistent spacing */
+:deep(.v-select:last-of-type) {
+	margin-bottom: 0;
+}
+
+/* Empty content styling */
+:deep(.empty-content) {
+	margin: 20px 0;
+}
+
+:deep(.empty-content__icon) {
+	width: 32px;
+	height: 32px;
 }
 </style>
