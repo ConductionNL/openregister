@@ -9,7 +9,7 @@ export const useRegisterStore = defineStore('register', {
 		filters: [], // List of query
 		pagination: {
 			page: 1,
-			limit: 20
+			limit: 20,
 		},
 	}),
 	actions: {
@@ -25,20 +25,16 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/**
 		 * Set pagination details
-		 *
-		 * @param {number} page
-		 * @param {number} [limit=14]
-		 * @return {void}
+		 * @param {number} page - The current page number for pagination
+		 * @param {number} limit - The number of items to display per page
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
 			console.info('Pagination set to', { page, limit }) // Logging the pagination
 		},
 		/**
-		 * Set query filters for object list
-		 *
-		 * @param {Object} filters
-		 * @return {void}
+		 * Set query filters for register list
+		 * @param {object} filters - The filter criteria to apply to the register list
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }

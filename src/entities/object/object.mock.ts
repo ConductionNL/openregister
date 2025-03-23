@@ -15,7 +15,7 @@ export const mockObjectData = (): TObject[] => [
 			created: new Date().toISOString(),
 			updated: new Date().toISOString(),
 			locked: ['token1', 'token2'],
-			owner: 'user1'
+			owner: 'user1',
 		},
 	},
 	{
@@ -32,8 +32,8 @@ export const mockObjectData = (): TObject[] => [
 			updated: new Date().toISOString(),
 			locked: null,
 			owner: 'user2',
-		}
-	}
+		},
+	},
 ]
 
 export const mockObject = (data: TObject[] = mockObjectData()): TObject[] => data.map(item => new ObjectEntity(item))

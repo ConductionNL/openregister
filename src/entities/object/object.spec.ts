@@ -26,8 +26,8 @@ describe('Object Entity', () => {
 				updated: '',
 				created: '',
 				locked: null,
-				owner: ''
-			}
+				owner: '',
+			},
 		}
 		const object = new ObjectEntity(partialData)
 
@@ -62,8 +62,8 @@ describe('Object Entity', () => {
 			'@self': mockObjectData()[0]['@self'],
 			customField: 'custom value',
 			nestedField: {
-				key: 'value'
-			}
+				key: 'value',
+			},
 		}
 		const object = new ObjectEntity(mockData)
 
@@ -77,20 +77,20 @@ describe('Object Entity', () => {
 			'@self': {
 				...mockObjectData()[0]['@self'],
 				id: '', // Invalid empty id
-				uuid: '' // Invalid empty uuid
-			}
+				uuid: '', // Invalid empty uuid
+			},
 		}
 		const object = new ObjectEntity(invalidData)
 
 		const validation = object.validate()
 		expect(validation.success).toBe(false)
-		
+
 		if (!validation.success) {
 			expect(validation.error.issues).toContainEqual(
 				expect.objectContaining({
 					path: ['@self', 'uuid'],
-					message: 'String must contain at least 1 character(s)'
-				})
+					message: 'String must contain at least 1 character(s)',
+				}),
 			)
 		}
 	})
@@ -118,8 +118,8 @@ describe('Object Entity', () => {
 				updated: '',
 				created: '',
 				locked: null,
-				owner: ''
-			}
+				owner: '',
+			},
 		}
 		const object = new ObjectEntity(minimalData)
 

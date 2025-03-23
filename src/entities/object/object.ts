@@ -5,6 +5,7 @@ import { TObject } from './object.types'
  * Entity class representing an Object with validation
  */
 export class ObjectEntity implements TObject {
+
 	'@self': {
 		id: string
 		uuid: string
@@ -19,6 +20,7 @@ export class ObjectEntity implements TObject {
 		locked: string[] | null
 		owner: string
 	}
+
 	[key: string]: unknown
 
 	constructor(object: TObject) {
@@ -34,7 +36,7 @@ export class ObjectEntity implements TObject {
 			updated: object['@self']?.updated || '',
 			created: object['@self']?.created || '',
 			locked: object['@self']?.locked || null,
-			owner: object['@self']?.owner || ''
+			owner: object['@self']?.owner || '',
 		}
 
 		// Copy any additional properties
@@ -61,10 +63,11 @@ export class ObjectEntity implements TObject {
 				updated: z.string(),
 				created: z.string(),
 				locked: z.array(z.string()).nullable(),
-				owner: z.string()
-			})
+				owner: z.string(),
+			}),
 		}).passthrough()
 
 		return schema.safeParse(this)
 	}
+
 }
