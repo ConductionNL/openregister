@@ -18,7 +18,7 @@ import { navigationStore } from '../store/store.js'
 		<EditObject />
 		<DeleteObject />
 		<LockObject />
-		<ViewObject v-if="navigationStore.modal === 'viewObject'" />
+		<ViewObject />
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />

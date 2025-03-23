@@ -72,7 +72,7 @@ const schemaProperties = computed(() => {
 							</td>
 							<td class="static-column">
 								<NcActions>
-									<NcActionButton @click="navigationStore.setSelected('objects'); objectStore.setObjectItem(result)">
+									<NcActionButton @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 										<template #icon>
 											<Eye :size="20" />
 										</template>
