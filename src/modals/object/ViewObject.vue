@@ -175,7 +175,7 @@ onMounted(() => {
 <template>
 	<NcDialog v-if="navigationStore.modal === 'viewObject' && hasObjectItem"
 		:name="'View Object (' + objectStore.objectItem['@self'].uuid + ')'"
-		size="normal"
+		size="large"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully loaded</p>
@@ -186,30 +186,30 @@ onMounted(() => {
 
 		<div v-if="!success" class="formContainer">
 			<!-- Metadata Display -->
-			<div v-if="objectStore.objectItem" class="metadata-grid">
-				<div class="metadata-item">
-					<span class="label">Version:</span>
-					<span class="value">{{ objectStore.objectItem['@self'].version }}</span>
+			<div class="detail-grid">
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].version }">
+					<span class="detail-label">Version:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].version || 'Not set' }}</span>
 				</div>
-				<div class="metadata-item">
-					<span class="label">Created:</span>
-					<span class="value">{{ new Date(objectStore.objectItem['@self'].created).toLocaleString() }}</span>
+				<div class="detail-item">
+					<span class="detail-label">Created:</span>
+					<span class="detail-value">{{ new Date(objectStore.objectItem['@self'].created).toLocaleString() }}</span>
 				</div>
-				<div class="metadata-item">
-					<span class="label">Updated:</span>
-					<span class="value">{{ new Date(objectStore.objectItem['@self'].updated).toLocaleString() }}</span>
+				<div class="detail-item">
+					<span class="detail-label">Updated:</span>
+					<span class="detail-value">{{ new Date(objectStore.objectItem['@self'].updated).toLocaleString() }}</span>
 				</div>
-				<div class="metadata-item">
-					<span class="label">Owner:</span>
-					<span class="value">{{ objectStore.objectItem['@self'].owner || 'Not set' }}</span>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].owner }">
+					<span class="detail-label">Owner:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].owner || 'Not set' }}</span>
 				</div>
-				<div class="metadata-item">
-					<span class="label">Application:</span>
-					<span class="value">{{ objectStore.objectItem['@self'].application || 'Not set' }}</span>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].application }">
+					<span class="detail-label">Application:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].application || 'Not set' }}</span>
 				</div>
-				<div class="metadata-item">
-					<span class="label">Organisation:</span>
-					<span class="value">{{ objectStore.objectItem['@self'].organisation || 'Not set' }}</span>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].organisation }">
+					<span class="detail-label">Organisation:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].organisation || 'Not set' }}</span>
 				</div>
 			</div>
 
@@ -531,30 +531,43 @@ onMounted(() => {
 	margin-bottom: 0.5rem;
 }
 
-.metadata-grid {
+.detail-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-	gap: 1rem;
-	margin-bottom: 2rem;
-	padding: 1rem;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
+	grid-template-columns: 1fr 1fr 1fr;  /* Exactly three columns */
+	gap: 12px;
+	margin: 20px auto;  /* Add margin to create spacing */
+	max-width: 100%;  /* Ensure it doesn't overflow */
 }
 
-.metadata-item {
+.detail-item {
 	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 0.5rem;
+	flex-direction: column;
+	padding: 12px;  /* Slightly increased padding */
+	background-color: var(--color-background-hover);
+	border-radius: 4px;
+	border-left: 3px solid var(--color-primary);
 }
 
-.label {
+.detail-item.empty-value {
+	border-left-color: var(--color-warning);
+}
+
+.detail-label {
 	font-weight: bold;
 	color: var(--color-text-maxcontrast);
+	margin-bottom: 4px;
 }
 
+.detail-value {
+	word-break: break-word;
+}
+
+/* Remove the old section container and metadata styles */
+.section-container,
+.metadata-grid,
+.metadata-item,
+.label,
 .value {
-	color: var(--color-main-text);
-	word-break: break-all;
+	display: none;
 }
 </style>
