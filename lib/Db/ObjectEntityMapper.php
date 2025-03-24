@@ -323,9 +323,8 @@ class ObjectEntityMapper extends QBMapper
 			$entity->setOwner($this->userSession->getUser()->getUID());
 		}
 
-		// Set the application to the current application
-		$currentApp = \OC::$server->getAppManager()->getCurrentApp();
-		$entity->setApplication($currentApp);
+		// Set the application to 'openregister' since this is our app
+		$entity->setApplication('openregister'); //@todo we want to get the app that the user is working in on its session
 
 		$entity = parent::insert($entity);
 		// Dispatch creation event

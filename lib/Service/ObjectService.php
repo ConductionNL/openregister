@@ -742,7 +742,7 @@ class ObjectService
 
 		// Handle object properties that are either nested objects or files
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register, $schema->getId(), depth: $depth);
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $schema->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
 
 		$this->setDefaults($objectEntity);

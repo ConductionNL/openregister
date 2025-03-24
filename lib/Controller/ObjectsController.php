@@ -270,25 +270,28 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int  $id The ID of the object to update
-	 *
+     * @param int    $id       The ID of the object to update
+     * @param string $register The register of the object
+     * @param string $schema   The schema of the object
+     * @param ObjectService $objectService The service to handle object operations
+     *
      * @return JSONResponse A JSON response containing the updated object details
      */
-    public function update(int $id, ObjectService $objectService): JSONResponse
+    public function update(int $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        $data = $this->request->getParams();
-        $object = $data['object'];
-        $mapping = $data['mapping'] ?? null;
+        $object = $this->request->getParams();
+        //$mapping = $data['mapping'] ?? null; @todo lets thin about how we want to use mapping, its currently unussed so lets depractice it for now
 
-        // lets remove all the _ and @ prefixed keys (prevent injection)
-        $data = array_filter($data, function($key) {
-            return !str_starts_with($key, '_') && !str_starts_with($key, '@');
-        }, ARRAY_FILTER_USE_KEY);
-        
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
+        // Filter out and remove properties that start with _ and @ (those are reserved for internal use)
+        // Also remove properties called id, uuid, register, or schema
+        // @todo lets add this to the documentation
+        $object = array_filter(
+            $object,
+            fn($key) => !str_starts_with($key, '_') 
+                && !str_starts_with($key, '@') 
+                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+            ARRAY_FILTER_USE_KEY
+        );
 
         // If mapping ID is provided, transform the object using the mapping
         //$mappingService = $this->getOpenConnectorMappingService();
@@ -300,9 +303,9 @@ class ObjectsController extends Controller
 
         // save it
         try {
-            $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data);
+            $objectEntity = $objectService->saveObject(register: $register, schema: $schema, object: $object);
 
-            // Unlock the object after saving
+            // Unlock the object after saving @todo this should be done in the saveObject method
             try {
                 $this->objectEntityMapper->unlockObject($objectEntity->getId());
             } catch (\Exception $e) {
@@ -312,7 +315,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
         }
 
-        return new JSONResponse($objectEntity->getObjectArray());
+        return new JSONResponse($objectEntity->jsonSerialize());
     }
 
 	/**
