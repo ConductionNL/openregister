@@ -206,11 +206,11 @@ onMounted(() => {
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].application }">
 					<span class="detail-label">Application:</span>
 					<span class="detail-value">{{ objectStore.objectItem['@self'].application || 'Not set' }}</span>
-				</div>
+			</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].organisation }">
 					<span class="detail-label">Organisation:</span>
 					<span class="detail-value">{{ objectStore.objectItem['@self'].organisation || 'Not set' }}</span>
-				</div>
+			</div>
 			</div>
 
 			<!-- Display Object -->
@@ -236,16 +236,16 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-							</div>
+			</div>
 						</BTab>
 						<BTab title="Data">
-							<div class="json-editor">
-								<label>Object (JSON)</label>
+				<div class="json-editor">
+					<label>Object (JSON)</label>
 								<div class="codeMirrorContainer">
 									<CodeMirror
 										v-model="editorContent"
 										:extensions="[json()]"
-										:basic="true"
+							:basic="true"
 										:readonly="true"
 										:tab-size="2"
 										style="height: 400px" />
@@ -405,17 +405,17 @@ onMounted(() => {
                                     <span>Page {{ pagination.auditTrails.currentPage }}</span>
                                     <NcButton @click="pagination.auditTrails.currentPage++" :disabled="pagination.auditTrails.currentPage >= Math.ceil(objectStore.auditTrails.total / pagination.auditTrails.limit)">
                                         Next
-                                    </NcButton>
-                                </div>
+						</NcButton>
+					</div>
                             </div>
                             <NcEmptyContent v-else>
                                 No audit trails found
                             </NcEmptyContent>
                         </BTab>
                     </BTabs>
-                </div>
-            </div>
-        </div>
+				</div>
+			</div>
+		</div>
 
         <template #actions>
             <NcButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(objectStore.objectItem)">
@@ -437,12 +437,12 @@ onMounted(() => {
                 Close
             </NcButton>
         </template>
-    </NcDialog>
+	</NcDialog>
 </template>
 
 <style scoped>
 .json-editor {
-	position: relative;
+    position: relative;
 	margin-bottom: 2.5rem;
 }
 

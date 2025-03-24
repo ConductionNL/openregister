@@ -293,6 +293,9 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
+        // Lets us the id from the url
+        $object['id'] = $id;
+
         // If mapping ID is provided, transform the object using the mapping
         //$mappingService = $this->getOpenConnectorMappingService();
 
