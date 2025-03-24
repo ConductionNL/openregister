@@ -646,8 +646,8 @@ class ObjectService
 	/**
 	 * Saves an object to the database.
 	 *
-	 * @param int $register The ID of the register to save the object to.
-	 * @param int $schema The ID of the schema to save the object to.
+	 * @param int|string|Register $register The ID, UUID, or object of the register to save the object to.
+	 * @param int|string|Schema $schema The ID, UUID, or object of the schema to save the object to.
 	 * @param array $object The data of the object to save.
 	 *
 	 * @return ObjectEntity The saved object entity.
@@ -655,21 +655,27 @@ class ObjectService
 	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
 	 * @throws CustomValidationException If the object fails custom validation.
 	 */
-	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
+	public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null): ObjectEntity
 	{
 		// Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
 
-        // Convert register and schema to their respective objects if they are strings // @todo ???
-        if (is_string($register) === true) {
+        // Convert register to its respective object if it is a string or int
+        if (!$register instanceof Register) {
             $register = $this->registerMapper->find($register);
+            if ($register === null) {
+                throw new Exception('Register not found');
+            }
         }
 
-        $schema = $this->schemaMapper->find($schema);
-        if ($schema === null) {
-            throw new Exception('Schema not found');
+        // Convert schema to its respective object if it is a string or int
+        if (!$schema instanceof Schema) {
+            $schema = $this->schemaMapper->find($schema);
+            if ($schema === null) {
+                throw new Exception('Schema not found');
+            }
         }
 
         if ($depth === null) {
@@ -695,7 +701,7 @@ class ObjectService
 		// Create new entity if none exists
 		if (isset($object['id']) === false || $objectEntity === null) {
 			$objectEntity = new ObjectEntity();
-			$objectEntity->setRegister($register);
+			$objectEntity->setRegister($register->getId());
 			$objectEntity->setSchema($schema->getId());
 		}
 
@@ -719,7 +725,17 @@ class ObjectService
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
-		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
+		// For backawards compatibility with the old url structure we need to check if the registers and schema have a slug and create one if not
+		if ($register->getSlug() === null) {
+			$this->registerMapper->update($register);
+		}
+
+		if ($schema->getSlug() === null) {
+			$this->schemaMapper->update($schema);
+		}
+
+		// Create the uri for the object
+		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
 
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);

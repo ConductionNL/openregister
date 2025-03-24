@@ -129,16 +129,14 @@ class SchemaMapper extends QBMapper
 	}
 
 	/**
-	 * Creates a schema from an array
+	 * Ensures that a schema object has a UUID and a slug.
 	 *
-	 * @param array $object The object to create
-	 * @return Schema The created schema
+	 * @param Schema $schema The schema object to clean
+	 * @return void
 	 */
-	public function createFromArray(array $object): Schema
+	private function cleanObject(Schema $schema): void
 	{
-		$schema = new Schema();
-		$schema->hydrate(object: $object);
-
+		// Check if UUID is set, if not, generate a new one
 		if ($schema->getUuid() === null) {
 			$schema->setUuid(Uuid::v4());
 		}
@@ -146,7 +144,7 @@ class SchemaMapper extends QBMapper
 		// Ensure the object has a slug
 		if (empty($schema->getSlug()) === true) {
 			// Convert to lowercase and replace spaces with dashes
-			$slug = strtolower(trim($string));
+			$slug = strtolower(trim($schema->getTitle())); // Assuming title is used for slug
 			// Remove special characters
 			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
 			// Remove multiple dashes
@@ -157,6 +155,34 @@ class SchemaMapper extends QBMapper
 			$schema->setSlug($slug);
 		}
 		
+		// Ensure the object has a version
+		if ($schema->getVersion() === null) {
+			$schema->setVersion('1.0.0');
+		} else {
+			// Split the version into major, minor, and patch
+			$versionParts = explode('.', $schema->getVersion());
+			// Increment the patch version
+			$versionParts[2] = (int)$versionParts[2] + 1;
+			// Reassemble the version string
+			$newVersion = implode('.', $versionParts);
+			$schema->setVersion($newVersion);
+		}
+	}
+
+	/**
+	 * Creates a schema from an array
+	 *
+	 * @param array $object The object to create
+	 * @return Schema The created schema
+	 */
+	public function createFromArray(array $object): Schema
+	{
+		$schema = new Schema();
+		$schema->hydrate(object: $object);
+
+		// Clean the schema object to ensure UUID, slug, and version are set
+		$this->cleanObject($schema);
+
 		$schema = $this->insert(entity: $schema);
 
 		return $schema;
@@ -168,6 +194,10 @@ class SchemaMapper extends QBMapper
 	public function update(Entity $entity): Entity
 	{
 		$oldSchema = $this->find($entity->getId());
+
+		// Clean the schema object to ensure UUID, slug, and version are set
+		$this->cleanObject($entity);
+
 		$entity = parent::update($entity);
 
 		// Dispatch update event
@@ -188,11 +218,8 @@ class SchemaMapper extends QBMapper
 		$newSchema = $this->find($id);
 		$newSchema->hydrate($object);
 
-		if (isset($object['version']) === false) {
-			$version = explode('.', $newSchema->getVersion());
-			$version[2] = (int) $version[2] + 1;
-			$newSchema->setVersion(implode('.', $version));
-		}
+		// Clean the schema object to ensure UUID, slug, and version are set
+		$this->cleanObject($newSchema);
 
 		$newSchema = $this->update($newSchema);
 

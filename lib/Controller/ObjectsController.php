@@ -291,16 +291,16 @@ class ObjectsController extends Controller
         }
 
         // If mapping ID is provided, transform the object using the mapping
-        $mappingService = $this->getOpenConnectorMappingService();
+        //$mappingService = $this->getOpenConnectorMappingService();
 
-        if ($mapping !== null && $mappingService !== null) {
-            $mapping = $mappingService->getMapping($mapping);
-            $data = $mappingService->executeMapping($mapping, $object);
-        }
+        //if ($mapping !== null && $mappingService !== null) {
+        //    $mapping = $mappingService->getMapping($mapping);
+        //    $data = $mappingService->executeMapping($mapping, $object);
+        //}
 
         // save it
         try {
-            $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data['object']);
+            $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data);
 
             // Unlock the object after saving
             try {
@@ -339,7 +339,7 @@ class ObjectsController extends Controller
         
         // Update the object in the mapper instead of deleting
         $this->objectEntityMapper->update($newObject);
-        
+
         // Create an audit trail with both old and new states
         $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
         

@@ -1,459 +1,464 @@
+/**
+ * @file EditObject.vue
+ * @module Modals/Object/Edit
+ * @description Component for editing objects with both JSON and form-based interfaces
+ * @requires @nextcloud/vue
+ * @requires vue-codemirror6
+ */
+
 <script setup>
 import { objectStore, schemaStore, registerStore, navigationStore } from '../../store/store.js'
+import { ref, computed, watch, onMounted } from 'vue'
 import { getTheme } from '../../services/getTheme.js'
-</script>
-
-<template>
-	<NcDialog v-if="navigationStore.modal === 'editObject'"
-		:name="objectStore.objectItem?.id ? 'Edit Object' : 'Add Object'"
-		size="normal"
-		:can-close="false">
-		<NcNoteCard v-if="success" type="success">
-			<p>Object successfully modified</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
-				:disabled="loading"
-				@click="registers.value = null">
-				<template #icon>
-					<ArrowLeft :size="20" />
-				</template>
-				Back to Register
-			</NcButton>
-			<NcButton v-if="registers.value?.id && schemas.value?.id"
-				:disabled="loading"
-				@click="schemas.value = null">
-				<template #icon>
-					<ArrowLeft :size="20" />
-				</template>
-				Back to Schema
-			</NcButton>
-			<NcButton
-				@click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !isValidJson(objectItem.object)"
-				type="primary"
-				@click="editObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && objectStore.objectItem?.id" :size="20" />
-					<Plus v-if="!loading && !objectStore.objectItem?.id" :size="20" />
-				</template>
-				{{ objectStore.objectItem?.id ? 'Save' : 'Add' }}
-			</NcButton>
-		</template>
-
-		<div v-if="!success" class="formContainer">
-			<div v-if="registers?.value?.id && success === null">
-				<b>Register:</b> {{ registers.value.label }}
-				<NcButton @click="registers.value = null; schemas.value = null;">
-					Edit Register
-				</NcButton>
-			</div>
-			<div v-if="schemas.value?.id && success === null">
-				<b>Schema:</b> {{ schemas.value.label }}
-				<NcButton @click="schemas.value = null">
-					Edit Schema
-				</NcButton>
-			</div>
-
-			<!-- STAGE 1 -->
-			<div v-if="!registers?.value?.id">
-				<NcSelect v-bind="registers"
-					v-model="registers.value"
-					input-label="Register"
-					:loading="registersLoading"
-					:disabled="loading" />
-			</div>
-
-			<!-- STAGE 2 -->
-			<div v-if="registers?.value?.id && !schemas?.value?.id">
-				<NcSelect v-bind="schemas"
-					v-model="schemas.value"
-					input-label="Schemas"
-					:loading="schemasLoading"
-					:disabled="loading" />
-			</div>
-
-			<!-- STAGE 3 -->
-			<div v-if="registers.value?.id && schemas.value?.id">
-				<div class="json-editor">
-					<label>Object (JSON)</label>
-					<div :class="`codeMirrorContainer ${getTheme()}`">
-						<CodeMirror v-model="objectItem.object"
-							:basic="true"
-							placeholder="{ &quot;key&quot;: &quot;value&quot; }"
-							:dark="getTheme() === 'dark'"
-							:linter="jsonParseLinter()"
-							:lang="json()"
-							:tab-size="2" />
-
-						<NcButton class="format-json-button"
-							type="secondary"
-							size="small"
-							@click="formatJSON_Object">
-							Format JSON
-						</NcButton>
-					</div>
-					<span v-if="!isValidJson(objectItem.object)" class="error-message">
-						Invalid JSON format
-					</span>
-				</div>
-			</div>
-		</div>
-	</NcDialog>
-</template>
-
-<script>
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
 import {
 	NcButton,
 	NcDialog,
 	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcTextField,
+	NcCheckboxRadioSwitch,
+	NcEmptyContent,
 } from '@nextcloud/vue'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
-import CodeMirror from 'vue-codemirror6'
+import { BTabs, BTab } from 'bootstrap-vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 
-export default {
-	name: 'EditObject',
-	components: {
-		NcDialog,
-		NcSelect,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		CodeMirror,
-		// Icons
-		ContentSaveOutline,
-		Cancel,
-		Plus,
-	},
-	data() {
-		return {
-			objectItem: {
-				schemas: '',
-				register: '',
-				object: '',
-			},
-			schemasLoading: false,
-			schemasData: [],
-			schemas: {
-				multiple: false,
-				closeOnSelect: true,
-				options: [],
-				value: null,
-			},
-			registersLoading: false,
-			registers: {},
-			success: null,
-			loading: false,
-			error: false,
-			hasUpdated: false,
-			closeModalTimeout: null,
+// State
+const success = ref(null)
+const loading = ref(false)
+const error = ref(null)
+const activeTab = ref(0) // Using number instead of string for BTabs
+const closeModalTimeout = ref(null)
+const formData = ref({})
+const jsonData = ref('')
+
+// Computed properties
+const currentRegister = computed(() => registerStore.registerItem)
+const currentSchema = computed(() => schemaStore.schemaItem)
+const schemaProperties = computed(() => currentSchema.value?.properties || {})
+const isNewObject = computed(() => !objectStore.objectItem?.['@self']?.id)
+const dialogTitle = computed(() => isNewObject.value ? 'Add Object' : 'Edit Object')
+
+// Methods
+const initializeData = () => {
+	if (!currentRegister.value || !currentSchema.value) {
+		// If we don't have register/schema info, try to get it from the object
+		if (objectStore.objectItem) {
+			const register = objectStore.objectItem['@self'].register
+			const schema = objectStore.objectItem['@self'].schema
+			
+			// Set the register and schema in their respective stores
+			registerStore.setRegisterItem(register)
+			schemaStore.setSchemaItem(schema)
 		}
-	},
-	watch: {
-		'registers.value': {
-			handler(newVal) {
-				if (newVal) {
-					if (!newVal.id) return
+	}
 
-					const currentRegister = registerStore.registerList.find((register) => register.id === newVal.id)
-					const filteredSchemas = this.schemasData.filter((schema) => currentRegister.schemas.includes(schema.id))
-
-					this.schemas.options = filteredSchemas.map((schema) => ({
-						id: schema.id,
-						label: schema.title,
-					}))
-				}
-			},
-			deep: true,
-		},
-	},
-	mounted() {
-		this.initializeObjectItem()
-	},
-	updated() {
-		if (navigationStore.modal === 'editObject' && !this.hasUpdated) {
-			this.initializeObjectItem()
-			this.fetchSchemas()
-			this.initializeRegisters()
-			this.hasUpdated = true
+	// Initialize data based on whether we're editing or creating
+	if (objectStore.objectItem) {
+		const initialData = { ...objectStore.objectItem }
+		formData.value = initialData
+		jsonData.value = JSON.stringify(initialData, null, 2)
+	} else {
+		// For new objects, initialize with @self structure
+		const initialData = {
+			'@self': {
+				register: currentRegister.value?.id,
+				schema: currentSchema.value?.id
+			}
 		}
-	},
-	methods: {
-		initializeObjectItem() {
-			if (objectStore.objectItem?.id) {
-				this.objectItem = {
-					...objectStore.objectItem,
-					schemas: objectStore.objectItem.schemas || '',
-					register: objectStore.objectItem.register || '',
-					object: JSON.stringify(objectStore.objectItem.object, null, 2) || '',
-				}
-			}
-		},
-		fetchSchemas() {
-			this.schemasLoading = true
+		formData.value = initialData
+		jsonData.value = JSON.stringify(initialData, null, 2)
+	}
+}
 
-			schemaStore.refreshSchemaList()
-				.then(() => {
-					this.schemasData = schemaStore.schemaList
+const updateFormFromJson = () => {
+	try {
+		const parsed = JSON.parse(jsonData.value)
+		formData.value = parsed
+	} catch (e) {
+		error.value = 'Invalid JSON format'
+	}
+}
 
-					this.schemas.value = objectStore.objectItem?.id
-						? this.schemasData.find((schema) => schema.id.toString() === objectStore.objectItem.schema.toString())
-						: null
-				})
-				.finally(() => {
-					this.schemasLoading = false
-				})
-		},
-		initializeRegisters() {
-			this.registersLoading = true
+const updateJsonFromForm = () => {
+	try {
+		jsonData.value = JSON.stringify(formData.value, null, 2)
+	} catch (e) {
+		console.error('Error updating JSON:', e)
+	}
+}
 
-			registerStore.refreshRegisterList()
-				.then(() => {
-					const activeRegister = objectStore.objectItem?.id
-						? registerStore.registerList.find((register) => register.id.toString() === objectStore.objectItem.register)
-						: null
+const isValidJson = (str) => {
+	try {
+		JSON.parse(str)
+		return true
+	} catch (e) {
+		return false
+	}
+}
 
-					this.registers = {
-						multiple: false,
-						closeOnSelect: true,
-						options: registerStore.registerList.map((register) => ({
-							id: register.id,
-							label: register.title,
-						})),
-						value: activeRegister
-							? {
-								id: activeRegister.id,
-								label: activeRegister.title,
-							}
-							: null,
-					}
+const formatJSON = () => {
+	try {
+		if (jsonData.value) {
+			const parsed = JSON.parse(jsonData.value)
+			jsonData.value = JSON.stringify(parsed, null, 2)
+		}
+	} catch (e) {
+		// Keep invalid JSON as-is
+	}
+}
 
-					this.registersLoading = false
-				})
-		},
-		closeModal() {
-			navigationStore.setModal(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.loading = false
-			this.error = false
-			this.hasUpdated = false
-			this.objectItem = {
-				schemas: '',
-				register: '',
-				object: '',
-			}
-		},
-		async editObject() {
-			this.loading = true
+const closeModal = () => {
+	navigationStore.setModal(false)
+	clearTimeout(closeModalTimeout.value)
+	success.value = null
+	loading.value = false
+	error.value = null
+	formData.value = {}
+	jsonData.value = ''
+}
 
-			objectStore.saveObject({
-				...this.objectItem,
-				object: JSON.parse(this.objectItem.object),
-				schema: this.schemas?.value?.id || '',
-				register: this.registers?.value?.id || '',
-			}).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while saving the object'
-			}).finally(() => {
-				this.loading = false
-			})
-		},
+const saveObject = async () => {
+	if (!currentRegister.value || !currentSchema.value) {
+		error.value = 'Register and schema are required'
+		return
+	}
 
-		isValidJson(str) {
-			if (!str) return true
-			try {
-				JSON.parse(str)
-				return true
-			} catch (e) {
-				return false
-			}
-		},
+	loading.value = true
+	error.value = null
 
-		formatJSON_Object() {
-			try {
-				if (this.objectItem.object) {
-					// Format the JSON with proper indentation
-					const parsed = JSON.parse(this.objectItem.object)
-					this.objectItem.object = JSON.stringify(parsed, null, 2)
-				}
-			} catch (e) {
-				// Keep invalid JSON as-is to allow user to fix it
-			}
-		},
-	},
+	try {
+		const dataToSave = activeTab.value === 1 ? JSON.parse(jsonData.value) : formData.value
+		
+		const { response } = await objectStore.saveObject(dataToSave, {
+			register: currentRegister.value.id,
+			schema: currentSchema.value.id
+		})
+
+		success.value = response.ok
+		if (response.ok) {
+			closeModalTimeout.value = setTimeout(closeModal, 2000)
+		}
+	} catch (e) {
+		error.value = e.message || 'Failed to save object'
+		success.value = false
+	} finally {
+		loading.value = false
+	}
+}
+
+// Watch for changes
+watch(() => objectStore.objectItem, (newValue) => {
+	if (newValue) {
+		initializeData()
+	}
+}, { immediate: true })
+
+watch(() => jsonData.value, (newValue) => {
+	if (activeTab.value === 1 && isValidJson(newValue)) {
+		updateFormFromJson()
+	}
+})
+
+watch(() => formData.value, (newValue) => {
+	if (activeTab.value === 0) {
+		updateJsonFromForm()
+	}
+}, { deep: true })
+
+// Lifecycle hooks
+onMounted(() => {
+	initializeData()
+})
+
+// Add modelValue handling for form fields
+const getFieldValue = (key) => {
+	return formData.value[key] || ''
+}
+
+const setFieldValue = (key, value) => {
+	formData.value[key] = value
 }
 </script>
 
+<template>
+	<NcDialog v-if="navigationStore.modal === 'editObject'"
+		:name="dialogTitle"
+		size="large"
+		:can-close="false">
+		<div class="dialog-content">
+			<NcNoteCard v-if="success" type="success" class="note-card">
+				<p>Object successfully {{ isNewObject ? 'created' : 'modified' }}</p>
+			</NcNoteCard>
+			<NcNoteCard v-if="error" type="error" class="note-card">
+				<p>{{ error }}</p>
+			</NcNoteCard>
+
+			<div v-if="!success">
+				<!-- Register and Schema Info with card style -->
+				<div class="detail-grid">
+					<div class="detail-item" :class="{ 'empty-value': !currentRegister?.title }">
+						<span class="detail-label">Register:</span>
+						<span class="detail-value">{{ currentRegister?.title || 'Not selected' }}</span>
+					</div>
+					<div class="detail-item" :class="{ 'empty-value': !currentSchema?.title }">
+						<span class="detail-label">Schema:</span>
+						<span class="detail-value">{{ currentSchema?.title || 'Not selected' }}</span>
+					</div>
+				</div>
+
+				<!-- Edit Tabs -->
+				<div class="tabContainer">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Form Editor" active>
+							<div class="form-editor" v-if="currentSchema">
+								<div v-for="(prop, key) in schemaProperties" :key="key" class="form-field">
+									<template v-if="prop.type === 'string'">
+										<NcTextField
+											:label="prop.title || key"
+											:model-value="getFieldValue(key)"
+											@update:model-value="value => setFieldValue(key, value)"
+											:placeholder="prop.description"
+											:helper-text="prop.description"
+											:required="prop.required"
+										/>
+									</template>
+									<template v-else-if="prop.type === 'boolean'">
+										<NcCheckboxRadioSwitch
+											:label="prop.title || key"
+											:model-value="getFieldValue(key)"
+											@update:model-value="value => setFieldValue(key, value)"
+											:helper-text="prop.description"
+											type="switch"
+										/>
+									</template>
+									<template v-else-if="prop.type === 'number' || prop.type === 'integer'">
+										<NcTextField
+											:label="prop.title || key"
+											:model-value="getFieldValue(key)"
+											@update:model-value="value => setFieldValue(key, value)"
+											:placeholder="prop.description"
+											:helper-text="prop.description"
+											:required="prop.required"
+											type="number"
+											:min="prop.minimum"
+											:max="prop.maximum"
+											:step="prop.type === 'integer' ? '1' : 'any'"
+										/>
+									</template>
+								</div>
+							</div>
+							<NcEmptyContent v-else>
+								Please select a schema to edit the object
+							</NcEmptyContent>
+						</BTab>
+						
+						<BTab title="JSON Editor">
+							<div class="json-editor">
+								<div :class="`codeMirrorContainer ${getTheme()}`">
+									<CodeMirror
+										v-model="jsonData"
+										:basic="true"
+										placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+										:dark="getTheme() === 'dark'"
+										:extensions="[json()]"
+										:tab-size="2"
+										style="height: 400px"
+									/>
+									<NcButton 
+										class="format-json-button"
+										type="secondary"
+										size="small"
+										@click="formatJSON">
+										Format JSON
+									</NcButton>
+								</div>
+								<span v-if="!isValidJson(jsonData)" class="error-message">
+									Invalid JSON format
+								</span>
+							</div>
+						</BTab>
+					</BTabs>
+				</div>
+			</div>
+		</div>
+
+		<template #actions>
+			<NcButton @click="closeModal">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				{{ success ? 'Close' : 'Cancel' }}
+			</NcButton>
+			
+			<NcButton
+				v-if="success === null"
+				:disabled="loading || (activeTab === 1 && !isValidJson(jsonData))"
+				type="primary"
+				@click="saveObject">
+				<template #icon>
+					<NcLoadingIcon v-if="loading" :size="20" />
+					<ContentSaveOutline v-else-if="!isNewObject" :size="20" />
+					<Plus v-else :size="20" />
+				</template>
+				{{ isNewObject ? 'Add' : 'Save' }}
+			</NcButton>
+		</template>
+	</NcDialog>
+</template>
+
 <style scoped>
+/* Add consistent dialog content spacing */
+.dialog-content {
+	padding: 0 20px;
+}
+
+/* Update note card margins */
+:deep(.note-card) {
+	margin: 20px 0;
+}
+
+/* Update detail grid margins */
+.detail-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin: 20px 0;
+	max-width: 100%;
+}
+
+.detail-item {
+	display: flex;
+	flex-direction: column;
+	padding: 12px;
+	background-color: var(--color-background-hover);
+	border-radius: 4px;
+	border-left: 3px solid var(--color-primary);
+}
+
+.detail-item.empty-value {
+	border-left-color: var(--color-warning);
+}
+
+.detail-label {
+	font-weight: bold;
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 4px;
+}
+
+.detail-value {
+	word-break: break-word;
+}
+
+.edit-tabs {
+	margin-top: 20px;
+}
+
+.form-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.form-field {
+	margin-bottom: 16px;
+}
+
+/* JSON Editor styles */
 .json-editor {
-    position: relative;
+	position: relative;
 	margin-bottom: 2.5rem;
 }
 
-.json-editor label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: bold;
+.codeMirrorContainer {
+	margin-block-start: 6px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	position: relative;
 }
 
-.json-editor .error-message {
-    position: absolute;
-	bottom: 0;
-	right: 50%;
-    transform: translateY(100%) translateX(50%);
-
-	color: var(--color-error);
-	font-size: 0.8rem;
-	padding-top: 0.25rem;
-	display: block;
+.codeMirrorContainer :deep(.cm-editor) {
+	height: 100%;
 }
 
-.json-editor .format-json-button {
+.codeMirrorContainer :deep(.cm-scroller) {
+	overflow: auto;
+}
+
+.format-json-button {
 	position: absolute;
 	bottom: 0;
 	right: 0;
-    transform: translateY(100%);
+	transform: translateY(100%);
 }
 
-/* Add styles for the code editor */
-.code-editor {
-	font-family: monospace;
-	width: 100%;
-	background-color: var(--color-background-dark);
+.error-message {
+	position: absolute;
+	bottom: 0;
+	right: 50%;
+	transform: translateY(100%) translateX(50%);
+	color: var(--color-error);
+	font-size: 0.8rem;
+	padding-top: 0.25rem;
 }
 
-.info-text {
-	margin: 1rem 0;
-	padding: 0.5rem;
-	background-color: var(--color-background-dark);
-	border-radius: var(--border-radius);
+/* Dark mode specific styles */
+.codeMirrorContainer.dark :deep(.cm-editor) {
+	background-color: var(--color-background-darker);
 }
 
-/* CodeMirror */
-.codeMirrorContainer {
-	margin-block-start: 6px;
+.codeMirrorContainer.light :deep(.cm-editor) {
+	background-color: var(--color-background-hover);
 }
 
-.prettifyButton {
-	margin-block-start: 10px;
+/* Add tab container styles */
+.tabContainer {
+	margin-top: 20px;
 }
 
-.codeMirrorContainer :deep(.cm-content) {
-	border-radius: 0 !important;
-	border: none !important;
-}
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
+/* Style the tabs to match ViewObject */
+:deep(.nav-tabs) {
+	border-bottom: 1px solid var(--color-border);
+	margin-bottom: 15px;
 }
 
-/* value text color */
-/* string */
-.codeMirrorContainer.light :deep(.ͼe) {
-	color: #448c27;
-}
-.codeMirrorContainer.dark :deep(.ͼe) {
-	color: #88c379;
+:deep(.nav-tabs .nav-link) {
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--color-text-maxcontrast);
+	padding: 8px 16px;
 }
 
-/* boolean */
-.codeMirrorContainer.light :deep(.ͼc) {
-	color: #221199;
-}
-.codeMirrorContainer.dark :deep(.ͼc) {
-	color: #8d64f7;
+:deep(.nav-tabs .nav-link.active) {
+	color: var(--color-main-text);
+	border-bottom: 2px solid var(--color-primary);
+	background-color: transparent;
 }
 
-/* null */
-.codeMirrorContainer.light :deep(.ͼb) {
-	color: #770088;
-}
-.codeMirrorContainer.dark :deep(.ͼb) {
-	color: #be55cd;
+:deep(.nav-tabs .nav-link:hover) {
+	border-bottom: 2px solid var(--color-border);
 }
 
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
+:deep(.tab-content) {
+	padding: 16px;
+	background-color: var(--color-main-background);
 }
 
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
+/* Form editor specific styles */
+.form-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
 }
 
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-    color: black;
-}
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-    color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-    color: #2d770f;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-    color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
+.form-field {
+	margin-bottom: 16px;
 }
 </style>
