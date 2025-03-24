@@ -1,3 +1,9 @@
+# Version: 0.1.60
+
+* [#296](https://github.com/ConductionNL/openregister/pull/296): Fixed publication file total being the same as limit
+* [#298](https://github.com/ConductionNL/openregister/pull/298): Dev to Main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
