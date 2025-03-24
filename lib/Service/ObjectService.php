@@ -1938,20 +1938,18 @@ class ObjectService
 		}
 
 		// Check for conflicts between extend and fields/filters
-		if (!empty($extend)) {
-			if (!empty($fields)) {
-				$missingFields = array_diff($extend, $fields);
-				if (!empty($missingFields)) {
-					throw new InvalidArgumentException("Properties in extend must also be in fields: " . implode(', ', $missingFields));
-				}
-			}
-			if (!empty($filter)) {
-				$conflictingFilters = array_intersect($extend, $filter);
-				if (!empty($conflictingFilters)) {
-					throw new InvalidArgumentException("Properties in extend must not be in filters: " . implode(', ', $conflictingFilters));
-				}
+		if (empty($extend) === false && empty($fields) === false) {
+            $missingFields = array_diff($extend, $fields);
+            if (!empty($missingFields)) {
+                throw new InvalidArgumentException("Properties in extend must also be in fields: " . implode(', ', $missingFields));
+            }
+        } else if (empty($extend) === false && empty($filter) === false) {
+			$conflictingFilters = array_intersect($extend, $filter);
+			if (!empty($conflictingFilters)) {
+				throw new InvalidArgumentException("Properties in extend must not be in filters: " . implode(', ', $conflictingFilters));
 			}
 		}
+
 
 		// Setup a placeholder for related objects to avoid refetching them
 		$relatedObjects = [];
@@ -2073,51 +2071,51 @@ class ObjectService
 			// Iterate over each property in the 'extend' array
 			foreach ($extend as $property) {
 				// Check if the current property exists in the dotEntity
-				if ($dotEntity->has($property)) {
-					// Retrieve the value of the property from the dotEntity
-					$value = $dotEntity->get($property);
+                if ($dotEntity->has($property) === false) {
+                    $errors[] = "Property '$property' could not be extended because it does not exist.";
+                    continue;
+                }
+                // Retrieve the value of the property from the dotEntity
+                $value = $dotEntity->get($property);
 
-					// Filter the relatedObjects array to find the object that matches the value
-					$relatedObject = array_filter($relatedObjects, function($obj) use ($value) {
-						// Check if the object's id, uuid, or url matches the value
-						return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
-					});
+                // Filter the relatedObjects array to find the object that matches the value
+                $relatedObject = array_filter($relatedObjects, function($obj) use ($value) {
+                    // Check if the object's id, uuid, or url matches the value
+                    return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
+                });
 
-					// Check if a related object was found
-					if (!empty($relatedObject)) {
-						// Get the first related object from the filtered results
-						$relatedObject = reset($relatedObject);
+                // Check if a related object was found
+                if (empty($relatedObject) === true) {
+                    // Add an error message if the related object could not be found
+                    $errors[] = "Property '$property' could not be extended.";
+                    continue;
+                }
 
-						// Check if the property is a nested property (contains a dot)
-						if (strpos($property, '.') !== false) {
-							// Split the property into main and sub-properties
-							$subProperties = explode('.', $property);
-							$mainProperty = array_shift($subProperties);
-							$subPropertyPath = implode('.', $subProperties);
+                // Get the first related object from the filtered results
+                $relatedObject = reset($relatedObject);
 
-							// Render the related object with the specified extensions
-							$relatedObject = $this->renderEntity(
-								$relatedObject,
-								$extend,
-								$depth + 1,
-								$filter,
-								$fields
-							);
+                // Check if the property is a nested property (contains a dot)
+                if (strpos($property, '.') !== false) {
+                    // Split the property into main and sub-properties
+                    $subProperties = explode('.', $property);
+                    $mainProperty = array_shift($subProperties);
+                    $subPropertyPath = implode('.', $subProperties);
 
-							// Set the rendered related object in the dotEntity under the main property
-							$dotEntity->set($mainProperty, $relatedObject);
-						} else {
-							// Set the related object directly in the dotEntity for non-nested properties
-							$dotEntity->set($property, $relatedObject);
-						}
-					} else {
-						// Add an error message if the related object could not be found
-						$errors[] = "Property '$property' could not be extended.";
-					}
-				} else {
-					// Add an error message if the property does not exist in the dotEntity
-					$errors[] = "Property '$property' could not be extended because it does not exist.";
-				}
+                    // Render the related object with the specified extensions
+                    $relatedObject = $this->renderEntity(
+                        $relatedObject,
+                        $extend,
+                        $depth + 1,
+                        $filter,
+                        $fields
+                    );
+
+                    // Set the rendered related object in the dotEntity under the main property
+                    $dotEntity->set($mainProperty, $relatedObject);
+                } else {
+                    // Set the related object directly in the dotEntity for non-nested properties
+                    $dotEntity->set($property, $relatedObject);
+                }
 			}
 
 			// If there are any errors, set them in the dotEntity under '@self.errors'

@@ -47,7 +47,7 @@ class RegisterMapper extends QBMapper
 	 * @param int $id The ID of the register to find
 	 * @return Register The found register
 	 */
-	public function find(int $id): Register
+	public function find(string|int $id): Register
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -148,7 +148,7 @@ class RegisterMapper extends QBMapper
 
 			$register->setSlug($slug);
 		}
-		
+
 		// Ensure the object has a version
 		if ($register->getVersion() === null) {
 			$register->setVersion('1.0.0');

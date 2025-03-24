@@ -42,7 +42,7 @@ class SchemaMapper extends QBMapper
 	 * @param int $id The id of the schema
 	 * @return Schema The schema
 	 */
-	public function find(int $id): Schema
+	public function find(string|int $id): Schema
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -154,7 +154,7 @@ class SchemaMapper extends QBMapper
 
 			$schema->setSlug($slug);
 		}
-		
+
 		// Ensure the object has a version
 		if ($schema->getVersion() === null) {
 			$schema->setVersion('1.0.0');

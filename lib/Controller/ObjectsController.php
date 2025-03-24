@@ -2,6 +2,8 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -10,6 +12,7 @@ use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
@@ -40,6 +43,8 @@ class ObjectsController extends Controller
         private readonly IAppManager $appManager,
         private readonly ContainerInterface $container,
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectAuditLogMapper $objectAuditLogMapper,
         private readonly ObjectService $objectService,
@@ -109,7 +114,7 @@ class ObjectsController extends Controller
 				return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
 			}
 			$schema = $schemaEntity->getId();
-            $filters['schema'] = $schema;    
+            $filters['schema'] = $schema;
 		}
 
 		if ($page !== null && isset($limit)) {
@@ -168,10 +173,11 @@ class ObjectsController extends Controller
     public function show(string $register, string $schema, string $id): JSONResponse
     {
         $requestParams = $this->request->getParams();
+
         $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
         $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
         $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
-        
+
 		// Check if $register is not an integer and look it up
 		if (!is_numeric($register)) {
 			$registerEntity = $this->registerMapper->find($register);
@@ -190,15 +196,15 @@ class ObjectsController extends Controller
 			$schema = $schemaEntity->getId();
 		}
 
-
         // Add validation that object belongs to specified register and schema
         try {
-            $object = $this->objectEntityMapper->find((int) $id);
-            if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
+            $object = $this->objectEntityMapper->find($id);
+
+            if ((int)$object->getRegister() !== $register || (int)$object->getSchema() !== $schema) {
                 return new JSONResponse(['error' => 'Object not found in specified register/schema'], 404);
             }
 
-            return new JSONResponse($this->objectService->renderEntity(entity: $object->jsonSerialize()), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+            return new JSONResponse($this->objectService->renderEntity(entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields:  $fields));
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Not Found'], 404);
         }
@@ -217,11 +223,11 @@ class ObjectsController extends Controller
     public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         $data = $this->request->getParams();
-        
+
         // Override register and schema from URL parameters
         $data['register'] = $register;
         $data['schema'] = $schema;
-        
+
         $object = $data['object'];
         $mapping = $data['mapping'] ?? null;
 
@@ -287,8 +293,8 @@ class ObjectsController extends Controller
         // @todo lets add this to the documentation
         $object = array_filter(
             $object,
-            fn($key) => !str_starts_with($key, '_') 
-                && !str_starts_with($key, '@') 
+            fn($key) => !str_starts_with($key, '_')
+                && !str_starts_with($key, '@')
                 && !in_array($key, ['id', 'uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
         );
@@ -338,18 +344,18 @@ class ObjectsController extends Controller
     {
         // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
-        
+
         // Clone the object to pass as the new state
         $newObject = clone $oldObject;
         $newObject->delete();
-        
+
         // Update the object in the mapper instead of deleting
         $this->objectEntityMapper->update($newObject);
 
         // Create an audit trail with both old and new states
         $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
-        
-        
+
+
         // Return the deleted object
         return new JSONResponse($newObject->jsonSerialize());
     }

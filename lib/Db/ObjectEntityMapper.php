@@ -68,7 +68,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param int|string $idOrUuid The ID or UUID of the object to find
 	 * @return ObjectEntity The ObjectEntity
 	 */
-	public function find($identifier): ObjectEntity
+	public function find(string|int $identifier): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -164,9 +164,9 @@ class ObjectEntityMapper extends QBMapper
 	 * Counts all objects
 	 *
 	 * @param array|null $filters The filters to apply
-	 * @param string|null $search The search string to apply	 * 
+	 * @param string|null $search The search string to apply	 *
 	 * @param bool $includeDeleted Whether to include deleted objects
-	 * 
+	 *
 	 * @return int The number of objects
 	 */
 	public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
@@ -212,7 +212,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param array|null $ids Array of IDs or UUIDs to filter by
 	 * @param string|null $uses Value that must be present in relations
 	 * @param bool $includeDeleted Whether to include deleted objects
-	 * 
+	 *
 	 * @return array An array of ObjectEntitys
 	 */
 	public function findAll(
