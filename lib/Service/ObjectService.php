@@ -745,7 +745,8 @@ class ObjectService
 
 		// Create the uri for the object 		
 		if ($objectEntity->getUri() === null) {
-			$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+			// @todo: this needs to be fixed
+			//$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
 		}
 
 		// Make sure we create a folder in NC for this object if it doesn't already have one	

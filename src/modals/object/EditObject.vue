@@ -42,39 +42,38 @@ const jsonData = ref('')
 const currentRegister = computed(() => registerStore.registerItem)
 const currentSchema = computed(() => schemaStore.schemaItem)
 const schemaProperties = computed(() => currentSchema.value?.properties || {})
-const isNewObject = computed(() => !objectStore.objectItem?.['@self']?.id)
+const isNewObject = computed(() => !objectStore.objectItem || !objectStore.objectItem?.['@self']?.id)
 const dialogTitle = computed(() => isNewObject.value ? 'Add Object' : 'Edit Object')
 
 // Methods
 const initializeData = () => {
-	if (!currentRegister.value || !currentSchema.value) {
-		// If we don't have register/schema info, try to get it from the object
-		if (objectStore.objectItem) {
-			const register = objectStore.objectItem['@self'].register
-			const schema = objectStore.objectItem['@self'].schema
-			
-			// Set the register and schema in their respective stores
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(schema)
-		}
-	}
-
-	// Initialize data based on whether we're editing or creating
-	if (objectStore.objectItem) {
-		const initialData = { ...objectStore.objectItem }
-		formData.value = initialData
-		jsonData.value = JSON.stringify(initialData, null, 2)
-	} else {
-		// For new objects, initialize with @self structure
+	// Initialize with empty data for new objects
+	if (!objectStore.objectItem) {
 		const initialData = {
 			'@self': {
-				register: currentRegister.value?.id,
-				schema: currentSchema.value?.id
+				id: '',
+				uuid: '',
+				uri: '',
+				register: currentRegister.value?.id || '',
+				schema: currentSchema.value?.id || '',
+				relations: '',
+				files: '',
+				folder: '',
+				updated: '',
+				created: '',
+				locked: null,
+				owner: ''
 			}
 		}
 		formData.value = initialData
 		jsonData.value = JSON.stringify(initialData, null, 2)
+		return
 	}
+
+	// For existing objects, use their data
+	const initialData = { ...objectStore.objectItem }
+	formData.value = initialData
+	jsonData.value = JSON.stringify(initialData, null, 2)
 }
 
 const updateFormFromJson = () => {

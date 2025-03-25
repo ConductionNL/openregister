@@ -8,7 +8,6 @@ export class ObjectEntity implements TObject {
 
 	'@self': {
 		id: string
-		uuid: string
 		uri: string
 		register: string
 		schema: string
@@ -18,7 +17,13 @@ export class ObjectEntity implements TObject {
 		updated: string
 		created: string
 		locked: string[] | null
-		owner: string
+		owner: string | null
+		organisation: string | null
+		application: string | null
+		version: string | null
+		deleted: string[] | null
+		geo: string[] | null
+		retention: string[] | null		
 	}
 
 	[key: string]: unknown
@@ -26,7 +31,6 @@ export class ObjectEntity implements TObject {
 	constructor(object: TObject) {
 		this['@self'] = {
 			id: object['@self']?.id || '',
-			uuid: object['@self']?.uuid || '',
 			uri: object['@self']?.uri || '',
 			register: object['@self']?.register || '',
 			schema: object['@self']?.schema || '',
@@ -36,7 +40,13 @@ export class ObjectEntity implements TObject {
 			updated: object['@self']?.updated || '',
 			created: object['@self']?.created || '',
 			locked: object['@self']?.locked || null,
-			owner: object['@self']?.owner || '',
+			owner: object['@self']?.owner || null,
+			organisation: object['@self']?.organisation || null,
+			application: object['@self']?.application || null,
+			version: object['@self']?.version || null,
+			deleted: object['@self']?.deleted || null,
+			geo: object['@self']?.geo || null,
+			retention: object['@self']?.retention || null,
 		}
 
 		// Copy any additional properties
@@ -57,13 +67,19 @@ export class ObjectEntity implements TObject {
 				uuid: z.string().min(1),
 				register: z.string().min(1),
 				schema: z.string().min(1),
-				relations: z.string(),
-				files: z.string(),
-				folder: z.string(),
-				updated: z.string(),
-				created: z.string(),
+				relations: z.array(z.string()).nullable(),
+				files: z.array(z.string()).nullable(),
+				folder: z.string().min(1),
+				updated: z.string().min(1),
+				created: z.string().min(1),
 				locked: z.array(z.string()).nullable(),
-				owner: z.string(),
+				owner: z.string().nullable(),
+				organisation: z.string().nullable(),
+				application: z.string().nullable(),
+				version: z.string().nullable(),
+				deleted: z.array(z.string()).nullable(),
+				geo: z.array(z.string()).nullable(),
+				retention: z.array(z.string()).nullable(),
 			}),
 		}).passthrough()
 
