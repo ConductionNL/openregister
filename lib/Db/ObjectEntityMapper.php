@@ -310,6 +310,8 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+	
+
 	/**
 	 * Inserts a new entity into the database.
 	 *
@@ -318,13 +320,6 @@ class ObjectEntityMapper extends QBMapper
 	 */
 	public function insert(Entity $entity): Entity
 	{
-		// Set the owner to the current user if logged in
-		if ($this->userSession->isLoggedIn()) {
-			$entity->setOwner($this->userSession->getUser()->getUID());
-		}
-
-		// Set the application to 'openregister' since this is our app
-		$entity->setApplication('openregister'); //@todo we want to get the app that the user is working in on its session
 
 		$entity = parent::insert($entity);
 		// Dispatch creation event
@@ -343,16 +338,8 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = new ObjectEntity();
 		$obj->hydrate(object: $object);
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
 
-		// Set current user as owner when creating new object
-		if ($this->userSession->isLoggedIn()) {
-			$obj->setOwner($this->userSession->getUser()->getUID());
-		}
-
-
+		// Prepare the object before insertion
 		return $this->insert($obj);
 	}
 
@@ -364,11 +351,11 @@ class ObjectEntityMapper extends QBMapper
 		$oldObject = $this->find($entity->getId());
 
 		$entity = parent::update($entity);
-		// Dispatch creation event
+		
+		// Dispatch update event
 		$this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
 		return $entity;
-
 	}
 
 	/**
@@ -384,19 +371,8 @@ class ObjectEntityMapper extends QBMapper
 		$newObject = clone $oldObject;
 		$newObject->hydrate($object);
 
-		// Set or update the version
-		if (isset($object['version']) === false) {
-			$version = explode('.', $newObject->getVersion());
-			$version[2] = (int) $version[2] + 1;
-			$newObject->setVersion(implode('.', $version));
-		}
-
-		// Set current user as owner if not already set
-		if ($newObject->getOwner() === null && $this->userSession->isLoggedIn()) {
-			$newObject->setOwner($this->userSession->getUser()->getUID());
-		}
-
-		return $newObject;
+		// Prepare the object before updating
+		return $this->update($this->prepareEntity($newObject));
 	}
 
 	/**

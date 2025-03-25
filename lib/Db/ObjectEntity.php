@@ -32,6 +32,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?string $organisation = null; // The organisation name
 	protected ?array $validation = []; // array describing validation rules
 	protected ?array $deleted = []; // array describing deletion details
+	protected ?array $geo = []; // array describing deletion details
+	protected ?array $retention = []; // array describing deletion details
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
 
@@ -55,9 +57,11 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'application', type: 'string');
 		$this->addType(fieldName:'organisation', type: 'string');
 		$this->addType(fieldName:'validation', type: 'json');
+		$this->addType(fieldName:'deleted', type: 'json');
+		$this->addType(fieldName:'geo', type: 'json');
+		$this->addType(fieldName:'retention', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
-		$this->addType(fieldName:'deleted', type: 'json');
 	}
 
 	/**
@@ -189,10 +193,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		$metadata = [
 			'@self' => array_filter($this->getObjectArray(), function($key) {
-				return in_array($key, ['object', 'textRepresentation', 'authorization', 'validation', 'deleted']) === false;
+				return in_array($key, ['object', 'textRepresentation', 'authorization','uuid']) === false;
 			}, ARRAY_FILTER_USE_KEY)
 		];
-		return array_merge($metadata, $this->object);
+		$metadata['@self']['id'] = $this->getUuid();
+		$metadata['id'] = $this->getUuid();
+		
+		return array_merge($this->object,$metadata);
 	}
 
 	/**
@@ -222,7 +229,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 			'validation' => $this->validation,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
-			'deleted' => $this->deleted
+			'deleted' => $this->deleted,
+			'geo' => $this->geo,
+			'retention' => $this->retention
 		];
 	}
 

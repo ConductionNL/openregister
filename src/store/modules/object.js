@@ -24,13 +24,7 @@ export const useObjectStore = defineStore('object', {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: false  // Enabled by default
-			},
-			uuid: {
-				label: 'UUID',
-				key: 'uuid',
-				description: 'Universal unique identifier',
-				enabled: true
+				enabled: true  // Enabled by default
 			},
 			uri: {
 				label: 'URI',

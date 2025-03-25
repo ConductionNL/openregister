@@ -72,6 +72,21 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 			]);
 		}
 
+		// Add geo column to store geo data in JSON format
+		if ($table->hasColumn('geo') === false) {
+			$table->addColumn('geo', Types::JSON, [
+				'notnull' => false,
+			]);
+		}
+
+		// Add retention column to store retention data in JSON format
+		if ($table->hasColumn('retention') === false) {
+			$table->addColumn('retention', Types::JSON, [
+				'notnull' => false,
+			]);
+		}
+		
+
 		// Update the openregister_schemas table
 		$table = $schema->getTable('openregister_schemas');
 		

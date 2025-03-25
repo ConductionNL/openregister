@@ -28,6 +28,7 @@ use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
@@ -78,6 +79,7 @@ class ObjectService
 	 * @param FileService $fileService File service for managing files.
 	 * @param IAppManager $appManager Application manager service.
 	 * @param IAppConfig $config Configuration manager.
+	 * @param IUserSession $userSession User session service.
 	 */
 	public function __construct(
 		private readonly ObjectEntityMapper $objectEntityMapper,
@@ -91,6 +93,7 @@ class ObjectService
 		private readonly IAppManager        $appManager,
 		private readonly IAppConfig         $config,
 		private readonly FileMapper         $fileMapper,
+		private readonly IUserSession       $userSession,
 		ArrayLoader $loader
 	)
 	{
@@ -661,6 +664,7 @@ class ObjectService
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
+		
 
         // Convert register to its respective object if it is a string or int
         if (!$register instanceof Register) {
@@ -682,45 +686,71 @@ class ObjectService
 			$depth = $schema->getMaxDepth();;
 		}
 
-		// Check if object already exists
 		if (isset($object['id']) === true) {
 			$objectEntity = $this->objectEntityMapper->find(
 				$object['id']
 			);
 		}
-
-        $this->validateCustomRules(object: $object, schema: $schema);
-
-        $validationResult = $this->validateObject(object: $object, schemaId: $schema->getId());
-
-		if ($validationResult->isValid() === false) {
-			throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
-		}
-		// Create new entity if none exists
-		if (isset($object['id']) === false || $objectEntity === null) {
+		else {
 			$objectEntity = new ObjectEntity();
 			$objectEntity->setRegister($register->getId());
 			$objectEntity->setSchema($schema->getId());
 		}
 
-		// Handle UUID assignment
-		if (isset($object['id']) && !empty($object['id'])) {
-			$objectEntity->setUuid($object['id']);
-		} else {
-			$objectEntity->setUuid(Uuid::v4());
-			$object['id'] = $objectEntity->getUuid();
-		}
-
-		// Make sure we create a folder in NC for this object
-		$this->fileService->createObjectFolder($objectEntity);
-
 		// Store old version for audit trail
 		$oldObject = clone $objectEntity;
-		$objectEntity->setObject($object);
 
-		// Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
-		if (empty($objectEntity->getUuid()) === true) {
+        $this->validateCustomRules(object: $object, schema: $schema);
+
+        $validationResult = $this->validateObject(object: $object, schemaId: $schema->getId());
+
+
+		if ($validationResult->isValid() === false) {
+			$objectEntity->setValidation($validationResult->error());
+			//throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
+		}
+
+		// Set the UUID if it is not set
+		if ($objectEntity->getUuid() === null) {
 			$objectEntity->setUuid(Uuid::v4());
+		}
+
+		// Set the owner to the current user if logged in
+		if ($objectEntity->getOwner() === null && $this->userSession->isLoggedIn()) {
+			$objectEntity->setOwner($this->userSession->getUser()->getUID());
+		}
+
+		// Set the application to 'openregister' since this is our app
+		if ($objectEntity->getApplication() === null) {
+			$objectEntity->setApplication('openregister');
+		}
+
+		// Set or update the version
+		if ($objectEntity->getVersion() === null) {
+			$objectEntity->setVersion('1.0.0');
+		} else {
+			$version = explode('.', $objectEntity->getVersion());
+			$version[2] = (int) $version[2] + 1;
+			$objectEntity->setVersion(implode('.', $version));
+		}
+
+		// Set dateCreated and dateModified
+		$currentDateTime = new \DateTime();
+		if ($objectEntity->getCreated() === null) {
+			$objectEntity->setCreated($currentDateTime);
+		}
+		
+		// We always set the updated time to the current date and time
+		$objectEntity->setUpdated($currentDateTime);
+
+		// Create the uri for the object 		
+		if ($objectEntity->getUri() === null) {
+			$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+		}
+
+		// Make sure we create a folder in NC for this object if it doesn't already have one	
+		if ($objectEntity->getFolder() === null) {
+			$this->fileService->createObjectFolder($objectEntity);
 		}
 
 		// For backawards compatibility with the old url structure we need to check if the registers and schema have a slug and create one if not
@@ -732,8 +762,10 @@ class ObjectService
 			$this->schemaMapper->update($schema);
 		}
 
-		// Create the uri for the object
-		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+
+		$objectCopy = $object;
+		unset($objectCopy['@self'], $objectCopy['id']);
+		$objectEntity->setObject($objectCopy);
 
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);

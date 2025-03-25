@@ -246,7 +246,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
 		}
 
-        return new JSONResponse($objectEntity->getObjectArray());
+        return new JSONResponse($objectEntity->jsonSerialize());
     }
 
     /**
@@ -264,8 +264,9 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the updated object details
      */
-    public function update(int $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function update(string $register, string $schema, string $id, ObjectService $objectService): JSONResponse
     {
+
         $object = $this->request->getParams();
         //$mapping = $data['mapping'] ?? null; @todo lets thin about how we want to use mapping, its currently unussed so lets depractice it for now
 
@@ -282,6 +283,7 @@ class ObjectsController extends Controller
 
         // Lets us the id from the url
         $object['id'] = $id;
+
 
         // If mapping ID is provided, transform the object using the mapping
         //$mappingService = $this->getOpenConnectorMappingService();
@@ -321,7 +323,7 @@ class ObjectsController extends Controller
 	 * @return JSONResponse An empty JSON response
 	 * @throws Exception
 	 */
-    public function destroy(int $id): JSONResponse
+    public function destroy(string $id): JSONResponse
     {
         // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
@@ -353,7 +355,7 @@ class ObjectsController extends Controller
 	 *
 	 * @return JSONResponse A JSON response containing the audit trail entries
 	 */
-	public function auditTrails(int $id): JSONResponse
+	public function auditTrails(string $id): JSONResponse
 	{
 		try {
 			$requestParams = $this->request->getParams();
@@ -377,7 +379,7 @@ class ObjectsController extends Controller
 	 *
      * @return JSONResponse A JSON response containing the call logs
      */
-    public function contracts(int $id): JSONResponse
+    public function contracts(string $id): JSONResponse
     {
         // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
@@ -398,7 +400,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the related objects
      */
-    public function relations(int $id): JSONResponse
+    public function relations(string $id): JSONResponse
     {
         try {
             $requestParams = $this->request->getParams();
@@ -447,7 +449,7 @@ class ObjectsController extends Controller
 	 *
      * @return JSONResponse A JSON response containing the call logs
      */
-    public function logs(int $id): JSONResponse
+    public function logs(string $id): JSONResponse
     {
         try {
             $jobLogs = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => $id]);
@@ -466,7 +468,7 @@ class ObjectsController extends Controller
 	 * @param int $id The ID of the object to lock
 	 * @return JSONResponse A JSON response containing the locked object
 	 */
-	public function lock(int $id): JSONResponse
+	public function lock(string $id): JSONResponse
 	{
 		try {
 			$data = $this->request->getParams();
@@ -501,7 +503,7 @@ class ObjectsController extends Controller
 	 * @param int $id The ID of the object to unlock
 	 * @return JSONResponse A JSON response containing the unlocked object
 	 */
-	public function unlock(int $id): JSONResponse
+	public function unlock(string $id): JSONResponse
 	{
 		try {
 			$object = $this->objectEntityMapper->unlockObject($id);
@@ -563,7 +565,7 @@ class ObjectsController extends Controller
 	 * @throws BadRequestException If no valid reversion point specified
 	 * @throws LockedException If object is locked
 	 */
-	public function revert(int $id): JSONResponse
+	public function revert(string $id): JSONResponse
 	{
 		try {
 			$data = $this->request->getParams();
