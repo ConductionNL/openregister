@@ -2358,7 +2358,11 @@ class ObjectService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		// Lets force the object id to be the object id of the object we are getting the audit trail for
-		$filters['object'] = $id;
+		$object = $this->objectEntityMapper->find($id);
+		$filters['object'] = $object->getId();
+
+		var_dump($filters);
+		die;
 
 		// @todo this is not working, it fails to find the logs
 		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);

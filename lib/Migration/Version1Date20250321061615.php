@@ -109,6 +109,24 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 			]);
 		}
 
+		// Update the openregister_registers table
+		$table = $schema->getTable('openregister_audit_trails');
+
+		// Add slug column to store unique identifier for registers
+		if ($table->hasColumn('object_uuid') === false) {
+			$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
+		}
+
+		// Add slug column to store unique identifier for registers
+		if ($table->hasColumn('register_uuid') === false) {
+			$table->addColumn('register_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
+		}
+
+		// Add slug column to store unique identifier for registers
+		if ($table->hasColumn('schema_uuid') === false) {
+			$table->addColumn('schema_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
+		}
+
 		return $schema;
 	}
 

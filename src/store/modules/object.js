@@ -116,7 +116,37 @@ export const useObjectStore = defineStore('object', {
 		},
 		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
-			console.info('Active object item set to ' + objectItem)
+			console.info('Active object item set to ' + objectItem?.['@self']?.id)
+
+			// If we have a valid object item, fetch related data
+			if (objectItem?.['@self']?.id) {
+				try {
+					// Fetch audit trails
+					const auditTrailsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/audit-trails`
+					const auditTrailsResponse = await fetch(auditTrailsEndpoint)
+					const auditTrailsData = await auditTrailsResponse.json()
+					this.setAuditTrails(auditTrailsData)
+
+					// Fetch relations (used by)
+					const relationsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/relations`
+					const relationsResponse = await fetch(relationsEndpoint)
+					const relationsData = await relationsResponse.json()
+					this.setRelations(relationsData)
+
+					// Fetch files
+					const filesEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/files`
+					const filesResponse = await fetch(filesEndpoint)
+					const filesData = await filesResponse.json()
+					this.setFiles(filesData)
+				} catch (error) {
+					console.error('Error fetching related data:', error)
+				}
+			} else {
+				// Clear related data when no object is selected
+				this.setAuditTrails([])
+				this.setRelations([])
+				this.setFiles([])
+			}
 		},
 		setObjectList(objectList) {
 			this.objectList = {

@@ -12,6 +12,9 @@ class AuditTrail extends Entity implements JsonSerializable
 	protected ?int $schema = null;
 	protected ?int $register = null;
 	protected ?int $object = null;
+	protected ?string $objectUuid = null;	
+	protected ?string $registerUuid = null;
+	protected ?string $schemaUuid = null;
 	protected ?string $action = null;
 	protected ?array $changed = null;
 	protected ?string $user = null;
@@ -27,6 +30,9 @@ class AuditTrail extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'schema', type: 'integer');
 		$this->addType(fieldName: 'register', type: 'integer');
 		$this->addType(fieldName: 'object', type: 'integer');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerUuid', type: 'string');
+		$this->addType(fieldName: 'schemaUuid', type: 'string');
 		$this->addType(fieldName: 'action', type: 'string');
 		$this->addType(fieldName: 'changed', type: 'json');
 		$this->addType(fieldName: 'user', type: 'string');
@@ -86,6 +92,9 @@ class AuditTrail extends Entity implements JsonSerializable
 			'schema' => $this->schema,
 			'register' => $this->register,
 			'object' => $this->object,
+			'objectUuid' => $this->objectUuid,
+			'registerUuid' => $this->registerUuid,
+			'schemaUuid' => $this->schemaUuid,
 			'action' => $this->action,
 			'changed' => $this->changed,
 			'user' => $this->user,
