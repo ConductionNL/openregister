@@ -98,7 +98,7 @@ class ObjectsController extends Controller
 		$search = $requestParams['_search'] ?? null;
 
 		// Check if $register is not an integer and look it up
-		if (!is_numeric($register)) {
+		if (is_numeric($register) === false) {
 			$registerEntity = $this->registerMapper->find($register);
 			if ($registerEntity === null) {
 				return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
@@ -108,7 +108,7 @@ class ObjectsController extends Controller
 		}
 
 		// Check if $schema is not an integer and look it up
-		if (!is_numeric($schema)) {
+		if (is_numeric($schema) === false) {
 			$schemaEntity = $this->schemaMapper->find($schema);
 			if ($schemaEntity === null) {
 				return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
@@ -223,7 +223,7 @@ class ObjectsController extends Controller
     public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         $object = $this->request->getParams();
-        
+
         $object = array_filter(
             $object,
             fn($key) => !str_starts_with($key, '_')
