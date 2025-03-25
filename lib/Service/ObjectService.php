@@ -1962,6 +1962,7 @@ class ObjectService
 		}
 
 		// If fields are specified, filter the entity to include only those fields
+        // @TODO: combining fields and extend causes issues with an id, probably that is caused here.
 		if (empty($fields) === false) {
 			$dotEntity = new Dot(array_filter($dotEntity->flatten(), function($key) use ($fields) {
 				return in_array($key, $fields);
