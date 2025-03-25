@@ -74,7 +74,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:value.sync="properties.fileConfiguration.maxSize" />
 			</div>
 
-			<template v-if="properties.type !== 'object' && properties.type !== 'file'">
+			<template v-if="properties.type !== 'object' && properties.type !== 'file' && properties.type !== 'array'">
 				<NcTextField :disabled="loading"
 					label="Pattern (regex)"
 					:value.sync="properties.pattern" />
