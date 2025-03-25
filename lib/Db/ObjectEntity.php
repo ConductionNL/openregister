@@ -3,13 +3,14 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use Exception;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
 /**
  * Entity class representing an object in the OpenRegister system
- * 
+ *
  * This class handles storage and manipulation of objects including their metadata,
  * locking mechanisms, and serialization for API responses.
  */
@@ -41,7 +42,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName:'uuid', type: 'string');	
+		$this->addType(fieldName:'uuid', type: 'string');
 		$this->addType(fieldName:'uri', type: 'string');
 		$this->addType(fieldName:'version', type: 'string');
 		$this->addType(fieldName:'register', type: 'string');
@@ -72,7 +73,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	public function getObject(): array
 	{
 		return $this->object ?? [];
-	}	
+	}
 
 	/**
 	 * Get the files data
@@ -82,7 +83,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	public function getFiles(): array
 	{
 		return $this->files ?? [];
-	}	
+	}
 
 	/**
 	 * Get the relations data
@@ -134,7 +135,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 		return $this->validation;
 	}
 
-	
+
 
 	/**
 	 * Get array of field names that are JSON type
@@ -173,7 +174,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 			try {
 				$this->$method($value);
-			} catch (\Exception $exception) {
+			} catch (Exception $exception) {
 			}
 		}
 
@@ -182,9 +183,9 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 	/**
 	 * Serialize the entity to JSON format
-	 * 
+	 *
 	 * Creates a metadata array containing object properties except sensitive fields.
-	 * Filters out 'object', 'textRepresentation' and 'authorization' fields and 
+	 * Filters out 'object', 'textRepresentation' and 'authorization' fields and
 	 * stores remaining properties under '@self' key for API responses.
 	 *
 	 * @return array Serialized object data
@@ -242,13 +243,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 * @param string|null $process Optional process identifier
 	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
 	 * @return bool True if lock was successful
-	 * @throws \Exception If object is already locked by another user
+	 * @throws Exception If object is already locked by another user
 	 */
 	public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
 	{
 		$currentUser = $userSession->getUser();
 		if (!$currentUser) {
-			throw new \Exception('No user logged in');
+			throw new Exception('No user logged in');
 		}
 
 		$userId = $currentUser->getUID();
@@ -257,10 +258,10 @@ class ObjectEntity extends Entity implements JsonSerializable
 		// If already locked, check if it's the same user and not expired
 		if ($this->isLocked()) {
 			$lock = $this->locked;
-			
+
 			// If locked by different user
 			if ($lock['user'] !== $userId) {
-				throw new \Exception('Object is locked by another user');
+				throw new Exception('Object is locked by another user');
 			}
 
 			// If same user, extend the lock
@@ -297,7 +298,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 *
 	 * @param IUserSession $userSession Current user session
 	 * @return bool True if unlock was successful
-	 * @throws \Exception If object is locked by another user
+	 * @throws Exception If object is locked by another user
 	 */
 	public function unlock(IUserSession $userSession): bool
 	{
@@ -307,14 +308,14 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 		$currentUser = $userSession->getUser();
 		if (!$currentUser) {
-			throw new \Exception('No user logged in');
+			throw new Exception('No user logged in');
 		}
 
 		$userId = $currentUser->getUID();
-		
+
 		// Check if locked by different user
 		if ($this->locked['user'] !== $userId) {
-			throw new \Exception('Object is locked by another user');
+			throw new Exception('Object is locked by another user');
 		}
 
 		$this->locked = null;
@@ -360,13 +361,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 * @param string $deletedReason Reason for deletion
 	 * @param int $retentionPeriod Retention period in days (default: 30 days)
 	 * @return bool True if delete was successful
-	 * @throws \Exception If no user is logged in
+	 * @throws Exception If no user is logged in
 	 */
 	public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod = 30): bool
 	{
 		$currentUser = $userSession->getUser();
-		if (!$currentUser) {
-			throw new \Exception('No user logged in');
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
 		}
 
 		$userId = $currentUser->getUID();
