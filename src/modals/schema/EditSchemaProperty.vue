@@ -74,7 +74,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:value.sync="properties.fileConfiguration.maxSize" />
 			</div>
 
-			<template v-if="properties.type !== 'object' && properties.type !== 'file' && properties.type !== 'array'">
+			<template v-if="properties.type !== 'object' && properties.type !== 'file'">
 				<NcTextField :disabled="loading"
 					label="Pattern (regex)"
 					:value.sync="properties.pattern" />
@@ -82,16 +82,17 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcTextField :disabled="loading"
 					label="Behavior"
 					:value.sync="properties.behavior" />
+				<template v-if="properties.type !== 'array'">
+					<NcInputField :disabled="loading"
+						type="number"
+						label="Minimum length"
+						:value.sync="properties.minLength" />
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Minimum length"
-					:value.sync="properties.minLength" />
-
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Maximum length"
-					:value.sync="properties.maxLength" />
+					<NcInputField :disabled="loading"
+						type="number"
+						label="Maximum length"
+						:value.sync="properties.maxLength" />
+				</template>
 			</template>
 
 			<!-- TYPE : STRING -->
