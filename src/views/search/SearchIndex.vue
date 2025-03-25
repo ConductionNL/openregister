@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
 import { computed } from 'vue'
 import { NcButton } from '@nextcloud/vue'
 
@@ -30,6 +30,11 @@ const showNoObjectsMessage = computed(() => {
 		&& !objectStore.loading 
 		&& !objectStore.objectList?.results?.length
 })
+
+const openAddObjectModal = () => {
+	objectStore.setObjectItem(null) // Clear any existing object
+	navigationStore.setModal('editObject')
+}
 </script>
 
 <template>
@@ -44,13 +49,22 @@ const showNoObjectsMessage = computed(() => {
 			:inline="1"
 			:primary="true" 
 			:menu-name="`Bulk action for ${objectStore.selectedObjects?.length || 0} objects`">
-				<NcActionButton >
+				<NcActionButton 
+					@click="openAddObjectModal" 
+					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+					:title="!registerStore.registerItem ? 'Please select a register to add an object' : (!schemaStore.schemaItem ? 'Please select a schema to add an object' : '')">
+					<template #icon>
+						<Pencil :size="20" />
+					</template>
+					Add
+				</NcActionButton>
+				<NcActionButton>
 					<template #icon>
 						<Upload :size="20" />
 					</template>
 					Upload
 				</NcActionButton>
-				<NcActionButton >
+				<NcActionButton>
 					<template #icon>
 						<Download :size="20" />
 					</template>

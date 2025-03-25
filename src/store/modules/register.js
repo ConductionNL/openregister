@@ -14,8 +14,8 @@ export const useRegisterStore = defineStore('register', {
 	}),
 	actions: {
 		setRegisterItem(registerItem) {
-			this.registerItem = registerItem && new Register(registerItem)
-			console.log('Active register item set to ' + registerItem.name)
+			this.registerItem = registerItem ? new Register(registerItem) : null
+			console.log('Active register item set to ' + (registerItem?.title || 'null'))
 		},
 		setRegisterList(registerList) {
 			this.registerList = registerList.map(

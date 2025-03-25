@@ -682,9 +682,6 @@ class ObjectService
 			$depth = $schema->getMaxDepth();;
 		}
 
-		var_dump($$object['id']);
-		die();
-
 		// Check if object already exists
 		if (isset($object['id']) === true) {
 			$objectEntity = $this->objectEntityMapper->find(

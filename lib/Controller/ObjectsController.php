@@ -222,38 +222,19 @@ class ObjectsController extends Controller
      */
     public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        $data = $this->request->getParams();
-
-        // Override register and schema from URL parameters
-        $data['register'] = $register;
-        $data['schema'] = $schema;
-
-        $object = $data['object'];
-        $mapping = $data['mapping'] ?? null;
-
-         // lets remove all the _ and @ prefixed keys (prevent injection)
-         $data = array_filter($data, function($key) {
-            return !str_starts_with($key, '_') && !str_starts_with($key, '@');
-        }, ARRAY_FILTER_USE_KEY);
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        // If mapping ID is provided, transform the object using the mapping
-        $mappingService = $this->getOpenConnectorMappingService();
-
-        if ($mapping !== null && $mappingService !== null) {
-            $mapping = $mappingService->getMapping($mapping);
-
-            $object = $mappingService->executeMapping($mapping, $object);
-            $data['register'] = $register;
-            $data['schema'] = $schema;
-        }
+        $object = $this->request->getParams();
+        
+        $object = array_filter(
+            $object,
+            fn($key) => !str_starts_with($key, '_')
+                && !str_starts_with($key, '@')
+                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+            ARRAY_FILTER_USE_KEY
+        );
 
 		// Save the object
 		try {
-			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
+            $objectEntity = $objectService->saveObject(register: $register, schema: $schema, object: $object);
 
 			// Unlock the object after saving
 			try {
