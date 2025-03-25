@@ -320,6 +320,10 @@ class ObjectEntityMapper extends QBMapper
 	 */
 	public function insert(Entity $entity): Entity
 	{
+        // Lets make sure that @self and id never enter the database
+		$object = $entity->getObject();		
+		unset($object['@self'], $object['id']);
+		$entity->setObject($object);
 
 		$entity = parent::insert($entity);
 		// Dispatch creation event
@@ -349,6 +353,11 @@ class ObjectEntityMapper extends QBMapper
 	public function update(Entity $entity): Entity
 	{
 		$oldObject = $this->find($entity->getId());
+		
+        // Lets make sure that @self and id never enter the database
+		$object = $entity->getObject();		
+		unset($object['@self'], $object['id']);
+		$entity->setObject($object);
 
 		$entity = parent::update($entity);
 		

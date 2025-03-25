@@ -762,10 +762,7 @@ class ObjectService
 			$this->schemaMapper->update($schema);
 		}
 
-
-		$objectCopy = $object;
-		unset($objectCopy['@self'], $objectCopy['id']);
-		$objectEntity->setObject($objectCopy);
+		$objectEntity->setObject($object);
 
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
