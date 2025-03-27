@@ -193,10 +193,33 @@ class Schema extends Entity implements JsonSerializable
 			}
 
 
-			if ($property['type'] === 'object' && isset($property['objectConfiguration']['handling']) === true && $property['objectConfiguration']['handling'] === 'uri') {
-				$data['properties'][$title]['format'] = 'uri';
-				$data['properties'][$title]['type']   = 'string';
+            // @TODO unset $ref because this cant work yet and will cause errors, the validater will try to find these schemas but they are internal references.
+            if ($property['type'] === 'object' && isset($property['$ref']) === true) {
 				unset($data['properties'][$title]['$ref']);
+            }
+            if ($property['type'] === 'array' && isset($property['items']['$ref']) === true) {
+				unset($data['properties'][$title]['items']['$ref']);
+            }
+
+            // Make object uri properties validateable as string uri and cascaded objects.
+			if ($property['type'] === 'object' && isset($property['objectConfiguration']['handling']) === true && $property['objectConfiguration']['handling'] === 'uri') {
+                unset($data['properties'][$title]['format'], $data['properties'][$title]['type']);
+				$data['properties'][$title]['oneOf'] = [
+                    [
+                        'type' => 'object'
+                    ],
+                    [
+                        'type' => 'string',
+                        'format' => 'uri'
+                    ]
+                ];
+
+                // Also if not required type null must be a option
+                if (in_array($title, $data['required']) === false) {
+                    $data['properties'][$title]['oneOf'][] = [
+                        'type' => 'null'
+                    ];
+                }
 			}
 		}
 
