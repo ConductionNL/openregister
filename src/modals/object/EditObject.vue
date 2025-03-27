@@ -458,6 +458,8 @@ const setFieldValue = (key, value) => {
 
 .detail-item.empty-value {
 	border-left-color: var(--color-warning);
+}
+
 .json-editor .format-json-button {
 	position: absolute;
 	bottom: -33px;
@@ -468,6 +470,8 @@ const setFieldValue = (key, value) => {
 	font-weight: bold;
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 4px;
+}
+
 /* Add styles for the code editor */
 .code-editor {
 	font-family: monospace;
