@@ -15,7 +15,7 @@ import { navigationStore } from '../store/store.js'
 		<DeleteSchemaProperty />
 		<EditSource />
 		<DeleteSource />
-		<EditObject />
+		<EditObject v-if="navigationStore.modal === 'editObject'" />
 		<DeleteObject />
 		<LockObject />
 		<ViewObject />
