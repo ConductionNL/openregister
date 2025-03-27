@@ -9,6 +9,7 @@ return [
 	'routes' => [
 		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
 		// Objects
+		['name' => 'objects#all', 'url' => '/api/objects', 'verb' => 'GET'],
 		['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
 		['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
 		['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

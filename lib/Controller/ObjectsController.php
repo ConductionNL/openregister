@@ -8,7 +8,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectAuditLogMapper;
+// use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
@@ -46,7 +46,7 @@ class ObjectsController extends Controller
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
+        // private readonly ObjectAuditLogMapper $objectAuditLogMapper,
         private readonly ObjectService $objectService,
 
     )
@@ -74,89 +74,121 @@ class ObjectsController extends Controller
     }
 
     /**
+     * Retrieves a list of all objects
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse A JSON response containing the list of objects
+     */
+    public function all(): JSONResponse
+    {
+        return $this->getObjects();
+    }
+
+    /**
      * Retrieves a list of all objects for a specific register and schema
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $register The register slug or identiefer
-     * @param string $schema The schema slug or identiefer
+     * @param string $register The register slug or identifier
+     * @param string $schema The schema slug or identifier
      * @return JSONResponse A JSON response containing the list of objects
      */
-    public function index(string $register, string $schema, ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(string $register, string $schema): JSONResponse
+    {
+        return $this->getObjects(register: $register, schema: $schema);
+    }
+
+    /**
+     * Private method to fetch objects with optional register and schema filtering.
+     *
+     * @param string|null $register Optional register slug or identifier
+     * @param string|null $schema Optional schema slug or identifier
+     * @return JSONResponse A JSON response containing the list of objects
+     */
+    private function getObjects(?string $register = null, ?string $schema = null): JSONResponse
     {
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters
-		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
-		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
-		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
-		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
-		$filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
-		$fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
-		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
-		$search = $requestParams['_search'] ?? null;
+        $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+        $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+        $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+        $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
+        $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+        $search = $requestParams['_search'] ?? null;
 
-		// Check if $register is not an integer and look it up
-		if (is_numeric($register) === false) {
-			$registerEntity = $this->registerMapper->find($register);
-			if ($registerEntity === null) {
-				return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
-			}
-			$register = $registerEntity->getId();
-            $filters['register'] = $register;
-		}
-
-		// Check if $schema is not an integer and look it up
-		if (is_numeric($schema) === false) {
-			$schemaEntity = $this->schemaMapper->find($schema);
-			if ($schemaEntity === null) {
-				return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
-			}
-			$schema = $schemaEntity->getId();
-            $filters['schema'] = $schema;
-		}
-
-		if ($page !== null && isset($limit)) {
-			$page = (int) $page;
-			$offset = $limit * ($page - 1);
-		}
-
-		// Ensure order and extend are arrays
-		if (is_string($order) === true) {
-			$order = array_map('trim', explode(',', $order));
-		}
-		if (is_string($extend) === true) {
-			$extend = array_map('trim', explode(',', $extend));
-		}
-
-		// Remove unnecessary parameters from filters
-		$filters = $requestParams;
-		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
-		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
-		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
-
-        // Lets support extend
-		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
-		$total   = $this->objectEntityMapper->countAll($filters);
-		$pages   = $limit !== null ? ceil($total/$limit) : 1;
-
-
-
-        // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
-        foreach ($objects as $key => $object) {
-            $objects[$key] = $this->objectService->renderEntity(entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields:  $fields);
+        // Handle pagination
+        if ($page !== null && isset($limit) === true) {
+            $page = (int) $page;
+            $offset = $limit * ($page - 1);
         }
 
-		$results =  [
-			'results' => $objects,
-			'total' => $total,
-			'page' => $page ?? 1,
-			'pages' => $pages,
-		];
+        // Ensure order and extend are arrays
+        if (is_string($order) === true) {
+            $order = array_map('trim', explode(',', $order));
+        }
+        if (is_string($extend) === true) {
+            $extend = array_map('trim', explode(',', $extend));
+        }
 
+        // Remove unnecessary parameters from filters
+        $filters = $requestParams;
+        unset(
+            $filters['_route'], $filters['_extend'], $filters['_limit'], 
+            $filters['_offset'], $filters['_order'], $filters['_page'], 
+            $filters['_search'], $filters['extend'], $filters['limit'], 
+            $filters['offset'], $filters['order'], $filters['page']
+        );
 
-        return new JSONResponse($results);
+        // Apply register and schema filters if provided
+        if ($register !== null) {
+            if (is_numeric($register) === true) {
+                $registerEntity = $this->registerMapper->find($register);
+                if ($registerEntity === null) {
+                    return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
+                }
+                $register = $registerEntity->getId();
+            }
+            $filters['register'] = $register;
+        }
+
+        if ($schema !== null) {
+            if (is_numeric($schema) === true) {
+                $schemaEntity = $this->schemaMapper->find($schema);
+                if ($schemaEntity === null) {
+                    return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+                }
+                $schema = $schemaEntity->getId();
+            }
+            $filters['schema'] = $schema;
+        }
+
+        // Fetch objects
+        $objects = $this->objectEntityMapper->findAll(
+            limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search
+        );
+        $total = $this->objectEntityMapper->countAll($filters);
+        $pages = $limit !== null ? ceil($total / $limit) : 1;
+
+        // Process objects
+        foreach ($objects as $key => $object) {
+            $objects[$key] = $this->objectService->renderEntity(
+                entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields: $fields
+            );
+        }
+
+        // Response
+        return new JSONResponse([
+            'results' => $objects,
+            'total' => $total,
+            'page' => $page ?? 1,
+            'pages' => $pages,
+        ]);
     }
 
     /**
@@ -452,7 +484,7 @@ class ObjectsController extends Controller
     public function logs(string $id): JSONResponse
     {
         try {
-            $jobLogs = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => $id]);
+            $jobLogs = $this->auditTrailMapper->findAll(null, null, ['object_id' => $id]);
             return new JSONResponse($jobLogs);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Logs not found'], 404);
