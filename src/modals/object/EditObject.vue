@@ -62,8 +62,8 @@ const initializeData = () => {
 				updated: '',
 				created: '',
 				locked: null,
-				owner: ''
-			}
+				owner: '',
+			},
 		}
 		formData.value = initialData
 		jsonData.value = JSON.stringify(initialData, null, 2)
@@ -134,10 +134,10 @@ const saveObject = async () => {
 
 	try {
 		const dataToSave = activeTab.value === 1 ? JSON.parse(jsonData.value) : formData.value
-		
+
 		const { response } = await objectStore.saveObject(dataToSave, {
 			register: currentRegister.value.id,
-			schema: currentSchema.value.id
+			schema: currentSchema.value.id,
 		})
 
 		success.value = response.ok
@@ -214,34 +214,31 @@ const setFieldValue = (key, value) => {
 
 				<!-- Edit Tabs -->
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
+					<BTabs v-model="activeTab" content-class="mt-3" justified>
 						<BTab title="Form Editor" active>
-							<div class="form-editor" v-if="currentSchema">
+							<div v-if="currentSchema" class="form-editor">
 								<div v-for="(prop, key) in schemaProperties" :key="key" class="form-field">
 									<template v-if="prop.type === 'string'">
 										<NcTextField
 											:label="prop.title || key"
 											:model-value="getFieldValue(key)"
-											@update:model-value="value => setFieldValue(key, value)"
 											:placeholder="prop.description"
 											:helper-text="prop.description"
 											:required="prop.required"
-										/>
+											@update:model-value="value => setFieldValue(key, value)" />
 									</template>
 									<template v-else-if="prop.type === 'boolean'">
 										<NcCheckboxRadioSwitch
 											:label="prop.title || key"
 											:model-value="getFieldValue(key)"
-											@update:model-value="value => setFieldValue(key, value)"
 											:helper-text="prop.description"
 											type="switch"
-										/>
+											@update:model-value="value => setFieldValue(key, value)" />
 									</template>
 									<template v-else-if="prop.type === 'number' || prop.type === 'integer'">
 										<NcTextField
 											:label="prop.title || key"
 											:model-value="getFieldValue(key)"
-											@update:model-value="value => setFieldValue(key, value)"
 											:placeholder="prop.description"
 											:helper-text="prop.description"
 											:required="prop.required"
@@ -249,7 +246,7 @@ const setFieldValue = (key, value) => {
 											:min="prop.minimum"
 											:max="prop.maximum"
 											:step="prop.type === 'integer' ? '1' : 'any'"
-										/>
+											@update:model-value="value => setFieldValue(key, value)" />
 									</template>
 								</div>
 							</div>
@@ -257,7 +254,7 @@ const setFieldValue = (key, value) => {
 								Please select a schema to edit the object
 							</NcEmptyContent>
 						</BTab>
-						
+
 						<BTab title="JSON Editor">
 							<div class="json-editor">
 								<div :class="`codeMirrorContainer ${getTheme()}`">
@@ -268,9 +265,8 @@ const setFieldValue = (key, value) => {
 										:dark="getTheme() === 'dark'"
 										:extensions="[json()]"
 										:tab-size="2"
-										style="height: 400px"
-									/>
-									<NcButton 
+										style="height: 400px" />
+									<NcButton
 										class="format-json-button"
 										type="secondary"
 										size="small"
@@ -295,7 +291,7 @@ const setFieldValue = (key, value) => {
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			
+
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || (activeTab === 1 && !isValidJson(jsonData))"
