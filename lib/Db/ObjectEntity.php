@@ -31,7 +31,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?string $folder = null; // The folder path where this object is stored
 	protected ?string $application = null; // The application name
 	protected ?string $organisation = null; // The organisation name
-	protected ?array $validation = []; // array describing validation rules
+	protected ?array $validation = []; // array describing validation results
 	protected ?array $deleted = []; // array describing deletion details
 	protected ?array $geo = []; // array describing deletion details
 	protected ?array $retention = []; // array describing deletion details

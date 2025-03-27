@@ -20,6 +20,11 @@ use OCP\AppFramework\Db\Entity;
  * @property string|null $folder Nextcloud folder path where register is stored
  * @property DateTime|null $updated Last update timestamp
  * @property DateTime|null $created Creation timestamp
+ * @property string|null $owner The Nextcloud user that owns this register
+ * @property string|null $application The application name
+ * @property string|null $organisation The organisation name
+ * @property array|null $authorization JSON object describing authorizations
+ * @property DateTime|null $deleted Deletion timestamp
  */
 class Register extends Entity implements JsonSerializable
 {
@@ -34,6 +39,11 @@ class Register extends Entity implements JsonSerializable
 	protected ?string $folder = null; // Nextcloud folder path where register is stored
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
+	protected ?string $owner = null;
+	protected ?string $application = null;
+	protected ?string $organisation = null;
+	protected ?array $authorization = [];
+	protected ?DateTime $deleted = null;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
@@ -47,6 +57,11 @@ class Register extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'folder', type: 'string');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'application', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'deleted', type: 'datetime');
 	}
 
 	/**
@@ -107,7 +122,12 @@ class Register extends Entity implements JsonSerializable
 			'tablePrefix' => $this->tablePrefix,
 			'folder' => $this->folder,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-			'created' => isset($this->created) ? $this->created->format('c') : null
+			'created' => isset($this->created) ? $this->created->format('c') : null,
+			'owner' => $this->owner,
+			'application' => $this->application,
+			'organisation' => $this->organisation,
+			'authorization' => $this->authorization,
+			'deleted' => isset($this->deleted) ? $this->deleted->format('c') : null
 		];
 	}
 }

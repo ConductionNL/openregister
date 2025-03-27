@@ -35,6 +35,11 @@ use stdClass;
  * @property DateTime|null $updated Last update timestamp
  * @property DateTime|null $created Creation timestamp
  * @property int $maxDepth Maximum depth of the schema
+ * @property string|null $owner The Nextcloud user that owns this schema
+ * @property string|null $application The application name
+ * @property string|null $organisation The organisation name
+ * @property array|null $authorization JSON object describing authorizations
+ * @property DateTime|null $deleted Deletion timestamp
  */
 class Schema extends Entity implements JsonSerializable
 {
@@ -52,6 +57,11 @@ class Schema extends Entity implements JsonSerializable
 	protected ?DateTime $updated   = null;
 	protected ?DateTime $created   = null;
 	protected int	    $maxDepth  = 0;
+	protected ?string $owner       = null;
+	protected ?string $application = null;
+	protected ?string $organisation = null;
+	protected ?array $authorization = [];
+	protected ?DateTime $deleted   = null;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
@@ -67,7 +77,12 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
+		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER); // @todo this is being missed used so needs a refactor, sub onjects should be based on schema property config
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'application', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'deleted', type: 'datetime');
 	}
 
 	/**
@@ -170,6 +185,11 @@ class Schema extends Entity implements JsonSerializable
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
 			'maxDepth' => $this->maxDepth,
+			'owner' => $this->owner,
+			'application' => $this->application,
+			'organisation' => $this->organisation,
+			'authorization' => $this->authorization,
+			'deleted' => isset($this->deleted) ? $this->deleted->format('c') : null
 		];
 
 		$jsonFields = $this->getJsonFields();
