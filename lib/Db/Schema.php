@@ -192,11 +192,30 @@ class Schema extends Entity implements JsonSerializable
 				unset($data['properties'][$title]['items']['type']);
 			}
 
+            if ($property['type'] === 'object' && isset($property['$ref']) === true) {
+				unset($data['properties'][$title]['$ref']);
+            }
+
+            if ($property['type'] === 'array' && isset($property['items']['$ref']) === true) {
+				unset($data['properties'][$title]['items']['$ref']);
+            }
 
 			if ($property['type'] === 'object' && isset($property['objectConfiguration']['handling']) === true && $property['objectConfiguration']['handling'] === 'uri') {
-				$data['properties'][$title]['format'] = 'uri';
-				$data['properties'][$title]['type']   = 'string';
-				unset($data['properties'][$title]['$ref']);
+                unset($data['properties'][$title]['format'], $data['properties'][$title]['type']);
+				$data['properties'][$title]['oneOf'] = [
+                    [
+                        'type' => 'object'
+                    ],
+                    [
+                        'type' => 'string',
+                        'format' => 'uri'
+                    ]
+                ];
+                if (in_array($title, $data['required']) === false) {
+                    $data['properties'][$title]['oneOf'][] = [
+                        'type' => 'null'
+                    ];
+                }
 			}
 		}
 
