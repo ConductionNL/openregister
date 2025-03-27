@@ -42,14 +42,18 @@ class SchemaMapper extends QBMapper
 	 * @param int $id The id of the schema
 	 * @return Schema The schema
 	 */
-	public function find(int $id): Schema
+	public function find(string|int $id): Schema
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_schemas')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->orX(
+					$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+				)
 			);
 
 		return $this->findEntity(query: $qb);
@@ -125,6 +129,47 @@ class SchemaMapper extends QBMapper
 	}
 
 	/**
+	 * Ensures that a schema object has a UUID and a slug.
+	 *
+	 * @param Schema $schema The schema object to clean
+	 * @return void
+	 */
+	private function cleanObject(Schema $schema): void
+	{
+		// Check if UUID is set, if not, generate a new one
+		if ($schema->getUuid() === null) {
+			$schema->setUuid(Uuid::v4());
+		}
+
+		// Ensure the object has a slug
+		if (empty($schema->getSlug()) === true) {
+			// Convert to lowercase and replace spaces with dashes
+			$slug = strtolower(trim($schema->getTitle())); // Assuming title is used for slug
+			// Remove special characters
+			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+			// Remove multiple dashes
+			$slug = preg_replace('/-+/', '-', $slug);
+			// Remove leading/trailing dashes
+			$slug = trim($slug, '-');
+
+			$schema->setSlug($slug);
+		}
+
+		// Ensure the object has a version
+		if ($schema->getVersion() === null) {
+			$schema->setVersion('1.0.0');
+		} else {
+			// Split the version into major, minor, and patch
+			$versionParts = explode('.', $schema->getVersion());
+			// Increment the patch version
+			$versionParts[2] = (int)$versionParts[2] + 1;
+			// Reassemble the version string
+			$newVersion = implode('.', $versionParts);
+			$schema->setVersion($newVersion);
+		}
+	}
+
+	/**
 	 * Creates a schema from an array
 	 *
 	 * @param array $object The object to create
@@ -135,9 +180,8 @@ class SchemaMapper extends QBMapper
 		$schema = new Schema();
 		$schema->hydrate(object: $object);
 
-		if ($schema->getUuid() === null) {
-			$schema->setUuid(Uuid::v4());
-		}
+		// Clean the schema object to ensure UUID, slug, and version are set
+		$this->cleanObject($schema);
 
 		$schema = $this->insert(entity: $schema);
 
@@ -150,6 +194,10 @@ class SchemaMapper extends QBMapper
 	public function update(Entity $entity): Entity
 	{
 		$oldSchema = $this->find($entity->getId());
+
+		// Clean the schema object to ensure UUID, slug, and version are set
+		$this->cleanObject($entity);
+
 		$entity = parent::update($entity);
 
 		// Dispatch update event
@@ -170,11 +218,8 @@ class SchemaMapper extends QBMapper
 		$newSchema = $this->find($id);
 		$newSchema->hydrate($object);
 
-		if (isset($object['version']) === false) {
-			$version = explode('.', $newSchema->getVersion());
-			$version[2] = (int) $version[2] + 1;
-			$newSchema->setVersion(implode('.', $version));
-		}
+		// Clean the schema object to ensure UUID, slug, and version are set
+		$this->cleanObject($newSchema);
 
 		$newSchema = $this->update($newSchema);
 

@@ -1,92 +1,191 @@
 <script setup>
-import { searchStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
 import { EventBus } from '../../eventBus.js'
+import { computed, ref, onMounted, watch } from 'vue'
+
+// Add search input ref and debounce function
+const searchQuery = ref('')
+let searchTimeout = null
+
+// Debounced search function
+const handleSearch = (value) => {
+	if (searchTimeout) {
+		clearTimeout(searchTimeout)
+	}
+
+	searchTimeout = setTimeout(() => {
+		// Update the filters object with the search query
+		objectStore.setFilters({
+			_search: value || ''  // Set as object property instead of array
+		})
+
+		// Only refresh if we have both register and schema selected
+		if (registerStore.registerItem && schemaStore.schemaItem) {
+			objectStore.refreshObjectList({
+				register: registerStore.registerItem.id,
+				schema: schemaStore.schemaItem.id
+			})
+		}
+	}, 1000) // 3 second delay
+}
+
+// Computed properties to handle the false values
+const selectedRegisterValue = computed({
+	get: () => {
+		if (!registerStore.registerItem) return null
+		// Return in the same format as the options
+		return {
+			value: registerStore.registerItem,
+			label: registerStore.registerItem.title
+		}
+	},
+	set: (value) => {
+		registerStore.setRegisterItem(value?.value || null)
+	}
+})
+
+const selectedSchemaValue = computed({
+	get: () => {
+		if (!schemaStore.schemaItem) return null
+		// Return in the same format as the options
+		return {
+			value: schemaStore.schemaItem,
+			label: schemaStore.schemaItem.title
+		}
+	},
+	set: (value) => {
+		schemaStore.setSchemaItem(value?.value || null)
+	}
+})
+
+// Initialize column filters when component mounts
+onMounted(() => {
+	objectStore.initializeColumnFilters()
+})
+
+const metadataColumns = computed(() => {
+	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+		id,
+		...meta
+	}))
+})
+
+// Watch for schema changes to initialize properties
+watch(() => schemaStore.schemaItem, (newSchema) => {
+	if (newSchema) {
+		objectStore.initializeProperties(newSchema)
+	} else {
+		objectStore.properties = {}
+		objectStore.initializeColumnFilters()
+	}
+}, { immediate: true })
 </script>
 
 <template>
 	<NcAppSidebar
-		name="Zoek opdracht"
-		subtitle="baldie"
-		subname="Binnen het federatieve netwerk">
-		<NcAppSidebarTab id="search-tab" name="Zoeken" :order="1">
+		ref="sidebar"
+		name="Object selection"
+		subtitle="Select register and schema"
+		subname="Within the federative network">
+		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
-			<NcSelect v-bind="registerOptions"
-				v-model="searchStore.searchObjectsDataRegister"
-				input-label="Registratie"
-				:loading="registerLoading"
-				:disabled="registerLoading" />
-			<NcSelect v-bind="schemaOptions"
-				v-model="searchStore.searchObjectsDataSchema"
-				input-label="Schema"
-				:loading="schemaLoading"
-				:disabled="!selectedRegister?.id || schemaLoading" />
 
-			<div v-if="searchStore.searchObjectsResult?.results?.length">
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.objectId"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'objectId')">
-					ObjectID
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.created"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'created')">
-					Created
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.updated"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'updated')">
-					Updated
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.files"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'files')">
-					Files
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch :checked.sync="columnFilter.schemaProperties"
-					@update:checked="(status) => emitUpdatedColumnFilter(status, 'schemaProperties')">
-					Schema properties
-				</NcCheckboxRadioSwitch>
+			<!-- Search Section -->
+			<div class="section">
+				<h3 class="section-title">Search</h3>
+				<NcSelect v-bind="registerOptions"
+					:model-value="selectedRegisterValue"
+					@update:model-value="selectedRegisterValue = $event"
+					input-label="Register"
+					:loading="registerLoading"
+					:disabled="registerLoading"
+					placeholder="Select a register" />
+				
+				<NcSelect v-bind="schemaOptions"
+					:model-value="selectedSchemaValue"
+					@update:model-value="selectedSchemaValue = $event"
+					input-label="Schema"
+					:loading="schemaLoading"
+					:disabled="!selectedRegister || schemaLoading" />
+
+				<NcTextField
+					v-model="searchQuery"
+					@update:modelValue="handleSearch"
+					label="Search objects"
+					type="search"
+					:disabled="!selectedRegister || !selectedSchema"
+					placeholder="Type to search..."
+					class="search-input" />
+
+				<NcNoteCard type="info" class="column-hint">
+					You can customize visible columns in the 
+					<NcButton type="tertiary" 
+							 @click="$refs.sidebar.showTab('columns-tab')" 
+							 class="inline-button">
+						Columns tab
+					</NcButton>
+				</NcNoteCard>
 			</div>
+
+			
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="upload-tab" name="Upload" :order="2">
+		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
 			<template #icon>
-				<Upload :size="20" />
+				<FormatColumns :size="20" />
 			</template>
 
-			<NcNoteCard type="info">
-				OpenConnector is required for this feature.
-				<NcButton v-if="!openConnectorInstalled && !openConnectorInstallError" type="secondary" @click="installApp('openconnector')">
-					Install OpenConnector
-				</NcButton>
-			</NcNoteCard>
-			<NcNoteCard v-if="openConnectorInstallError" type="error">
-				Failed to install OpenConnector. Check console for more details.
-			</NcNoteCard>
-		</NcAppSidebarTab>
+			<!-- Custom Columns Section -->
+			<div class="section">
+				<h3 class="section-title">Properties</h3>
+				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
+					No schema selected. Please select a schema to view properties.
+				</NcNoteCard>
+				<NcNoteCard v-else-if="!Object.keys(objectStore.properties || {}).length" type="warning">
+					Selected schema has no properties. Please add properties to the schema.
+				</NcNoteCard>
+				<div v-else class="column-switches">
+					<NcCheckboxRadioSwitch 
+						v-for="(property, propertyName) in objectStore.properties" 
+						:key="`prop_${propertyName}`"
+						:checked="objectStore.columnFilters[`prop_${propertyName}`]"
+						@update:checked="(status) => objectStore.updateColumnFilter(`prop_${propertyName}`, status)"
+						:title="property.description">
+						{{ property.label }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</div>
 
-		<NcAppSidebarTab id="download-tab" name="Download" :order="3">
-			<template #icon>
-				<Download :size="20" />
-			</template>
-
-			<NcNoteCard type="info">
-				OpenConnector is required for this feature.
-				<NcButton v-if="!openConnectorInstalled && !openConnectorInstallError" type="secondary" @click="installApp('openconnector')">
-					Install OpenConnector
-				</NcButton>
-			</NcNoteCard>
-			<NcNoteCard v-if="openConnectorInstallError" type="error">
-				Failed to install OpenConnector. Check console for more details.
-			</NcNoteCard>
+			<!-- Default Columns Section -->
+			<div class="section">
+				<h3 class="section-title">Metadata</h3>
+				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
+					No schema selected. Please select a schema to view metadata columns.
+				</NcNoteCard>
+				<div class="column-switches" v-if="schemaStore.schemaItem">
+					<NcCheckboxRadioSwitch 
+						v-for="meta in metadataColumns" 
+						:key="`meta_${meta.id}`"
+						:checked="objectStore.columnFilters[`meta_${meta.id}`]"
+						@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)"
+						:title="meta.description">
+						{{ meta.label }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</div>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcEmptyContent } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -96,6 +195,14 @@ export default {
 		NcSelect,
 		NcButton,
 		NcNoteCard,
+		NcCheckboxRadioSwitch,
+		NcTextField,
+		NcEmptyContent,
+		// Icons
+		Magnify,
+		Upload,
+		Download,
+		FormatColumns,
 	},
 	data() {
 		return {
@@ -104,101 +211,88 @@ export default {
 			appInstallService: new AppInstallService(),
 			openConnectorInstalled: true,
 			openConnectorInstallError: false,
-			columnFilter: {
-				objectId: true,
-				created: true,
-				updated: true,
-				files: true,
-				schemaProperties: true,
-			},
-			/**
-			 * This is used to prevent another search from being triggered when schema is changed.
-			 * This is needed because the pagination is set to 1 when switching schema.
-			 * Which will trigger another search.
-			 */
-			ignoreNextPageWatch: false,
 		}
 	},
 	computed: {
-		// when registerList is filled, make a options object for NcSelect
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
+					value: register,  // The full object goes in value
 					label: register.title,
-					id: register.id,
 				})),
 			}
 		},
-		// when schemaList is filled, make a options object for NcSelect based on the selected register
 		schemaOptions() {
-			const fullSelectedRegister = registerStore.registerList.find(register => register.id === (this.selectedRegister?.id || Symbol('no selected register')))
-			if (!fullSelectedRegister) return []
+			const fullSelectedRegister = registerStore.registerList.find(
+				register => register.id === (this.selectedRegister?.id || Symbol('no selected register'))
+			)
+			if (!fullSelectedRegister) return { options: [] }
 
 			return {
 				options: schemaStore.schemaList
 					.filter(schema => fullSelectedRegister.schemas.includes(schema.id))
 					.map(schema => ({
+						value: schema,  // The full object goes in value
 						label: schema.title,
-						id: schema.id,
 					})),
 			}
 		},
-		selectedRegister: () => searchStore.searchObjectsDataRegister,
-		selectedSchema: () => searchStore.searchObjectsDataSchema,
-		page: () => searchStore.searchObjectsDataPagination,
+		selectedRegister() {
+			return registerStore.registerItem || false
+		},
+		selectedSchema() {
+			return schemaStore.schemaItem || false
+		},
+		metadataColumns() {
+			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+				id,
+				...meta
+			}))
+		}
 	},
 	watch: {
-		// when the selected register changes clear the selected schema
 		selectedRegister(newValue) {
-			searchStore.searchObjectsDataSchema = null
+			if (!newValue) {
+				schemaStore.setSchemaItem(false)
+			}
 		},
-		// when selectedSchema changes, search for objects with the selected register and schema as filters
 		selectedSchema(newValue) {
-			if (newValue?.id) {
-				searchStore.searchObjectsDataPagination = 1
+			if (newValue) {
+				objectStore.setPagination(1)
 				this.ignoreNextPageWatch = true
 
-				this.searchObjects()
+				objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id
+				})
 
-				// wait for loading to finish, then allow watching on page to continue
 				const unwatch = this.$watch(
-					() => searchStore.searchObjectsLoading,
+					() => objectStore.loading,
 					(newVal) => {
 						if (newVal === false) {
 							this.ignoreNextPageWatch = false
-							unwatch() // Remove the watcher once we're done
+							unwatch()
 						}
 					},
 				)
 			}
 		},
-		page() {
-			if (this.ignoreNextPageWatch) {
-				return
-			}
-			this.searchObjects()
-		},
 	},
 	mounted() {
 		this.registerLoading = true
 		this.schemaLoading = true
-		registerStore.refreshRegisterList().finally(() => (this.registerLoading = false))
-		schemaStore.refreshSchemaList().finally(() => (this.schemaLoading = false))
+		
+		registerStore.refreshRegisterList()
+			.finally(() => (this.registerLoading = false))
+		
+		schemaStore.refreshSchemaList()
+			.finally(() => (this.schemaLoading = false))
 
 		this.initAppInstallService()
 	},
 	methods: {
-		searchObjects() {
-			searchStore.searchObjects({
-				register: searchStore.searchObjectsDataRegister?.id,
-				schema: searchStore.searchObjectsDataSchema?.id,
-				_limit: searchStore.searchObjectsDataPaginationLimit,
-				_page: searchStore.searchObjectsDataPagination,
-			})
-		},
 		async initAppInstallService() {
 			await this.appInstallService.init()
-
 			this.openConnectorInstalled = await this.appInstallService.isAppInstalled('openconnector')
 		},
 		async installApp(appId) {
@@ -206,7 +300,6 @@ export default {
 				await this.appInstallService.forceInstallApp(appId)
 				this.openConnectorInstalled = true
 			} catch (error) {
-				// gracefully show error to user and remove the button
 				if (error.status === 403 && error.data?.message === 'Password confirmation is required') {
 					console.error('Password confirmation needed before installing apps')
 				} else {
@@ -215,12 +308,82 @@ export default {
 				this.openConnectorInstallError = true
 			}
 		},
-		emitUpdatedColumnFilter(status, id) {
-			EventBus.$emit('object-search-set-column-filter', {
-				id,
-				enabled: status,
-			})
-		},
 	},
 }
 </script>
+
+<style scoped>
+.section {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section:last-child {
+	border-bottom: none;
+}
+
+.section-title {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	padding: 0 16px;
+	margin: 0 0 12px 0;
+}
+
+.column-switches {
+	padding: 0 16px;
+}
+
+.column-switches :deep(.checkbox-radio-switch) {
+	margin: 8px 0;
+}
+
+.search-input {
+	margin: 12px 16px;
+}
+
+.empty-state {
+	color: var(--color-text-maxcontrast);
+	text-align: center;
+	padding: 12px;
+	font-style: italic;
+}
+
+/* Add some spacing between select inputs */
+:deep(.v-select) {
+	margin: 0 16px 12px 16px;
+}
+
+/* Style for the last select to maintain consistent spacing */
+:deep(.v-select:last-of-type) {
+	margin-bottom: 0;
+}
+
+/* Empty content styling */
+:deep(.empty-content) {
+	margin: 20px 0;
+}
+
+:deep(.empty-content__icon) {
+	width: 32px;
+	height: 32px;
+}
+
+.column-hint {
+	margin: 8px 16px;
+}
+
+.inline-button {
+	display: inline;
+	padding: 0;
+	margin: 0;
+	text-decoration: underline;
+	height: auto;
+	min-height: auto;
+	color: var(--color-primary);
+}
+
+.inline-button:hover {
+	text-decoration: none;
+}
+</style>

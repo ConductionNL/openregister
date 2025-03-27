@@ -4,20 +4,42 @@ import { Schema } from '../../entities/index.js'
 
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
-		schemaItem: null,
+		schemaItem: false,
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
+		filters: [], // List of query
+		pagination: {
+			page: 1,
+			limit: 20,
+		},
 	}),
 	actions: {
 		setSchemaItem(schemaItem) {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
-			console.log('Active schema item set to ' + schemaItem)
+			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
 		setSchemaList(schemaList) {
 			this.schemaList = schemaList.map(
 				(schemaItem) => new Schema(schemaItem),
 			)
 			console.log('Schema list set to ' + schemaList.length + ' items')
+		},
+		/**
+		 * Set pagination details
+		 * @param {number} page - The current page number for pagination
+		 * @param {number} limit - The number of items to display per page
+		 */
+		setPagination(page, limit = 14) {
+			this.pagination = { page, limit }
+			console.info('Pagination set to', { page, limit }) // Logging the pagination
+		},
+		/**
+		 * Set query filters for schema list
+		 * @param {object} filters - The filter criteria to apply to the schema list
+		 */
+		setFilters(filters) {
+			this.filters = { ...this.filters, ...filters }
+			console.info('Query filters set to', this.filters) // Logging the filters
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshSchemaList(search = null) {

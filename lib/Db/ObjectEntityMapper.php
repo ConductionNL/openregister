@@ -68,7 +68,7 @@ class ObjectEntityMapper extends QBMapper
 	 * @param int|string $idOrUuid The ID or UUID of the object to find
 	 * @return ObjectEntity The ObjectEntity
 	 */
-	public function find($identifier): ObjectEntity
+	public function find(string|int $identifier): ObjectEntity
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -164,15 +164,23 @@ class ObjectEntityMapper extends QBMapper
 	 * Counts all objects
 	 *
 	 * @param array|null $filters The filters to apply
-	 * @param string|null $search The search string to apply
+	 * @param string|null $search The search string to apply	 *
+	 * @param bool $includeDeleted Whether to include deleted objects
+	 *
 	 * @return int The number of objects
 	 */
-	public function countAll(?array $filters = [], ?string $search = null): int
+	public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
 	{
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
 			->from(from: 'openregister_objects');
+
+		// Conditionally count objects based on $includeDeleted
+		if ($includeDeleted === false) {
+			$qb->andWhere($qb->expr()->isNull('deleted'));
+		}
+
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
@@ -203,6 +211,8 @@ class ObjectEntityMapper extends QBMapper
 	 * @param string|null $search The search string to apply
 	 * @param array|null $ids Array of IDs or UUIDs to filter by
 	 * @param string|null $uses Value that must be present in relations
+	 * @param bool $includeDeleted Whether to include deleted objects
+	 *
 	 * @return array An array of ObjectEntitys
 	 */
 	public function findAll(
@@ -214,7 +224,8 @@ class ObjectEntityMapper extends QBMapper
 		array $sort = [],
 		?string $search = null,
 		?array $ids = null,
-		?string $uses = null
+		?string $uses = null,
+		bool $includeDeleted = false
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -222,6 +233,11 @@ class ObjectEntityMapper extends QBMapper
 			->from('openregister_objects')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
+
+		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+		if (!$includeDeleted) {
+			$qb->andWhere($qb->expr()->isNull('deleted'));
+		}
 
 		// Handle filtering by IDs/UUIDs if provided
 		if ($ids !== null && !empty($ids)) {
@@ -294,17 +310,26 @@ class ObjectEntityMapper extends QBMapper
 		return $this->findEntities(query: $qb);
 	}
 
+	
+
 	/**
-	 * @inheritDoc
+	 * Inserts a new entity into the database.
+	 *
+	 * @param Entity $entity The entity to insert.
+	 * @return Entity The inserted entity.
 	 */
 	public function insert(Entity $entity): Entity
 	{
+        // Lets make sure that @self and id never enter the database
+		$object = $entity->getObject();		
+		unset($object['@self'], $object['id']);
+		$entity->setObject($object);
+
 		$entity = parent::insert($entity);
 		// Dispatch creation event
 		$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
 		return $entity;
-
 	}
 
 	/**
@@ -317,13 +342,8 @@ class ObjectEntityMapper extends QBMapper
 	{
 		$obj = new ObjectEntity();
 		$obj->hydrate(object: $object);
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
-		// Set current user as owner when creating new object
-		if ($this->userSession->isLoggedIn()) {
-			$obj->setOwner($this->userSession->getUser()->getUID());
-		}
+
+		// Prepare the object before insertion
 		return $this->insert($obj);
 	}
 
@@ -333,13 +353,18 @@ class ObjectEntityMapper extends QBMapper
 	public function update(Entity $entity): Entity
 	{
 		$oldObject = $this->find($entity->getId());
+		
+        // Lets make sure that @self and id never enter the database
+		$object = $entity->getObject();		
+		unset($object['@self'], $object['id']);
+		$entity->setObject($object);
 
 		$entity = parent::update($entity);
-		// Dispatch creation event
+		
+		// Dispatch update event
 		$this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
 		return $entity;
-
 	}
 
 	/**
@@ -355,19 +380,8 @@ class ObjectEntityMapper extends QBMapper
 		$newObject = clone $oldObject;
 		$newObject->hydrate($object);
 
-		// Set or update the version
-		if (isset($object['version']) === false) {
-			$version = explode('.', $newObject->getVersion());
-			$version[2] = (int) $version[2] + 1;
-			$newObject->setVersion(implode('.', $version));
-		}
-
-		// Set current user as owner if not already set
-		if ($newObject->getOwner() === null && $this->userSession->isLoggedIn()) {
-			$newObject->setOwner($this->userSession->getUser()->getUID());
-		}
-
-		return $newObject;
+		// Prepare the object before updating
+		return $this->update($this->prepareEntity($newObject));
 	}
 
 	/**
@@ -542,4 +556,17 @@ class ObjectEntityMapper extends QBMapper
 		$object = $this->find($identifier);
 		return $object->isLocked();
 	}
+
+    public function findMultiple(array $ids): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->orWhere($qb->expr()->in('id',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uuid',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uri',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+
+        return $this->findEntities($qb);
+    }
 }

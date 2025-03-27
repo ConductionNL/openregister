@@ -28,6 +28,7 @@ use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
@@ -78,6 +79,7 @@ class ObjectService
 	 * @param FileService $fileService File service for managing files.
 	 * @param IAppManager $appManager Application manager service.
 	 * @param IAppConfig $config Configuration manager.
+	 * @param IUserSession $userSession User session service.
 	 */
 	public function __construct(
 		private readonly ObjectEntityMapper $objectEntityMapper,
@@ -91,6 +93,7 @@ class ObjectService
 		private readonly IAppManager        $appManager,
 		private readonly IAppConfig         $config,
 		private readonly FileMapper         $fileMapper,
+		private readonly IUserSession       $userSession,
 		ArrayLoader $loader
 	)
 	{
@@ -352,7 +355,8 @@ class ObjectService
         array $sort = [],
         ?string $search = null,
         ?array $extend = [],
-		bool $files = false
+		bool $files = false,
+        ?string $uses = null,
     ): array
     {
         $objects = $this->getObjects(
@@ -363,7 +367,8 @@ class ObjectService
             filters: $filters,
             sort: $sort,
             search: $search,
-			files: $files
+			files: $files,
+            uses: $uses
         );
 
         // If extend is provided, extend each object
@@ -570,6 +575,7 @@ class ObjectService
         array $sort = [],
         ?string $search = null,
 		bool $files = true,
+        ?string $uses = null
     )
     {
         // Set object type and filters if register and schema are provided
@@ -587,7 +593,8 @@ class ObjectService
             offset: $offset,
             filters: $filters,
             sort: $sort,
-            search: $search
+            search: $search,
+            uses: $uses
         );
 
 		if ($files === false) {
@@ -604,12 +611,12 @@ class ObjectService
 
     /**
      * Validate custom rules on the object.
-     * 
+     *
 	 * @param array  $object The data of the object.
 	 * @param Schema $schema The schema of the object.
-     * 
+     *
 	 * @throws CustomValidationException If the object fails custom validation.
-     * 
+     *
      * @return array Custom errors.
      */
     private function validateCustomRules(array $object, Schema $schema): void
@@ -632,9 +639,9 @@ class ObjectService
 
     /**
      * Handles the exception and creates a JSONResponse for errors.
-     * 
+     *
      * @param ValidationException|CustomValidationException $exception
-     * 
+     *
      * @return JSONResponse A response with error messages
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception): JSONResponse
@@ -648,17 +655,17 @@ class ObjectService
             default:
                 $validationErrors = $exception->getErrors();
                 break;
-            
+
         }
-        
+
         return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $validationErrors], 400);
     }
 
 	/**
 	 * Saves an object to the database.
 	 *
-	 * @param int $register The ID of the register to save the object to.
-	 * @param int $schema The ID of the schema to save the object to.
+	 * @param int|string|Register $register The ID, UUID, or object of the register to save the object to.
+	 * @param int|string|Schema $schema The ID, UUID, or object of the schema to save the object to.
 	 * @param array $object The data of the object to save.
 	 *
 	 * @return ObjectEntity The saved object entity.
@@ -666,78 +673,119 @@ class ObjectService
 	 * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
 	 * @throws CustomValidationException If the object fails custom validation.
 	 */
-	public function saveObject(int $register, int $schema, array $object, ?int $depth = null): ObjectEntity
+	public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null): ObjectEntity
 	{
 		// Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
-
-        // Convert register and schema to their respective objects if they are strings // @todo ???
-        if (is_string($register) === true) {
-            $register = $this->registerMapper->find($register);
-        }
-			
-        $schema = $this->schemaMapper->find($schema);
-        if ($schema === null) {
-            throw new Exception('Schema not found');
-        }
 		
+
+        // Convert register to its respective object if it is a string or int
+        if (!$register instanceof Register) {
+            $register = $this->registerMapper->find($register);
+            if ($register === null) {
+                throw new Exception('Register not found');
+            }
+        }
+
+        // Convert schema to its respective object if it is a string or int
+        if (!$schema instanceof Schema) {
+            $schema = $this->schemaMapper->find($schema);
+            if ($schema === null) {
+                throw new Exception('Schema not found');
+            }
+        }
+
         if ($depth === null) {
 			$depth = $schema->getMaxDepth();;
 		}
 
-		// Check if object already exists
 		if (isset($object['id']) === true) {
-			$objectEntity = $this->objectEntityMapper->findByUuid(
-				$this->registerMapper->find($register),
-				$schema,
+			$objectEntity = $this->objectEntityMapper->find(
 				$object['id']
 			);
 		}
-
-        $this->validateCustomRules(object: $object, schema: $schema);
-		
-        $validationResult = $this->validateObject(object: $object, schemaId: $schema->getId());
-
-		if ($validationResult->isValid() === false) {
-			throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
-		}
-		// Create new entity if none exists
-		if (isset($object['id']) === false || $objectEntity === null) {
+		else {
 			$objectEntity = new ObjectEntity();
-			$objectEntity->setRegister($register);
+			$objectEntity->setRegister($register->getId());
 			$objectEntity->setSchema($schema->getId());
 		}
 
-		// Handle UUID assignment
-		if (isset($object['id']) && !empty($object['id'])) {
-			$objectEntity->setUuid($object['id']);
-		} else {
-			$objectEntity->setUuid(Uuid::v4());
-			$object['id'] = $objectEntity->getUuid();
-		}
-
-		// Make sure we create a folder in NC for this object
-		$this->fileService->createObjectFolder($objectEntity);
-
 		// Store old version for audit trail
 		$oldObject = clone $objectEntity;
-		$objectEntity->setObject($object);
 
-		// Ensure UUID exists //@todo: this is not needed anymore? this kinde of uuid is set in the handleLinkRelations function
-		if (empty($objectEntity->getUuid()) === true) {
+        $this->validateCustomRules(object: $object, schema: $schema);
+
+        $validationResult = $this->validateObject(object: $object, schemaId: $schema->getId());
+
+
+		if ($validationResult->isValid() === false) {
+			$objectEntity->setValidation($validationResult->error());
+			//throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
+		}
+
+		// Set the UUID if it is not set
+		if ($objectEntity->getUuid() === null) {
 			$objectEntity->setUuid(Uuid::v4());
 		}
 
-		$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid()])));
+		// Set the owner to the current user if logged in
+		if ($objectEntity->getOwner() === null && $this->userSession->isLoggedIn()) {
+			$objectEntity->setOwner($this->userSession->getUser()->getUID());
+		}
+
+		// Set the application to 'openregister' since this is our app
+		if ($objectEntity->getApplication() === null) {
+			$objectEntity->setApplication('openregister');
+		}
+
+		// Set or update the version
+		if ($objectEntity->getVersion() === null) {
+			$objectEntity->setVersion('1.0.0');
+		} else {
+			$version = explode('.', $objectEntity->getVersion());
+			$version[2] = (int) $version[2] + 1;
+			$objectEntity->setVersion(implode('.', $version));
+		}
+
+		// Set dateCreated and dateModified
+		$currentDateTime = new \DateTime();
+		if ($objectEntity->getCreated() === null) {
+			$objectEntity->setCreated($currentDateTime);
+		}
+		
+		// We always set the updated time to the current date and time
+		$objectEntity->setUpdated($currentDateTime);
+
+		// Create the uri for the object 		
+		if ($objectEntity->getUri() === null) {
+			// @todo: this needs to be fixed
+			//$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+		}
+
+		// Make sure we create a folder in NC for this object if it doesn't already have one	
+		if ($objectEntity->getFolder() === null) {
+			$this->fileService->createObjectFolder($objectEntity);
+		}
+
+		// For backawards compatibility with the old url structure we need to check if the registers and schema have a slug and create one if not
+		if ($register->getSlug() === null) {
+			$this->registerMapper->update($register);
+		}
+
+		if ($schema->getSlug() === null) {
+			$this->schemaMapper->update($schema);
+		}
+
+		$objectEntity->setObject($object);
 
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
 		// Handle object properties that are either nested objects or files
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register, $schema->getId(), depth: $depth);
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $schema->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
 
 		$this->setDefaults($objectEntity);
@@ -781,7 +829,7 @@ class ObjectService
         $schema = $this->schemaMapper->find($objectEntity->getSchema());
         foreach ($schema->getProperties() as $propertyName => $property) {
             if (isset($property['type']) === true && (
-                $property['type'] === 'object' || 
+                $property['type'] === 'object' ||
                 ($property['type'] === 'array') && isset($property['items']['type']) === true && $property['items']['type'] === 'object')) {
                 $validRelationProperties[] = $propertyName;
             }
@@ -1283,7 +1331,6 @@ class ObjectService
 			$succes = $this->fileService->updateFile(
 				content: $fileContent,
 				filePath: $filePath,
-				createNew: true
 			);
 
 			if ($succes === false) {
@@ -1474,9 +1521,9 @@ class ObjectService
 	 * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
 	 *
 	 * @param ObjectEntity|string $object The object or object ID to fetch files for
-	 * 
+	 *
 	 * @return Node[] The files found
-	 * 
+	 *
 	 * @throws NotFoundException If the folder is not found
 	 * @throws DoesNotExistException If the object ID is not found
 	 */
@@ -1486,7 +1533,7 @@ class ObjectService
 		if (is_string($object)) {
 			$object = $this->objectEntityMapper->find($object);
 		}
-		
+
 		$folder = $this->fileService->getObjectFolder(
 			objectEntity: $object,
 			register: $object->getRegister(),
@@ -1582,13 +1629,13 @@ class ObjectService
 
 	/**
 	 * Retrieves all available tags in the system.
-	 * 
+	 *
 	 * This method fetches all tags that are visible and assignable by users
 	 * from the system tag manager.
 	 *
 	 * @return array An array of tag names
 	 * @throws \Exception If there's an error retrieving the tags
-	 * 
+	 *
 	 * @psalm-return array<int, string>
 	 * @phpstan-return array<int, string>
 	 */
@@ -1621,7 +1668,7 @@ class ObjectService
 	 * Publish a file by creating a public share link
 	 *
 	 * @todo Should be in file service
-	 * 
+	 *
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string $filePath Path to the file to publish
 	 * @return \OCP\Files\File The published file
@@ -1642,14 +1689,14 @@ class ObjectService
 			throw new Exception('File not found');
 		}
 
-		$shareLink = $this->fileService->createShareLink(path: $file->getPath());			
-		
+		$shareLink = $this->fileService->createShareLink(path: $file->getPath());
+
 		return $file;
 	}
 
 	/**
 	 * Unpublish a file by removing its public share link
-	 * 
+	 *
 	 * @todo Should be in file service
 	 *
 	 * @param ObjectEntity|string $object The object or object ID
@@ -1667,14 +1714,14 @@ class ObjectService
 		// Get the file node
 		$fullPath = $this->fileService->getObjectFilePath($object, $filePath);
 		$file = $this->fileService->getNode($fullPath);
-		
+
 
 		if (!$file instanceof \OCP\Files\File) {
 			throw new Exception('File not found');
 		}
 
-		$this->fileService->deleteShareLinks(file: $file);			
-		
+		$this->fileService->deleteShareLinks(file: $file);
+
 		return $file;
 	}
 
@@ -1954,51 +2001,217 @@ class ObjectService
 	 * Renders an entity by replacing file and relation IDs with their respective objects.
 	 *
 	 * Expands files and relations within the entity based on the provided extend array.
+	 * Optionally filters out specified properties from the entity and returns only specified fields.
 	 *
-	 * @param array $entity The entity data to render.
+	 * @param array $entity The serialized entity.
 	 * @param array|null $extend Optional properties to expand within the entity.
+	 * @param int $depth The depth to which relations should be expanded.
+	 * @param array|null $filter Optional array of property names to be excluded from the entity.
+	 * @param array|null $fields Optional array of property names to be included in the result.
 	 *
 	 * @return array The rendered entity with expanded properties.
+	 * @throws InvalidArgumentException If both filters and fields are used simultaneously or if extend and fields/filters conflict.
 	 * @throws Exception If rendering or extending fails.
+	 *
+	 * @phpstan-param array<string, mixed> $entity
+	 * @phpstan-param array<string>|null $extend
+	 * @phpstan-param array<string>|null $filter
+	 * @phpstan-param array<string>|null $fields
 	 */
-	public function renderEntity(array $entity, ?array $extend = []): array
+	public function renderEntity(array $entity, ?array $extend = [], int $depth = 0, ?array $filter = [], ?array $fields = []): array
 	{
-		// check if entity has files or relations and if not just return the entity
-		if (array_key_exists(key: 'files', array: $entity) === false && array_key_exists(key: 'relations', array: $entity) === false) {
-			return $entity;
+        $dotEntity = new Dot($entity);
+
+
+		// Check for simultaneous use of filters and fields
+		if (!empty($filter) && !empty($fields)) {
+			throw new InvalidArgumentException("Cannot use both filters and fields simultaneously.");
 		}
 
-		// Lets create a dot array of the entity
-		$dotEntity = new Dot($entity);
+		// Check for conflicts between extend and fields/filters
+		if (empty($extend) === false && empty($fields) === false) {
+            $missingFields = array_diff($extend, $fields);
+            if (!empty($missingFields)) {
+                throw new InvalidArgumentException("Properties in extend must also be in fields: " . implode(', ', $missingFields));
+            }
+        } else if (empty($extend) === false && empty($filter) === false) {
+			$conflictingFilters = array_intersect($extend, $filter);
+			if (!empty($conflictingFilters)) {
+				throw new InvalidArgumentException("Properties in extend must not be in filters: " . implode(', ', $conflictingFilters));
+			}
+		}
 
+
+		// Setup a placeholder for related objects to avoid refetching them
+		$relatedObjects = [];
+
+		// Use the filter array to remove specified properties from the entity.
+        $dotEntity->delete(keys: $filter);
+
+		// If fields are specified, filter the entity to include only those fields
+        // @TODO: combining fields and extend causes issues with an id, probably that is caused here.
+		if (empty($fields) === false) {
+			$dotEntity = new Dot(array_filter($dotEntity->flatten(), function($key) use ($fields) {
+				return in_array($key, $fields);
+			}, ARRAY_FILTER_USE_KEY), parse: true);
+		}
+
+
+		// Get the schema for this entity
+		$schema = $this->schemaMapper->find($dotEntity->get('@self.schema'));
+
+		// Htis needs to be done before we start extending the entitymade operational
 		// loop through the files and replace the file ids with the file objects)
-		if (array_key_exists(key: 'files', array: $entity) === true && empty($entity['files']) === false) {
+		if ($dotEntity->has('@self.files') && empty($dotEntity->get('@self.files')) === false) {
 			// Loop through the files array where key is dot notation path and value is file id
-			foreach ($entity['files'] as $path => $fileId) {
+			foreach ($dotEntity->get('@self.files')->all() as $path => $fileId) {
 				// Replace the value at the dot notation path with the file URL
 				// @todo: does not work
-//                $dotEntity->set($path, $filesById[$fileId]->getUrl());
+				// $dotEntity->set($path, $filesById[$fileId]->getUrl());
 			}
 		}
 
-		// Loop through the relations and replace the relation ids with the relation objects if extended
-		if (array_key_exists(key: 'relations', array: $entity) === true && empty($entity['relations']) === false) {
-			// loop through the relations and replace the relation ids with the relation objects
-			foreach ($entity['relations'] as $path => $relationId) {
-				// if the relation is not in the extend array, skip it
-				if (in_array(needle: $path, haystack: $extend) === false) {
-					continue;
+
+		/**
+		 * Processes inverted relations for the entity.
+		 *
+		 * This core functionality handles properties marked as 'inverted' in the schema.
+		 * It finds objects that reference this entity and adds them to the appropriate
+		 * properties in the entity based on the inverted relation configuration.
+		 *
+		 * This function only sets the uuid of the referencing objects in the entity. (exendt is defined at another point)
+		 *
+		 */
+
+
+		// Get all properties from the schema that have inverted=true
+		$invertedProperties = array_filter(
+			$schema->getProperties(),
+			fn($property) => isset($property['inversedBy']) && empty($property['inversedBy']) === false
+		);
+
+		// Only process inverted relations if we have inverted properties
+		if (empty($invertedProperties) === false) {
+			// Get objects that reference this entity
+
+			$usedByObjects = $this->objectEntityMapper->findAll(uses: $entity['uuid']);
+
+			// Loop through inverted properties and add referenced objects
+			foreach ($invertedProperties as $key => $property) {
+				// Filter objects that reference this entity through the specified inverted property
+				$referencingObjects = array_filter(
+					$usedByObjects,
+					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $entity['uuid']
+				);
+
+				// Extract only the UUIDs from the referencing objects instead of the entire objects
+				$referencingUuids = array_map(
+					fn($obj) => $obj->getUuid(),
+					$referencingObjects
+				);
+
+				// Set only the UUIDs in the entity property
+				if ($property['type'] !== 'array') {
+					$dotEntity[$key] = end($referencingUuids);
+				} else {
+					$dotEntity[$key] = $referencingUuids;
 				}
-				// Replace the value at the dot notation path with the relation object
-				// @todo: does not work
-//                $dotEntity->set($path, $this->getObject(register: $this->getRegister(), schema: $this->getSchema(), uuid: $relationId));
+			}
+			// Store the referenced objects in the related objects array for potential later extension
+			$relatedObjects = array_merge($relatedObjects, $usedByObjects);
+			unset($usedByObjects);
+		}
+
+		// If extending is asked for we can get the related objects and extend them
+		// Check if the entity has relations and is not empty
+		if ($dotEntity->has('@self.relations') && empty($dotEntity->get('@self.relations')) === false) {
+			// Extract all the related object IDs from the relations array
+			$objectIds = array_values($dotEntity->get('@self.relations'));
+
+			// Use the getMany function from the mapper to retrieve all related objects
+			$objects = $this->objectEntityMapper->findMultiple($objectIds);
+
+			// Serialize the related objects to cast them to arrays
+			$objects = array_map(fn($obj) => $obj->jsonSerialize(), $objects);
+
+			// Add them to the related objects array
+			$relatedObjects = array_merge($relatedObjects, $objects);
+			unset($objects);
+		}
+
+		/**
+		 * Extend the entity with related properties.
+		 *
+		 * This section checks if there are properties specified in the 'extend' array.
+		 * For each property, it verifies if the property exists in the dotEntity.
+		 * If the property exists, it attempts to find a related object from the relatedObjects array.
+		 * If a related object is found, it sets the property in the dotEntity with the related object.
+		 * If no related object is found, it logs an error for that property.
+		 * Finally, if there are any errors, they are set in the dotEntity.
+		 */
+		// Check if there are properties specified in the 'extend' array
+		if (!empty($extend)) {
+			$errors = []; // Initialize an array to store any errors encountered during the process
+
+			// Iterate over each property in the 'extend' array
+			foreach ($extend as $property) {
+				// Check if the current property exists in the dotEntity
+                if ($dotEntity->has($property) === false) {
+                    $errors[] = "Property '$property' could not be extended because it does not exist.";
+                    continue;
+                }
+                // Retrieve the value of the property from the dotEntity
+                $value = $dotEntity->get($property);
+
+                // Filter the relatedObjects array to find the object that matches the value
+                $relatedObject = array_filter($relatedObjects, function($obj) use ($value) {
+                    // Check if the object's id, uuid, or url matches the value
+                    return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
+                });
+
+                // Check if a related object was found
+                if (empty($relatedObject) === true) {
+                    // Add an error message if the related object could not be found
+                    $errors[] = "Property '$property' could not be extended.";
+                    continue;
+                }
+
+                // Get the first related object from the filtered results
+                $relatedObject = reset($relatedObject);
+
+                // Check if the property is a nested property (contains a dot)
+                if (strpos($property, '.') !== false) {
+                    // Split the property into main and sub-properties
+                    $subProperties = explode('.', $property);
+                    $mainProperty = array_shift($subProperties);
+                    $subPropertyPath = implode('.', $subProperties);
+
+                    // Render the related object with the specified extensions
+                    $relatedObject = $this->renderEntity(
+                        $relatedObject,
+                        $extend,
+                        $depth + 1,
+                        $filter,
+                        $fields
+                    );
+
+                    // Set the rendered related object in the dotEntity under the main property
+                    $dotEntity->set($mainProperty, $relatedObject);
+                } else {
+                    // Set the related object directly in the dotEntity for non-nested properties
+                    $dotEntity->set($property, $relatedObject);
+                }
+			}
+
+			// If there are any errors, set them in the dotEntity under '@self.errors'
+			if (!empty($errors)) {
+				$dotEntity->set('@self.errors', $errors);
 			}
 		}
 
-		// Update the entity with modified values
-		$entity = $dotEntity->all();
-
-		return $this->extendEntity(entity: $entity, extend: $extend);
+		// Update the entity with all modified values from the dotEntity
+        // Lets return the entity with the extended properties
+		return $dotEntity->all();
 	}
 
 	/**
@@ -2175,7 +2388,7 @@ class ObjectService
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
 	 * @param array $requestParams Optional request parameters
-	 * 
+	 *
 	 * @return array The audit trail entries
 	 */
 	public function getPaginatedAuditTrail(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
@@ -2209,10 +2422,19 @@ class ObjectService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		// Lets force the object id to be the object id of the object we are getting the audit trail for
-		$filters['object'] = $id;
+		$object = $this->objectEntityMapper->find($id)->getObjectArray();
+		$filters = [];
+		$filters['object'] = $object['id'];
+
+		//var_dump($filters);
+		//die;
+
+		//$filters['registerUuid'] = $object->getRegisterUuid();
+		//$filters['schemaUuid'] = $object->getSchemaUuid();
+
 
 		// @todo this is not working, it fails to find the logs
-		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);		
+		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
 
 		// Format the audit trails
 		$total   = count($auditTrails);
@@ -2236,7 +2458,7 @@ class ObjectService
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
 	 * @param array $requestParams Optional request parameters
-	 * 
+	 *
 	 * @return array The objects that reference this object
 	 */
 	public function getRelations(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
@@ -2256,7 +2478,7 @@ class ObjectService
 		// Filter out self-references if any
 		$referencingObjects = array_filter($referencingObjects, function($referencingObject) use ($id) {
 			return $referencingObject->getUuid() !== $id;
-		});			
+		});
 
 		return $referencingObjects;
 	}
@@ -2269,7 +2491,7 @@ class ObjectService
 	 * @param int|null $register Optional register ID to override current register
 	 * @param int|null $schema Optional schema ID to override current schema
 	 * @param array $requestParams Optional request parameters for pagination, filtering and sorting
-	 * 
+	 *
 	 * @return array The paginated list of objects that reference this object, with metadata
 	 */
 	public function getPaginatedRelations(string $id, ?int $register = null, ?int $schema = null, ?array $requestParams = []): array
@@ -2308,7 +2530,7 @@ class ObjectService
 		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, ids: $object->getRelations());
 
 		// Apply pagination
-		$total = count($objects);
+		$total = $this->objectEntityMapper->countAll(filters: $filters);
 		$pages = $limit !== null ? ceil($total/$limit) : 1;
 
 		return [
@@ -2333,7 +2555,7 @@ class ObjectService
 	{
 		// First get the object to access its relations
 		//$object = $this->find($id);
-		//$relations = $object->getRelations() ?? [];				
+		//$relations = $object->getRelations() ?? [];
 
 		// Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
@@ -2376,36 +2598,23 @@ class ObjectService
 		//	if ($referencedObjects[$path] === null){
 		//		$referencedObjects[$path] = $relationId;
 		//	}
-		//}		
-		$objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend, uses: $id);
-		$total   = $this->count($filters);
+		//}
+		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, uses: $id);
+		$total   = $this->objectEntityMapper->countAll(filters: $filters);
 		$pages   = $limit !== null ? ceil($total/$limit) : 1;
 
-		$facets  = $this->getAggregations(
-			filters: $filters,
-			search: $search
-		);
+//		$facets  = $this->getAggregations(
+//			filters: $filters,
+//			search: $search
+//		);
 
 		return [
 			'results' => $objects,
-			'facets' => $facets,
+//			'facets' => $facets,
 			'total' => $total,
 			'page' => $page ?? 1,
 			'pages' => $pages,
 		];
-
-		// Format the audit trails
-		$total   = count($referencingObjects);
-		$pages   = $limit !== null ? ceil($total/$limit) : 1;
-
-		return [
-			'results' => $referencingObjects,
-			'total' => $total,
-			'page' => $page ?? 1,
-			'pages' => $pages,
-		];
-
-		return $referencedObjects;
 	}
 
     /**

@@ -199,6 +199,7 @@ class AuditTrailMapper extends QBMapper
         // Create and populate a new AuditTrail object
         $auditTrail	= new AuditTrail();
         $auditTrail->setUuid(Uuid::v4());
+        //$auditTrail->setObject($objectEntity->getId()); @todo change migration!!
         $auditTrail->setObject($objectEntity->getId());
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);

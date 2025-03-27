@@ -47,7 +47,7 @@ class RegisterMapper extends QBMapper
 	 * @param int $id The ID of the register to find
 	 * @return Register The found register
 	 */
-	public function find(int $id): Register
+	public function find(string|int $id): Register
 	{
 		$qb = $this->db->getQueryBuilder();
 
@@ -55,7 +55,11 @@ class RegisterMapper extends QBMapper
 		$qb->select('*')
 			->from('openregister_registers')
 			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+				$qb->expr()->orX(
+					$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+				)
 			);
 
 		// Execute the query and return the result
@@ -119,6 +123,47 @@ class RegisterMapper extends QBMapper
 	}
 
 	/**
+	 * Ensures that a register object has a UUID and a slug.
+	 *
+	 * @param Register $register The register object to clean
+	 * @return void
+	 */
+	private function cleanObject(Register $register): void
+	{
+		// Check if UUID is set, if not, generate a new one
+		if ($register->getUuid() === null) {
+			$register->setUuid(Uuid::v4());
+		}
+
+		// Ensure the object has a slug
+		if (empty($register->getSlug()) === true) {
+			// Convert to lowercase and replace spaces with dashes
+			$slug = strtolower(trim($register->getTitle())); // Assuming title is used for slug
+			// Remove special characters
+			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+			// Remove multiple dashes
+			$slug = preg_replace('/-+/', '-', $slug);
+			// Remove leading/trailing dashes
+			$slug = trim($slug, '-');
+
+			$register->setSlug($slug);
+		}
+
+		// Ensure the object has a version
+		if ($register->getVersion() === null) {
+			$register->setVersion('1.0.0');
+		} else {
+			// Split the version into major, minor, and patch
+			$versionParts = explode('.', $register->getVersion());
+			// Increment the patch version
+			$versionParts[2] = (int)$versionParts[2] + 1;
+			// Reassemble the version string
+			$newVersion = implode('.', $versionParts);
+			$register->setVersion($newVersion);
+		}
+	}
+
+	/**
 	 * Create a new register from an array of data
 	 *
 	 * @param array $object The data to create the register from
@@ -129,9 +174,8 @@ class RegisterMapper extends QBMapper
 		$register = new Register();
 		$register->hydrate(object: $object);
 
-		if ($register->getUuid() === null) {
-			$register->setUuid(Uuid::v4());
-		}
+		// Clean the register object to ensure UUID, slug, and version are set
+		$this->cleanObject($register);
 
 		$register = $this->insert(entity: $register);
 
@@ -144,6 +188,10 @@ class RegisterMapper extends QBMapper
 	public function update(Entity $entity): Entity
 	{
 		$oldSchema = $this->find($entity->getId());
+
+		// Clean the register object to ensure UUID, slug, and version are set
+		$this->cleanObject($entity);
+
 		$entity = parent::update($entity);
 
 		// Dispatch update event
@@ -164,16 +212,14 @@ class RegisterMapper extends QBMapper
 		$newRegister = $this->find($id);
 		$newRegister->hydrate($object);
 
-		if (isset($object['version']) === false) {
-			$version = explode('.', $newRegister->getVersion());
-			$version[2] = (int) $version[2] + 1;
-			$newRegister->setVersion(implode('.', $version));
-		}
+		// Clean the register object to ensure UUID, slug, and version are set
+		$this->cleanObject($newRegister);
 
 		$newRegister = $this->update($newRegister);
 
 		return $newRegister;
 	}
+
 
 	/**
 	 * Delete a register

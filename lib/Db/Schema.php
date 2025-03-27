@@ -9,9 +9,42 @@ use OCP\DB\Types;
 use OCP\IURLGenerator;
 use stdClass;
 
+/**
+ * Class Schema
+ * 
+ * Entity class representing a Schema
+ * 
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ * @author   Nextcloud GmbH and Nextcloud contributors
+ * @license  AGPL-3.0-or-later
+ * @link     https://github.com/ConductionNL/OpenRegister
+ * @version  0.1.48
+ * 
+ * @property string|null $uuid Unique identifier for the schema
+ * @property string|null $slug Slug of the schema
+ * @property string|null $title Title of the schema
+ * @property string|null $version Version of the schema
+ * @property string|null $description Description of the schema
+ * @property string|null $summary Summary of the schema
+ * @property array|null $required Required fields of the schema
+ * @property array|null $properties Properties of the schema
+ * @property array|null $archive Archive data of the schema
+ * @property string|null $source Source of the schema
+ * @property bool $hardValidation Whether hard validation is enabled
+ * @property DateTime|null $updated Last update timestamp
+ * @property DateTime|null $created Creation timestamp
+ * @property int $maxDepth Maximum depth of the schema
+ * @property string|null $owner The Nextcloud user that owns this schema
+ * @property string|null $application The application name
+ * @property string|null $organisation The organisation name
+ * @property array|null $authorization JSON object describing authorizations
+ * @property DateTime|null $deleted Deletion timestamp
+ */
 class Schema extends Entity implements JsonSerializable
 {
 	protected ?string $uuid 	   = null;
+	protected ?string $slug        = null;
 	protected ?string $title       = null;
 	protected ?string $description = null;
 	protected ?string $version     = null;
@@ -24,9 +57,15 @@ class Schema extends Entity implements JsonSerializable
 	protected ?DateTime $updated   = null;
 	protected ?DateTime $created   = null;
 	protected int	    $maxDepth  = 0;
+	protected ?string $owner       = null;
+	protected ?string $application = null;
+	protected ?string $organisation = null;
+	protected ?array $authorization = [];
+	protected ?DateTime $deleted   = null;
 
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'slug', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'version', type: 'string');
@@ -38,7 +77,12 @@ class Schema extends Entity implements JsonSerializable
 		$this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
+		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER); // @todo this is being missed used so needs a refactor, sub onjects should be based on schema property config
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'application', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'deleted', type: 'datetime');
 	}
 
 	/**
@@ -128,6 +172,7 @@ class Schema extends Entity implements JsonSerializable
 		$array = [
 			'id'          => $this->id,
 			'uuid' 		  => $this->uuid,
+			'slug' 		  => $this->slug,
 			'title'       => $this->title,
 			'description' => $this->description,
 			'version'     => $this->version,
@@ -140,6 +185,11 @@ class Schema extends Entity implements JsonSerializable
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
 			'maxDepth' => $this->maxDepth,
+			'owner' => $this->owner,
+			'application' => $this->application,
+			'organisation' => $this->organisation,
+			'authorization' => $this->authorization,
+			'deleted' => isset($this->deleted) ? $this->deleted->format('c') : null
 		];
 
 		$jsonFields = $this->getJsonFields();

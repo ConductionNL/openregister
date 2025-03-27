@@ -2,13 +2,17 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectAuditLogMapper;
+// use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
@@ -20,7 +24,6 @@ use Psr\Container\NotFoundExceptionInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Symfony\Component\Uid\Uuid;
 use Psr\Container\ContainerInterface;
-use OCA\OpenConnector\Exception\CustomValidationException;
 
 class ObjectsController extends Controller
 {
@@ -40,8 +43,10 @@ class ObjectsController extends Controller
         private readonly IAppManager $appManager,
         private readonly ContainerInterface $container,
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
+        // private readonly ObjectAuditLogMapper $objectAuditLogMapper,
         private readonly ObjectService $objectService,
 
     )
@@ -71,132 +76,197 @@ class ObjectsController extends Controller
     /**
      * Retrieves a list of all objects
      *
-     * This method returns a JSON response containing an array of all objects in the system.
-     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @return JSONResponse A JSON response containing the list of objects
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function all(): JSONResponse
     {
-        
-        $requestParams = $this->request->getParams();
-
-        // Extract specific parameters
-		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
-		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
-		$order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
-		$extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
-		$page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
-		$search = $requestParams['_search'] ?? null;
-
-		if ($page !== null && isset($limit)) {
-			$page = (int) $page;
-			$offset = $limit * ($page - 1);
-		}
-
-		// Ensure order and extend are arrays
-		if (is_string($order) === true) {
-			$order = array_map('trim', explode(',', $order));
-		}
-		if (is_string($extend) === true) {
-			$extend = array_map('trim', explode(',', $extend));
-		}
-
-		// Remove unnecessary parameters from filters
-		$filters = $requestParams;
-		unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
-		unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
-		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
-
-        // Lets support extend
-		$objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
-		$total   = $this->objectEntityMapper->countAll($filters);
-		$pages   = $limit !== null ? ceil($total/$limit) : 1;
-
-		
-
-        // We dont want to return the entity, but the object (and kant reley on the normal serilzier)
-        foreach ($objects as $key => $object) {
-            $objects[$key] = $object->getObjectArray();
-        }
-
-		$results =  [
-			'results' => $objects,
-			'total' => $total,
-			'page' => $page ?? 1,
-			'pages' => $pages,
-		];
-
-
-        return new JSONResponse($results);
+        return $this->getObjects();
     }
 
     /**
-     * Retrieves a single object by its ID
-     *
-     * This method returns a JSON response containing the details of a specific object.
+     * Retrieves a list of all objects for a specific register and schema
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the object to retrieve
-	 *
-     * @return JSONResponse A JSON response containing the object details
+     * @param string $register The register slug or identifier
+     * @param string $schema The schema slug or identifier
+     * @return JSONResponse A JSON response containing the list of objects
      */
-    public function show(string $id): JSONResponse
+    public function index(string $register, string $schema): JSONResponse
     {
+        return $this->getObjects(register: $register, schema: $schema);
+    }
+
+    /**
+     * Private method to fetch objects with optional register and schema filtering.
+     *
+     * @param string|null $register Optional register slug or identifier
+     * @param string|null $schema Optional schema slug or identifier
+     * @return JSONResponse A JSON response containing the list of objects
+     */
+    private function getObjects(?string $register = null, ?string $schema = null): JSONResponse
+    {
+        $requestParams = $this->request->getParams();
+
+        // Extract specific parameters
+        $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
+        $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+        $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+        $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
+        $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+        $search = $requestParams['_search'] ?? null;
+
+        // Handle pagination
+        if ($page !== null && isset($limit) === true) {
+            $page = (int) $page;
+            $offset = $limit * ($page - 1);
+        }
+
+        // Ensure order and extend are arrays
+        if (is_string($order) === true) {
+            $order = array_map('trim', explode(',', $order));
+        }
+        if (is_string($extend) === true) {
+            $extend = array_map('trim', explode(',', $extend));
+        }
+
+        // Remove unnecessary parameters from filters
+        $filters = $requestParams;
+        unset(
+            $filters['_route'], $filters['_extend'], $filters['_limit'], 
+            $filters['_offset'], $filters['_order'], $filters['_page'], 
+            $filters['_search'], $filters['extend'], $filters['limit'], 
+            $filters['offset'], $filters['order'], $filters['page']
+        );
+
+        // Apply register and schema filters if provided
+        if ($register !== null) {
+            if (is_numeric($register) === true) {
+                $registerEntity = $this->registerMapper->find($register);
+                if ($registerEntity === null) {
+                    return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
+                }
+                $register = $registerEntity->getId();
+            }
+            $filters['register'] = $register;
+        }
+
+        if ($schema !== null) {
+            if (is_numeric($schema) === true) {
+                $schemaEntity = $this->schemaMapper->find($schema);
+                if ($schemaEntity === null) {
+                    return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+                }
+                $schema = $schemaEntity->getId();
+            }
+            $filters['schema'] = $schema;
+        }
+
+        // Fetch objects
+        $objects = $this->objectEntityMapper->findAll(
+            limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search
+        );
+        $total = $this->objectEntityMapper->countAll($filters);
+        $pages = $limit !== null ? ceil($total / $limit) : 1;
+
+        // Process objects
+        foreach ($objects as $key => $object) {
+            $objects[$key] = $this->objectService->renderEntity(
+                entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields: $fields
+            );
+        }
+
+        // Response
+        return new JSONResponse([
+            'results' => $objects,
+            'total' => $total,
+            'page' => $page ?? 1,
+            'pages' => $pages,
+        ]);
+    }
+
+    /**
+     * Shows a specific object
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The register slug or identiefer
+     * @param string $schema The schema slug or identiefer
+     * @param string $id The object ID
+     * @return JSONResponse A JSON response containing the object
+     */
+    public function show(string $register, string $schema, string $id): JSONResponse
+    {
+        $requestParams = $this->request->getParams();
+
+        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        $filter = $requestParams['filter'] ?? $requestParams['_filter'] ?? null;
+        $fields = $requestParams['fields'] ?? $requestParams['_fields'] ?? null;
+
+		// Check if $register is not an integer and look it up
+		if (!is_numeric($register)) {
+			$registerEntity = $this->registerMapper->find($register);
+			if ($registerEntity === null) {
+				return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
+			}
+			$register = $registerEntity->getId();
+		}
+
+		// Check if $schema is not an integer and look it up
+		if (!is_numeric($schema)) {
+			$schemaEntity = $this->schemaMapper->find($schema);
+			if ($schemaEntity === null) {
+				return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+			}
+			$schema = $schemaEntity->getId();
+		}
+
+        // Add validation that object belongs to specified register and schema
         try {
-            return new JSONResponse($this->objectEntityMapper->find((int) $id)->getObjectArray());
+            $object = $this->objectEntityMapper->find($id);
+
+            if ((int)$object->getRegister() !== $register || (int)$object->getSchema() !== $schema) {
+                return new JSONResponse(['error' => 'Object not found in specified register/schema'], 404);
+            }
+
+            return new JSONResponse($this->objectService->renderEntity(entity: $object->jsonSerialize(), extend: $extend, depth: 0, filter: $filter, fields:  $fields));
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(['error' => 'Not Found'], 404);
         }
     }
 
-	/**
-	 * Creates a new object
-	 *
-	 * This method creates a new object based on POST data.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse A JSON response containing the created object
-	 * @throws Exception
-	 */
-    public function create(ObjectService $objectService): JSONResponse
+    /**
+     * Creates a new object in the specified register and schema
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The register slug or identiefer
+     * @param string $schema The schema slug or identiefer
+     * @return JSONResponse A JSON response containing the created object
+     */
+    public function create(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        $data = $this->request->getParams();
-        $object = $data['object'];
-        $mapping = $data['mapping'] ?? null;
-        $register = $data['register'];
-        $schema = $data['schema'];
+        $object = $this->request->getParams();
 
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        // If mapping ID is provided, transform the object using the mapping
-        $mappingService = $this->getOpenConnectorMappingService();
-
-        if ($mapping !== null && $mappingService !== null) {
-            $mapping = $mappingService->getMapping($mapping);
-
-            $object = $mappingService->executeMapping($mapping, $object);
-            $data['register'] = $register;
-            $data['schema'] = $schema;
-        }
+        $object = array_filter(
+            $object,
+            fn($key) => !str_starts_with($key, '_')
+                && !str_starts_with($key, '@')
+                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+            ARRAY_FILTER_USE_KEY
+        );
 
 		// Save the object
 		try {
-			$objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $object);
+            $objectEntity = $objectService->saveObject(register: $register, schema: $schema, object: $object);
 
 			// Unlock the object after saving
 			try {
@@ -208,7 +278,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
 		}
 
-        return new JSONResponse($objectEntity->getObjectArray());
+        return new JSONResponse($objectEntity->jsonSerialize());
     }
 
     /**
@@ -219,38 +289,47 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param int  $id The ID of the object to update
-	 *
+     * @param int    $id       The ID of the object to update
+     * @param string $register The register of the object
+     * @param string $schema   The schema of the object
+     * @param ObjectService $objectService The service to handle object operations
+     *
      * @return JSONResponse A JSON response containing the updated object details
      */
-    public function update(int $id, ObjectService $objectService): JSONResponse
+    public function update(string $register, string $schema, string $id, ObjectService $objectService): JSONResponse
     {
-        $data = $this->request->getParams();
-        $object = $data['object'];
-        $mapping = $data['mapping'] ?? null;
 
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
+        $object = $this->request->getParams();
+        //$mapping = $data['mapping'] ?? null; @todo lets thin about how we want to use mapping, its currently unussed so lets depractice it for now
+
+        // Filter out and remove properties that start with _ and @ (those are reserved for internal use)
+        // Also remove properties called id, uuid, register, or schema
+        // @todo lets add this to the documentation
+        $object = array_filter(
+            $object,
+            fn($key) => !str_starts_with($key, '_')
+                && !str_starts_with($key, '@')
+                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Lets us the id from the url
+        $object['id'] = $id;
+
 
         // If mapping ID is provided, transform the object using the mapping
-        $mappingService = $this->getOpenConnectorMappingService();
+        //$mappingService = $this->getOpenConnectorMappingService();
 
-        if ($mapping !== null && $mappingService !== null) {
-            $mapping = $mappingService->getMapping($mapping);
-            $data = $mappingService->executeMapping($mapping, $object);
-        }
+        //if ($mapping !== null && $mappingService !== null) {
+        //    $mapping = $mappingService->getMapping($mapping);
+        //    $data = $mappingService->executeMapping($mapping, $object);
+        //}
 
         // save it
         try {
-            $objectEntity = $objectService->saveObject(register: $data['register'], schema: $data['schema'], object: $data['object']);
+            $objectEntity = $objectService->saveObject(register: $register, schema: $schema, object: $object);
 
-            // Unlock the object after saving
+            // Unlock the object after saving @todo this should be done in the saveObject method
             try {
                 $this->objectEntityMapper->unlockObject($objectEntity->getId());
             } catch (\Exception $e) {
@@ -260,7 +339,7 @@ class ObjectsController extends Controller
             return $objectService->handleValidationException(exception: $exception);
         }
 
-        return new JSONResponse($objectEntity->getObjectArray());
+        return new JSONResponse($objectEntity->jsonSerialize());
     }
 
 	/**
@@ -276,15 +355,24 @@ class ObjectsController extends Controller
 	 * @return JSONResponse An empty JSON response
 	 * @throws Exception
 	 */
-    public function destroy(int $id): JSONResponse
+    public function destroy(string $id): JSONResponse
     {
         // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject);
 
-        $this->objectEntityMapper->delete($this->objectEntityMapper->find($id));
+        // Clone the object to pass as the new state
+        $newObject = clone $oldObject;
+        $newObject->delete();
 
-        return new JSONResponse([]);
+        // Update the object in the mapper instead of deleting
+        $this->objectEntityMapper->update($newObject);
+
+        // Create an audit trail with both old and new states
+        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
+
+
+        // Return the deleted object
+        return new JSONResponse($newObject->jsonSerialize());
     }
 
 	/**
@@ -299,7 +387,7 @@ class ObjectsController extends Controller
 	 *
 	 * @return JSONResponse A JSON response containing the audit trail entries
 	 */
-	public function auditTrails(int $id): JSONResponse
+	public function auditTrails(string $id): JSONResponse
 	{
 		try {
 			$requestParams = $this->request->getParams();
@@ -323,7 +411,7 @@ class ObjectsController extends Controller
 	 *
      * @return JSONResponse A JSON response containing the call logs
      */
-    public function contracts(int $id): JSONResponse
+    public function contracts(string $id): JSONResponse
     {
         // Create a log entry
         $oldObject = $this->objectEntityMapper->find($id);
@@ -344,7 +432,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the related objects
      */
-    public function relations(int $id): JSONResponse
+    public function relations(string $id): JSONResponse
     {
         try {
             $requestParams = $this->request->getParams();
@@ -368,15 +456,16 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the referenced objects
      */
-    public function uses(int $id): JSONResponse
+    public function uses(string $id): JSONResponse
     {
         try {
             $requestParams = $this->request->getParams();
+            unset($requestParams['id']);
             return new JSONResponse($this->objectService->getPaginatedUses($id, null, null, $requestParams));
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+            return new JSONResponse(['ERROR' => $e->getMessage(), 'trace' => $e->getTrace()], 500);
         }
     }
 
@@ -392,66 +481,15 @@ class ObjectsController extends Controller
 	 *
      * @return JSONResponse A JSON response containing the call logs
      */
-    public function logs(int $id): JSONResponse
+    public function logs(string $id): JSONResponse
     {
         try {
-            $jobLogs = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => $id]);
+            $jobLogs = $this->auditTrailMapper->findAll(null, null, ['object_id' => $id]);
             return new JSONResponse($jobLogs);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Logs not found'], 404);
         }
     }
-
-    /**
-     * Retrieves all available mappings
-     *
-     * This method returns a JSON response containing all available mappings in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of mappings
-     */
-    public function mappings(): JSONResponse
-    {
-        // Get mapping service, which will return null based on implementation
-        $mappingService = $this->getOpenConnectorMappingService();
-
-        // Initialize results array
-        $results = [];
-
-        // If mapping service exists, get all mappings using find() method
-        if ($mappingService !== null) {
-            $results = $mappingService->getMappings();
-        }
-
-        // Return response with results array and total count
-        return new JSONResponse([
-            'results' => $results,
-            'total' => count($results)
-        ]);
-    }
-
-    	/**
-	 * Attempts to retrieve the OpenRegister service from the container.
-	 *
-	 * @return mixed|null The OpenRegister service if available, null otherwise.
-	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
-	 */
-	public function getOpenConnectorMappingService(): ?\OCA\OpenConnector\Service\MappingService
-	{
-		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
-			try {
-				// Attempt to get the OpenRegister service from the container
-				return $this->container->get('OCA\OpenConnector\Service\MappingService');
-			} catch (Exception $e) {
-				// If the service is not available, return null
-				return null;
-			}
-		}
-
-		return null;
-	}
 
 	/**
 	 * Lock an object
@@ -462,7 +500,7 @@ class ObjectsController extends Controller
 	 * @param int $id The ID of the object to lock
 	 * @return JSONResponse A JSON response containing the locked object
 	 */
-	public function lock(int $id): JSONResponse
+	public function lock(string $id): JSONResponse
 	{
 		try {
 			$data = $this->request->getParams();
@@ -497,7 +535,7 @@ class ObjectsController extends Controller
 	 * @param int $id The ID of the object to unlock
 	 * @return JSONResponse A JSON response containing the unlocked object
 	 */
-	public function unlock(int $id): JSONResponse
+	public function unlock(string $id): JSONResponse
 	{
 		try {
 			$object = $this->objectEntityMapper->unlockObject($id);
@@ -559,7 +597,7 @@ class ObjectsController extends Controller
 	 * @throws BadRequestException If no valid reversion point specified
 	 * @throws LockedException If object is locked
 	 */
-	public function revert(int $id): JSONResponse
+	public function revert(string $id): JSONResponse
 	{
 		try {
 			$data = $this->request->getParams();
@@ -619,13 +657,13 @@ class ObjectsController extends Controller
             // Get the object with files included
             $object = $this->objectEntityMapper->find((int) $id);
             $files = $objectService->getFiles($object);
-            
+
             // Format files with pagination support
             $requestParams = $this->request->getParams();
             $formattedFiles = $objectService->formatFiles($files, $requestParams);
-            
+
             return new JSONResponse($formattedFiles);
-            
+
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {

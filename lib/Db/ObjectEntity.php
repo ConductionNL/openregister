@@ -3,13 +3,14 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use Exception;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
 /**
  * Entity class representing an object in the OpenRegister system
- * 
+ *
  * This class handles storage and manipulation of objects including their metadata,
  * locking mechanisms, and serialization for API responses.
  */
@@ -27,15 +28,21 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?array $locked = null; // Contains the locked object if the object is locked
 	protected ?string $owner = null; // The Nextcloud user that owns this object
 	protected ?array $authorization = []; // JSON object describing authorizations
+	protected ?string $folder = null; // The folder path where this object is stored
+	protected ?string $application = null; // The application name
+	protected ?string $organisation = null; // The organisation name
+	protected ?array $validation = []; // array describing validation results
+	protected ?array $deleted = []; // array describing deletion details
+	protected ?array $geo = []; // array describing deletion details
+	protected ?array $retention = []; // array describing deletion details
 	protected ?DateTime $updated = null;
 	protected ?DateTime $created = null;
-	protected ?string $folder = null; // The folder path where this object is stored
 
 	/**
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName:'uuid', type: 'string');	
+		$this->addType(fieldName:'uuid', type: 'string');
 		$this->addType(fieldName:'uri', type: 'string');
 		$this->addType(fieldName:'version', type: 'string');
 		$this->addType(fieldName:'register', type: 'string');
@@ -47,9 +54,15 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$this->addType(fieldName:'locked', type: 'json');
 		$this->addType(fieldName:'owner', type: 'string');
 		$this->addType(fieldName:'authorization', type: 'json');
+		$this->addType(fieldName:'folder', type: 'string');
+		$this->addType(fieldName:'application', type: 'string');
+		$this->addType(fieldName:'organisation', type: 'string');
+		$this->addType(fieldName:'validation', type: 'json');
+		$this->addType(fieldName:'deleted', type: 'json');
+		$this->addType(fieldName:'geo', type: 'json');
+		$this->addType(fieldName:'retention', type: 'json');
 		$this->addType(fieldName:'updated', type: 'datetime');
 		$this->addType(fieldName:'created', type: 'datetime');
-		$this->addType(fieldName:'folder', type: 'string');
 	}
 
 	/**
@@ -60,7 +73,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	public function getObject(): array
 	{
 		return $this->object ?? [];
-	}	
+	}
 
 	/**
 	 * Get the files data
@@ -70,7 +83,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	public function getFiles(): array
 	{
 		return $this->files ?? [];
-	}	
+	}
 
 	/**
 	 * Get the relations data
@@ -101,6 +114,28 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		return $this->authorization;
 	}
+
+	/**
+	 * Get the deleted data
+	 *
+	 * @return array The deleted data or null if not deleted
+	 */
+	public function getDeleted(): ?array
+	{
+		return $this->deleted;
+	}
+
+	/**
+	 * Get the deleted data
+	 *
+	 * @return array The deleted data or null if not deleted
+	 */
+	public function getValidation(): ?array
+	{
+		return $this->validation;
+	}
+
+
 
 	/**
 	 * Get array of field names that are JSON type
@@ -139,7 +174,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 			try {
 				$this->$method($value);
-			} catch (\Exception $exception) {
+			} catch (Exception $exception) {
 			}
 		}
 
@@ -148,21 +183,23 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 	/**
 	 * Serialize the entity to JSON format
-	 * 
+	 *
 	 * Creates a metadata array containing object properties except sensitive fields.
-	 * Filters out 'object', 'textRepresentation' and 'authorization' fields and 
+	 * Filters out 'object', 'textRepresentation' and 'authorization' fields and
 	 * stores remaining properties under '@self' key for API responses.
 	 *
 	 * @return array Serialized object data
 	 */
 	public function jsonSerialize(): array
 	{
-		$metadata = [
-			'@self' => array_filter($this->getObjectArray(), function($key) {
-				return in_array($key, ['object', 'textRepresentation', 'authorization']) === false;
-			}, ARRAY_FILTER_USE_KEY)
-		];
-		return array_merge($metadata, $this->object);
+		// Backwards compatibility for old objects
+		$object = $this->object;
+		$object['@self'] = $this->getObjectArray();
+		$object['@self']['id'] = $this->getUuid();
+		$object['id'] = $this->getUuid();
+		
+		// lets merge and return
+		return $object;
 	}
 
 	/**
@@ -174,21 +211,23 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		return [
 			'id' => $this->id,
-			'uuid' => $this->uuid,
 			'uri' => $this->uri,
 			'version'     => $this->version,
 			'register' => $this->register,
 			'schema' => $this->schema,
-			'object' => $this->object,
 			'files' => $this->files,
 			'relations' => $this->relations,
-			'textRepresentation' => $this->textRepresentation,
 			'locked' => $this->locked,
 			'owner' => $this->owner,
-			'authorization' => $this->authorization,
+			'folder' => $this->folder,
+			'application' => $this->application,
+			'organisation' => $this->organisation,
+			'validation' => $this->validation,
+			'geo' => $this->geo,
+			'retention' => $this->retention,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
-			'folder' => $this->folder
+			'deleted' => $this->deleted,
 		];
 	}
 
@@ -199,13 +238,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 * @param string|null $process Optional process identifier
 	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
 	 * @return bool True if lock was successful
-	 * @throws \Exception If object is already locked by another user
+	 * @throws Exception If object is already locked by another user
 	 */
 	public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
 	{
 		$currentUser = $userSession->getUser();
 		if (!$currentUser) {
-			throw new \Exception('No user logged in');
+			throw new Exception('No user logged in');
 		}
 
 		$userId = $currentUser->getUID();
@@ -214,10 +253,10 @@ class ObjectEntity extends Entity implements JsonSerializable
 		// If already locked, check if it's the same user and not expired
 		if ($this->isLocked()) {
 			$lock = $this->locked;
-			
+
 			// If locked by different user
 			if ($lock['user'] !== $userId) {
-				throw new \Exception('Object is locked by another user');
+				throw new Exception('Object is locked by another user');
 			}
 
 			// If same user, extend the lock
@@ -254,7 +293,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 *
 	 * @param IUserSession $userSession Current user session
 	 * @return bool True if unlock was successful
-	 * @throws \Exception If object is locked by another user
+	 * @throws Exception If object is locked by another user
 	 */
 	public function unlock(IUserSession $userSession): bool
 	{
@@ -264,14 +303,14 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 		$currentUser = $userSession->getUser();
 		if (!$currentUser) {
-			throw new \Exception('No user logged in');
+			throw new Exception('No user logged in');
 		}
 
 		$userId = $currentUser->getUID();
-		
+
 		// Check if locked by different user
 		if ($this->locked['user'] !== $userId) {
-			throw new \Exception('Object is locked by another user');
+			throw new Exception('Object is locked by another user');
 		}
 
 		$this->locked = null;
@@ -308,5 +347,37 @@ class ObjectEntity extends Entity implements JsonSerializable
 		}
 
 		return $this->locked;
+	}
+
+	/**
+	 * Delete the object
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string $deletedReason Reason for deletion
+	 * @param int $retentionPeriod Retention period in days (default: 30 days)
+	 * @return bool True if delete was successful
+	 * @throws Exception If no user is logged in
+	 */
+	public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod = 30): bool
+	{
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$userId = $currentUser->getUID();
+		$now = new \DateTime();
+		$purgeDate = clone $now;
+		$purgeDate->add(new \DateInterval('P' . $retentionPeriod . 'D'));
+
+		$this->deleted = [
+			'deleted' => $now->format('c'),
+			'deletedBy' => $userId,
+			'deletedReason' => $deletedReason,
+			'retentionPeriod' => $retentionPeriod,
+			'purgeDate' => $purgeDate->format('c')
+		];
+
+		return true;
 	}
 }

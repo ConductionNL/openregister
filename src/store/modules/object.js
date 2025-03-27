@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { AuditTrail, ObjectEntity } from '../../entities/index.js'
+import { useRegisterStore } from '../../store/modules/register.js'
+import { useSchemaStore } from '../../store/modules/schema.js'
 
 export const useObjectStore = defineStore('object', {
 	state: () => ({
@@ -11,11 +13,140 @@ export const useObjectStore = defineStore('object', {
 		relations: [],
 		fileItem: false, // Single file item
 		files: [], // List of files
+		filters: {}, // List of query paramters
+		pagination: {
+			page: 1,
+			limit: 20
+		},
+		selectedObjects: [],
+		metadata: {
+			objectId: {
+				label: 'ID',
+				key: 'id',
+				description: 'Unique identifier of the object',
+				enabled: true  // Enabled by default
+			},
+			uri: {
+				label: 'URI',
+				key: 'uri',
+				description: 'Uniform resource identifier',
+				enabled: false
+			},
+			version: {
+				label: 'Version',
+				key: 'version',
+				description: 'Version number of the object',
+				enabled: false
+			},
+			register: {
+				label: 'Register',
+				key: 'register',
+				description: 'Register the object belongs to',
+				enabled: false
+			},
+			schema: {
+				label: 'Schema',
+				key: 'schema',
+				description: 'Schema the object follows',
+				enabled: false
+			},
+			files: {
+				label: 'Files',
+				key: 'files',
+				description: 'Attached files count',
+				enabled: true  // Enabled by default
+			},
+			relations: {
+				label: 'Relations',
+				key: 'relations',
+				description: 'Related objects count',
+				enabled: false
+			},
+			locked: {
+				label: 'Locked',
+				key: 'locked',
+				description: 'Lock status of the object',
+				enabled: false
+			},
+			owner: {
+				label: 'Owner',
+				key: 'owner',
+				description: 'Owner of the object',
+				enabled: false
+			},
+			application: {
+				label: 'Application',
+				key: 'application',
+				description: 'Application that created the object',
+				enabled: false
+			},
+			folder: {
+				label: 'Folder',
+				key: 'folder',
+				description: 'Storage folder location',
+				enabled: false
+			},
+			files: {
+				label: 'File',
+				key: 'files',
+				description: 'The files attached to the object',
+				enabled: false
+			},
+			created: {
+				label: 'Created',
+				key: 'created',
+				description: 'Creation date and time',
+				enabled: true  // Enabled by default
+			},
+			updated: {
+				label: 'Updated',
+				key: 'updated',
+				description: 'Last update date and time',
+				enabled: true  // Enabled by default
+			}
+		},
+		properties: {}, // Will be populated based on schema
+		columnFilters: {},  // Will contain both metadata and property filters
+		loading: false
 	}),
 	actions: {
+		// Helper method to build endpoint path
+		_buildObjectPath({ register, schema, objectId = '' }) {
+			return `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
+		},
 		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
-			console.info('Active object item set to ' + objectItem)
+			console.info('Active object item set to ' + objectItem?.['@self']?.id)
+
+			// If we have a valid object item, fetch related data
+			if (objectItem?.['@self']?.id) {
+				try {
+					// Fetch audit trails
+					const auditTrailsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/audit-trails`
+					const auditTrailsResponse = await fetch(auditTrailsEndpoint)
+					const auditTrailsData = await auditTrailsResponse.json()
+					this.setAuditTrails(auditTrailsData)
+
+					// Fetch relations (used by)
+					const relationsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/relations`
+					const relationsResponse = await fetch(relationsEndpoint)
+					const relationsData = await relationsResponse.json()
+					this.setRelations(relationsData)
+
+					// Fetch files
+					const filesEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/files`
+					const filesResponse = await fetch(filesEndpoint)
+					const filesData = await filesResponse.json()
+					this.setFiles(filesData)
+				} catch (error) {
+					console.error('Error fetching related data:', error)
+				}
+			} else {
+				// Clear related data when no object is selected
+				this.setAuditTrails([])
+				this.setRelations([])
+				this.setFiles([])
+			}
 		},
 		setObjectList(objectList) {
 			this.objectList = {
@@ -43,140 +174,123 @@ export const useObjectStore = defineStore('object', {
 		},
 		setFileItem(fileItem) {
 			this.fileItem = fileItem
+			console.info('File item set to', fileItem) // Logging the file item
 		},
 		setFiles(files) {
 			this.files = files
+			console.info('Files set to', files) // Logging the files
 		},
-		/* istanbul ignore next */ // ignore this for Jest until moved into a service
+		/**
+		 * Set pagination details
+		 *
+		 * @param {number} page
+		 * @param {number} [limit=14]
+		 * @return {void}
+		 */
+		setPagination(page, limit = 14) {
+			this.pagination = { page, limit }
+			console.info('Pagination set to', { page, limit }) // Logging the pagination
+		},
+		/**
+		 * Set query filters for object list
+		 *
+		 * @param {Object} filters
+		 * @return {void}
+		 */
+		setFilters(filters) {
+			this.filters = { ...this.filters, ...filters }
+			console.info('Query filters set to', this.filters) // Logging the filters
+		},
 		async refreshObjectList(options = {}) {
-			// @todo this might belong in a service?
-			let endpoint = '/index.php/apps/openregister/api/objects'
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+			
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+			
+			if (!register || !schema) {
+				throw new Error('Register and schema are required')
+			}
+
+			let endpoint = this._buildObjectPath({
+				register,
+				schema
+			})
+			
 			const params = []
 
-			if (options.search && options.search !== '') {
-				params.push('_search=' + options.search)
-			}
-			if (options.limit && options.limit !== '') {
-				params.push('_limit=' + options.limit)
-			}
-			if (options.page && options.page !== '') {
-				params.push('_page=' + options.page)
-			}
+			// Handle filters as an object
+			Object.entries(this.filters).forEach(([key, value]) => {
+				if (value !== undefined && value !== '') {
+					params.push(`${key}=${encodeURIComponent(value)}`)
+				}
+			})
+			
+			if (options.limit || this.pagination.limit) params.push('_limit=' + (options.limit || this.pagination.limit))
+			if (options.page || this.pagination.page) params.push('_page=' + (options.page || this.pagination.page))
 
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')
 			}
 
-			return fetch(endpoint, {
-				method: 'GET',
-			})
-				.then(
-					(response) => {
-						response.json().then(
-							(data) => {
-								this.setObjectList(data)
-							},
-						)
-					},
-				)
-				.catch(
-					(err) => {
-						console.error(err)
-					},
-				)
-		},
-		// New function to get a single object
-		async getObject(id) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
+				const response = await fetch(endpoint)
+				const data = await response.json()
+				this.setObjectList(data)
+				return { response, data }
+			} catch (err) {
+				console.error(err)
+				throw err
+			}
+		},
+		async getObject({ register, schema, objectId }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Register, schema and objectId are required')
+			}
+
+			const endpoint = this._buildObjectPath({ register, schema, objectId })
+
+			try {
+				const response = await fetch(endpoint)
 				const data = await response.json()
 				this.setObjectItem(data)
-				this.getAuditTrails(data.id)
-				this.getRelations(data.id)
-
+				this.getAuditTrails({ register, schema, objectId })
+				this.getRelations({ register, schema, objectId })
 				return data
 			} catch (err) {
 				console.error(err)
 				throw err
 			}
 		},
-		// Delete an object
-		async deleteObject(objectItem) {
-			if (!objectItem.id) {
-				throw new Error('No object item to delete')
+		async saveObject(objectItem, { register, schema }) {
+			if (!objectItem || !register || !schema) {
+				throw new Error('Object item, register and schema are required')
 			}
 
-			console.info('Deleting object...')
+			const isNewObject = !objectItem['@self'].id
+			const endpoint = this._buildObjectPath({
+				register,
+				schema,
+				objectId: isNewObject ? '' : objectItem['@self'].id
+			})
 
-			const endpoint = `/index.php/apps/openregister/api/objects/${objectItem.id}`
+			objectItem['@self'].updated = new Date().toISOString()
 
 			try {
 				const response = await fetch(endpoint, {
-					method: 'DELETE',
+					method: isNewObject ? 'POST' : 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(objectItem)
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				this.refreshObjectList()
-				this.setObjectItem(null)
-
-				return { response, data: responseData }
+				const data = new ObjectEntity(await response.json())
+				this.setObjectItem(data)
+				await this.refreshObjectList({ register, schema })
+				return { response, data }
 			} catch (error) {
-				console.error('Error deleting object:', error)
-				throw new Error(`Failed to delete object: ${error.message}`)
+				console.error('Error saving object:', error)
+				throw error
 			}
-		},
-		// Create or save an object from store
-		async saveObject(objectItem) {
-			if (!objectItem) {
-				throw new Error('No object item to save')
-			}
-
-			console.info('Saving object...')
-
-			const isNewObject = !objectItem.id
-			const endpoint = isNewObject
-				? '/index.php/apps/openregister/api/objects'
-				: `/index.php/apps/openregister/api/objects/${objectItem.id}`
-			const method = isNewObject ? 'POST' : 'PUT'
-
-			// change updated to current date as a singular iso date string
-			objectItem.updated = new Date().toISOString()
-
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(objectItem),
-				},
-			)
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const data = new ObjectEntity(await response.json())
-
-			this.refreshObjectList()
-			this.setObjectItem(data)
-			this.getAuditTrails(data.id)
-			this.getRelations(data.id)
-
-			return { response, data }
 		},
 		// mass delete objects
 		async massDeleteObject(objectIds) {
@@ -192,7 +306,7 @@ export const useObjectStore = defineStore('object', {
 			}
 
 			await Promise.all(objectIds.map(async (objectId) => {
-				const endpoint = `/index.php/apps/openregister/api/objects/${objectId}`
+				const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 
 				try {
 					const response = await fetch(endpoint, {
@@ -220,7 +334,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get audit trails for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/audit-trails/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/audit-trails}`
 			const params = []
 
 			if (options.search && options.search !== '') {
@@ -257,7 +371,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get relations for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/relations/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/relations`
 			const params = []
 
 			if (options.search && options.search !== '') {
@@ -298,7 +412,7 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('No object id to get files for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/files/${id}`
+			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files`
 			const params = []
 
 			if (options.search && options.search !== '') {
@@ -354,7 +468,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise} Promise that resolves when the object is locked
 		 */
 		async lockObject(id, process = null, duration = null) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}/lock`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/lock`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -389,7 +503,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise} Promise that resolves when the object is unlocked
 		 */
 		async unlockObject(id) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}/unlock`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/${id}/unlock`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -422,7 +536,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise} Promise that resolves when the object is reverted
 		 */
 		async revertObject(id, options) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${id}/revert`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/${id}/revert`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -447,5 +561,142 @@ export const useObjectStore = defineStore('object', {
 				throw new Error(`Failed to revert object: ${error.message}`)
 			}
 		},
+		setSelectedObjects(objects) {
+			this.selectedObjects = objects
+		},
+		toggleSelectAllObjects() {
+			if (this.isAllSelected) {
+				// Clear selection
+				this.selectedObjects = []
+			} else {
+				// Select all current objects
+				this.selectedObjects = this.objectList.results.map(result => result['@self'].id)
+			}
+		},
+		updateColumnFilter(id, enabled) {
+			console.log('Updating column filter:', id, enabled)
+			console.log('Current columnFilters:', this.columnFilters)
+			
+			if (id.startsWith('meta_')) {
+				const metaId = id.replace('meta_', '')
+				if (this.metadata[metaId]) {
+					this.metadata[metaId].enabled = enabled
+					this.columnFilters[id] = enabled
+					console.log('Updated metadata filter:', metaId, enabled)
+				}
+			} else if (id.startsWith('prop_')) {
+				const propId = id.replace('prop_', '')
+				if (this.properties[propId]) {
+					this.properties[propId].enabled = enabled
+					this.columnFilters[id] = enabled
+					console.log('Updated property filter:', propId, enabled)
+				}
+			}
+			
+			console.log('Updated columnFilters:', this.columnFilters)
+			// Force a refresh of the table
+			this.objectList = { ...this.objectList }
+		},
+		// Initialize properties based on schema
+		initializeProperties(schema) {
+			if (!schema?.properties) return
+
+			console.log('Initializing properties from schema:', schema.properties)
+
+			// Reset properties
+			this.properties = {}
+
+			// Create property entries similar to metadata structure
+			Object.entries(schema.properties).forEach(([propertyName, property]) => {
+				this.properties[propertyName] = {
+					// Capitalize first letter and replace underscores/hyphens with spaces
+					label: propertyName
+						.split(/[-_]/)
+						.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+						.join(' '),
+					key: propertyName,
+					description: property.description || '',
+					enabled: false,
+					type: property.type
+				}
+			})
+
+			console.log('Properties initialized:', this.properties)
+
+			// Reinitialize column filters to include new properties
+			this.initializeColumnFilters()
+		},
+		// Update to handle both metadata and properties
+		initializeColumnFilters() {
+			this.columnFilters = {
+				...Object.entries(this.metadata).reduce((acc, [id, meta]) => {
+					acc[`meta_${id}`] = meta.enabled
+					return acc
+				}, {}),
+				...Object.entries(this.properties).reduce((acc, [id, prop]) => {
+					acc[`prop_${id}`] = prop.enabled
+					return acc
+				}, {})
+			}
+			console.log('Initialized column filters:', this.columnFilters)
+		},
 	},
+	getters: {
+		isAllSelected() {
+			if (!this.objectList?.results?.length) return false
+			const currentIds = this.objectList.results.map(result => result['@self'].id)
+			return currentIds.every(id => this.selectedObjects.includes(id))
+		},
+		// Add getter for enabled metadata columns
+		enabledMetadata() {
+			return Object.entries(this.metadata)
+				.filter(([id]) => this.columnFilters[`meta_${id}`])
+				.map(([id, meta]) => ({
+					id: `meta_${id}`,
+					...meta
+				}))
+		},
+		// Add getter for enabled property columns
+		enabledProperties() {
+			return Object.entries(this.properties)
+				.filter(([id]) => this.columnFilters[`prop_${id}`])
+				.map(([id, prop]) => ({
+					id: `prop_${id}`,
+					...prop
+				}))
+		},
+		// Separate getter for ID/UUID metadata
+		enabledIdentifierMetadata() {
+			return Object.entries(this.metadata)
+				.filter(([id]) => 
+					(id === 'objectId' || id === 'uuid') && 
+					this.columnFilters[`meta_${id}`]
+				)
+				.map(([id, meta]) => ({
+					id: `meta_${id}`,
+					...meta
+				}))
+		},
+		// Separate getter for other metadata
+		enabledOtherMetadata() {
+			return Object.entries(this.metadata)
+				.filter(([id]) => 
+					id !== 'objectId' && 
+					id !== 'uuid' && 
+					this.columnFilters[`meta_${id}`]
+				)
+				.map(([id, meta]) => ({
+					id: `meta_${id}`,
+					...meta
+				}))
+		},
+		// Combined enabled columns in the desired order
+		enabledColumns() {
+			return [
+				...this.enabledIdentifierMetadata,  // ID/UUID first
+				...this.enabledProperties,          // Then properties
+				...this.enabledOtherMetadata        // Then other metadata
+			]
+		}
+	}
 })

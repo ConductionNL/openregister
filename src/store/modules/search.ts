@@ -96,7 +96,11 @@ export const useSearchStore = defineStore('search', () => {
 
 		searchObjectsLoading.value = true
 
-		fetch(`/index.php/apps/openregister/api/objects${queryPart}`, { method: 'GET' })
+		const register = searchObjectsDataRegister.value?.id || ''
+		const schema = searchObjectsDataSchema.value?.id || ''
+		const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${queryPart}`
+
+		fetch(endpoint, { method: 'GET' })
 			.then(async response => {
 				console.info('Search results fetched')
 

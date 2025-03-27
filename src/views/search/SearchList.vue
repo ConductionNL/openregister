@@ -1,25 +1,21 @@
 <script setup>
-import { navigationStore, objectStore, schemaStore, searchStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 import { EventBus } from '../../eventBus.js'
+import { computed } from 'vue'
+
+const selectedSchema = computed(() => {
+	return schemaStore.schemaList.find(
+		schema => schema.id.toString() === objectStore.activeSchema?.id?.toString()
+	)
+})
+
+const schemaProperties = computed(() => {
+	return Object.values(selectedSchema.value?.properties || {}) || []
+})
 </script>
 
 <template>
-	<div class="search-list">
-		<div class="search-list-header">
-			<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !!searchStore.searchObjectsResult?.results?.length"
-				:size="24"
-				class="loadingIcon"
-				appearance="dark"
-				name="Objects loading" />
-
-			<NcButton :disabled="selectedObjects.length === 0" type="error" @click="() => massDeleteObjectModal = true">
-				<template #icon>
-					<Delete :size="20" />
-				</template>
-				Delete {{ selectedObjects.length }} {{ selectedObjects.length > 1 ? 'objects' : 'object' }}
-			</NcButton>
-		</div>
-
+	<div class="search-list">				
 		<div class="search-list-table">
 			<VueDraggable v-model="activeHeaders"
 				target=".sort-target"
@@ -29,51 +25,54 @@ import { EventBus } from '../../eventBus.js'
 					<thead>
 						<tr class="table-row sort-target">
 							<th class="static-column">
-								<input v-model="selectAllObjects"
+								<input 
+									:checked="objectStore.isAllSelected"
 									type="checkbox"
 									class="cursor-pointer"
-									@change="toggleSelectAllObjects()">
+									@change="objectStore.toggleSelectAllObjects">
 							</th>
-							<template v-for="header in activeHeaders">
-								<th v-if="header.enabled" :key="header.id">
-									<span class="sticky-header">
-										{{ header.label }}
-									</span>
-								</th>
-							</template>
-							<th class="static-column">
+							<th v-for="column in objectStore.enabledColumns" 
+								:key="column.id">
+								<span class="sticky-header column-title" :title="column.description">
+									{{ column.label }}
+								</span>
+							</th>
+							<th class="static-column column-title">
 								Actions
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(result) in searchStore.searchObjectsResult.results" :key="result.uuid" class="table-row">
+						<tr v-for="result in objectStore.objectList.results" 
+							:key="result['@self'].uuid" 
+							class="table-row">
 							<td class="static-column">
-								<input v-model="selectedObjects"
-									:value="result.id"
+								<input 
+									v-model="objectStore.selectedObjects"
+									:value="result['@self'].id"
 									type="checkbox"
-									class="cursor-pointer"
-									@change="onSelectObject(result.id)">
+									class="cursor-pointer">
 							</td>
-							<template v-for="header in activeHeaders">
-								<td v-if="header.enabled" :key="header.id">
-									<span v-if="header.id === 'files'">
-										<NcCounterBubble :count="result.files ? result.files.length : 0" />
+							<td v-for="column in objectStore.enabledColumns" 
+								:key="column.id">
+								<template v-if="column.id.startsWith('meta_')">
+									<span v-if="column.id === 'meta_files'">
+										<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />
 									</span>
-									<span v-else-if="header.id === 'schemaProperties'">
-										<NcCounterBubble :count="schemaProperties.length" />
-									</span>
-									<span v-else-if="header.id === 'created' || header.id === 'updated'">
-										{{ getValidISOstring(result[header.key]) ? new Date(result[header.key]).toLocaleString() : 'N/A' }}
+									<span v-else-if="column.id === 'meta_created' || column.id === 'meta_updated'">
+										{{ getValidISOstring(result['@self'][column.key]) ? new Date(result['@self'][column.key]).toLocaleString() : 'N/A' }}
 									</span>
 									<span v-else>
-										{{ result[header.key] }}
+										{{ result['@self'][column.key] }}
 									</span>
-								</td>
-							</template>
+								</template>
+								<template v-else>
+									<span>{{ result[column.key] ?? 'N/A' }}</span>
+								</template>
+							</td>
 							<td class="static-column">
 								<NcActions>
-									<NcActionButton @click="navigationStore.setSelected('objects'); objectStore.setObjectItem(result)">
+									<NcActionButton @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 										<template #icon>
 											<Eye :size="20" />
 										</template>
@@ -85,6 +84,12 @@ import { EventBus } from '../../eventBus.js'
 										</template>
 										Edit
 									</NcActionButton>
+									<NcActionButton @click="deleteObject(result['@self'].id)">
+										<template #icon>
+											<Delete :size="20" />
+										</template>
+										Delete
+									</NcActionButton>
 								</NcActions>
 							</td>
 						</tr>
@@ -95,15 +100,16 @@ import { EventBus } from '../../eventBus.js'
 
 		<div class="pagination-container">
 			<BPagination
-				v-model="searchStore.searchObjectsDataPagination"
-				:total-rows="searchStore.searchObjectsResult.total"
-				:per-page="searchStore.searchObjectsDataPaginationLimit"
+				v-model="objectStore.pagination.page"
+				:total-rows="objectStore.objectList.total"
+				:per-page="objectStore.pagination.limit"
 				:first-number="true"
-				:last-number="true" />
+				:last-number="true"
+				@change="onPageChange" />
 		</div>
 
 		<MassDeleteObject v-if="massDeleteObjectModal"
-			:selected-objects="selectedObjects"
+			:selected-objects="objectStore.selectedObjects"
 			@close-modal="() => massDeleteObjectModal = false"
 			@success="onMassDeleteSuccess" />
 	</div>
@@ -134,8 +140,62 @@ export default {
 				{
 					id: 'objectId',
 					label: 'ObjectID',
-					key: 'uuid',
+					key: 'id',
 					enabled: true,
+				},
+				{
+					id: 'uuid',
+					label: 'UUID',
+					key: 'uuid',
+					enabled: false,
+				},
+				{
+					id: 'uri',
+					label: 'URI',
+					key: 'uri',
+					enabled: false,
+				},
+				{
+					id: 'version',
+					label: 'Version',
+					key: 'version',
+					enabled: false,
+				},
+				{
+					id: 'register',
+					label: 'Register',
+					key: 'register',
+					enabled: false,
+				},
+				{
+					id: 'schema',
+					label: 'Schema',
+					key: 'schema',
+					enabled: false,
+				},
+				{
+					id: 'files',
+					label: 'Files',
+					key: 'files',
+					enabled: true,
+				},
+				{
+					id: 'relations',
+					label: 'Relations',
+					key: 'relations',
+					enabled: false,
+				},
+				{
+					id: 'locked',
+					label: 'Locked',
+					key: 'locked',
+					enabled: false,
+				},
+				{
+					id: 'owner',
+					label: 'Owner',
+					key: 'owner',
+					enabled: false,
 				},
 				{
 					id: 'created',
@@ -150,17 +210,11 @@ export default {
 					enabled: true,
 				},
 				{
-					id: 'files',
-					label: 'Amount of files',
-					key: 'files',
-					enabled: true,
-				},
-				{
-					id: 'schemaProperties',
-					label: 'Schema properties',
-					key: null,
-					enabled: true,
-				},
+					id: 'folder',
+					label: 'Folder',
+					key: 'folder',
+					enabled: false,
+				}
 			],
 			/**
 			 * To ensure complete compatibility between the toggle and the drag function,
@@ -169,30 +223,23 @@ export default {
 			 * This array is a copy of the headers array but with the disabled headers filtered out.
 			 */
 			activeHeaders: [],
-			// select boxes
-			selectAllObjects: false,
-			selectedObjects: [],
 			// modal state
 			massDeleteObjectModal: false,
 		}
 	},
 	computed: {
-		objectsLoading: () => searchStore.searchObjectsLoading,
-		selectedSchema() {
-			return schemaStore.schemaList.find((schema) => schema.id.toString() === searchStore.searchObjectsResult?.results?.[0]?.schema?.toString())
-		},
-		schemaProperties() {
-			return Object.values(this.selectedSchema.properties) || []
+		loading() {
+			return objectStore.loading
 		},
 	},
 	watch: {
-		headers: {
+		'objectStore.columnFilters': {
 			handler() {
 				this.setActiveHeaders()
 			},
-			deep: true,
+			deep: true
 		},
-		objectsLoading: {
+		loading: {
 			handler(newVal) {
 				// if loading finished, run setSelectAllObjects
 				newVal === false && this.setSelectAllObjects()
@@ -214,7 +261,8 @@ export default {
 	},
 	methods: {
 		setActiveHeaders() {
-			this.activeHeaders = _.cloneDeep(this.headers.filter((header) => header.enabled))
+			this.activeHeaders = this.headers
+				.filter(header => objectStore.columnFilters[header.id])
 		},
 		/**
 		 * This function sets the selectAllObjects state to true if all object ids from the searchObjectsResult are in the selectedObjects array.
@@ -222,41 +270,27 @@ export default {
 		 * This is used to ensure that the selectAllObjects state is always in sync with the selectedObjects array.
 		 */
 		setSelectAllObjects() {
-			const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result.id) || []
+			const allObjectIds = objectStore.objectList?.results?.map(result => result['@self'].id) || []
 			this.selectAllObjects = allObjectIds.every(id => this.selectedObjects.includes(id))
-		},
-		onSelectObject(id) {
-			this.setSelectAllObjects()
 		},
 		openLink(link, type = '') {
 			window.open(link, type)
 		},
-		toggleSelectAllObjects() {
-			if (this.selectAllObjects) {
-				// add all ids from searchObjectsResult to selectedObjects
-				this.selectedObjects = [
-					...this.selectedObjects,
-					...searchStore.searchObjectsResult.results.map((result) => result.id).filter((id) => !this.selectedObjects.includes(id)),
-				]
-			} else {
-				// remove all ids from searchObjectsResult in selectedObjects
-				const allObjectIds = searchStore.searchObjectsResult?.results.map(result => result.id) || []
-				this.selectedObjects = this.selectedObjects.filter((id) => !allObjectIds.includes(id))
+		onMassDeleteSuccess() {
+			objectStore.refreshObjectList()
+		},
+		async deleteObject(id) {
+			try {
+				await objectStore.deleteObject(id)
+				objectStore.refreshObjectList()
+			} catch (error) {
+				console.error('Failed to delete object:', error)
 			}
 		},
-		onMassDeleteSuccess() {
-			const unwatch = this.$watch(
-				() => searchStore.searchObjectsLoading,
-				(newVal) => {
-					if (newVal === false) {
-						this.selectedObjects = []
-						this.setSelectAllObjects()
-						unwatch() // Remove the watcher once we're done
-					}
-				},
-			)
-			searchStore.reDoSearch()
-		},
+		onPageChange(page) {
+			objectStore.setPagination(page)
+			objectStore.refreshObjectList()
+		}
 	},
 }
 </script>
@@ -264,9 +298,16 @@ export default {
 <style scoped>
 .search-list-header {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
-    gap: 10px;
-    margin-inline-end: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.search-list-header h2 {
+    margin: 0;
+    font-size: var(--default-font-size);
+    font-weight: bold;
 }
 
 .search-list-table {
@@ -339,5 +380,10 @@ input[type="checkbox"] {
     background-color: var(--color-primary-element-light) !important;
     opacity: 0.5 !important;
     cursor: not-allowed !important;
+}
+
+/* Make column titles bold */
+.column-title {
+    font-weight: bold;
 }
 </style>
