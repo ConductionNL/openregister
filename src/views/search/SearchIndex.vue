@@ -1,40 +1,5 @@
 <script setup>
 import { objectStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
-import { computed } from 'vue'
-import { NcButton } from '@nextcloud/vue'
-
-const pageTitle = computed(() => {
-	if (!registerStore.registerItem) {
-		return 'No register selected'
-	}
-	
-	const registerName = (registerStore.registerItem.label || registerStore.registerItem.title).charAt(0).toUpperCase() + 
-		(registerStore.registerItem.label || registerStore.registerItem.title).slice(1)
-	const objectCount = objectStore.objectList?.results?.length || 0
-	const objectTotal = objectStore.objectList?.total || 0
-	
-	if (!schemaStore.schemaItem) {
-		return `${registerName} / No schema selected`
-	}
-	
-	const schemaName = (schemaStore.schemaItem.label || schemaStore.schemaItem.title).charAt(0).toUpperCase() + 
-		(schemaStore.schemaItem.label || schemaStore.schemaItem.title).slice(1)
-	return `${registerName} / ${schemaName} (${objectCount} of ${objectTotal})`
-})
-
-const showNoRegisterWarning = computed(() => !registerStore.registerItem)
-const showNoSchemaWarning = computed(() => registerStore.registerItem && !schemaStore.schemaItem)
-const showNoObjectsMessage = computed(() => {
-	return registerStore.registerItem 
-		&& schemaStore.schemaItem 
-		&& !objectStore.loading 
-		&& !objectStore.objectList?.results?.length
-})
-
-const openAddObjectModal = () => {
-	objectStore.setObjectItem(null) // Clear any existing object
-	navigationStore.setModal('editObject')
-}
 </script>
 
 <template>
@@ -44,15 +9,15 @@ const openAddObjectModal = () => {
 				{{ pageTitle }}
 			</h1>
 
-			<NcActions 
-			:force-name="true" 
-			:inline="1"
-			:primary="true" 
-			:menu-name="`Bulk action for ${objectStore.selectedObjects?.length || 0} objects`">
-				<NcActionButton 
-					@click="openAddObjectModal" 
+			<NcActions
+				:force-name="true"
+				:inline="1"
+				:primary="true"
+				:menu-name="`Bulk action for ${objectStore.selectedObjects?.length || 0} objects`">
+				<NcActionButton
 					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
-					:title="!registerStore.registerItem ? 'Please select a register to add an object' : (!schemaStore.schemaItem ? 'Please select a schema to add an object' : '')">
+					:title="!registerStore.registerItem ? 'Please select a register to add an object' : (!schemaStore.schemaItem ? 'Please select a schema to add an object' : '')"
+					@click="openAddObjectModal">
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
@@ -78,8 +43,6 @@ const openAddObjectModal = () => {
 				</NcActionButton>
 			</NcActions>
 		</span>
-
-		
 
 		<!-- Warning when no register is selected -->
 		<NcNoteCard v-if="showNoRegisterWarning" type="warning">
@@ -109,9 +72,9 @@ const openAddObjectModal = () => {
 <script>
 import { NcAppContent, NcNoteCard, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import SearchList from './SearchList.vue'
-import LightningBolt from 'vue-material-design-icons/LightningBolt.vue'
+
+// Icons
 import Delete from 'vue-material-design-icons/Delete.vue'
-import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
@@ -123,14 +86,53 @@ export default {
 		NcNoteCard,
 		NcLoadingIcon,
 		SearchList,
-		NcButton,
 		Delete,
-		LightningBolt,
-		ArrowRight,
 		Download,
 		Pencil,
 		Upload,
-		
+
+	},
+
+	computed: {
+		pageTitle() {
+			if (!registerStore.registerItem) {
+				return 'No register selected'
+			}
+
+			const registerName = (registerStore.registerItem.label || registerStore.registerItem.title).charAt(0).toUpperCase()
+		+ (registerStore.registerItem.label || registerStore.registerItem.title).slice(1)
+			const objectCount = objectStore.objectList?.results?.length || 0
+			const objectTotal = objectStore.objectList?.total || 0
+
+			if (!schemaStore.schemaItem) {
+				return `${registerName} / No schema selected`
+			}
+
+			const schemaName = (schemaStore.schemaItem.label || schemaStore.schemaItem.title).charAt(0).toUpperCase()
+		+ (schemaStore.schemaItem.label || schemaStore.schemaItem.title).slice(1)
+			return `${registerName} / ${schemaName} (${objectCount} of ${objectTotal})`
+		},
+
+		showNoRegisterWarning() {
+			return !registerStore.registerItem
+		},
+		showNoSchemaWarning() {
+			return registerStore.registerItem && !schemaStore.schemaItem
+		},
+		showNoObjectsMessage() {
+			return registerStore.registerItem
+				&& schemaStore.schemaItem
+				&& !objectStore.loading
+				&& !objectStore.objectList?.results?.length
+		},
+
+	},
+
+	methods: {
+		openAddObjectModal() {
+			objectStore.setObjectItem(null) // Clear any existing object
+			navigationStore.setModal('editObject')
+		},
 	},
 }
 </script>

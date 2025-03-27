@@ -1,21 +1,10 @@
 <script setup>
-import { navigationStore, objectStore } from '../../store/store.js'
+import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 import { EventBus } from '../../eventBus.js'
-import { computed } from 'vue'
-
-const selectedSchema = computed(() => {
-	return schemaStore.schemaList.find(
-		schema => schema.id.toString() === objectStore.activeSchema?.id?.toString()
-	)
-})
-
-const schemaProperties = computed(() => {
-	return Object.values(selectedSchema.value?.properties || {}) || []
-})
 </script>
 
 <template>
-	<div class="search-list">				
+	<div class="search-list">
 		<div class="search-list-table">
 			<VueDraggable v-model="activeHeaders"
 				target=".sort-target"
@@ -25,13 +14,13 @@ const schemaProperties = computed(() => {
 					<thead>
 						<tr class="table-row sort-target">
 							<th class="static-column">
-								<input 
+								<input
 									:checked="objectStore.isAllSelected"
 									type="checkbox"
 									class="cursor-pointer"
 									@change="objectStore.toggleSelectAllObjects">
 							</th>
-							<th v-for="column in objectStore.enabledColumns" 
+							<th v-for="column in objectStore.enabledColumns"
 								:key="column.id">
 								<span class="sticky-header column-title" :title="column.description">
 									{{ column.label }}
@@ -43,17 +32,17 @@ const schemaProperties = computed(() => {
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="result in objectStore.objectList.results" 
-							:key="result['@self'].uuid" 
+						<tr v-for="result in objectStore.objectList.results"
+							:key="result['@self'].uuid"
 							class="table-row">
 							<td class="static-column">
-								<input 
+								<input
 									v-model="objectStore.selectedObjects"
 									:value="result['@self'].id"
 									type="checkbox"
 									class="cursor-pointer">
 							</td>
-							<td v-for="column in objectStore.enabledColumns" 
+							<td v-for="column in objectStore.enabledColumns"
 								:key="column.id">
 								<template v-if="column.id.startsWith('meta_')">
 									<span v-if="column.id === 'meta_files'">
@@ -71,7 +60,7 @@ const schemaProperties = computed(() => {
 								</template>
 							</td>
 							<td class="static-column">
-								<NcActions>
+								<NcActions class="actionsButton">
 									<NcActionButton @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 										<template #icon>
 											<Eye :size="20" />
@@ -116,11 +105,10 @@ const schemaProperties = computed(() => {
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcCounterBubble, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
-import _ from 'lodash'
 
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -133,6 +121,9 @@ export default {
 	components: {
 		NcActions,
 		NcActionButton,
+		NcCounterBubble,
+		BPagination,
+		VueDraggable,
 	},
 	data() {
 		return {
@@ -214,7 +205,7 @@ export default {
 					label: 'Folder',
 					key: 'folder',
 					enabled: false,
-				}
+				},
 			],
 			/**
 			 * To ensure complete compatibility between the toggle and the drag function,
@@ -231,13 +222,21 @@ export default {
 		loading() {
 			return objectStore.loading
 		},
+		selectedSchema() {
+			return schemaStore.schemaList.find(
+				schema => schema.id.toString() === objectStore.activeSchema?.id?.toString(),
+			)
+		},
+		schemaProperties() {
+			return Object.values(this.selectedSchema?.properties || {}) || []
+		},
 	},
 	watch: {
 		'objectStore.columnFilters': {
 			handler() {
 				this.setActiveHeaders()
 			},
-			deep: true
+			deep: true,
 		},
 		loading: {
 			handler(newVal) {
@@ -290,10 +289,18 @@ export default {
 		onPageChange(page) {
 			objectStore.setPagination(page)
 			objectStore.refreshObjectList()
-		}
+		},
 	},
 }
 </script>
+
+<style>
+.actionsButton > div > button {
+    margin-top: 0px !important;
+    margin-right: 0px !important;
+    padding-right: 0px !important;
+}
+</style>
 
 <style scoped>
 .search-list-header {

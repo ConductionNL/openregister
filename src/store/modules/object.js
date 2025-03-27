@@ -16,7 +16,7 @@ export const useObjectStore = defineStore('object', {
 		filters: {}, // List of query paramters
 		pagination: {
 			page: 1,
-			limit: 20
+			limit: 20,
 		},
 		selectedObjects: [],
 		metadata: {
@@ -24,90 +24,90 @@ export const useObjectStore = defineStore('object', {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true  // Enabled by default
+				enabled: true, // Enabled by default
 			},
 			uri: {
 				label: 'URI',
 				key: 'uri',
 				description: 'Uniform resource identifier',
-				enabled: false
+				enabled: false,
 			},
 			version: {
 				label: 'Version',
 				key: 'version',
 				description: 'Version number of the object',
-				enabled: false
+				enabled: false,
 			},
 			register: {
 				label: 'Register',
 				key: 'register',
 				description: 'Register the object belongs to',
-				enabled: false
+				enabled: false,
 			},
 			schema: {
 				label: 'Schema',
 				key: 'schema',
 				description: 'Schema the object follows',
-				enabled: false
+				enabled: false,
 			},
 			files: {
 				label: 'Files',
 				key: 'files',
 				description: 'Attached files count',
-				enabled: true  // Enabled by default
+				enabled: true, // Enabled by default
 			},
 			relations: {
 				label: 'Relations',
 				key: 'relations',
 				description: 'Related objects count',
-				enabled: false
+				enabled: false,
 			},
 			locked: {
 				label: 'Locked',
 				key: 'locked',
 				description: 'Lock status of the object',
-				enabled: false
+				enabled: false,
 			},
 			owner: {
 				label: 'Owner',
 				key: 'owner',
 				description: 'Owner of the object',
-				enabled: false
+				enabled: false,
 			},
 			application: {
 				label: 'Application',
 				key: 'application',
 				description: 'Application that created the object',
-				enabled: false
+				enabled: false,
 			},
 			folder: {
 				label: 'Folder',
 				key: 'folder',
 				description: 'Storage folder location',
-				enabled: false
+				enabled: false,
 			},
 			files: {
 				label: 'File',
 				key: 'files',
 				description: 'The files attached to the object',
-				enabled: false
+				enabled: false,
 			},
 			created: {
 				label: 'Created',
 				key: 'created',
 				description: 'Creation date and time',
-				enabled: true  // Enabled by default
+				enabled: true, // Enabled by default
 			},
 			updated: {
 				label: 'Updated',
 				key: 'updated',
 				description: 'Last update date and time',
-				enabled: true  // Enabled by default
-			}
+				enabled: true, // Enabled by default
+			},
 		},
 		properties: {}, // Will be populated based on schema
-		columnFilters: {},  // Will contain both metadata and property filters
-		loading: false
+		columnFilters: {}, // Will contain both metadata and property filters
+		loading: false,
 	}),
 	actions: {
 		// Helper method to build endpoint path
@@ -168,7 +168,7 @@ export const useObjectStore = defineStore('object', {
 			this.relationItem = relationItem && new ObjectEntity(relationItem)
 		},
 		setRelations(relations) {
-			this.relations = relations.map(
+			this.relations = relations.results.map(
 				(relation) => new ObjectEntity(relation),
 			)
 		},
@@ -184,7 +184,7 @@ export const useObjectStore = defineStore('object', {
 		 * Set pagination details
 		 *
 		 * @param {number} page
-		 * @param {number} [limit=14]
+		 * @param {number} [limit]
 		 * @return {void}
 		 */
 		setPagination(page, limit = 14) {
@@ -194,7 +194,7 @@ export const useObjectStore = defineStore('object', {
 		/**
 		 * Set query filters for object list
 		 *
-		 * @param {Object} filters
+		 * @param {object} filters
 		 * @return {void}
 		 */
 		setFilters(filters) {
@@ -204,19 +204,19 @@ export const useObjectStore = defineStore('object', {
 		async refreshObjectList(options = {}) {
 			const registerStore = useRegisterStore()
 			const schemaStore = useSchemaStore()
-			
+
 			const register = options.register || registerStore.registerItem?.id
 			const schema = options.schema || schemaStore.schemaItem?.id
-			
+
 			if (!register || !schema) {
 				throw new Error('Register and schema are required')
 			}
 
 			let endpoint = this._buildObjectPath({
 				register,
-				schema
+				schema,
 			})
-			
+
 			const params = []
 
 			// Handle filters as an object
@@ -225,7 +225,7 @@ export const useObjectStore = defineStore('object', {
 					params.push(`${key}=${encodeURIComponent(value)}`)
 				}
 			})
-			
+
 			if (options.limit || this.pagination.limit) params.push('_limit=' + (options.limit || this.pagination.limit))
 			if (options.page || this.pagination.page) params.push('_page=' + (options.page || this.pagination.page))
 
@@ -271,7 +271,7 @@ export const useObjectStore = defineStore('object', {
 			const endpoint = this._buildObjectPath({
 				register,
 				schema,
-				objectId: isNewObject ? '' : objectItem['@self'].id
+				objectId: isNewObject ? '' : objectItem['@self'].id,
 			})
 
 			objectItem['@self'].updated = new Date().toISOString()
@@ -280,7 +280,7 @@ export const useObjectStore = defineStore('object', {
 				const response = await fetch(endpoint, {
 					method: isNewObject ? 'POST' : 'PUT',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(objectItem)
+					body: JSON.stringify(objectItem),
 				})
 
 				const data = new ObjectEntity(await response.json())
@@ -576,7 +576,7 @@ export const useObjectStore = defineStore('object', {
 		updateColumnFilter(id, enabled) {
 			console.log('Updating column filter:', id, enabled)
 			console.log('Current columnFilters:', this.columnFilters)
-			
+
 			if (id.startsWith('meta_')) {
 				const metaId = id.replace('meta_', '')
 				if (this.metadata[metaId]) {
@@ -592,7 +592,7 @@ export const useObjectStore = defineStore('object', {
 					console.log('Updated property filter:', propId, enabled)
 				}
 			}
-			
+
 			console.log('Updated columnFilters:', this.columnFilters)
 			// Force a refresh of the table
 			this.objectList = { ...this.objectList }
@@ -617,7 +617,7 @@ export const useObjectStore = defineStore('object', {
 					key: propertyName,
 					description: property.description || '',
 					enabled: false,
-					type: property.type
+					type: property.type,
 				}
 			})
 
@@ -636,7 +636,7 @@ export const useObjectStore = defineStore('object', {
 				...Object.entries(this.properties).reduce((acc, [id, prop]) => {
 					acc[`prop_${id}`] = prop.enabled
 					return acc
-				}, {})
+				}, {}),
 			}
 			console.log('Initialized column filters:', this.columnFilters)
 		},
@@ -653,7 +653,7 @@ export const useObjectStore = defineStore('object', {
 				.filter(([id]) => this.columnFilters[`meta_${id}`])
 				.map(([id, meta]) => ({
 					id: `meta_${id}`,
-					...meta
+					...meta,
 				}))
 		},
 		// Add getter for enabled property columns
@@ -662,41 +662,41 @@ export const useObjectStore = defineStore('object', {
 				.filter(([id]) => this.columnFilters[`prop_${id}`])
 				.map(([id, prop]) => ({
 					id: `prop_${id}`,
-					...prop
+					...prop,
 				}))
 		},
 		// Separate getter for ID/UUID metadata
 		enabledIdentifierMetadata() {
 			return Object.entries(this.metadata)
-				.filter(([id]) => 
-					(id === 'objectId' || id === 'uuid') && 
-					this.columnFilters[`meta_${id}`]
+				.filter(([id]) =>
+					(id === 'objectId' || id === 'uuid')
+					&& this.columnFilters[`meta_${id}`],
 				)
 				.map(([id, meta]) => ({
 					id: `meta_${id}`,
-					...meta
+					...meta,
 				}))
 		},
 		// Separate getter for other metadata
 		enabledOtherMetadata() {
 			return Object.entries(this.metadata)
-				.filter(([id]) => 
-					id !== 'objectId' && 
-					id !== 'uuid' && 
-					this.columnFilters[`meta_${id}`]
+				.filter(([id]) =>
+					id !== 'objectId'
+					&& id !== 'uuid'
+					&& this.columnFilters[`meta_${id}`],
 				)
 				.map(([id, meta]) => ({
 					id: `meta_${id}`,
-					...meta
+					...meta,
 				}))
 		},
 		// Combined enabled columns in the desired order
 		enabledColumns() {
 			return [
-				...this.enabledIdentifierMetadata,  // ID/UUID first
-				...this.enabledProperties,          // Then properties
-				...this.enabledOtherMetadata        // Then other metadata
+				...this.enabledIdentifierMetadata, // ID/UUID first
+				...this.enabledProperties, // Then properties
+				...this.enabledOtherMetadata, // Then other metadata
 			]
-		}
-	}
+		},
+	},
 })
