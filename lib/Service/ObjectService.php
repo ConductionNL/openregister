@@ -17,7 +17,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
@@ -86,7 +85,6 @@ class ObjectService
 		private readonly RegisterMapper     $registerMapper,
 		private readonly SchemaMapper       $schemaMapper,
 		private readonly AuditTrailMapper   $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
 		private readonly ContainerInterface $container,
 		private readonly IURLGenerator      $urlGenerator,
 		private readonly FileService        $fileService,
