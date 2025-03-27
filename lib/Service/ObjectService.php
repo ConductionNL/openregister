@@ -269,6 +269,26 @@ class ObjectService
 	{
 		$object['id'] = $id;
 
+        $schema = $this->schemaMapper->find($this->getSchema());
+        if ($schema === null) {
+            throw new Exception('Schema not found');
+        }
+
+        $properties = $schema->getProperties();
+
+        $errors = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            // Validate immutable
+            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true) {
+                $errors[sprintf("/%s", $propertyName)][] = sprintf("%s is immutable and may not be overwritten", $propertyName);
+            }
+        }
+
+        if (empty($errors) === false) {
+            throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
+        }
+
+
 		if ($patch === true) {
 			$oldObject = $this->getObject(
 				$this->registerMapper->find($this->getRegister()),
@@ -609,11 +629,6 @@ class ObjectService
 
         $errors = [];
         foreach ($properties as $propertyName => $propertyConfig) {
-            // Validate immutable
-            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true && isset($object['id'])) {
-                $errors[sprintf("/%s", $propertyName)][] = "The property is immutable and may not be overwritten";
-            }
-
             // @todo do something for object properties because the validator will always expect a object instead off uri (string) or id
         }
 
