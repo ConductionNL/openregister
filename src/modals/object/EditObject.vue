@@ -1,5 +1,190 @@
 <script setup>
 import { objectStore, schemaStore, registerStore, navigationStore } from '../../store/store.js'
+import { ref, computed, watch, onMounted } from 'vue'
+import { getTheme } from '../../services/getTheme.js'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
+import {
+	NcButton,
+	NcDialog,
+	NcSelect,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcTextField,
+	NcCheckboxRadioSwitch,
+	NcEmptyContent,
+} from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
+
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+
+// State
+const success = ref(null)
+const loading = ref(false)
+const error = ref(null)
+const activeTab = ref(0) // Using number instead of string for BTabs
+const closeModalTimeout = ref(null)
+const formData = ref({})
+const jsonData = ref('')
+
+// Computed properties
+const currentRegister = computed(() => registerStore.registerItem)
+const currentSchema = computed(() => schemaStore.schemaItem)
+const schemaProperties = computed(() => currentSchema.value?.properties || {})
+const isNewObject = computed(() => !objectStore.objectItem || !objectStore.objectItem?.['@self']?.id)
+const dialogTitle = computed(() => isNewObject.value ? 'Add Object' : 'Edit Object')
+
+// Methods
+const initializeData = () => {
+	// Initialize with empty data for new objects
+	if (!objectStore.objectItem) {
+		const initialData = {
+			'@self': {
+				id: '',
+				uuid: '',
+				uri: '',
+				register: currentRegister.value?.id || '',
+				schema: currentSchema.value?.id || '',
+				relations: '',
+				files: '',
+				folder: '',
+				updated: '',
+				created: '',
+				locked: null,
+				owner: ''
+			}
+		}
+		formData.value = initialData
+		jsonData.value = JSON.stringify(initialData, null, 2)
+		return
+	}
+
+	// For existing objects, use their data
+	const initialData = { ...objectStore.objectItem }
+	formData.value = initialData
+	jsonData.value = JSON.stringify(initialData, null, 2)
+}
+
+const updateFormFromJson = () => {
+	try {
+		const parsed = JSON.parse(jsonData.value)
+		formData.value = parsed
+	} catch (e) {
+		error.value = 'Invalid JSON format'
+	}
+}
+
+const updateJsonFromForm = () => {
+	try {
+		jsonData.value = JSON.stringify(formData.value, null, 2)
+	} catch (e) {
+		console.error('Error updating JSON:', e)
+	}
+}
+
+const isValidJson = (str) => {
+	try {
+		JSON.parse(str)
+		return true
+	} catch (e) {
+		return false
+	}
+}
+
+const formatJSON = () => {
+	try {
+		if (jsonData.value) {
+			const parsed = JSON.parse(jsonData.value)
+			jsonData.value = JSON.stringify(parsed, null, 2)
+		}
+	} catch (e) {
+		// Keep invalid JSON as-is
+	}
+}
+
+const setActiveTab0 = () => {
+    this.activeTab = 0
+}
+const setActiveTab1 = () => {
+    this.activeTab = 1
+}
+
+const closeModal = () => {
+	navigationStore.setModal(false)
+	clearTimeout(closeModalTimeout.value)
+	success.value = null
+	loading.value = false
+	error.value = null
+	formData.value = {}
+	jsonData.value = ''
+}
+
+const saveObject = async () => {
+	if (!currentRegister.value || !currentSchema.value) {
+		error.value = 'Register and schema are required'
+		return
+	}
+
+    console.log(activeTab.value, JSON.parse(jsonData.value));
+
+	loading.value = true
+	error.value = null
+
+	try {
+		const dataToSave = activeTab.value === 1 ? JSON.parse(jsonData.value) : formData.value
+		
+		const { response } = await objectStore.saveObject(dataToSave, {
+			register: currentRegister.value.id,
+			schema: currentSchema.value.id
+		})
+
+		success.value = response.ok
+		if (response.ok) {
+			closeModalTimeout.value = setTimeout(closeModal, 2000)
+		}
+	} catch (e) {
+		error.value = e.message || 'Failed to save object'
+		success.value = false
+	} finally {
+		loading.value = false
+	}
+}
+
+// Watch for changes
+watch(() => objectStore.objectItem, (newValue) => {
+	if (newValue) {
+		initializeData()
+	}
+}, { immediate: true })
+
+watch(() => jsonData.value, (newValue) => {
+	if (activeTab.value === 1 && isValidJson(newValue)) {
+		updateFormFromJson()
+	}
+})
+
+watch(() => formData.value, (newValue) => {
+	if (activeTab.value === 0) {
+		updateJsonFromForm()
+	}
+}, { deep: true })
+
+// Lifecycle hooks
+onMounted(() => {
+	initializeData()
+})
+
+// Add modelValue handling for form fields
+const getFieldValue = (key) => {
+	return formData.value[key] || ''
+}
+
+const setFieldValue = (key, value) => {
+	formData.value[key] = value
+}
 </script>
 
 <template>
@@ -30,9 +215,9 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 
 				<!-- Edit Tabs -->
 				<div class="tabContainer">
-					<BTabs v-model="activeTab" content-class="mt-3" justified>
-						<BTab title="Form Editor" active>
-							<div v-if="currentSchema" class="form-editor">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Form Editor" :onclick={setActiveTab0}>
+							<div class="form-editor" v-if="currentSchema">
 								<div v-for="(prop, key) in schemaProperties" :key="key" class="form-field">
 									<template v-if="prop.type === 'string'">
 										<NcTextField
@@ -70,8 +255,8 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 								Please select a schema to edit the object
 							</NcEmptyContent>
 						</BTab>
-
-						<BTab title="JSON Editor">
+						
+						<BTab title="JSON Editor" :onclick={setActiveTab1}>
 							<div class="json-editor">
 								<div :class="`codeMirrorContainer ${getTheme()}`">
 									<CodeMirror
