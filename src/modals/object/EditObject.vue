@@ -12,6 +12,121 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { getTheme } from '../../services/getTheme.js'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
+</script>
+
+<template>
+	<NcDialog v-if="navigationStore.modal === 'editObject'"
+		:name="objectStore.objectItem?.id ? 'Edit Object' : 'Add Object'"
+		size="normal"
+		:can-close="false">
+		<NcNoteCard v-if="success" type="success">
+			<p>Object successfully modified</p>
+		</NcNoteCard>
+		<NcNoteCard v-if="error" type="error">
+			<p>{{ error }}</p>
+		</NcNoteCard>
+
+		<template #actions>
+			<div class="buttonContainer">
+				<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
+					:disabled="loading"
+					@click="registers.value = null">
+					<template #icon>
+						<ArrowLeft :size="20" />
+					</template>
+					Back to Register
+				</NcButton>
+				<NcButton v-if="registers.value?.id && schemas.value?.id"
+					:disabled="loading"
+					@click="schemas.value = null">
+					<template #icon>
+						<ArrowLeft :size="20" />
+					</template>
+					Back to Schema
+				</NcButton>
+				<NcButton
+					@click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="success === null"
+					:disabled="!registers.value?.id || !schemas.value?.id || loading || !isValidJson(objectItem.object)"
+					type="primary"
+					@click="editObject()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading && objectStore.objectItem?.id" :size="20" />
+						<Plus v-if="!loading && !objectStore.objectItem?.id" :size="20" />
+					</template>
+					{{ objectStore.objectItem?.id ? 'Save' : 'Add' }}
+				</NcButton>
+			</div>
+		</template>
+
+		<div v-if="!success" class="formContainer">
+			<div v-if="registers?.value?.id && success === null">
+				<b>Register:</b> {{ registers.value.label }}
+				<NcButton @click="registers.value = null; schemas.value = null;">
+					Edit Register
+				</NcButton>
+			</div>
+			<div v-if="schemas.value?.id && success === null">
+				<b>Schema:</b> {{ schemas.value.label }}
+				<NcButton @click="schemas.value = null">
+					Edit Schema
+				</NcButton>
+			</div>
+
+			<!-- STAGE 1 -->
+			<div v-if="!registers?.value?.id">
+				<NcSelect v-bind="registers"
+					v-model="registers.value"
+					input-label="Register"
+					:loading="registersLoading"
+					:disabled="loading" />
+			</div>
+
+			<!-- STAGE 2 -->
+			<div v-if="registers?.value?.id && !schemas?.value?.id">
+				<NcSelect v-bind="schemas"
+					v-model="schemas.value"
+					input-label="Schemas"
+					:loading="schemasLoading"
+					:disabled="loading" />
+			</div>
+
+			<!-- STAGE 3 -->
+			<div v-if="registers.value?.id && schemas.value?.id">
+				<div class="json-editor">
+					<label>Object (JSON)</label>
+					<div :class="`codeMirrorContainer ${getTheme()}`">
+						<CodeMirror v-model="objectItem.object"
+							:basic="true"
+							placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+							:dark="getTheme() === 'dark'"
+							:linter="jsonParseLinter()"
+							:lang="json()"
+							:tab-size="2" />
+
+						<NcButton class="format-json-button"
+							type="secondary"
+							size="small"
+							@click="formatJSON_Object">
+							Format JSON
+						</NcButton>
+					</div>
+					<span v-if="!isValidJson(objectItem.object)" class="error-message">
+						Invalid JSON format
+					</span>
+				</div>
+			</div>
+		</div>
+	</NcDialog>
+</template>
+
+<script>
 import {
 	NcButton,
 	NcDialog,
@@ -343,12 +458,21 @@ const setFieldValue = (key, value) => {
 
 .detail-item.empty-value {
 	border-left-color: var(--color-warning);
+.json-editor .format-json-button {
+	position: absolute;
+	bottom: -33px;
+	left: 0;
 }
 
 .detail-label {
 	font-weight: bold;
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 4px;
+/* Add styles for the code editor */
+.code-editor {
+	font-family: monospace;
+	width: 100%;
+	background-color: var(--color-background-dark);
 }
 
 .detail-value {

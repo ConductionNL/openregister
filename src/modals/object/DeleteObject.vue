@@ -19,23 +19,25 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				type="error"
-				@click="deleteObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Delete
-			</NcButton>
+			<div class="buttonContainer ">
+				<NcButton @click="closeDialog">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success === null ? 'Cancel' : 'Close' }}
+				</NcButton>
+				<NcButton
+					v-if="success === null"
+					:disabled="loading"
+					type="error"
+					@click="deleteObject()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<TrashCanOutline v-if="!loading" :size="20" />
+					</template>
+					Delete
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>

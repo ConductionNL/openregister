@@ -13,16 +13,19 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div v-if="createAnother || !success" class="formContainer">
+		<div v-if="createAnother || !success" class="formContainer modalSpacing">
 			<NcTextField :disabled="loading"
 				label="Title *"
-				:value.sync="schemaItem.title" />
+				:value.sync="schemaItem.title"
+				style="margin-top: 12px;" />
 			<NcTextArea :disabled="loading"
 				label="Description"
-				:value.sync="schemaItem.description" />
+				:value.sync="schemaItem.description"
+				resize="none" />
 			<NcTextArea :disabled="loading"
 				label="Summary"
-				:value.sync="schemaItem.summary" />
+				:value.sync="schemaItem.summary"
+				resize="none" />
 			<NcCheckboxRadioSwitch
 				v-if="!schemaStore.schemaItem?.id"
 				:disabled="loading"
@@ -32,23 +35,25 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="createAnother ||!success"
-				:disabled="loading || !schemaItem.title"
-				type="primary"
-				@click="editSchema()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
-					<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
-				</template>
-				{{ schemaStore.schemaItem?.id && !createAnother ? 'Save' : 'Create' }}
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="createAnother ||!success"
+					:disabled="loading || !schemaItem.title"
+					type="primary"
+					@click="editSchema()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-if="!loading && schemaStore.schemaItem?.id" :size="20" />
+						<Plus v-if="!loading && !schemaStore.schemaItem?.id" :size="20" />
+					</template>
+					{{ schemaStore.schemaItem?.id && !createAnother ? 'Save' : 'Create' }}
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>

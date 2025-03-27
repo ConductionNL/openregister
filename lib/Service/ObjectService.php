@@ -268,6 +268,25 @@ class ObjectService
     public function updateFromArray(string $id, array $object, bool $updateVersion, bool $patch = false, ?array $extend = []): array
 	{
 		$object['id'] = $id;
+			
+        $schema = $this->schemaMapper->find($this->getSchema());
+        if ($schema === null) {
+            throw new Exception('Schema not found');
+        }
+
+        $properties = $schema->getProperties();
+
+        $errors = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            // Validate immutable
+            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true) {
+                $errors[sprintf("/%s", $propertyName)][] = sprintf("%s is immutable and may not be overwritten", $propertyName);
+            }
+        }
+
+        if (empty($errors) === false) {
+            throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
+        }
 
 		if ($patch === true) {
 			$oldObject = $this->getObject(
@@ -609,12 +628,8 @@ class ObjectService
 
         $errors = [];
         foreach ($properties as $propertyName => $propertyConfig) {
-            // Validate immutable
-            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true && isset($object['id'])) {
-                $errors[sprintf("/%s", $propertyName)][] = "The property is immutable and may not be overwritten";
-            }
 
-            // @todo do something for object properties because the validator will always expect a object instead off uri (string) or id
+            // @todo do something for object properties because the validator will currently always expect a object instead off uri (string) or id (because of json schema)
         }
 
         if (empty($errors) === false) {
@@ -851,6 +866,40 @@ class ObjectService
 		return $objectEntity;
 	}
 
+    /**
+     * Extracts and validates a UUID from a given string or URI.
+     *
+     * @param string $item The item to validate (UUID or URL containing a UUID).
+     * @param string $propertyName The property name for error messages.
+     * 
+     * @return string The validated UUID.
+     * 
+     * @throws CustomValidationException If the item is not a valid UUID.
+     */
+    private function getIdFromString(string $item, string $propertyName): string {
+        // Check if item is a valid UUID.
+        if (Uuid::isValid($item) === true) {
+            return $item;
+        }
+
+        // If item is a string but not a UUID, check if it is a URI.
+        $lastSlashPos = false;
+        if (filter_var($item, FILTER_VALIDATE_URL) !== false) {
+            $lastSlashPos = strrpos($item, '/');
+        }
+        
+        // Extract the ID from the URI and validate it as a UUID.
+        if ($lastSlashPos !== false) {
+            $id = substr($item, $lastSlashPos + 1);
+            if (Uuid::isValid($id)) {
+                return $id;
+            }
+        }
+
+        $error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
+        throw new CustomValidationException(message: self::VALIDATION_ERROR_MESSAGE, errors: [$error]);
+    }
+
 	/**
 	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
@@ -859,7 +908,7 @@ class ObjectService
 	 *
 	 * @param array $property The property schema details for the nested object.
 	 * @param string $propertyName The name of the property in the parent object.
-	 * @param array $item The nested subobject data to process.
+	 * @param array|string $item The nested subobject data to process.
 	 * @param ObjectEntity $objectEntity The parent object entity to associate the nested subobject with.
 	 * @param int $register The register associated with the schema.
 	 * @param int $schema The schema identifier for the subobject.
@@ -867,12 +916,13 @@ class ObjectService
 	 *
 	 * @return string The UUID of the nested subobject.
 	 * @throws ValidationException When schema or object validation fails.
+	 * @throws CustomValidationException If the object fails custom validation.
 	 * @throws GuzzleException
 	 */
 	private function addObject(
 		array $property,
 		string $propertyName,
-		array $item,
+		array|string $item,
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
@@ -880,6 +930,12 @@ class ObjectService
 		int $depth = 0,
 	): string|array
 	{
+        $itemIsID = false;
+        if (is_string($item) === true) {
+            $item = $this->getIdFromString($item, $propertyName);
+            $itemIsID = true;
+        }
+
 		$subSchema = $schema;
 		if (is_int($property['$ref']) === true) {
 			$subSchema = $property['$ref'];
@@ -890,12 +946,20 @@ class ObjectService
 		}
 
 		// Handle nested object in array
-		$nestedObject = $this->saveObject(
-			register: $register,
-			schema: (int) $subSchema,
-			object: $item,
-			depth: $depth-1
-		);
+		if ($itemIsID === true) {
+			$nestedObject = $this->getObject(
+				register: $this->registerMapper->find((int) $register),
+				schema: $this->schemaMapper->find((int) $subSchema),
+				uuid: $item
+			);
+		} else {
+			$nestedObject = $this->saveObject(
+				register: $register,
+				schema: (int) $subSchema,
+				object: $item,
+				depth: $depth-1
+			);
+		}
 
 		if ($index === null) {
 			// Store relation and replace with reference
@@ -919,19 +983,19 @@ class ObjectService
 	 *
 	 * @param array $property The schema definition for the object property.
 	 * @param string $propertyName The name of the object property.
-	 * @param array $item The data corresponding to the property in the parent object.
+	 * @param array|string $item The data corresponding to the property in the parent object.
 	 * @param ObjectEntity $objectEntity The object entity to link the processed data to.
 	 * @param int $register The register associated with the schema.
 	 * @param int $schema The schema identifier for the property.
 	 *
 	 * @return string The updated property data, typically a reference UUID.
-	 * @throws ValidationException When schema or object validation fails.
+	 * @throws ValidationException|CustomValidationException When schema or object validation fails.
 	 * @throws GuzzleException
 	 */
 	private function handleObjectProperty(
 		array $property,
 		string $propertyName,
-		array $item,
+		array|string $item,
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
@@ -1127,7 +1191,7 @@ class ObjectService
 	 * @param ObjectEntity $objectEntity The object entity being processed.
 	 *
 	 * @return array The updated object with processed properties.
-	 * @throws GuzzleException|ValidationException When schema validation or file handling fails.
+	 * @throws GuzzleException|ValidationException|CustomValidationException When schema validation or file handling fails.
 	 */
 	private function handleProperty(
 		array $property,

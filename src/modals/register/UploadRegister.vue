@@ -14,32 +14,36 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div v-if="!success" class="formContainer">
+		<div v-if="!success" class="formContainer modalSpacing">
 			<NcTextField :disabled="loading"
 				label="Url"
-				:value.sync="register.url" />
+				:value.sync="register.url"
+				style="margin-top: 12px;" />
 			<NcTextArea :disabled="loading"
 				label="Schema"
-				:value.sync="register.json" />
+				:value.sync="register.json"
+				resize="none" />
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success"
-				:disabled="loading"
-				type="primary"
-				@click="uploadRegister()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Upload :size="20" />
-				</template>
-				Upload
-			</NcButton>
+			<div class="buttonContainer">
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
+				<NcButton v-if="!success"
+					:disabled="loading"
+					type="primary"
+					@click="uploadRegister()">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<Upload :size="20" />
+					</template>
+					Upload
+				</NcButton>
+			</div>
 		</template>
 	</NcDialog>
 </template>
