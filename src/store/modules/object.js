@@ -86,12 +86,6 @@ export const useObjectStore = defineStore('object', {
 				description: 'Storage folder location',
 				enabled: false,
 			},
-			files: {
-				label: 'File',
-				key: 'files',
-				description: 'The files attached to the object',
-				enabled: false,
-			},
 			created: {
 				label: 'Created',
 				key: 'created',
@@ -174,32 +168,32 @@ export const useObjectStore = defineStore('object', {
 		},
 		setFileItem(fileItem) {
 			this.fileItem = fileItem
-			console.info('File item set to', fileItem) // Logging the file item
+			console.info('File item set to', fileItem)
 		},
 		setFiles(files) {
 			this.files = files
-			console.info('Files set to', files) // Logging the files
+			console.info('Files set to', files)
 		},
 		/**
 		 * Set pagination details
 		 *
-		 * @param {number} page
-		 * @param {number} [limit]
+		 * @param {number} page Default page is 1
+		 * @param {number} [limit] Default limit is 14
 		 * @return {void}
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit }) // Logging the pagination
+			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for object list
 		 *
-		 * @param {object} filters
+		 * @param {object} filters Filters to set
 		 * @return {void}
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters) // Logging the filters
+			console.info('Query filters set to', this.filters)
 		},
 		async refreshObjectList(options = {}) {
 			const registerStore = useRegisterStore()
@@ -226,8 +220,12 @@ export const useObjectStore = defineStore('object', {
 				}
 			})
 
-			if (options.limit || this.pagination.limit) params.push('_limit=' + (options.limit || this.pagination.limit))
-			if (options.page || this.pagination.page) params.push('_page=' + (options.page || this.pagination.page))
+			if (options.limit || this.pagination.limit) {
+				params.push('_limit=' + (options.limit || this.pagination.limit))
+			}
+			if (options.page || this.pagination.page) {
+				params.push('_page=' + (options.page || this.pagination.page))
+			}
 
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')
@@ -404,7 +402,7 @@ export const useObjectStore = defineStore('object', {
 		 * Get files for an object
 		 *
 		 * @param {number} id Object ID
-		 * @param options Pagination options
+		 * @param {object} options Pagination options
 		 * @return {Promise} Promise that resolves with the object's files
 		 */
 		async getFiles(id, options = {}) {
@@ -574,34 +572,36 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		updateColumnFilter(id, enabled) {
-			console.log('Updating column filter:', id, enabled)
-			console.log('Current columnFilters:', this.columnFilters)
+			console.info('Updating column filter:', id, enabled)
+			console.info('Current columnFilters:', this.columnFilters)
 
 			if (id.startsWith('meta_')) {
 				const metaId = id.replace('meta_', '')
 				if (this.metadata[metaId]) {
 					this.metadata[metaId].enabled = enabled
 					this.columnFilters[id] = enabled
-					console.log('Updated metadata filter:', metaId, enabled)
+					console.info('Updated metadata filter:', metaId, enabled)
 				}
 			} else if (id.startsWith('prop_')) {
 				const propId = id.replace('prop_', '')
 				if (this.properties[propId]) {
 					this.properties[propId].enabled = enabled
 					this.columnFilters[id] = enabled
-					console.log('Updated property filter:', propId, enabled)
+					console.info('Updated property filter:', propId, enabled)
 				}
 			}
 
-			console.log('Updated columnFilters:', this.columnFilters)
+			console.info('Updated columnFilters:', this.columnFilters)
 			// Force a refresh of the table
 			this.objectList = { ...this.objectList }
 		},
 		// Initialize properties based on schema
 		initializeProperties(schema) {
-			if (!schema?.properties) return
+			if (!schema?.properties) {
+				return
+			}
 
-			console.log('Initializing properties from schema:', schema.properties)
+			console.info('Initializing properties from schema:', schema.properties)
 
 			// Reset properties
 			this.properties = {}
@@ -621,7 +621,7 @@ export const useObjectStore = defineStore('object', {
 				}
 			})
 
-			console.log('Properties initialized:', this.properties)
+			console.info('Properties initialized:', this.properties)
 
 			// Reinitialize column filters to include new properties
 			this.initializeColumnFilters()
@@ -638,12 +638,14 @@ export const useObjectStore = defineStore('object', {
 					return acc
 				}, {}),
 			}
-			console.log('Initialized column filters:', this.columnFilters)
+			console.info('Initialized column filters:', this.columnFilters)
 		},
 	},
 	getters: {
 		isAllSelected() {
-			if (!this.objectList?.results?.length) return false
+			if (!this.objectList?.results?.length) {
+				return false
+			}
 			const currentIds = this.objectList.results.map(result => result['@self'].id)
 			return currentIds.every(id => this.selectedObjects.includes(id))
 		},

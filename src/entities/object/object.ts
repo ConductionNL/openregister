@@ -23,7 +23,7 @@ export class ObjectEntity implements TObject {
 		version: string | null
 		deleted: string[] | null
 		geo: string[] | null
-		retention: string[] | null		
+		retention: string[] | null
 	}
 
 	[key: string]: unknown
