@@ -843,12 +843,21 @@ class ObjectService
 				$currentPath = $path ? "$path.$key" : $key;
 
 				if (is_array($value) === true) {
-					// Recurse into nested arrays
-					$findRelations($value, $currentPath);
+                    if (isset($value['@self']['id']) === true) {
+						$relations[$currentPath] = $value['@self']['id'];
+                    }
+
+                    if (isset($value[0]['@self']['id']) === true) {
+                        foreach ($value as $key2 => $subObject) {
+                            if (isset($subObject['@self']['id']) === true) { 
+                                $relations["$currentPath.$key2"] = $subObject['@self']['id'];
+                            }
+                        }
+                    }
 				} else if (is_string($value) === true) {
 					// Check for URLs and UUIDs
 					if ((filter_var($value, FILTER_VALIDATE_URL) !== false
-							|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1)
+							|| Uuid::isValid($value) === true)
 						&& in_array($value, $selfIdentifiers, true) === false
 					) {
 						$relations[$currentPath] = $value;
