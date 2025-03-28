@@ -673,6 +673,10 @@ class ObjectService
 	 */
 	public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null): ObjectEntity
 	{
+        $dump = false;
+        if ($schema == 23) {
+            $dump = true;
+        }
 		// Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
@@ -777,7 +781,7 @@ class ObjectService
 		}
 
 		$objectEntity->setObject($object);
-        
+
 		// Handle object properties that are either nested objects or files
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
@@ -834,7 +838,7 @@ class ObjectService
         }
 
 		// Function to recursively find links/UUIDs and build dot notation paths
-		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers, $validRelationProperties) {
+        $findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers, $validRelationProperties) {
 			foreach ($data as $key => $value) {
                 if (in_array($key, $validRelationProperties) === false) {
                     continue;
@@ -907,6 +911,40 @@ class ObjectService
         throw new CustomValidationException(message: self::VALIDATION_ERROR_MESSAGE, errors: [$error]);
     }
 
+    /**
+     * Gets schema id from a reference in a property
+     * 
+     * @param array $property
+     * @param string $propertyName
+     * @param int $schema
+     * 
+     * @return string schemaId 
+     * 
+     * @throws Exception If no reference found
+     */
+    private function getSchemaFromPropertyReference(array $property, string $propertyName, int $schema): string
+    {
+        $reference = $property['$ref'] ?? $property['items']['$ref'] ?? null;
+        if ($reference === null) {
+            throw new Exception(sprintf('Could not find a $ref for schema $d property %s', $schema, $propertyName));
+        }
+
+		if (is_numeric($reference) === true) {
+			return $reference;
+		} 
+        
+        if (filter_var(value: $reference, filter: FILTER_VALIDATE_URL) !== false) {
+			$parsedUrl = parse_url($reference);
+			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
+			$pathEnd = end($explodedPath);
+            if (is_numeric($pathEnd) === true) {
+                return $pathEnd;
+            }
+		}
+
+        throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
+    }
+
 	/**
 	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
@@ -922,7 +960,7 @@ class ObjectService
 	 * @param int|null $index Optional index of the subobject if it resides in an array.
 	 *
 	 * @return string The UUID of the nested subobject.
-	 * @throws ValidationException|CustomValidationException When schema or object validation fails.
+	 * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
 	 * @throws GuzzleException
 	 */
 	private function addObject(
@@ -942,26 +980,7 @@ class ObjectService
             $itemIsID = true;
         }
 
-        $reference = $property['$ref'] ?? $property['items']['$ref'] ?? null;
-        if ($reference === null) {
-            throw new Exception(sprintf('Could not find a $ref for schema $d property %s', $schema, $propertyName));
-        }
-
-        $subSchema = null;
-		if (is_numeric($reference) === true) {
-			$subSchema = $reference;
-		} else if (filter_var(value: $reference, filter: FILTER_VALIDATE_URL) !== false) {
-			$parsedUrl = parse_url($reference);
-			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
-			$pathEnd = end($explodedPath);
-            if (is_numeric($pathEnd) === true) {
-                $subSchema = $pathEnd;
-            }
-		}
-
-        if ($subSchema === null) {
-            throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
-        }
+        $subSchema = $this->getSchemaFromPropertyReference(property: $property, propertyName: $propertyName, schema: $schema);
 
 		// Handle nested object in array
 		if ($itemIsID === true) {
