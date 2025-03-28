@@ -942,14 +942,18 @@ class ObjectService
             $itemIsID = true;
         }
 
-		$subSchema = $schema;
-		if (is_int($property['$ref']) === true) {
+        $subSchema = null;
+		if (isset($property['$ref']) === true && is_numeric($property['$ref']) === true) {
 			$subSchema = $property['$ref'];
-		} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
+		} else if (isset($property['$ref']) === true && filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
 			$parsedUrl = parse_url($property['$ref']);
 			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
 			$subSchema = end($explodedPath);
 		}
+
+        if ($subSchema === null) {
+            throw new Exception(sprintf('Could not get $ref for schema %d property %s', $schema, $propertyName));
+        }
 
 		// Handle nested object in array
 		if ($itemIsID === true) {
