@@ -777,14 +777,14 @@ class ObjectService
 		}
 
 		$objectEntity->setObject($object);
-
-		// Let grap any links that we can
-		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
-
+        
 		// Handle object properties that are either nested objects or files
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
+
+		// Let grap any links that we can
+		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
 		$this->setDefaults($objectEntity);
 
