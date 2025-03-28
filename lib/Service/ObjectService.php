@@ -243,7 +243,7 @@ class ObjectService
 
         // Extend object with properties if requested
         if (empty($extend) === false) {
-            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
+            $objectEntity = $this->renderEntity(entity: $objectEntity, extend: $extend);
         }
 
         return $objectEntity;
@@ -308,7 +308,7 @@ class ObjectService
 
         // Extend object with properties if requested
         if (empty($extend) === false) {
-            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
+            $objectEntity = $this->renderEntity(entity: $objectEntity, extend: $extend);
         }
 
         return $objectEntity;
@@ -375,7 +375,7 @@ class ObjectService
             $objects = array_map(function($object) use ($extend) {
                 // Convert object to array if needed
                 $objectArray = is_array($object) ? $object : $object->jsonSerialize();
-                return $this->extendEntity(entity: $objectArray, extend: $extend);
+                return $this->renderEntity(entity: $objectArray, extend: $extend);
             }, $objects);
         }
 
@@ -2213,6 +2213,8 @@ class ObjectService
 
 	/**
 	 * Extends an entity with related objects based on the extend array.
+     * 
+     * @deprecated Use renderEntity
 	 *
 	 * @param mixed $entity The entity to extend
 	 * @param array $extend Properties to extend with related data
@@ -2274,7 +2276,7 @@ class ObjectService
 							try {
 								$found = $this->objectEntityMapper->find($val);
 								if ($found) {
-									$extendedFound = $this->extendEntity($found->jsonSerialize(), $extend, $depth + 1);
+									$extendedFound = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1);
 									$extendedValues[] = $extendedFound;
 								}
 							} catch (Exception $e) {
@@ -2289,7 +2291,7 @@ class ObjectService
 						$found = $this->objectEntityMapper->find($value);
 						if ($found) {
 							// Serialize and recursively extend the found object (apply depth tracking here)
-							$result[$property] = $this->extendEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1
+							$result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1
 						}
 					}
 				} catch (Exception $e2) {
