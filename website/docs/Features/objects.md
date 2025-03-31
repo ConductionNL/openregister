@@ -406,6 +406,10 @@ The audit trail system automatically records:
 - The reason for changes (when provided)
 - Processing activities
 
+Audit trails can be acces from the object view (itself part of the table view) select the register / schema / object that you want to audit and go to the audit trails tab in the view monolog
+
+@todo needs immages
+
 ## Read Action Logging
 
 The system only logs read actions when accessing individual objects (e.g., GET /api/objects/123). Collection reads and search operations (e.g., GET /api/objects?name=test) are intentionally not logged for several important reasons:
