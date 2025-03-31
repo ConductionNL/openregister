@@ -673,15 +673,11 @@ class ObjectService
 	 */
 	public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null): ObjectEntity
 	{
-        $dump = false;
-        if ($schema == 23) {
-            $dump = true;
-        }
 		// Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
-		
+
 
         // Convert register to its respective object if it is a string or int
         if (!$register instanceof Register) {
@@ -700,7 +696,7 @@ class ObjectService
         }
 
         if ($depth === null) {
-			$depth = $schema->getMaxDepth();;
+			$depth = $schema->getMaxDepth();
 		}
 
 		if (isset($object['id']) === true) {
@@ -2188,6 +2184,9 @@ class ObjectService
 		 */
 		// Check if there are properties specified in the 'extend' array
 		if (!empty($extend)) {
+			if ($extend === ['all']) {
+				$extend = array_keys($dotEntity->all());
+			}
 			$errors = []; // Initialize an array to store any errors encountered during the process
 
 			// Iterate over each property in the 'extend' array
