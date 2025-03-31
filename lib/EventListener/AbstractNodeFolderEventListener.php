@@ -1,5 +1,6 @@
 <?php
 
+
 namespace OCA\OpenRegister\EventListener;
 
 use InvalidArgumentException;
@@ -16,47 +17,47 @@ use OCP\Files\FileInfo;
 class AbstractNodeFolderEventListener implements IEventListener
 {
 
-	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly FileService $fileService,
-	) {}
 
-	/**
-	 * @inheritDoc
-	 */
-	public function handle(Event $event): void
-	{
-		if ($event instanceof AbstractNodeEvent === false) {
-			return;
-		}
+    public function __construct(
+        private readonly ObjectService $objectService,
+        private readonly FileService $fileService,
+    ) {
 
-		$node = $event->getNode();
-		if ($node->getType() !== FileInfo::TYPE_FOLDER) {
-			return;
-		}
+    }//end __construct()
 
-		match (true) {
-			$event instanceof NodeCreatedEvent => $this->handleNodeCreated(event: $event),
-			$event instanceof NodeDeletedEvent => $this->handleNodeDeleted(event: $event),
-			$event instanceof NodeTouchedEvent => $this->handleNodeTouched(event: $event),
-			$event instanceof NodeWrittenEvent => $this->handleNodeWritten(event: $event),
-			default => throw new InvalidArgumentException(message: 'Unsupported event type: ' . get_class($event)),
-		};
-	}
 
-	private function handleNodeCreated(NodeCreatedEvent $event): void {
-//		$this->objectService->nodeCreatedEventFunction(event: $event);
-	}
+    /**
+     * @inheritDoc
+     */
+    public function handle(Event $event): void
+    {
+        if ($event instanceof AbstractNodeEvent === false) {
+            return;
+        }
 
-	private function handleNodeDeleted(NodeDeletedEvent $event): void {
-//		$this->objectService->nodeDeletedEventFunction();
-	}
+        $node = $event->getNode();
+        if ($node->getType() !== FileInfo::TYPE_FOLDER) {
+            return;
+        }
 
-	private function handleNodeTouched(NodeTouchedEvent $event): void {
-//		$this->objectService->nodeTouchedEventFunction();
-	}
+        match (true) {
+            $event instanceof NodeCreatedEvent => $this->handleNodeCreated(event: $event),
+            $event instanceof NodeDeletedEvent => $this->handleNodeDeleted(event: $event),
+            $event instanceof NodeTouchedEvent => $this->handleNodeTouched(event: $event),
+            $event instanceof NodeWrittenEvent => $this->handleNodeWritten(event: $event),
+        default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
+        };
 
-	private function handleNodeWritten(NodeWrittenEvent $event): void {
-//		$this->objectService->nodeWrittenEventFunction();
-	}
-}
+    }//end handle()
+
+
+    private function handleNodeCreated(NodeCreatedEvent $event): void
+    {
+        // $this->objectService->nodeCreatedEventFunction(event: $event);    }//end handleNodeCreated()    private function handleNodeDeleted(NodeDeletedEvent $event): void
+    {
+        // $this->objectService->nodeDeletedEventFunction();    }//end handleNodeDeleted()    private function handleNodeTouched(NodeTouchedEvent $event): void
+    {
+        // $this->objectService->nodeTouchedEventFunction();    }//end handleNodeTouched()    private function handleNodeWritten(NodeWrittenEvent $event): void
+    {
+        // $this->objectService->nodeWrittenEventFunction();    }//end handleNodeWritten()
+    }//end handleNodeWritten()

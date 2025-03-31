@@ -20,227 +20,250 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
  */
 class SchemaMapper extends QBMapper
 {
-	private $eventDispatcher;
 
-	/**
-	 * Constructor for the SchemaMapper
-	 *
-	 * @param IDBConnection $db The database connection
-	 * @param IEventDispatcher $eventDispatcher The event dispatcher
-	 */
-	public function __construct(
-		IDBConnection $db,
-		IEventDispatcher $eventDispatcher
-	) {
-		parent::__construct($db, 'openregister_schemas');
-		$this->eventDispatcher = $eventDispatcher;
-	}
-
-	/**
-	 * Finds a schema by id
-	 *
-	 * @param int $id The id of the schema
-	 * @return Schema The schema
-	 */
-	public function find(string|int $id): Schema
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_schemas')
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-					$qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
-				)
-			);
-
-		return $this->findEntity(query: $qb);
-	}
-
-	/**
-	 * Finds multiple schemas by id
-	 *
-	 * @param array $ids The ids of the schemas
-	 * @return array The schemas
-	 */
-	public function findMultiple(array $ids): array
-	{
-		$result = [];
-		foreach ($ids as $id) {
-			$result[] = $this->find($id);
-		}
-
-		return $result;
-	}
+    private $eventDispatcher;
 
 
-	/**
-	 * Finds all schemas
-	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
-	 * @param array|null $filters The filters to apply
-	 * @param array|null $searchConditions The search conditions to apply
-	 * @param array|null $searchParams The search parameters to apply
-	 * @return array The schemas
-	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Constructor for the SchemaMapper
+     *
+     * @param IDBConnection    $db              The database connection
+     * @param IEventDispatcher $eventDispatcher The event dispatcher
+     */
+    public function __construct(
+        IDBConnection $db,
+        IEventDispatcher $eventDispatcher
+    ) {
+        parent::__construct($db, 'openregister_schemas');
+        $this->eventDispatcher = $eventDispatcher;
 
-		$qb->select('*')
-			->from('openregister_schemas')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+    }//end __construct()
+
+
+    /**
+     * Finds a schema by id
+     *
+     * @param  int $id The id of the schema
+     * @return Schema The schema
+     */
+    public function find(string | int $id): Schema
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
+                )
+            );
+
+        return $this->findEntity(query: $qb);
+
+    }//end find()
+
+
+    /**
+     * Finds multiple schemas by id
+     *
+     * @param  array $ids The ids of the schemas
+     * @return array The schemas
+     */
+    public function findMultiple(array $ids): array
+    {
+        $result = [];
+        foreach ($ids as $id) {
+            $result[] = $this->find($id);
+        }
+
+        return $result;
+
+    }//end findMultiple()
+
+
+    /**
+     * Finds all schemas
+     *
+     * @param  int|null   $limit            The limit of the results
+     * @param  int|null   $offset           The offset of the results
+     * @param  array|null $filters          The filters to apply
+     * @param  array|null $searchConditions The search conditions to apply
+     * @param  array|null $searchParams     The search parameters to apply
+     * @return array The schemas
+     */
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
         foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-			}
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } else if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else {
+                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+            }
         }
 
         if (!empty($searchConditions)) {
-            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
-		return $this->findEntities(query: $qb);
-	}
+        return $this->findEntities(query: $qb);
 
-	/**
-	 * @inheritdoc
-	 */
-	public function insert(Entity $entity): Entity
-	{
-		$entity = parent::insert($entity);
+    }//end findAll()
 
-		// Dispatch creation event
-		$this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
 
-		return $entity;
-	}
+    /**
+     * @inheritdoc
+     */
+    public function insert(Entity $entity): Entity
+    {
+        $entity = parent::insert($entity);
 
-	/**
-	 * Ensures that a schema object has a UUID and a slug.
-	 *
-	 * @param Schema $schema The schema object to clean
-	 * @return void
-	 */
-	private function cleanObject(Schema $schema): void
-	{
-		// Check if UUID is set, if not, generate a new one
-		if ($schema->getUuid() === null) {
-			$schema->setUuid(Uuid::v4());
-		}
+        // Dispatch creation event
+        $this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
 
-		// Ensure the object has a slug
-		if (empty($schema->getSlug()) === true) {
-			// Convert to lowercase and replace spaces with dashes
-			$slug = strtolower(trim($schema->getTitle())); // Assuming title is used for slug
-			// Remove special characters
-			$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-			// Remove multiple dashes
-			$slug = preg_replace('/-+/', '-', $slug);
-			// Remove leading/trailing dashes
-			$slug = trim($slug, '-');
+        return $entity;
 
-			$schema->setSlug($slug);
-		}
+    }//end insert()
 
-		// Ensure the object has a version
-		if ($schema->getVersion() === null) {
-			$schema->setVersion('1.0.0');
-		} else {
-			// Split the version into major, minor, and patch
-			$versionParts = explode('.', $schema->getVersion());
-			// Increment the patch version
-			$versionParts[2] = (int)$versionParts[2] + 1;
-			// Reassemble the version string
-			$newVersion = implode('.', $versionParts);
-			$schema->setVersion($newVersion);
-		}
-	}
 
-	/**
-	 * Creates a schema from an array
-	 *
-	 * @param array $object The object to create
-	 * @return Schema The created schema
-	 */
-	public function createFromArray(array $object): Schema
-	{
-		$schema = new Schema();
-		$schema->hydrate(object: $object);
+    /**
+     * Ensures that a schema object has a UUID and a slug.
+     *
+     * @param  Schema $schema The schema object to clean
+     * @return void
+     */
+    private function cleanObject(Schema $schema): void
+    {
+        // Check if UUID is set, if not, generate a new one
+        if ($schema->getUuid() === null) {
+            $schema->setUuid(Uuid::v4());
+        }
 
-		// Clean the schema object to ensure UUID, slug, and version are set
-		$this->cleanObject($schema);
+        // Ensure the object has a slug
+        if (empty($schema->getSlug()) === true) {
+            // Convert to lowercase and replace spaces with dashes
+            $slug = strtolower(trim($schema->getTitle()));
+            // Assuming title is used for slug
+            // Remove special characters
+            $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+            // Remove multiple dashes
+            $slug = preg_replace('/-+/', '-', $slug);
+            // Remove leading/trailing dashes
+            $slug = trim($slug, '-');
 
-		$schema = $this->insert(entity: $schema);
+            $schema->setSlug($slug);
+        }
 
-		return $schema;
-	}
+        // Ensure the object has a version
+        if ($schema->getVersion() === null) {
+            $schema->setVersion('1.0.0');
+        } else {
+            // Split the version into major, minor, and patch
+            $versionParts = explode('.', $schema->getVersion());
+            // Increment the patch version
+            $versionParts[2] = ((int) $versionParts[2] + 1);
+            // Reassemble the version string
+            $newVersion = implode('.', $versionParts);
+            $schema->setVersion($newVersion);
+        }
 
-	/**
-	 * @inheritdoc
-	 */
-	public function update(Entity $entity): Entity
-	{
-		$oldSchema = $this->find($entity->getId());
+    }//end cleanObject()
 
-		// Clean the schema object to ensure UUID, slug, and version are set
-		$this->cleanObject($entity);
 
-		$entity = parent::update($entity);
+    /**
+     * Creates a schema from an array
+     *
+     * @param  array $object The object to create
+     * @return Schema The created schema
+     */
+    public function createFromArray(array $object): Schema
+    {
+        $schema = new Schema();
+        $schema->hydrate(object: $object);
 
-		// Dispatch update event
-		$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent($entity, $oldSchema));
+        // Clean the schema object to ensure UUID, slug, and version are set
+        $this->cleanObject($schema);
 
-		return $entity;
-	}
+        $schema = $this->insert(entity: $schema);
 
-	/**
-	 * Updates a schema from an array
-	 *
-	 * @param int $id The id of the schema to update
-	 * @param array $object The object to update
-	 * @return Schema The updated schema
-	 */
-	public function updateFromArray(int $id, array $object): Schema
-	{
-		$newSchema = $this->find($id);
-		$newSchema->hydrate($object);
+        return $schema;
 
-		// Clean the schema object to ensure UUID, slug, and version are set
-		$this->cleanObject($newSchema);
+    }//end createFromArray()
 
-		$newSchema = $this->update($newSchema);
 
-		return $newSchema;
-	}
+    /**
+     * @inheritdoc
+     */
+    public function update(Entity $entity): Entity
+    {
+        $oldSchema = $this->find($entity->getId());
 
-	/**
-	 * Delete a schema
-	 *
-	 * @param Schema $schema The schema to delete
-	 * @return Schema The deleted schema
-	 */
-	public function delete(Entity $schema): Schema
-	{
-		$result = parent::delete($schema);
+        // Clean the schema object to ensure UUID, slug, and version are set
+        $this->cleanObject($entity);
 
-		// Dispatch deletion event
-		$this->eventDispatcher->dispatchTyped(
-			new SchemaDeletedEvent($schema)
-		);
+        $entity = parent::update($entity);
 
-		return $result;
-	}
-}
+        // Dispatch update event
+        $this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent($entity, $oldSchema));
+
+        return $entity;
+
+    }//end update()
+
+
+    /**
+     * Updates a schema from an array
+     *
+     * @param  int   $id     The id of the schema to update
+     * @param  array $object The object to update
+     * @return Schema The updated schema
+     */
+    public function updateFromArray(int $id, array $object): Schema
+    {
+        $newSchema = $this->find($id);
+        $newSchema->hydrate($object);
+
+        // Clean the schema object to ensure UUID, slug, and version are set
+        $this->cleanObject($newSchema);
+
+        $newSchema = $this->update($newSchema);
+
+        return $newSchema;
+
+    }//end updateFromArray()
+
+
+    /**
+     * Delete a schema
+     *
+     * @param  Schema $schema The schema to delete
+     * @return Schema The deleted schema
+     */
+    public function delete(Entity $schema): Schema
+    {
+        $result = parent::delete($schema);
+
+        // Dispatch deletion event
+        $this->eventDispatcher->dispatchTyped(
+            new SchemaDeletedEvent($schema)
+        );
+
+        return $result;
+
+    }//end delete()
+
+
+}//end class

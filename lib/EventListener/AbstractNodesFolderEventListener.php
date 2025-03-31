@@ -1,5 +1,6 @@
 <?php
 
+
 namespace OCA\OpenRegister\EventListener;
 
 use InvalidArgumentException;
@@ -15,37 +16,41 @@ use OCP\Files\FileInfo;
 class AbstractNodesFolderEventListener implements IEventListener
 {
 
-	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly FileService $fileService,
-	) {}
 
-	/**
+    public function __construct(
+        private readonly ObjectService $objectService,
+        private readonly FileService $fileService,
+    ) {
+
+    }//end __construct()
+
+
+    /**
      * @inheritDoc
      */
     public function handle(Event $event): void
     {
         if ($event instanceof AbstractNodesEvent === false) {
-			return;
-		}
+            return;
+        }
 
-		$sourceNode = $event->getSource();
-		if ($sourceNode->getType() === FileInfo::TYPE_FOLDER) {
-			return;
-		}
+        $sourceNode = $event->getSource();
+        if ($sourceNode->getType() === FileInfo::TYPE_FOLDER) {
+            return;
+        }
 
-		match (true) {
-			$event instanceof NodeCopiedEvent => $this->handleNodeCopied(event: $event),
-			$event instanceof NodeRenamedEvent => $this->handleNodeRenamed(event: $event),
-			default => throw new InvalidArgumentException(message: 'Unsupported event type: ' . get_class($event)),
-		};
-    }
+        match (true) {
+            $event instanceof NodeCopiedEvent => $this->handleNodeCopied(event: $event),
+            $event instanceof NodeRenamedEvent => $this->handleNodeRenamed(event: $event),
+        default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
+        };
 
-	private function handleNodeCopied(NodeCopiedEvent $event): void {
-//		$this->objectService->nodeCopiedEventFunction();
-	}
+    }//end handle()
 
-	private function handleNodeRenamed(NodeRenamedEvent $event): void {
-//		$this->objectService->nodeRenamedEventFunction();
-	}
-}
+
+    private function handleNodeCopied(NodeCopiedEvent $event): void
+    {
+        // $this->objectService->nodeCopiedEventFunction();    }//end handleNodeCopied()    private function handleNodeRenamed(NodeRenamedEvent $event): void
+    {
+        // $this->objectService->nodeRenamedEventFunction();    }//end handleNodeRenamed()
+    }//end handleNodeRenamed()

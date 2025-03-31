@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenConnector Consumers Controller
+ *
+ * This file contains the controller for handling consumer related operations
+ * in the OpenRegister application.
+ *
+ * @category  Controller
+ * @package   OCA\OpenRegister\AppInfo
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Controller;
 
@@ -8,13 +22,19 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 
+/**
+ * Class DashboardController
+ */
 class DashboardController extends Controller
 {
+
 
     public function __construct($appName, IRequest $request)
     {
         parent::__construct($appName, $request);
-    }
+
+    }//end __construct()
+
 
     /**
      * @NoAdminRequired
@@ -23,12 +43,12 @@ class DashboardController extends Controller
     public function page(?string $getParameter)
     {
         try {
-            $response =new TemplateResponse(
+            $response = new TemplateResponse(
                 $this->appName,
                 'index',
                 []
             );
-            
+
             $csp = new ContentSecurityPolicy();
             $csp->addAllowedConnectDomain('*');
             $response->setContentSecurityPolicy($csp);
@@ -42,7 +62,9 @@ class DashboardController extends Controller
                 '500'
             );
         }
-    }
+
+    }//end page()
+
 
     /**
      * @NoAdminRequired
@@ -56,5 +78,8 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
-}
+
+    }//end index()
+
+
+}//end class

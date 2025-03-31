@@ -15,177 +15,197 @@ use Symfony\Component\Uid\Uuid;
 
 class FileMapper extends QBMapper
 {
-	/**
-	 * Constructor for FileMapper.
-	 *
-	 * @param IDBConnection $db Database connection instance.
-	 */
-	public function __construct(IDBConnection $db)
-	{
-		parent::__construct($db, 'openregister_files');
-	}
 
-	/**
-	 * Finds a File entity by its ID.
-	 *
-	 * @param int $id The ID of the file to find.
-	 *
-	 * @return \OCA\OpenRegister\Db\File The found file entity.
-	 * @throws Exception If a database error occurs.
-	 * @throws DoesNotExistException If no file is found with the given ID.
-	 * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
-	 */
-	public function find(int $id): File
-	{
-		$qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openregister_files')
-			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-			);
+    /**
+     * Constructor for FileMapper.
+     *
+     * @param IDBConnection $db Database connection instance.
+     */
+    public function __construct(IDBConnection $db)
+    {
+        parent::__construct($db, 'openregister_files');
 
-		return $this->findEntity(query: $qb);
-	}
+    }//end __construct()
 
-	/**
-	 * Retrieves all File entities with optional filtering, search, and pagination.
-	 *
-	 * @param int|null $limit Maximum number of results to return.
-	 * @param int|null $offset Number of results to skip.
-	 * @param array|null $filters Key-value pairs to filter results.
-	 * @param array|null $searchConditions Search conditions for query.
-	 * @param array|null $searchParams Parameters for search conditions.
-	 *
-	 * @return array List of File entities.
-	 * @throws Exception If a database error occurs.
-	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
-	{
-		$qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openregister_files')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+    /**
+     * Finds a File entity by its ID.
+     *
+     * @param int $id The ID of the file to find.
+     *
+     * @return \OCA\OpenRegister\Db\File The found file entity.
+     * @throws Exception If a database error occurs.
+     * @throws DoesNotExistException If no file is found with the given ID.
+     * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
+     */
+    public function find(int $id): File
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		foreach ($filters as $filter => $value) {
-			$filter = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $filter));
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-			}
-		}
+        $qb->select('*')
+            ->from('openregister_files')
+            ->where(
+                $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+            );
 
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+        return $this->findEntity(query: $qb);
 
-		return $this->findEntities(query: $qb);
-	}
+    }//end find()
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param \OCA\OpenRegister\Db\File|Entity $entity
-	 * @return \OCA\OpenRegister\Db\File
-	 * @throws \OCP\DB\Exception
-	 */
-	public function insert(File|Entity $entity): File
-	{
-		// Set created and updated fields
-		$entity->setCreated(new DateTime());
-		$entity->setUpdated(new DateTime());
 
-		if ($entity->getUuid() === null) {
-			$entity->setUuid(Uuid::v4());
-		}
+    /**
+     * Retrieves all File entities with optional filtering, search, and pagination.
+     *
+     * @param int|null   $limit            Maximum number of results to return.
+     * @param int|null   $offset           Number of results to skip.
+     * @param array|null $filters          Key-value pairs to filter results.
+     * @param array|null $searchConditions Search conditions for query.
+     * @param array|null $searchParams     Parameters for search conditions.
+     *
+     * @return array List of File entities.
+     * @throws Exception If a database error occurs.
+     */
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		return parent::insert($entity);
-	}
+        $qb->select('*')
+            ->from('openregister_files')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
-	/**
-	 * @inheritDoc
-	 *
-	 * @param \OCA\OpenRegister\Db\File|Entity $entity
-	 * @return \OCA\OpenRegister\Db\File
-	 * @throws \OCP\DB\Exception
-	 */
-	public function update(File|Entity $entity): File
-	{
-		// Set updated field
-		$entity->setUpdated(new DateTime());
+        foreach ($filters as $filter => $value) {
+            $filter = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $filter));
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } else if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else {
+                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+            }
+        }
 
-		return parent::update($entity);
-	}
+        if (empty($searchConditions) === false) {
+            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
+            foreach ($searchParams as $param => $value) {
+                $qb->setParameter($param, $value);
+            }
+        }
 
-	/**
-	 * Creates a File entity from an array of data.
-	 *
-	 * @param array $object The data to create the entity from.
-	 *
-	 * @return \OCA\OpenRegister\Db\File The created File entity.
-	 * @throws Exception If a database error occurs.
-	 */
-	public function createFromArray(array $object): File
-	{
-		$obj = new File();
-		$obj->hydrate($object);
-		// Set UUID
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
-		return $this->insert(entity: $obj);
-	}
+        return $this->findEntities(query: $qb);
 
-	/**
-	 * Updates a File entity by its ID using an array of data.
-	 *
-	 * @param int $id The ID of the file to update.
-	 * @param array $object The data to update the entity with.
-	 *
-	 * @return \OCA\OpenRegister\Db\File The updated File entity.
-	 * @throws DoesNotExistException If no file is found with the given ID.
-	 * @throws Exception If a database error occurs.
-	 * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
-	 */
-	public function updateFromArray(int $id, array $object): File
-	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
+    }//end findAll()
 
-		// Set or update the version
-		$version = explode('.', $obj->getVersion());
-		$version[2] = (int)$version[2] + 1;
-		$obj->setVersion(implode('.', $version));
 
-		return $this->update($obj);
-	}
+    /**
+     * @inheritDoc
+     *
+     * @param  \OCA\OpenRegister\Db\File|Entity $entity
+     * @return \OCA\OpenRegister\Db\File
+     * @throws \OCP\DB\Exception
+     */
+    public function insert(File | Entity $entity): File
+    {
+        // Set created and updated fields
+        $entity->setCreated(new DateTime());
+        $entity->setUpdated(new DateTime());
 
-	/**
-	 * Gets the total count of files.
-	 *
-	 * @return int The total number of files in the database.
-	 * @throws Exception If a database error occurs.
-	 */
-	public function countAll(): int
-	{
-		$qb = $this->db->getQueryBuilder();
+        if ($entity->getUuid() === null) {
+            $entity->setUuid(Uuid::v4());
+        }
 
-		// Select count of all files
-		$qb->select($qb->createFunction('COUNT(*) as count'))
-			->from('openregister_files');
+        return parent::insert($entity);
 
-		$result = $qb->execute();
-		$row = $result->fetch();
+    }//end insert()
 
-		// Return the total count
-		return (int)$row['count'];
-	}
-}
+
+    /**
+     * @inheritDoc
+     *
+     * @param  \OCA\OpenRegister\Db\File|Entity $entity
+     * @return \OCA\OpenRegister\Db\File
+     * @throws \OCP\DB\Exception
+     */
+    public function update(File | Entity $entity): File
+    {
+        // Set updated field
+        $entity->setUpdated(new DateTime());
+
+        return parent::update($entity);
+
+    }//end update()
+
+
+    /**
+     * Creates a File entity from an array of data.
+     *
+     * @param array $object The data to create the entity from.
+     *
+     * @return \OCA\OpenRegister\Db\File The created File entity.
+     * @throws Exception If a database error occurs.
+     */
+    public function createFromArray(array $object): File
+    {
+        $obj = new File();
+        $obj->hydrate($object);
+        // Set UUID
+        if ($obj->getUuid() === null) {
+            $obj->setUuid(Uuid::v4());
+        }
+
+        return $this->insert(entity: $obj);
+
+    }//end createFromArray()
+
+
+    /**
+     * Updates a File entity by its ID using an array of data.
+     *
+     * @param int   $id     The ID of the file to update.
+     * @param array $object The data to update the entity with.
+     *
+     * @return \OCA\OpenRegister\Db\File The updated File entity.
+     * @throws DoesNotExistException If no file is found with the given ID.
+     * @throws Exception If a database error occurs.
+     * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
+     */
+    public function updateFromArray(int $id, array $object): File
+    {
+        $obj = $this->find($id);
+        $obj->hydrate($object);
+
+        // Set or update the version
+        $version    = explode('.', $obj->getVersion());
+        $version[2] = ((int) $version[2] + 1);
+        $obj->setVersion(implode('.', $version));
+
+        return $this->update($obj);
+
+    }//end updateFromArray()
+
+
+    /**
+     * Gets the total count of files.
+     *
+     * @return int The total number of files in the database.
+     * @throws Exception If a database error occurs.
+     */
+    public function countAll(): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        // Select count of all files
+        $qb->select($qb->createFunction('COUNT(*) as count'))
+            ->from('openregister_files');
+
+        $result = $qb->execute();
+        $row    = $result->fetch();
+
+        // Return the total count
+        return (int) $row['count'];
+
+    }//end countAll()
+
+
+}//end class
