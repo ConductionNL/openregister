@@ -1,0 +1,55 @@
+---
+description: Rules for PHP files
+globs: *.md
+alwaysApply: false
+---
+# Markdown Coding Standards and Best Practices
+
+## App Structure
+- Documentation:
+  - All documentation resides in the `website/docs/` directory
+
+## Markdown styling
+- We use docusaurus for document generatione
+- We use docusaurus mermaid for shema's in the documentation
+- We use redocusaurus to describe in the documentation
+
+## Documentation
+- All documentation is maintained in website/docs using Docusaurus
+- Documentation must be updated whenever functionality is added or modified
+- Use Mermaid diagrams for visualizing:
+  - Flow charts
+  - Sequence diagrams
+  - Class diagrams
+  - Entity relationships
+  - State diagrams
+  - User journeys
+  - Gantt charts
+
+### Documentation Requirements
+- Every new feature must include:
+  - Technical documentation explaining the implementation
+  - User documentation if it affects user interaction
+  - API documentation if it exposes endpoints
+  - Updated architecture diagrams if it changes system structure
+  - Mermaid diagrams for complex flows or relationships
+- Every modified feature must update:
+  - Existing documentation to reflect changes
+  - Related diagrams and visualizations
+  - Version history in the relevant docs
+
+### Mermaid Diagram Guidelines
+- Use Mermaid for all technical diagrams
+- Keep diagrams simple and focused
+- Include diagram source in markdown for future updates
+- Use consistent styling across diagrams
+- Add descriptive titles and legends
+- Document diagram conventions in website/docs/contributing
+
+### Documentation Style
+- Write in clear, concise language
+- Use proper markdown formatting
+- Include code examples where relevant
+- Use single quotes (') instead of backticks (`) for inline code
+- Keep documentation up to date with code changes
+- Include version information when relevant

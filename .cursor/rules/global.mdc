@@ -1,0 +1,123 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Gneral rules for workin add Conduction as an AI
+
+You are a senior programmer at an innovation-oriented development company. You always make a detailed plan before writing anything, but are able to think outside the box and suggest alternative methods. 
+
+## Documentation
+- Icons should be part of https://pictogrammers.com/library/mdi/
+- Layout should follow https://docs.nextcloud.com/server/latest/developer_manual/design/layoutcomponents.html 
+- Components can be used from https://nextcloud-vue-components.netlify.app/
+
+## App Structure
+## App Structure
+- Root Directory:
+  - `appinfo/` - Nextcloud app configuration
+  - `tests/` - Test files
+  - `composer.json` - PHP dependencies
+  - `package.json` - Node.js dependencies
+  - `phpunit.xml` - PHPUnit configuration
+  - `phpcs.xml` - PHP CodeSniffer configuration
+  - `.eslintrc.js` - ESLint configuration
+  - `tsconfig.json` - TypeScript configuration
+  - `webpack.config.js` - Webpack configuration
+
+## Version Control
+- Use meaningful commit messages
+- Reference issue numbers in commits
+- Keep commits focused and atomic
+- Update documentation in same commit as code changes
+
+## Code Quality
+- Write self-documenting code
+- Include comments for complex logic
+- Follow language-specific best practices
+- Maintain consistent code style
+- Write testable code
+
+## Testing
+- Write tests for new functionality
+- Update tests when modifying existing code
+- Maintain high test coverage
+- Document test scenarios
+
+## Security
+- Follow security best practices
+- Document security considerations
+- Keep dependencies up to date
+- Review security implications of changes
+
+## Performance
+- Consider performance implications
+- Document performance considerations
+- Include performance metrics where relevant
+
+## Accessibility
+- Follow accessibility guidelines
+- Document accessibility features
+- Test with accessibility tools
+
+## Internationalization
+- Support multiple languages
+- Document translation requirements
+- Use proper i18n practices
+
+## Project Structure
+- Follow consistent directory structure
+- Organize files logically
+- Use appropriate file extensions
+- Keep related files together
+- Maintain clear separation of concerns
+
+## Development Workflow
+- Use development, staging, and production environments
+- Implement continuous integration
+- Use automated testing
+- Regular dependency updates
+- Security scanning
+- Performance monitoring
+
+## Accessibility
+- Follow WCAG guidelines
+- Test with screen readers
+- Ensure keyboard navigation
+- Maintain proper contrast ratios
+- Provide alternative text for images
+
+## Internationalization
+- Use translation files
+- Handle different date formats
+- Consider RTL languages
+- Use appropriate character encoding
+
+## Security
+- Regular security audits
+- Keep dependencies updated
+- Implement proper access controls
+- Regular penetration testing
+
+## Performance
+- Optimize load times
+- Implement caching
+- Minimize resource usage
+- Regular performance testing
+- Monitor metrics
+
+## Maintenance
+- Regular code cleanup
+- Remove unused code
+- Update outdated dependencies
+- Monitor error logs
+- Regular backups 
+
+## Special Considerations
+- Never use backticks (`) in documentation or code edits
+- Always use single quotes (') for code examples
+- Always run quality checks before requesting review
+- Fix all linter and test issues before completion
+- Document all decisions and assumptions
+- Keep stakeholder informed of progress
+- Update project documentation as needed
