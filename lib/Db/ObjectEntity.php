@@ -23,7 +23,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?array $object = [];
 	protected ?array $files = []; // array of file ids that are related to this object
 	protected ?array $relations = []; // array of object ids that this object is related to
-	protected ?string $textRepresentation = null;
+	protected ?string $textRepresentation = null; //@todo should be depracticed an removed
 	protected ?array $locked = null; // Contains the locked object if the object is locked
 	protected ?string $owner = null; // The Nextcloud user that owns this object
 	protected ?array $authorization = []; // JSON object describing authorizations
