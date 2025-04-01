@@ -512,6 +512,9 @@ class FileService
 
 		$formattedFiles = [];
 
+		// Counts total before slicing
+		$total   = count($files);
+
 		// Apply offset and limit to files array if specified
 		$files = array_slice($files, $offset, $limit);
 
@@ -520,7 +523,6 @@ class FileService
 		}
 
 		// @todo search
-		$total   = count($formattedFiles);
 		$pages   = $limit !== null ? ceil($total/$limit) : 1;
 
 		return [

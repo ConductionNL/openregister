@@ -31,7 +31,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 	protected ?string $folder = null; // The folder path where this object is stored
 	protected ?string $application = null; // The application name
 	protected ?string $organisation = null; // The organisation name
-	protected ?array $validation = []; // array describing validation rules
+	protected ?array $validation = []; // array describing validation results
 	protected ?array $deleted = []; // array describing deletion details
 	protected ?array $geo = []; // array describing deletion details
 	protected ?array $retention = []; // array describing deletion details
@@ -192,15 +192,14 @@ class ObjectEntity extends Entity implements JsonSerializable
 	 */
 	public function jsonSerialize(): array
 	{
-		$metadata = [
-			'@self' => array_filter($this->getObjectArray(), function($key) {
-				return in_array($key, ['object', 'textRepresentation', 'authorization','uuid']) === false;
-			}, ARRAY_FILTER_USE_KEY)
-		];
-		$metadata['@self']['id'] = $this->getUuid();
-		$metadata['id'] = $this->getUuid();
+		// Backwards compatibility for old objects
+		$object = $this->object;
+		$object['@self'] = $this->getObjectArray();
+		$object['@self']['id'] = $this->getUuid();
+		$object['id'] = $this->getUuid();
 		
-		return array_merge($this->object,$metadata);
+		// lets merge and return
+		return $object;
 	}
 
 	/**
@@ -212,27 +211,23 @@ class ObjectEntity extends Entity implements JsonSerializable
 	{
 		return [
 			'id' => $this->id,
-			'uuid' => $this->uuid,
 			'uri' => $this->uri,
 			'version'     => $this->version,
 			'register' => $this->register,
 			'schema' => $this->schema,
-			'object' => $this->object,
 			'files' => $this->files,
 			'relations' => $this->relations,
-			'textRepresentation' => $this->textRepresentation,
 			'locked' => $this->locked,
 			'owner' => $this->owner,
-			'authorization' => $this->authorization,
 			'folder' => $this->folder,
 			'application' => $this->application,
 			'organisation' => $this->organisation,
 			'validation' => $this->validation,
+			'geo' => $this->geo,
+			'retention' => $this->retention,
 			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
 			'created' => isset($this->created) ? $this->created->format('c') : null,
 			'deleted' => $this->deleted,
-			'geo' => $this->geo,
-			'retention' => $this->retention
 		];
 	}
 

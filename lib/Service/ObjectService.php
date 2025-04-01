@@ -17,7 +17,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
@@ -86,7 +85,6 @@ class ObjectService
 		private readonly RegisterMapper     $registerMapper,
 		private readonly SchemaMapper       $schemaMapper,
 		private readonly AuditTrailMapper   $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
 		private readonly ContainerInterface $container,
 		private readonly IURLGenerator      $urlGenerator,
 		private readonly FileService        $fileService,
@@ -245,7 +243,7 @@ class ObjectService
 
         // Extend object with properties if requested
         if (empty($extend) === false) {
-            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
+            $objectEntity = $this->renderEntity(entity: $objectEntity, extend: $extend);
         }
 
         return $objectEntity;
@@ -269,6 +267,26 @@ class ObjectService
 	{
 		$object['id'] = $id;
 
+        $schema = $this->schemaMapper->find($this->getSchema());
+        if ($schema === null) {
+            throw new Exception('Schema not found');
+        }
+
+        $properties = $schema->getProperties();
+
+        $errors = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            // Validate immutable
+            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true) {
+                $errors[sprintf("/%s", $propertyName)][] = sprintf("%s is immutable and may not be overwritten", $propertyName);
+            }
+        }
+
+        if (empty($errors) === false) {
+            throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
+        }
+
+
 		if ($patch === true) {
 			$oldObject = $this->getObject(
 				$this->registerMapper->find($this->getRegister()),
@@ -290,7 +308,7 @@ class ObjectService
 
         // Extend object with properties if requested
         if (empty($extend) === false) {
-            $objectEntity = $this->extendEntity(entity: $objectEntity, extend: $extend);
+            $objectEntity = $this->renderEntity(entity: $objectEntity, extend: $extend);
         }
 
         return $objectEntity;
@@ -357,7 +375,7 @@ class ObjectService
             $objects = array_map(function($object) use ($extend) {
                 // Convert object to array if needed
                 $objectArray = is_array($object) ? $object : $object->jsonSerialize();
-                return $this->extendEntity(entity: $objectArray, extend: $extend);
+                return $this->renderEntity(entity: $objectArray, extend: $extend);
             }, $objects);
         }
 
@@ -609,11 +627,6 @@ class ObjectService
 
         $errors = [];
         foreach ($properties as $propertyName => $propertyConfig) {
-            // Validate immutable
-            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true && isset($object['id'])) {
-                $errors[sprintf("/%s", $propertyName)][] = "The property is immutable and may not be overwritten";
-            }
-
             // @todo do something for object properties because the validator will always expect a object instead off uri (string) or id
         }
 
@@ -683,7 +696,7 @@ class ObjectService
         }
 
         if ($depth === null) {
-			$depth = $schema->getMaxDepth();;
+			$depth = $schema->getMaxDepth();
 		}
 
 		if (isset($object['id']) === true) {
@@ -745,7 +758,8 @@ class ObjectService
 
 		// Create the uri for the object
 		if ($objectEntity->getUri() === null) {
-			$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+			// @todo: this needs to be fixed
+			//$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
 		}
 
 		// Make sure we create a folder in NC for this object if it doesn't already have one
@@ -764,13 +778,13 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-		// Let grap any links that we can
-		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
-
 		// Handle object properties that are either nested objects or files
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $schema->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
+
+		// Let grap any links that we can
+		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
 		$this->setDefaults($objectEntity);
 
@@ -820,7 +834,7 @@ class ObjectService
         }
 
 		// Function to recursively find links/UUIDs and build dot notation paths
-		$findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers, $validRelationProperties) {
+        $findRelations = function ($data, $path = '') use (&$findRelations, &$relations, $selfIdentifiers, $validRelationProperties) {
 			foreach ($data as $key => $value) {
                 if (in_array($key, $validRelationProperties) === false) {
                     continue;
@@ -829,12 +843,21 @@ class ObjectService
 				$currentPath = $path ? "$path.$key" : $key;
 
 				if (is_array($value) === true) {
-					// Recurse into nested arrays
-					$findRelations($value, $currentPath);
+                    if (isset($value['@self']['id']) === true) {
+						$relations[$currentPath] = $value['@self']['id'];
+                    }
+
+                    if (isset($value[0]['@self']['id']) === true) {
+                        foreach ($value as $key2 => $subObject) {
+                            if (isset($subObject['@self']['id']) === true) { 
+                                $relations["$currentPath.$key2"] = $subObject['@self']['id'];
+                            }
+                        }
+                    }
 				} else if (is_string($value) === true) {
 					// Check for URLs and UUIDs
 					if ((filter_var($value, FILTER_VALIDATE_URL) !== false
-							|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1)
+							|| Uuid::isValid($value) === true)
 						&& in_array($value, $selfIdentifiers, true) === false
 					) {
 						$relations[$currentPath] = $value;
@@ -850,6 +873,74 @@ class ObjectService
 		return $objectEntity;
 	}
 
+    /**
+     * Extracts and validates a UUID from a given string or URI.
+     *
+     * @param string $item The item to validate (UUID or URL containing a UUID).
+     * @param string $propertyName The property name for error messages.
+     * 
+     * @return string The validated UUID.
+     * 
+     * @throws CustomValidationException If the item is not a valid UUID.
+     */
+    private function getIdFromString(string $item, string $propertyName): string {
+        // Check if item is a valid UUID.
+        if (Uuid::isValid($item) === true) {
+            return $item;
+        }
+
+        // If item is a string but not a UUID, check if it is a URI.
+        $lastSlashPos = false;
+        if (filter_var($item, FILTER_VALIDATE_URL) !== false) {
+            $lastSlashPos = strrpos($item, '/');
+        }
+        
+        // Extract the ID from the URI and validate it as a UUID.
+        if ($lastSlashPos !== false) {
+            $id = substr($item, $lastSlashPos + 1);
+            if (Uuid::isValid($id)) {
+                return $id;
+            }
+        }
+
+        $error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
+        throw new CustomValidationException(message: self::VALIDATION_ERROR_MESSAGE, errors: [$error]);
+    }
+
+    /**
+     * Gets schema id from a reference in a property
+     * 
+     * @param array $property
+     * @param string $propertyName
+     * @param int $schema
+     * 
+     * @return string schemaId 
+     * 
+     * @throws Exception If no reference found
+     */
+    private function getSchemaFromPropertyReference(array $property, string $propertyName, int $schema): string
+    {
+        $reference = $property['$ref'] ?? $property['items']['$ref'] ?? null;
+        if ($reference === null) {
+            throw new Exception(sprintf('Could not find a $ref for schema $d property %s', $schema, $propertyName));
+        }
+
+		if (is_numeric($reference) === true) {
+			return $reference;
+		} 
+        
+        if (filter_var(value: $reference, filter: FILTER_VALIDATE_URL) !== false) {
+			$parsedUrl = parse_url($reference);
+			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
+			$pathEnd = end($explodedPath);
+            if (is_numeric($pathEnd) === true) {
+                return $pathEnd;
+            }
+		}
+
+        throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
+    }
+
 	/**
 	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
@@ -858,20 +949,20 @@ class ObjectService
 	 *
 	 * @param array $property The property schema details for the nested object.
 	 * @param string $propertyName The name of the property in the parent object.
-	 * @param array $item The nested subobject data to process.
+	 * @param array|string $item The nested subobject data to process.
 	 * @param ObjectEntity $objectEntity The parent object entity to associate the nested subobject with.
 	 * @param int $register The register associated with the schema.
 	 * @param int $schema The schema identifier for the subobject.
 	 * @param int|null $index Optional index of the subobject if it resides in an array.
 	 *
 	 * @return string The UUID of the nested subobject.
-	 * @throws ValidationException When schema or object validation fails.
+	 * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
 	 * @throws GuzzleException
 	 */
 	private function addObject(
 		array $property,
 		string $propertyName,
-		array $item,
+		array|string $item,
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
@@ -879,22 +970,29 @@ class ObjectService
 		int $depth = 0,
 	): string|array
 	{
-		$subSchema = $schema;
-		if (is_int($property['$ref']) === true) {
-			$subSchema = $property['$ref'];
-		} else if (filter_var(value: $property['$ref'], filter: FILTER_VALIDATE_URL) !== false) {
-			$parsedUrl = parse_url($property['$ref']);
-			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
-			$subSchema = end($explodedPath);
-		}
+        $itemIsID = false;
+        if (is_string($item) === true) {
+            $item = $this->getIdFromString($item, $propertyName);
+            $itemIsID = true;
+        }
+
+        $subSchema = $this->getSchemaFromPropertyReference(property: $property, propertyName: $propertyName, schema: $schema);
 
 		// Handle nested object in array
-		$nestedObject = $this->saveObject(
-			register: $register,
-			schema: (int) $subSchema,
-			object: $item,
-			depth: $depth-1
-		);
+		if ($itemIsID === true) {
+			$nestedObject = $this->getObject(
+				register: $this->registerMapper->find((int) $register),
+				schema: $this->schemaMapper->find((int) $subSchema),
+				uuid: $item
+			);
+		} else {
+			$nestedObject = $this->saveObject(
+				register: $register,
+				schema: (int) $subSchema,
+				object: $item,
+				depth: $depth-1
+			);
+		}
 
 		if ($index === null) {
 			// Store relation and replace with reference
@@ -918,19 +1016,19 @@ class ObjectService
 	 *
 	 * @param array $property The schema definition for the object property.
 	 * @param string $propertyName The name of the object property.
-	 * @param array $item The data corresponding to the property in the parent object.
+	 * @param array|string $item The data corresponding to the property in the parent object.
 	 * @param ObjectEntity $objectEntity The object entity to link the processed data to.
 	 * @param int $register The register associated with the schema.
 	 * @param int $schema The schema identifier for the property.
 	 *
 	 * @return string The updated property data, typically a reference UUID.
-	 * @throws ValidationException When schema or object validation fails.
+	 * @throws ValidationException|CustomValidationException When schema or object validation fails.
 	 * @throws GuzzleException
 	 */
 	private function handleObjectProperty(
 		array $property,
 		string $propertyName,
-		array $item,
+		array|string $item,
 		ObjectEntity $objectEntity,
 		int $register,
 		int $schema,
@@ -962,7 +1060,7 @@ class ObjectService
 	 * @param int $schema The schema identifier for the array elements.
 	 *
 	 * @return array The processed array with updated references or data.
-	 * @throws GuzzleException|ValidationException When schema validation or file handling fails.
+	 * @throws GuzzleException|ValidationException|CustomValidationException When schema validation or file handling fails.
 	 */
 	private function handleArrayProperty(
 		array $property,
@@ -2093,6 +2191,9 @@ class ObjectService
 		 */
 		// Check if there are properties specified in the 'extend' array
 		if (!empty($extend)) {
+			if ($extend === ['all']) {
+				$extend = array_keys($dotEntity->all());
+			}
 			$errors = []; // Initialize an array to store any errors encountered during the process
 
 			// Iterate over each property in the 'extend' array
@@ -2158,6 +2259,8 @@ class ObjectService
 
 	/**
 	 * Extends an entity with related objects based on the extend array.
+     * 
+     * @deprecated Use renderEntity
 	 *
 	 * @param mixed $entity The entity to extend
 	 * @param array $extend Properties to extend with related data
@@ -2219,7 +2322,7 @@ class ObjectService
 							try {
 								$found = $this->objectEntityMapper->find($val);
 								if ($found) {
-									$extendedFound = $this->extendEntity($found->jsonSerialize(), $extend, $depth + 1);
+									$extendedFound = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1);
 									$extendedValues[] = $extendedFound;
 								}
 							} catch (Exception $e) {
@@ -2234,7 +2337,7 @@ class ObjectService
 						$found = $this->objectEntityMapper->find($value);
 						if ($found) {
 							// Serialize and recursively extend the found object (apply depth tracking here)
-							$result[$property] = $this->extendEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1
+							$result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1
 						}
 					}
 				} catch (Exception $e2) {
@@ -2364,7 +2467,16 @@ class ObjectService
 		unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
 		// Lets force the object id to be the object id of the object we are getting the audit trail for
-		$filters['object'] = $id;
+		$object = $this->objectEntityMapper->find($id)->getObjectArray();
+		$filters = [];
+		$filters['object'] = $object['id'];
+
+		//var_dump($filters);
+		//die;
+
+		//$filters['registerUuid'] = $object->getRegisterUuid();
+		//$filters['schemaUuid'] = $object->getSchemaUuid();
+
 
 		// @todo this is not working, it fails to find the logs
 		$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);

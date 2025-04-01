@@ -16,29 +16,34 @@ describe('Object Entity', () => {
 	it('should create an Object entity with partial data', () => {
 		const partialData: TObject = {
 			'@self': {
-				uuid: 'test-uuid',
+				id: '',
 				uri: 'test-uri',
 				register: 'test-register',
 				schema: 'test-schema',
-				relations: '{}',
-				files: '{}',
+				relations: '',
+				files: '',
 				folder: '',
 				updated: '',
 				created: '',
 				locked: null,
 				owner: '',
+				organisation: null,
+				application: null,
+				version: null,
+				deleted: null,
+				geo: null,
+				retention: null,
 			},
 		}
 		const object = new ObjectEntity(partialData)
 
 		expect(object).toBeInstanceOf(Object)
 		expect(object['@self'].id).toBe('')
-		expect(object['@self'].uuid).toBe('test-uuid')
 		expect(object['@self'].uri).toBe('test-uri')
 		expect(object['@self'].register).toBe('test-register')
 		expect(object['@self'].schema).toBe('test-schema')
-		expect(object['@self'].relations).toBe('{}')
-		expect(object['@self'].files).toBe('{}')
+		expect(object['@self'].relations).toBe('')
+		expect(object['@self'].files).toBe('')
 		expect(object['@self'].updated).toBe('')
 		expect(object['@self'].created).toBe('')
 		expect(object['@self'].locked).toBe(null)
@@ -77,7 +82,6 @@ describe('Object Entity', () => {
 			'@self': {
 				...mockObjectData()[0]['@self'],
 				id: '', // Invalid empty id
-				uuid: '', // Invalid empty uuid
 			},
 		}
 		const object = new ObjectEntity(invalidData)
@@ -88,7 +92,7 @@ describe('Object Entity', () => {
 		if (!validation.success) {
 			expect(validation.error.issues).toContainEqual(
 				expect.objectContaining({
-					path: ['@self', 'uuid'],
+					path: ['@self', 'id'],
 					message: 'String must contain at least 1 character(s)',
 				}),
 			)
@@ -107,18 +111,23 @@ describe('Object Entity', () => {
 	it('should create empty strings for undefined @self properties', () => {
 		const minimalData: TObject = {
 			'@self': {
-				uuid: 'test-uuid',
+				id: '',
 				uri: 'test-uri',
 				register: 'test-register',
 				schema: 'test-schema',
-				object: '{}',
-				relations: '{}',
-				files: '{}',
+				relations: '',
+				files: '',
 				folder: '',
 				updated: '',
 				created: '',
 				locked: null,
 				owner: '',
+				organisation: null,
+				application: null,
+				version: null,
+				deleted: null,
+				geo: null,
+				retention: null,
 			},
 		}
 		const object = new ObjectEntity(minimalData)

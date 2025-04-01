@@ -8,7 +8,6 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectAuditLogMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
@@ -46,7 +45,6 @@ class ObjectsController extends Controller
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
 		private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectAuditLogMapper $objectAuditLogMapper,
         private readonly ObjectService $objectService,
 
     )
@@ -452,7 +450,7 @@ class ObjectsController extends Controller
     public function logs(string $id): JSONResponse
     {
         try {
-            $jobLogs = $this->objectAuditLogMapper->findAll(null, null, ['object_id' => $id]);
+            $jobLogs = $this->auditTrailMapper->findAll(null, null, ['object_id' => $id]);
             return new JSONResponse($jobLogs);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Logs not found'], 404);

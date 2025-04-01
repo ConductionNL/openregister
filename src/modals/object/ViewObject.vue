@@ -13,7 +13,6 @@ import { ref, onMounted, computed, watch } from 'vue'
 import {
 	NcDialog,
 	NcButton,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcEmptyContent,
 	NcCounterBubble,
@@ -21,11 +20,9 @@ import {
 import { json } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
+import { getTheme } from '../../services/getTheme.js'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
-import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
@@ -35,15 +32,6 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 
 // Initialize refs
 const objectItem = ref(null)
-const schemasLoading = ref(false)
-const schemas = ref({
-	multiple: false,
-	closeOnSelect: true,
-	options: [],
-	value: null,
-})
-const registersLoading = ref(false)
-const registers = ref({})
 const success = ref(null)
 const loading = ref(false)
 const error = ref(false)
@@ -65,9 +53,9 @@ watch(() => objectStore.objectItem, (newValue) => {
 
 // Computed properties
 const hasObjectItem = computed(() => {
-	return objectStore.objectItem !== null && 
-		   objectStore.objectItem !== undefined && 
-		   objectStore.objectItem['@self'] !== undefined
+	return objectStore.objectItem !== null
+		   && objectStore.objectItem !== undefined
+		   && objectStore.objectItem['@self'] !== undefined
 })
 
 // Pagination
@@ -206,11 +194,11 @@ onMounted(() => {
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].application }">
 					<span class="detail-label">Application:</span>
 					<span class="detail-value">{{ objectStore.objectItem['@self'].application || 'Not set' }}</span>
-			</div>
+				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].organisation }">
 					<span class="detail-label">Organisation:</span>
 					<span class="detail-value">{{ objectStore.objectItem['@self'].organisation || 'Not set' }}</span>
-			</div>
+				</div>
 			</div>
 
 			<!-- Display Object -->
@@ -227,216 +215,216 @@ onMounted(() => {
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="(value, key) in objectStore.objectItem" 
+										<tr v-for="(value, key) in objectStore.objectItem"
 											:key="key"
-											class="table-row"
-											v-if="key !== '@self'">
+											class="table-row">
 											<td>{{ key }}</td>
 											<td>{{ typeof value === 'object' ? JSON.stringify(value) : value }}</td>
 										</tr>
 									</tbody>
 								</table>
-			</div>
+							</div>
 						</BTab>
 						<BTab title="Data">
-				<div class="json-editor">
-					<label>Object (JSON)</label>
-								<div class="codeMirrorContainer">
+							<div class="json-editor">
+								<label>Object (JSON)</label>
+								<div :class="`codeMirrorContainer ${getTheme()}`">
 									<CodeMirror
 										v-model="editorContent"
-										:extensions="[json()]"
-							:basic="true"
+										:basic="true"
 										:readonly="true"
+										:dark="getTheme() === 'dark'"
+										:extensions="[json()]"
 										:tab-size="2"
 										style="height: 400px" />
 								</div>
-                            </div>
-                        </BTab>
-                        <BTab title="Uses">
-                            <div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0" class="search-list-table">
-                                <table class="table">
-                                    <thead>
-                                        <tr class="table-row">
-                                            <th>Relation</th>
-                                            <th>Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(relation, key) in objectStore.objectItem.relations"
-                                            :key="key"
-                                            class="table-row">
-                                            <td>{{ key }}</td>
-                                            <td>{{ relation }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <NcEmptyContent v-else>
-                                No relations found
-                            </NcEmptyContent>
-                        </BTab>
-                        <BTab title="Used by">
-                            <div v-if="objectStore.relations.length" class="search-list-table">
-                                <table class="table">
-                                    <thead>
-                                        <tr class="table-row">
-                                            <th>ID</th>
-                                            <th>URI</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="relation in objectStore.relations"
-                                            :key="relation.id"
-                                            class="table-row">
-                                            <td>{{ relation.id }}</td>
-                                            <td>{{ relation.uri }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div v-if="!relationsLoading && objectStore.relations.total > pagination.relations.limit" class="pagination">
-                                    <NcButton @click="pagination.relations.currentPage--" :disabled="pagination.relations.currentPage === 1">
-                                        Previous
-                                    </NcButton>
-                                    <span>Page {{ pagination.relations.currentPage }}</span>
-                                    <NcButton @click="pagination.relations.currentPage++" :disabled="pagination.relations.currentPage >= Math.ceil(objectStore.relations.total / pagination.relations.limit)">
-                                        Next
-                                    </NcButton>
-                                </div>
-                            </div>
-                            <NcEmptyContent v-else>
-                                No relations found
-                            </NcEmptyContent>
-                        </BTab>
-                        <BTab title="Files">
-                            <div v-if="objectStore.files.results?.length > 0" class="search-list-table">
-                                <table class="table">
-                                    <thead>
-                                        <tr class="table-row">
-                                            <th>Name</th>
-                                            <th>Size</th>
-                                            <th>Type</th>
-                                            <th>Labels</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(attachment, i) in objectStore.files.results"
-                                            :key="`${attachment}${i}`"
-                                            :class="{ 'active': activeAttachment === attachment.id }"
-                                            class="table-row"
-                                            @click="() => {
-                                                if (activeAttachment === attachment.id) activeAttachment = null
-                                                else activeAttachment = attachment.id
-                                            }">
-                                            <td>
-                                                <ExclamationThick v-if="!attachment.accessUrl || !attachment.downloadUrl" class="warningIcon" :size="20" />
-                                                <FileOutline v-else class="publishedIcon" :size="20" />
-                                                {{ attachment.name ?? attachment?.title }}
-                                            </td>
-                                            <td>{{ formatFileSize(attachment?.size) }}</td>
-                                            <td>{{ attachment?.type || 'No type' }}</td>
-                                            <td>
-                                                <div class="fileLabelsContainer">
-                                                    <NcCounterBubble v-for="label of attachment.labels" :key="label">
-                                                        {{ label }}
-                                                    </NcCounterBubble>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <NcButton @click="openFile(attachment)">
-                                                    <template #icon>
-                                                        <OpenInNew :size="20" />
-                                                    </template>
-                                                    View file
-                                                </NcButton>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div v-if="!fileLoading && objectStore.files.total > pagination.files.limit" class="pagination">
-                                    <NcButton @click="pagination.files.currentPage--" :disabled="pagination.files.currentPage === 1">
-                                        Previous
-                                    </NcButton>
-                                    <span>Page {{ pagination.files.currentPage }}</span>
-                                    <NcButton @click="pagination.files.currentPage++" :disabled="pagination.files.currentPage >= Math.ceil(objectStore.files.total / pagination.files.limit)">
-                                        Next
-                                    </NcButton>
-                                </div>
-                            </div>
-                            <NcEmptyContent v-else>
-                                No attachments added yet
-                            </NcEmptyContent>
-                        </BTab>
-                        <BTab title="Audit Trails">
-                            <div v-if="objectStore.auditTrails.results?.length" class="search-list-table">
-                                <table class="table">
-                                    <thead>
-                                        <tr class="table-row">
-                                            <th>Date</th>
-                                            <th>User</th>
-                                            <th>Action</th>
-                                            <th>Changes</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(auditTrail, key) in objectStore.auditTrails.results"
-                                            :key="key"
-                                            class="table-row">
-                                            <td>{{ new Date(auditTrail.created).toLocaleString() }}</td>
-                                            <td>{{ auditTrail.userName }}</td>
-                                            <td>{{ auditTrail.action }}</td>
-                                            <td>{{ Object.keys(auditTrail.changed).length }}</td>
-                                            <td>
-                                                <NcButton @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
-                                                    <template #icon>
-                                                        <Eye :size="20" />
-                                                    </template>
-                                                    View details
-                                                </NcButton>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div v-if="!auditTrailLoading && objectStore.auditTrails.total > pagination.auditTrails.limit" class="pagination">
-                                    <NcButton @click="pagination.auditTrails.currentPage--" :disabled="pagination.auditTrails.currentPage === 1">
-                                        Previous
-                                    </NcButton>
-                                    <span>Page {{ pagination.auditTrails.currentPage }}</span>
-                                    <NcButton @click="pagination.auditTrails.currentPage++" :disabled="pagination.auditTrails.currentPage >= Math.ceil(objectStore.auditTrails.total / pagination.auditTrails.limit)">
-                                        Next
-						</NcButton>
-					</div>
-                            </div>
-                            <NcEmptyContent v-else>
-                                No audit trails found
-                            </NcEmptyContent>
-                        </BTab>
-                    </BTabs>
+							</div>
+						</BTab>
+						<BTab title="Uses">
+							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>Relation</th>
+											<th>Value</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(relation, key) in objectStore.objectItem.relations"
+											:key="key"
+											class="table-row">
+											<td>{{ key }}</td>
+											<td>{{ relation }}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<NcEmptyContent v-else>
+								No relations found
+							</NcEmptyContent>
+						</BTab>
+						<BTab title="Used by">
+							<div v-if="objectStore.relations.length" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>ID</th>
+											<th>URI</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="relation in objectStore.relations"
+											:key="relation.id"
+											class="table-row">
+											<td>{{ relation.id }}</td>
+											<td>{{ relation.uri }}</td>
+										</tr>
+									</tbody>
+								</table>
+								<div v-if="!relationsLoading && objectStore.relations.total > pagination.relations.limit" class="pagination">
+									<NcButton :disabled="pagination.relations.currentPage === 1" @click="pagination.relations.currentPage--">
+										Previous
+									</NcButton>
+									<span>Page {{ pagination.relations.currentPage }}</span>
+									<NcButton :disabled="pagination.relations.currentPage >= Math.ceil(objectStore.relations.total / pagination.relations.limit)" @click="pagination.relations.currentPage++">
+										Next
+									</NcButton>
+								</div>
+							</div>
+							<NcEmptyContent v-else>
+								No relations found
+							</NcEmptyContent>
+						</BTab>
+						<BTab title="Files">
+							<div v-if="objectStore.files.results?.length > 0" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>Name</th>
+											<th>Size</th>
+											<th>Type</th>
+											<th>Labels</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(attachment, i) in objectStore.files.results"
+											:key="`${attachment}${i}`"
+											:class="{ 'active': activeAttachment === attachment.id }"
+											class="table-row"
+											@click="() => {
+												if (activeAttachment === attachment.id) activeAttachment = null
+												else activeAttachment = attachment.id
+											}">
+											<td>
+												<ExclamationThick v-if="!attachment.accessUrl || !attachment.downloadUrl" class="warningIcon" :size="20" />
+												<FileOutline v-else class="publishedIcon" :size="20" />
+												{{ attachment.name ?? attachment?.title }}
+											</td>
+											<td>{{ formatFileSize(attachment?.size) }}</td>
+											<td>{{ attachment?.type || 'No type' }}</td>
+											<td>
+												<div class="fileLabelsContainer">
+													<NcCounterBubble v-for="label of attachment.labels" :key="label">
+														{{ label }}
+													</NcCounterBubble>
+												</div>
+											</td>
+											<td>
+												<NcButton @click="openFile(attachment)">
+													<template #icon>
+														<OpenInNew :size="20" />
+													</template>
+													View file
+												</NcButton>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<div v-if="!fileLoading && objectStore.files.total > pagination.files.limit" class="pagination">
+									<NcButton :disabled="pagination.files.currentPage === 1" @click="pagination.files.currentPage--">
+										Previous
+									</NcButton>
+									<span>Page {{ pagination.files.currentPage }}</span>
+									<NcButton :disabled="pagination.files.currentPage >= Math.ceil(objectStore.files.total / pagination.files.limit)" @click="pagination.files.currentPage++">
+										Next
+									</NcButton>
+								</div>
+							</div>
+							<NcEmptyContent v-else>
+								No attachments added yet
+							</NcEmptyContent>
+						</BTab>
+						<BTab title="Audit Trails">
+							<div v-if="objectStore.auditTrails.results?.length" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>Date</th>
+											<th>User</th>
+											<th>Action</th>
+											<th>Changes</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(auditTrail, key) in objectStore.auditTrails.results"
+											:key="key"
+											class="table-row">
+											<td>{{ new Date(auditTrail.created).toLocaleString() }}</td>
+											<td>{{ auditTrail.userName }}</td>
+											<td>{{ auditTrail.action }}</td>
+											<td>{{ Object.keys(auditTrail.changed).length }}</td>
+											<td>
+												<NcButton @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View details
+												</NcButton>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<div v-if="!auditTrailLoading && objectStore.auditTrails.total > pagination.auditTrails.limit" class="pagination">
+									<NcButton :disabled="pagination.auditTrails.currentPage === 1" @click="pagination.auditTrails.currentPage--">
+										Previous
+									</NcButton>
+									<span>Page {{ pagination.auditTrails.currentPage }}</span>
+									<NcButton :disabled="pagination.auditTrails.currentPage >= Math.ceil(objectStore.auditTrails.total / pagination.auditTrails.limit)" @click="pagination.auditTrails.currentPage++">
+										Next
+									</NcButton>
+								</div>
+							</div>
+							<NcEmptyContent v-else>
+								No audit trails found
+							</NcEmptyContent>
+						</BTab>
+					</BTabs>
 				</div>
 			</div>
 		</div>
 
-        <template #actions>
-            <NcButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(objectStore.objectItem)">
-                <template #icon>
-                    <Pencil :size="20" />
-                </template>
-                Edit Object
-            </NcButton>
-            <NcButton @click="navigationStore.setModal('addFile'); objectStore.setObjectItem(objectStore.objectItem)">
-                <template #icon>
-                    <Upload :size="20" />
-                </template>
-                Add File
-            </NcButton>
-            <NcButton type="primary" @click="closeModal">
-                <template #icon>
-                    <Cancel :size="20" />
-                </template>
-                Close
-            </NcButton>
-        </template>
+		<template #actions>
+			<NcButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(objectStore.objectItem)">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				Edit Object
+			</NcButton>
+			<NcButton @click="navigationStore.setModal('addFile'); objectStore.setObjectItem(objectStore.objectItem)">
+				<template #icon>
+					<Upload :size="20" />
+				</template>
+				Add File
+			</NcButton>
+			<NcButton type="primary" @click="closeModal">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				Close
+			</NcButton>
+		</template>
 	</NcDialog>
 </template>
 
@@ -569,5 +557,106 @@ onMounted(() => {
 .label,
 .value {
 	display: none;
+}
+
+/* CodeMirror */
+.codeMirrorContainer {
+	margin-block-start: 6px;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+	border-radius: 0 !important;
+	border: none !important;
+}
+.codeMirrorContainer :deep(.cm-editor) {
+	outline: none !important;
+}
+.codeMirrorContainer.light > .vue-codemirror {
+	border: 1px dotted silver;
+}
+.codeMirrorContainer.dark > .vue-codemirror {
+	border: 1px dotted grey;
+}
+
+/* value text color */
+/* string */
+.codeMirrorContainer.light :deep(.ͼe) {
+	color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+	color: #88c379;
+}
+
+/* boolean */
+.codeMirrorContainer.light :deep(.ͼc) {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.ͼc) {
+	color: #8d64f7;
+}
+
+/* null */
+.codeMirrorContainer.light :deep(.ͼb) {
+	color: #770088;
+}
+.codeMirrorContainer.dark :deep(.ͼb) {
+	color: #be55cd;
+}
+
+/* number */
+.codeMirrorContainer.light :deep(.ͼd) {
+	color: #d19a66;
+}
+.codeMirrorContainer.dark :deep(.ͼd) {
+	color: #9d6c3a;
+}
+
+/* text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+	cursor: text !important;
+}
+
+/* selection color */
+.codeMirrorContainer.light :deep(.cm-line)::selection,
+.codeMirrorContainer.light :deep(.cm-line) ::selection {
+	background-color: #d7eaff !important;
+    color: black;
+}
+.codeMirrorContainer.dark :deep(.cm-line)::selection,
+.codeMirrorContainer.dark :deep(.cm-line) ::selection {
+	background-color: #8fb3e6 !important;
+    color: black;
+}
+
+/* string */
+.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
+    color: #2d770f;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
+    color: #104e0c;
+}
+
+/* boolean */
+.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
+	color: #221199;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
+	color: #4026af;
+}
+
+/* null */
+.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
+	color: #770088;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
+	color: #770088;
+}
+
+/* number */
+.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
+	color: #8c5c2c;
+}
+.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
+	color: #623907;
 }
 </style>

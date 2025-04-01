@@ -1,0 +1,440 @@
+---
+description: Rules for PHP files
+globs: ["*.php"]
+alwaysApply: false
+---
+# PHP Coding Standards
+
+## General Rules
+- Use spaces for indentation, not tabs
+- Indent with 4 spaces
+- Line length should not exceed 150 characters
+- Files must end with a single blank line
+- No trailing whitespace at the end of lines
+- Use single quotes for strings unless double quotes are needed
+- Add docblocks to all methods, classes, and properties
+- Add return types to all methods
+- Add type hints to all methods
+- Add default values to all methods where appropriate
+- Add phpstan and psalm annotations to all methods
+- Add phpunit tests to all methods
+- Add inline comments to explain complex logic
+- Use readonly properties where appropriate
+
+## Class Structure
+- Class files should begin with a docblock containing:
+  - Class name
+  - Category
+  - Package
+  - Author
+  - Copyright
+  - License
+  - Version
+  - Link to the application
+
+## Method Structure
+- One blank line between methods
+- Opening brace on same line as method declaration
+- Closing brace must be followed by one blank line
+- Method parameters should be properly aligned
+- Type declarations should be used whenever possible
+- Return type declarations should be used
+
+## Control Structures
+- Opening brace on same line
+- One space after keywords (if, for, while, etc)
+- No space after function name in function calls
+- Spaces around operators
+- One space after commas in function calls
+- Use elseif instead of else if
+- Add end comments for long control structures
+
+## Arrays
+- Multi-line arrays should have each element on its own line
+- Array elements should be properly aligned
+- Trailing comma after last element
+- Use short array syntax []
+
+## Error Handling
+- Use try-catch blocks appropriately
+- Document thrown exceptions in docblocks
+- Add meaningful error messages
+
+## Documentation
+- All classes must have complete docblocks
+- All methods must have complete docblocks
+- Complex logic should have inline comments
+- Use proper alignment in docblocks
+- Add @param, @return, and @throws tags as needed
+
+## Naming Conventions
+- Classes: PascalCase
+- Methods: camelCase
+- Properties: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Variables: camelCase
+
+## File Structure
+- One class per file
+- Namespace declaration first
+- Use statements after namespace
+- Class declaration after use statements
+- Proper file and directory naming
+
+## Testing
+- All public methods should have unit tests
+- Test class names should end with Test
+- Test methods should begin with test
+- Use meaningful test method names
+- Add docblocks to test methods
+
+## Security
+- Validate all input
+- Escape all output
+- Use prepared statements for SQL
+- Follow OWASP security guidelines
+- Document security considerations
+
+## Performance
+- Optimize database queries
+- Use caching where appropriate
+- Minimize file operations
+- Document performance considerations
+
+## Maintenance
+- Remove unused code
+- Keep dependencies updated
+- Monitor error logs
+- Regular backups
+- Document maintenance procedures
+
+## Class and Interface Rules
+- All classes and interfaces must have a complete docblock containing:
+  - Description
+  - Package
+  - Category
+  - Author
+  - Copyright
+  - License
+  - Version
+  - Link
+  - Since
+
+## Code Style
+- Follow PSR-12 coding standards
+- Multi-line control structures must have:
+  - First expression on the line after the opening parenthesis
+  - Closing parenthesis on the line after the last expression
+  - Proper indentation for all lines
+
+## Properties
+- All properties must have type declarations
+- Use readonly properties where appropriate
+- All properties must have docblocks with type information
+
+## Methods
+- All methods must have:
+  - Return type declarations
+  - Parameter type declarations
+  - Default values for optional parameters
+  - Complete docblocks including:
+    - Description
+    - @param annotations with types and descriptions
+    - @return annotation with type and description
+    - @throws annotation for any exceptions
+  - PHPStan and Psalm annotations where appropriate
+
+## Documentation
+- All code changes must be documented in Docusaurus
+- Documentation files must be in the website/docs folder
+- Use single quotes (') instead of backticks (`) in documentation
+- Technical documentation must include:
+  - Class purpose and responsibility
+  - Method descriptions and usage examples
+  - Configuration options
+  - Dependencies and requirements
+
+## Quality Checks
+- All code must pass:
+  - PHP_CodeSniffer (PSR-12) with zero errors or warnings
+  - PHPStan (Level 5) with zero errors
+  - Psalm (Level 5) with zero errors
+  - PHPUnit tests with 100% pass rate and at least 80% code coverage
+- Configuration files:
+  - Use phpcs.xml for phpcs configuration
+  - Use phpstan.neon for PHPStan configuration
+  - Use psalm.xml for Psalm configuration
+  - Both should be present in the project root
+- Set up pre-commit hooks to automatically run checks
+- For CI/CD pipelines, these checks should be part of the build process
+
+## Example Class Structure
+```php
+<?php
+
+namespace OCA\OpenConnector\Service\Handler;
+
+/**
+ * Description of the class purpose.
+ *
+ * @package     OpenConnector
+ * @category    Service
+ * @author      Conduction B.V. <info@conduction.nl>
+ * @copyright   Copyright (C) 2024 Conduction B.V. All rights reserved.
+ * @license     EUPL 1.2
+ * @version     1.0.0
+ * @link        https://openregister.app
+ *
+ * @since       1.0.0 - Description of when this class was added
+ */
+class ExampleClass
+{
+    /**
+     * Description of the property.
+     *
+     * @var string
+     */
+    private readonly string $property;
+
+    /**
+     * Constructor.
+     *
+     * @param string $property Description of the parameter
+     */
+    public function __construct(string $property)
+    {
+        $this->property = $property;
+    }
+
+    /**
+     * Description of what the method does.
+     *
+     * @param string $param Description of the parameter
+     * @param int    $optionalParam Description of the optional parameter
+     *
+     * @return bool Description of the return value
+     *
+     * @throws \Exception When something goes wrong
+     *
+     * @psalm-pure
+     * @phpstan-return bool
+     */
+    public function exampleMethod(string $param, int $optionalParam = 0): bool
+    {
+        // Method implementation
+        return true;
+    }
+}
+```
+
+## App Structure
+- Backend (PHP):
+  - All PHP code resides in the `lib/` directory
+  - Directory structure follows PSR-4 autoloading:
+    - `lib/Controller/` - Application controllers
+    - `lib/Service/` - Business logic and services
+    - `lib/Db/` - Database entities and mappers
+    - `lib/Exception/` - Custom exceptions
+    - `lib/Migration/` - Database migrations
+    - `lib/Helper/` - Helper classes and utilities
+    - `lib/Event/` - Event classes
+    - `lib/EventListener/` - Event listeners
+    - `lib/Command/` - Console commands
+    - `lib/Cron/` - Cron jobs
+    - `lib/Settings/` - Application settings
+    - `lib/AppInfo/` - App information and registration
+    - `lib/Http/` - HTTP related classes
+    - `lib/Validator/` - Validation classes
+    - `lib/Factory/` - Factory classes
+    - `lib/Provider/` - Service providers
+    - `lib/Twig/` - Twig extensions and runtime
+    
+## File Structure
+- All PHP files should start with a docblock containing:
+  - Class name
+  - Category
+  - Package
+  - Author
+  - Copyright
+  - License
+  - Version
+  - Link to application
+
+## Code Style (PHPCS Rules)
+- Use the phpcs.xml in the root as standard when doing phpcs checks
+- Follow PEAR standard with specific customizations:
+  - Line length: max 125 chars (soft limit), 150 chars (hard limit)
+  - No Yoda conditions
+  - Use short array syntax []
+  - One argument per line in multi-line function calls
+  - No inline control structures
+  - No multiple statements on one line
+  - Space after type casting
+  - No underscore prefix for private methods/properties
+  - Inline comments must end in full-stops, exclamation marks, or question marks
+  - Implicit true comparisons prohibited; use === true instead
+  - Operator ! prohibited; use === false instead
+
+
+### Spacing Rules
+- Array bracket spacing (Squiz)
+- Function declaration argument spacing (Squiz)
+- Control structure spacing (Squiz)
+- Function spacing: 1 line between functions
+- Member var spacing (Squiz)
+- Operator spacing (Squiz)
+- No superfluous whitespace
+
+### Commenting Rules
+- Block comments properly aligned (Squiz)
+- DocComment alignment (Squiz)
+- Empty catch must have comment
+- Proper inline comment formatting
+- Long condition closing comments
+- Variable comments required
+
+### Forbidden Functions/Patterns
+- sizeof (use count)
+- delete (use unset)
+- print (use echo)
+- is_null
+- create_function
+- var_dump
+- No inline if statements
+
+### Array Formatting
+- Custom array indentation rules
+- No long array syntax
+- Proper key/value alignment
+
+## Method Requirements
+- All methods, classes, and properties MUST have docblocks
+- All methods MUST have:
+  - Return type declarations
+  - Parameter type hints
+  - Default values for optional parameters
+  - PHPStan and Psalm annotations
+  - PHPUnit tests
+  - Inline comments explaining each logical step
+  - Docblocks containing:
+    - @param annotations with types and descriptions
+    - @return annotation with type and description
+    - @throws annotations for all possible exceptions
+    - @since annotation with version number
+    - @deprecated annotation if applicable
+- Properties MUST:
+  - Have docblocks with type information
+  - Use readonly modifier when the property should not be modified after construction
+  - Include visibility modifier (public, protected, private)
+  - Have proper type hints
+- Classes MUST:
+  - Have complete docblocks as per template
+  - Follow single responsibility principle
+  - Use proper inheritance and interfaces
+  - Have descriptive names matching their purpose
+
+## Documentation
+- Use Docusaurus for documentation
+- Technical and user documentation should be in website/docs folder
+- All code changes must be documented
+- Use single quotes (') instead of backticks (`) in documentation
+
+## Testing
+- Write PHPUnit tests for all methods
+- Tests should be placed in tests/ directory
+- Test names should be descriptive and follow the pattern test[MethodName]_[Scenario]
+
+## Error Handling
+- Use appropriate exception types
+- Include meaningful error messages
+- Log errors appropriately
+- Handle edge cases
+
+## Security
+- Never expose sensitive data
+- Use prepared statements for database queries
+- Validate all input
+- Sanitize all output
+- Follow OWASP security guidelines
+
+## Performance
+- Optimize database queries
+- Use caching where appropriate
+- Minimize memory usage
+- Consider scalability
+
+## Dependencies
+- Use Composer for dependency management
+- Keep dependencies up to date
+- Document all external dependencies
+- Use specific version constraints
+
+## Automatic Code Quality Checks
+
+### PHP_CodeSniffer (PHPCS)
+- All code must pass PHPCS checks using PSR-12 standard
+- Run PHPCS before committing code changes:
+  ```bash
+  # Check coding standard violations
+  phpcs --standard=PSR12 file_or_directory_to_check.php
+  
+  # Automatically fix coding standard violations
+  phpcbf --standard=PSR12 file_or_directory_to_check.php
+  ```
+- Common standards to check:
+  - PSR-12 (Preferred)
+  - PSR-2 (Legacy)
+  - PSR-1 (Basic)
+
+### PHPStan
+- All code must pass PHPStan analysis at level 5 or higher
+- Run PHPStan before committing code changes:
+  ```bash
+  # Run PHPStan on specific files
+  vendor/bin/phpstan analyse lib/Service/YourService.php
+  
+  # Run PHPStan on entire lib directory
+  vendor/bin/phpstan analyse lib/
+  ```
+- Use PHPStan annotations to improve type checking:
+  - `@phpstan-param` - Specify more detailed parameter types
+  - `@phpstan-return` - Specify more detailed return types
+  - `@phpstan-var` - Specify more detailed property types
+  - `@phpstan-template` - For generic classes
+  - `@phpstan-type` - To define complex types
+
+### Psalm
+- All code must pass Psalm analysis at level 5 or higher
+- Run Psalm before committing code changes:
+  ```bash
+  # Run Psalm on specific files
+  vendor/bin/psalm lib/Service/YourService.php --no-cache
+  
+  # Run Psalm on entire lib directory
+  vendor/bin/psalm --no-cache
+  ```
+- Use Psalm annotations for better type checking:
+  - `@psalm-param` - Specify more detailed parameter types
+  - `@psalm-return` - Specify more detailed return types
+  - `@psalm-var` - Specify more detailed property types
+  - `@psalm-pure` - Mark methods as pure (no side effects)
+  - `@psalm-immutable` - Mark classes as immutable
+
+### Verification Workflow
+1. Write or modify code according to standards
+2. Run PHPCS to check and fix formatting issues:
+   ```bash
+   phpcbf --standard=PSR12 path/to/your/file.php
+   phpcs --standard=PSR12 path/to/your/file.php
+   ```
+3. Run PHPStan to check for type errors and logical issues:
+   ```bash
+   vendor/bin/phpstan analyse path/to/your/file.php
+   ```
+4. Run Psalm for additional static analysis:
+   ```bash
+   vendor/bin/psalm path/to/your/file.php --no-cache
+   ```
+5. Fix any identified issues
+6. Run unit tests to ensure functionality
+7. Commit only after all checks pass 

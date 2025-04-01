@@ -16,7 +16,7 @@ export const useSchemaStore = defineStore('schema', {
 	actions: {
 		setSchemaItem(schemaItem) {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
-			console.log('Active schema item set to ' + schemaItem.name)
+			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
 		setSchemaList(schemaList) {
 			this.schemaList = schemaList.map(

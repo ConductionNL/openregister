@@ -16,7 +16,7 @@ export const useObjectStore = defineStore('object', {
 		filters: {}, // List of query paramters
 		pagination: {
 			page: 1,
-			limit: 20
+			limit: 20,
 		},
 		selectedObjects: [],
 		metadata: {
@@ -24,90 +24,84 @@ export const useObjectStore = defineStore('object', {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true  // Enabled by default
+				enabled: true, // Enabled by default
 			},
 			uri: {
 				label: 'URI',
 				key: 'uri',
 				description: 'Uniform resource identifier',
-				enabled: false
+				enabled: false,
 			},
 			version: {
 				label: 'Version',
 				key: 'version',
 				description: 'Version number of the object',
-				enabled: false
+				enabled: false,
 			},
 			register: {
 				label: 'Register',
 				key: 'register',
 				description: 'Register the object belongs to',
-				enabled: false
+				enabled: false,
 			},
 			schema: {
 				label: 'Schema',
 				key: 'schema',
 				description: 'Schema the object follows',
-				enabled: false
+				enabled: false,
 			},
 			files: {
 				label: 'Files',
 				key: 'files',
 				description: 'Attached files count',
-				enabled: true  // Enabled by default
+				enabled: true, // Enabled by default
 			},
 			relations: {
 				label: 'Relations',
 				key: 'relations',
 				description: 'Related objects count',
-				enabled: false
+				enabled: false,
 			},
 			locked: {
 				label: 'Locked',
 				key: 'locked',
 				description: 'Lock status of the object',
-				enabled: false
+				enabled: false,
 			},
 			owner: {
 				label: 'Owner',
 				key: 'owner',
 				description: 'Owner of the object',
-				enabled: false
+				enabled: false,
 			},
 			application: {
 				label: 'Application',
 				key: 'application',
 				description: 'Application that created the object',
-				enabled: false
+				enabled: false,
 			},
 			folder: {
 				label: 'Folder',
 				key: 'folder',
 				description: 'Storage folder location',
-				enabled: false
-			},
-			files: {
-				label: 'File',
-				key: 'files',
-				description: 'The files attached to the object',
-				enabled: false
+				enabled: false,
 			},
 			created: {
 				label: 'Created',
 				key: 'created',
 				description: 'Creation date and time',
-				enabled: true  // Enabled by default
+				enabled: true, // Enabled by default
 			},
 			updated: {
 				label: 'Updated',
 				key: 'updated',
 				description: 'Last update date and time',
-				enabled: true  // Enabled by default
-			}
+				enabled: true, // Enabled by default
+			},
 		},
 		properties: {}, // Will be populated based on schema
-		columnFilters: {},  // Will contain both metadata and property filters
-		loading: false
+		columnFilters: {}, // Will contain both metadata and property filters
+		loading: false,
 	}),
 	actions: {
 		// Helper method to build endpoint path
@@ -116,7 +110,37 @@ export const useObjectStore = defineStore('object', {
 		},
 		async setObjectItem(objectItem) {
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
-			console.info('Active object item set to ' + objectItem)
+			console.info('Active object item set to ' + objectItem?.['@self']?.id)
+
+			// If we have a valid object item, fetch related data
+			if (objectItem?.['@self']?.id) {
+				try {
+					// Fetch audit trails
+					const auditTrailsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/audit-trails`
+					const auditTrailsResponse = await fetch(auditTrailsEndpoint)
+					const auditTrailsData = await auditTrailsResponse.json()
+					this.setAuditTrails(auditTrailsData)
+
+					// Fetch relations (used by)
+					const relationsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/relations`
+					const relationsResponse = await fetch(relationsEndpoint)
+					const relationsData = await relationsResponse.json()
+					this.setRelations(relationsData)
+
+					// Fetch files
+					const filesEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/files`
+					const filesResponse = await fetch(filesEndpoint)
+					const filesData = await filesResponse.json()
+					this.setFiles(filesData)
+				} catch (error) {
+					console.error('Error fetching related data:', error)
+				}
+			} else {
+				// Clear related data when no object is selected
+				this.setAuditTrails([])
+				this.setRelations([])
+				this.setFiles([])
+			}
 		},
 		setObjectList(objectList) {
 			this.objectList = {
@@ -138,55 +162,55 @@ export const useObjectStore = defineStore('object', {
 			this.relationItem = relationItem && new ObjectEntity(relationItem)
 		},
 		setRelations(relations) {
-			this.relations = relations.map(
+			this.relations = relations.results.map(
 				(relation) => new ObjectEntity(relation),
 			)
 		},
 		setFileItem(fileItem) {
 			this.fileItem = fileItem
-			console.info('File item set to', fileItem) // Logging the file item
+			console.info('File item set to', fileItem)
 		},
 		setFiles(files) {
 			this.files = files
-			console.info('Files set to', files) // Logging the files
+			console.info('Files set to', files)
 		},
 		/**
 		 * Set pagination details
 		 *
-		 * @param {number} page
-		 * @param {number} [limit=14]
+		 * @param {number} page Default page is 1
+		 * @param {number} [limit] Default limit is 14
 		 * @return {void}
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit }) // Logging the pagination
+			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for object list
 		 *
-		 * @param {Object} filters
+		 * @param {object} filters Filters to set
 		 * @return {void}
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters) // Logging the filters
+			console.info('Query filters set to', this.filters)
 		},
 		async refreshObjectList(options = {}) {
 			const registerStore = useRegisterStore()
 			const schemaStore = useSchemaStore()
-			
+
 			const register = options.register || registerStore.registerItem?.id
 			const schema = options.schema || schemaStore.schemaItem?.id
-			
+
 			if (!register || !schema) {
 				throw new Error('Register and schema are required')
 			}
 
 			let endpoint = this._buildObjectPath({
 				register,
-				schema
+				schema,
 			})
-			
+
 			const params = []
 
 			// Handle filters as an object
@@ -195,9 +219,13 @@ export const useObjectStore = defineStore('object', {
 					params.push(`${key}=${encodeURIComponent(value)}`)
 				}
 			})
-			
-			if (options.limit || this.pagination.limit) params.push('_limit=' + (options.limit || this.pagination.limit))
-			if (options.page || this.pagination.page) params.push('_page=' + (options.page || this.pagination.page))
+
+			if (options.limit || this.pagination.limit) {
+				params.push('_limit=' + (options.limit || this.pagination.limit))
+			}
+			if (options.page || this.pagination.page) {
+				params.push('_page=' + (options.page || this.pagination.page))
+			}
 
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')
@@ -241,7 +269,7 @@ export const useObjectStore = defineStore('object', {
 			const endpoint = this._buildObjectPath({
 				register,
 				schema,
-				objectId: isNewObject ? '' : objectItem['@self'].id
+				objectId: isNewObject ? '' : objectItem['@self'].id,
 			})
 
 			objectItem['@self'].updated = new Date().toISOString()
@@ -250,7 +278,7 @@ export const useObjectStore = defineStore('object', {
 				const response = await fetch(endpoint, {
 					method: isNewObject ? 'POST' : 'PUT',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(objectItem)
+					body: JSON.stringify(objectItem),
 				})
 
 				const data = new ObjectEntity(await response.json())
@@ -374,7 +402,7 @@ export const useObjectStore = defineStore('object', {
 		 * Get files for an object
 		 *
 		 * @param {number} id Object ID
-		 * @param options Pagination options
+		 * @param {object} options Pagination options
 		 * @return {Promise} Promise that resolves with the object's files
 		 */
 		async getFiles(id, options = {}) {
@@ -544,34 +572,36 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		updateColumnFilter(id, enabled) {
-			console.log('Updating column filter:', id, enabled)
-			console.log('Current columnFilters:', this.columnFilters)
-			
+			console.info('Updating column filter:', id, enabled)
+			console.info('Current columnFilters:', this.columnFilters)
+
 			if (id.startsWith('meta_')) {
 				const metaId = id.replace('meta_', '')
 				if (this.metadata[metaId]) {
 					this.metadata[metaId].enabled = enabled
 					this.columnFilters[id] = enabled
-					console.log('Updated metadata filter:', metaId, enabled)
+					console.info('Updated metadata filter:', metaId, enabled)
 				}
 			} else if (id.startsWith('prop_')) {
 				const propId = id.replace('prop_', '')
 				if (this.properties[propId]) {
 					this.properties[propId].enabled = enabled
 					this.columnFilters[id] = enabled
-					console.log('Updated property filter:', propId, enabled)
+					console.info('Updated property filter:', propId, enabled)
 				}
 			}
-			
-			console.log('Updated columnFilters:', this.columnFilters)
+
+			console.info('Updated columnFilters:', this.columnFilters)
 			// Force a refresh of the table
 			this.objectList = { ...this.objectList }
 		},
 		// Initialize properties based on schema
 		initializeProperties(schema) {
-			if (!schema?.properties) return
+			if (!schema?.properties) {
+				return
+			}
 
-			console.log('Initializing properties from schema:', schema.properties)
+			console.info('Initializing properties from schema:', schema.properties)
 
 			// Reset properties
 			this.properties = {}
@@ -587,11 +617,11 @@ export const useObjectStore = defineStore('object', {
 					key: propertyName,
 					description: property.description || '',
 					enabled: false,
-					type: property.type
+					type: property.type,
 				}
 			})
 
-			console.log('Properties initialized:', this.properties)
+			console.info('Properties initialized:', this.properties)
 
 			// Reinitialize column filters to include new properties
 			this.initializeColumnFilters()
@@ -606,14 +636,16 @@ export const useObjectStore = defineStore('object', {
 				...Object.entries(this.properties).reduce((acc, [id, prop]) => {
 					acc[`prop_${id}`] = prop.enabled
 					return acc
-				}, {})
+				}, {}),
 			}
-			console.log('Initialized column filters:', this.columnFilters)
+			console.info('Initialized column filters:', this.columnFilters)
 		},
 	},
 	getters: {
 		isAllSelected() {
-			if (!this.objectList?.results?.length) return false
+			if (!this.objectList?.results?.length) {
+				return false
+			}
 			const currentIds = this.objectList.results.map(result => result['@self'].id)
 			return currentIds.every(id => this.selectedObjects.includes(id))
 		},
@@ -623,7 +655,7 @@ export const useObjectStore = defineStore('object', {
 				.filter(([id]) => this.columnFilters[`meta_${id}`])
 				.map(([id, meta]) => ({
 					id: `meta_${id}`,
-					...meta
+					...meta,
 				}))
 		},
 		// Add getter for enabled property columns
@@ -632,41 +664,41 @@ export const useObjectStore = defineStore('object', {
 				.filter(([id]) => this.columnFilters[`prop_${id}`])
 				.map(([id, prop]) => ({
 					id: `prop_${id}`,
-					...prop
+					...prop,
 				}))
 		},
 		// Separate getter for ID/UUID metadata
 		enabledIdentifierMetadata() {
 			return Object.entries(this.metadata)
-				.filter(([id]) => 
-					(id === 'objectId' || id === 'uuid') && 
-					this.columnFilters[`meta_${id}`]
+				.filter(([id]) =>
+					(id === 'objectId' || id === 'uuid')
+					&& this.columnFilters[`meta_${id}`],
 				)
 				.map(([id, meta]) => ({
 					id: `meta_${id}`,
-					...meta
+					...meta,
 				}))
 		},
 		// Separate getter for other metadata
 		enabledOtherMetadata() {
 			return Object.entries(this.metadata)
-				.filter(([id]) => 
-					id !== 'objectId' && 
-					id !== 'uuid' && 
-					this.columnFilters[`meta_${id}`]
+				.filter(([id]) =>
+					id !== 'objectId'
+					&& id !== 'uuid'
+					&& this.columnFilters[`meta_${id}`],
 				)
 				.map(([id, meta]) => ({
 					id: `meta_${id}`,
-					...meta
+					...meta,
 				}))
 		},
 		// Combined enabled columns in the desired order
 		enabledColumns() {
 			return [
-				...this.enabledIdentifierMetadata,  // ID/UUID first
-				...this.enabledProperties,          // Then properties
-				...this.enabledOtherMetadata        // Then other metadata
+				...this.enabledIdentifierMetadata, // ID/UUID first
+				...this.enabledProperties, // Then properties
+				...this.enabledOtherMetadata, // Then other metadata
 			]
-		}
-	}
+		},
+	},
 })
