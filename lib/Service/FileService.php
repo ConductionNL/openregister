@@ -4,6 +4,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\Files_Versions\Versions\VersionManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -65,9 +66,19 @@ class FileService
         private readonly ISystemTagManager      $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly ObjectEntityMapper     $objectEntityMapper,
+        private readonly VersionManager         $versionManager,
 	)
 	{
 	}
+
+    public function getVersion (Node $file, string $version):?Node
+    {
+        if($file instanceof File === false) {
+            return $file;
+        }
+
+        return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
+    }
 
 	/**
 	 * Creates a folder for a Register (used for storing files of Schemas/Objects).

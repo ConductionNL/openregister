@@ -664,7 +664,7 @@ class ObjectService
         $object = array_filter($object, function($key) {
             return !str_starts_with($key, '_');
         }, ARRAY_FILTER_USE_KEY);
-		
+
 
         // Convert register to its respective object if it is a string or int
         if (!$register instanceof Register) {
@@ -739,16 +739,16 @@ class ObjectService
 		if ($objectEntity->getCreated() === null) {
 			$objectEntity->setCreated($currentDateTime);
 		}
-		
+
 		// We always set the updated time to the current date and time
 		$objectEntity->setUpdated($currentDateTime);
 
-		// Create the uri for the object 		
+		// Create the uri for the object
 		if ($objectEntity->getUri() === null) {
 			$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
 		}
 
-		// Make sure we create a folder in NC for this object if it doesn't already have one	
+		// Make sure we create a folder in NC for this object if it doesn't already have one
 		if ($objectEntity->getFolder() === null) {
 			$this->fileService->createObjectFolder($objectEntity);
 		}
@@ -1492,7 +1492,7 @@ class ObjectService
 	 * @throws NotFoundException If the folder or file is not found
 	 * @throws DoesNotExistException If the object ID is not found
 	 */
-	public function getFile(ObjectEntity|string $object, string $filePath): ?Node
+	public function getFile(ObjectEntity|string $object, string $filePath, ?string $version = null): ?Node
 	{
 		// If string ID provided, try to find the object entity
 		if (is_string($object)) {
@@ -1505,13 +1505,20 @@ class ObjectService
 			schema: $object->getSchema()
 		);
 
-		if ($folder instanceof Folder === true) {
+		if ($folder instanceof Folder === true && $version === null) {
 			try {
 				return $folder->get($filePath);
 			} catch (NotFoundException $e) {
 				return null;
 			}
-		}
+		} elseif($folder instanceof Folder === true) {
+            try {
+                $file = $folder->get($filePath);
+                return $this->fileService->getVersion($file, $version);
+            } catch (NotFoundException $e) {
+                return null;
+            }
+        }
 
 		return null;
 	}
