@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister Audit Trail
+ *
+ * This file contains the class for handling audit trail related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -9,96 +23,189 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Entity class representing an Audit Trail entry
  *
- * This class handles the storage and tracking of all changes and actions performed
- * on objects, registers, and schemas in the OpenRegister system.
+ * Manages audit trail data and operations
  *
- * @category Database
- * @package  OCA\OpenRegister\Db
- * @author   Nextcloud GmbH and Nextcloud contributors
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/OpenRegister
- * @version  0.1.48
+ * @package OCA\OpenRegister\Db
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
 
+    /**
+     * Unique identifier for the audit trail entry
+     *
+     * @var string|null Unique identifier for the audit trail entry
+     */
     protected ?string $uuid = null;
 
+    /**
+     * Schema ID associated with the audit trail entry
+     *
+     * @var integer|null Schema ID associated with the audit trail entry
+     */
     protected ?int $schema = null;
 
+    /**
+     * Register ID associated with the audit trail entry
+     *
+     * @var integer|null Register ID associated with the audit trail entry
+     */
     protected ?int $register = null;
 
+    /**
+     * Object ID associated with the audit trail entry
+     *
+     * @var integer|null Object ID associated with the audit trail entry
+     */
     protected ?int $object = null;
 
+    /**
+     * UUID of the object associated with the audit trail entry
+     *
+     * @var string|null UUID of the object associated with the audit trail entry
+     */
     protected ?string $objectUuid = null;
 
+    /**
+     * UUID of the register associated with the audit trail entry
+     *
+     * @var string|null UUID of the register associated with the audit trail entry
+     */
     protected ?string $registerUuid = null;
 
+    /**
+     * UUID of the schema associated with the audit trail entry
+     *
+     * @var string|null UUID of the schema associated with the audit trail entry
+     */
     protected ?string $schemaUuid = null;
 
+    /**
+     * Action performed in the audit trail entry
+     *
+     * @var string|null Action performed in the audit trail entry
+     */
     protected ?string $action = null;
 
+    /**
+     * Changed data in the audit trail entry
+     *
+     * @var array|null Changed data in the audit trail entry
+     */
     protected ?array $changed = null;
 
+    /**
+     * User ID associated with the audit trail entry
+     *
+     * @var string|null User ID associated with the audit trail entry
+     */
     protected ?string $user = null;
 
+    /**
+     * Username associated with the audit trail entry
+     *
+     * @var string|null Username associated with the audit trail entry
+     */
     protected ?string $userName = null;
 
+    /**
+     * Session ID associated with the audit trail entry
+     *
+     * @var string|null Session ID associated with the audit trail entry
+     */
     protected ?string $session = null;
 
+    /**
+     * Request data associated with the audit trail entry
+     *
+     * @var string|null Request data associated with the audit trail entry
+     */
     protected ?string $request = null;
 
+    /**
+     * IP address associated with the audit trail entry
+     *
+     * @var string|null IP address associated with the audit trail entry
+     */
     protected ?string $ipAddress = null;
 
+    /**
+     * Version of the audit trail entry
+     *
+     * @var string|null Version of the audit trail entry
+     */
     protected ?string $version = null;
 
+    /**
+     * Creation timestamp of the audit trail entry
+     *
+     * @var DateTime|null Creation timestamp of the audit trail entry
+     */
     protected ?DateTime $created = null;
 
-    // Properties from Dutch standards for personal data processing
-
     /**
-     * @var string|null The unique identifier of the organization processing personal data.
-     * This can be an OIN (Organisatie Identificatie Nummer), RSIN (Rechtspersonen en Samenwerkingsverbanden Informatienummer),
-     * KVK (Kamer van Koophandel) number, or any other official organization identifier.
+     * The unique identifier of the organization processing personal data
+     *
+     * This can be an OIN (Organisatie Identificatie Nummer), RSIN (Rechtspersonen en Samenwerkingsverbanden
+     * Informatienummer), KVK (Kamer van Koophandel) number, or any other official organization identifier.
+     *
+     * @var string|null The unique identifier of the organization processing personal data
      */
     protected ?string $organisationId = null;
 
     /**
-     * @var string|null The type of organization identifier used.
+     * The type of organization identifier used
+     *
      * Common values include:
      * - 'OIN': Organisatie Identificatie Nummer
      * - 'RSIN': Rechtspersonen en Samenwerkingsverbanden Informatienummer
      * - 'KVK': Kamer van Koophandel
      * - 'OTHER': Other type of organization identifier
+     *
+     * @var string|null The type of organization identifier used
      */
     protected ?string $organisationIdType = null;
 
     /**
+     * The Processing Activity ID that identifies the specific processing operation
+     *
      * @var string|null The Processing Activity ID that identifies the specific processing operation
      */
     protected ?string $processingActivityId = null;
 
     /**
+     * The URL where the processing activity is registered
+     *
      * @var string|null The URL where the processing activity is registered
      */
     protected ?string $processingActivityUrl = null;
 
     /**
+     * The unique identifier for this specific processing operation
+     *
      * @var string|null The unique identifier for this specific processing operation
      */
     protected ?string $processingId = null;
 
     /**
+     * The confidentiality level of the processed data
+     *
      * @var string|null The confidentiality level of the processed data (e.g., 'public', 'internal', 'confidential')
      */
     protected ?string $confidentiality = null;
 
     /**
+     * The retention period for the processed data in ISO 8601 duration format
+     *
      * @var string|null The retention period for the processed data in ISO 8601 duration format
      */
     protected ?string $retentionPeriod = null;
 
 
+    /**
+     * Constructor for the AuditTrail class
+     *
+     * Sets up field types for all properties
+     */
     public function __construct()
     {
         $this->addType(fieldName: 'uuid', type: 'string');
@@ -140,20 +247,36 @@ class AuditTrail extends Entity implements JsonSerializable
     }//end getChanged()
 
 
+    /**
+     * Get JSON fields from the entity
+     *
+     * Returns all fields that are of type 'json'
+     *
+     * @return array<string> List of JSON field names
+     */
     public function getJsonFields(): array
     {
         return array_keys(
             array_filter(
-           $this->getFieldTypes(),
-           function ($field) {
-                return $field === 'json';
-           }
-           )
+                $this->getFieldTypes(),
+                function ($field) {
+                    return $field === 'json';
+                }
+            )
         );
 
     }//end getJsonFields()
 
 
+    /**
+     * Hydrate the entity with data from an array
+     *
+     * Sets entity properties based on input array values
+     *
+     * @param array $object The data array to hydrate from
+     *
+     * @return self Returns $this for method chaining
+     */
     public function hydrate(array $object): self
     {
         $jsonFields = $this->getJsonFields();
@@ -168,6 +291,7 @@ class AuditTrail extends Entity implements JsonSerializable
             try {
                 $this->$method($value);
             } catch (\Exception $exception) {
+                // Silently ignore invalid properties.
             }
         }
 
@@ -176,8 +300,20 @@ class AuditTrail extends Entity implements JsonSerializable
     }//end hydrate()
 
 
+    /**
+     * Convert entity to JSON serializable array
+     *
+     * Prepares the entity data for JSON serialization
+     *
+     * @return array<string, mixed> Array of serializable entity data
+     */
     public function jsonSerialize(): array
     {
+        $created = null;
+        if (isset($this->created) === true) {
+            $created = $this->created->format('c');
+        }
+
         return [
             'id'                    => $this->id,
             'uuid'                  => $this->uuid,
@@ -195,7 +331,7 @@ class AuditTrail extends Entity implements JsonSerializable
             'request'               => $this->request,
             'ipAddress'             => $this->ipAddress,
             'version'               => $this->version,
-            'created'               => isset($this->created) ? $this->created->format('c') : null,
+            'created'               => $created,
             'organisationId'        => $this->organisationId,
             'organisationIdType'    => $this->organisationIdType,
             'processingActivityId'  => $this->processingActivityId,

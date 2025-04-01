@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister Source Mapper
+ *
+ * This file contains the class for handling source mapper related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -33,7 +47,8 @@ class SourceMapper extends QBMapper
     /**
      * Finds a source by id
      *
-     * @param  int $id The id of the source
+     * @param int $id The id of the source
+     *
      * @return Source The source
      */
     public function find(int $id): Source
@@ -54,15 +69,21 @@ class SourceMapper extends QBMapper
     /**
      * Finds all sources
      *
-     * @param  int|null   $limit            The limit of the results
-     * @param  int|null   $offset           The offset of the results
-     * @param  array|null $filters          The filters to apply
-     * @param  array|null $searchConditions The search conditions to apply
-     * @param  array|null $searchParams     The search parameters to apply
+     * @param int|null   $limit            The limit of the results
+     * @param int|null   $offset           The offset of the results
+     * @param array|null $filters          The filters to apply
+     * @param array|null $searchConditions The search conditions to apply
+     * @param array|null $searchParams     The search parameters to apply
+     *
      * @return array The sources
      */
-    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
-    {
+    public function findAll(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
+    ): array {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -80,7 +101,7 @@ class SourceMapper extends QBMapper
             }
         }
 
-        if (!empty($searchConditions)) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -95,7 +116,8 @@ class SourceMapper extends QBMapper
     /**
      * Creates a source from an array
      *
-     * @param  array $object The object to create
+     * @param array $object The object to create
+     *
      * @return Source The created source
      */
     public function createFromArray(array $object): Source
@@ -103,7 +125,7 @@ class SourceMapper extends QBMapper
         $source = new Source();
         $source->hydrate(object: $object);
 
-        // Set uuid if not provided
+        // Set uuid if not provided.
         if ($source->getUuid() === null) {
             $source->setUuid(Uuid::v4());
         }
@@ -116,8 +138,9 @@ class SourceMapper extends QBMapper
     /**
      * Updates a source from an array
      *
-     * @param  int   $id     The id of the source to update
-     * @param  array $object The object to update
+     * @param int   $id     The id of the source to update
+     * @param array $object The object to update
+     *
      * @return Source The updated source
      */
     public function updateFromArray(int $id, array $object): Source
@@ -125,7 +148,7 @@ class SourceMapper extends QBMapper
         $obj = $this->find($id);
         $obj->hydrate($object);
 
-        // Set or update the version
+        // Set or update the version.
         if (isset($object['version']) === false) {
             $version    = explode('.', $obj->getVersion());
             $version[2] = ((int) $version[2] + 1);

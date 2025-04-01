@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister Register Mapper
+ *
+ * This file contains the class for handling register mapper related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -22,8 +36,18 @@ use OCA\OpenRegister\Event\RegisterDeletedEvent;
 class RegisterMapper extends QBMapper
 {
 
+    /**
+     * The schema mapper instance
+     *
+     * @var SchemaMapper
+     */
     private $schemaMapper;
 
+    /**
+     * The event dispatcher instance
+     *
+     * @var IEventDispatcher
+     */
     private $eventDispatcher;
 
 
@@ -33,6 +57,8 @@ class RegisterMapper extends QBMapper
      * @param IDBConnection    $db              The database connection
      * @param SchemaMapper     $schemaMapper    The schema mapper
      * @param IEventDispatcher $eventDispatcher The event dispatcher
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
@@ -49,14 +75,15 @@ class RegisterMapper extends QBMapper
     /**
      * Find a register by its ID
      *
-     * @param  int $id The ID of the register to find
+     * @param int|string $id The ID of the register to find
+     *
      * @return Register The found register
      */
     public function find(string | int $id): Register
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Build the query
+        // Build the query.
         $qb->select('*')
             ->from('openregister_registers')
             ->where(
@@ -67,33 +94,39 @@ class RegisterMapper extends QBMapper
                 )
             );
 
-        // Execute the query and return the result
+        // Execute the query and return the result.
         return $this->findEntity(query: $qb);
 
     }//end find()
 
 
     /**
-     * Find all registers with optional filtering and searching
+     * Find all registers
      *
-     * @param  int|null   $limit            Maximum number of results to return
-     * @param  int|null   $offset           Number of results to skip
-     * @param  array|null $filters          Associative array of filters
-     * @param  array|null $searchConditions Array of search conditions
-     * @param  array|null $searchParams     Array of search parameters
+     * @param int|null   $limit            The limit of the results
+     * @param int|null   $offset           The offset of the results
+     * @param array|null $filters          The filters to apply
+     * @param array|null $searchConditions Array of search conditions
+     * @param array|null $searchParams     Array of search parameters
+     *
      * @return array Array of found registers
      */
-    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
-    {
+    public function findAll(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
+    ): array {
         $qb = $this->db->getQueryBuilder();
 
-        // Build the base query
+        // Build the base query.
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // Apply filters
+        // Apply filters.
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -104,28 +137,32 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        // Apply search conditions
-        if (!empty($searchConditions)) {
+        // Apply search conditions.
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
-        // Execute the query and return the results
+        // Execute the query and return the results.
         return $this->findEntities(query: $qb);
 
     }//end findAll()
 
 
     /**
-     * @inheritdoc
+     * Insert a new entity
+     *
+     * @param Entity $entity The entity to insert
+     *
+     * @return Entity The inserted entity
      */
     public function insert(Entity $entity): Entity
     {
         $entity = parent::insert($entity);
 
-        // Dispatch creation event
+        // Dispatch creation event.
         $this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent($entity));
 
         return $entity;
@@ -136,40 +173,41 @@ class RegisterMapper extends QBMapper
     /**
      * Ensures that a register object has a UUID and a slug.
      *
-     * @param  Register $register The register object to clean
+     * @param Register $register The register object to clean
+     *
      * @return void
      */
     private function cleanObject(Register $register): void
     {
-        // Check if UUID is set, if not, generate a new one
+        // Check if UUID is set, if not, generate a new one.
         if ($register->getUuid() === null) {
             $register->setUuid(Uuid::v4());
         }
 
-        // Ensure the object has a slug
+        // Ensure the object has a slug.
         if (empty($register->getSlug()) === true) {
-            // Convert to lowercase and replace spaces with dashes
+            // Convert to lowercase and replace spaces with dashes.
             $slug = strtolower(trim($register->getTitle()));
-            // Assuming title is used for slug
-            // Remove special characters
+            // Assuming title is used for slug.
+            // Remove special characters.
             $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-            // Remove multiple dashes
+            // Remove multiple dashes.
             $slug = preg_replace('/-+/', '-', $slug);
-            // Remove leading/trailing dashes
+            // Remove leading/trailing dashes.
             $slug = trim($slug, '-');
 
             $register->setSlug($slug);
         }
 
-        // Ensure the object has a version
+        // Ensure the object has a version.
         if ($register->getVersion() === null) {
             $register->setVersion('1.0.0');
         } else {
-            // Split the version into major, minor, and patch
+            // Split the version into major, minor, and patch.
             $versionParts = explode('.', $register->getVersion());
-            // Increment the patch version
+            // Increment the patch version.
             $versionParts[2] = ((int) $versionParts[2] + 1);
-            // Reassemble the version string
+            // Reassemble the version string.
             $newVersion = implode('.', $versionParts);
             $register->setVersion($newVersion);
         }
@@ -180,7 +218,8 @@ class RegisterMapper extends QBMapper
     /**
      * Create a new register from an array of data
      *
-     * @param  array $object The data to create the register from
+     * @param array $object The data to create the register from
+     *
      * @return Register The created register
      */
     public function createFromArray(array $object): Register
@@ -188,7 +227,7 @@ class RegisterMapper extends QBMapper
         $register = new Register();
         $register->hydrate(object: $object);
 
-        // Clean the register object to ensure UUID, slug, and version are set
+        // Clean the register object to ensure UUID, slug, and version are set.
         $this->cleanObject($register);
 
         $register = $this->insert(entity: $register);
@@ -199,18 +238,22 @@ class RegisterMapper extends QBMapper
 
 
     /**
-     * @inheritdoc
+     * Update an entity
+     *
+     * @param Entity $entity The entity to update
+     *
+     * @return Entity The updated entity
      */
     public function update(Entity $entity): Entity
     {
         $oldSchema = $this->find($entity->getId());
 
-        // Clean the register object to ensure UUID, slug, and version are set
+        // Clean the register object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);
 
         $entity = parent::update($entity);
 
-        // Dispatch update event
+        // Dispatch update event.
         $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent($entity, $oldSchema));
 
         return $entity;
@@ -221,8 +264,9 @@ class RegisterMapper extends QBMapper
     /**
      * Update an existing register from an array of data
      *
-     * @param  int   $id     The ID of the register to update
-     * @param  array $object The new data for the register
+     * @param int   $id     The ID of the register to update
+     * @param array $object The new data for the register
+     *
      * @return Register The updated register
      */
     public function updateFromArray(int $id, array $object): Register
@@ -230,7 +274,7 @@ class RegisterMapper extends QBMapper
         $newRegister = $this->find($id);
         $newRegister->hydrate($object);
 
-        // Clean the register object to ensure UUID, slug, and version are set
+        // Clean the register object to ensure UUID, slug, and version are set.
         $this->cleanObject($newRegister);
 
         $newRegister = $this->update($newRegister);
@@ -243,14 +287,15 @@ class RegisterMapper extends QBMapper
     /**
      * Delete a register
      *
-     * @param  Register $entity The register to delete
+     * @param Register $entity The register to delete
+     *
      * @return Register The deleted register
      */
     public function delete(Entity $entity): Register
     {
         $result = parent::delete($entity);
 
-        // Dispatch deletion event
+        // Dispatch deletion event.
         $this->eventDispatcher->dispatchTyped(
             new RegisterDeletedEvent($entity)
         );
@@ -263,7 +308,8 @@ class RegisterMapper extends QBMapper
     /**
      * Get all schemas associated with a register
      *
-     * @param  int $registerId The ID of the register
+     * @param int $registerId The ID of the register
+     *
      * @return array Array of schemas
      */
     public function getSchemasByRegisterId(int $registerId): array
@@ -273,7 +319,7 @@ class RegisterMapper extends QBMapper
 
         $schemas = [];
 
-        // Fetch each schema by its ID
+        // Fetch each schema by its ID.
         foreach ($schemaIds as $schemaId) {
             $schemas[] = $this->schemaMapper->find((int) $schemaId);
         }
@@ -286,15 +332,16 @@ class RegisterMapper extends QBMapper
     /**
      * Check if a register has a schema with a specific title
      *
-     * @param  int    $registerId  The ID of the register
-     * @param  string $schemaTitle The title of the schema to look for
+     * @param int    $registerId  The ID of the register
+     * @param string $schemaTitle The title of the schema to look for
+     *
      * @return Schema|bool The schema if found, false otherwise
      */
     public function hasSchemaWithTitle(int $registerId, string $schemaTitle): (Schema | bool)
     {
         $schemas = $this->getSchemasByRegisterId($registerId);
 
-        // Check each schema for a matching title
+        // Check each schema for a matching title.
         foreach ($schemas as $schema) {
             if ($schema->getTitle() === $schemaTitle) {
                 return $schema;

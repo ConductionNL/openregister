@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister Object Entity Mapper
+ *
+ * This file contains the class for handling object entity mapper related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -32,8 +46,26 @@ use OCA\OpenRegister\Exception\LockedException;
  */
 class ObjectEntityMapper extends QBMapper
 {
+
+    /**
+     * Database JSON service instance
+     *
+     * @var IDatabaseJsonService
+     */
     private IDatabaseJsonService $databaseJsonService;
+
+    /**
+     * Event dispatcher instance
+     *
+     * @var IEventDispatcher
+     */
     private IEventDispatcher $eventDispatcher;
+
+    /**
+     * User session instance
+     *
+     * @var IUserSession
+     */
     private IUserSession $userSession;
 
     public const MAIN_FILTERS          = ['register', 'schema', 'uuid', 'created', 'updated'];
@@ -69,18 +101,31 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by ID or UUID
      *
-     * @param  int|string $idOrUuid The ID or UUID of the object to find
+     * @param int|string $identifier The ID or UUID of the object to find
+     *
      * @return ObjectEntity The ObjectEntity
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function find(string | int $identifier): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
+        // Determine ID parameter based on whether identifier is numeric.
+        $idParam = -1;
+        if (is_numeric($identifier) === true) {
+            $idParam = $identifier;
+        }
+
         $qb->select('*')
             ->from('openregister_objects')
             ->where(
                 $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter(is_numeric($identifier) ? $identifier : -1, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq(
+                        'id',
+                        $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)
+                    ),
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
                 )
@@ -94,10 +139,14 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by UUID
      *
-     * @param  string $uuid The UUID of the object to find
-     * @return ObjectEntity The object
+     * @param Register $register The register to search in
+     * @param Schema   $schema   The schema to search in
+     * @param string   $uuid     The UUID of the object to find
+     *
+     * @return ObjectEntity|null The object if found, null otherwise
+     * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity | null
+    public function findByUuid(Register $register, Schema $schema, string $uuid): (ObjectEntity | null)
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -125,10 +174,12 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by UUID only
      *
-     * @param  string $uuid The UUID of the object to find
-     * @return ObjectEntity The object
+     * @param string $uuid The UUID of the object to find
+     *
+     * @return ObjectEntity|null The object if found, null otherwise
+     * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function findByUuidOnly(string $uuid): ObjectEntity | null
+    public function findByUuidOnly(string $uuid): (ObjectEntity | null)
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -150,11 +201,13 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find objects by register and schema
      *
-     * @param  string $register The register to find objects for
-     * @param  string $schema   The schema to find objects for
-     * @return array An array of ObjectEntitys
+     * @param string $register The register to find objects for
+     * @param string $schema   The schema to find objects for
+     *
+     * @return array An array of ObjectEntity objects
+     * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function findByRegisterAndSchema(string $register, string $schema): ObjectEntity
+    public function findByRegisterAndSchema(string $register, string $schema): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -188,17 +241,17 @@ class ObjectEntityMapper extends QBMapper
         $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
             ->from(from: 'openregister_objects');
 
-        // Conditionally count objects based on $includeDeleted
+        // Conditionally count objects based on $includeDeleted.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
         foreach ($filters as $filter => $value) {
-            if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNull($filter));
-            } else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
@@ -227,7 +280,8 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $uses             Value that must be present in relations
      * @param bool        $includeDeleted   Whether to include deleted objects
      *
-     * @return array An array of ObjectEntitys
+     * @return array An array of ObjectEntity objects
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function findAll(
         ?int $limit=null,
@@ -248,20 +302,20 @@ class ObjectEntityMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
-        if (!$includeDeleted) {
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
-        // Handle filtering by IDs/UUIDs if provided
-        if ($ids !== null && !empty($ids)) {
+        // Handle filtering by IDs/UUIDs if provided.
+        if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
             $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
 
-        // Handle filtering by uses in relations if provided
+        // Handle filtering by uses in relations if provided.
         if ($uses !== null) {
             $qb->andWhere(
                 $qb->expr()->isNotNull(
@@ -273,29 +327,29 @@ class ObjectEntityMapper extends QBMapper
         }
 
         foreach ($filters as $filter => $value) {
-            if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNull($filter));
-            } else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
 
-        if (!empty($searchConditions)) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
-        // @roto: tody this code up please and make ik monogdb compatible
-        // Check if _relations filter exists to search in relations column
+        // @todo: tidy this code up please and make it mongodb compatible.
+        // Check if _relations filter exists to search in relations column.
         if (isset($filters['_relations']) === true) {
-            // Handle both single string and array of relations
+            // Handle both single string and array of relations.
             $relations = (array) $filters['_relations'];
 
-            // Build OR conditions for each relation
+            // Build OR conditions for each relation.
             $orConditions = [];
             foreach ($relations as $relation) {
                 $orConditions[] = $qb->expr()->isNotNull(
@@ -305,14 +359,14 @@ class ObjectEntityMapper extends QBMapper
                 );
             }
 
-            // Add the combined OR conditions to query
+            // Add the combined OR conditions to query.
             $qb->andWhere($qb->expr()->orX(...$orConditions));
 
-            // Remove _relations from filters since it's handled separately
+            // Remove _relations from filters since it's handled separately.
             unset($filters['_relations']);
         }//end if
 
-        // Filter and search the objects
+        // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
         $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
@@ -325,18 +379,20 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Inserts a new entity into the database.
      *
-     * @param  Entity $entity The entity to insert.
+     * @param Entity $entity The entity to insert.
+     *
      * @return Entity The inserted entity.
+     * @throws \OCP\DB\Exception If a database error occurs.
      */
     public function insert(Entity $entity): Entity
     {
-        // Lets make sure that @self and id never enter the database
+        // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
 
         $entity = parent::insert($entity);
-        // Dispatch creation event
+        // Dispatch creation event.
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
         return $entity;
@@ -347,35 +403,43 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Creates an object from an array
      *
-     * @param  array $object The object to create
+     * @param array $object The object to create
+     *
      * @return ObjectEntity The created object
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function createFromArray(array $object): ObjectEntity
     {
         $obj = new ObjectEntity();
         $obj->hydrate(object: $object);
 
-        // Prepare the object before insertion
+        // Prepare the object before insertion.
         return $this->insert($obj);
 
     }//end createFromArray()
 
 
     /**
-     * @inheritDoc
+     * Updates an entity in the database
+     *
+     * @param Entity $entity The entity to update
+     *
+     * @return Entity The updated entity
+     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      */
     public function update(Entity $entity): Entity
     {
         $oldObject = $this->find($entity->getId());
 
-        // Lets make sure that @self and id never enter the database
+        // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
 
         $entity = parent::update($entity);
 
-        // Dispatch update event
+        // Dispatch update event.
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
         return $entity;
@@ -386,9 +450,12 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Updates an object from an array
      *
-     * @param  int   $id     The id of the object to update
-     * @param  array $object The object to update
+     * @param int   $id     The id of the object to update
+     * @param array $object The object to update
+     *
      * @return ObjectEntity The updated object
+     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
      */
     public function updateFromArray(int $id, array $object): ObjectEntity
     {
@@ -396,7 +463,7 @@ class ObjectEntityMapper extends QBMapper
         $newObject = clone $oldObject;
         $newObject->hydrate($object);
 
-        // Prepare the object before updating
+        // Prepare the object before updating.
         return $this->update($this->prepareEntity($newObject));
 
     }//end updateFromArray()
@@ -405,14 +472,16 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Delete an object
      *
-     * @param  ObjectEntity $object The object to delete
+     * @param ObjectEntity $object The object to delete
+     *
      * @return ObjectEntity The deleted object
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function delete(Entity $object): ObjectEntity
     {
         $result = parent::delete($object);
 
-        // Dispatch deletion event
+        // Dispatch deletion event.
         $this->eventDispatcher->dispatch(
             ObjectDeletedEvent::class,
             new ObjectDeletedEvent($object)
@@ -426,79 +495,86 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Gets the facets for the objects
      *
-     * @param  array       $filters The filters to apply
-     * @param  string|null $search  The search string to apply
+     * @param array       $filters The filters to apply
+     * @param string|null $search  The search string to apply
+     *
      * @return array The facets
+     * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function getFacets(array $filters=[], ?string $search=null)
+    public function getFacets(array $filters=[], ?string $search=null): array
     {
-    if (key_exists(
-                key: 'register',
-                array:
-        $filters
-                ) === true
-    )                          {
-        $register = $filters['register'];
+        $register = null;
+        $schema   = null;
 
+        if (array_key_exists('register', $filters) === true) {
+            $register = $filters['register'];
+        }
 
-    }
-    if (key_exists(
-                key: 'schema',
-                array:
-        $filters
-                ) === true
-    )                          {
-        $schema = $filters['schema'];
-    }
+        if (array_key_exists('schema', $filters) === true) {
+            $schema = $filters['schema'];
+        }
 
-    $fields = [];
-    if (isset($filters['_queries'])) {
-        $fields = $filters['_queries'];
-    }
+        $fields = [];
+        if (isset($filters['_queries']) === true) {
+            $fields = $filters['_queries'];
+        }
 
-    unset(
-        $filters['_fields'],
-        $filters['register'],
-        $filters['schema'],
-        $filters['created'],
-        $filters['updated'],
-        $filters['uuid']
+        unset(
+            $filters['_fields'],
+            $filters['register'],
+            $filters['schema'],
+            $filters['created'],
+            $filters['updated'],
+            $filters['uuid']
         );
 
         return $this->databaseJsonService->getAggregations(
-        builder: $this->db->getQueryBuilder(),
-        fields: $fields,
-        register: $register,
-        schema: $schema,
-        filters: $filters,
-        search: $search
+            builder: $this->db->getQueryBuilder(),
+            fields: $fields,
+            register: $register,
+            schema: $schema,
+            filters: $filters,
+            search: $search
         );
-    }//end if
+
+    }//end getFacets()
 
 
     /**
      * Find objects that have a specific URI or UUID in their relations
      *
-     * @param  string $search       The URI or UUID to search for in relations
-     * @param  bool   $partialMatch Whether to search for partial matches (default: false)
+     * @param string $search       The URI or UUID to search for in relations
+     * @param bool   $partialMatch Whether to search for partial matches (default: false)
+     *
      * @return array An array of ObjectEntities that have the specified URI/UUID
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function findByRelationUri(string $search, bool $partialMatch=false): array
     {
         $qb = $this->db->getQueryBuilder();
 
-        // For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON
-        // For exact matches, we use 'one' mode which finds exact string matches
-        $mode       = $partialMatch ? 'all' : 'one';
-        $searchTerm = $partialMatch ? '%'.$search.'%' : $search;
+        // For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON.
+        // For exact matches, we use 'one' mode which finds exact string matches.
+        $mode       = 'one';
+        $searchTerm = $search;
+
+        if ($partialMatch === true) {
+            $mode       = 'all';
+            $searchTerm = '%'.$search.'%';
+        }
+
+        $searchFunction = "JSON_SEARCH(relations, '".$mode."', ".$qb->createNamedParameter($searchTerm);
+        if ($partialMatch === true) {
+            $searchFunction .= ", NULL, '$')";
+        } else {
+            $searchFunction .= ")";
+        }
 
         $qb->select('*')
             ->from('openregister_objects')
             ->where(
                 $qb->expr()->isNotNull(
-                    $qb->createFunction(
-                        "JSON_SEARCH(relations, '".$mode."', ".$qb->createNamedParameter($searchTerm).($partialMatch ? ", NULL, '$')" : ")")
-                    )
+                    $qb->createFunction($searchFunction)
                 )
             );
 
@@ -510,11 +586,12 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Lock an object
      *
-     * @param  string|int  $identifier Object ID, UUID, or URI
-     * @param  string|null $process    Optional process identifier
-     * @param  int|null    $duration   Lock duration in seconds
+     * @param string|int  $identifier Object ID, UUID, or URI
+     * @param string|null $process    Optional process identifier
+     * @param int|null    $duration   Lock duration in seconds
+     *
      * @return ObjectEntity The locked object
-     * @throws DoesNotExistException If object not found
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      * @throws \Exception If locking fails
      */
     public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
@@ -525,18 +602,18 @@ class ObjectEntityMapper extends QBMapper
             $duration = $this::DEFAULT_LOCK_DURATION;
         }
 
-        // Check if user has permission to lock
-        if (!$this->userSession->isLoggedIn()) {
+        // Check if user has permission to lock.
+        if ($this->userSession->isLoggedIn() === false) {
             throw new \Exception('Must be logged in to lock objects');
         }
 
-        // Attempt to lock the object
+        // Attempt to lock the object.
         $object->lock($this->userSession, $process, $duration);
 
-        // Save the locked object
+        // Save the locked object.
         $object = $this->update($object);
 
-        // Dispatch lock event
+        // Dispatch lock event.
         $this->eventDispatcher->dispatch(
             ObjectLockedEvent::class,
             new ObjectLockedEvent($object)
@@ -550,27 +627,28 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Unlock an object
      *
-     * @param  string|int $identifier Object ID, UUID, or URI
+     * @param string|int $identifier Object ID, UUID, or URI
+     *
      * @return ObjectEntity The unlocked object
-     * @throws DoesNotExistException If object not found
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      * @throws \Exception If unlocking fails
      */
     public function unlockObject($identifier): ObjectEntity
     {
         $object = $this->find($identifier);
 
-        // Check if user has permission to unlock
-        if (!$this->userSession->isLoggedIn()) {
+        // Check if user has permission to unlock.
+        if ($this->userSession->isLoggedIn() === false) {
             throw new \Exception('Must be logged in to unlock objects');
         }
 
-        // Attempt to unlock the object
+        // Attempt to unlock the object.
         $object->unlock($this->userSession);
 
-        // Save the unlocked object
+        // Save the unlocked object.
         $object = $this->update($object);
 
-        // Dispatch unlock event
+        // Dispatch unlock event.
         $this->eventDispatcher->dispatch(
             ObjectUnlockedEvent::class,
             new ObjectUnlockedEvent($object)
@@ -584,9 +662,10 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Check if an object is locked
      *
-     * @param  string|int $identifier Object ID, UUID, or URI
+     * @param string|int $identifier Object ID, UUID, or URI
+     *
      * @return bool True if object is locked, false otherwise
-     * @throws DoesNotExistException If object not found
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      */
     public function isObjectLocked($identifier): bool
     {
@@ -596,19 +675,27 @@ class ObjectEntityMapper extends QBMapper
     }//end isObjectLocked()
 
 
-   public function findMultiple(array $ids): array
+    /**
+     * Find multiple objects by their IDs, UUIDs, or URIs
+     *
+     * @param array $ids Array of IDs, UUIDs, or URIs to find
+     *
+     * @return array An array of ObjectEntity objects
+     * @throws \OCP\DB\Exception If a database error occurs
+     */
+    public function findMultiple(array $ids): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from('openregister_objects')
-            ->orWhere($qb->expr()->in('id',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uuid',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uri',  $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            ->orWhere($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uri', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
         return $this->findEntities($qb);
 
-   }//end findMultiple()
+    }//end findMultiple()
 
 
-    }//end if
+}//end class

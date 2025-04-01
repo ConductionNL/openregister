@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister Object Entity
+ *
+ * This file contains the class for handling object entity related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -17,58 +31,151 @@ use OCP\IUserSession;
 class ObjectEntity extends Entity implements JsonSerializable
 {
 
+    /**
+     * Unique identifier for the object.
+     *
+     * @var string|null Unique identifier for the object
+     */
     protected ?string $uuid = null;
 
+    /**
+     * URI of the object.
+     *
+     * @var string|null URI of the object
+     */
     protected ?string $uri = null;
 
+    /**
+     * Version of the object.
+     *
+     * @var string|null Version of the object
+     */
     protected ?string $version = null;
 
+    /**
+     * Register associated with the object.
+     *
+     * @var string|null Register associated with the object
+     */
     protected ?string $register = null;
 
+    /**
+     * Schema associated with the object.
+     *
+     * @var string|null Schema associated with the object
+     */
     protected ?string $schema = null;
 
+    /**
+     * Object data stored as an array.
+     *
+     * @var array|null Object data
+     */
     protected ?array $object = [];
 
+    /**
+     * Files associated with the object.
+     *
+     * @var array|null Files associated with the object
+     */
     protected ?array $files = [];
 
-    // array of file ids that are related to this object
+    /**
+     * Relations to other objects stored as an array of file IDs.
+     *
+     * @var array|null Array of file IDs that are related to this object
+     */
     protected ?array $relations = [];
 
-    // array of object ids that this object is related to
+    /**
+     * Text representation of the object.
+     *
+     * @var string|null Text representation of the object
+     */
     protected ?string $textRepresentation = null;
 
+    /**
+     * Lock information for the object if locked.
+     *
+     * @var array|null Contains the locked object if the object is locked
+     */
     protected ?array $locked = null;
 
-    // Contains the locked object if the object is locked
+    /**
+     * The owner of this object.
+     *
+     * @var string|null The Nextcloud user that owns this object
+     */
     protected ?string $owner = null;
 
-    // The Nextcloud user that owns this object
+    /**
+     * Authorization details for the object.
+     *
+     * @var array|null JSON object describing authorizations
+     */
     protected ?array $authorization = [];
 
-    // JSON object describing authorizations
+    /**
+     * Folder path where the object is stored.
+     *
+     * @var string|null The folder path where this object is stored
+     */
     protected ?string $folder = null;
 
-    // The folder path where this object is stored
+    /**
+     * Application name associated with the object.
+     *
+     * @var string|null The application name
+     */
     protected ?string $application = null;
 
-    // The application name
+    /**
+     * Organisation name associated with the object.
+     *
+     * @var string|null The organisation name
+     */
     protected ?string $organisation = null;
 
-    // The organisation name
+    /**
+     * Validation results for the object.
+     *
+     * @var array|null Array describing validation results
+     */
     protected ?array $validation = [];
 
-    // array describing validation results
+    /**
+     * Deletion details if the object is deleted.
+     *
+     * @var array|null Array describing deletion details
+     */
     protected ?array $deleted = [];
 
-    // array describing deletion details
+    /**
+     * Geographical details for the object.
+     *
+     * @var array|null Array describing geographical details
+     */
     protected ?array $geo = [];
 
-    // array describing deletion details
+    /**
+     * Retention details for the object.
+     *
+     * @var array|null Array describing retention details
+     */
     protected ?array $retention = [];
 
-    // array describing deletion details
+    /**
+     * Last update timestamp.
+     *
+     * @var DateTime|null Last update timestamp
+     */
     protected ?DateTime $updated = null;
 
+    /**
+     * Creation timestamp.
+     *
+     * @var DateTime|null Creation timestamp
+     */
     protected ?DateTime $created = null;
 
 
@@ -208,7 +315,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Hydrate the entity from an array of data
      *
-     * @param  array $object Array of data to hydrate the entity with
+     * @param array $object Array of data to hydrate the entity with
+     *
      * @return self Returns the hydrated entity
      */
     public function hydrate(array $object): self
@@ -229,6 +337,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             try {
                 $this->$method($value);
             } catch (Exception $exception) {
+                // Silently ignore invalid properties.
             }
         }
 
@@ -248,13 +357,13 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        // Backwards compatibility for old objects
+        // Backwards compatibility for old objects.
         $object          = $this->object;
         $object['@self'] = $this->getObjectArray();
         $object['@self']['id'] = $this->getUuid();
         $object['id']          = $this->getUuid();
 
-        // lets merge and return
+        // Let's merge and return.
         return $object;
 
     }//end jsonSerialize()
@@ -283,8 +392,8 @@ class ObjectEntity extends Entity implements JsonSerializable
             'validation'   => $this->validation,
             'geo'          => $this->geo,
             'retention'    => $this->retention,
-            'updated'      => isset($this->updated) ? $this->updated->format('c') : null,
-            'created'      => isset($this->created) ? $this->created->format('c') : null,
+            'updated'      => $this->getFormattedDate($this->updated),
+            'created'      => $this->getFormattedDate($this->created),
             'deleted'      => $this->deleted,
         ];
 
@@ -292,34 +401,54 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 
     /**
+     * Format DateTime object to ISO 8601 string or return null
+     *
+     * @param DateTime|null $date The date to format
+     *
+     * @return string|null The formatted date or null
+     */
+    private function getFormattedDate(?DateTime $date): ?string
+    {
+        if ($date === null) {
+            return null;
+        }
+
+        return $date->format('c');
+
+    }//end getFormattedDate()
+
+
+    /**
      * Lock the object for a specific duration
      *
-     * @param  IUserSession $userSession Current user session
-     * @param  string|null  $process     Optional process identifier
-     * @param  int|null     $duration    Lock duration in seconds (default: 1 hour)
+     * @param IUserSession $userSession Current user session
+     * @param string|null  $process     Optional process identifier
+     * @param int|null     $duration    Lock duration in seconds (default: 1 hour)
+     *
      * @return bool True if lock was successful
+     *
      * @throws Exception If object is already locked by another user
      */
     public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
     {
         $currentUser = $userSession->getUser();
-        if (!$currentUser) {
+        if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
         $userId = $currentUser->getUID();
         $now    = new \DateTime();
 
-        // If already locked, check if it's the same user and not expired
-        if ($this->isLocked()) {
+        // If already locked, check if it's the same user and not expired.
+        if ($this->isLocked() === true) {
             $lock = $this->locked;
 
-            // If locked by different user
+            // If locked by different user.
             if ($lock['user'] !== $userId) {
                 throw new Exception('Object is locked by another user');
             }
 
-            // If same user, extend the lock
+            // If same user, extend the lock.
             $expirationDate = new \DateTime($lock['expiration']);
             $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
@@ -332,7 +461,7 @@ class ObjectEntity extends Entity implements JsonSerializable
                 'expiration' => $newExpiration->format('c'),
             ];
         } else {
-            // Create new lock
+            // Create new lock.
             $expiration = clone $now;
             $expiration->add(new \DateInterval('PT'.$duration.'S'));
 
@@ -353,24 +482,26 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Unlock the object
      *
-     * @param  IUserSession $userSession Current user session
+     * @param IUserSession $userSession Current user session
+     *
      * @return bool True if unlock was successful
+     *
      * @throws Exception If object is locked by another user
      */
     public function unlock(IUserSession $userSession): bool
     {
-        if (!$this->isLocked()) {
+        if ($this->isLocked() === false) {
             return true;
         }
 
         $currentUser = $userSession->getUser();
-        if (!$currentUser) {
+        if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
         $userId = $currentUser->getUID();
 
-        // Check if locked by different user
+        // Check if locked by different user.
         if ($this->locked['user'] !== $userId) {
             throw new Exception('Object is locked by another user');
         }
@@ -388,11 +519,11 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function isLocked(): bool
     {
-        if (!$this->locked) {
+        if ($this->locked === null) {
             return false;
         }
 
-        // Check if lock has expired
+        // Check if lock has expired.
         $now        = new \DateTime();
         $expiration = new \DateTime($this->locked['expiration']);
 
@@ -408,7 +539,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getLockInfo(): ?array
     {
-        if (!$this->isLocked()) {
+        if ($this->isLocked() === false) {
             return null;
         }
 
@@ -420,10 +551,12 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Delete the object
      *
-     * @param  IUserSession $userSession     Current user session
-     * @param  string       $deletedReason   Reason for deletion
-     * @param  int          $retentionPeriod Retention period in days (default: 30 days)
+     * @param IUserSession $userSession     Current user session
+     * @param string       $deletedReason   Reason for deletion
+     * @param int          $retentionPeriod Retention period in days (default: 30 days)
+     *
      * @return bool True if delete was successful
+     *
      * @throws Exception If no user is logged in
      */
     public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod=30): bool

@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister Register
+ *
+ * This file contains the class for handling register related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -9,60 +23,131 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Entity class representing a Register
  *
- * @property string|null $uuid Unique identifier for the register
- * @property string|null $slug Slug of the register
- * @property string|null $title Title of the register
- * @property string|null $version Version of the register
- * @property string|null $description Description of the register
- * @property array|null $schemas Schemas associated with the register
- * @property string|null $source Source of the register
- * @property string|null $tablePrefix Prefix for database tables
- * @property string|null $folder Nextcloud folder path where register is stored
- * @property DateTime|null $updated Last update timestamp
- * @property DateTime|null $created Creation timestamp
- * @property string|null $owner The Nextcloud user that owns this register
- * @property string|null $application The application name
- * @property string|null $organisation The organisation name
- * @property array|null $authorization JSON object describing authorizations
- * @property DateTime|null $deleted Deletion timestamp
+ * Manages register-related data and operations
+ *
+ * @package OCA\OpenRegister\Db
  */
 class Register extends Entity implements JsonSerializable
 {
 
+    /**
+     * Unique identifier for the register
+     *
+     * @var string|null Unique identifier for the register
+     */
     protected ?string $uuid = null;
 
+    /**
+     * Slug of the register
+     *
+     * @var string|null Slug of the register
+     */
     protected ?string $slug = null;
 
+    /**
+     * Title of the register
+     *
+     * @var string|null Title of the register
+     */
     protected ?string $title = null;
 
+    /**
+     * Version of the register
+     *
+     * @var string|null Version of the register
+     */
     protected ?string $version = null;
 
+    /**
+     * Description of the register
+     *
+     * @var string|null Description of the register
+     */
     protected ?string $description = null;
 
+    /**
+     * Schemas associated with the register
+     *
+     * @var array|null Schemas associated with the register
+     */
     protected ?array $schemas = [];
 
+    /**
+     * Source of the register
+     *
+     * @var string|null Source of the register
+     */
     protected ?string $source = null;
 
+    /**
+     * Prefix for database tables
+     *
+     * @var string|null Prefix for database tables
+     */
     protected ?string $tablePrefix = null;
 
+    /**
+     * Nextcloud folder path where register is stored
+     *
+     * @var string|null Nextcloud folder path where register is stored
+     */
     protected ?string $folder = null;
 
-    // Nextcloud folder path where register is stored
+    /**
+     * Last update timestamp
+     *
+     * @var DateTime|null Last update timestamp
+     */
     protected ?DateTime $updated = null;
 
+    /**
+     * Creation timestamp
+     *
+     * @var DateTime|null Creation timestamp
+     */
     protected ?DateTime $created = null;
 
+    /**
+     * The Nextcloud user that owns this register
+     *
+     * @var string|null The Nextcloud user that owns this register
+     */
     protected ?string $owner = null;
 
+    /**
+     * The application name
+     *
+     * @var string|null The application name
+     */
     protected ?string $application = null;
 
+    /**
+     * The organisation name
+     *
+     * @var string|null The organisation name
+     */
     protected ?string $organisation = null;
 
+    /**
+     * JSON object describing authorizations
+     *
+     * @var array|null JSON object describing authorizations
+     */
     protected ?array $authorization = [];
 
+    /**
+     * Deletion timestamp
+     *
+     * @var DateTime|null Deletion timestamp
+     */
     protected ?DateTime $deleted = null;
 
 
+    /**
+     * Constructor for the Register class
+     *
+     * Sets up field types for all properties
+     */
     public function __construct()
     {
         $this->addType(fieldName: 'uuid', type: 'string');
@@ -97,20 +182,36 @@ class Register extends Entity implements JsonSerializable
     }//end getSchemas()
 
 
+    /**
+     * Get JSON fields from the entity
+     *
+     * Returns all fields that are of type 'json'
+     *
+     * @return array<string> List of JSON field names
+     */
     public function getJsonFields(): array
     {
         return array_keys(
             array_filter(
-           $this->getFieldTypes(),
-           function ($field) {
-                return $field === 'json';
-           }
-           )
+                $this->getFieldTypes(),
+                function ($field) {
+                    return $field === 'json';
+                }
+            )
         );
 
     }//end getJsonFields()
 
 
+    /**
+     * Hydrate the entity with data from an array
+     *
+     * Sets entity properties based on input array values
+     *
+     * @param array $object The data array to hydrate from
+     *
+     * @return self Returns $this for method chaining
+     */
     public function hydrate(array $object): self
     {
         $jsonFields = $this->getJsonFields();
@@ -129,6 +230,7 @@ class Register extends Entity implements JsonSerializable
             try {
                 $this->$method($value);
             } catch (\Exception $exception) {
+                // Silently ignore invalid properties.
             }
         }
 
@@ -137,8 +239,30 @@ class Register extends Entity implements JsonSerializable
     }//end hydrate()
 
 
+    /**
+     * Convert entity to JSON serializable array
+     *
+     * Prepares the entity data for JSON serialization
+     *
+     * @return array<string, mixed> Array of serializable entity data
+     */
     public function jsonSerialize(): array
     {
+        $updated = null;
+        if (isset($this->updated) === true) {
+            $updated = $this->updated->format('c');
+        }
+
+        $created = null;
+        if (isset($this->created) === true) {
+            $created = $this->created->format('c');
+        }
+
+        $deleted = null;
+        if (isset($this->deleted) === true) {
+            $deleted = $this->deleted->format('c');
+        }
+
         return [
             'id'            => $this->id,
             'uuid'          => $this->uuid,
@@ -150,13 +274,13 @@ class Register extends Entity implements JsonSerializable
             'source'        => $this->source,
             'tablePrefix'   => $this->tablePrefix,
             'folder'        => $this->folder,
-            'updated'       => isset($this->updated) ? $this->updated->format('c') : null,
-            'created'       => isset($this->created) ? $this->created->format('c') : null,
+            'updated'       => $updated,
+            'created'       => $created,
             'owner'         => $this->owner,
             'application'   => $this->application,
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
-            'deleted'       => isset($this->deleted) ? $this->deleted->format('c') : null,
+            'deleted'       => $deleted,
         ];
 
     }//end jsonSerialize()

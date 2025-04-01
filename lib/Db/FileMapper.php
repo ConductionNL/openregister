@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister File Mapper
+ *
+ * This file contains the class for handling file related operations
+ * in the OpenRegister application.
+ *
+ * @category  Database
+ * @package   OCA\OpenRegister\Db
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -13,6 +27,13 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * File Mapper class for database operations
+ *
+ * Handles all database operations related to File entities
+ *
+ * @package OCA\OpenRegister\Db
+ */
 class FileMapper extends QBMapper
 {
 
@@ -66,8 +87,13 @@ class FileMapper extends QBMapper
      * @return array List of File entities.
      * @throws Exception If a database error occurs.
      */
-    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
-    {
+    public function findAll(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
+    ): array {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -99,15 +125,18 @@ class FileMapper extends QBMapper
 
 
     /**
-     * @inheritDoc
+     * Inserts a File entity into the database
      *
-     * @param  \OCA\OpenRegister\Db\File|Entity $entity
-     * @return \OCA\OpenRegister\Db\File
-     * @throws \OCP\DB\Exception
+     * Overrides the parent method to set additional fields
+     *
+     * @param \OCA\OpenRegister\Db\File|Entity $entity The entity to insert
+     *
+     * @return \OCA\OpenRegister\Db\File The inserted entity with updated ID
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function insert(File | Entity $entity): File
     {
-        // Set created and updated fields
+        // Set created and updated fields.
         $entity->setCreated(new DateTime());
         $entity->setUpdated(new DateTime());
 
@@ -121,15 +150,18 @@ class FileMapper extends QBMapper
 
 
     /**
-     * @inheritDoc
+     * Updates a File entity in the database
      *
-     * @param  \OCA\OpenRegister\Db\File|Entity $entity
-     * @return \OCA\OpenRegister\Db\File
-     * @throws \OCP\DB\Exception
+     * Overrides the parent method to update timestamp
+     *
+     * @param \OCA\OpenRegister\Db\File|Entity $entity The entity to update
+     *
+     * @return \OCA\OpenRegister\Db\File The updated entity
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function update(File | Entity $entity): File
     {
-        // Set updated field
+        // Set updated field.
         $entity->setUpdated(new DateTime());
 
         return parent::update($entity);
@@ -149,7 +181,7 @@ class FileMapper extends QBMapper
     {
         $obj = new File();
         $obj->hydrate($object);
-        // Set UUID
+        // Set UUID.
         if ($obj->getUuid() === null) {
             $obj->setUuid(Uuid::v4());
         }
@@ -175,7 +207,7 @@ class FileMapper extends QBMapper
         $obj = $this->find($id);
         $obj->hydrate($object);
 
-        // Set or update the version
+        // Set or update the version.
         $version    = explode('.', $obj->getVersion());
         $version[2] = ((int) $version[2] + 1);
         $obj->setVersion(implode('.', $version));
@@ -195,14 +227,14 @@ class FileMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Select count of all files
+        // Select count of all files.
         $qb->select($qb->createFunction('COUNT(*) as count'))
             ->from('openregister_files');
 
         $result = $qb->execute();
         $row    = $result->fetch();
 
-        // Return the total count
+        // Return the total count.
         return (int) $row['count'];
 
     }//end countAll()
