@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister RegisterDeletedEvent
+ *
+ * This file contains the event class dispatched when a register is deleted
+ * in the OpenRegister application.
+ *
+ * @category  Event
+ * @package   OCA\OpenRegister\Event
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Event;
 
@@ -12,6 +26,8 @@ class RegisterDeletedEvent extends Event
 {
 
     /**
+     * The deleted register
+     *
      * @var Register The register that was deleted
      */
     private Register $register;
@@ -21,6 +37,8 @@ class RegisterDeletedEvent extends Event
      * Constructor for RegisterDeletedEvent
      *
      * @param Register $register The register that was deleted
+     *
+     * @return void
      */
     public function __construct(Register $register)
     {

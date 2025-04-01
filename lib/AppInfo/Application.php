@@ -83,4 +83,8 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // No boot actions required at the moment    }//end boot()    }//end boot()
+        // No boot actions required at the moment
+    }//end boot()
+
+
+}//end class

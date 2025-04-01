@@ -146,7 +146,7 @@ class ObjectEntityMapper extends QBMapper
      * @return ObjectEntity|null The object if found, null otherwise
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function findByUuid(Register $register, Schema $schema, string $uuid): (ObjectEntity | null)
+    public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity | null
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -179,7 +179,7 @@ class ObjectEntityMapper extends QBMapper
      * @return ObjectEntity|null The object if found, null otherwise
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function findByUuidOnly(string $uuid): (ObjectEntity | null)
+    public function findByUuidOnly(string $uuid): ObjectEntity | null
     {
         $qb = $this->db->getQueryBuilder();
 

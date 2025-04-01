@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister SchemaCreatedEvent
+ *
+ * This file contains the event class dispatched when a schema is created
+ * in the OpenRegister application.
+ *
+ * @category  Event
+ * @package   OCA\OpenRegister\Event
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Event;
 
@@ -12,6 +26,8 @@ class SchemaCreatedEvent extends Event
 {
 
     /**
+     * The newly created schema
+     *
      * @var Schema The schema that was created
      */
     private Schema $schema;
@@ -21,6 +37,8 @@ class SchemaCreatedEvent extends Event
      * Constructor for SchemaCreatedEvent
      *
      * @param Schema $schema The schema that was created
+     *
+     * @return void
      */
     public function __construct(Schema $schema)
     {

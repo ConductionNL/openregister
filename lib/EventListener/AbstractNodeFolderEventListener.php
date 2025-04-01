@@ -51,13 +51,55 @@ class AbstractNodeFolderEventListener implements IEventListener
     }//end handle()
 
 
+    /**
+     * Handle node created event
+     *
+     * @param NodeCreatedEvent $event The node created event
+     *
+     * @return void
+     */
     private function handleNodeCreated(NodeCreatedEvent $event): void
     {
-        // $this->objectService->nodeCreatedEventFunction(event: $event);    }//end handleNodeCreated()    private function handleNodeDeleted(NodeDeletedEvent $event): void
+        // Call the object service to handle the node created event
+        $this->objectService->nodeCreatedEventFunction(event: $event);
+    }
+
+    /**
+     * Handle node deleted event
+     *
+     * @param NodeDeletedEvent $event The node deleted event
+     *
+     * @return void
+     */
+    private function handleNodeDeleted(NodeDeletedEvent $event): void
     {
-        // $this->objectService->nodeDeletedEventFunction();    }//end handleNodeDeleted()    private function handleNodeTouched(NodeTouchedEvent $event): void
+        // Call the object service to handle the node deleted event
+        $this->objectService->nodeDeletedEventFunction(event: $event);
+    }
+
+    /**
+     * Handle node touched event
+     *
+     * @param NodeTouchedEvent $event The node touched event
+     *
+     * @return void
+     */
+    private function handleNodeTouched(NodeTouchedEvent $event): void
     {
-        // $this->objectService->nodeTouchedEventFunction();    }//end handleNodeTouched()    private function handleNodeWritten(NodeWrittenEvent $event): void
+        // Call the object service to handle the node touched event
+        $this->objectService->nodeTouchedEventFunction(event: $event);
+    }
+
+    /**
+     * Handle node written event
+     *
+     * @param NodeWrittenEvent $event The node written event
+     *
+     * @return void
+     */
+    private function handleNodeWritten(NodeWrittenEvent $event): void
     {
-        // $this->objectService->nodeWrittenEventFunction();    }//end handleNodeWritten()
-    }//end handleNodeWritten()
+        // Call the object service to handle the node written event
+        $this->objectService->nodeWrittenEventFunction(event: $event);
+    }
+}//end class

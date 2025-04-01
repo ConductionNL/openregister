@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister SchemaDeletedEvent
+ *
+ * This file contains the event class dispatched when a schema is deleted
+ * in the OpenRegister application.
+ *
+ * @category  Event
+ * @package   OCA\OpenRegister\Event
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Event;
 
@@ -12,6 +26,8 @@ class SchemaDeletedEvent extends Event
 {
 
     /**
+     * The deleted schema
+     *
      * @var Schema The schema that was deleted
      */
     private Schema $schema;
@@ -21,6 +37,8 @@ class SchemaDeletedEvent extends Event
      * Constructor for SchemaDeletedEvent
      *
      * @param Schema $schema The schema that was deleted
+     *
+     * @return void
      */
     public function __construct(Schema $schema)
     {

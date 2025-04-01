@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister SchemaUpdatedEvent
+ *
+ * This file contains the event class dispatched when a schema is updated
+ * in the OpenRegister application.
+ *
+ * @category  Event
+ * @package   OCA\OpenRegister\Event
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Event;
 
@@ -12,11 +26,15 @@ class SchemaUpdatedEvent extends Event
 {
 
     /**
+     * The updated schema state
+     *
      * @var Schema The schema after update
      */
     private Schema $newSchema;
 
     /**
+     * The previous schema state
+     *
      * @var Schema The schema before update
      */
     private Schema $oldSchema;
@@ -27,6 +45,8 @@ class SchemaUpdatedEvent extends Event
      *
      * @param Schema $newSchema The schema after update
      * @param Schema $oldSchema The schema before update
+     *
+     * @return void
      */
     public function __construct(Schema $newSchema, Schema $oldSchema)
     {
