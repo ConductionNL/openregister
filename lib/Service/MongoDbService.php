@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenRegister MongoDbService
+ *
+ * Service class for handling MongoDB operations in the OpenRegister application.
+ *
+ * This service provides methods for:
+ * - CRUD operations on objects
+ * - Aggregation operations on objects
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Service;
 

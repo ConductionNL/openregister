@@ -1,21 +1,22 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  * 
  * This migration adds columns to the openregister_objects, openregister_schemas, 
  * openregister_registers, and openregister_audit_trails tables. It also drops the 
  * openregister_object_audit_logs table as it is no longer used.
- * 
- * @category Migration
- * @package  OCA\OpenRegister\Migration
- * @version  1.0.0
- * @author   Nextcloud
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/OpenRegister
+ *
+ * @category  Migration
+ * @package   OCA\OpenRegister\Migration
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
+
 
 namespace OCA\OpenRegister\Migration;
 

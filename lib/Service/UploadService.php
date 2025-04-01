@@ -1,4 +1,26 @@
 <?php
+/**
+ * OpenRegister UploadService
+ *
+ * Service class for handling file and JSON uploads in the OpenRegister application.
+ *
+ * This service provides methods for:
+ * - Processing uploaded JSON data
+ * - Retrieving JSON data from URLs
+ * - Parsing YAML data
+ * - Handling schema resolution and validation
+ * - Managing relations and linked data (extending objects with related sub-objects)
+ * - CRUD operations on objects
+ * - Audit trails and data aggregation
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Service;
 

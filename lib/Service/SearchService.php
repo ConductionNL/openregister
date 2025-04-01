@@ -1,4 +1,23 @@
 <?php
+/**
+ * OpenRegister SearchService
+ *
+ * Service class for handling search operations in the OpenRegister application.
+ *
+ * This service provides methods for:
+ * - Searching objects across multiple sources
+ * - Merging search results
+ * - Handling facets/aggregations
+ * - Processing search parameters
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Service;
 
