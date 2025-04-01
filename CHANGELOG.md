@@ -1,3 +1,9 @@
+# Version: 0.1.63
+
+* [#309](https://github.com/ConductionNL/openregister/pull/309): Reverted SearchSideBar changes
+* [#310](https://github.com/ConductionNL/openregister/pull/310): Development to main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
