@@ -24,7 +24,6 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUpdatedEvent extends Event
 {
-
     /**
      * The updated object entity state
      *
@@ -38,7 +37,6 @@ class ObjectUpdatedEvent extends Event
      * @var ObjectEntity The object entity before update
      */
     private ObjectEntity $oldObject;
-
 
     /**
      * Constructor for ObjectUpdatedEvent
@@ -56,7 +54,6 @@ class ObjectUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated object entity
      *
@@ -68,7 +65,6 @@ class ObjectUpdatedEvent extends Event
 
     }//end getNewObject()
 
-
     /**
      * Get the original object entity
      *
@@ -79,6 +75,5 @@ class ObjectUpdatedEvent extends Event
         return $this->oldObject;
 
     }//end getOldObject()
-
 
 }//end class

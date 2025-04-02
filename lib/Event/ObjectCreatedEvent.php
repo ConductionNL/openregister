@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectCreatedEvent extends Event
 {
-
     /**
      * The newly created object entity
      *
      * @var ObjectEntity The object entity that was created
      */
     private ObjectEntity $object;
-
 
     /**
      * Constructor for ObjectCreatedEvent
@@ -47,7 +45,6 @@ class ObjectCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created object entity
      *
@@ -58,6 +55,5 @@ class ObjectCreatedEvent extends Event
         return $this->object;
 
     }//end getObject()
-
 
 }//end class

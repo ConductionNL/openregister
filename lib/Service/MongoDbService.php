@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Service;
 
 use Adbar\Dot;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -39,12 +38,11 @@ class MongoDbService
      * @var array
      */
     public const BASE_OBJECT = [
-        'database'   => 'objects',
+        'database' => 'objects',
     // The default database name
         'collection' => 'json',
     // The default collection name
     ];
-
 
     /**
      * Gets a configured Guzzle HTTP client
@@ -62,7 +60,6 @@ class MongoDbService
 
     }//end getClient()
 
-
     /**
      * Save an object to MongoDB
      *
@@ -79,26 +76,25 @@ class MongoDbService
         // Prepare object with base configuration and data
         $object = self::BASE_OBJECT;
         $object['dataSource'] = $config['mongodbCluster'];
-        $object['document']   = $data;
+        $object['document'] = $data;
         // Generate and set UUID for new document
         $object['document']['id'] = $object['document']['_id'] = Uuid::v4();
 
         // Insert document via API
-        $result     = $client->post(
+        $result = $client->post(
             uri: 'action/insertOne',
             options: ['json' => $object],
         );
         $resultData = json_decode(
             json: $result->getBody()->getContents(),
-            associative: true
+            associative: TRUE
         );
-        $id         = $resultData['insertedId'];
+        $id = $resultData['insertedId'];
 
         // Return complete object by finding it with new ID
         return $this->findObject(filters: ['_id' => $id], config: $config);
 
     }//end saveObject()
-
 
     /**
      * Find multiple objects matching given filters
@@ -115,7 +111,7 @@ class MongoDbService
         // Prepare query object
         $object = self::BASE_OBJECT;
         $object['dataSource'] = $config['mongodbCluster'];
-        $object['filter']     = $filters;
+        $object['filter'] = $filters;
 
         // @todo Fix mongodb sort
         // if (empty($sort) === false) {
@@ -128,11 +124,10 @@ class MongoDbService
 
         return json_decode(
             json: $returnData->getBody()->getContents(),
-            associative: true
+            associative: TRUE
         );
 
     }//end findObjects()
-
 
     /**
      * Find a single object matching given filters
@@ -147,7 +142,7 @@ class MongoDbService
         $client = $this->getClient(config: $config);
 
         // Prepare query object
-        $object           = self::BASE_OBJECT;
+        $object = self::BASE_OBJECT;
         $object['filter'] = $filters;
         $object['dataSource'] = $config['mongodbCluster'];
 
@@ -159,13 +154,12 @@ class MongoDbService
 
         $result = json_decode(
             json: $returnData->getBody()->getContents(),
-            associative: true
+            associative: TRUE
         );
 
         return $result['document'];
 
     }//end findObject()
-
 
     /**
      * Update an existing object in MongoDB
@@ -184,11 +178,11 @@ class MongoDbService
         $dotUpdate = new Dot($update);
 
         // Prepare update query
-        $object           = self::BASE_OBJECT;
+        $object = self::BASE_OBJECT;
         $object['filter'] = $filters;
         $object['update']['$set'] = $update;
-        $object['upsert']         = true;
-        $object['dataSource']     = $config['mongodbCluster'];
+        $object['upsert'] = TRUE;
+        $object['dataSource'] = $config['mongodbCluster'];
 
         // Execute update via API
         $returnData = $client->post(
@@ -200,7 +194,6 @@ class MongoDbService
         return $this->findObject($filters, $config);
 
     }//end updateObject()
-
 
     /**
      * Delete an object from MongoDB
@@ -215,7 +208,7 @@ class MongoDbService
         $client = $this->getClient(config: $config);
 
         // Prepare delete query
-        $object           = self::BASE_OBJECT;
+        $object = self::BASE_OBJECT;
         $object['filter'] = $filters;
         $object['dataSource'] = $config['mongodbCluster'];
 
@@ -228,7 +221,6 @@ class MongoDbService
         return [];
 
     }//end deleteObject()
-
 
     /**
      * Perform aggregation operations on MongoDB collection
@@ -244,9 +236,9 @@ class MongoDbService
         $client = $this->getClient(config: $config);
 
         // Prepare aggregation query
-        $object           = self::BASE_OBJECT;
+        $object = self::BASE_OBJECT;
         $object['filter'] = $filters;
-        $object['pipeline']   = $pipeline;
+        $object['pipeline'] = $pipeline;
         $object['dataSource'] = $config['mongodbCluster'];
 
         // Execute aggregation via API
@@ -257,10 +249,9 @@ class MongoDbService
 
         return json_decode(
             json: $returnData->getBody()->getContents(),
-            associative: true
+            associative: TRUE
         );
 
     }//end aggregateObjects()
-
 
 }//end class

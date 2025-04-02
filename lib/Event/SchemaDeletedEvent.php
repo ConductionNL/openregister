@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaDeletedEvent extends Event
 {
-
     /**
      * The deleted schema
      *
      * @var Schema The schema that was deleted
      */
     private Schema $schema;
-
 
     /**
      * Constructor for SchemaDeletedEvent
@@ -47,7 +45,6 @@ class SchemaDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted schema
      *
@@ -58,6 +55,5 @@ class SchemaDeletedEvent extends Event
         return $this->schema;
 
     }//end getSchema()
-
 
 }//end class

@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectDeletedEvent extends Event
 {
-
     /**
      * The deleted object entity
      *
      * @var ObjectEntity The object entity that was deleted
      */
     private ObjectEntity $object;
-
 
     /**
      * Constructor for ObjectDeletedEvent
@@ -47,7 +45,6 @@ class ObjectDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted object entity
      *
@@ -58,6 +55,5 @@ class ObjectDeletedEvent extends Event
         return $this->object;
 
     }//end getObject()
-
 
 }//end class

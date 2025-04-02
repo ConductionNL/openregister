@@ -16,35 +16,32 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
-use OCP\App\IAppManager;
 use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use Opis\JsonSchema\Errors\ErrorFormatter;
-use Symfony\Component\Uid\Uuid;
 use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Class ObjectsController
  */
 class ObjectsController extends Controller
 {
-
-
     /**
      * Constructor for the ObjectsController
      *
@@ -77,7 +74,6 @@ class ObjectsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Returns the template of the main app's page
      *
@@ -97,7 +93,6 @@ class ObjectsController extends Controller
         );
 
     }//end page()
-
 
     /**
      * Retrieves a list of all objects for a specific register and schema
@@ -124,52 +119,52 @@ class ObjectsController extends Controller
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters
-        $limit  = ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = ($requestParams['offset'] ?? $requestParams['_offset'] ?? null);
-        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $page   = ($requestParams['page'] ?? $requestParams['_page'] ?? null);
-        $search = $requestParams['_search'] ?? null;
+        $limit = ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = ($requestParams['offset'] ?? $requestParams['_offset'] ?? NULL);
+        $order = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
+        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? NULL);
+        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? NULL);
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? NULL);
+        $page = ($requestParams['page'] ?? $requestParams['_page'] ?? NULL);
+        $search = $requestParams['_search'] ?? NULL;
 
         // Initialize filters array
         $filters = [];
 
         // Check if $register is not an integer and look it up
-        if (is_numeric($register) === false) {
+        if (is_numeric($register) === FALSE) {
             $registerEntity = $this->registerMapper->find($register);
-            if ($registerEntity === null) {
+            if ($registerEntity === NULL) {
                 return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
             }
 
-            $register            = $registerEntity->getId();
+            $register = $registerEntity->getId();
             $filters['register'] = $register;
         }
 
         // Check if $schema is not an integer and look it up
-        if (is_numeric($schema) === false) {
+        if (is_numeric($schema) === FALSE) {
             $schemaEntity = $this->schemaMapper->find($schema);
-            if ($schemaEntity === null) {
+            if ($schemaEntity === NULL) {
                 return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
             }
 
-            $schema            = $schemaEntity->getId();
+            $schema = $schemaEntity->getId();
             $filters['schema'] = $schema;
         }
 
         // Calculate offset from page number if provided
-        if ($page !== null && isset($limit)) {
-            $page   = (int) $page;
+        if ($page !== NULL && isset($limit)) {
+            $page = (int) $page;
             $offset = ($limit * ($page - 1));
         }
 
         // Ensure order and extend are arrays
-        if (is_string($order) === true) {
+        if (is_string($order) === TRUE) {
             $order = array_map('trim', explode(',', $order));
         }
 
-        if (is_string($extend) === true) {
+        if (is_string($extend) === TRUE) {
             $extend = array_map('trim', explode(',', $extend));
         }
 
@@ -201,8 +196,8 @@ class ObjectsController extends Controller
             sort: $order,
             search: $search
         );
-        $total   = $this->objectEntityMapper->countAll($filters);
-        $pages   = $limit !== null ? ceil($total / $limit) : 1;
+        $total = $this->objectEntityMapper->countAll($filters);
+        $pages = $limit !== NULL ? ceil($total / $limit) : 1;
 
         // Process each object through the object service
         foreach ($objects as $key => $object) {
@@ -218,15 +213,14 @@ class ObjectsController extends Controller
         // Build results array with pagination information
         $results = [
             'results' => $objects,
-            'total'   => $total,
-            'page'    => ($page ?? 1),
-            'pages'   => $pages,
+            'total' => $total,
+            'page' => ($page ?? 1),
+            'pages' => $pages,
         ];
 
         return new JSONResponse($results);
 
     }//end index()
-
 
     /**
      * Shows a specific object from a register and schema
@@ -248,14 +242,14 @@ class ObjectsController extends Controller
         $requestParams = $this->request->getParams();
 
         // Extract parameters for rendering
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
+        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? NULL);
+        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? NULL);
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? NULL);
 
         // Check if $register is not an integer and look it up
         if (!is_numeric($register)) {
             $registerEntity = $this->registerMapper->find($register);
-            if ($registerEntity === null) {
+            if ($registerEntity === NULL) {
                 return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
             }
 
@@ -265,7 +259,7 @@ class ObjectsController extends Controller
         // Check if $schema is not an integer and look it up
         if (!is_numeric($schema)) {
             $schemaEntity = $this->schemaMapper->find($schema);
-            if ($schemaEntity === null) {
+            if ($schemaEntity === NULL) {
                 return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
             }
 
@@ -300,7 +294,6 @@ class ObjectsController extends Controller
 
     }//end show()
 
-
     /**
      * Creates a new object in the specified register and schema
      *
@@ -327,7 +320,7 @@ class ObjectsController extends Controller
         // Filter out special parameters and reserved fields
         $object = array_filter(
             $object,
-            fn($key) => !str_starts_with($key, '_')
+            fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
                 && !in_array($key, ['id', 'uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
@@ -358,7 +351,6 @@ class ObjectsController extends Controller
 
     }//end create()
 
-
     /**
      * Updates an existing object
      *
@@ -387,7 +379,7 @@ class ObjectsController extends Controller
         // Filter out special parameters and reserved fields
         $object = array_filter(
             $object,
-            fn($key) => !str_starts_with($key, '_')
+            fn ($key) => !str_starts_with($key, '_')
                 && !str_starts_with($key, '@')
                 && !in_array($key, ['id', 'uuid', 'register', 'schema']),
             ARRAY_FILTER_USE_KEY
@@ -408,13 +400,13 @@ class ObjectsController extends Controller
             }
 
             // Check if the object is locked
-            if ($existingObject->isLocked() === true
+            if ($existingObject->isLocked() === TRUE
                 && $existingObject->getLockedBy() !== $this->container->get('userId')
             ) {
                 // Return a "locked" error with the user who has the lock
                 return new JSONResponse(
                     [
-                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                        'error' => 'Object is locked by '.$existingObject->getLockedBy(),
                         'lockedBy' => $existingObject->getLockedBy(),
                     ],
                     423
@@ -452,7 +444,6 @@ class ObjectsController extends Controller
 
     }//end update()
 
-
     /**
      * Deletes an object
      *
@@ -486,7 +477,6 @@ class ObjectsController extends Controller
 
     }//end destroy()
 
-
     /**
      * Retrieves a list of logs for an object
      *
@@ -503,7 +493,7 @@ class ObjectsController extends Controller
     {
         try {
             $requestParams = $this->request->getParams();
-            return new JSONResponse($this->objectService->getPaginatedAuditTrail($id, null, null, $requestParams));
+            return new JSONResponse($this->objectService->getPaginatedAuditTrail($id, NULL, NULL, $requestParams));
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {
@@ -511,7 +501,6 @@ class ObjectsController extends Controller
         }
 
     }//end auditTrails()
-
 
     /**
      * Retrieves call logs for a object
@@ -535,7 +524,6 @@ class ObjectsController extends Controller
 
     }//end contracts()
 
-
     /**
      * Retrieves all objects that use a object
      *
@@ -552,7 +540,7 @@ class ObjectsController extends Controller
     {
         try {
             $requestParams = $this->request->getParams();
-            return new JSONResponse($this->objectService->getPaginatedRelations($id, null, null, $requestParams));
+            return new JSONResponse($this->objectService->getPaginatedRelations($id, NULL, NULL, $requestParams));
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {
@@ -560,7 +548,6 @@ class ObjectsController extends Controller
         }
 
     }//end relations()
-
 
     /**
      * Retrieves all objects that this object references
@@ -579,7 +566,7 @@ class ObjectsController extends Controller
         try {
             $requestParams = $this->request->getParams();
             unset($requestParams['id']);
-            return new JSONResponse($this->objectService->getPaginatedUses($id, null, null, $requestParams));
+            return new JSONResponse($this->objectService->getPaginatedUses($id, NULL, NULL, $requestParams));
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\Exception $e) {
@@ -587,7 +574,6 @@ class ObjectsController extends Controller
         }
 
     }//end uses()
-
 
     /**
      * Retrieves call logs for an object
@@ -604,14 +590,13 @@ class ObjectsController extends Controller
     public function logs(string $id): JSONResponse
     {
         try {
-            $jobLogs = $this->auditTrailMapper->findAll(null, null, ['object_id' => $id]);
+            $jobLogs = $this->auditTrailMapper->findAll(NULL, NULL, ['object_id' => $id]);
             return new JSONResponse($jobLogs);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Logs not found'], 404);
         }
 
     }//end logs()
-
 
     /**
      * Lock an object
@@ -625,9 +610,9 @@ class ObjectsController extends Controller
     public function lock(string $id): JSONResponse
     {
         try {
-            $data     = $this->request->getParams();
-            $process  = $data['process'] ?? null;
-            $duration = isset($data['duration']) ? (int) $data['duration'] : null;
+            $data = $this->request->getParams();
+            $process = $data['process'] ?? NULL;
+            $duration = isset($data['duration']) ? (int) $data['duration'] : NULL;
 
             $object = $this->objectEntityMapper->lockObject(
                 $id,
@@ -648,7 +633,6 @@ class ObjectsController extends Controller
         }//end try
 
     }//end lock()
-
 
     /**
      * Unlock an object
@@ -675,7 +659,6 @@ class ObjectsController extends Controller
         }
 
     }//end unlock()
-
 
     /**
      * Revert an object to a previous state
@@ -728,23 +711,23 @@ class ObjectsController extends Controller
             $data = $this->request->getParams();
 
             // Parse the revert point
-            $until = null;
+            $until = NULL;
             if (isset($data['datetime'])) {
                 $until = new \DateTime($data['datetime']);
-            } else if (isset($data['auditTrailId'])) {
+            } elseif (isset($data['auditTrailId'])) {
                 $until = $data['auditTrailId'];
-            } else if (isset($data['version'])) {
+            } elseif (isset($data['version'])) {
                 $until = $data['version'];
             }
 
-            if ($until === null) {
+            if ($until === NULL) {
                 return new JSONResponse(
                     ['error' => 'Must specify either datetime, auditTrailId, or version'],
                     400
                 );
             }
 
-            $overwriteVersion = $data['overwriteVersion'] ?? false;
+            $overwriteVersion = $data['overwriteVersion'] ?? FALSE;
 
             // Get the reverted object using AuditTrailMapper instead
             $revertedObject = $this->auditTrailMapper->revertObject(
@@ -767,7 +750,6 @@ class ObjectsController extends Controller
 
     }//end revert()
 
-
     /**
      * Retrieves files associated with an object
      *
@@ -782,10 +764,10 @@ class ObjectsController extends Controller
         try {
             // Get the object with files included
             $object = $this->objectEntityMapper->find((int) $id);
-            $files  = $objectService->getFiles($object);
+            $files = $objectService->getFiles($object);
 
             // Format files with pagination support
-            $requestParams  = $this->request->getParams();
+            $requestParams = $this->request->getParams();
             $formattedFiles = $objectService->formatFiles($files, $requestParams);
 
             return new JSONResponse($formattedFiles);
@@ -796,6 +778,5 @@ class ObjectsController extends Controller
         }
 
     }//end files()
-
 
 }//end class

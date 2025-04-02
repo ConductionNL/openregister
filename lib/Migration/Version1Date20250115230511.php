@@ -33,8 +33,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250115230511 extends SimpleMigrationStep
 {
-
-
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -44,7 +42,6 @@ class Version1Date20250115230511 extends SimpleMigrationStep
     {
 
     }//end preSchemaChange()
-
 
     /**
      * @param  IOutput                   $output
@@ -63,50 +60,50 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_objects');
 
         // Add locked column to store lock tokens as JSON array
-        if ($table->hasColumn('locked') === false) {
+        if ($table->hasColumn('locked') === FALSE) {
             $table->addColumn(
-            'locked',
-            Types::JSON,
-           [
-               'notnull' => false,
-               'default' => null,
+                'locked',
+                Types::JSON,
+                [
+               'notnull' => FALSE,
+               'default' => NULL,
            ]
             );
         }
 
         // Add owner column to store user ID of object owner
-        if ($table->hasColumn('owner') === false) {
+        if ($table->hasColumn('owner') === FALSE) {
             $table->addColumn(
-            'owner',
-            Types::STRING,
-           [
-               'notnull' => false,
-               'length'  => 64,
+                'owner',
+                Types::STRING,
+                [
+               'notnull' => FALSE,
+               'length' => 64,
                'default' => '',
            ]
             );
         }
 
         // Add authorization column to store access permissions as JSON object
-        if ($table->hasColumn('authorization') === false) {
+        if ($table->hasColumn('authorization') === FALSE) {
             $table->addColumn(
-            'authorization',
-            Types::TEXT,
-           [
-               'notnull' => false,
-               'default' => null,
+                'authorization',
+                Types::TEXT,
+                [
+               'notnull' => FALSE,
+               'default' => NULL,
            ]
             );
         }
 
         // Add folder column to store Nextcloud folder path
-        if ($table->hasColumn('folder') === false) {
+        if ($table->hasColumn('folder') === FALSE) {
             $table->addColumn(
-            'folder',
-            Types::STRING,
-           [
-               'notnull' => false,
-               'length'  => 4000,
+                'folder',
+                Types::STRING,
+                [
+               'notnull' => FALSE,
+               'length' => 4000,
                'default' => '',
            ]
             );
@@ -116,13 +113,13 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         $registersTable = $schema->getTable('openregister_registers');
 
         // Add folder column to store Nextcloud folder path for registers
-        if ($registersTable->hasColumn('folder') === false) {
+        if ($registersTable->hasColumn('folder') === FALSE) {
             $registersTable->addColumn(
-            'folder',
-            Types::STRING,
-           [
-               'notnull' => false,
-               'length'  => 4000,
+                'folder',
+                Types::STRING,
+                [
+               'notnull' => FALSE,
+               'length' => 4000,
                'default' => '',
            ]
             );
@@ -131,7 +128,6 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * @param IOutput                   $output
@@ -142,6 +138,5 @@ class Version1Date20250115230511 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
 
 }//end class

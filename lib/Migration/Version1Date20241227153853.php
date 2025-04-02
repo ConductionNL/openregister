@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20241227153853 extends SimpleMigrationStep
 {
-
-
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -42,7 +40,6 @@ class Version1Date20241227153853 extends SimpleMigrationStep
     {
 
     }//end preSchemaChange()
-
 
     /**
      * @param  IOutput                   $output
@@ -59,14 +56,13 @@ class Version1Date20241227153853 extends SimpleMigrationStep
 
         // Update the openregister_schemas table
         $table = $schema->getTable('openregister_schemas');
-        if ($table->hasColumn('max_depth') === false) {
-            $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true])->setDefault(default: 0);
+        if ($table->hasColumn('max_depth') === FALSE) {
+            $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => TRUE])->setDefault(default: 0);
         }
 
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * @param IOutput                   $output
@@ -77,6 +73,5 @@ class Version1Date20241227153853 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
 
 }//end class

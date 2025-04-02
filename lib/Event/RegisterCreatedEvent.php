@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterCreatedEvent extends Event
 {
-
     /**
      * The newly created register
      *
      * @var Register The register that was created
      */
     private Register $register;
-
 
     /**
      * Constructor for RegisterCreatedEvent
@@ -47,7 +45,6 @@ class RegisterCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created register
      *
@@ -58,6 +55,5 @@ class RegisterCreatedEvent extends Event
         return $this->register;
 
     }//end getRegister()
-
 
 }//end class

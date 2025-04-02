@@ -28,8 +28,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version1Date20241022135300 extends SimpleMigrationStep
 {
-
-
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -39,7 +37,6 @@ class Version1Date20241022135300 extends SimpleMigrationStep
     {
 
     }//end preSchemaChange()
-
 
     /**
      * @param  IOutput                   $output
@@ -57,7 +54,7 @@ class Version1Date20241022135300 extends SimpleMigrationStep
         // rename the register column to regsiter
         $table = $schema->getTable('openregister_audit_trails');
         if (!$table->hasColumn('register')) {
-            $table->addColumn('register', Types::INTEGER, ['notnull' => false]);
+            $table->addColumn('register', Types::INTEGER, ['notnull' => FALSE]);
         }
 
         if ($table->hasColumn('regsiter')) {
@@ -68,7 +65,6 @@ class Version1Date20241022135300 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -78,6 +74,5 @@ class Version1Date20241022135300 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
 
 }//end class

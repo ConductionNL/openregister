@@ -6,8 +6,6 @@ use Opis\JsonSchema\Format;
 
 class BsnFormat implements Format
 {
-
-
     /**
      * @inheritDoc
      */
@@ -20,11 +18,11 @@ class BsnFormat implements Format
             pad_type: STR_PAD_LEFT,
         );
 
-        if (ctype_digit($data) === false) {
-            return false;
+        if (ctype_digit($data) === FALSE) {
+            return FALSE;
         }
 
-        $control          = 0;
+        $control = 0;
         $reversedIterator = 9;
         foreach (str_split($data) as $character) {
             $control += ($character * (($reversedIterator > 1) ? $reversedIterator : -1));
@@ -34,6 +32,5 @@ class BsnFormat implements Format
         return ($control % 11) === 0;
 
     }//end validate()
-
 
 }//end class

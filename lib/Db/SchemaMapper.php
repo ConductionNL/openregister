@@ -16,16 +16,15 @@
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCA\OpenRegister\Event\SchemaCreatedEvent;
-use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Event\SchemaDeletedEvent;
 
 /**
  * The SchemaMapper class
@@ -34,14 +33,12 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
  */
 class SchemaMapper extends QBMapper
 {
-
     /**
      * The event dispatcher instance
      *
      * @var IEventDispatcher
      */
     private $eventDispatcher;
-
 
     /**
      * Constructor for the SchemaMapper
@@ -57,7 +54,6 @@ class SchemaMapper extends QBMapper
         $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
-
 
     /**
      * Finds a schema by id
@@ -87,7 +83,6 @@ class SchemaMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Finds multiple schemas by id
      *
@@ -109,7 +104,6 @@ class SchemaMapper extends QBMapper
 
     }//end findMultiple()
 
-
     /**
      * Finds all schemas
      *
@@ -123,11 +117,11 @@ class SchemaMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?int $limit = NULL,
+        ?int $offset = NULL,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = []
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -139,14 +133,14 @@ class SchemaMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
 
-        if (empty($searchConditions) === false) {
+        if (empty($searchConditions) === FALSE) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -156,7 +150,6 @@ class SchemaMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
-
 
     /**
      * Inserts a schema entity into the database
@@ -177,7 +170,6 @@ class SchemaMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Ensures that a schema object has a UUID and a slug.
      *
@@ -188,12 +180,12 @@ class SchemaMapper extends QBMapper
     private function cleanObject(Schema $schema): void
     {
         // Check if UUID is set, if not, generate a new one.
-        if ($schema->getUuid() === null) {
+        if ($schema->getUuid() === NULL) {
             $schema->setUuid(Uuid::v4());
         }
 
         // Ensure the object has a slug.
-        if (empty($schema->getSlug()) === true) {
+        if (empty($schema->getSlug()) === TRUE) {
             // Convert to lowercase and replace spaces with dashes.
             $slug = strtolower(trim($schema->getTitle()));
             // Assuming title is used for slug.
@@ -208,7 +200,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Ensure the object has a version.
-        if ($schema->getVersion() === null) {
+        if ($schema->getVersion() === NULL) {
             $schema->setVersion('1.0.0');
         } else {
             // Split the version into major, minor, and patch.
@@ -221,7 +213,6 @@ class SchemaMapper extends QBMapper
         }
 
     }//end cleanObject()
-
 
     /**
      * Creates a schema from an array
@@ -244,7 +235,6 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end createFromArray()
-
 
     /**
      * Updates a schema entity in the database
@@ -272,7 +262,6 @@ class SchemaMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Updates a schema from an array
      *
@@ -297,7 +286,6 @@ class SchemaMapper extends QBMapper
 
     }//end updateFromArray()
 
-
     /**
      * Delete a schema
      *
@@ -318,6 +306,5 @@ class SchemaMapper extends QBMapper
         return $result;
 
     }//end delete()
-
 
 }//end class

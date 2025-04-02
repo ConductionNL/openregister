@@ -16,8 +16,6 @@
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Db\Source;
-use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -30,8 +28,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SourceMapper extends QBMapper
 {
-
-
     /**
      * Constructor for the SourceMapper
      *
@@ -42,7 +38,6 @@ class SourceMapper extends QBMapper
         parent::__construct($db, 'openregister_sources');
 
     }//end __construct()
-
 
     /**
      * Finds a source by id
@@ -65,7 +60,6 @@ class SourceMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Finds all sources
      *
@@ -78,11 +72,11 @@ class SourceMapper extends QBMapper
      * @return array The sources
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?int $limit = NULL,
+        ?int $offset = NULL,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = []
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -94,14 +88,14 @@ class SourceMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
 
-        if (empty($searchConditions) === false) {
+        if (empty($searchConditions) === FALSE) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -111,7 +105,6 @@ class SourceMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
-
 
     /**
      * Creates a source from an array
@@ -126,14 +119,13 @@ class SourceMapper extends QBMapper
         $source->hydrate(object: $object);
 
         // Set uuid if not provided.
-        if ($source->getUuid() === null) {
+        if ($source->getUuid() === NULL) {
             $source->setUuid(Uuid::v4());
         }
 
         return $this->insert(entity: $source);
 
     }//end createFromArray()
-
 
     /**
      * Updates a source from an array
@@ -149,8 +141,8 @@ class SourceMapper extends QBMapper
         $obj->hydrate($object);
 
         // Set or update the version.
-        if (isset($object['version']) === false) {
-            $version    = explode('.', $obj->getVersion());
+        if (isset($object['version']) === FALSE) {
+            $version = explode('.', $obj->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $obj->setVersion(implode('.', $version));
         }
@@ -158,6 +150,5 @@ class SourceMapper extends QBMapper
         return $this->update($obj);
 
     }//end updateFromArray()
-
 
 }//end class

@@ -29,41 +29,40 @@ use OCP\AppFramework\Db\Entity;
  */
 class Register extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the register
      *
      * @var string|null Unique identifier for the register
      */
-    protected ?string $uuid = null;
+    protected ?string $uuid = NULL;
 
     /**
      * Slug of the register
      *
      * @var string|null Slug of the register
      */
-    protected ?string $slug = null;
+    protected ?string $slug = NULL;
 
     /**
      * Title of the register
      *
      * @var string|null Title of the register
      */
-    protected ?string $title = null;
+    protected ?string $title = NULL;
 
     /**
      * Version of the register
      *
      * @var string|null Version of the register
      */
-    protected ?string $version = null;
+    protected ?string $version = NULL;
 
     /**
      * Description of the register
      *
      * @var string|null Description of the register
      */
-    protected ?string $description = null;
+    protected ?string $description = NULL;
 
     /**
      * Schemas associated with the register
@@ -77,56 +76,56 @@ class Register extends Entity implements JsonSerializable
      *
      * @var string|null Source of the register
      */
-    protected ?string $source = null;
+    protected ?string $source = NULL;
 
     /**
      * Prefix for database tables
      *
      * @var string|null Prefix for database tables
      */
-    protected ?string $tablePrefix = null;
+    protected ?string $tablePrefix = NULL;
 
     /**
      * Nextcloud folder path where register is stored
      *
      * @var string|null Nextcloud folder path where register is stored
      */
-    protected ?string $folder = null;
+    protected ?string $folder = NULL;
 
     /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
      */
-    protected ?DateTime $updated = null;
+    protected ?DateTime $updated = NULL;
 
     /**
      * Creation timestamp
      *
      * @var DateTime|null Creation timestamp
      */
-    protected ?DateTime $created = null;
+    protected ?DateTime $created = NULL;
 
     /**
      * The Nextcloud user that owns this register
      *
      * @var string|null The Nextcloud user that owns this register
      */
-    protected ?string $owner = null;
+    protected ?string $owner = NULL;
 
     /**
      * The application name
      *
      * @var string|null The application name
      */
-    protected ?string $application = null;
+    protected ?string $application = NULL;
 
     /**
      * The organisation name
      *
      * @var string|null The organisation name
      */
-    protected ?string $organisation = null;
+    protected ?string $organisation = NULL;
 
     /**
      * JSON object describing authorizations
@@ -140,8 +139,7 @@ class Register extends Entity implements JsonSerializable
      *
      * @var DateTime|null Deletion timestamp
      */
-    protected ?DateTime $deleted = null;
-
+    protected ?DateTime $deleted = NULL;
 
     /**
      * Constructor for the Register class
@@ -169,7 +167,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the schemas data
      *
@@ -180,7 +177,6 @@ class Register extends Entity implements JsonSerializable
         return ($this->schemas ?? []);
 
     }//end getSchemas()
-
 
     /**
      * Get JSON fields from the entity
@@ -202,7 +198,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end getJsonFields()
 
-
     /**
      * Hydrate the entity with data from an array
      *
@@ -216,13 +211,13 @@ class Register extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === false) {
+        if (isset($object['metadata']) === FALSE) {
             $object['metadata'] = [];
         }
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === true && $value === []) {
-                $value = null;
+            if (in_array($key, $jsonFields) === TRUE && $value === []) {
+                $value = NULL;
             }
 
             $method = 'set'.ucfirst($key);
@@ -238,7 +233,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Convert entity to JSON serializable array
      *
@@ -248,42 +242,41 @@ class Register extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $updated = null;
-        if (isset($this->updated) === true) {
+        $updated = NULL;
+        if (isset($this->updated) === TRUE) {
             $updated = $this->updated->format('c');
         }
 
-        $created = null;
-        if (isset($this->created) === true) {
+        $created = NULL;
+        if (isset($this->created) === TRUE) {
             $created = $this->created->format('c');
         }
 
-        $deleted = null;
-        if (isset($this->deleted) === true) {
+        $deleted = NULL;
+        if (isset($this->deleted) === TRUE) {
             $deleted = $this->deleted->format('c');
         }
 
         return [
-            'id'            => $this->id,
-            'uuid'          => $this->uuid,
-            'slug'          => $this->slug,
-            'title'         => $this->title,
-            'version'       => $this->version,
-            'description'   => $this->description,
-            'schemas'       => $this->schemas,
-            'source'        => $this->source,
-            'tablePrefix'   => $this->tablePrefix,
-            'folder'        => $this->folder,
-            'updated'       => $updated,
-            'created'       => $created,
-            'owner'         => $this->owner,
-            'application'   => $this->application,
-            'organisation'  => $this->organisation,
+            'id' => $this->id,
+            'uuid' => $this->uuid,
+            'slug' => $this->slug,
+            'title' => $this->title,
+            'version' => $this->version,
+            'description' => $this->description,
+            'schemas' => $this->schemas,
+            'source' => $this->source,
+            'tablePrefix' => $this->tablePrefix,
+            'folder' => $this->folder,
+            'updated' => $updated,
+            'created' => $created,
+            'owner' => $this->owner,
+            'application' => $this->application,
+            'organisation' => $this->organisation,
             'authorization' => $this->authorization,
-            'deleted'       => $deleted,
+            'deleted' => $deleted,
         ];
 
     }//end jsonSerialize()
-
 
 }//end class

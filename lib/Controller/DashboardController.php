@@ -17,24 +17,21 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\JSONResponse;
-use OCP\IRequest;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IRequest;
 
 /**
  * Class DashboardController
  */
 class DashboardController extends Controller
 {
-
-
     public function __construct($appName, IRequest $request)
     {
         parent::__construct($appName, $request);
 
     }//end __construct()
-
 
     /**
      * @NoAdminRequired
@@ -65,7 +62,6 @@ class DashboardController extends Controller
 
     }//end page()
 
-
     /**
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -80,6 +76,5 @@ class DashboardController extends Controller
         }
 
     }//end index()
-
 
 }//end class

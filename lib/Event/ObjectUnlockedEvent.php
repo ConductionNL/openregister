@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUnlockedEvent extends Event
 {
-
     /**
      * The unlocked object entity
      *
      * @var ObjectEntity The object that has been unlocked
      */
     private ObjectEntity $object;
-
 
     /**
      * Constructor for ObjectUnlockedEvent
@@ -47,7 +45,6 @@ class ObjectUnlockedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the unlocked object entity
      *
@@ -58,6 +55,5 @@ class ObjectUnlockedEvent extends Event
         return $this->object;
 
     }//end getObject()
-
 
 }//end class

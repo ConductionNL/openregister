@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectLockedEvent extends Event
 {
-
     /**
      * The locked object entity
      *
      * @var ObjectEntity The object that has been locked
      */
     private ObjectEntity $object;
-
 
     /**
      * Constructor for ObjectLockedEvent
@@ -47,7 +45,6 @@ class ObjectLockedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the locked object entity
      *
@@ -58,6 +55,5 @@ class ObjectLockedEvent extends Event
         return $this->object;
 
     }//end getObject()
-
 
 }//end class

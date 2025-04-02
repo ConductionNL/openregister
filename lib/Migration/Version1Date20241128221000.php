@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20241128221000 extends SimpleMigrationStep
 {
-
-
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -42,7 +40,6 @@ class Version1Date20241128221000 extends SimpleMigrationStep
     {
 
     }//end preSchemaChange()
-
 
     /**
      * @param  IOutput                   $output
@@ -59,38 +56,37 @@ class Version1Date20241128221000 extends SimpleMigrationStep
 
         // Update the openregister_objects table
         $table = $schema->getTable('openregister_objects');
-        if ($table->hasColumn('uri') === false) {
+        if ($table->hasColumn('uri') === FALSE) {
             $table->addColumn(
                 name: 'uri',
                 typeName: Types::STRING,
                 options: [
-                    'notnull' => true,
-                    'length'  => 255,
+                    'notnull' => TRUE,
+                    'length' => 255,
                 ]
             )->setDefault('');
         }
 
-        if ($table->hasColumn('files') === false) {
+        if ($table->hasColumn('files') === FALSE) {
             $table->addColumn(
                 name: 'files',
                 typeName: Types::JSON,
-                options: ['notnull' => false]
+                options: ['notnull' => FALSE]
             )->setDefault('{}');
         }
 
-        if ($table->hasColumn('relations') === false) {
+        if ($table->hasColumn('relations') === FALSE) {
             $table->addColumn(
                 name: 'relations',
                 typeName: Types::JSON,
-                options: ['notnull' => false]
+                options: ['notnull' => FALSE]
             )->setDefault('{}');
-            ;
+            
         }
 
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * @param IOutput                   $output
@@ -101,6 +97,5 @@ class Version1Date20241128221000 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
 
 }//end class

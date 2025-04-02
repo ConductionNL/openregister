@@ -24,7 +24,6 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaUpdatedEvent extends Event
 {
-
     /**
      * The updated schema state
      *
@@ -38,7 +37,6 @@ class SchemaUpdatedEvent extends Event
      * @var Schema The schema before update
      */
     private Schema $oldSchema;
-
 
     /**
      * Constructor for SchemaUpdatedEvent
@@ -56,7 +54,6 @@ class SchemaUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated schema
      *
@@ -68,7 +65,6 @@ class SchemaUpdatedEvent extends Event
 
     }//end getNewSchema()
 
-
     /**
      * Get the original schema
      *
@@ -79,6 +75,5 @@ class SchemaUpdatedEvent extends Event
         return $this->oldSchema;
 
     }//end getOldSchema()
-
 
 }//end class

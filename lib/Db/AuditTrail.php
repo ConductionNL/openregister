@@ -29,118 +29,117 @@ use OCP\AppFramework\Db\Entity;
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the audit trail entry
      *
      * @var string|null Unique identifier for the audit trail entry
      */
-    protected ?string $uuid = null;
+    protected ?string $uuid = NULL;
 
     /**
      * Schema ID associated with the audit trail entry
      *
      * @var integer|null Schema ID associated with the audit trail entry
      */
-    protected ?int $schema = null;
+    protected ?int $schema = NULL;
 
     /**
      * Register ID associated with the audit trail entry
      *
      * @var integer|null Register ID associated with the audit trail entry
      */
-    protected ?int $register = null;
+    protected ?int $register = NULL;
 
     /**
      * Object ID associated with the audit trail entry
      *
      * @var integer|null Object ID associated with the audit trail entry
      */
-    protected ?int $object = null;
+    protected ?int $object = NULL;
 
     /**
      * UUID of the object associated with the audit trail entry
      *
      * @var string|null UUID of the object associated with the audit trail entry
      */
-    protected ?string $objectUuid = null;
+    protected ?string $objectUuid = NULL;
 
     /**
      * UUID of the register associated with the audit trail entry
      *
      * @var string|null UUID of the register associated with the audit trail entry
      */
-    protected ?string $registerUuid = null;
+    protected ?string $registerUuid = NULL;
 
     /**
      * UUID of the schema associated with the audit trail entry
      *
      * @var string|null UUID of the schema associated with the audit trail entry
      */
-    protected ?string $schemaUuid = null;
+    protected ?string $schemaUuid = NULL;
 
     /**
      * Action performed in the audit trail entry
      *
      * @var string|null Action performed in the audit trail entry
      */
-    protected ?string $action = null;
+    protected ?string $action = NULL;
 
     /**
      * Changed data in the audit trail entry
      *
      * @var array|null Changed data in the audit trail entry
      */
-    protected ?array $changed = null;
+    protected ?array $changed = NULL;
 
     /**
      * User ID associated with the audit trail entry
      *
      * @var string|null User ID associated with the audit trail entry
      */
-    protected ?string $user = null;
+    protected ?string $user = NULL;
 
     /**
      * Username associated with the audit trail entry
      *
      * @var string|null Username associated with the audit trail entry
      */
-    protected ?string $userName = null;
+    protected ?string $userName = NULL;
 
     /**
      * Session ID associated with the audit trail entry
      *
      * @var string|null Session ID associated with the audit trail entry
      */
-    protected ?string $session = null;
+    protected ?string $session = NULL;
 
     /**
      * Request data associated with the audit trail entry
      *
      * @var string|null Request data associated with the audit trail entry
      */
-    protected ?string $request = null;
+    protected ?string $request = NULL;
 
     /**
      * IP address associated with the audit trail entry
      *
      * @var string|null IP address associated with the audit trail entry
      */
-    protected ?string $ipAddress = null;
+    protected ?string $ipAddress = NULL;
 
     /**
      * Version of the audit trail entry
      *
      * @var string|null Version of the audit trail entry
      */
-    protected ?string $version = null;
+    protected ?string $version = NULL;
 
     /**
      * Creation timestamp of the audit trail entry
      *
      * @var DateTime|null Creation timestamp of the audit trail entry
      */
-    protected ?DateTime $created = null;
+    protected ?DateTime $created = NULL;
 
     /**
      * The unique identifier of the organization processing personal data
@@ -150,7 +149,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The unique identifier of the organization processing personal data
      */
-    protected ?string $organisationId = null;
+    protected ?string $organisationId = NULL;
 
     /**
      * The type of organization identifier used
@@ -163,43 +162,42 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The type of organization identifier used
      */
-    protected ?string $organisationIdType = null;
+    protected ?string $organisationIdType = NULL;
 
     /**
      * The Processing Activity ID that identifies the specific processing operation
      *
      * @var string|null The Processing Activity ID that identifies the specific processing operation
      */
-    protected ?string $processingActivityId = null;
+    protected ?string $processingActivityId = NULL;
 
     /**
      * The URL where the processing activity is registered
      *
      * @var string|null The URL where the processing activity is registered
      */
-    protected ?string $processingActivityUrl = null;
+    protected ?string $processingActivityUrl = NULL;
 
     /**
      * The unique identifier for this specific processing operation
      *
      * @var string|null The unique identifier for this specific processing operation
      */
-    protected ?string $processingId = null;
+    protected ?string $processingId = NULL;
 
     /**
      * The confidentiality level of the processed data
      *
      * @var string|null The confidentiality level of the processed data (e.g., 'public', 'internal', 'confidential')
      */
-    protected ?string $confidentiality = null;
+    protected ?string $confidentiality = NULL;
 
     /**
      * The retention period for the processed data in ISO 8601 duration format
      *
      * @var string|null The retention period for the processed data in ISO 8601 duration format
      */
-    protected ?string $retentionPeriod = null;
-
+    protected ?string $retentionPeriod = NULL;
 
     /**
      * Constructor for the AuditTrail class
@@ -234,7 +232,6 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the changed data
      *
@@ -245,7 +242,6 @@ class AuditTrail extends Entity implements JsonSerializable
         return ($this->changed ?? []);
 
     }//end getChanged()
-
 
     /**
      * Get JSON fields from the entity
@@ -267,7 +263,6 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end getJsonFields()
 
-
     /**
      * Hydrate the entity with data from an array
      *
@@ -282,8 +277,8 @@ class AuditTrail extends Entity implements JsonSerializable
         $jsonFields = $this->getJsonFields();
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === true && $value === []) {
-                $value = null;
+            if (in_array($key, $jsonFields) === TRUE && $value === []) {
+                $value = NULL;
             }
 
             $method = 'set'.ucfirst($key);
@@ -299,7 +294,6 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Convert entity to JSON serializable array
      *
@@ -309,39 +303,38 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $created = null;
-        if (isset($this->created) === true) {
+        $created = NULL;
+        if (isset($this->created) === TRUE) {
             $created = $this->created->format('c');
         }
 
         return [
-            'id'                    => $this->id,
-            'uuid'                  => $this->uuid,
-            'schema'                => $this->schema,
-            'register'              => $this->register,
-            'object'                => $this->object,
-            'objectUuid'            => $this->objectUuid,
-            'registerUuid'          => $this->registerUuid,
-            'schemaUuid'            => $this->schemaUuid,
-            'action'                => $this->action,
-            'changed'               => $this->changed,
-            'user'                  => $this->user,
-            'userName'              => $this->userName,
-            'session'               => $this->session,
-            'request'               => $this->request,
-            'ipAddress'             => $this->ipAddress,
-            'version'               => $this->version,
-            'created'               => $created,
-            'organisationId'        => $this->organisationId,
-            'organisationIdType'    => $this->organisationIdType,
-            'processingActivityId'  => $this->processingActivityId,
+            'id' => $this->id,
+            'uuid' => $this->uuid,
+            'schema' => $this->schema,
+            'register' => $this->register,
+            'object' => $this->object,
+            'objectUuid' => $this->objectUuid,
+            'registerUuid' => $this->registerUuid,
+            'schemaUuid' => $this->schemaUuid,
+            'action' => $this->action,
+            'changed' => $this->changed,
+            'user' => $this->user,
+            'userName' => $this->userName,
+            'session' => $this->session,
+            'request' => $this->request,
+            'ipAddress' => $this->ipAddress,
+            'version' => $this->version,
+            'created' => $created,
+            'organisationId' => $this->organisationId,
+            'organisationIdType' => $this->organisationIdType,
+            'processingActivityId' => $this->processingActivityId,
             'processingActivityUrl' => $this->processingActivityUrl,
-            'processingId'          => $this->processingId,
-            'confidentiality'       => $this->confidentiality,
-            'retentionPeriod'       => $this->retentionPeriod,
+            'processingId' => $this->processingId,
+            'confidentiality' => $this->confidentiality,
+            'retentionPeriod' => $this->retentionPeriod,
         ];
 
     }//end jsonSerialize()
-
 
 }//end class

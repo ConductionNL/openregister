@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-require_once './vendor-bin/cs-fixer/vendor/autoload.php';
-
-use Nextcloud\CodingStandard\Config;
-
 $finder = PhpCsFixer\Finder::create()
 	->exclude('vendor')
 	->in(__DIR__)

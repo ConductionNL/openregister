@@ -24,7 +24,6 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterUpdatedEvent extends Event
 {
-
     /**
      * The updated register state
      *
@@ -38,7 +37,6 @@ class RegisterUpdatedEvent extends Event
      * @var Register The register before update
      */
     private Register $oldRegister;
-
 
     /**
      * Constructor for RegisterUpdatedEvent
@@ -56,7 +54,6 @@ class RegisterUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated register
      *
@@ -68,7 +65,6 @@ class RegisterUpdatedEvent extends Event
 
     }//end getNewRegister()
 
-
     /**
      * Get the original register
      *
@@ -79,6 +75,5 @@ class RegisterUpdatedEvent extends Event
         return $this->oldRegister;
 
     }//end getOldRegister()
-
 
 }//end class

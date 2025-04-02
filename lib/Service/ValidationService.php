@@ -18,12 +18,6 @@
 
 namespace OCA\OpenRegister\Service;
 
-use Respect\Validation\Exceptions\ComponentException;
-use Respect\Validation\Exceptions\NestedValidationException;
-use Respect\Validation\Factory;
-use Respect\Validation\Rules;
-use Respect\Validation\Validator;
-
 /**
  * @Author Wilco Louwerse <wilco@conduction.nl>
  *
@@ -33,6 +27,5 @@ use Respect\Validation\Validator;
  */
 class ValidationService
 {
-
 
 }//end class

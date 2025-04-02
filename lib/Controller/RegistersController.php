@@ -16,27 +16,24 @@
 namespace OCA\OpenRegister\Controller;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class RegistersController
  */
 class RegistersController extends Controller
 {
-
-
     /**
      * Constructor for the RegistersController
      *
@@ -59,7 +56,6 @@ class RegistersController extends Controller
 
     }//end __construct()
 
-
     /**
      * Returns the template of the main app's page
      *
@@ -80,7 +76,6 @@ class RegistersController extends Controller
 
     }//end page()
 
-
     /**
      * Retrieves a list of all registers
      *
@@ -99,23 +94,23 @@ class RegistersController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching
-        $filters        = $this->request->getParams();
+        $filters = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
         // Create search parameters and conditions for filtering
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
             fieldsToSearch: $fieldsToSearch
         );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // Return all registers that match the search conditions
         return new JSONResponse(
             [
                 'results' => $this->registerMapper->findAll(
-                    limit: null,
-                    offset: null,
+                    limit: NULL,
+                    offset: NULL,
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams
@@ -124,7 +119,6 @@ class RegistersController extends Controller
         );
 
     }//end index()
-
 
     /**
      * Retrieves a single register by its ID
@@ -149,7 +143,6 @@ class RegistersController extends Controller
         }
 
     }//end show()
-
 
     /**
      * Creates a new register
@@ -182,7 +175,6 @@ class RegistersController extends Controller
         return new JSONResponse($this->registerMapper->createFromArray(object: $data));
 
     }//end create()
-
 
     /**
      * Updates an existing register
@@ -218,7 +210,6 @@ class RegistersController extends Controller
 
     }//end update()
 
-
     /**
      * Deletes a register
      *
@@ -242,7 +233,6 @@ class RegistersController extends Controller
 
     }//end destroy()
 
-
     /**
      * Get objects
      *
@@ -265,7 +255,6 @@ class RegistersController extends Controller
 
     }//end objects()
 
-
     /**
      * Updates an existing Register object using a json text/string as input
      *
@@ -280,12 +269,11 @@ class RegistersController extends Controller
      * @throws Exception If there is a database error
      * @throws GuzzleException If there is an HTTP request error
      */
-    public function uploadUpdate(?int $id=null): JSONResponse
+    public function uploadUpdate(?int $id = NULL): JSONResponse
     {
         return $this->upload($id);
 
     }//end uploadUpdate()
-
 
     /**
      * Creates a new Register object or updates an existing one
@@ -301,9 +289,9 @@ class RegistersController extends Controller
      * @throws GuzzleException If there is an HTTP request error
      * @throws Exception If there is a database error
      */
-    public function upload(?int $id=null): JSONResponse
+    public function upload(?int $id = NULL): JSONResponse
     {
-        if ($id !== null) {
+        if ($id !== NULL) {
             // If ID is provided, find the existing register
             $register = $this->registerMapper->find($id);
         } else {
@@ -320,7 +308,7 @@ class RegistersController extends Controller
         }
 
         // Validate that the jsonArray is a valid OAS3 object containing schemas
-        if (isset($phpArray['openapi']) === false || isset($phpArray['components']['schemas']) === false) {
+        if (isset($phpArray['openapi']) === FALSE || isset($phpArray['components']['schemas']) === FALSE) {
             return new JSONResponse(
                 data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'],
                 statusCode: 400
@@ -328,14 +316,14 @@ class RegistersController extends Controller
         }
 
         // Set default title if not provided or empty
-        if (empty($phpArray['info']['title']) === true) {
+        if (empty($phpArray['info']['title']) === TRUE) {
             $phpArray['info']['title'] = 'New Register';
         }
 
         // Update the register with the data from the uploaded JSON
         $register->hydrate($phpArray);
 
-        if ($register->getId() === null) {
+        if ($register->getId() === NULL) {
             // Insert a new register if no ID is set
             $register = $this->registerMapper->insert($register);
         } else {
@@ -346,6 +334,5 @@ class RegistersController extends Controller
         return new JSONResponse($register);
 
     }//end upload()
-
 
 }//end class

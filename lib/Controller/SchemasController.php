@@ -16,15 +16,15 @@
 namespace OCA\OpenRegister\Controller;
 
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -35,8 +35,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemasController extends Controller
 {
-
-
     /**
      * Constructor for the SchemasController
      *
@@ -61,7 +59,6 @@ class SchemasController extends Controller
 
     }//end __construct()
 
-
     /**
      * Returns the template of the main app's page
      *
@@ -82,7 +79,6 @@ class SchemasController extends Controller
 
     }//end page()
 
-
     /**
      * Retrieves a list of all schemas
      *
@@ -101,16 +97,16 @@ class SchemasController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching
-        $filters        = $this->request->getParams();
+        $filters = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
         // Create search parameters and conditions for filtering
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
             fieldsToSearch: $fieldsToSearch
         );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // Return all schemas that match the search conditions
         return new JSONResponse(
@@ -124,7 +120,6 @@ class SchemasController extends Controller
         );
 
     }//end index()
-
 
     /**
      * Retrieves a single schema by its ID
@@ -149,7 +144,6 @@ class SchemasController extends Controller
         }
 
     }//end show()
-
 
     /**
      * Creates a new schema
@@ -182,7 +176,6 @@ class SchemasController extends Controller
         return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
 
     }//end create()
-
 
     /**
      * Updates an existing schema
@@ -218,7 +211,6 @@ class SchemasController extends Controller
 
     }//end update()
 
-
     /**
      * Deletes a schema
      *
@@ -242,7 +234,6 @@ class SchemasController extends Controller
 
     }//end destroy()
 
-
     /**
      * Updates an existing Schema object using a json text/string as input
      *
@@ -257,12 +248,11 @@ class SchemasController extends Controller
      * @throws Exception If there is a database error
      * @throws GuzzleException If there is an HTTP request error
      */
-    public function uploadUpdate(?int $id=null): JSONResponse
+    public function uploadUpdate(?int $id = NULL): JSONResponse
     {
         return $this->upload($id);
 
     }//end uploadUpdate()
-
 
     /**
      * Creates a new Schema object or updates an existing one
@@ -278,9 +268,9 @@ class SchemasController extends Controller
      * @throws Exception If there is a database error
      * @throws GuzzleException If there is an HTTP request error
      */
-    public function upload(?int $id=null): JSONResponse
+    public function upload(?int $id = NULL): JSONResponse
     {
-        if ($id !== null) {
+        if ($id !== NULL) {
             // If ID is provided, find the existing schema
             $schema = $this->schemaMapper->find($id);
         } else {
@@ -297,14 +287,14 @@ class SchemasController extends Controller
         }
 
         // Set default title if not provided or empty
-        if (empty($phpArray['title']) === true) {
+        if (empty($phpArray['title']) === TRUE) {
             $phpArray['title'] = 'New Schema';
         }
 
         // Update the schema with the data from the uploaded JSON
         $schema->hydrate($phpArray);
 
-        if ($schema->getId() === null) {
+        if ($schema->getId() === NULL) {
             // Insert a new schema if no ID is set
             $schema = $this->schemaMapper->insert($schema);
         } else {
@@ -315,7 +305,6 @@ class SchemasController extends Controller
         return new JSONResponse($schema);
 
     }//end upload()
-
 
     /**
      * Creates and return a json file for a Schema
@@ -345,6 +334,5 @@ class SchemasController extends Controller
         return new JSONResponse($schema);
 
     }//end download()
-
 
 }//end class

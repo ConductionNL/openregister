@@ -26,14 +26,12 @@ use OCP\Search\Result;
  */
 class SearchController extends Controller
 {
-
     /**
      * The search service instance
      *
      * @var ISearch
      */
     private readonly ISearch $searchService;
-
 
     /**
      * Constructor for the SearchController
@@ -54,7 +52,6 @@ class SearchController extends Controller
 
     }//end __construct()
 
-
     /**
      * Handles search requests and forwards them to the Nextcloud search service
      *
@@ -73,21 +70,20 @@ class SearchController extends Controller
 
         // Format the search results for the JSON response
         $formattedResults = array_map(
-                function (Result $result) {
-                    return [
-                        'id'     => $result->getId(),
-                        'name'   => $result->getName(),
-                        'type'   => $result->getType(),
-                        'url'    => $result->getUrl(),
-                        'source' => $result->getSource(),
-                    ];
-                },
-                $results
-                );
+            function (Result $result) {
+                return [
+                    'id' => $result->getId(),
+                    'name' => $result->getName(),
+                    'type' => $result->getType(),
+                    'url' => $result->getUrl(),
+                    'source' => $result->getSource(),
+                ];
+            },
+            $results
+        );
 
         return new JSONResponse($formattedResults);
 
     }//end search()
-
 
 }//end class

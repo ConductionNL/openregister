@@ -1,6 +1,5 @@
 <?php
 
-
 namespace OCA\OpenRegister\EventListener;
 
 use InvalidArgumentException;
@@ -16,8 +15,6 @@ use OCP\Files\FileInfo;
 
 class AbstractNodeFolderEventListener implements IEventListener
 {
-
-
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
@@ -25,13 +22,12 @@ class AbstractNodeFolderEventListener implements IEventListener
 
     }//end __construct()
 
-
     /**
      * @inheritDoc
      */
     public function handle(Event $event): void
     {
-        if ($event instanceof AbstractNodeEvent === false) {
+        if ($event instanceof AbstractNodeEvent === FALSE) {
             return;
         }
 
@@ -40,16 +36,15 @@ class AbstractNodeFolderEventListener implements IEventListener
             return;
         }
 
-        match (true) {
+        match (TRUE) {
             $event instanceof NodeCreatedEvent => $this->handleNodeCreated(event: $event),
             $event instanceof NodeDeletedEvent => $this->handleNodeDeleted(event: $event),
             $event instanceof NodeTouchedEvent => $this->handleNodeTouched(event: $event),
             $event instanceof NodeWrittenEvent => $this->handleNodeWritten(event: $event),
-        default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
+            default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
         };
 
     }//end handle()
-
 
     /**
      * Handle node created event

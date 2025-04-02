@@ -16,13 +16,11 @@
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Db\Log;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
  * The AuditTrailMapper class handles audit trail operations and object reversions
@@ -31,14 +29,12 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  */
 class AuditTrailMapper extends QBMapper
 {
-
     /**
      * The object entity mapper instance
      *
      * @var ObjectEntityMapper
      */
     private ObjectEntityMapper $objectEntityMapper;
-
 
     /**
      * Constructor for the AuditTrailMapper
@@ -54,7 +50,6 @@ class AuditTrailMapper extends QBMapper
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
-
 
     /**
      * Finds an audit trail by id
@@ -77,7 +72,6 @@ class AuditTrailMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find all audit trails with filters and sorting
      *
@@ -92,13 +86,13 @@ class AuditTrailMapper extends QBMapper
      * @return array The audit trails
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        ?array $sort=[],
-        ?string $search=null
+        ?int $limit = NULL,
+        ?int $offset = NULL,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        ?array $sort = [],
+        ?string $search = NULL
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -110,14 +104,14 @@ class AuditTrailMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
 
-        if (empty($searchConditions) === false) {
+        if (empty($searchConditions) === FALSE) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -125,14 +119,14 @@ class AuditTrailMapper extends QBMapper
         }
 
         // Add search on ext fields if search term provided.
-        if ($search !== null) {
+        if ($search !== NULL) {
             $qb->andWhere(
                 $qb->expr()->like('ext', $qb->createNamedParameter('%'.$search.'%'))
             );
         }
 
         // Add sorting if specified.
-        if (empty($sort) === false) {
+        if (empty($sort) === FALSE) {
             foreach ($sort as $field => $direction) {
                 if (strtoupper($direction) === 'DESC') {
                     $direction = 'DESC';
@@ -148,7 +142,6 @@ class AuditTrailMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Finds all audit trails for a given object
      *
@@ -163,15 +156,15 @@ class AuditTrailMapper extends QBMapper
      */
     public function findAllUuid(
         string $identifier,
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?int $limit = NULL,
+        ?int $offset = NULL,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = []
     ): array {
         try {
-            $object            = $this->objectEntityMapper->find(identifier: $identifier);
-            $objectId          = $object->getId();
+            $object = $this->objectEntityMapper->find(identifier: $identifier);
+            $objectId = $object->getId();
             $filters['object'] = $objectId;
             return $this->findAll($limit, $offset, $filters, $searchConditions, $searchParams);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -180,7 +173,6 @@ class AuditTrailMapper extends QBMapper
         }
 
     }//end findAllUuid()
-
 
     /**
      * Creates an audit trail from an array
@@ -195,14 +187,13 @@ class AuditTrailMapper extends QBMapper
         $log->hydrate(object: $object);
 
         // Set uuid if not provided.
-        if ($log->getUuid() === null) {
+        if ($log->getUuid() === NULL) {
             $log->setUuid(Uuid::v4());
         }
 
         return $this->insert(entity: $log);
 
     }//end createFromArray()
-
 
     /**
      * Creates an audit trail for object changes
@@ -212,15 +203,15 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      */
-    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null): AuditTrail
+    public function createAuditTrail(?ObjectEntity $old = NULL, ?ObjectEntity $new = NULL): AuditTrail
     {
         // Determine the action based on the presence of old and new objects.
         $action = 'update';
-        if ($new === null) {
-            $action       = 'delete';
+        if ($new === NULL) {
+            $action = 'delete';
             $objectEntity = $old;
-        } else if ($old === null) {
-            $action       = 'create';
+        } elseif ($old === NULL) {
+            $action = 'create';
             $objectEntity = $new;
         } else {
             $objectEntity = $new;
@@ -229,7 +220,7 @@ class AuditTrailMapper extends QBMapper
         // Initialize an array to store changed fields.
         $changed = [];
         if ($action !== 'delete') {
-            if ($old !== null) {
+            if ($old !== NULL) {
                 $oldArray = $old->jsonSerialize();
             } else {
                 $oldArray = [];
@@ -239,9 +230,9 @@ class AuditTrailMapper extends QBMapper
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
-                if ((isset($oldArray[$key]) === false) || ($oldArray[$key] !== $value)) {
+                if ((isset($oldArray[$key]) === FALSE) || ($oldArray[$key] !== $value)) {
                     $changed[$key] = [
-                        'old' => ($oldArray[$key] ?? null),
+                        'old' => ($oldArray[$key] ?? NULL),
                         'new' => $value,
                     ];
                 }
@@ -250,10 +241,10 @@ class AuditTrailMapper extends QBMapper
             // For updates, check for removed fields.
             if ($action === 'update') {
                 foreach ($oldArray as $key => $value) {
-                    if (isset($newArray[$key]) === false) {
+                    if (isset($newArray[$key]) === FALSE) {
                         $changed[$key] = [
                             'old' => $value,
-                            'new' => null,
+                            'new' => NULL,
                         ];
                     }
                 }
@@ -271,7 +262,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);
 
-        if ($user !== null) {
+        if ($user !== NULL) {
             $auditTrail->setUser($user->getUID());
             $auditTrail->setUserName($user->getDisplayName());
         } else {
@@ -291,7 +282,6 @@ class AuditTrailMapper extends QBMapper
 
     }//end createAuditTrail()
 
-
     /**
      * Get audit trails for an object until a specific point or version
      *
@@ -301,7 +291,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return array Array of AuditTrail objects
      */
-    public function findByObjectUntil(int $objectId, string $objectUuid, $until=null): array
+    public function findByObjectUntil(int $objectId, string $objectUuid, $until = NULL): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -327,8 +317,8 @@ class AuditTrailMapper extends QBMapper
                     )
                 )
             );
-        } else if (is_string($until) === true) {
-            if ($this->isSemanticVersion($until) === true) {
+        } elseif (is_string($until) === TRUE) {
+            if ($this->isSemanticVersion($until) === TRUE) {
                 // Handle semantic version.
                 $qb->andWhere(
                     $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -344,7 +334,7 @@ class AuditTrailMapper extends QBMapper
                         'created',
                         $qb->createFunction(
                             sprintf(
-                                    '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
+                                '(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
                                 $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
                             )
                         )
@@ -356,7 +346,6 @@ class AuditTrailMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findByObjectUntil()
-
 
     /**
      * Check if a string is a semantic version
@@ -371,7 +360,6 @@ class AuditTrailMapper extends QBMapper
 
     }//end isSemanticVersion()
 
-
     /**
      * Revert an object to a previous state
      *
@@ -383,7 +371,7 @@ class AuditTrailMapper extends QBMapper
      * @throws DoesNotExistException If object not found
      * @throws \Exception If revert fails
      */
-    public function revertObject($identifier, $until=null, bool $overwriteVersion=false): ObjectEntity
+    public function revertObject($identifier, $until = NULL, bool $overwriteVersion = FALSE): ObjectEntity
     {
         // Get the current object.
         $object = $this->objectEntityMapper->find($identifier);
@@ -395,7 +383,7 @@ class AuditTrailMapper extends QBMapper
             $until
         );
 
-        if (empty($auditTrails) === true && $until !== null) {
+        if (empty($auditTrails) === TRUE && $until !== NULL) {
             throw new \Exception('No audit trail entries found for the specified reversion point.');
         }
 
@@ -408,8 +396,8 @@ class AuditTrailMapper extends QBMapper
         }
 
         // Handle versioning.
-        if ($overwriteVersion === false) {
-            $version    = explode('.', $revertedObject->getVersion());
+        if ($overwriteVersion === FALSE) {
+            $version = explode('.', $revertedObject->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $revertedObject->setVersion(implode('.', $version));
         }
@@ -417,7 +405,6 @@ class AuditTrailMapper extends QBMapper
         return $revertedObject;
 
     }//end revertObject()
-
 
     /**
      * Helper function to revert changes from an audit trail entry
@@ -433,17 +420,16 @@ class AuditTrailMapper extends QBMapper
 
         // Iterate through each change and apply the reverse.
         foreach ($changes as $field => $change) {
-            if (isset($change['old']) === true) {
+            if (isset($change['old']) === TRUE) {
                 // Use reflection to set the value if it's a protected property.
                 $reflection = new \ReflectionClass($object);
-                $property   = $reflection->getProperty($field);
-                $property->setAccessible(true);
+                $property = $reflection->getProperty($field);
+                $property->setAccessible(TRUE);
                 $property->setValue($object, $change['old']);
             }
         }
 
     }//end revertChanges()
-
 
     // We dont need update as we dont change the log.
 }//end class

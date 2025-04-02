@@ -15,13 +15,13 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SearchService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -31,8 +31,6 @@ use OCP\IRequest;
  */
 class SourcesController extends Controller
 {
-
-
     /**
      * Constructor for the SourcesController
      *
@@ -52,7 +50,6 @@ class SourcesController extends Controller
         parent::__construct($appName, $request);
 
     }//end __construct()
-
 
     /**
      * Returns the template of the main app's page
@@ -74,7 +71,6 @@ class SourcesController extends Controller
 
     }//end page()
 
-
     /**
      * Retrieves a list of all sources
      *
@@ -93,23 +89,23 @@ class SourcesController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching
-        $filters        = $this->request->getParams();
+        $filters = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
         // Create search parameters and conditions for filtering
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
             fieldsToSearch: $fieldsToSearch
         );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // Return all sources that match the search conditions
         return new JSONResponse(
             [
                 'results' => $this->sourceMapper->findAll(
-                    limit: null,
-                    offset: null,
+                    limit: NULL,
+                    offset: NULL,
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams
@@ -118,7 +114,6 @@ class SourcesController extends Controller
         );
 
     }//end index()
-
 
     /**
      * Retrieves a single source by its ID
@@ -143,7 +138,6 @@ class SourcesController extends Controller
         }
 
     }//end show()
-
 
     /**
      * Creates a new source
@@ -176,7 +170,6 @@ class SourcesController extends Controller
         return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
 
     }//end create()
-
 
     /**
      * Updates an existing source
@@ -212,7 +205,6 @@ class SourcesController extends Controller
 
     }//end update()
 
-
     /**
      * Deletes a source
      *
@@ -235,6 +227,5 @@ class SourcesController extends Controller
         return new JSONResponse([]);
 
     }//end destroy()
-
 
 }//end class

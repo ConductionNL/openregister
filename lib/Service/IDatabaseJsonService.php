@@ -26,8 +26,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 interface IDatabaseJsonService
 {
-
-
     /**
      * Filters the JSON objects in the objects column based upon given filters.
      *
@@ -37,7 +35,6 @@ interface IDatabaseJsonService
      * @return IQueryBuilder The updated query builder.
      */
     public function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder;
-
 
     /**
      * Searches in the JSON bojects in the objects column for given string.
@@ -49,7 +46,6 @@ interface IDatabaseJsonService
      */
     public function searchJson(IQueryBuilder $builder, string $search): IQueryBuilder;
 
-
     /**
      * Sorts search results on json fields.
      *
@@ -59,7 +55,6 @@ interface IDatabaseJsonService
      * @return IQueryBuilder The updated query builder.
      */
     public function orderJson(IQueryBuilder $builder, array $order): IQueryBuilder;
-
 
     /**
      * Generates aggregations (facets) for given fields combined with given filters.
@@ -73,7 +68,5 @@ interface IDatabaseJsonService
      *
      * @return array The resulting aggregations
      */
-    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters=[], ?string $search=null): array;
-
-
+    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters = [], ?string $search = NULL): array;
 }//end interface

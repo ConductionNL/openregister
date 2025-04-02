@@ -24,7 +24,6 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectRevertedEvent extends Event
 {
-
     /**
      * The reverted object entity
      *
@@ -39,7 +38,6 @@ class ObjectRevertedEvent extends Event
      */
     private $until;
 
-
     /**
      * Constructor for ObjectRevertedEvent
      *
@@ -48,14 +46,13 @@ class ObjectRevertedEvent extends Event
      *
      * @return void
      */
-    public function __construct(ObjectEntity $object, $until=null)
+    public function __construct(ObjectEntity $object, $until = NULL)
     {
         parent::__construct();
         $this->object = $object;
-        $this->until  = $until;
+        $this->until = $until;
 
     }//end __construct()
-
 
     /**
      * Get the reverted object entity
@@ -68,7 +65,6 @@ class ObjectRevertedEvent extends Event
 
     }//end getObject()
 
-
     /**
      * Get the reversion point
      *
@@ -79,6 +75,5 @@ class ObjectRevertedEvent extends Event
         return $this->until;
 
     }//end getRevertPoint()
-
 
 }//end class

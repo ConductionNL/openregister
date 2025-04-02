@@ -9,9 +9,7 @@ use Exception;
  */
 class CustomValidationException extends Exception
 {
-
     private array $errors;
-
 
     /**
      * @inheritDoc
@@ -25,7 +23,6 @@ class CustomValidationException extends Exception
 
     }//end __construct()
 
-
     /**
      * Retrieves the errors to display them.
      *
@@ -36,6 +33,5 @@ class CustomValidationException extends Exception
         return $this->errors;
 
     }//end getErrors()
-
 
 }//end class

@@ -31,8 +31,6 @@ use OCP\Files\FileInfo;
  */
 class AbstractNodesFolderEventListener implements IEventListener
 {
-
-
     /**
      * Constructor for AbstractNodesFolderEventListener
      *
@@ -48,7 +46,6 @@ class AbstractNodesFolderEventListener implements IEventListener
 
     }//end __construct()
 
-
     /**
      * Handle incoming events.
      *
@@ -58,7 +55,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        if ($event instanceof AbstractNodesEvent === false) {
+        if ($event instanceof AbstractNodesEvent === FALSE) {
             return;
         }
 
@@ -67,16 +64,15 @@ class AbstractNodesFolderEventListener implements IEventListener
             return;
         }
 
-        match (true) {
+        match (TRUE) {
             $event instanceof NodeCopiedEvent => $this->handleNodeCopied(event: $event),
             $event instanceof NodeRenamedEvent => $this->handleNodeRenamed(event: $event),
-        default => throw new InvalidArgumentException(
+            default => throw new InvalidArgumentException(
                 message: 'Unsupported event type: '.get_class($event)
             ),
         };
 
     }//end handle()
-
 
     /**
      * Handle when a node is copied.
@@ -87,9 +83,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     private function handleNodeCopied(NodeCopiedEvent $event): void
     {
-        // $this->objectService->nodeCopiedEventFunction();    
+        // $this->objectService->nodeCopiedEventFunction();
     }//end handleNodeCopied()
-
 
     /**
      * Handle when a node is renamed.
@@ -100,6 +95,6 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     private function handleNodeRenamed(NodeRenamedEvent $event): void
     {
-        // $this->objectService->nodeRenamedEventFunction();    
-    }//end handleNodeRenamed()    
+        // $this->objectService->nodeRenamedEventFunction();
+    }//end handleNodeRenamed()
 }//end Class

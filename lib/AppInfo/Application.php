@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * OpenConnector Consumers Controller
  *
@@ -45,7 +44,6 @@ class Application extends App implements IBootstrap
      */
     public const APP_ID = 'openregister';
 
-
     /**
      * Constructor for the Application class
      *
@@ -58,7 +56,6 @@ class Application extends App implements IBootstrap
         parent::__construct(self::APP_ID);
 
     }//end __construct()
-
 
     /**
      * Register application components
@@ -73,7 +70,6 @@ class Application extends App implements IBootstrap
 
     }//end register()
 
-
     /**
      * Boot application components
      *
@@ -85,6 +81,5 @@ class Application extends App implements IBootstrap
     {
         // No boot actions required at the moment
     }//end boot()
-
 
 }//end class

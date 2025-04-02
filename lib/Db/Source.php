@@ -27,63 +27,61 @@ use OCP\AppFramework\Db\Entity;
  */
 class Source extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the source
      *
      * @var string|null Unique identifier for the source
      */
-    protected ?string $uuid = null;
+    protected ?string $uuid = NULL;
 
     /**
      * Title of the source
      *
      * @var string|null Title of the source
      */
-    protected ?string $title = null;
+    protected ?string $title = NULL;
 
     /**
      * Version of the source
      *
      * @var string|null Version of the source
      */
-    protected ?string $version = null;
+    protected ?string $version = NULL;
 
     /**
      * Description of the source
      *
      * @var string|null Description of the source
      */
-    protected ?string $description = null;
+    protected ?string $description = NULL;
 
     /**
      * Database URL of the source
      *
      * @var string|null Database URL of the source
      */
-    protected ?string $databaseUrl = null;
+    protected ?string $databaseUrl = NULL;
 
     /**
      * Type of the source
      *
      * @var string|null Type of the source
      */
-    protected ?string $type = null;
+    protected ?string $type = NULL;
 
     /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
      */
-    protected ?DateTime $updated = null;
+    protected ?DateTime $updated = NULL;
 
     /**
      * Creation timestamp
      *
      * @var DateTime|null Creation timestamp
      */
-    protected ?DateTime $created = null;
-
+    protected ?DateTime $created = NULL;
 
     /**
      * Constructor for the Source class
@@ -102,7 +100,6 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'created', type: 'datetime');
 
     }//end __construct()
-
 
     /**
      * Get JSON fields from the entity
@@ -124,7 +121,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end getJsonFields()
 
-
     /**
      * Hydrate the entity with data from an array
      *
@@ -138,13 +134,13 @@ class Source extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === false) {
+        if (isset($object['metadata']) === FALSE) {
             $object['metadata'] = [];
         }
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === true && $value === []) {
-                $value = null;
+            if (in_array($key, $jsonFields) === TRUE && $value === []) {
+                $value = NULL;
             }
 
             $method = 'set'.ucfirst($key);
@@ -160,7 +156,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Convert entity to JSON serializable array
      *
@@ -170,29 +165,28 @@ class Source extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $updated = null;
-        if (isset($this->updated) === true) {
+        $updated = NULL;
+        if (isset($this->updated) === TRUE) {
             $updated = $this->updated->format('c');
         }
 
-        $created = null;
-        if (isset($this->created) === true) {
+        $created = NULL;
+        if (isset($this->created) === TRUE) {
             $created = $this->created->format('c');
         }
 
         return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'title'       => $this->title,
-            'version'     => $this->version,
+            'id' => $this->id,
+            'uuid' => $this->uuid,
+            'title' => $this->title,
+            'version' => $this->version,
             'description' => $this->description,
             'databaseUrl' => $this->databaseUrl,
-            'type'        => $this->type,
-            'updated'     => $updated,
-            'created'     => $created,
+            'type' => $this->type,
+            'updated' => $updated,
+            'created' => $created,
         ];
 
     }//end jsonSerialize()
-
 
 }//end class

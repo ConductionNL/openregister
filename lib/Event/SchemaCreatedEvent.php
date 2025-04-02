@@ -24,14 +24,12 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaCreatedEvent extends Event
 {
-
     /**
      * The newly created schema
      *
      * @var Schema The schema that was created
      */
     private Schema $schema;
-
 
     /**
      * Constructor for SchemaCreatedEvent
@@ -47,7 +45,6 @@ class SchemaCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created schema
      *
@@ -58,6 +55,5 @@ class SchemaCreatedEvent extends Event
         return $this->schema;
 
     }//end getSchema()
-
 
 }//end class

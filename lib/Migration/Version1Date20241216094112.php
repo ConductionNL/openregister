@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20241216094112 extends SimpleMigrationStep
 {
-
-
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -42,7 +40,6 @@ class Version1Date20241216094112 extends SimpleMigrationStep
     {
 
     }//end preSchemaChange()
-
 
     /**
      * @param  IOutput                   $output
@@ -57,21 +54,21 @@ class Version1Date20241216094112 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_files') === false) {
+        if ($schema->hasTable('openregister_files') === FALSE) {
             $table = $schema->createTable('openregister_files');
-            $table->addColumn(name: 'id', typeName: Types::BIGINT, options: ['autoincrement' => true, 'notnull' => true, 'length' => 255]);
-            $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-            $table->addColumn(name: 'filename', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'download_url', typeName: Types::STRING, options: ['notnull' => false, 'length' => 1023]);
-            $table->addColumn(name: 'share_url', typeName: Types::STRING, options: ['notnull' => false, 'length' => 1023]);
-            $table->addColumn(name: 'access_url', typeName: Types::STRING, options: ['notnull' => false, 'length' => 1023]);
-            $table->addColumn(name: 'extension', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'checksum', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'source', typeName: Types::INTEGER, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'user_id', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'created', typeName: Types::DATETIME_IMMUTABLE, options: ['notnull' => true, 'length' => 255]);
-            $table->addColumn(name: 'updated', typeName: Types::DATETIME_MUTABLE, options: ['notnull' => true, 'length' => 255]);
-            $table->addColumn(name: 'file_path', typeName: Types::STRING)->setNotnull(false)->setDefault(null);
+            $table->addColumn(name: 'id', typeName: Types::BIGINT, options: ['autoincrement' => TRUE, 'notnull' => TRUE, 'length' => 255]);
+            $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => TRUE, 'length' => 255]);
+            $table->addColumn(name: 'filename', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 255]);
+            $table->addColumn(name: 'download_url', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 1023]);
+            $table->addColumn(name: 'share_url', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 1023]);
+            $table->addColumn(name: 'access_url', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 1023]);
+            $table->addColumn(name: 'extension', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 255]);
+            $table->addColumn(name: 'checksum', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 255]);
+            $table->addColumn(name: 'source', typeName: Types::INTEGER, options: ['notnull' => FALSE, 'length' => 255]);
+            $table->addColumn(name: 'user_id', typeName: Types::STRING, options: ['notnull' => FALSE, 'length' => 255]);
+            $table->addColumn(name: 'created', typeName: Types::DATETIME_IMMUTABLE, options: ['notnull' => TRUE, 'length' => 255]);
+            $table->addColumn(name: 'updated', typeName: Types::DATETIME_MUTABLE, options: ['notnull' => TRUE, 'length' => 255]);
+            $table->addColumn(name: 'file_path', typeName: Types::STRING)->setNotnull(FALSE)->setDefault(NULL);
 
             $table->setPrimaryKey(['id']);
         }
@@ -79,7 +76,6 @@ class Version1Date20241216094112 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * @param IOutput                   $output
@@ -90,6 +86,5 @@ class Version1Date20241216094112 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
 
 }//end class
