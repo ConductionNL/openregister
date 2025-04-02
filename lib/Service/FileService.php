@@ -57,32 +57,57 @@ use OCP\IUserManager;
  */
 class FileService
 {
+	/**
+	 * Root folder name for all OpenRegister files
+	 */
 	const ROOT_FOLDER = 'Open Registers';
-    const APP_GROUP = 'openregister';
-    const APP_USER = 'OpenRegister';
-    const FILE_TAG_TYPE = 'files';
+	
+	/**
+	 * Application group name
+	 */
+	const APP_GROUP = 'openregister';
+	
+	/**
+	 * Application user name
+	 */
+	const APP_USER = 'OpenRegister';
+	
+	/**
+	 * File tag type identifier
+	 */
+	const FILE_TAG_TYPE = 'files';
+
 	/**
 	 * Constructor for FileService
 	 *
-	 * @param IUserSession $userSession The user session
-	 * @param LoggerInterface $logger The logger interface
-	 * @param IRootFolder $rootFolder The root folder interface
-	 * @param IManager $shareManager The share manager interface
+	 * @param IUserSession           $userSession        The user session
+	 * @param IUserManager           $userManager        The user manager
+	 * @param LoggerInterface        $logger             The logger interface
+	 * @param IRootFolder            $rootFolder         The root folder interface
+	 * @param IManager               $shareManager       The share manager interface
+	 * @param IURLGenerator          $urlGenerator       URL generator service
+	 * @param IConfig                $config             Configuration service
+	 * @param RegisterMapper         $registerMapper     Register data mapper
+	 * @param SchemaMapper           $schemaMapper       Schema data mapper
+	 * @param IGroupManager          $groupManager       Group manager service
+	 * @param ISystemTagManager      $systemTagManager   System tag manager
+	 * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper
+	 * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper
 	 */
 	public function __construct(
-		private readonly IUserSession    		$userSession,
-		private readonly IUserManager    		$userManager,
-		private readonly LoggerInterface 		$logger,
-		private readonly IRootFolder     		$rootFolder,
-		private readonly IManager        		$shareManager,
-		private readonly IURLGenerator   		$urlGenerator,
-		private readonly IConfig         		$config,
-		private readonly RegisterMapper  		$registerMapper,
-		private readonly SchemaMapper    		$schemaMapper,
-        private readonly IGroupManager   		$groupManager,
-        private readonly ISystemTagManager      $systemTagManager,
-        private readonly ISystemTagObjectMapper $systemTagMapper,
-        private readonly ObjectEntityMapper     $objectEntityMapper,
+		private readonly IUserSession           $userSession,
+		private readonly IUserManager           $userManager,
+		private readonly LoggerInterface        $logger,
+		private readonly IRootFolder            $rootFolder,
+		private readonly IManager               $shareManager,
+		private readonly IURLGenerator          $urlGenerator,
+		private readonly IConfig                $config,
+		private readonly RegisterMapper         $registerMapper,
+		private readonly SchemaMapper           $schemaMapper,
+		private readonly IGroupManager          $groupManager,
+		private readonly ISystemTagManager      $systemTagManager,
+		private readonly ISystemTagObjectMapper $systemTagMapper,
+		private readonly ObjectEntityMapper     $objectEntityMapper,
 	)
 	{
 	}
@@ -90,10 +115,10 @@ class FileService
 	/**
 	 * Creates a folder for a Register (used for storing files of Schemas/Objects).
 	 *
-	 * @param Register|int $register The Register to create the folder for.
+	 * @param Register|int $register The Register to create the folder for
 	 *
-	 * @return string The path to the folder.
-	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 * @return string The path to the folder
+	 * @throws Exception In case we can't create the folder because it is not permitted
 	 */
 	public function createRegisterFolder(Register|int $register): string
 	{
@@ -103,10 +128,10 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName");
 		$this->registerMapper->update($register);
 
-		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName";
+		$folderPath = $this::ROOT_FOLDER."/$registerFolderName";
 		$this->createFolder(folderPath: $folderPath);
 
 		return $folderPath;
@@ -115,9 +140,9 @@ class FileService
 	/**
 	 * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
 	 *
-	 * @param Register $register The Register to get the folder name for.
+	 * @param Register $register The Register to get the folder name for
 	 *
-	 * @return string The name the folder for this Register should have.
+	 * @return string The name the folder for this Register should have
 	 */
 	private function getRegisterFolderName(Register $register): string
 	{
@@ -133,11 +158,11 @@ class FileService
 	/**
 	 * Creates a folder for a Schema (used for storing files of Objects).
 	 *
-	 * @param Register|int $register The Register to create the schema folder for.
-	 * @param Schema|int $schema The Schema to create the folder for.
+	 * @param Register|int $register The Register to create the schema folder for
+	 * @param Schema|int   $schema   The Schema to create the folder for
 	 *
-	 * @return string The path to the folder.
-	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 * @return string The path to the folder
+	 * @throws Exception In case we can't create the folder because it is not permitted
 	 */
 	public function createSchemaFolder(Register|int $register, Schema|int $schema): string
 	{
@@ -152,12 +177,12 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName");
 		$this->registerMapper->update($register);
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 
-		$folderPath = $this::ROOT_FOLDER . "/$registerFolderName/$schemaFolderName";
+		$folderPath = $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName";
 		$this->createFolder(folderPath: $folderPath);
 
 		return $folderPath;
@@ -166,9 +191,9 @@ class FileService
 	/**
 	 * Get the name for the folder used for storing files of objects of a specific Schema.
 	 *
-	 * @param Schema $schema The Schema to get the folder name for.
+	 * @param Schema $schema The Schema to get the folder name for
 	 *
-	 * @return string The name the folder for this Schema should have.
+	 * @return string The name the folder for this Schema should have
 	 */
 	private function getSchemaFolderName(Schema $schema): string
 	{
@@ -178,22 +203,26 @@ class FileService
 	/**
 	 * Creates a folder for an Object (used for storing files of this Object).
 	 *
-	 * @param ObjectEntity $objectEntity The Object to create the folder for.
-	 * @param Register|int|null $register The Register to create the Object folder for.
-	 * @param Schema|int|null $schema The Schema to create the Object folder for.
+	 * @param ObjectEntity      $objectEntity The Object to create the folder for
+	 * @param Register|int|null $register     The Register to create the Object folder for (optional)
+	 * @param Schema|int|null   $schema       The Schema to create the Object folder for (optional)
+	 * @param string|null       $folderPath   Optional path to use instead of generating one
 	 *
-	 * @return Node|null The NextCloud Node object of the folder. Or null if something went wrong creating the folder.
-	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 * @return Node|null The NextCloud Node object of the folder, or null if creation failed
+	 * @throws Exception In case we can't create the folder because it is not permitted
 	 */
 	public function createObjectFolder(
 		ObjectEntity      $objectEntity,
 		Register|int|null $register = null,
 		Schema|int|null   $schema = null,
 		string            $folderPath = null
-	): ?Node
-	{
+	): ?Node {
 		if ($folderPath === null) {
-			$folderPath = $this->getObjectFolderPath(objectEntity: $objectEntity, register: $register, schema: $schema);
+			$folderPath = $this->getObjectFolderPath(
+				objectEntity: $objectEntity,
+				register: $register,
+				schema: $schema
+			);
 		}
 		$this->createFolder(folderPath: $folderPath);
 
@@ -201,13 +230,13 @@ class FileService
 		// @todo ^If so, we need to update these functions to be able to create shareLinks for folders as well (not only files)
 		$objectEntity->setFolder($folderPath);
 
-//		// Create or find ShareLink
-//		$share = $this->fileService->findShare(path: $filePath);
-//		if ($share !== null) {
-//			$shareLink = $this->fileService->getShareLink($share);
-//		} else {
-//			$shareLink = $this->fileService->createShareLink(path: $filePath);
-//		}
+		// Create or find ShareLink
+		// $share = $this->fileService->findShare(path: $filePath);
+		// if ($share !== null) {
+		//     $shareLink = $this->fileService->getShareLink($share);
+		// } else {
+		//     $shareLink = $this->fileService->createShareLink(path: $filePath);
+		// }
 
 		return $this->getNode($folderPath);
 	}
@@ -215,30 +244,29 @@ class FileService
 	/**
 	 * Gets the NextCloud Node object for the folder of an Object.
 	 *
-	 * @param ObjectEntity $objectEntity The Object to get the folder for.
-	 * @param Register|int|null $register The Register to get the Object folder for.
-	 * @param Schema|int|null $schema The Schema to get the Object folder for.
+	 * @param ObjectEntity      $objectEntity The Object to get the folder for
+	 * @param Register|int|null $register     The Register to get the Object folder for (optional)
+	 * @param Schema|int|null   $schema       The Schema to get the Object folder for (optional)
 	 *
-	 * @return Node|null The NextCloud Node object of the folder. Or null if something went wrong getting / creating the folder.
-	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 * @return Node|null The NextCloud Node object of the folder, or null if getting/creating failed
+	 * @throws Exception In case we can't create the folder because it is not permitted
 	 */
 	public function getObjectFolder(
 		ObjectEntity      $objectEntity,
 		Register|int|null $register = null,
 		Schema|int|null   $schema = null
-	): ?Node
-	{
-        if (empty($objectEntity->getFolder()) === true) {
-            $folderPath = $this->getObjectFolderPath(
-                objectEntity: $objectEntity,
-                register: $register,
-                schema: $schema
-            );
+	): ?Node {
+		if (empty($objectEntity->getFolder()) === true) {
+			$folderPath = $this->getObjectFolderPath(
+				objectEntity: $objectEntity,
+				register: $register,
+				schema: $schema
+			);
 			$objectEntity->setFolder($folderPath);
 			$this->objectEntityMapper->update($objectEntity);
-        } else {
-            $folderPath = $objectEntity->getFolder();
-        }
+		} else {
+			$folderPath = $objectEntity->getFolder();
+		}
 
 		$node = $this->getNode($folderPath);
 
@@ -256,19 +284,18 @@ class FileService
 	/**
 	 * Gets the path to the folder of an object.
 	 *
-	 * @param ObjectEntity $objectEntity The Object to get the folder path for.
-	 * @param Register|int|null $register The Register to get the Object folder path for (must match Object->register).
-	 * @param Schema|int|null $schema The Schema to get the Object folder path for (must match Object->schema).
+	 * @param ObjectEntity      $objectEntity The Object to get the folder path for
+	 * @param Register|int|null $register     The Register to get the Object folder path for (must match Object->register)
+	 * @param Schema|int|null   $schema       The Schema to get the Object folder path for (must match Object->schema)
 	 *
-	 * @return string The path to the folder.
-	 * @throws Exception If something went wrong getting the path, a mismatch in object register/schema & function parameters register/schema for example.
+	 * @return string The path to the folder
+	 * @throws Exception If something went wrong getting the path, a mismatch in object register/schema & function parameters
 	 */
 	private function getObjectFolderPath(
 		ObjectEntity      $objectEntity,
 		Register|int|null $register = null,
 		Schema|int|null   $schema = null
-	): string
-	{
+	): string {
 		$objectRegister = (int)$objectEntity->getRegister();
 		if ($register === null) {
 			$register = $objectRegister;
@@ -297,60 +324,60 @@ class FileService
 
 		$registerFolderName = $this->getRegisterFolderName($register);
 		// @todo maybe we want to use ShareLink here for register->folder as well?
-		$register->setFolder($this::ROOT_FOLDER . "/$registerFolderName");
+		$register->setFolder($this::ROOT_FOLDER."/$registerFolderName");
 		$this->registerMapper->update($register);
 
 		$schemaFolderName = $this->getSchemaFolderName($schema);
 		$objectFolderName = $this->getObjectFolderName($objectEntity);
 
-		return $this::ROOT_FOLDER . "/$registerFolderName/$schemaFolderName/$objectFolderName";
+		return $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName/$objectFolderName";
 	}
 
 	/**
 	 * Get the name for the folder used for storing files of the given object.
 	 *
-	 * @param ObjectEntity $objectEntity The Object to get the folder name for.
+	 * @param ObjectEntity $objectEntity The Object to get the folder name for
 	 *
-	 * @return string The name the folder for this object should have.
+	 * @return string The name the folder for this object should have
 	 */
 	private function getObjectFolderName(ObjectEntity $objectEntity): string
 	{
 		// @todo check if property Title or Name exists and use that as object title
 		$objectTitle = 'object';
 
-//		return "{$objectEntity->getUuid()} ($objectTitle)";
+		// return "{$objectEntity->getUuid()} ($objectTitle)";
 		return $objectEntity->getUuid();
 	}
 
 	/**
 	 * Returns a link to the given folder path.
 	 *
-	 * @param string $folderPath The path to a folder in NextCloud.
+	 * @param string $folderPath The path to a folder in NextCloud
 	 *
-	 * @return string The share link needed to get the file or folder for the given IShare object.
+	 * @return string The URL to access the folder through the web interface
 	 */
 	private function getFolderLink(string $folderPath): string
 	{
 		$folderPath = str_replace('%2F', '/', urlencode($folderPath));
-		return $this->getCurrentDomain() . "/index.php/apps/files/files?dir=$folderPath";
+		return $this->getCurrentDomain()."/index.php/apps/files/files?dir=$folderPath";
 	}
 
 	/**
 	 * Returns a share link for the given IShare object.
 	 *
-	 * @param IShare $share An IShare object we are getting the share link for.
+	 * @param IShare $share An IShare object we are getting the share link for
 	 *
-	 * @return string The share link needed to get the file or folder for the given IShare object.
+	 * @return string The share link needed to get the file or folder for the given IShare object
 	 */
 	public function getShareLink(IShare $share): string
 	{
-		return $this->getCurrentDomain() . '/index.php/s/' . $share->getToken();
+		return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
 	}
 
 	/**
-	 * Gets and returns the current host / domain with correct protocol.
+	 * Gets and returns the current host/domain with correct protocol.
 	 *
-	 * @return string The current http/https domain url.
+	 * @return string The current http/https domain URL
 	 */
 	private function getCurrentDomain(): string
 	{
@@ -489,7 +516,6 @@ class FileService
 	 */
 	public function formatFiles(array $files, ?array $requestParams = []): array
 	{
-
 		// Extract specific parameters
 		$limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
 		$offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
@@ -564,9 +590,12 @@ class FileService
 	}
 
 	/**
-	 * @param Node $file
-	 * @param int $shareType
-	 * @return IShare[]
+	 * Finds shares associated with a file or folder.
+	 *
+	 * @param Node $file      The Node file or folder to find shares for
+	 * @param int  $shareType The type of share to look for (default: 3 for public link)
+	 *
+	 * @return IShare[] Array of shares associated with the file
 	 */
 	public function findShares(Node $file, int $shareType = 3): array
 	{
@@ -580,10 +609,10 @@ class FileService
 	/**
 	 * Try to find a IShare object with given $path & $shareType.
 	 *
-	 * @param string $path The path to a file we are trying to find a IShare object for.
-	 * @param int|null $shareType The shareType of the share we are trying to find.
+	 * @param string   $path      The path to a file we are trying to find a IShare object for
+	 * @param int|null $shareType The shareType of the share we are trying to find (default: 3 for public link)
 	 *
-	 * @return IShare|null An IShare object or null.
+	 * @return IShare|null An IShare object if found, null otherwise
 	 */
 	public function findShare(string $path, ?int $shareType = 3): ?IShare
 	{
@@ -619,10 +648,10 @@ class FileService
 	/**
 	 * Creates a IShare object using the $shareData array data.
 	 *
-	 * @param array $shareData The data to create a IShare with, should contain 'path', 'file', 'shareType', 'permissions' and 'userid'.
+	 * @param array $shareData The data to create a IShare with, should contain 'path', 'file', 'shareType', 'permissions' and 'userid'
 	 *
-	 * @return IShare The Created IShare object.
-	 * @throws Exception
+	 * @return IShare The Created IShare object
+	 * @throws Exception If creating the share fails
 	 */
 	private function createShare(array $shareData): IShare
 	{
@@ -655,14 +684,15 @@ class FileService
 
 	/**
 	 * Creates and returns a share link for a file (or folder).
-	 * (https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share)
+	 * 
+	 * @see https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share
 	 *
-	 * @param string $path Path (from root) to the file/folder which should be shared.
-	 * @param int|null $shareType 0 = user; 1 = group; 3 = public link; 4 = email; 6 = federated cloud share; 7 = circle; 10 = Talk conversation
-	 * @param int|null $permissions 1 = read; 2 = update; 4 = create; 8 = delete; 16 = share; 31 = all (default: 31, for public shares: 1)
+	 * @param string   $path        Path (from root) to the file/folder which should be shared
+	 * @param int|null $shareType   The share type (0=user, 1=group, 3=public link, 4=email, etc.)
+	 * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
 	 *
-	 * @return string The share link.
-	 * @throws Exception In case creating the share(link) fails.
+	 * @return string The share link
+	 * @throws Exception If creating the share link fails
 	 */
 	public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string
 	{
@@ -684,8 +714,8 @@ class FileService
 		}
 
 		try {
-            $file = $this->rootFolder->get($path);
-//			$file = $userFolder->get(path: $path);
+			$file = $this->rootFolder->get($path);
+			// $file = $userFolder->get(path: $path);
 		} catch (NotFoundException $e) {
 			$this->logger->error("Can't create share link for $path because file doesn't exist");
 
@@ -701,23 +731,22 @@ class FileService
 			]);
 			return $this->getShareLink($share);
 		} catch (Exception $exception) {
-			$this->logger->error("Can't create share link for $path: " . $exception->getMessage());
+			$this->logger->error("Can't create share link for $path: ".$exception->getMessage());
 
 			throw new Exception('Can\'t create share link');
 		}
 	}
 
 	/**
-	 * Deletes a share link for a file or folder.
+	 * Deletes all share links for a file or folder.
 	 *
-	 * @param string $path Path (from root) to the file/folder whose share should be deleted
-	 * @param int|null $shareType The type of share to delete (default: 3 for public link)
+	 * @param Node $file The file or folder whose shares should be deleted
 	 *
-	 * @return bool True if the share was successfully deleted
-	 * @throws Exception If the share cannot be found or deleted
+	 * @return Node The file with shares deleted
+	 * @throws Exception If the shares cannot be deleted
 	 *
-	 * @psalm-return bool
-	 * @phpstan-return bool
+	 * @psalm-return Node
+	 * @phpstan-return Node
 	 */
 	public function deleteShareLinks(Node $file): Node
 	{
@@ -729,8 +758,8 @@ class FileService
 				$this->shareManager->deleteShare($share);
 				$this->logger->info("Successfully deleted share for path: $share->getPath()");
 			} catch (Exception $e) {
-				$this->logger->error("Failed to delete share for path $share->getPath(): " . $e->getMessage());
-				throw new Exception("Failed to delete share for path $share->getPath(): " . $e->getMessage());
+				$this->logger->error("Failed to delete share for path $share->getPath(): ".$e->getMessage());
+				throw new Exception("Failed to delete share for path $share->getPath(): ".$e->getMessage());
 			}
 		}
 
@@ -740,10 +769,10 @@ class FileService
 	/**
 	 * Creates a new folder in NextCloud, unless it already exists.
 	 *
-	 * @param string $folderPath Path (from root) to where you want to create a folder, include the name of the folder. (/Media/exampleFolder)
+	 * @param string $folderPath Path (from root) to where you want to create a folder, include the name of the folder
 	 *
-	 * @return bool True if successfully created a new folder.
-	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 * @return bool True if successfully created a new folder, false if folder already exists
+	 * @throws Exception If creating the folder is not permitted
 	 */
 	public function createFolder(string $folderPath): bool
 	{
@@ -757,7 +786,7 @@ class FileService
 			// First, check if the root folder exists, and if not, create it and share it with the openregister group.
 			try {
 				$userFolder->get(self::ROOT_FOLDER);
-			} catch(NotFoundException $exception) {
+			} catch (NotFoundException $exception) {
 				$rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
 
 				if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
@@ -787,7 +816,7 @@ class FileService
 			return false;
 
 		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't create folder $folderPath: " . $e->getMessage());
+			$this->logger->error("Can't create folder $folderPath: ".$e->getMessage());
 
 			throw new Exception("Can\'t create folder $folderPath");
 		}
@@ -796,11 +825,12 @@ class FileService
 	/**
 	 * Overwrites an existing file in NextCloud.
 	 *
-	 * @param string $filePath Path (from root) where to save the file. NOTE: this should include the name and extension/format of the file as well! (example.pdf)
-	 * @param mixed|null $content Optional content of the file. If null, only metadata like tags will be updated.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @return bool True if successful.
-	 * @throws Exception If neither content nor tags are provided, or if file operations fail
+	 * @param string $filePath The path (from root) where to save the file, including filename and extension
+	 * @param mixed  $content  Optional content of the file. If null, only metadata like tags will be updated
+	 * @param array  $tags     Optional array of tags to attach to the file
+	 * 
+	 * @return File The updated file
+	 * @throws Exception If the file doesn't exist or if file operations fail
 	 */
 	public function updateFile(string $filePath, mixed $content = null, array $tags = []): File
 	{
@@ -819,8 +849,8 @@ class FileService
 						try {
 							$file->putContent(data: $content);
 						} catch (NotPermittedException $e) {
-							$this->logger->error("Can't write content to file: " . $e->getMessage());
-							throw new Exception("Can't write content to file: " . $e->getMessage());
+							$this->logger->error("Can't write content to file: ".$e->getMessage());
+							throw new Exception("Can't write content to file: ".$e->getMessage());
 						}
 					}
 
@@ -834,30 +864,37 @@ class FileService
 					throw new Exception("File $filePath does not exist");
 				}
 			} catch (NotPermittedException|InvalidPathException $e) {
-				$this->logger->error("Can't update file $filePath: " . $e->getMessage());
+				$this->logger->error("Can't update file $filePath: ".$e->getMessage());
 
 				throw new Exception("Can't update file $filePath");
 			}
 		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't update file $filePath: " . $e->getMessage());
+			$this->logger->error("Can't update file $filePath: ".$e->getMessage());
 
 			throw new Exception("Can't update file $filePath");
 		}
 	}
 
-	public function getObjectFilePath(string|ObjectEntity $object, string $filePath)
+	/**
+	 * Constructs a file path for a specific object.
+	 *
+	 * @param string|ObjectEntity $object   The object entity or object UUID
+	 * @param string              $filePath The relative file path within the object folder
+	 *
+	 * @return string The complete file path
+	 */
+	public function getObjectFilePath(string|ObjectEntity $object, string $filePath): string
 	{
 		return $object->getFolder().'/'.$filePath;
 	}
 
-
 	/**
 	 * Deletes a file from NextCloud.
 	 *
-	 * @param string $filePath Path (from root) to the file you want to delete.
+	 * @param string $filePath Path (from root) to the file you want to delete
 	 *
-	 * @return bool True if successful.
-	 * @throws Exception In case deleting the file is not permitted.
+	 * @return bool True if successful, false if the file didn't exist
+	 * @throws Exception If deleting the file is not permitted
 	 */
 	public function deleteFile(string $filePath): bool
 	{
@@ -880,24 +917,23 @@ class FileService
 					return false;
 				}
 			} catch (NotPermittedException|InvalidPathException $e) {
-				$this->logger->error("Can't delete file $filePath: " . $e->getMessage());
+				$this->logger->error("Can't delete file $filePath: ".$e->getMessage());
 
 				throw new Exception("Can't delete file $filePath");
 			}
 		} catch (NotPermittedException $e) {
-			$this->logger->error("Can't delete file $filePath: " . $e->getMessage());
+			$this->logger->error("Can't delete file $filePath: ".$e->getMessage());
 
 			throw new Exception("Can't delete file $filePath");
 		}
 	}
 
-
-
 	/**
 	 * Attach tags to a file.
 	 *
-	 * @param string $fileId The fileId.
-	 * @param array $tags Tags to associate with the file.
+	 * @param string $fileId The file ID
+	 * @param array  $tags   Tags to associate with the file
+	 *
 	 * @return void
 	 */
 	private function attachTagsToFile(string $fileId, array $tags = []): void
@@ -910,21 +946,21 @@ class FileService
 			$oldTagIds = $oldTagIds[$fileId];
 		}
 
-
 		// Create new tags if they don't exist
+		$newTagIds = [];
 		foreach ($tags as $key => $tagName) {
 			// Skip empty tag names
 			if (empty($tagName)) {
 				continue;
 			}
 
-            try {
-                $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
-            } catch (Exception $exception) {
-                $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
-            }
+			try {
+				$tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
+			} catch (Exception $exception) {
+				$tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
+			}
 
-            $newTagIds[] = $tag->getId();
+			$newTagIds[] = $tag->getId();
 		}
 
 		// Only assign new tags if we have any
@@ -935,7 +971,7 @@ class FileService
 		// Find tags that exist in old tags but not in new tags (tags to be removed)
 		$tagsToRemove = array_diff($oldTagIds ?? [], $newTagIds ?? []);
 		// Remove any keys with value 0 from tags to remove array
-		$tagsToRemove = array_filter($tagsToRemove, function($value) {
+		$tagsToRemove = array_filter($tagsToRemove, function ($value) {
 			return $value !== 0;
 		});
 
@@ -944,18 +980,17 @@ class FileService
 			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
 		}
 
-		//@todo Let check if there are now esisitng tags without files (orpahns) that need to be deleted
+		// @todo Let's check if there are now existing tags without files (orphans) that need to be deleted
 	}
 
-
 	/**
-	 * Adds a new file to an object's folder with the OpenCatalogi user as owner
+	 * Adds a new file to an object's folder with the OpenCatalogi user as owner.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to add the file to
-	 * @param string $fileName The name of the file to create
-	 * @param string $content The content to write to the file
-	 * @param bool $share Whether to create a share link for the file
-	 * @param array $tags Optional array of tags to attach to the file
+	 * @param string       $fileName     The name of the file to create
+	 * @param string       $content      The content to write to the file
+	 * @param bool         $share        Whether to create a share link for the file
+	 * @param array        $tags         Optional array of tags to attach to the file
 	 *
 	 * @return File The created file
 	 * @throws NotPermittedException If file creation fails due to permissions
@@ -971,18 +1006,18 @@ class FileService
 				schema: $objectEntity->getSchema()
 			);
 
-            /**
-             * @var File $file
-             */
+			/**
+			 * @var File $file
+			 */
 			$file = $folder->newFile($fileName);
 
 			// Write content to the file
 			$file->putContent($content);
 
 			// Create a share link for the file if requested
-            if ($share === true) {
-                $this->createShareLink(path: $file->getPath());
-            }
+			if ($share === true) {
+				$this->createShareLink(path: $file->getPath());
+			}
 
 			// Add tags to the file if provided
 			if (empty($tags) === false) {
@@ -992,11 +1027,11 @@ class FileService
 			return $file;
 
 		} catch (NotPermittedException $e) {
-			$this->logger->error("Permission denied creating file $fileName: " . $e->getMessage());
-			throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
+			$this->logger->error("Permission denied creating file $fileName: ".$e->getMessage());
+			throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
 		} catch (\Exception $e) {
-			$this->logger->error("Failed to create file $fileName: " . $e->getMessage());
-			throw new \Exception("Failed to create file $fileName: " . $e->getMessage());
+			$this->logger->error("Failed to create file $fileName: ".$e->getMessage());
+			throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
 		}
 	}
 
@@ -1027,8 +1062,8 @@ class FileService
 			sort($tagNames);
 			return array_values($tagNames);
 		} catch (\Exception $e) {
-			$this->logger->error('Failed to retrieve tags: ' . $e->getMessage());
-			throw new \Exception('Failed to retrieve tags: ' . $e->getMessage());
+			$this->logger->error('Failed to retrieve tags: '.$e->getMessage());
+			throw new \Exception('Failed to retrieve tags: '.$e->getMessage());
 		}
 	}
 }

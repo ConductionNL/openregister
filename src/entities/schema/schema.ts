@@ -13,6 +13,7 @@ export class Schema implements TSchema {
 	public archive: Record<string, any>
 	public updated: string
 	public created: string
+	public slug: string
 
 	constructor(schema: TSchema) {
 		this.id = schema.id || ''
@@ -25,6 +26,7 @@ export class Schema implements TSchema {
 		this.archive = schema.archive || {}
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
+		this.slug = schema.slug || ''
 	}
 
 	public validate(): SafeParseReturnType<TSchema, unknown> {
@@ -39,6 +41,7 @@ export class Schema implements TSchema {
 			archive: z.object({}),
 			updated: z.string(),
 			created: z.string(),
+			slug: z.string().min(1),
 		})
 
 		return schema.safeParse(this)

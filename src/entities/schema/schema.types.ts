@@ -9,4 +9,5 @@ export type TSchema = {
     archive: Record<string, any>
     updated: string;
     created: string;
+    slug: string; // Slug for the schema
 }
