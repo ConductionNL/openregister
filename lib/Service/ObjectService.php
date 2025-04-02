@@ -40,7 +40,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
@@ -65,28 +68,6 @@ use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
-/**
- * OpenRegister ObjectService
- *
- * Service class for handling object operations in the OpenRegister application.
- *
- * This service provides methods for:
- * - CRUD operations on objects
- * - Schema resolution and validation
- * - Managing relations and linked data (extending objects with related sub-objects)
- * - Audit trails and data aggregation
- *
- * @category  Service
- * @package   OCA\OpenRegister\Service
- *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version   GIT: <git-id>
- *
- * @link      https://OpenRegister.app
- */
 class ObjectService
 {
     /** @var int The current register ID */
@@ -95,13 +76,19 @@ class ObjectService
     /** @var int The current schema ID */
     private int $schema;
 
+    /** @var Environment Twig environment for template rendering */
+    private Environment $twig;
+    
+    /** @var \OCP\EventDispatcher\IEventDispatcher Event dispatcher for sending events */
+    private $eventDispatcher;
+
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
     /**
      * Constructor for ObjectService.
      *
      * Initializes the service with dependencies required for database and object operations.
-     *
+     * 
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param RegisterMapper     $registerMapper     Register data mapper.
      * @param SchemaMapper       $schemaMapper       Schema data mapper.
@@ -114,6 +101,7 @@ class ObjectService
      * @param FileMapper         $fileMapper         File mapper for database operations.
      * @param IUserSession       $userSession        User session service.
      * @param ArrayLoader        $loader             Twig array loader for templates.
+     * @param \OCP\EventDispatcher\IEventDispatcher $eventDispatcher Event dispatcher service.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -127,9 +115,11 @@ class ObjectService
         private readonly IAppConfig $config,
         private readonly FileMapper $fileMapper,
         private readonly IUserSession $userSession,
-        ArrayLoader $loader
+        ArrayLoader $loader,
+        \OCP\EventDispatcher\IEventDispatcher $eventDispatcher
     ) {
         $this->twig = new Environment($loader);
+        $this->eventDispatcher = $eventDispatcher;
     }//end __construct()
 
     /**
@@ -1586,6 +1576,7 @@ class ObjectService
     {
         $fileName = str_replace('.', '_', $propertyName);
         $objectDot = new Dot($object);
+        $fileContent = null;
 
         // Handle base64 encoded file.
         if (is_string($objectDot->get("$propertyName.base64")) === true
