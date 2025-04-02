@@ -5,16 +5,16 @@
  * This file contains the class for handling file related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -38,6 +38,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class FileMapper extends QBMapper
 {
+
+
     /**
      * Constructor for FileMapper.
      *
@@ -48,6 +50,7 @@ class FileMapper extends QBMapper
         parent::__construct($db, 'openregister_files');
 
     }//end __construct()
+
 
     /**
      * Finds a File entity by its ID.
@@ -74,6 +77,7 @@ class FileMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Retrieves all File entities with optional filtering, search, and pagination.
      *
@@ -88,11 +92,11 @@ class FileMapper extends QBMapper
      * @return array List of File entities.
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -105,7 +109,7 @@ class FileMapper extends QBMapper
             $filter = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $filter));
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -122,6 +126,7 @@ class FileMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
 
     /**
      * Inserts a File entity into the database
@@ -148,6 +153,7 @@ class FileMapper extends QBMapper
 
     }//end insert()
 
+
     /**
      * Updates a File entity in the database
      *
@@ -167,6 +173,7 @@ class FileMapper extends QBMapper
         return parent::update($entity);
 
     }//end update()
+
 
     /**
      * Creates a File entity from an array of data.
@@ -190,6 +197,7 @@ class FileMapper extends QBMapper
 
     }//end createFromArray()
 
+
     /**
      * Updates a File entity by its ID using an array of data.
      *
@@ -208,13 +216,14 @@ class FileMapper extends QBMapper
         $obj->hydrate($object);
 
         // Set or update the version.
-        $version = explode('.', $obj->getVersion());
+        $version    = explode('.', $obj->getVersion());
         $version[2] = ((int) $version[2] + 1);
         $obj->setVersion(implode('.', $version));
 
         return $this->update($obj);
 
     }//end updateFromArray()
+
 
     /**
      * Gets the total count of files.
@@ -232,11 +241,12 @@ class FileMapper extends QBMapper
             ->from('openregister_files');
 
         $result = $qb->execute();
-        $row = $result->fetch();
+        $row    = $result->fetch();
 
         // Return the total count.
         return (int) $row['count'];
 
     }//end countAll()
+
 
 }//end class

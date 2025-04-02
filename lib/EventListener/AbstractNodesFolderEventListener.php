@@ -1,20 +1,22 @@
 <?php
+
+
 /**
  * OpenRegister AbstractNodesFolderEventListener
  *
  * This file contains the event listener for node folder events
  * in the OpenRegister application.
  *
- * @category  EventListener
- * @package   OCA\OpenRegister\EventListener
+ * @category EventListener
+ * @package  OCA\OpenRegister\EventListener
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\EventListener;
@@ -34,6 +36,8 @@ use OCP\Files\FileInfo;
  */
 class AbstractNodesFolderEventListener implements IEventListener
 {
+
+
     /**
      * Constructor for AbstractNodesFolderEventListener
      *
@@ -48,6 +52,7 @@ class AbstractNodesFolderEventListener implements IEventListener
     ) {
 
     }//end __construct()
+
 
     /**
      * Handle incoming events.
@@ -70,12 +75,13 @@ class AbstractNodesFolderEventListener implements IEventListener
         match (true) {
             $event instanceof NodeCopiedEvent => $this->handleNodeCopied(event: $event),
             $event instanceof NodeRenamedEvent => $this->handleNodeRenamed(event: $event),
-            default => throw new InvalidArgumentException(
+        default => throw new InvalidArgumentException(
                 message: 'Unsupported event type: '.get_class($event)
             ),
         };
 
     }//end handle()
+
 
     /**
      * Handle when a node is copied.
@@ -86,8 +92,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     private function handleNodeCopied(NodeCopiedEvent $event): void
     {
-        // $this->objectService->nodeCopiedEventFunction();
-    }//end handleNodeCopied()
+        // $this->objectService->nodeCopiedEventFunction();    }//end handleNodeCopied()
+
 
     /**
      * Handle when a node is renamed.
@@ -98,6 +104,4 @@ class AbstractNodesFolderEventListener implements IEventListener
      */
     private function handleNodeRenamed(NodeRenamedEvent $event): void
     {
-        // $this->objectService->nodeRenamedEventFunction();
-    }//end handleNodeRenamed()
-}//end Class
+        // $this->objectService->nodeRenamedEventFunction();    }//end handleNodeRenamed()    }//end handleNodeRenamed()

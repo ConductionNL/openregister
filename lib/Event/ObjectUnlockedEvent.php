@@ -5,16 +5,16 @@
  * This file contains the event class dispatched when an object is unlocked
  * in the OpenRegister application.
  *
- * @category  Event
- * @package   OCA\OpenRegister\Event
+ * @category Event
+ * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Event;
@@ -27,12 +27,14 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUnlockedEvent extends Event
 {
+
     /**
      * The unlocked object entity
      *
      * @var ObjectEntity The object that has been unlocked
      */
     private ObjectEntity $object;
+
 
     /**
      * Constructor for ObjectUnlockedEvent
@@ -48,6 +50,7 @@ class ObjectUnlockedEvent extends Event
 
     }//end __construct()
 
+
     /**
      * Get the unlocked object entity
      *
@@ -58,5 +61,6 @@ class ObjectUnlockedEvent extends Event
         return $this->object;
 
     }//end getObject()
+
 
 }//end class

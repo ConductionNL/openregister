@@ -5,16 +5,16 @@
  * This file contains the event class dispatched when an object is reverted
  * to a previous state in the OpenRegister application.
  *
- * @category  Event
- * @package   OCA\OpenRegister\Event
+ * @category Event
+ * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Event;
@@ -27,6 +27,7 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectRevertedEvent extends Event
 {
+
     /**
      * The reverted object entity
      *
@@ -41,6 +42,7 @@ class ObjectRevertedEvent extends Event
      */
     private $until;
 
+
     /**
      * Constructor for ObjectRevertedEvent
      *
@@ -49,13 +51,14 @@ class ObjectRevertedEvent extends Event
      *
      * @return void
      */
-    public function __construct(ObjectEntity $object, $until = null)
+    public function __construct(ObjectEntity $object, $until=null)
     {
         parent::__construct();
         $this->object = $object;
-        $this->until = $until;
+        $this->until  = $until;
 
     }//end __construct()
+
 
     /**
      * Get the reverted object entity
@@ -68,6 +71,7 @@ class ObjectRevertedEvent extends Event
 
     }//end getObject()
 
+
     /**
      * Get the reversion point
      *
@@ -78,5 +82,6 @@ class ObjectRevertedEvent extends Event
         return $this->until;
 
     }//end getRevertPoint()
+
 
 }//end class

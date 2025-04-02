@@ -4,16 +4,16 @@
  *
  * This file contains the provider class for the objects search.
  *
- * @category  Search
- * @package   OCA\OpenRegister\Search
+ * @category Search
+ * @package  OCA\OpenRegister\Search
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -39,6 +39,7 @@ use OCP\Search\SearchResultEntry;
  */
 class ObjectsProvider implements IFilteringProvider
 {
+
     /**
      * The localization service
      *
@@ -53,6 +54,7 @@ class ObjectsProvider implements IFilteringProvider
      */
     private readonly IURLGenerator $urlGenerator;
 
+
     /**
      * Constructor for the ObjectsProvider class
      *
@@ -63,17 +65,18 @@ class ObjectsProvider implements IFilteringProvider
      */
     public function __construct(IL10N $l10n, IURLGenerator $urlGenerator)
     {
-        $this->l10n = $l10n;
+        $this->l10n         = $l10n;
         $this->urlGenerator = $urlGenerator;
 
     }//end __construct()
+
 
     /**
      * Returns the list of supported filters for the search provider
      *
      * @return string[] List of supported filter names
      *
-     * @psalm-return   array<string>
+     * @psalm-return array<string>
      *
      * @phpstan-return array<string>
      */
@@ -92,12 +95,13 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end getSupportedFilters()
 
+
     /**
      * Returns the list of alternate IDs for the search provider
      *
      * @return string[] List of alternate IDs
      *
-     * @psalm-return   array<string>
+     * @psalm-return array<string>
      *
      * @phpstan-return array<string>
      */
@@ -107,12 +111,13 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end getAlternateIds()
 
+
     /**
      * Returns the list of custom filters for the search provider
      *
      * @return FilterDefinition[] List of custom filter definitions
      *
-     * @psalm-return   array<FilterDefinition>
+     * @psalm-return array<FilterDefinition>
      *
      * @phpstan-return array<FilterDefinition>
      */
@@ -125,6 +130,7 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end getCustomFilters()
 
+
     /**
      * Performs a search based on the provided query
      *
@@ -133,7 +139,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return SearchResult The search results
      *
-     * @psalm-suppress           PropertyNotSetInConstructor
+     * @psalm-suppress PropertyNotSetInConstructor
      *
      * @phpstan-ignore-next-line
      */
@@ -142,7 +148,7 @@ class ObjectsProvider implements IFilteringProvider
         // Retrieve filters
         $filters = [];
 
-        /**
+        /*
          * @var string|null $register
          */
         $register = $query->getFilter('register')?->get();
@@ -150,7 +156,7 @@ class ObjectsProvider implements IFilteringProvider
             $filters['register'] = $register;
         }
 
-        /**
+        /*
          * @var string|null $schema
          */
         $schema = $query->getFilter('schema')?->get();
@@ -158,25 +164,25 @@ class ObjectsProvider implements IFilteringProvider
             $filters['schema'] = $schema;
         }
 
-        /**
+        /*
          * @var string|null $search
          */
         $search = $query->getFilter('term')?->get();
 
-        /**
+        /*
          * @var string|null $since
          */
         $since = $query->getFilter('since')?->get();
 
-        /**
+        /*
          * @var string|null $until
          */
         $until = $query->getFilter('until')?->get();
 
         // @todo: implement pagination
-        $limit = null;
+        $limit  = null;
         $offset = null;
-        $order = null;
+        $order  = null;
 
         // Get the objects
         $results = $this->objectEntityMapper->findAll(
@@ -211,5 +217,6 @@ class ObjectsProvider implements IFilteringProvider
         );
 
     }//end search()
+
 
 }//end class

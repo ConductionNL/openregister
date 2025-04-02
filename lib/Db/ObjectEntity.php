@@ -5,16 +5,16 @@
  * This file contains the class for handling object entity related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -33,6 +33,7 @@ use OCP\IUserSession;
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the object.
      *
@@ -180,6 +181,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
+
     /**
      * Initialize the entity and define field types
      */
@@ -209,6 +211,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end __construct()
 
+
     /**
      * Get the object data
      *
@@ -219,6 +222,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         return ($this->object ?? []);
 
     }//end getObject()
+
 
     /**
      * Get the files data
@@ -231,6 +235,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getFiles()
 
+
     /**
      * Get the relations data
      *
@@ -241,6 +246,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         return ($this->relations ?? []);
 
     }//end getRelations()
+
 
     /**
      * Get the locked data
@@ -253,6 +259,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getlocked()
 
+
     /**
      * Get the authorization data
      *
@@ -263,6 +270,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $this->authorization;
 
     }//end getAuthorization()
+
 
     /**
      * Get the deleted data
@@ -275,6 +283,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getDeleted()
 
+
     /**
      * Get the deleted data
      *
@@ -285,6 +294,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $this->validation;
 
     }//end getValidation()
+
 
     /**
      * Get array of field names that are JSON type
@@ -303,6 +313,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity from an array of data
@@ -337,6 +348,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+
     /**
      * Serialize the entity to JSON format
      *
@@ -349,15 +361,16 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object = $this->object;
+        $object          = $this->object;
         $object['@self'] = $this->getObjectArray();
         $object['@self']['id'] = $this->getUuid();
-        $object['id'] = $this->getUuid();
+        $object['id']          = $this->getUuid();
 
         // Let's merge and return.
         return $object;
 
     }//end jsonSerialize()
+
 
     /**
      * Get array representation of all object properties
@@ -367,27 +380,28 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function getObjectArray(): array
     {
         return [
-            'id' => $this->id,
-            'uri' => $this->uri,
-            'version' => $this->version,
-            'register' => $this->register,
-            'schema' => $this->schema,
-            'files' => $this->files,
-            'relations' => $this->relations,
-            'locked' => $this->locked,
-            'owner' => $this->owner,
-            'folder' => $this->folder,
-            'application' => $this->application,
+            'id'           => $this->id,
+            'uri'          => $this->uri,
+            'version'      => $this->version,
+            'register'     => $this->register,
+            'schema'       => $this->schema,
+            'files'        => $this->files,
+            'relations'    => $this->relations,
+            'locked'       => $this->locked,
+            'owner'        => $this->owner,
+            'folder'       => $this->folder,
+            'application'  => $this->application,
             'organisation' => $this->organisation,
-            'validation' => $this->validation,
-            'geo' => $this->geo,
-            'retention' => $this->retention,
-            'updated' => $this->getFormattedDate($this->updated),
-            'created' => $this->getFormattedDate($this->created),
-            'deleted' => $this->deleted,
+            'validation'   => $this->validation,
+            'geo'          => $this->geo,
+            'retention'    => $this->retention,
+            'updated'      => $this->getFormattedDate($this->updated),
+            'created'      => $this->getFormattedDate($this->created),
+            'deleted'      => $this->deleted,
         ];
 
     }//end getObjectArray()
+
 
     /**
      * Format DateTime object to ISO 8601 string or return null
@@ -406,6 +420,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getFormattedDate()
 
+
     /**
      * Lock the object for a specific duration
      *
@@ -416,9 +431,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If object is already locked by another user
      *
      * @return bool True if lock was successful
-     *
      */
-    public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
+    public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
@@ -426,7 +440,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         $userId = $currentUser->getUID();
-        $now = new \DateTime();
+        $now    = new \DateTime();
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
@@ -439,14 +453,14 @@ class ObjectEntity extends Entity implements JsonSerializable
 
             // If same user, extend the lock.
             $expirationDate = new \DateTime($lock['expiration']);
-            $newExpiration = clone $now;
+            $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 
             $this->locked = [
-                'user' => $userId,
-                'process' => ($process ?? $lock['process']),
-                'created' => $lock['created'],
-                'duration' => $duration,
+                'user'       => $userId,
+                'process'    => ($process ?? $lock['process']),
+                'created'    => $lock['created'],
+                'duration'   => $duration,
                 'expiration' => $newExpiration->format('c'),
             ];
         } else {
@@ -455,10 +469,10 @@ class ObjectEntity extends Entity implements JsonSerializable
             $expiration->add(new \DateInterval('PT'.$duration.'S'));
 
             $this->locked = [
-                'user' => $userId,
-                'process' => $process,
-                'created' => $now->format('c'),
-                'duration' => $duration,
+                'user'       => $userId,
+                'process'    => $process,
+                'created'    => $now->format('c'),
+                'duration'   => $duration,
                 'expiration' => $expiration->format('c'),
             ];
         }//end if
@@ -466,6 +480,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         return true;
 
     }//end lock()
+
 
     /**
      * Unlock the object
@@ -475,7 +490,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If object is locked by another user
      *
      * @return bool True if unlock was successful
-     *
      */
     public function unlock(IUserSession $userSession): bool
     {
@@ -500,6 +514,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end unlock()
 
+
     /**
      * Check if the object is currently locked
      *
@@ -512,12 +527,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         // Check if lock has expired.
-        $now = new \DateTime();
+        $now        = new \DateTime();
         $expiration = new \DateTime($this->locked['expiration']);
 
         return $now < $expiration;
 
     }//end isLocked()
+
 
     /**
      * Get lock information
@@ -534,6 +550,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getLockInfo()
 
+
     /**
      * Delete the object
      *
@@ -544,30 +561,30 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @throws Exception If no user is logged in
      *
      * @return bool True if delete was successful
-     *
      */
-    public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod = 30): bool
+    public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod=30): bool
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
             throw new Exception('No user logged in');
         }
 
-        $userId = $currentUser->getUID();
-        $now = new \DateTime();
+        $userId    = $currentUser->getUID();
+        $now       = new \DateTime();
         $purgeDate = clone $now;
         $purgeDate->add(new \DateInterval('P'.$retentionPeriod.'D'));
 
         $this->deleted = [
-            'deleted' => $now->format('c'),
-            'deletedBy' => $userId,
-            'deletedReason' => $deletedReason,
+            'deleted'         => $now->format('c'),
+            'deletedBy'       => $userId,
+            'deletedReason'   => $deletedReason,
             'retentionPeriod' => $retentionPeriod,
-            'purgeDate' => $purgeDate->format('c'),
+            'purgeDate'       => $purgeDate->format('c'),
         ];
 
         return true;
 
     }//end delete()
+
 
 }//end class

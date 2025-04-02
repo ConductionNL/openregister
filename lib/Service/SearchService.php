@@ -10,16 +10,16 @@
  * - Handling facets/aggregations
  * - Processing search parameters
  *
- * @category  Service
- * @package   OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -36,14 +36,20 @@ use OCP\IURLGenerator;
  */
 class SearchService
 {
-    /** @var Client HTTP client for making requests. */
+
+    /**
+     * @var Client HTTP client for making requests.
+     */
     public $client;
 
-    /** @var array Default base object configuration. */
+    /**
+     * @var array Default base object configuration.
+     */
     public const BASE_OBJECT = [
-        'database' => 'objects',
+        'database'   => 'objects',
         'collection' => 'json',
     ];
+
 
     /**
      * Constructor.
@@ -54,13 +60,15 @@ class SearchService
         private readonly IURLGenerator $urlGenerator,
     ) {
         $this->client = new Client();
-    }
+
+    }//end __construct()
+
 
     /**
      * Merges facet counts from two aggregations.
      *
      * @param array $existingAggregation Original aggregation array.
-     * @param array $newAggregation New aggregation array to merge.
+     * @param array $newAggregation      New aggregation array to merge.
      *
      * @return array Merged facet counts.
      */
@@ -68,7 +76,7 @@ class SearchService
     {
         $results = [];
         $existingAggregationMapped = [];
-        $newAggregationMapped = [];
+        $newAggregationMapped      = [];
 
         // Map existing aggregation counts by ID.
         foreach ($existingAggregation as $value) {
@@ -78,7 +86,7 @@ class SearchService
         // Merge new aggregation counts, adding to existing where present.
         foreach ($newAggregation as $value) {
             if (isset($existingAggregationMapped[$value['_id']]) === true) {
-                $newAggregationMapped[$value['_id']] = $existingAggregationMapped[$value['_id']] + $value['count'];
+                $newAggregationMapped[$value['_id']] = ($existingAggregationMapped[$value['_id']] + $value['count']);
             } else {
                 $newAggregationMapped[$value['_id']] = $value['count'];
             }
@@ -90,13 +98,15 @@ class SearchService
         }
 
         return $results;
+
     }//end mergeFacets()
+
 
     /**
      * Merges multiple aggregation arrays.
      *
      * @param array|null $existingAggregations Original aggregations.
-     * @param array|null $newAggregations New aggregations to merge.
+     * @param array|null $newAggregations      New aggregations to merge.
      *
      * @return array Merged aggregations.
      */
@@ -114,8 +124,11 @@ class SearchService
                 $existingAggregations[$key] = $this->mergeFacets($existingAggregations[$key], $aggregation);
             }
         }
+
         return $existingAggregations;
+
     }//end mergeAggregations()
+
 
     /**
      * Comparison function for sorting results by score.
@@ -127,28 +140,30 @@ class SearchService
      */
     public function sortResultArray(array $a, array $b): int
     {
-        return $a['_score'] <=> $b['_score'];
+        return ($a['_score'] <=> $b['_score']);
+
     }//end sortResultArray()
+
 
     /**
      * Main search function that queries multiple sources and merges results.
      *
-     * @param array $parameters Search parameters and filters.
+     * @param array $parameters    Search parameters and filters.
      * @param array $elasticConfig Elasticsearch configuration.
-     * @param array $dbConfig Database configuration.
-     * @param array $catalogi List of catalogs to search.
+     * @param array $dbConfig      Database configuration.
+     * @param array $catalogi      List of catalogs to search.
      *
      * @return array Combined search results with facets and pagination info.
      */
-    public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi = []): array
+    public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi=[]): array
     {
         // Initialize results arrays.
         $localResults['results'] = [];
-        $localResults['facets'] = [];
+        $localResults['facets']  = [];
 
         $totalResults = 0;
-        $limit = isset($parameters['.limit']) === true ? $parameters['.limit'] : 30;
-        $page = isset($parameters['.page']) === true ? $parameters['.page'] : 1;
+        $limit        = isset($parameters['.limit']) === true ? $parameters['.limit'] : 30;
+        $page         = isset($parameters['.page']) === true ? $parameters['.page'] : 1;
 
         // Query elastic if configured.
         if ($elasticConfig['location'] !== '') {
@@ -162,16 +177,16 @@ class SearchService
             $pages = (int) ceil($totalResults / $limit);
             return [
                 'results' => $localResults['results'],
-                'facets' => $localResults['facets'],
-                'count' => count($localResults['results']),
-                'limit' => $limit,
-                'page' => $page,
-                'pages' => $pages === 0 ? 1 : $pages,
-                'total' => $totalResults,
+                'facets'  => $localResults['facets'],
+                'count'   => count($localResults['results']),
+                'limit'   => $limit,
+                'page'    => $page,
+                'pages'   => $pages === 0 ? 1 : $pages,
+                'total'   => $totalResults,
             ];
         }
 
-        $results = $localResults['results'];
+        $results      = $localResults['results'];
         $aggregations = $localResults['facets'];
 
         $searchEndpoints = [];
@@ -179,14 +194,14 @@ class SearchService
         // Build search requests for each endpoint.
         $promises = [];
         foreach ($directory as $instance) {
-            if (
-                $instance['default'] === false
+            if ($instance['default'] === false
                 || isset($parameters['.catalogi']) === true
                 && in_array($instance['catalogId'], $parameters['.catalogi']) === false
                 || $instance['search'] = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(routeName:"opencatalogi.directory.index"))
             ) {
                 continue;
             }
+
             $searchEndpoints[$instance['search']][] = $instance['catalogId'];
         }
 
@@ -225,14 +240,16 @@ class SearchService
         // Return combined results with pagination info.
         return [
             'results' => $results,
-            'facets' => $aggregations,
-            'count' => count($results),
-            'limit' => $limit,
-            'page' => $page,
-            'pages' => $pages === 0 ? 1 : $pages,
-            'total' => $totalResults,
+            'facets'  => $aggregations,
+            'count'   => count($results),
+            'limit'   => $limit,
+            'page'    => $page,
+            'pages'   => $pages === 0 ? 1 : $pages,
+            'total'   => $totalResults,
         ];
+
     }//end search()
+
 
     /**
      * This function adds a single query param to the given $vars array. ?$name=$value
@@ -253,9 +270,9 @@ class SearchService
     {
         $matchesCount = preg_match(pattern: '/(\[[^[\]]*])/', subject: $name, matches:$matches);
         if ($matchesCount > 0) {
-            $key = $matches[0];
+            $key  = $matches[0];
             $name = str_replace(search: $key, replace:'', subject: $name);
-            $key = trim(string: $key, characters: '[]');
+            $key  = trim(string: $key, characters: '[]');
             if (empty($key) === false) {
                 $vars[$nameKey] = ($vars[$nameKey] ?? []);
                 $this->recursiveRequestQueryKey(
@@ -273,12 +290,13 @@ class SearchService
 
     }//end recursiveRequestQueryKey()
 
+
     /**
      * This function creates a mongodb filter array.
      *
      * Also unsets _search in filters !
      *
-     * @param array $filters 	    Query parameters from request.
+     * @param array $filters        Query parameters from request.
      * @param array $fieldsToSearch Database field names to filter/search on.
      *
      * @return array $filters
@@ -286,7 +304,7 @@ class SearchService
     public function createMongoDBSearchFilter(array $filters, array $fieldsToSearch): array
     {
         if (isset($filters['_search']) === true) {
-            $searchRegex = ['$regex' => $filters['_search'], '$options' => 'i'];
+            $searchRegex    = ['$regex' => $filters['_search'], '$options' => 'i'];
             $filters['$or'] = [];
 
             foreach ($fieldsToSearch as $field) {
@@ -300,18 +318,21 @@ class SearchService
             if ($value === 'IS NOT NULL') {
                 $filters[$field] = ['$ne' => null];
             }
+
             if ($value === 'IS NULL') {
                 $filters[$field] = ['$eq' => null];
             }
         }
 
         return $filters;
+
     }//end createMongoDBSearchFilter()
+
 
     /**
      * This function creates mysql search conditions based on given filters from request.
      *
-     * @param array $filters 	    Query parameters from request.
+     * @param array $filters        Query parameters from request.
      * @param array $fieldsToSearch Fields to search on in sql.
      *
      * @return array $searchConditions
@@ -326,7 +347,9 @@ class SearchService
         }
 
         return $searchConditions;
+
     }//end createMySQLSearchConditions()
+
 
     /**
      * This function unsets all keys starting with _ from filters.
@@ -344,12 +367,14 @@ class SearchService
         }
 
         return $filters;
+
     }//end unsetSpecialQueryParams()
+
 
     /**
      * This function creates mysql search parameters based on given filters from request.
      *
-     * @param array $filters 	    Query parameters from request.
+     * @param array $filters Query parameters from request.
      *
      * @return array $searchParams
      */
@@ -361,7 +386,9 @@ class SearchService
         }
 
         return $searchParams;
+
     }//end createMySQLSearchParams()
+
 
     /**
      * This function creates an sort array based on given order param from request.
@@ -375,13 +402,15 @@ class SearchService
         $sort = [];
         if (isset($filters['_order']) && is_array($filters['_order'])) {
             foreach ($filters['_order'] as $field => $direction) {
-                $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                $direction    = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                 $sort[$field] = $direction;
             }
         }
 
         return $sort;
+
     }//end createSortForMySQL()
+
 
     /**
      * This function creates an sort array based on given order param from request.
@@ -402,7 +431,9 @@ class SearchService
         }
 
         return $sort;
+
     }//end createSortForMongoDB()
+
 
     /**
      * Parses the request query string and returns it as an array of queries.
@@ -411,14 +442,14 @@ class SearchService
      *
      * @return array The resulting array of query parameters.
      */
-    public function parseQueryString(string $queryString = ''): array
+    public function parseQueryString(string $queryString=''): array
     {
         $pairs = explode(separator: '&', string: $queryString);
 
         foreach ($pairs as $pair) {
             $kvpair = explode(separator: '=', string: $pair);
 
-            $key = urldecode(string: $kvpair[0]);
+            $key   = urldecode(string: $kvpair[0]);
             $value = '';
             if (count(value: $kvpair) === 2) {
                 $value = urldecode(string: $kvpair[1]);
@@ -437,8 +468,11 @@ class SearchService
                 ),
                 value: $value
             );
-        }
+        }//end foreach
 
         return $vars;
+
     }//end parseQueryString()
+
+
 }//end class

@@ -4,16 +4,16 @@
  *
  * Controller for handling search operations in the OpenRegister app.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\AppInfo
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -29,12 +29,14 @@ use OCP\Search\Result;
  */
 class SearchController extends Controller
 {
+
     /**
      * The search service instance
      *
      * @var ISearch
      */
     private readonly ISearch $searchService;
+
 
     /**
      * Constructor for the SearchController
@@ -54,6 +56,7 @@ class SearchController extends Controller
         $this->searchService = $searchService;
 
     }//end __construct()
+
 
     /**
      * Handles search requests and forwards them to the Nextcloud search service
@@ -76,10 +79,10 @@ class SearchController extends Controller
         $formattedResults = array_map(
             function (Result $result) {
                 return [
-                    'id' => $result->getId(),
-                    'name' => $result->getName(),
-                    'type' => $result->getType(),
-                    'url' => $result->getUrl(),
+                    'id'     => $result->getId(),
+                    'name'   => $result->getName(),
+                    'type'   => $result->getType(),
+                    'url'    => $result->getUrl(),
                     'source' => $result->getSource(),
                 ];
             },
@@ -89,5 +92,6 @@ class SearchController extends Controller
         return new JSONResponse($formattedResults);
 
     }//end search()
+
 
 }//end class

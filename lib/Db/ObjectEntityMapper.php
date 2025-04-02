@@ -5,16 +5,16 @@
  * This file contains the class for handling object entity mapper related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -42,6 +42,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class ObjectEntityMapper extends QBMapper
 {
+
     /**
      * Database JSON service instance
      *
@@ -67,6 +68,7 @@ class ObjectEntityMapper extends QBMapper
 
     public const DEFAULT_LOCK_DURATION = 3600;
 
+
     /**
      * Constructor for the ObjectEntityMapper
      *
@@ -88,9 +90,10 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $this->eventDispatcher = $eventDispatcher;
-        $this->userSession = $userSession;
+        $this->userSession     = $userSession;
 
     }//end __construct()
+
 
     /**
      * Find an object by ID or UUID
@@ -130,6 +133,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Find an object by UUID
      *
@@ -165,6 +169,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findByUuid()
 
+
     /**
      * Find an object by UUID only
      *
@@ -191,6 +196,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
     }//end findByUuidOnly()
+
 
     /**
      * Find objects by register and schema
@@ -219,6 +225,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findByRegisterAndSchema()
 
+
     /**
      * Counts all objects
      *
@@ -228,7 +235,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects
      */
-    public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
+    public function countAll(?array $filters=[], ?string $search=null, bool $includeDeleted=false): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -243,9 +250,9 @@ class ObjectEntityMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNull($filter));
-            } elseif (in_array($filter, self::MAIN_FILTERS) === true) {
+            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
@@ -258,6 +265,7 @@ class ObjectEntityMapper extends QBMapper
         return $result->fetchAll()[0]['count'];
 
     }//end countAll()
+
 
     /**
      * Find all ObjectEntitys
@@ -278,16 +286,16 @@ class ObjectEntityMapper extends QBMapper
      * @return array An array of ObjectEntity objects
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        array $sort = [],
-        ?string $search = null,
-        ?array $ids = null,
-        ?string $uses = null,
-        bool $includeDeleted = false
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $sort=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -323,9 +331,9 @@ class ObjectEntityMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNull($filter));
-            } elseif (in_array($filter, self::MAIN_FILTERS) === true) {
+            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
@@ -369,6 +377,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findAll()
 
+
     /**
      * Inserts a new entity into the database.
      *
@@ -393,6 +402,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end insert()
 
+
     /**
      * Creates an object from an array
      *
@@ -411,6 +421,7 @@ class ObjectEntityMapper extends QBMapper
         return $this->insert($obj);
 
     }//end createFromArray()
+
 
     /**
      * Updates an entity in the database
@@ -440,6 +451,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end update()
 
+
     /**
      * Updates an object from an array
      *
@@ -461,6 +473,7 @@ class ObjectEntityMapper extends QBMapper
         return $this->update($this->prepareEntity($newObject));
 
     }//end updateFromArray()
+
 
     /**
      * Delete an object
@@ -485,6 +498,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end delete()
 
+
     /**
      * Gets the facets for the objects
      *
@@ -495,10 +509,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array The facets
      */
-    public function getFacets(array $filters = [], ?string $search = null): array
+    public function getFacets(array $filters=[], ?string $search=null): array
     {
         $register = null;
-        $schema = null;
+        $schema   = null;
 
         if (array_key_exists('register', $filters) === true) {
             $register = $filters['register'];
@@ -533,6 +547,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getFacets()
 
+
     /**
      * Find objects that have a specific URI or UUID in their relations
      *
@@ -543,17 +558,17 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array An array of ObjectEntities that have the specified URI/UUID
      */
-    public function findByRelationUri(string $search, bool $partialMatch = false): array
+    public function findByRelationUri(string $search, bool $partialMatch=false): array
     {
         $qb = $this->db->getQueryBuilder();
 
         // For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON.
         // For exact matches, we use 'one' mode which finds exact string matches.
-        $mode = 'one';
+        $mode       = 'one';
         $searchTerm = $search;
 
         if ($partialMatch === true) {
-            $mode = 'all';
+            $mode       = 'all';
             $searchTerm = '%'.$search.'%';
         }
 
@@ -576,6 +591,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findByRelationUri()
 
+
     /**
      * Lock an object
      *
@@ -588,7 +604,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The locked object
      */
-    public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
+    public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
     {
         $object = $this->find($identifier);
 
@@ -616,6 +632,7 @@ class ObjectEntityMapper extends QBMapper
         return $object;
 
     }//end lockObject()
+
 
     /**
      * Unlock an object
@@ -652,6 +669,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end unlockObject()
 
+
     /**
      * Check if an object is locked
      *
@@ -667,6 +685,7 @@ class ObjectEntityMapper extends QBMapper
         return $object->isLocked();
 
     }//end isObjectLocked()
+
 
     /**
      * Find multiple objects by their IDs, UUIDs, or URIs
@@ -690,5 +709,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findMultiple()
+
 
 }//end class

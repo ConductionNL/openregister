@@ -5,16 +5,16 @@
  * Controller for managing object operations in the OpenRegister app.
  * Provides CRUD functionality for objects within registers and schemas.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\AppInfo
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -45,6 +45,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class ObjectsController extends Controller
 {
+
+
     /**
      * Constructor for the ObjectsController
      *
@@ -77,6 +79,7 @@ class ObjectsController extends Controller
 
     }//end __construct()
 
+
     /**
      * Returns the template of the main app's page
      *
@@ -97,6 +100,7 @@ class ObjectsController extends Controller
         );
 
     }//end page()
+
 
     /**
      * Retrieves a list of all objects for a specific register and schema
@@ -124,13 +128,13 @@ class ObjectsController extends Controller
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters
-        $limit = ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $limit  = ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
         $offset = ($requestParams['offset'] ?? $requestParams['_offset'] ?? null);
-        $order = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
+        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $page = ($requestParams['page'] ?? $requestParams['_page'] ?? null);
+        $page   = ($requestParams['page'] ?? $requestParams['_page'] ?? null);
         $search = $requestParams['_search'] ?? null;
 
         // Initialize filters array
@@ -143,7 +147,7 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
             }
 
-            $register = $registerEntity->getId();
+            $register            = $registerEntity->getId();
             $filters['register'] = $register;
         }
 
@@ -154,13 +158,13 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
             }
 
-            $schema = $schemaEntity->getId();
+            $schema            = $schemaEntity->getId();
             $filters['schema'] = $schema;
         }
 
         // Calculate offset from page number if provided
         if ($page !== null && isset($limit)) {
-            $page = (int) $page;
+            $page   = (int) $page;
             $offset = ($limit * ($page - 1));
         }
 
@@ -201,8 +205,8 @@ class ObjectsController extends Controller
             sort: $order,
             search: $search
         );
-        $total = $this->objectEntityMapper->countAll($filters);
-        $pages = $limit !== null ? ceil($total / $limit) : 1;
+        $total   = $this->objectEntityMapper->countAll($filters);
+        $pages   = $limit !== null ? ceil($total / $limit) : 1;
 
         // Process each object through the object service
         foreach ($objects as $key => $object) {
@@ -218,14 +222,15 @@ class ObjectsController extends Controller
         // Build results array with pagination information
         $results = [
             'results' => $objects,
-            'total' => $total,
-            'page' => ($page ?? 1),
-            'pages' => $pages,
+            'total'   => $total,
+            'page'    => ($page ?? 1),
+            'pages'   => $pages,
         ];
 
         return new JSONResponse($results);
 
     }//end index()
+
 
     /**
      * Shows a specific object from a register and schema
@@ -300,6 +305,7 @@ class ObjectsController extends Controller
 
     }//end show()
 
+
     /**
      * Creates a new object in the specified register and schema
      *
@@ -358,6 +364,7 @@ class ObjectsController extends Controller
 
     }//end create()
 
+
     /**
      * Updates an existing object
      *
@@ -414,7 +421,7 @@ class ObjectsController extends Controller
                 // Return a "locked" error with the user who has the lock
                 return new JSONResponse(
                     [
-                        'error' => 'Object is locked by '.$existingObject->getLockedBy(),
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
                         'lockedBy' => $existingObject->getLockedBy(),
                     ],
                     423
@@ -452,6 +459,7 @@ class ObjectsController extends Controller
 
     }//end update()
 
+
     /**
      * Deletes an object
      *
@@ -487,6 +495,7 @@ class ObjectsController extends Controller
 
     }//end destroy()
 
+
     /**
      * Retrieves a list of logs for an object
      *
@@ -513,6 +522,7 @@ class ObjectsController extends Controller
 
     }//end auditTrails()
 
+
     /**
      * Retrieves call logs for a object
      *
@@ -535,6 +545,7 @@ class ObjectsController extends Controller
         return new JSONResponse(['error' => 'Not yet implemented'], 501);
 
     }//end contracts()
+
 
     /**
      * Retrieves all objects that use a object
@@ -561,6 +572,7 @@ class ObjectsController extends Controller
         }
 
     }//end relations()
+
 
     /**
      * Retrieves all objects that this object references
@@ -589,6 +601,7 @@ class ObjectsController extends Controller
 
     }//end uses()
 
+
     /**
      * Retrieves call logs for an object
      *
@@ -613,6 +626,7 @@ class ObjectsController extends Controller
 
     }//end logs()
 
+
     /**
      * Lock an object
      *
@@ -620,15 +634,15 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @param  int $id The ID of the object to lock
+     * @param int $id The ID of the object to lock
      *
      * @return JSONResponse A JSON response containing the locked object
      */
     public function lock(string $id): JSONResponse
     {
         try {
-            $data = $this->request->getParams();
-            $process = $data['process'] ?? null;
+            $data     = $this->request->getParams();
+            $process  = $data['process'] ?? null;
             $duration = isset($data['duration']) ? (int) $data['duration'] : null;
 
             $object = $this->objectEntityMapper->lockObject(
@@ -651,6 +665,7 @@ class ObjectsController extends Controller
 
     }//end lock()
 
+
     /**
      * Unlock an object
      *
@@ -658,7 +673,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @param  int $id The ID of the object to unlock
+     * @param int $id The ID of the object to unlock
      *
      * @return JSONResponse A JSON response containing the unlocked object
      */
@@ -678,6 +693,7 @@ class ObjectsController extends Controller
         }
 
     }//end unlock()
+
 
     /**
      * Revert an object to a previous state
@@ -718,7 +734,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @param  int $id The ID of the object to revert
+     * @param int $id The ID of the object to revert
      *
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
@@ -736,9 +752,9 @@ class ObjectsController extends Controller
             $until = null;
             if (isset($data['datetime'])) {
                 $until = new \DateTime($data['datetime']);
-            } elseif (isset($data['auditTrailId'])) {
+            } else if (isset($data['auditTrailId'])) {
                 $until = $data['auditTrailId'];
-            } elseif (isset($data['version'])) {
+            } else if (isset($data['version'])) {
                 $until = $data['version'];
             }
 
@@ -772,6 +788,7 @@ class ObjectsController extends Controller
 
     }//end revert()
 
+
     /**
      * Retrieves files associated with an object
      *
@@ -779,7 +796,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @param  string $id The ID of the object to get files for
+     * @param string $id The ID of the object to get files for
      *
      * @return JSONResponse A JSON response containing the object's files
      */
@@ -788,10 +805,10 @@ class ObjectsController extends Controller
         try {
             // Get the object with files included
             $object = $this->objectEntityMapper->find((int) $id);
-            $files = $objectService->getFiles($object);
+            $files  = $objectService->getFiles($object);
 
             // Format files with pagination support
-            $requestParams = $this->request->getParams();
+            $requestParams  = $this->request->getParams();
             $formattedFiles = $objectService->formatFiles($files, $requestParams);
 
             return new JSONResponse($formattedFiles);
@@ -802,5 +819,6 @@ class ObjectsController extends Controller
         }
 
     }//end files()
+
 
 }//end class

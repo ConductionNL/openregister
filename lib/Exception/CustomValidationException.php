@@ -4,16 +4,16 @@
  *
  * This file contains the exception class for custom validation errors.
  *
- * @category  Exception
- * @package   OCA\OpenRegister\Exception
+ * @category Exception
+ * @package  OCA\OpenRegister\Exception
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Exception;
@@ -25,7 +25,9 @@ use Exception;
  */
 class CustomValidationException extends Exception
 {
+
     private array $errors;
+
 
     /**
      * @inheritDoc
@@ -39,6 +41,7 @@ class CustomValidationException extends Exception
 
     }//end __construct()
 
+
     /**
      * Retrieves the errors to display them.
      *
@@ -49,5 +52,6 @@ class CustomValidationException extends Exception
         return $this->errors;
 
     }//end getErrors()
+
 
 }//end class

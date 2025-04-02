@@ -5,16 +5,16 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -32,6 +32,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the audit trail entry
      *
@@ -202,6 +203,7 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     protected ?string $retentionPeriod = null;
 
+
     /**
      * Constructor for the AuditTrail class
      *
@@ -235,6 +237,7 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end __construct()
 
+
     /**
      * Get the changed data
      *
@@ -245,6 +248,7 @@ class AuditTrail extends Entity implements JsonSerializable
         return ($this->changed ?? []);
 
     }//end getChanged()
+
 
     /**
      * Get JSON fields from the entity
@@ -265,6 +269,7 @@ class AuditTrail extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity with data from an array
@@ -297,6 +302,7 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+
     /**
      * Convert entity to JSON serializable array
      *
@@ -312,32 +318,33 @@ class AuditTrail extends Entity implements JsonSerializable
         }
 
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'schema' => $this->schema,
-            'register' => $this->register,
-            'object' => $this->object,
-            'objectUuid' => $this->objectUuid,
-            'registerUuid' => $this->registerUuid,
-            'schemaUuid' => $this->schemaUuid,
-            'action' => $this->action,
-            'changed' => $this->changed,
-            'user' => $this->user,
-            'userName' => $this->userName,
-            'session' => $this->session,
-            'request' => $this->request,
-            'ipAddress' => $this->ipAddress,
-            'version' => $this->version,
-            'created' => $created,
-            'organisationId' => $this->organisationId,
-            'organisationIdType' => $this->organisationIdType,
-            'processingActivityId' => $this->processingActivityId,
+            'id'                    => $this->id,
+            'uuid'                  => $this->uuid,
+            'schema'                => $this->schema,
+            'register'              => $this->register,
+            'object'                => $this->object,
+            'objectUuid'            => $this->objectUuid,
+            'registerUuid'          => $this->registerUuid,
+            'schemaUuid'            => $this->schemaUuid,
+            'action'                => $this->action,
+            'changed'               => $this->changed,
+            'user'                  => $this->user,
+            'userName'              => $this->userName,
+            'session'               => $this->session,
+            'request'               => $this->request,
+            'ipAddress'             => $this->ipAddress,
+            'version'               => $this->version,
+            'created'               => $created,
+            'organisationId'        => $this->organisationId,
+            'organisationIdType'    => $this->organisationIdType,
+            'processingActivityId'  => $this->processingActivityId,
             'processingActivityUrl' => $this->processingActivityUrl,
-            'processingId' => $this->processingId,
-            'confidentiality' => $this->confidentiality,
-            'retentionPeriod' => $this->retentionPeriod,
+            'processingId'          => $this->processingId,
+            'confidentiality'       => $this->confidentiality,
+            'retentionPeriod'       => $this->retentionPeriod,
         ];
 
     }//end jsonSerialize()
+
 
 }//end class

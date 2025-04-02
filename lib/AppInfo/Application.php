@@ -1,21 +1,22 @@
 <?php
 
+
 /**
  * OpenConnector Consumers Controller
  *
  * This file contains the controller for handling consumer related operations
  * in the OpenRegister application.
  *
- * @category  AppInfo
- * @package   OCA\OpenRegister\AppInfo
+ * @category AppInfo
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -35,10 +36,10 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * @category AppInfo
  * @package  OCA\OpenRegister\AppInfo
  *
- * @author   Nextcloud Dev Team
- * @license  AGPL-3.0-or-later
+ * @author  Nextcloud Dev Team
+ * @license AGPL-3.0-or-later
  *
- * @link     https://github.com/nextcloud/server/blob/master/apps-extra/openregister
+ * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  */
 class Application extends App implements IBootstrap
 {
@@ -48,6 +49,7 @@ class Application extends App implements IBootstrap
      * @var string
      */
     public const APP_ID = 'openregister';
+
 
     /**
      * Constructor for the Application class
@@ -62,6 +64,7 @@ class Application extends App implements IBootstrap
 
     }//end __construct()
 
+
     /**
      * Register application components
      *
@@ -75,6 +78,7 @@ class Application extends App implements IBootstrap
 
     }//end register()
 
+
     /**
      * Boot application components
      *
@@ -84,7 +88,4 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // No boot actions required at the moment
-    }//end boot()
-
-}//end class
+        // No boot actions required at the moment    }//end boot()    }//end boot()

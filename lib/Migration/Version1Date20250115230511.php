@@ -2,16 +2,16 @@
 /**
  * OpenRegister Migration
  *
- * @category  Migration
- * @package   OCA\OpenRegister\Migration
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -36,6 +36,8 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250115230511 extends SimpleMigrationStep
 {
+
+
     /**
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -46,16 +48,17 @@ class Version1Date20250115230511 extends SimpleMigrationStep
 
     }//end preSchemaChange()
 
+
     /**
-     * @param  IOutput                   $output
-     * @param  Closure(): ISchemaWrapper $schemaClosure
-     * @param  array                     $options
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
      *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -69,9 +72,9 @@ class Version1Date20250115230511 extends SimpleMigrationStep
                 'locked',
                 Types::JSON,
                 [
-               'notnull' => false,
-               'default' => null,
-           ]
+                    'notnull' => false,
+                    'default' => null,
+                ]
             );
         }
 
@@ -81,10 +84,10 @@ class Version1Date20250115230511 extends SimpleMigrationStep
                 'owner',
                 Types::STRING,
                 [
-               'notnull' => false,
-               'length' => 64,
-               'default' => '',
-           ]
+                    'notnull' => false,
+                    'length'  => 64,
+                    'default' => '',
+                ]
             );
         }
 
@@ -94,9 +97,9 @@ class Version1Date20250115230511 extends SimpleMigrationStep
                 'authorization',
                 Types::TEXT,
                 [
-               'notnull' => false,
-               'default' => null,
-           ]
+                    'notnull' => false,
+                    'default' => null,
+                ]
             );
         }
 
@@ -106,10 +109,10 @@ class Version1Date20250115230511 extends SimpleMigrationStep
                 'folder',
                 Types::STRING,
                 [
-               'notnull' => false,
-               'length' => 4000,
-               'default' => '',
-           ]
+                    'notnull' => false,
+                    'length'  => 4000,
+                    'default' => '',
+                ]
             );
         }
 
@@ -122,16 +125,17 @@ class Version1Date20250115230511 extends SimpleMigrationStep
                 'folder',
                 Types::STRING,
                 [
-               'notnull' => false,
-               'length' => 4000,
-               'default' => '',
-           ]
+                    'notnull' => false,
+                    'length'  => 4000,
+                    'default' => '',
+                ]
             );
         }
 
         return $schema;
 
     }//end changeSchema()
+
 
     /**
      * @param IOutput                   $output
@@ -142,5 +146,6 @@ class Version1Date20250115230511 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
+
 
 }//end class

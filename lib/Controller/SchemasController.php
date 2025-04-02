@@ -4,16 +4,16 @@
  *
  * Controller for managing schema operations in the OpenRegister app.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\AppInfo
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -38,6 +38,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemasController extends Controller
 {
+
+
     /**
      * Constructor for the SchemasController
      *
@@ -62,6 +64,7 @@ class SchemasController extends Controller
 
     }//end __construct()
 
+
     /**
      * Returns the template of the main app's page
      *
@@ -83,6 +86,7 @@ class SchemasController extends Controller
 
     }//end page()
 
+
     /**
      * Retrieves a list of all schemas
      *
@@ -102,16 +106,16 @@ class SchemasController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching
-        $filters = $this->request->getParams();
+        $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
         // Create search parameters and conditions for filtering
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
             fieldsToSearch: $fieldsToSearch
         );
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // Return all schemas that match the search conditions
         return new JSONResponse(
@@ -125,6 +129,7 @@ class SchemasController extends Controller
         );
 
     }//end index()
+
 
     /**
      * Retrieves a single schema by its ID
@@ -150,6 +155,7 @@ class SchemasController extends Controller
         }
 
     }//end show()
+
 
     /**
      * Creates a new schema
@@ -183,6 +189,7 @@ class SchemasController extends Controller
         return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
 
     }//end create()
+
 
     /**
      * Updates an existing schema
@@ -219,6 +226,7 @@ class SchemasController extends Controller
 
     }//end update()
 
+
     /**
      * Deletes a schema
      *
@@ -244,6 +252,7 @@ class SchemasController extends Controller
 
     }//end destroy()
 
+
     /**
      * Updates an existing Schema object using a json text/string as input
      *
@@ -260,11 +269,12 @@ class SchemasController extends Controller
      *
      * @return JSONResponse The JSON response with the updated schema
      */
-    public function uploadUpdate(?int $id = null): JSONResponse
+    public function uploadUpdate(?int $id=null): JSONResponse
     {
         return $this->upload($id);
 
     }//end uploadUpdate()
+
 
     /**
      * Creates a new Schema object or updates an existing one
@@ -282,7 +292,7 @@ class SchemasController extends Controller
      *
      * @return JSONResponse The JSON response with the created or updated schema
      */
-    public function upload(?int $id = null): JSONResponse
+    public function upload(?int $id=null): JSONResponse
     {
         if ($id !== null) {
             // If ID is provided, find the existing schema
@@ -320,6 +330,7 @@ class SchemasController extends Controller
 
     }//end upload()
 
+
     /**
      * Creates and return a json file for a Schema
      *
@@ -350,5 +361,6 @@ class SchemasController extends Controller
         return new JSONResponse($schema);
 
     }//end download()
+
 
 }//end class

@@ -11,16 +11,16 @@
  * - Aggregating JSON data.
  * - Audit trails and data aggregation.
  *
- * @category  Service
- * @package   OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -29,6 +29,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 
 interface IDatabaseJsonService
 {
+
+
     /**
      * Filters the JSON objects in the objects column based upon given filters.
      *
@@ -37,7 +39,11 @@ interface IDatabaseJsonService
      *
      * @return IQueryBuilder The updated query builder.
      */
-    public function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder; //end filterJson()
+    public function filterJson(IQueryBuilder $builder, array $filters): IQueryBuilder;
+
+
+    // end filterJson()
+
 
     /**
      * Searches in the JSON objects in the objects column for given string.
@@ -47,7 +53,11 @@ interface IDatabaseJsonService
      *
      * @return IQueryBuilder The updated query builder.
      */
-    public function searchJson(IQueryBuilder $builder, string $search): IQueryBuilder; //end searchJson()
+    public function searchJson(IQueryBuilder $builder, string $search): IQueryBuilder;
+
+
+    // end searchJson()
+
 
     /**
      * Sorts search results on JSON fields.
@@ -57,7 +67,11 @@ interface IDatabaseJsonService
      *
      * @return IQueryBuilder The updated query builder.
      */
-    public function orderJson(IQueryBuilder $builder, array $order): IQueryBuilder; //end orderJson()
+    public function orderJson(IQueryBuilder $builder, array $order): IQueryBuilder;
+
+
+    // end orderJson()
+
 
     /**
      * Generates aggregations (facets) for given fields combined with given filters.
@@ -71,5 +85,7 @@ interface IDatabaseJsonService
      *
      * @return array The resulting aggregations.
      */
-    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters = [], ?string $search = null): array; //end getAggregations()
-}//end interface
+    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters=[], ?string $search=null): array;
+
+
+    // end getAggregations()}//end interface

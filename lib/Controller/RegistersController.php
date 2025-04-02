@@ -4,16 +4,16 @@
  *
  * Controller for managing register operations in the OpenRegister app.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\AppInfo
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -37,6 +37,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class RegistersController extends Controller
 {
+
+
     /**
      * Constructor for the RegistersController
      *
@@ -59,6 +61,7 @@ class RegistersController extends Controller
 
     }//end __construct()
 
+
     /**
      * Returns the template of the main app's page
      *
@@ -80,6 +83,7 @@ class RegistersController extends Controller
 
     }//end page()
 
+
     /**
      * Retrieves a list of all registers
      *
@@ -99,16 +103,16 @@ class RegistersController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching
-        $filters = $this->request->getParams();
+        $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
         // Create search parameters and conditions for filtering
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
             fieldsToSearch: $fieldsToSearch
         );
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // Return all registers that match the search conditions
         return new JSONResponse(
@@ -124,6 +128,7 @@ class RegistersController extends Controller
         );
 
     }//end index()
+
 
     /**
      * Retrieves a single register by its ID
@@ -149,6 +154,7 @@ class RegistersController extends Controller
         }
 
     }//end show()
+
 
     /**
      * Creates a new register
@@ -182,6 +188,7 @@ class RegistersController extends Controller
         return new JSONResponse($this->registerMapper->createFromArray(object: $data));
 
     }//end create()
+
 
     /**
      * Updates an existing register
@@ -218,6 +225,7 @@ class RegistersController extends Controller
 
     }//end update()
 
+
     /**
      * Deletes a register
      *
@@ -243,6 +251,7 @@ class RegistersController extends Controller
 
     }//end destroy()
 
+
     /**
      * Get objects
      *
@@ -266,6 +275,7 @@ class RegistersController extends Controller
 
     }//end objects()
 
+
     /**
      * Updates an existing Register object using a json text/string as input
      *
@@ -282,11 +292,12 @@ class RegistersController extends Controller
      *
      * @return JSONResponse The JSON response with the updated register
      */
-    public function uploadUpdate(?int $id = null): JSONResponse
+    public function uploadUpdate(?int $id=null): JSONResponse
     {
         return $this->upload($id);
 
     }//end uploadUpdate()
+
 
     /**
      * Creates a new Register object or updates an existing one
@@ -304,7 +315,7 @@ class RegistersController extends Controller
      *
      * @return JSONResponse The JSON response with the created or updated register
      */
-    public function upload(?int $id = null): JSONResponse
+    public function upload(?int $id=null): JSONResponse
     {
         if ($id !== null) {
             // If ID is provided, find the existing register
@@ -349,5 +360,6 @@ class RegistersController extends Controller
         return new JSONResponse($register);
 
     }//end upload()
+
 
 }//end class

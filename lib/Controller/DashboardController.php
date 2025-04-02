@@ -5,16 +5,16 @@
  * This file contains the controller for handling consumer related operations
  * in the OpenRegister application.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\AppInfo
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -30,11 +30,14 @@ use OCP\IRequest;
  */
 class DashboardController extends Controller
 {
+
+
     public function __construct($appName, IRequest $request)
     {
         parent::__construct($appName, $request);
 
     }//end __construct()
+
 
     /**
      * @NoAdminRequired
@@ -66,6 +69,7 @@ class DashboardController extends Controller
 
     }//end page()
 
+
     /**
      * @NoAdminRequired
      *
@@ -81,5 +85,6 @@ class DashboardController extends Controller
         }
 
     }//end index()
+
 
 }//end class

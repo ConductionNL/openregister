@@ -5,16 +5,16 @@
  * This file contains the event class dispatched when an object is created
  * in the OpenRegister application.
  *
- * @category  Event
- * @package   OCA\OpenRegister\Event
+ * @category Event
+ * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Event;
@@ -27,12 +27,14 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectCreatedEvent extends Event
 {
+
     /**
      * The newly created object entity
      *
      * @var ObjectEntity The object entity that was created
      */
     private ObjectEntity $object;
+
 
     /**
      * Constructor for ObjectCreatedEvent
@@ -48,6 +50,7 @@ class ObjectCreatedEvent extends Event
 
     }//end __construct()
 
+
     /**
      * Get the created object entity
      *
@@ -58,5 +61,6 @@ class ObjectCreatedEvent extends Event
         return $this->object;
 
     }//end getObject()
+
 
 }//end class

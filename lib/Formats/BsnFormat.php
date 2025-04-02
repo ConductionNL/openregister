@@ -4,16 +4,16 @@
  *
  * This file contains the format class for the Bsn format.
  *
- * @category  Format
- * @package   OCA\OpenRegister\Formats
+ * @category Format
+ * @package  OCA\OpenRegister\Formats
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Formats;
@@ -22,6 +22,8 @@ use Opis\JsonSchema\Format;
 
 class BsnFormat implements Format
 {
+
+
     /**
      * @inheritDoc
      */
@@ -38,7 +40,7 @@ class BsnFormat implements Format
             return false;
         }
 
-        $control = 0;
+        $control          = 0;
         $reversedIterator = 9;
         foreach (str_split($data) as $character) {
             $control += ($character * (($reversedIterator > 1) ? $reversedIterator : -1));
@@ -48,5 +50,6 @@ class BsnFormat implements Format
         return ($control % 11) === 0;
 
     }//end validate()
+
 
 }//end class

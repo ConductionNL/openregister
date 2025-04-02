@@ -4,16 +4,16 @@
  *
  * Controller for managing source operations in the OpenRegister app.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\AppInfo
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -34,6 +34,8 @@ use OCP\IRequest;
  */
 class SourcesController extends Controller
 {
+
+
     /**
      * Constructor for the SourcesController
      *
@@ -53,6 +55,7 @@ class SourcesController extends Controller
         parent::__construct($appName, $request);
 
     }//end __construct()
+
 
     /**
      * Returns the template of the main app's page
@@ -75,6 +78,7 @@ class SourcesController extends Controller
 
     }//end page()
 
+
     /**
      * Retrieves a list of all sources
      *
@@ -94,16 +98,16 @@ class SourcesController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching
-        $filters = $this->request->getParams();
+        $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
         // Create search parameters and conditions for filtering
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
             fieldsToSearch: $fieldsToSearch
         );
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         // Return all sources that match the search conditions
         return new JSONResponse(
@@ -119,6 +123,7 @@ class SourcesController extends Controller
         );
 
     }//end index()
+
 
     /**
      * Retrieves a single source by its ID
@@ -144,6 +149,7 @@ class SourcesController extends Controller
         }
 
     }//end show()
+
 
     /**
      * Creates a new source
@@ -177,6 +183,7 @@ class SourcesController extends Controller
         return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
 
     }//end create()
+
 
     /**
      * Updates an existing source
@@ -213,6 +220,7 @@ class SourcesController extends Controller
 
     }//end update()
 
+
     /**
      * Deletes a source
      *
@@ -237,5 +245,6 @@ class SourcesController extends Controller
         return new JSONResponse([]);
 
     }//end destroy()
+
 
 }//end class

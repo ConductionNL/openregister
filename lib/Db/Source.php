@@ -5,16 +5,16 @@
  * This file contains the class for handling source related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -30,6 +30,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Source extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the source
      *
@@ -86,6 +87,7 @@ class Source extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
+
     /**
      * Constructor for the Source class
      *
@@ -103,6 +105,7 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'created', type: 'datetime');
 
     }//end __construct()
+
 
     /**
      * Get JSON fields from the entity
@@ -123,6 +126,7 @@ class Source extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity with data from an array
@@ -159,6 +163,7 @@ class Source extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+
     /**
      * Convert entity to JSON serializable array
      *
@@ -179,17 +184,18 @@ class Source extends Entity implements JsonSerializable
         }
 
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'title' => $this->title,
-            'version' => $this->version,
+            'id'          => $this->id,
+            'uuid'        => $this->uuid,
+            'title'       => $this->title,
+            'version'     => $this->version,
             'description' => $this->description,
             'databaseUrl' => $this->databaseUrl,
-            'type' => $this->type,
-            'updated' => $updated,
-            'created' => $created,
+            'type'        => $this->type,
+            'updated'     => $updated,
+            'created'     => $created,
         ];
 
     }//end jsonSerialize()
+
 
 }//end class

@@ -5,16 +5,16 @@
  * This file contains the class for handling register related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -32,6 +32,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class Register extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the register
      *
@@ -144,6 +145,7 @@ class Register extends Entity implements JsonSerializable
      */
     protected ?DateTime $deleted = null;
 
+
     /**
      * Constructor for the Register class
      *
@@ -170,6 +172,7 @@ class Register extends Entity implements JsonSerializable
 
     }//end __construct()
 
+
     /**
      * Get the schemas data
      *
@@ -180,6 +183,7 @@ class Register extends Entity implements JsonSerializable
         return ($this->schemas ?? []);
 
     }//end getSchemas()
+
 
     /**
      * Get JSON fields from the entity
@@ -200,6 +204,7 @@ class Register extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity with data from an array
@@ -236,6 +241,7 @@ class Register extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+
     /**
      * Convert entity to JSON serializable array
      *
@@ -261,25 +267,26 @@ class Register extends Entity implements JsonSerializable
         }
 
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'slug' => $this->slug,
-            'title' => $this->title,
-            'version' => $this->version,
-            'description' => $this->description,
-            'schemas' => $this->schemas,
-            'source' => $this->source,
-            'tablePrefix' => $this->tablePrefix,
-            'folder' => $this->folder,
-            'updated' => $updated,
-            'created' => $created,
-            'owner' => $this->owner,
-            'application' => $this->application,
-            'organisation' => $this->organisation,
+            'id'            => $this->id,
+            'uuid'          => $this->uuid,
+            'slug'          => $this->slug,
+            'title'         => $this->title,
+            'version'       => $this->version,
+            'description'   => $this->description,
+            'schemas'       => $this->schemas,
+            'source'        => $this->source,
+            'tablePrefix'   => $this->tablePrefix,
+            'folder'        => $this->folder,
+            'updated'       => $updated,
+            'created'       => $created,
+            'owner'         => $this->owner,
+            'application'   => $this->application,
+            'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
-            'deleted' => $deleted,
+            'deleted'       => $deleted,
         ];
 
     }//end jsonSerialize()
+
 
 }//end class

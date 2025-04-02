@@ -5,16 +5,16 @@
  * This file contains the class for handling schema related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -35,6 +35,7 @@ use stdClass;
  */
 class Schema extends Entity implements JsonSerializable
 {
+
     /**
      * Unique identifier for the schema
      *
@@ -168,6 +169,7 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?DateTime $deleted = null;
 
+
     /**
      * Constructor for the Schema class
      *
@@ -198,6 +200,7 @@ class Schema extends Entity implements JsonSerializable
 
     }//end __construct()
 
+
     /**
      * Get the required data
      *
@@ -208,6 +211,7 @@ class Schema extends Entity implements JsonSerializable
         return ($this->required ?? []);
 
     }//end getRequired()
+
 
     /**
      * Get the properties data
@@ -220,6 +224,7 @@ class Schema extends Entity implements JsonSerializable
 
     }//end getProperties()
 
+
     /**
      * Get the archive data
      *
@@ -230,6 +235,7 @@ class Schema extends Entity implements JsonSerializable
         return ($this->archive ?? []);
 
     }//end getArchive()
+
 
     /**
      * Get JSON fields from the entity
@@ -250,6 +256,7 @@ class Schema extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity with data from an array
@@ -286,6 +293,7 @@ class Schema extends Entity implements JsonSerializable
 
     }//end hydrate()
 
+
     /**
      * Serializes the schema to an array
      *
@@ -295,14 +303,14 @@ class Schema extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $required = ($this->required ?? []);
+        $required   = ($this->required ?? []);
         $properties = [];
 
         if (isset($this->properties) === true) {
             foreach ($this->properties as $title => $property) {
                 $title = ($property['title'] ?? $title);
 
-                $isRequired = (isset($property['required']) === true && $property['required'] === true);
+                $isRequired    = (isset($property['required']) === true && $property['required'] === true);
                 $notInRequired = in_array($title, $required) === false;
 
                 if ($isRequired === true && $notInRequired === true) {
@@ -329,29 +337,30 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'slug' => $this->slug,
-            'title' => $this->title,
-            'description' => $this->description,
-            'version' => $this->version,
-            'summary' => $this->summary,
-            'required' => $required,
-            'properties' => $properties,
-            'archive' => $this->archive,
-            'source' => $this->source,
+            'id'             => $this->id,
+            'uuid'           => $this->uuid,
+            'slug'           => $this->slug,
+            'title'          => $this->title,
+            'description'    => $this->description,
+            'version'        => $this->version,
+            'summary'        => $this->summary,
+            'required'       => $required,
+            'properties'     => $properties,
+            'archive'        => $this->archive,
+            'source'         => $this->source,
             'hardValidation' => $this->hardValidation,
-            'updated' => $updated,
-            'created' => $created,
-            'maxDepth' => $this->maxDepth,
-            'owner' => $this->owner,
-            'application' => $this->application,
-            'organisation' => $this->organisation,
-            'authorization' => $this->authorization,
-            'deleted' => $deleted,
+            'updated'        => $updated,
+            'created'        => $created,
+            'maxDepth'       => $this->maxDepth,
+            'owner'          => $this->owner,
+            'application'    => $this->application,
+            'organisation'   => $this->organisation,
+            'authorization'  => $this->authorization,
+            'deleted'        => $deleted,
         ];
 
     }//end jsonSerialize()
+
 
     /**
      * Converts schema to an object representation
@@ -364,22 +373,22 @@ class Schema extends Entity implements JsonSerializable
      */
     public function getSchemaObject(IURLGenerator $urlGenerator): object
     {
-        $schema = new stdClass();
+        $schema        = new stdClass();
         $schema->title = $this->title;
         $schema->description = $this->description;
-        $schema->version = $this->version;
-        $schema->type = 'object';
-        $schema->required = $this->required;
-        $schema->$schema = 'https://json-schema.org/draft/2020-12/schema';
-        $schema->$id = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
-        $schema->properties = new stdClass();
+        $schema->version     = $this->version;
+        $schema->type        = 'object';
+        $schema->required    = $this->required;
+        $schema->$schema     = 'https://json-schema.org/draft/2020-12/schema';
+        $schema->$id         = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->properties  = new stdClass();
 
         foreach ($this->properties as $propertyName => $property) {
             if (isset($property['properties']) === true) {
-                $nestedProperties = new stdClass();
-                $nestedProperty = new stdClass();
-                $nestedProperty->type = 'object';
-                $nestedProperty->title = $property['title'];
+                $nestedProperties         = new stdClass();
+                $nestedProperty           = new stdClass();
+                $nestedProperty->type     = 'object';
+                $nestedProperty->title    = $property['title'];
                 $nestedProperty->required = [];
 
                 if (isset($property['properties']) === true) {
@@ -397,7 +406,7 @@ class Schema extends Entity implements JsonSerializable
                     }
                 }
 
-                $nestedProperty->properties = $nestedProperties;
+                $nestedProperty->properties        = $nestedProperties;
                 $schema->properties->$propertyName = $nestedProperty;
             } else {
                 $prop = new stdClass();
@@ -415,5 +424,6 @@ class Schema extends Entity implements JsonSerializable
         return $schema;
 
     }//end getSchemaObject()
+
 
 }//end class

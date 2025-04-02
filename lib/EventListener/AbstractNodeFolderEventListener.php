@@ -5,16 +5,16 @@
  * This file contains the event class dispatched when a schema is updated
  * in the OpenRegister application.
  *
- * @category  EventListener
- * @package   OCA\OpenRegister\Event
+ * @category EventListener
+ * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\EventListener;
@@ -32,12 +32,15 @@ use OCP\Files\FileInfo;
 
 class AbstractNodeFolderEventListener implements IEventListener
 {
+
+
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
     ) {
 
     }//end __construct()
+
 
     /**
      * @inheritDoc
@@ -58,10 +61,11 @@ class AbstractNodeFolderEventListener implements IEventListener
             $event instanceof NodeDeletedEvent => $this->handleNodeDeleted(event: $event),
             $event instanceof NodeTouchedEvent => $this->handleNodeTouched(event: $event),
             $event instanceof NodeWrittenEvent => $this->handleNodeWritten(event: $event),
-            default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
+        default => throw new InvalidArgumentException(message: 'Unsupported event type: '.get_class($event)),
         };
 
     }//end handle()
+
 
     /**
      * Handle node created event
@@ -74,7 +78,9 @@ class AbstractNodeFolderEventListener implements IEventListener
     {
         // Call the object service to handle the node created event
         $this->objectService->nodeCreatedEventFunction(event: $event);
-    }
+
+    }//end handleNodeCreated()
+
 
     /**
      * Handle node deleted event
@@ -87,7 +93,9 @@ class AbstractNodeFolderEventListener implements IEventListener
     {
         // Call the object service to handle the node deleted event
         $this->objectService->nodeDeletedEventFunction(event: $event);
-    }
+
+    }//end handleNodeDeleted()
+
 
     /**
      * Handle node touched event
@@ -100,7 +108,9 @@ class AbstractNodeFolderEventListener implements IEventListener
     {
         // Call the object service to handle the node touched event
         $this->objectService->nodeTouchedEventFunction(event: $event);
-    }
+
+    }//end handleNodeTouched()
+
 
     /**
      * Handle node written event
@@ -113,5 +123,8 @@ class AbstractNodeFolderEventListener implements IEventListener
     {
         // Call the object service to handle the node written event
         $this->objectService->nodeWrittenEventFunction(event: $event);
-    }
+
+    }//end handleNodeWritten()
+
+
 }//end class

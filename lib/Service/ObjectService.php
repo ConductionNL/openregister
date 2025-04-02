@@ -1438,7 +1438,6 @@ class ObjectService
      * @throws Exception
      *
      * @return File
-     *
      */
     private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
     {
@@ -1517,7 +1516,6 @@ class ObjectService
      * @throws GuzzleException
      *
      * @return File
-     *
      */
     private function fetchFile(File $file, string $propertyName, ObjectEntity $objectEntity): File
     {
@@ -1581,7 +1579,6 @@ class ObjectService
      * @throws \OCP\DB\Exception When database operation fails.
      *
      * @return string The updated object with resolved file references.
-     *
      */
     private function handleFileProperty(ObjectEntity $objectEntity, array $object, string $propertyName, ?string $format = null): string
     {
@@ -1656,7 +1653,6 @@ class ObjectService
      * @throws DoesNotExistException If the object ID is not found
      *
      * @return Node[] The files found
-     *
      */
     public function getFiles(ObjectEntity|string $object): array
     {
@@ -1689,7 +1685,6 @@ class ObjectService
      * @throws DoesNotExistException If the object ID is not found
      *
      * @return Node|null The file if found, null otherwise
-     *
      */
     public function getFile(ObjectEntity|string $object, string $filePath): ?Node
     {
@@ -1749,7 +1744,6 @@ class ObjectService
      * @throws Exception If file update fails
      *
      * @return \OCP\Files\File The updated file
-     *
      */
     public function updateFile(ObjectEntity|string $object, string $filePath, ?string $content = null, array $tags = []): \OCP\Files\File
     {
@@ -1793,7 +1787,6 @@ class ObjectService
      * @throws Exception If file deletion fails
      *
      * @return bool True if successful
-     *
      */
     public function deleteFile(ObjectEntity|string $object, string $filePath): bool
     {
@@ -1810,7 +1803,7 @@ class ObjectService
     /**
      * Publish a file by creating a public share link
      *
-     * @todo Should be in file service
+     * @todo Should be in file service.
      *
      * @param ObjectEntity|string $object The object or object ID
      * @param string $filePath Path to the file to publish
@@ -1818,7 +1811,6 @@ class ObjectService
      * @throws Exception If file publishing fails
      *
      * @return \OCP\Files\File The published file
-     *
      */
     public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
     {
@@ -1843,7 +1835,7 @@ class ObjectService
     /**
      * Unpublish a file by removing its public share link
      *
-     * @todo Should be in file service
+     * @todo Should be in file service.
      *
      * @param ObjectEntity|string $object The object or object ID
      * @param string $filePath Path to the file to unpublish
@@ -1851,7 +1843,6 @@ class ObjectService
      * @throws Exception If file unpublishing fails
      *
      * @return \OCP\Files\File The unpublished file
-     *
      */
     public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
     {
@@ -1887,7 +1878,6 @@ class ObjectService
      * @throws NotFoundException
      *
      * @return array Array of formatted file metadata arrays
-     *
      */
     public function formatFiles(array $files, ?array $requestParams = []): array
     {
@@ -1926,7 +1916,7 @@ class ObjectService
         try {
             $formattedFiles = $this->fileService->formatFiles($files);
         } catch (InvalidPathException|NotFoundException $e) {
-
+            // Empty catch block.
         }
 
         $object->setFiles($formattedFiles);
@@ -1942,11 +1932,11 @@ class ObjectService
      * @param Schema $schema The schema defining the object structure.
      * @param string $uuid The unique identifier of the object to retrieve.
      * @param array|null $extend Optional properties to include in the retrieved object.
+     * @param bool $files Whether to include files in the response.
      *
      * @throws Exception If the source type is unsupported.
      *
      * @return ObjectEntity The retrieved object as an entity.
-     *
      */
     public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = [], bool $files = false): ObjectEntity
     {
@@ -2009,11 +1999,11 @@ class ObjectService
      * @param Register $register The register containing the objects.
      * @param Schema $schema The schema defining the properties and relationships.
      * @param ObjectEntity $object The object entity whose related objects should be deleted.
+     * @param string $originalObjectId The ID of the original object being deleted.
      *
      * @throws Exception If any errors occur during the deletion process.
      *
      * @return void
-     *
      */
     private function cascadeDeleteObjects(Register $register, Schema $schema, ObjectEntity $object, string $originalObjectId): void
     {
@@ -2044,8 +2034,7 @@ class ObjectService
      *
      * @throws Exception If source type is unsupported
      *
-     * @return bool      True if deletion was successful
-     *
+     * @return bool True if deletion was successful
      */
     public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId = null): bool
     {
@@ -2093,7 +2082,6 @@ class ObjectService
      * @throws InvalidArgumentException If the object type is unknown.
      *
      * @return mixed The mapper for the specified object type.
-     *
      */
     public function getMapper(?string $objectType = null, ?int $register = null, ?int $schema = null): mixed
     {
@@ -2128,7 +2116,6 @@ class ObjectService
      * @throws InvalidArgumentException If the object type is unknown.
      *
      * @return array The retrieved objects.
-     *
      */
     public function getMultipleObjects(string $objectType, array $ids): array
     {
@@ -2380,11 +2367,11 @@ class ObjectService
      *
      * @param mixed $entity The entity to extend
      * @param array $extend Properties to extend with related data
+     * @param int|null $depth Maximum recursion depth
      *
      * @throws Exception If property not found
      *
      * @return array The extended entity as an array
-     *
      */
     public function extendEntity(array $entity, array $extend, ?int $depth = 0): array
     {
@@ -2475,7 +2462,6 @@ class ObjectService
      * @throws Exception If extension fails
      *
      * @return array The registers with schema data
-     *
      */
     public function getRegisters(): array
     {
@@ -2792,7 +2778,6 @@ class ObjectService
      * @throws \Twig\Error\SyntaxError
      *
      * @return ObjectEntity The resulting objectEntity.
-     *
      */
     public function setDefaults(ObjectEntity $objectEntity): ObjectEntity
     {
@@ -2804,8 +2789,15 @@ class ObjectService
         }
 
         foreach ($schema->getProperties() as $name => $property) {
-            if (isset($data[$name]) === false && isset($property['default']) === true) {
-                $data[$name] = $this->twig->createTemplate($property['default'], "{$schema->getTitle()}.$name")->render($objectEntity->getObjectArray());
+            // Check if the property doesn't exist in the data and has a default value defined
+            if (isset($data[$name]) === false && 
+                isset($property['default']) === true
+            ) {
+                // Create a template from the default value and render it with the object's data
+                $data[$name] = $this->twig->createTemplate(
+                    $property['default'], 
+                    "{$schema->getTitle()}.$name"
+                )->render($objectEntity->getObjectArray());
             }
         }
 
@@ -2826,7 +2818,6 @@ class ObjectService
      * @throws LockedException If object already locked by another user
      *
      * @return ObjectEntity The locked object
-     *
      */
     public function lockObject($identifier, ?string $process = null, ?int $duration = 3600): ObjectEntity
     {
@@ -2856,7 +2847,6 @@ class ObjectService
      * @throws LockedException If object locked by another user
      *
      * @return ObjectEntity The unlocked object
-     *
      */
     public function unlockObject($identifier): ObjectEntity
     {
@@ -2865,7 +2855,7 @@ class ObjectService
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Must be logged in')) {
+            if (str_contains($e->getMessage(), 'Must be logged in') === true) {
                 throw new NotAuthorizedException($e->getMessage());
             }
             throw new LockedException($e->getMessage());
@@ -2880,7 +2870,6 @@ class ObjectService
      * @throws NotFoundException If object not found
      *
      * @return bool True if object is locked, false otherwise
-     *
      */
     public function isLocked($identifier): bool
     {
@@ -2903,7 +2892,6 @@ class ObjectService
      * @throws \Exception If revert fails
      *
      * @return ObjectEntity The reverted object
-     *
      */
     public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity
     {
@@ -2928,7 +2916,7 @@ class ObjectService
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Must be logged in')) {
+            if (str_contains($e->getMessage(), 'Must be logged in') === true) {
                 throw new NotAuthorizedException($e->getMessage());
             }
             throw $e;

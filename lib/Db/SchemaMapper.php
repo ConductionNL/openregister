@@ -5,16 +5,16 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -36,12 +36,14 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemaMapper extends QBMapper
 {
+
     /**
      * The event dispatcher instance
      *
      * @var IEventDispatcher
      */
     private $eventDispatcher;
+
 
     /**
      * Constructor for the SchemaMapper
@@ -57,6 +59,7 @@ class SchemaMapper extends QBMapper
         $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
+
 
     /**
      * Finds a schema by id
@@ -87,6 +90,7 @@ class SchemaMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Finds multiple schemas by id
      *
@@ -109,6 +113,7 @@ class SchemaMapper extends QBMapper
 
     }//end findMultiple()
 
+
     /**
      * Finds all schemas
      *
@@ -123,11 +128,11 @@ class SchemaMapper extends QBMapper
      * @return array The schemas
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -139,7 +144,7 @@ class SchemaMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -156,6 +161,7 @@ class SchemaMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
 
     /**
      * Inserts a schema entity into the database
@@ -176,6 +182,7 @@ class SchemaMapper extends QBMapper
         return $entity;
 
     }//end insert()
+
 
     /**
      * Ensures that a schema object has a UUID and a slug.
@@ -221,6 +228,7 @@ class SchemaMapper extends QBMapper
 
     }//end cleanObject()
 
+
     /**
      * Creates a schema from an array
      *
@@ -243,6 +251,7 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end createFromArray()
+
 
     /**
      * Updates a schema entity in the database
@@ -271,6 +280,7 @@ class SchemaMapper extends QBMapper
 
     }//end update()
 
+
     /**
      * Updates a schema from an array
      *
@@ -296,6 +306,7 @@ class SchemaMapper extends QBMapper
 
     }//end updateFromArray()
 
+
     /**
      * Delete a schema
      *
@@ -317,5 +328,6 @@ class SchemaMapper extends QBMapper
         return $result;
 
     }//end delete()
+
 
 }//end class

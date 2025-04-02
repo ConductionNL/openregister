@@ -5,16 +5,16 @@
  * This file contains the event class dispatched when a register is created
  * in the OpenRegister application.
  *
- * @category  Event
- * @package   OCA\OpenRegister\Event
+ * @category Event
+ * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Event;
@@ -27,12 +27,14 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterCreatedEvent extends Event
 {
+
     /**
      * The newly created register
      *
      * @var Register The register that was created
      */
     private Register $register;
+
 
     /**
      * Constructor for RegisterCreatedEvent
@@ -48,6 +50,7 @@ class RegisterCreatedEvent extends Event
 
     }//end __construct()
 
+
     /**
      * Get the created register
      *
@@ -58,5 +61,6 @@ class RegisterCreatedEvent extends Event
         return $this->register;
 
     }//end getRegister()
+
 
 }//end class

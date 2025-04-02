@@ -5,16 +5,16 @@
  * This file contains the class for handling source mapper related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -31,6 +31,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class SourceMapper extends QBMapper
 {
+
+
     /**
      * Constructor for the SourceMapper
      *
@@ -41,6 +43,7 @@ class SourceMapper extends QBMapper
         parent::__construct($db, 'openregister_sources');
 
     }//end __construct()
+
 
     /**
      * Finds a source by id
@@ -63,6 +66,7 @@ class SourceMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Finds all sources
      *
@@ -75,11 +79,11 @@ class SourceMapper extends QBMapper
      * @return array The sources
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -91,7 +95,7 @@ class SourceMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -108,6 +112,7 @@ class SourceMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
 
     /**
      * Creates a source from an array
@@ -130,6 +135,7 @@ class SourceMapper extends QBMapper
 
     }//end createFromArray()
 
+
     /**
      * Updates a source from an array
      *
@@ -145,7 +151,7 @@ class SourceMapper extends QBMapper
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version = explode('.', $obj->getVersion());
+            $version    = explode('.', $obj->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $obj->setVersion(implode('.', $version));
         }
@@ -153,5 +159,6 @@ class SourceMapper extends QBMapper
         return $this->update($obj);
 
     }//end updateFromArray()
+
 
 }//end class

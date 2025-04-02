@@ -5,16 +5,16 @@
  * This file contains the event class dispatched when a register is updated
  * in the OpenRegister application.
  *
- * @category  Event
- * @package   OCA\OpenRegister\Event
+ * @category Event
+ * @package  OCA\OpenRegister\Event
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Event;
@@ -27,6 +27,7 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterUpdatedEvent extends Event
 {
+
     /**
      * The updated register state
      *
@@ -40,6 +41,7 @@ class RegisterUpdatedEvent extends Event
      * @var Register The register before update
      */
     private Register $oldRegister;
+
 
     /**
      * Constructor for RegisterUpdatedEvent
@@ -57,6 +59,7 @@ class RegisterUpdatedEvent extends Event
 
     }//end __construct()
 
+
     /**
      * Get the updated register
      *
@@ -68,6 +71,7 @@ class RegisterUpdatedEvent extends Event
 
     }//end getNewRegister()
 
+
     /**
      * Get the original register
      *
@@ -78,5 +82,6 @@ class RegisterUpdatedEvent extends Event
         return $this->oldRegister;
 
     }//end getOldRegister()
+
 
 }//end class

@@ -10,16 +10,16 @@
  * - Filtering JSON data
  * - Aggregating JSON data
  *
- * @category  Service
- * @package   OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -34,15 +34,17 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  */
 class MySQLJsonService implements IDatabaseJsonService
 {
+
+
     /**
      * Add ordering to a query based on JSON fields.
      *
-     * @param  IQueryBuilder $builder The query builder instance
-     * @param  array         $order   Array of field => direction pairs for ordering
+     * @param IQueryBuilder $builder The query builder instance
+     * @param array         $order   Array of field => direction pairs for ordering
      *
      * @return IQueryBuilder The modified query builder
      */
-    public function orderJson(IQueryBuilder $builder, array $order = []): IQueryBuilder
+    public function orderJson(IQueryBuilder $builder, array $order=[]): IQueryBuilder
     {
         // Loop through each ordering field and direction.
         foreach ($order as $item => $direction) {
@@ -58,15 +60,16 @@ class MySQLJsonService implements IDatabaseJsonService
 
     }//end orderJson()
 
+
     /**
      * Add full-text search functionality for JSON fields.
      *
-     * @param  IQueryBuilder $builder The query builder instance
-     * @param  string|null   $search  The search term to look for
+     * @param IQueryBuilder $builder The query builder instance
+     * @param string|null   $search  The search term to look for
      *
      * @return IQueryBuilder The modified query builder
      */
-    public function searchJson(IQueryBuilder $builder, ?string $search = null): IQueryBuilder
+    public function searchJson(IQueryBuilder $builder, ?string $search=null): IQueryBuilder
     {
         if ($search !== null) {
             // Create parameter for the search term with wildcards.
@@ -79,15 +82,16 @@ class MySQLJsonService implements IDatabaseJsonService
 
     }//end searchJson()
 
+
     /**
      * Add complex filters to the filter set.
      *
      * Handles special filter cases like 'after' and 'before' for date ranges,
      * as well as IN clauses for arrays of values.
      *
-     * @param  IQueryBuilder $builder The query builder instance
-     * @param  string        $filter  The filtered field
-     * @param  array         $values  The values to filter on
+     * @param IQueryBuilder $builder The query builder instance
+     * @param string        $filter  The filtered field
+     * @param array         $values  The values to filter on
      *
      * @return IQueryBuilder The modified query builder
      */
@@ -140,15 +144,16 @@ class MySQLJsonService implements IDatabaseJsonService
 
     }//end jsonFilterArray()
 
+
     /**
      * Build a string to search multiple values in an array.
      *
      * Creates an OR condition for each value to check if it exists
      * within a JSON array field.
      *
-     * @param  array         $values  The values to search for
-     * @param  string        $filter  The field to filter on
-     * @param  IQueryBuilder $builder The query builder instance
+     * @param array         $values  The values to search for
+     * @param string        $filter  The field to filter on
+     * @param IQueryBuilder $builder The query builder instance
      *
      * @return string The resulting OR conditions as a string
      */
@@ -166,10 +171,11 @@ class MySQLJsonService implements IDatabaseJsonService
 
     }//end getMultipleContains()
 
+
     /**
      * Parse filter in PHP style to MySQL style filter.
      *
-     * @param  string $filter The original filter
+     * @param string $filter The original filter
      *
      * @return string The parsed filter for MySQL
      */
@@ -194,6 +200,7 @@ class MySQLJsonService implements IDatabaseJsonService
 
     }//end parseFilter()
 
+
     /**
      * Add JSON filtering to a query.
      *
@@ -202,8 +209,8 @@ class MySQLJsonService implements IDatabaseJsonService
      * - Array filters
      * - Simple equality filters
      *
-     * @param  IQueryBuilder $builder The query builder instance
-     * @param  array         $filters Array of filters to apply
+     * @param IQueryBuilder $builder The query builder instance
+     * @param array         $filters Array of filters to apply
      *
      * @return IQueryBuilder The modified query builder
      */
@@ -222,7 +229,7 @@ class MySQLJsonService implements IDatabaseJsonService
                 // Handle complex filters (after/before).
                 $builder = $this->jsonFilterArray(builder: $builder, filter: $filter, values: $value);
                 continue;
-            } elseif (is_array($value) === true) {
+            } else if (is_array($value) === true) {
                 // Handle array of values with IN clause and contains check.
                 $builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR_ARRAY, placeHolder: ":value$filter");
                 $builder
@@ -240,22 +247,23 @@ class MySQLJsonService implements IDatabaseJsonService
 
     }//end filterJson()
 
+
     /**
      * Get aggregations (facets) for specified fields.
      *
      * Returns counts of unique values for each specified field,
      * filtered by the provided filters and search term.
      *
-     * @param  IQueryBuilder $builder  The query builder instance
-     * @param  array         $fields   Fields to get aggregations for
-     * @param  int           $register Register ID to filter by
-     * @param  int           $schema   Schema ID to filter by
-     * @param  array         $filters  Additional filters to apply
-     * @param  string|null   $search   Optional search term
+     * @param IQueryBuilder $builder  The query builder instance
+     * @param array         $fields   Fields to get aggregations for
+     * @param int           $register Register ID to filter by
+     * @param int           $schema   Schema ID to filter by
+     * @param array         $filters  Additional filters to apply
+     * @param string|null   $search   Optional search term
      *
      * @return array Array of facets with counts for each field
      */
-    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters = [], ?string $search = null): array
+    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters=[], ?string $search=null): array
     {
         $facets = [];
 
@@ -279,7 +287,7 @@ class MySQLJsonService implements IDatabaseJsonService
             $builder = $this->searchJson($builder, $search);
 
             // Execute query and store results.
-            $result = $builder->executeQuery();
+            $result         = $builder->executeQuery();
             $facets[$field] = $result->fetchAll();
 
             // Reset builder for next field.
@@ -290,5 +298,6 @@ class MySQLJsonService implements IDatabaseJsonService
         return $facets;
 
     }//end getAggregations()
+
 
 }//end class

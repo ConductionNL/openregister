@@ -5,16 +5,16 @@
  * This file contains the class for handling register mapper related operations
  * in the OpenRegister application.
  *
- * @category  Database
- * @package   OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -36,6 +36,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class RegisterMapper extends QBMapper
 {
+
     /**
      * The schema mapper instance
      *
@@ -49,6 +50,7 @@ class RegisterMapper extends QBMapper
      * @var IEventDispatcher
      */
     private $eventDispatcher;
+
 
     /**
      * Constructor for RegisterMapper
@@ -65,10 +67,11 @@ class RegisterMapper extends QBMapper
         IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_registers');
-        $this->schemaMapper = $schemaMapper;
+        $this->schemaMapper    = $schemaMapper;
         $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
+
 
     /**
      * Find a register by its ID
@@ -97,6 +100,7 @@ class RegisterMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Find all registers
      *
@@ -109,11 +113,11 @@ class RegisterMapper extends QBMapper
      * @return array Array of found registers
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -127,7 +131,7 @@ class RegisterMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -147,6 +151,7 @@ class RegisterMapper extends QBMapper
 
     }//end findAll()
 
+
     /**
      * Insert a new entity
      *
@@ -164,6 +169,7 @@ class RegisterMapper extends QBMapper
         return $entity;
 
     }//end insert()
+
 
     /**
      * Ensures that a register object has a UUID and a slug.
@@ -209,6 +215,7 @@ class RegisterMapper extends QBMapper
 
     }//end cleanObject()
 
+
     /**
      * Create a new register from an array of data
      *
@@ -229,6 +236,7 @@ class RegisterMapper extends QBMapper
         return $register;
 
     }//end createFromArray()
+
 
     /**
      * Update an entity
@@ -253,6 +261,7 @@ class RegisterMapper extends QBMapper
 
     }//end update()
 
+
     /**
      * Update an existing register from an array of data
      *
@@ -275,6 +284,7 @@ class RegisterMapper extends QBMapper
 
     }//end updateFromArray()
 
+
     /**
      * Delete a register
      *
@@ -295,6 +305,7 @@ class RegisterMapper extends QBMapper
 
     }//end delete()
 
+
     /**
      * Get all schemas associated with a register
      *
@@ -304,7 +315,7 @@ class RegisterMapper extends QBMapper
      */
     public function getSchemasByRegisterId(int $registerId): array
     {
-        $register = $this->find($registerId);
+        $register  = $this->find($registerId);
         $schemaIds = $register->getSchemas();
 
         $schemas = [];
@@ -318,6 +329,7 @@ class RegisterMapper extends QBMapper
 
     }//end getSchemasByRegisterId()
 
+
     /**
      * Check if a register has a schema with a specific title
      *
@@ -326,7 +338,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Schema|bool The schema if found, false otherwise
      */
-    public function hasSchemaWithTitle(int $registerId, string $schemaTitle): Schema | bool
+    public function hasSchemaWithTitle(int $registerId, string $schemaTitle): (Schema | bool)
     {
         $schemas = $this->getSchemasByRegisterId($registerId);
 
@@ -340,5 +352,6 @@ class RegisterMapper extends QBMapper
         return false;
 
     }//end hasSchemaWithTitle()
+
 
 }//end class
