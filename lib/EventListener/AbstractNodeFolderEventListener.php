@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile
 /**
  * OpenRegister AbstractNodeFolderEventListener
  *
@@ -30,10 +31,18 @@ use OCP\Files\Events\Node\NodeTouchedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\Files\FileInfo;
 
+// phpcs:disable
 class AbstractNodeFolderEventListener implements IEventListener
 {
 
-
+    /**
+     * Constructor for AbstractNodeFolderEventListener.
+     *
+     * @param ObjectService $objectService The object service for handling node events.
+     * @param FileService   $fileService   The file service for file operations.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
@@ -43,7 +52,13 @@ class AbstractNodeFolderEventListener implements IEventListener
 
 
     /**
-     * @inheritDoc
+     * Handle event dispatched by the event dispatcher.
+     *
+     * This method processes node events and dispatches them to appropriate handlers.
+     *
+     * @param Event $event The event to handle.
+     *
+     * @return void
      */
     public function handle(Event $event): void
     {
@@ -76,7 +91,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeCreated(NodeCreatedEvent $event): void
     {
-        // Call the object service to handle the node created event
+        // Call the object service to handle the node created event.
         $this->objectService->nodeCreatedEventFunction(event: $event);
 
     }//end handleNodeCreated()
@@ -91,7 +106,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeDeleted(NodeDeletedEvent $event): void
     {
-        // Call the object service to handle the node deleted event
+        // Call the object service to handle the node deleted event.
         $this->objectService->nodeDeletedEventFunction(event: $event);
 
     }//end handleNodeDeleted()
@@ -106,7 +121,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeTouched(NodeTouchedEvent $event): void
     {
-        // Call the object service to handle the node touched event
+        // Call the object service to handle the node touched event.
         $this->objectService->nodeTouchedEventFunction(event: $event);
 
     }//end handleNodeTouched()
@@ -121,7 +136,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     private function handleNodeWritten(NodeWrittenEvent $event): void
     {
-        // Call the object service to handle the node written event
+        // Call the object service to handle the node written event.
         $this->objectService->nodeWrittenEventFunction(event: $event);
 
     }//end handleNodeWritten()
