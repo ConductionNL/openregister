@@ -256,8 +256,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     placeHolder: ":value$filter"
                 );
                 $builder->andWhere(
-                    "(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))".
-                    $this->getMultipleContains($value, $filter, $builder)
+                    "(json_unquote(json_extract(object, :path$filter)) IN (:value$filter))".$this->getMultipleContains($value, $filter, $builder)
                 );
                 continue;
             }

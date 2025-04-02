@@ -22,6 +22,8 @@
 namespace OCA\OpenRegister\Service;
 
 /**
+ * ValidationService
+ *
  * @Author Wilco Louwerse <wilco@conduction.nl>
  *
  * @license EUPL <https://github.com/ConductionNL/contactcatalogus/blob/master/LICENSE.md>
