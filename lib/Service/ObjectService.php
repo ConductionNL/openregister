@@ -141,7 +141,6 @@ class ObjectService
      * @throws \Psr\Container\NotFoundExceptionInterface If the service is not found.
      *
      * @return mixed|null The OpenConnector service instance or null if not available.
-     *
      */
     public function getOpenConnector(string $filePath = '\Service\ObjectService'): mixed
     {
@@ -199,9 +198,9 @@ class ObjectService
     /**
      * Validates an object against a schema.
      *
-     * @param array       $object       The object to validate.
-     * @param int|null    $schemaId     The schema ID to validate against.
-     * @param object      $schemaObject A custom schema object for validation.
+     * @param array  $object       The object to validate.
+     * @param int    $schemaId     The schema ID to validate against.
+     * @param object $schemaObject A custom schema object for validation.
      *
      * @return ValidationResult The result of the validation.
      */
@@ -394,18 +393,18 @@ class ObjectService
     /**
      * Retrieves all objects matching criteria.
      *
-     * @param int|null $limit Maximum number of results
-     * @param int|null $offset Starting offset for pagination
-     * @param array $filters Criteria to filter the objects
-     * @param array $sort Sorting options
-     * @param string|null $search Search term
-     * @param array|null $extend Properties to extend the results with
-     * @param bool $files Whether to include files in the response
-     * @param string|null $uses Value that must be present in relations
+     * @param int|null    $limit  Maximum number of results.
+     * @param int|null    $offset Starting offset for pagination.
+     * @param array       $filters Criteria to filter the objects.
+     * @param array       $sort   Sorting options.
+     * @param string|null $search Search term.
+     * @param array|null  $extend Properties to extend the results with.
+     * @param bool        $files  Whether to include files in the response.
+     * @param string|null $uses   Value that must be present in relations.
      *
-     * @throws \Exception If a database error occurs
+     * @throws \Exception If a database error occurs.
      *
-     * @return array List of matching objects
+     * @return array List of matching objects.
      *
      * @psalm-return array<int, mixed>
      *
@@ -434,12 +433,15 @@ class ObjectService
         );
 
         // If extend is provided, extend each object.
-        if (!empty($extend)) {
-            $objects = array_map(function ($object) use ($extend) {
-                // Convert object to array if needed.
-                $objectArray = is_array($object) ? $object : $object->jsonSerialize();
-                return $this->renderEntity(entity: $objectArray, extend: $extend);
-            }, $objects);
+        if (empty($extend) === false) {
+            $objects = array_map(
+                function ($object) use ($extend) {
+                    // Convert object to array if needed.
+                    $objectArray = is_array($object) ? $object : $object->jsonSerialize();
+                    return $this->renderEntity(entity: $objectArray, extend: $extend);
+                },
+                $objects
+            );
         }
 
         return $objects;
