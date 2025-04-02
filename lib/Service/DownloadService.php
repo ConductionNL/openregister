@@ -97,7 +97,6 @@ class DownloadService
      *
      * @return void
      */
-    #[NoReturn]
     private function downloadJson(string $jsonData, string $filename): void
     {
         // Define the file name and path for the temporary JSON file.
@@ -141,4 +140,6 @@ class DownloadService
             default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
     }//end getMapper()
+
+
 }//end class

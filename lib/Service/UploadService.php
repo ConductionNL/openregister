@@ -13,16 +13,16 @@
  * - CRUD operations on objects
  * - Audit trails and data aggregation
  *
- * @category  Service
- * @package   OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -47,13 +47,26 @@ use Symfony\Component\Yaml\Yaml;
  */
 class UploadService
 {
+
+
+    /**
+     * Constructor for the UploadService class.
+     *
+     * @param Client         $client         The Guzzle HTTP client.
+     * @param SchemaMapper   $schemaMapper   The schema mapper.
+     * @param RegisterMapper $registerMapper The register mapper.
+     *
+     * @return void
+     */
     public function __construct(
         private Client $client,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
     ) {
         $this->client = new Client([]);
-    }
+
+    }//end __construct()
+
 
     /**
      * Gets the uploaded json from the request data. And returns it as a PHP array.
@@ -65,10 +78,10 @@ class UploadService
      *
      * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
-    public function getUploadedJson(array $data): array|JSONResponse
+    public function getUploadedJson(array $data): array | JSONResponse
     {
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
@@ -90,7 +103,7 @@ class UploadService
         }
 
         if (empty($data['url']) === false) {
-            $phpArray = $this->getJSONfromURL($data['url']);
+            $phpArray           = $this->getJSONfromURL($data['url']);
             $phpArray['source'] = $data['url'];
             return $phpArray;
         }
@@ -105,19 +118,8 @@ class UploadService
         }
 
         return $phpArray;
-    }//end getUploadedJson
 
-    /**
-     * Gets uploaded file form request and returns it as PHP array to use for creating/updating an object.
-     *
-     * @return array|JSONResponse
-     */
-    private function getJSONfromFile(): array|JSONResponse
-    {
-        // @todo
-
-        return new JSONResponse(data: ['error' => 'Not yet implemented.'], statusCode: 501);
-    }//end getJSONfromFile
+    }//end getUploadedJson()
 
     /**
      * Uses Guzzle to call the given URL and returns response as PHP array.
@@ -128,7 +130,7 @@ class UploadService
      *
      * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
      */
-    private function getJSONfromURL(string $url): array|JSONResponse
+    private function getJSONfromURL(string $url): array | JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
@@ -161,13 +163,15 @@ class UploadService
         }
 
         return $phpArray;
-    }//end getJSONfromURL
+
+    }//end getJSONfromURL()
+
 
     /**
      * Handles adding schemas to a register during upload.
      *
      * @param Register $register The register to add schemas to.
-     * @param array $phpArray The PHP array containing the uploaded json data.
+     * @param array    $phpArray The PHP array containing the uploaded json data.
      *
      * @throws \OCP\DB\Exception
      *
@@ -199,18 +203,21 @@ class UploadService
                     $schema->setUuid(Uuid::v4());
                     $this->schemaMapper->insert($schema);
                 }
-            }
+            }//end if
 
             $schema->hydrate($schemaData);
             $this->schemaMapper->update($schema);
             // Add the schema to the register.
-            $schemas = $register->getSchemas();
+            $schemas   = $register->getSchemas();
             $schemas[] = $schema->getId();
             $register->setSchemas($schemas);
             // Lets save the updated register.
             $register = $this->registerMapper->update($register);
-        }
+        }//end foreach
 
         return $register;
-    }//end handleRegisterSchemas
+
+        }//end handleRegisterSchemas()
+
+
 }//end class
