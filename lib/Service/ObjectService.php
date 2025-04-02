@@ -2795,7 +2795,7 @@ class ObjectService
             if (isset($data[$name]) === false && 
                 isset($property['default']) === true
             ) {
-                // Create a template from the default value and render it with the object's data
+                // Create a template from the default value and render it with the object's data.
                 $data[$name] = $this->twig->createTemplate(
                     $property['default'], 
                     "{$schema->getTitle()}.$name"
@@ -2832,7 +2832,7 @@ class ObjectService
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Must be logged in')) {
+            if (str_contains($e->getMessage(), 'Must be logged in') === true) {
                 throw new NotAuthorizedException($e->getMessage());
             }
             throw new LockedException($e->getMessage());
