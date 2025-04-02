@@ -700,9 +700,15 @@ class ObjectService
 		}
 
 		if (isset($object['id']) === true) {
-			$objectEntity = $this->objectEntityMapper->find(
-				$object['id']
-			);
+            try {
+                $objectEntity = $this->objectEntityMapper->find(
+                    $object['id']
+                );
+            } catch (DoesNotExistException $exception) {
+                $objectEntity = new ObjectEntity();
+                $objectEntity->setRegister($register->getId());
+                $objectEntity->setSchema($schema->getId());
+            }
 		}
 		else {
 			$objectEntity = new ObjectEntity();
@@ -759,7 +765,7 @@ class ObjectService
 		// Create the uri for the object
 		if ($objectEntity->getUri() === null) {
 			// @todo: this needs to be fixed
-			//$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+			$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
 		}
 
 		// Make sure we create a folder in NC for this object if it doesn't already have one
@@ -849,7 +855,7 @@ class ObjectService
 
                     if (isset($value[0]['@self']['id']) === true) {
                         foreach ($value as $key2 => $subObject) {
-                            if (isset($subObject['@self']['id']) === true) { 
+                            if (isset($subObject['@self']['id']) === true) {
                                 $relations["$currentPath.$key2"] = $subObject['@self']['id'];
                             }
                         }
@@ -878,9 +884,9 @@ class ObjectService
      *
      * @param string $item The item to validate (UUID or URL containing a UUID).
      * @param string $propertyName The property name for error messages.
-     * 
+     *
      * @return string The validated UUID.
-     * 
+     *
      * @throws CustomValidationException If the item is not a valid UUID.
      */
     private function getIdFromString(string $item, string $propertyName): string {
@@ -894,7 +900,7 @@ class ObjectService
         if (filter_var($item, FILTER_VALIDATE_URL) !== false) {
             $lastSlashPos = strrpos($item, '/');
         }
-        
+
         // Extract the ID from the URI and validate it as a UUID.
         if ($lastSlashPos !== false) {
             $id = substr($item, $lastSlashPos + 1);
@@ -909,13 +915,13 @@ class ObjectService
 
     /**
      * Gets schema id from a reference in a property
-     * 
+     *
      * @param array $property
      * @param string $propertyName
      * @param int $schema
-     * 
-     * @return string schemaId 
-     * 
+     *
+     * @return string schemaId
+     *
      * @throws Exception If no reference found
      */
     private function getSchemaFromPropertyReference(array $property, string $propertyName, int $schema): string
@@ -927,8 +933,8 @@ class ObjectService
 
 		if (is_numeric($reference) === true) {
 			return $reference;
-		} 
-        
+		}
+
         if (filter_var(value: $reference, filter: FILTER_VALIDATE_URL) !== false) {
 			$parsedUrl = parse_url($reference);
 			$explodedPath = explode(separator: '/', string: $parsedUrl['path']);
@@ -2259,7 +2265,7 @@ class ObjectService
 
 	/**
 	 * Extends an entity with related objects based on the extend array.
-     * 
+     *
      * @deprecated Use renderEntity
 	 *
 	 * @param mixed $entity The entity to extend
