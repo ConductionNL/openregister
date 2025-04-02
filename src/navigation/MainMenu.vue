@@ -20,14 +20,9 @@ import { navigationStore } from '../store/store.js'
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Tables" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'tableSearch'" name="Tables" @click="navigationStore.setSelected('tableSearch')">
 				<template #icon>
 					<TableMultiple :size="20" />
-				</template>
-			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
-				<template #icon>
-					<LayersSearchOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationList>

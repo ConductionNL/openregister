@@ -11,7 +11,7 @@ import { navigationStore } from '../store/store.js'
 			<SourcesIndex v-if="navigationStore.selected === 'sources'" />
 			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
-			<SearchIndex v-if="navigationStore.selected === 'search'" />
+			<SearchIndex v-if="navigationStore.selected === 'tableSearch'" />
 		</template>
 	</NcAppContent>
 </template>

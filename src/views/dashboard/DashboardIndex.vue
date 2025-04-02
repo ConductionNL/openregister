@@ -93,7 +93,13 @@ export default {
 			}
 		},
 		navigateTo(section) {
-			navigationStore.setSelected(section)
+
+			if (section === 'objects') {
+				navigationStore.setSelected('tableSearch')
+			} else {
+				navigationStore.setSelected(section)
+			}
+
 		},
 		abbreviatedValue(value) {
 			if (value >= 1000) {
