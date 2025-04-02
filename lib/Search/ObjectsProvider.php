@@ -45,14 +45,14 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @var IL10N
      */
-    private readonly IL10N $l10n;
+    private IL10N $l10n;
 
     /**
      * The URL generator service
      *
      * @var IURLGenerator
      */
-    private readonly IURLGenerator $urlGenerator;
+    private IURLGenerator $urlGenerator;
 
 
     /**
@@ -83,12 +83,12 @@ class ObjectsProvider implements IFilteringProvider
     public function getSupportedFilters(): array
     {
         return [
-            // Generic
+            // Generic.
             'term',
             'since',
             'until',
             'person',
-            // Open Register Specific
+            // Open Register Specific.
             'register',
             'schema',
         ];
@@ -145,12 +145,13 @@ class ObjectsProvider implements IFilteringProvider
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
-        // Retrieve filters
+        // Retrieve filters.
         $filters = [];
 
         /*
          * @var string|null $register
          */
+
         $register = $query->getFilter('register')?->get();
         if ($register !== null) {
             $filters['register'] = $register;
@@ -159,6 +160,7 @@ class ObjectsProvider implements IFilteringProvider
         /*
          * @var string|null $schema
          */
+
         $schema = $query->getFilter('schema')?->get();
         if ($schema !== null) {
             $filters['schema'] = $schema;
@@ -167,24 +169,27 @@ class ObjectsProvider implements IFilteringProvider
         /*
          * @var string|null $search
          */
+
         $search = $query->getFilter('term')?->get();
 
         /*
          * @var string|null $since
          */
+
         $since = $query->getFilter('since')?->get();
 
         /*
          * @var string|null $until
          */
+
         $until = $query->getFilter('until')?->get();
 
-        // @todo: implement pagination
+        // @todo: implement pagination.
         $limit  = null;
         $offset = null;
         $order  = null;
 
-        // Get the objects
+        // Get the objects.
         $results = $this->objectEntityMapper->findAll(
             limit: $limit,
             offset: $offset,
@@ -193,7 +198,7 @@ class ObjectsProvider implements IFilteringProvider
             search: $search
         );
 
-        // Convert results to SearchResult
+        // Convert results to SearchResult.
         $searchResultEntries = [];
         foreach ($results as $result) {
             $searchResultEntries[] = new SearchResultEntry(

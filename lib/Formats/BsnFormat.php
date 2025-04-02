@@ -25,7 +25,13 @@ class BsnFormat implements Format
 
 
     /**
+     * Validates if a given value conforms to the Dutch BSN (Burgerservicenummer) format.
+     *
+     * @param mixed $data The data to validate against the BSN format.
+     *
      * @inheritDoc
+     *
+     * @return bool True if data is a valid BSN, false otherwise.
      */
     public function validate(mixed $data): bool
     {
@@ -43,7 +49,13 @@ class BsnFormat implements Format
         $control          = 0;
         $reversedIterator = 9;
         foreach (str_split($data) as $character) {
-            $control += ($character * (($reversedIterator > 1) ? $reversedIterator : -1));
+            // Calculate the multiplier based on position.
+            $multiplier = -1;
+            if ($reversedIterator > 1) {
+                $multiplier = $reversedIterator;
+            }
+
+            $control += ($character * $multiplier);
             $reversedIterator--;
         }
 

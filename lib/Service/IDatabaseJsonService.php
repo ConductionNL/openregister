@@ -1,4 +1,20 @@
 <?php
+/**
+ * OpenRegister IDatabaseJsonService
+ *
+ * This file contains the interface for database JSON operations.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Service;
 
@@ -53,7 +69,14 @@ interface IDatabaseJsonService
      *
      * @return array The resulting aggregations
      */
-    public function getAggregations(IQueryBuilder $builder, array $fields, int $register, int $schema, array $filters=[], ?string $search=null): array;
+    public function getAggregations(
+        IQueryBuilder $builder,
+        array $fields,
+        int $register,
+        int $schema,
+        array $filters=[],
+        ?string $search=null
+    ): array;
 
 
 }//end interface

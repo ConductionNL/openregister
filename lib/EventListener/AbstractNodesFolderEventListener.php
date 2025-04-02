@@ -1,6 +1,5 @@
-// phpcs:ignoreFile
 <?php
-// phpcs:disable
+// phpcs:ignoreFile
 
 /**
  * OpenRegister AbstractNodesFolderEventListener

@@ -38,11 +38,15 @@ class SearchService
 {
 
     /**
+     * HTTP client for making requests.
+     * 
      * @var Client HTTP client for making requests.
      */
     public $client;
 
     /**
+     * Default base object configuration for database operations.
+     *
      * @var array Default base object configuration.
      */
     public const BASE_OBJECT = [
@@ -93,7 +97,12 @@ class SearchService
         }
 
         // Format results array with merged counts.
-        foreach (array_merge(array_diff($existingAggregationMapped, $newAggregationMapped), array_diff($newAggregationMapped, $existingAggregationMapped)) as $key => $value) {
+        foreach (
+            array_merge(
+                array_diff($existingAggregationMapped, $newAggregationMapped),
+                array_diff($newAggregationMapped, $existingAggregationMapped)
+            ) as $key => $value
+        ) {
             $results[] = ['_id' => $key, 'count' => $value];
         }
 
@@ -162,8 +171,15 @@ class SearchService
         $localResults['facets']  = [];
 
         $totalResults = 0;
-        $limit        = isset($parameters['.limit']) === true ? $parameters['.limit'] : 30;
-        $page         = isset($parameters['.page']) === true ? $parameters['.page'] : 1;
+        $limit        = 30;
+        if (isset($parameters['.limit']) === true) {
+            $limit = $parameters['.limit'];
+        }
+        
+        $page = 1;
+        if (isset($parameters['.page']) === true) {
+            $page = $parameters['.page'];
+        }
 
         // Query elastic if configured.
         if ($elasticConfig['location'] !== '') {
@@ -181,7 +197,7 @@ class SearchService
                 'count'   => count($localResults['results']),
                 'limit'   => $limit,
                 'page'    => $page,
-                'pages'   => $pages === 0 ? 1 : $pages,
+                'pages'   => ($pages === 0) ? 1 : $pages,
                 'total'   => $totalResults,
             ];
         }
@@ -194,10 +210,10 @@ class SearchService
         // Build search requests for each endpoint.
         $promises = [];
         foreach ($directory as $instance) {
-            if ($instance['default'] === false
-                || isset($parameters['.catalogi']) === true
-                && in_array($instance['catalogId'], $parameters['.catalogi']) === false
-                || $instance['search'] = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(routeName:"opencatalogi.directory.index"))
+            if (($instance['default'] === false) 
+                || (isset($parameters['.catalogi']) === true
+                && in_array($instance['catalogId'], $parameters['.catalogi']) === false)
+                || ($instance['search'] === $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(routeName:"opencatalogi.directory.index")))
             ) {
                 continue;
             }
@@ -244,7 +260,7 @@ class SearchService
             'count'   => count($results),
             'limit'   => $limit,
             'page'    => $page,
-            'pages'   => $pages === 0 ? 1 : $pages,
+            'pages'   => ($pages === 0) ? 1 : $pages,
             'total'   => $totalResults,
         ];
 
@@ -253,16 +269,17 @@ class SearchService
 
     /**
      * This function adds a single query param to the given $vars array. ?$name=$value
-     * Will check if request query $name has [...] inside the parameter, like this: ?queryParam[$nameKey]=$value.
-     * Works recursive, so in case we have ?queryParam[$nameKey][$anotherNameKey][etc][etc]=$value.
-     * Also checks for queryParams ending on [] like: ?queryParam[$nameKey][] (or just ?queryParam[]), if this is the case
-     * this function will add given value to an array of [queryParam][$nameKey][] = $value or [queryParam][] = $value.
-     * If none of the above this function will just add [queryParam] = $value to $vars.
      *
      * @param array  $vars    The vars array we are going to store the query parameter in.
      * @param string $name    The full $name of the query param, like this: ?$name=$value.
      * @param string $nameKey The full $name of the query param, unless it contains [] like: ?queryParam[$nameKey]=$value.
      * @param string $value   The full $value of the query param, like this: ?$name=$value.
+     * 
+     * Will check if request query $name has [...] inside the parameter, like this: ?queryParam[$nameKey]=$value.
+     * Works recursive, so in case we have ?queryParam[$nameKey][$anotherNameKey][etc][etc]=$value.
+     * Also checks for queryParams ending on [] like: ?queryParam[$nameKey][] (or just ?queryParam[]), if this is the case
+     * this function will add given value to an array of [queryParam][$nameKey][] = $value or [queryParam][] = $value.
+     * If none of the above this function will just add [queryParam] = $value to $vars.
      *
      * @return void
      */
@@ -400,9 +417,9 @@ class SearchService
     public function createSortForMySQL(array $filters): array
     {
         $sort = [];
-        if (isset($filters['_order']) && is_array($filters['_order'])) {
+        if (isset($filters['_order']) === true && is_array($filters['_order']) === true) {
             foreach ($filters['_order'] as $field => $direction) {
-                $direction    = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                $direction    = (strtoupper($direction) === 'DESC') ? 'DESC' : 'ASC';
                 $sort[$field] = $direction;
             }
         }
@@ -424,9 +441,9 @@ class SearchService
     public function createSortForMongoDB(array $filters): array
     {
         $sort = [];
-        if (isset($filters['_order']) && is_array($filters['_order'])) {
+        if (isset($filters['_order']) === true && is_array($filters['_order']) === true) {
             foreach ($filters['_order'] as $field => $direction) {
-                $sort[$field] = strtoupper($direction) === 'DESC' ? -1 : 1;
+                $sort[$field] = (strtoupper($direction) === 'DESC') ? -1 : 1;
             }
         }
 
@@ -461,10 +478,10 @@ class SearchService
                 nameKey: substr(
                     string: $key,
                     offset: 0,
-                    length: strpos(
+                    length: (strpos(
                         haystack: $key,
                         needle: '['
-                    )
+                    ))
                 ),
                 value: $value
             );
