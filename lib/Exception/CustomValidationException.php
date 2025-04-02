@@ -26,13 +26,21 @@ use Exception;
 class CustomValidationException extends Exception
 {
 
+    /**
+     * The validation errors.
+     *
+     * @var array
+     */
     private array $errors;
 
 
     /**
-     * @inheritDoc
+     * Constructor for CustomValidationException.
      *
-     * @param array $errors The errors.
+     * @param string $message The error message.
+     * @param array  $errors  The validation errors.
+     *
+     * @return void
      */
     public function __construct(string $message, array $errors)
     {

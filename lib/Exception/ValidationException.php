@@ -25,18 +25,41 @@ use Throwable;
 class ValidationException extends Exception
 {
 
+    /**
+     * The validation errors.
+     *
+     * @var ValidationError|null
+     */
+    private ?ValidationError $errors;
 
+
+    /**
+     * Constructor for ValidationException.
+     *
+     * @param string               $message  The error message.
+     * @param int                  $code     The error code.
+     * @param Throwable|null       $previous The previous exception.
+     * @param ValidationError|null $errors   The validation errors.
+     *
+     * @return void
+     */
     public function __construct(
         string $message,
         int $code=0,
         ?Throwable $previous=null,
-        private ?ValidationError $errors=null
+        ?ValidationError $errors=null
     ) {
+        $this->errors = $errors;
         parent::__construct($message, $code, $previous);
 
     }//end __construct()
 
 
+    /**
+     * Returns the validation errors.
+     *
+     * @return ValidationError The validation errors.
+     */
     public function getErrors(): ValidationError
     {
         return $this->errors;
