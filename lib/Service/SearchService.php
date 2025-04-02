@@ -39,7 +39,7 @@ class SearchService
 
     /**
      * HTTP client for making requests.
-     * 
+     *
      * @var Client HTTP client for making requests.
      */
     public $client;
@@ -97,8 +97,7 @@ class SearchService
         }
 
         // Format results array with merged counts.
-        foreach (
-            array_merge(
+        foreach (array_merge(
                 array_diff($existingAggregationMapped, $newAggregationMapped),
                 array_diff($newAggregationMapped, $existingAggregationMapped)
             ) as $key => $value
@@ -175,7 +174,7 @@ class SearchService
         if (isset($parameters['.limit']) === true) {
             $limit = $parameters['.limit'];
         }
-        
+
         $page = 1;
         if (isset($parameters['.page']) === true) {
             $page = $parameters['.page'];
@@ -197,7 +196,7 @@ class SearchService
                 'count'   => count($localResults['results']),
                 'limit'   => $limit,
                 'page'    => $page,
-                'pages'   => ($pages === 0) ? 1 : $pages,
+                'pages'   => ($pages === 0 ? 1 : $pages),
                 'total'   => $totalResults,
             ];
         }
@@ -210,7 +209,7 @@ class SearchService
         // Build search requests for each endpoint.
         $promises = [];
         foreach ($directory as $instance) {
-            if (($instance['default'] === false) 
+            if (($instance['default'] === false)
                 || (isset($parameters['.catalogi']) === true
                 && in_array($instance['catalogId'], $parameters['.catalogi']) === false)
                 || ($instance['search'] === $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(routeName:"opencatalogi.directory.index")))
@@ -260,7 +259,7 @@ class SearchService
             'count'   => count($results),
             'limit'   => $limit,
             'page'    => $page,
-            'pages'   => ($pages === 0) ? 1 : $pages,
+            'pages'   => ($pages === 0 ? 1 : $pages),
             'total'   => $totalResults,
         ];
 
@@ -274,12 +273,12 @@ class SearchService
      * @param string $name    The full $name of the query param, like this: ?$name=$value.
      * @param string $nameKey The full $name of the query param, unless it contains [] like: ?queryParam[$nameKey]=$value.
      * @param string $value   The full $value of the query param, like this: ?$name=$value.
-     * 
-     * Will check if request query $name has [...] inside the parameter, like this: ?queryParam[$nameKey]=$value.
-     * Works recursive, so in case we have ?queryParam[$nameKey][$anotherNameKey][etc][etc]=$value.
-     * Also checks for queryParams ending on [] like: ?queryParam[$nameKey][] (or just ?queryParam[]), if this is the case
-     * this function will add given value to an array of [queryParam][$nameKey][] = $value or [queryParam][] = $value.
-     * If none of the above this function will just add [queryParam] = $value to $vars.
+     *
+     *                        Will check if request query $name has [...] inside the parameter, like this: ?queryParam[$nameKey]=$value.
+     *                        Works recursive, so in case we have ?queryParam[$nameKey][$anotherNameKey][etc][etc]=$value.
+     *                        Also checks for queryParams ending on [] like: ?queryParam[$nameKey][] (or just ?queryParam[]), if this is the case
+     *                        this function will add given value to an array of [queryParam][$nameKey][] = $value or [queryParam][] = $value.
+     *                        If none of the above this function will just add [queryParam] = $value to $vars.
      *
      * @return void
      */
@@ -378,7 +377,7 @@ class SearchService
     public function unsetSpecialQueryParams(array $filters): array
     {
         foreach ($filters as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($filters[$key]);
             }
         }
@@ -419,7 +418,12 @@ class SearchService
         $sort = [];
         if (isset($filters['_order']) === true && is_array($filters['_order']) === true) {
             foreach ($filters['_order'] as $field => $direction) {
-                $direction    = (strtoupper($direction) === 'DESC') ? 'DESC' : 'ASC';
+                if (strtoupper($direction) === 'DESC') {
+                    $direction = 'DESC';
+                } else {
+                    $direction = 'ASC';
+                }
+
                 $sort[$field] = $direction;
             }
         }
@@ -432,18 +436,22 @@ class SearchService
     /**
      * This function creates an sort array based on given order param from request.
      *
-     * @todo Not functional yet. Needs to be fixed (see PublicationsController->index).
-     *
      * @param array $filters Query parameters from request.
      *
      * @return array $sort
+     *
+     * @todo Not functional yet. Needs to be fixed (see PublicationsController->index).
      */
     public function createSortForMongoDB(array $filters): array
     {
         $sort = [];
         if (isset($filters['_order']) === true && is_array($filters['_order']) === true) {
             foreach ($filters['_order'] as $field => $direction) {
-                $sort[$field] = (strtoupper($direction) === 'DESC') ? -1 : 1;
+                if (strtoupper($direction) === 'DESC') {
+                    $sort[$field] = -1;
+                } else {
+                    $sort[$field] = 1;
+                }
             }
         }
 
@@ -462,6 +470,7 @@ class SearchService
     public function parseQueryString(string $queryString=''): array
     {
         $pairs = explode(separator: '&', string: $queryString);
+        $vars  = [];
 
         foreach ($pairs as $pair) {
             $kvpair = explode(separator: '=', string: $pair);
