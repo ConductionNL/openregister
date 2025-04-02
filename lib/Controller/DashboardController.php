@@ -1,8 +1,8 @@
 <?php
 /**
- * OpenConnector Consumers Controller
+ * OpenConnector Dashboard Controller
  *
- * This file contains the controller for handling consumer related operations
+ * This file contains the controller for handling dashboard related operations
  * in the OpenRegister application.
  *
  * @category Controller
@@ -27,12 +27,23 @@ use OCP\IRequest;
 
 /**
  * Class DashboardController
+ *
+ * Controller for handling dashboard related operations in the application.
+ * Provides functionality to display the dashboard page and retrieve dashboard data.
  */
 class DashboardController extends Controller
 {
 
 
-    public function __construct($appName, IRequest $request)
+    /**
+     * Constructor for the DashboardController
+     *
+     * @param string   $appName The name of the app
+     * @param IRequest $request The request object
+     *
+     * @return void
+     */
+    public function __construct(string $appName, IRequest $request)
     {
         parent::__construct($appName, $request);
 
@@ -40,11 +51,19 @@ class DashboardController extends Controller
 
 
     /**
+     * Returns the template of the dashboard page
+     *
+     * This method renders the dashboard page of the application, adding any necessary data to the template.
+     *
+     * @param string|null $getParameter Optional parameter for the page request
+     *
+     * @return TemplateResponse The rendered template response
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function page(?string $getParameter)
+    public function page(?string $getParameter=null): TemplateResponse
     {
         try {
             $response = new TemplateResponse(
@@ -71,6 +90,12 @@ class DashboardController extends Controller
 
 
     /**
+     * Retrieves dashboard data
+     *
+     * This method returns a JSON response containing dashboard data.
+     *
+     * @return JSONResponse A JSON response containing the dashboard data
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired

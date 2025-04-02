@@ -92,24 +92,24 @@ class SchemasController extends Controller
      *
      * This method returns a JSON response containing an array of all schemas in the system.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param ObjectService $objectService The object service
      * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of schemas
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function index(
         ObjectService $objectService,
         SearchService $searchService
     ): JSONResponse {
-        // Get request parameters for filtering and searching
+        // Get request parameters for filtering and searching.
         $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
-        // Create search parameters and conditions for filtering
+        // Create search parameters and conditions for filtering.
         $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
@@ -117,7 +117,7 @@ class SchemasController extends Controller
         );
         $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        // Return all schemas that match the search conditions
+        // Return all schemas that match the search conditions.
         return new JSONResponse(
             [
                 'results' => $this->schemaMapper->findAll(
@@ -136,21 +136,21 @@ class SchemasController extends Controller
      *
      * This method returns a JSON response containing the details of a specific schema.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $id The ID of the schema to retrieve
      *
      * @return JSONResponse A JSON response containing the schema details
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function show(string $id): JSONResponse
     {
         try {
-            // Try to find the schema by ID
+            // Try to find the schema by ID.
             return new JSONResponse($this->schemaMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            // Return a 404 error if the schema doesn't exist
+            // Return a 404 error if the schema doesn't exist.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
 
@@ -162,30 +162,30 @@ class SchemasController extends Controller
      *
      * This method creates a new schema based on POST data.
      *
+     * @return JSONResponse A JSON response containing the created schema
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created schema
      */
     public function create(): JSONResponse
     {
-        // Get request parameters
+        // Get request parameters.
         $data = $this->request->getParams();
 
-        // Remove internal parameters (starting with '_')
+        // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Remove ID if present to ensure a new record is created
-        if (isset($data['id'])) {
+        // Remove ID if present to ensure a new record is created.
+        if (isset($data['id']) === true) {
             unset($data['id']);
         }
 
-        // Create a new schema from the data
+        // Create a new schema from the data.
         return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
 
     }//end create()
@@ -196,32 +196,32 @@ class SchemasController extends Controller
      *
      * This method updates an existing schema based on its ID.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the schema to update
      *
      * @return JSONResponse A JSON response containing the updated schema details
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function update(int $id): JSONResponse
     {
-        // Get request parameters
+        // Get request parameters.
         $data = $this->request->getParams();
 
-        // Remove internal parameters (starting with '_')
+        // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Remove ID if present to prevent conflicts
-        if (isset($data['id'])) {
+        // Remove ID if present to prevent conflicts.
+        if (isset($data['id']) === true) {
             unset($data['id']);
         }
 
-        // Update the schema with the provided data
+        // Update the schema with the provided data.
         return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
 
     }//end update()
@@ -232,22 +232,22 @@ class SchemasController extends Controller
      *
      * This method deletes a schema based on its ID.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the schema to delete
      *
      * @throws Exception If there is an error deleting the schema
      *
      * @return JSONResponse An empty JSON response
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the schema by ID and delete it
+        // Find the schema by ID and delete it.
         $this->schemaMapper->delete($this->schemaMapper->find(id: $id));
 
-        // Return an empty response
+        // Return an empty response.
         return new JSONResponse([]);
 
     }//end destroy()
@@ -258,16 +258,17 @@ class SchemasController extends Controller
      *
      * Uses 'file', 'url' or else 'json' from POST body.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int|null $id The ID of the schema to update, or null for a new schema
      *
      * @throws Exception If there is a database error
+     *
      * @throws GuzzleException If there is an HTTP request error
      *
      * @return JSONResponse The JSON response with the updated schema
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function uploadUpdate(?int $id=null): JSONResponse
     {
@@ -281,48 +282,49 @@ class SchemasController extends Controller
      *
      * Uses 'file', 'url' or else 'json' from POST body.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int|null $id The ID of the schema to update, or null for a new schema
      *
      * @throws Exception If there is a database error
+     *
      * @throws GuzzleException If there is an HTTP request error
      *
      * @return JSONResponse The JSON response with the created or updated schema
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function upload(?int $id=null): JSONResponse
     {
         if ($id !== null) {
-            // If ID is provided, find the existing schema
+            // If ID is provided, find the existing schema.
             $schema = $this->schemaMapper->find($id);
         } else {
-            // Otherwise, create a new schema
+            // Otherwise, create a new schema.
             $schema = new Schema();
             $schema->setUuid(Uuid::v4());
         }
 
-        // Get the uploaded JSON data
+        // Get the uploaded JSON data.
         $phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
         if ($phpArray instanceof JSONResponse) {
-            // Return any error response from the upload service
+            // Return any error response from the upload service.
             return $phpArray;
         }
 
-        // Set default title if not provided or empty
+        // Set default title if not provided or empty.
         if (empty($phpArray['title']) === true) {
             $phpArray['title'] = 'New Schema';
         }
 
-        // Update the schema with the data from the uploaded JSON
+        // Update the schema with the data from the uploaded JSON.
         $schema->hydrate($phpArray);
 
         if ($schema->getId() === null) {
-            // Insert a new schema if no ID is set
+            // Insert a new schema if no ID is set.
             $schema = $this->schemaMapper->insert($schema);
         } else {
-            // Update the existing schema
+            // Update the existing schema.
             $schema = $this->schemaMapper->update($schema);
         }
 
@@ -334,30 +336,30 @@ class SchemasController extends Controller
     /**
      * Creates and return a json file for a Schema
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the schema to return json file for
      *
      * @throws Exception If there is an error retrieving the schema
      *
      * @return JSONResponse A JSON response containing the schema as JSON
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function download(int $id): JSONResponse
     {
-        // Get the Accept header to determine the response format
+        // Get the Accept header to determine the response format.
         $accept = $this->request->getHeader('Accept');
 
         try {
-            // Find the schema by ID
+            // Find the schema by ID.
             $schema = $this->schemaMapper->find($id);
         } catch (Exception $e) {
-            // Return a 404 error if the schema doesn't exist
+            // Return a 404 error if the schema doesn't exist.
             return new JSONResponse(['error' => 'Schema not found'], 404);
         }
 
-        // Return the schema as JSON
+        // Return the schema as JSON.
         return new JSONResponse($schema);
 
     }//end download()

@@ -84,24 +84,24 @@ class SourcesController extends Controller
      *
      * This method returns a JSON response containing an array of all sources in the system.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param ObjectService $objectService The object service
      * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of sources
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function index(
         ObjectService $objectService,
         SearchService $searchService
     ): JSONResponse {
-        // Get request parameters for filtering and searching
+        // Get request parameters for filtering and searching.
         $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
-        // Create search parameters and conditions for filtering
+        // Create search parameters and conditions for filtering.
         $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             filters: $filters,
@@ -109,7 +109,7 @@ class SourcesController extends Controller
         );
         $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        // Return all sources that match the search conditions
+        // Return all sources that match the search conditions.
         return new JSONResponse(
             [
                 'results' => $this->sourceMapper->findAll(
@@ -130,21 +130,21 @@ class SourcesController extends Controller
      *
      * This method returns a JSON response containing the details of a specific source.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $id The ID of the source to retrieve
      *
      * @return JSONResponse A JSON response containing the source details
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function show(string $id): JSONResponse
     {
         try {
-            // Try to find the source by ID
+            // Try to find the source by ID.
             return new JSONResponse($this->sourceMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            // Return a 404 error if the source doesn't exist
+            // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
 
@@ -156,30 +156,30 @@ class SourcesController extends Controller
      *
      * This method creates a new source based on POST data.
      *
+     * @return JSONResponse A JSON response containing the created source
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created source
      */
     public function create(): JSONResponse
     {
-        // Get request parameters
+        // Get request parameters.
         $data = $this->request->getParams();
 
-        // Remove internal parameters (starting with '_')
+        // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Remove ID if present to ensure a new record is created
-        if (isset($data['id'])) {
+        // Remove ID if present to ensure a new record is created.
+        if (isset($data['id']) === true) {
             unset($data['id']);
         }
 
-        // Create a new source from the data
+        // Create a new source from the data.
         return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
 
     }//end create()
@@ -190,32 +190,32 @@ class SourcesController extends Controller
      *
      * This method updates an existing source based on its ID.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the source to update
      *
      * @return JSONResponse A JSON response containing the updated source details
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function update(int $id): JSONResponse
     {
-        // Get request parameters
+        // Get request parameters.
         $data = $this->request->getParams();
 
-        // Remove internal parameters (starting with '_')
+        // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Remove ID if present to prevent conflicts
-        if (isset($data['id'])) {
+        // Remove ID if present to prevent conflicts.
+        if (isset($data['id']) === true) {
             unset($data['id']);
         }
 
-        // Update the source with the provided data
+        // Update the source with the provided data.
         return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
 
     }//end update()
@@ -226,22 +226,22 @@ class SourcesController extends Controller
      *
      * This method deletes a source based on its ID.
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the source to delete
+     *
+     * @return JSONResponse An empty JSON response
      *
      * @throws Exception If there is an error deleting the source
      *
-     * @return JSONResponse An empty JSON response
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function destroy(int $id): JSONResponse
     {
-        // Find the source by ID and delete it
+        // Find the source by ID and delete it.
         $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
 
-        // Return an empty response
+        // Return an empty response.
         return new JSONResponse([]);
 
     }//end destroy()

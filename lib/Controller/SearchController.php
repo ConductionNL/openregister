@@ -26,14 +26,17 @@ use OCP\Search\Result;
 
 /**
  * Class SearchController
+ *
+ * Controller for handling search operations in the application.
+ * Provides functionality to search across the application using the Nextcloud search service.
  */
 class SearchController extends Controller
 {
 
     /**
-     * The search service instance
+     * The search service instance.
      *
-     * @var ISearch
+     * @var \OCP\ISearch The Nextcloud search service
      */
     private readonly ISearch $searchService;
 
@@ -69,13 +72,13 @@ class SearchController extends Controller
      */
     public function search(): JSONResponse
     {
-        // Get the search query from the request parameters
+        // Get the search query from the request parameters.
         $query = $this->request->getParam('query', '');
 
-        // Perform the search using the search service
+        // Perform the search using the search service.
         $results = $this->searchService->search($query);
 
-        // Format the search results for the JSON response
+        // Format the search results for the JSON response.
         $formattedResults = array_map(
             function (Result $result) {
                 return [
