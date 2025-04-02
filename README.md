@@ -20,14 +20,14 @@ Registers can also apply additional logic to objects, such as validation that is
 - 💾 **Flexible Storage**: Store objects in Nextcloud, external databases, or object stores.
 - 🔄 **APIs**: Provide APIs for consumption.
 - 🧩 **Additional Logic**: Apply extra validation and logic beyond [`schema.json`](https://json-schema.org/).
-- 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management
+- 🗑️ [Object Deletion](website/docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management
 
 ## Documentation
 
 For more detailed information, please refer to the documentation files in the `docs` folder:
 
-- [Developer Guide](docs/developers.md)
-- [Styleguide](docs/styleguide.md)
+- [Developer Guide](website/docs/developers.md)
+- [Styleguide](website/docs/styleguide.md)
 
 # Open Register
 
@@ -53,28 +53,28 @@ Open Register makes these principles accessible to any organization by providing
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
-| 💾 [Storing Objects](docs/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
-| 📝 [Audit Trails](docs/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
-| ⏰ [Time Travel](docs/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
-| 🔒 [Object Locking](docs/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
-| 🗑️ [Soft Deletes](docs/soft-deletes.md) | Safely remove objects with recovery options | Data safety, compliance, mistake recovery |
-| 🔗 [Object Relations](docs/object-relations.md) | Create and manage connections between objects | Complex data structures, linked information, dependencies |
-| 📎 [File Attachments](docs/file-attachments.md) | Manage files associated with objects | Document management, version control, previews |
-| 🔍 [Content Search](docs/content-search.md) | Full-text search across objects and files | Quick discovery, unified search, advanced filtering |
-| 🏷️ [Automatic Facets](docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
-| ✅ [Schema Validation](docs/schema-validation.md) | Validate objects against JSON schemas | Data quality, consistency, structure enforcement |
-| 📚 [Register Management](docs/register-management.md) | Organize collections of related objects | Logical grouping, access control, process automation |
-| 🔐 [Access Control](docs/access-control.md) | Fine-grained permissions management | Security, role management, granular control |
-| ⚡ [Elasticsearch](docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
-| 📋 [Schema Import & Sharing](docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
-| 🔔 [Events & Webhooks](docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
-| ✂️ [Data Filtering](docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
-| 🔍 [Advanced Search](docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
-| 🗑️ [Object Deletion](docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
+| 💾 [Storing Objects](website/docs/storing-objects.md) | Configure how and where register data is stored | Storage flexibility, system integration, scalability |
+| 📝 [Audit Trails](website/docs/audit-trails.md) | Complete history of all object changes | Compliance, accountability, change tracking |
+| ⏰ [Time Travel](website/docs/time-travel.md) | View and restore previous object states | Data recovery, historical analysis, version control |
+| 🔒 [Object Locking](website/docs/object-locking.md) | Prevent concurrent modifications | Data integrity, process management, conflict prevention |
+| 🗑️ [Soft Deletes](website/docs/soft-deletes.md) | Safely remove objects with recovery options | Data safety, compliance, mistake recovery |
+| 🔗 [Object Relations](website/docs/object-relations.md) | Create and manage connections between objects | Complex data structures, linked information, dependencies |
+| 📎 [File Attachments](website/docs/file-attachments.md) | Manage files associated with objects | Document management, version control, previews |
+| 🔍 [Content Search](website/docs/content-search.md) | Full-text search across objects and files | Quick discovery, unified search, advanced filtering |
+| 🏷️ [Automatic Facets](website/docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
+| ✅ [Schema Validation](website/docs/schema-validation.md) | Validate objects against JSON schemas | Data quality, consistency, structure enforcement |
+| 📚 [Register Management](website/docs/register-management.md) | Organize collections of related objects | Logical grouping, access control, process automation |
+| 🔐 [Access Control](website/docs/access-control.md) | Fine-grained permissions management | Security, role management, granular control |
+| ⚡ [Elasticsearch](website/docs/elasticsearch.md) | Advanced search and analytics capabilities | Performance, insights, complex queries |
+| 📋 [Schema Import & Sharing](website/docs/schema-import.md) | Import schemas from Schema.org, OAS, GGM, and share via Open Catalogi | Standards compliance, reuse, collaboration |
+| 🔔 [Events & Webhooks](website/docs/events.md) | React to object changes with events and webhooks | Integration, automation, real-time updates |
+| ✂️ [Data Filtering](website/docs/data-filtering.md) | Select specific properties to return | Data minimalization, GDPR compliance, efficient responses |
+| 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
+| 🗑️ [Object Deletion](website/docs/object-deletion.md) | Soft deletion with retention and recovery | Data safety, compliance, lifecycle management |
 
 ## Documentation
 
-Documentation is available at [https://conduction.nl/openconnector](https://conduction.nl/openconnector) and created from the website folder of this repository.
+Documentation is available at [https://openregisters.app/](https://openregisters.app/) and created from the website folder of this repository.
 
 ## Requirements
 
@@ -82,13 +82,13 @@ Documentation is available at [https://conduction.nl/openconnector](https://cond
 - PHP 8.1 or higher
 - Database: MySQL/MariaDB
 
-## Installation
+<!-- ## Installation
 
 [Installation instructions](https://conduction.nl/openconnector/installation)
 
 ## Support
 
-[Support information](https://conduction.nl/openconnector/support)
+[Support information](https://conduction.nl/openconnector/support) -->
 
 ## Project Structure
 
