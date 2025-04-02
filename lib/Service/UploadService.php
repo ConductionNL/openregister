@@ -78,7 +78,7 @@ class UploadService
      *
      * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
-    public function getUploadedJson(array $data): array | JSONResponse
+    public function getUploadedJson(array $data): array
     {
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_') === true) {
@@ -113,13 +113,10 @@ class UploadService
             $phpArray = json_decode($phpArray, associative: true);
         }
 
-        if ($phpArray === null || $phpArray === false) {
-            return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
-        }
-
-        return $phpArray;
+        return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
 
     }//end getUploadedJson()
+
 
     /**
      * Uses Guzzle to call the given URL and returns response as PHP array.
@@ -130,7 +127,7 @@ class UploadService
      *
      * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
      */
-    private function getJSONfromURL(string $url): array | JSONResponse
+    private function getJSONfromURL(string $url): JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
@@ -158,11 +155,7 @@ class UploadService
                 break;
         }
 
-        if ($phpArray === null || $phpArray === false) {
-            return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
-        }
-
-        return $phpArray;
+        return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
 
     }//end getJSONfromURL()
 
@@ -217,7 +210,7 @@ class UploadService
 
         return $register;
 
-        }//end handleRegisterSchemas()
+    }//end handleRegisterSchemas()
 
 
 }//end class

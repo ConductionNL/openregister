@@ -7,16 +7,16 @@
  * This service provides methods for:
  * - Downloading objects as files.
  *
- * @category  Service
- * @package   OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link      https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -37,25 +37,38 @@ use OCP\IURLGenerator;
  */
 class DownloadService
 {
+
+
+    /**
+     * Constructor for the DownloadService class.
+     *
+     * @param IURLGenerator  $urlGenerator   The URL generator service.
+     * @param SchemaMapper   $schemaMapper   The schema mapper service.
+     * @param RegisterMapper $registerMapper The register mapper service.
+     *
+     * @return void
+     */
     public function __construct(
         private IURLGenerator $urlGenerator,
         private SchemaMapper $schemaMapper,
         private RegisterMapper $registerMapper
     ) {
-    }
+
+    }//end __construct()
+
 
     /**
      * Download a DB entity as a file. Depending on given Accept-header the file type might differ.
      *
-     * @param string $objectType The type of object to download.
-     * @param string|int $id The id of the object to download.
-     * @param string $accept The Accept-header from the download request.
+     * @param string     $objectType The type of object to download.
+     * @param string|int $id         The id of the object to download.
+     * @param string     $accept     The Accept-header from the download request.
      *
      * @throws Exception
      *
      * @return array The response data for the download request.
      */
-    public function download(string $objectType, string|int $id, string $accept): array
+    public function download(string $objectType, string | int $id, string $accept): array
     {
         // Get the appropriate mapper for the object type.
         $mapper = $this->getMapper($objectType);
@@ -67,16 +80,18 @@ class DownloadService
         }
 
         $objectArray = $object->jsonSerialize();
-        $filename = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
+        $filename    = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
 
-        if (str_contains(haystack: $accept, needle: 'application/json') === true || $accept === '*/*') {
-            $url = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()]));
+        if (str_contains($accept, 'application/json') === true || $accept === '*/*') {
+            $url = $this->urlGenerator->getAbsoluteURL(
+                $this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()])
+            );
 
-            $objArray['title'] = $objectArray['title'];
-            $objArray['$id'] = $url;
+            $objArray['title']   = $objectArray['title'];
+            $objArray['$id']     = $url;
             $objArray['$schema'] = 'https://docs.commongateway.nl/schemas/'.ucfirst($objectType).'.schema.json';
             $objArray['version'] = $objectArray['version'];
-            $objArray['type'] = $objectType;
+            $objArray['type']    = $objectType;
             unset($objectArray['title'], $objectArray['version'], $objectArray['id'], $objectArray['uuid']);
             $objArray = array_merge($objArray, $objectArray);
 
@@ -87,7 +102,9 @@ class DownloadService
         }
 
         return ['error' => "The Accept type $accept is not supported.", 'statusCode' => 400];
+
     }//end download()
+
 
     /**
      * Generate a downloadable json file response.
@@ -116,8 +133,12 @@ class DownloadService
 
         // Clean up: delete the temporary file.
         unlink($filePath);
-        exit; // Ensure no further script execution.
+
+        // Ensure no further script execution.
+        exit;
+
     }//end downloadJson()
+
 
     /**
      * Gets the appropriate mapper based on the object type.
@@ -137,8 +158,9 @@ class DownloadService
         return match ($objectTypeLower) {
             'schema' => $this->schemaMapper,
             'register' => $this->registerMapper,
-            default => throw new InvalidArgumentException("Unknown object type: $objectType"),
+        default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
+
     }//end getMapper()
 
 
