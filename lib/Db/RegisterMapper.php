@@ -336,9 +336,9 @@ class RegisterMapper extends QBMapper
      * @param int    $registerId  The ID of the register
      * @param string $schemaTitle The title of the schema to look for
      *
-     * @return Schema|bool The schema if found, false otherwise
+     * @return Schema|null The schema if found, null otherwise
      */
-    public function hasSchemaWithTitle(int $registerId, string $schemaTitle): (Schema | bool)
+    public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema 
     {
         $schemas = $this->getSchemasByRegisterId($registerId);
 
@@ -349,7 +349,7 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        return false;
+        return null;
 
     }//end hasSchemaWithTitle()
 
