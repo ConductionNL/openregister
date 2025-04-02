@@ -968,7 +968,7 @@ class FileService
                 try {
                     $file = $userFolder->get(path: $filePath);
 
-                    // If content is not null, update the file content
+                    // If content is not null, update the file content.
                     if ($content !== null) {
                         try {
                             $file->putContent(data: $content);
