@@ -1,6 +1,7 @@
 <script setup>
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { AppInstallService } from '../../services/appInstallService.js'
+import { computed, ref, onMounted, watch } from 'vue'
 </script>
 
 <template>
@@ -109,6 +110,83 @@ import { AppInstallService } from '../../services/appInstallService.js'
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
+
+// Add search input ref and debounce function
+const searchQuery = ref('')
+let searchTimeout = null
+
+// Debounced search function
+const handleSearch = (value) => {
+	if (searchTimeout) {
+		clearTimeout(searchTimeout)
+	}
+
+	searchTimeout = setTimeout(() => {
+		// Update the filters object with the search query
+		objectStore.setFilters({
+			_search: value || '', // Set as object property instead of array
+		})
+
+		// Only refresh if we have both register and schema selected
+		if (registerStore.registerItem && schemaStore.schemaItem) {
+			objectStore.refreshObjectList({
+				register: registerStore.registerItem.id,
+				schema: schemaStore.schemaItem.id,
+			})
+		}
+	}, 1000) // 3 second delay
+}
+
+// Computed properties to handle the false values
+const selectedRegisterValue = computed({
+	get: () => {
+		if (!registerStore.registerItem) return null
+		// Return in the same format as the options
+		return {
+			value: registerStore.registerItem,
+			label: registerStore.registerItem.title,
+		}
+	},
+	set: (value) => {
+		registerStore.setRegisterItem(value?.value || null)
+	},
+})
+
+const selectedSchemaValue = computed({
+	get: () => {
+		if (!schemaStore.schemaItem) return null
+		// Return in the same format as the options
+		return {
+			value: schemaStore.schemaItem,
+			label: schemaStore.schemaItem.title,
+		}
+	},
+	set: (value) => {
+		schemaStore.setSchemaItem(value?.value || null)
+	},
+})
+
+// Initialize column filters when component mounts
+onMounted(() => {
+	objectStore.initializeColumnFilters()
+})
+
+const metadataColumns = computed(() => {
+	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+		id,
+		...meta,
+	}))
+})
+
+// Watch for schema changes to initialize properties
+watch(() => schemaStore.schemaItem, (newSchema) => {
+	if (newSchema) {
+		objectStore.initializeProperties(newSchema)
+	} else {
+		objectStore.properties = {}
+		objectStore.initializeColumnFilters()
+	}
+}, { immediate: true })
 
 export default {
 	name: 'SearchSideBar',
