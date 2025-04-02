@@ -33,11 +33,7 @@ use OCP\Search\Result;
 class SearchController extends Controller
 {
 
-    /**
-     * The search service instance.
-     *
-     * @var \OCP\ISearch The Nextcloud search service
-     */
+    // phpcs:ignore Squiz.Commenting.VariableComment.Missing
     private readonly ISearch $searchService;
 
 
