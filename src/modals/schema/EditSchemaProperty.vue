@@ -81,16 +81,17 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcTextField :disabled="loading"
 					label="Behavior"
 					:value.sync="properties.behavior" />
+				<template v-if="properties.type !== 'array'">
+					<NcInputField :disabled="loading"
+						type="number"
+						label="Minimum length"
+						:value.sync="properties.minLength" />
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Minimum length"
-					:value.sync="properties.minLength" />
-
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Maximum length"
-					:value.sync="properties.maxLength" />
+					<NcInputField :disabled="loading"
+						type="number"
+						label="Maximum length"
+						:value.sync="properties.maxLength" />
+				</template>
 			</template>
 
 			<!-- TYPE : STRING -->
