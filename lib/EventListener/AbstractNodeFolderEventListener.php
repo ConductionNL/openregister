@@ -1,4 +1,18 @@
 <?php
+/**
+ * OpenRegister AbstractNodeFolderEventListener
+ *
+ * This file contains the event class dispatched when a schema is updated
+ * in the OpenRegister application.
+ *
+ * @category  EventListener
+ * @package   OCA\OpenRegister\Event
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\EventListener;
 
