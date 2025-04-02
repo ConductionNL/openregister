@@ -1906,6 +1906,7 @@ class ObjectService
      */
     public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
     {
+        $formattedFiles = [];
         try {
             $formattedFiles = $this->fileService->formatFiles($files);
         } catch (InvalidPathException|NotFoundException $e) {
