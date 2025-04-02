@@ -122,7 +122,7 @@ class FileService
      *
      * @return string The path to the folder
      */
-    public function createRegisterFolder(Register | int $register): string
+    public function createRegisterFolder(Register|int $register): string
     {
         if (is_int($register) === true) {
             $register = $this->registerMapper->find($register);
@@ -151,7 +151,7 @@ class FileService
     {
         $title = $register->getTitle();
 
-        if (str_ends_with(haystack: strtolower(rtrim($title)), needle: 'register')) {
+        if (str_ends_with(haystack: strtolower(rtrim($title)), needle: 'register') === true) {
             return $title;
         }
 
@@ -169,7 +169,7 @@ class FileService
      *
      * @return string The path to the folder
      */
-    public function createSchemaFolder(Register | int $register, Schema | int $schema): string
+    public function createSchemaFolder(Register|int $register, Schema|int $schema): string
     {
         if (is_int($register) === true) {
             $register = $this->registerMapper->find($register);
@@ -211,19 +211,19 @@ class FileService
      * Creates a folder for an Object (used for storing files of this Object).
      *
      * @param ObjectEntity      $objectEntity The Object to create the folder for
-     * @param Register|int|null $register     The Register to create the Object folder for (optional)
-     * @param Schema|int|null   $schema       The Schema to create the Object folder for (optional)
-     * @param string|null       $folderPath   Optional path to use instead of generating one
+     * @param Register | int | null $register     The Register to create the Object folder for (optional)
+     * @param Schema | int | null   $schema       The Schema to create the Object folder for (optional)
+     * @param string | null       $folderPath   Optional path to use instead of generating one
      *
      * @throws Exception In case we can't create the folder because it is not permitted
      *
-     * @return Node|null The NextCloud Node object of the folder, or null if creation failed
+     * @return Node | null The NextCloud Node object of the folder, or null if creation failed
      */
     public function createObjectFolder(
         ObjectEntity $objectEntity,
-        Register|int|null $register = null,
-        Schema|int|null $schema = null,
-        string|null $folderPath = null
+        Register | int | null $register = null,
+        Schema | int | null $schema = null,
+        string | null $folderPath = null
     ): ?Node {
         if ($folderPath === null) {
             $folderPath = $this->getObjectFolderPath(
@@ -244,7 +244,7 @@ class FileService
         //     $shareLink = $this->fileService->getShareLink($share);
         // } else {
         //     $shareLink = $this->fileService->createShareLink(path: $filePath);
-        // }
+        // }.
 
         return $this->getNode($folderPath);
     }//end createObjectFolder()
@@ -254,17 +254,17 @@ class FileService
      * Gets the NextCloud Node object for the folder of an Object.
      *
      * @param ObjectEntity      $objectEntity The Object to get the folder for
-     * @param Register|int|null $register     The Register to get the Object folder for (optional)
-     * @param Schema|int|null   $schema       The Schema to get the Object folder for (optional)
+     * @param Register | int | null $register     The Register to get the Object folder for (optional)
+     * @param Schema | int | null   $schema       The Schema to get the Object folder for (optional)
      *
      * @throws Exception In case we can't create the folder because it is not permitted
      *
-     * @return Node|null The NextCloud Node object of the folder, or null if getting/creating failed
+     * @return Node | null The NextCloud Node object of the folder, or null if getting/creating failed
      */
     public function getObjectFolder(
         ObjectEntity $objectEntity,
-        Register|int|null $register = null,
-        Schema|int|null $schema = null
+        Register | int | null $register = null,
+        Schema | int | null $schema = null
     ): ?Node {
         if (empty($objectEntity->getFolder()) === true) {
             $folderPath = $this->getObjectFolderPath(
@@ -297,8 +297,8 @@ class FileService
      * Gets the path to the folder of an object.
      *
      * @param ObjectEntity      $objectEntity The Object to get the folder path for
-     * @param Register|int|null $register     The Register to get the Object folder path for (optional)
-     * @param Schema|int|null   $schema       The Schema to get the Object folder path for (must match Object->schema)
+     * @param Register | int | null $register     The Register to get the Object folder path for (optional)
+     * @param Schema | int | null   $schema       The Schema to get the Object folder path for (must match Object->schema)
      *
      * @throws Exception If something went wrong getting the path, a mismatch in object register/schema & function parameters
      *
@@ -306,8 +306,8 @@ class FileService
      */
     private function getObjectFolderPath(
         ObjectEntity $objectEntity,
-        Register|int|null $register = null,
-        Schema|int|null $schema = null
+        Register | int | null $register = null,
+        Schema | int | null $schema = null
     ): string {
         $objectRegister = (int) $objectEntity->getRegister();
         if ($register === null) {
@@ -360,7 +360,7 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity $objectEntity): string
     {
-        // Check if property Title or Name exists and use that as object title
+        // Check if property Title or Name exists and use that as object title.
         $objectTitle = 'object';
 
         return $objectEntity->getUuid();
@@ -504,15 +504,15 @@ class FileService
                 $value = trim($value);
 
                 // Skip if key exists in base metadata.
-                if (isset($metadata[$key])) {
+                if (isset($metadata[$key]) === true) {
                     $remainingLabels[] = $label;
                     continue;
                 }
 
                 // If key already exists as array, append value.
-                if (isset($metadata[$key]) && is_array($metadata[$key]) === true) {
+                if (isset($metadata[$key]) === true && is_array($metadata[$key]) === true) {
                     $metadata[$key][] = $value;
-                } else if (isset($metadata[$key])) {
+                } else if (isset($metadata[$key]) === true) {
                     // If key exists but not as array, convert to array with both values.
                     $metadata[$key] = [$metadata[$key], $value];
                 } else {
@@ -638,8 +638,12 @@ class FileService
             $formattedFiles[] = $this->formatFile($file);
         }
 
-        /** @todo search. */
-        $pages = $limit !== null ? ceil($total / $limit) : 1;
+        // @todo search.
+        if ($limit !== null) {
+            $pages = ceil($total / $limit);
+        } else {
+            $pages = 1;
+        }
 
         return [
             'results' => $formattedFiles,
@@ -709,9 +713,9 @@ class FileService
      * Try to find a IShare object with given $path & $shareType.
      *
      * @param string   $path      The path to a file we are trying to find a IShare object for
-     * @param int|null $shareType The shareType of the share we are trying to find (default: 3 for public link)
+     * @param int | null $shareType The shareType of the share we are trying to find (default: 3 for public link)
      *
-     * @return IShare|null An IShare object if found, null otherwise
+     * @return IShare | null An IShare object if found, null otherwise
      */
     public function findShare(string $path, ?int $shareType = 3): ?IShare
     {
@@ -800,15 +804,15 @@ class FileService
     /**
      * Creates and returns a share link for a file (or folder).
      *
-     * @see https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
-     *
-     * @param string   $path        Path (from root) to the file/folder which should be shared
-     * @param int|null $shareType   The share type (0=user, 1=group, 3=public link, 4=email, etc.)
-     * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
+     * @param string   $path Path (from root) to the file/folder which should be shared
+     * @param int | null $shareType   The share type (0=user, 1=group, 3=public link, 4=email, etc.)
+     * @param int | null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
      *
      * @throws Exception If creating the share link fails
      *
      * @return string The share link
+     *
+     * @see https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
      */
     public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string
     {
@@ -915,11 +919,18 @@ class FileService
                     $this->groupManager->createGroup(self::APP_GROUP);
                 }
 
+                // Determine the node type before creating the share.
+                // Determine the node type based on the root folder's type
+                $nodeType = 'folder';
+                if ($rootFolder->getType() === 'file') {
+                    $nodeType = 'file';
+                }
+                
                 $this->createShare(
                     [
                         'path' => self::ROOT_FOLDER,
                         'nodeId' => $rootFolder->getId(),
-                        'nodeType' => ($rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder'),
+                        'nodeType' => $nodeType,
                         'shareType' => 1,
                         'permissions' => 31,
                         'sharedWith' => self::APP_GROUP,
@@ -1075,7 +1086,7 @@ class FileService
         $newTagIds = [];
         foreach ($tags as $key => $tagName) {
             // Skip empty tag names.
-            if (empty($tagName)) {
+            if (empty($tagName) === true) {
                 continue;
             }
 
@@ -1141,9 +1152,7 @@ class FileService
                 schema: $objectEntity->getSchema()
             );
 
-            /**
-             * @var File $file
-             */
+            // @var File $file
             $file = $folder->newFile($fileName);
 
             // Write content to the file.
@@ -1202,6 +1211,7 @@ class FileService
             $this->logger->error('Failed to retrieve tags: '.$e->getMessage());
             throw new \Exception('Failed to retrieve tags: '.$e->getMessage());
         }//end try
+
     }//end getAllTags()
     
 
