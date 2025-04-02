@@ -5,14 +5,17 @@
  * Service class for handling download operations in the OpenRegister application.
  *
  * This service provides methods for:
- * - Downloading objects as files
+ * - Downloading objects as files.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -48,12 +51,13 @@ class DownloadService
      * @param string|int $id The id of the object to download.
      * @param string $accept The Accept-header from the download request.
      *
-     * @return array The response data for the download request.
      * @throws Exception
+     *
+     * @return array The response data for the download request.
      */
     public function download(string $objectType, string|int $id, string $accept): array
     {
-        // Get the appropriate mapper for the object type
+        // Get the appropriate mapper for the object type.
         $mapper = $this->getMapper($objectType);
 
         try {
@@ -65,7 +69,7 @@ class DownloadService
         $objectArray = $object->jsonSerialize();
         $filename = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
 
-        if (str_contains(haystack: $accept, needle: 'application/json') === TRUE || $accept === '*/*') {
+        if (str_contains(haystack: $accept, needle: 'application/json') === true || $accept === '*/*') {
             $url = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()]));
 
             $objArray['title'] = $objectArray['title'];
@@ -76,14 +80,14 @@ class DownloadService
             unset($objectArray['title'], $objectArray['version'], $objectArray['id'], $objectArray['uuid']);
             $objArray = array_merge($objArray, $objectArray);
 
-            // Convert the object data to JSON
+            // Convert the object data to JSON.
             $jsonData = json_encode($objArray, JSON_PRETTY_PRINT);
 
             $this->downloadJson($jsonData, $filename);
         }
 
         return ['error' => "The Accept type $accept is not supported.", 'statusCode' => 400];
-    }
+    }//end download()
 
     /**
      * Generate a downloadable json file response.
@@ -96,44 +100,45 @@ class DownloadService
     #[NoReturn]
     private function downloadJson(string $jsonData, string $filename): void
     {
-        // Define the file name and path for the temporary JSON file
+        // Define the file name and path for the temporary JSON file.
         $fileName = $filename.'.json';
         $filePath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$fileName;
 
-        // Create and write the JSON data to the file
+        // Create and write the JSON data to the file.
         file_put_contents($filePath, $jsonData);
 
-        // Set headers to download the file
+        // Set headers to download the file.
         header('Content-Type: application/json');
         header('Content-Disposition: attachment; filename="'.$fileName.'"');
         header('Content-Length: '.filesize($filePath));
 
-        // Output the file contents
+        // Output the file contents.
         readfile($filePath);
 
-        // Clean up: delete the temporary file
+        // Clean up: delete the temporary file.
         unlink($filePath);
-        exit; // Ensure no further script execution
-    }
+        exit; // Ensure no further script execution.
+    }//end downloadJson()
 
     /**
      * Gets the appropriate mapper based on the object type.
      *
      * @param string $objectType The type of object to retrieve the mapper for.
      *
-     * @return mixed The appropriate mapper.
      * @throws InvalidArgumentException If an unknown object type is provided.
      * @throws Exception
+     *
+     * @return mixed The appropriate mapper.
      */
     private function getMapper(string $objectType): mixed
     {
         $objectTypeLower = strtolower($objectType);
 
-        // If the source is internal, return the appropriate mapper based on the object type
+        // If the source is internal, return the appropriate mapper based on the object type.
         return match ($objectTypeLower) {
             'schema' => $this->schemaMapper,
             'register' => $this->registerMapper,
             default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
-    }
-}
+    }//end getMapper()
+}//end class

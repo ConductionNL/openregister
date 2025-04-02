@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -34,35 +37,35 @@ class Register extends Entity implements JsonSerializable
      *
      * @var string|null Unique identifier for the register
      */
-    protected ?string $uuid = NULL;
+    protected ?string $uuid = null;
 
     /**
      * Slug of the register
      *
      * @var string|null Slug of the register
      */
-    protected ?string $slug = NULL;
+    protected ?string $slug = null;
 
     /**
      * Title of the register
      *
      * @var string|null Title of the register
      */
-    protected ?string $title = NULL;
+    protected ?string $title = null;
 
     /**
      * Version of the register
      *
      * @var string|null Version of the register
      */
-    protected ?string $version = NULL;
+    protected ?string $version = null;
 
     /**
      * Description of the register
      *
      * @var string|null Description of the register
      */
-    protected ?string $description = NULL;
+    protected ?string $description = null;
 
     /**
      * Schemas associated with the register
@@ -76,56 +79,56 @@ class Register extends Entity implements JsonSerializable
      *
      * @var string|null Source of the register
      */
-    protected ?string $source = NULL;
+    protected ?string $source = null;
 
     /**
      * Prefix for database tables
      *
      * @var string|null Prefix for database tables
      */
-    protected ?string $tablePrefix = NULL;
+    protected ?string $tablePrefix = null;
 
     /**
      * Nextcloud folder path where register is stored
      *
      * @var string|null Nextcloud folder path where register is stored
      */
-    protected ?string $folder = NULL;
+    protected ?string $folder = null;
 
     /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
      */
-    protected ?DateTime $updated = NULL;
+    protected ?DateTime $updated = null;
 
     /**
      * Creation timestamp
      *
      * @var DateTime|null Creation timestamp
      */
-    protected ?DateTime $created = NULL;
+    protected ?DateTime $created = null;
 
     /**
      * The Nextcloud user that owns this register
      *
      * @var string|null The Nextcloud user that owns this register
      */
-    protected ?string $owner = NULL;
+    protected ?string $owner = null;
 
     /**
      * The application name
      *
      * @var string|null The application name
      */
-    protected ?string $application = NULL;
+    protected ?string $application = null;
 
     /**
      * The organisation name
      *
      * @var string|null The organisation name
      */
-    protected ?string $organisation = NULL;
+    protected ?string $organisation = null;
 
     /**
      * JSON object describing authorizations
@@ -139,7 +142,7 @@ class Register extends Entity implements JsonSerializable
      *
      * @var DateTime|null Deletion timestamp
      */
-    protected ?DateTime $deleted = NULL;
+    protected ?DateTime $deleted = null;
 
     /**
      * Constructor for the Register class
@@ -211,13 +214,13 @@ class Register extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === FALSE) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === TRUE && $value === []) {
-                $value = NULL;
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
             }
 
             $method = 'set'.ucfirst($key);
@@ -242,18 +245,18 @@ class Register extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $updated = NULL;
-        if (isset($this->updated) === TRUE) {
+        $updated = null;
+        if (isset($this->updated) === true) {
             $updated = $this->updated->format('c');
         }
 
-        $created = NULL;
-        if (isset($this->created) === TRUE) {
+        $created = null;
+        if (isset($this->created) === true) {
             $created = $this->created->format('c');
         }
 
-        $deleted = NULL;
-        if (isset($this->deleted) === TRUE) {
+        $deleted = null;
+        if (isset($this->deleted) === true) {
             $deleted = $this->deleted->format('c');
         }
 

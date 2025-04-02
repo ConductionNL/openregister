@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -34,112 +37,112 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null Unique identifier for the audit trail entry
      */
-    protected ?string $uuid = NULL;
+    protected ?string $uuid = null;
 
     /**
      * Schema ID associated with the audit trail entry
      *
      * @var integer|null Schema ID associated with the audit trail entry
      */
-    protected ?int $schema = NULL;
+    protected ?int $schema = null;
 
     /**
      * Register ID associated with the audit trail entry
      *
      * @var integer|null Register ID associated with the audit trail entry
      */
-    protected ?int $register = NULL;
+    protected ?int $register = null;
 
     /**
      * Object ID associated with the audit trail entry
      *
      * @var integer|null Object ID associated with the audit trail entry
      */
-    protected ?int $object = NULL;
+    protected ?int $object = null;
 
     /**
      * UUID of the object associated with the audit trail entry
      *
      * @var string|null UUID of the object associated with the audit trail entry
      */
-    protected ?string $objectUuid = NULL;
+    protected ?string $objectUuid = null;
 
     /**
      * UUID of the register associated with the audit trail entry
      *
      * @var string|null UUID of the register associated with the audit trail entry
      */
-    protected ?string $registerUuid = NULL;
+    protected ?string $registerUuid = null;
 
     /**
      * UUID of the schema associated with the audit trail entry
      *
      * @var string|null UUID of the schema associated with the audit trail entry
      */
-    protected ?string $schemaUuid = NULL;
+    protected ?string $schemaUuid = null;
 
     /**
      * Action performed in the audit trail entry
      *
      * @var string|null Action performed in the audit trail entry
      */
-    protected ?string $action = NULL;
+    protected ?string $action = null;
 
     /**
      * Changed data in the audit trail entry
      *
      * @var array|null Changed data in the audit trail entry
      */
-    protected ?array $changed = NULL;
+    protected ?array $changed = null;
 
     /**
      * User ID associated with the audit trail entry
      *
      * @var string|null User ID associated with the audit trail entry
      */
-    protected ?string $user = NULL;
+    protected ?string $user = null;
 
     /**
      * Username associated with the audit trail entry
      *
      * @var string|null Username associated with the audit trail entry
      */
-    protected ?string $userName = NULL;
+    protected ?string $userName = null;
 
     /**
      * Session ID associated with the audit trail entry
      *
      * @var string|null Session ID associated with the audit trail entry
      */
-    protected ?string $session = NULL;
+    protected ?string $session = null;
 
     /**
      * Request data associated with the audit trail entry
      *
      * @var string|null Request data associated with the audit trail entry
      */
-    protected ?string $request = NULL;
+    protected ?string $request = null;
 
     /**
      * IP address associated with the audit trail entry
      *
      * @var string|null IP address associated with the audit trail entry
      */
-    protected ?string $ipAddress = NULL;
+    protected ?string $ipAddress = null;
 
     /**
      * Version of the audit trail entry
      *
      * @var string|null Version of the audit trail entry
      */
-    protected ?string $version = NULL;
+    protected ?string $version = null;
 
     /**
      * Creation timestamp of the audit trail entry
      *
      * @var DateTime|null Creation timestamp of the audit trail entry
      */
-    protected ?DateTime $created = NULL;
+    protected ?DateTime $created = null;
 
     /**
      * The unique identifier of the organization processing personal data
@@ -149,7 +152,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The unique identifier of the organization processing personal data
      */
-    protected ?string $organisationId = NULL;
+    protected ?string $organisationId = null;
 
     /**
      * The type of organization identifier used
@@ -162,42 +165,42 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null The type of organization identifier used
      */
-    protected ?string $organisationIdType = NULL;
+    protected ?string $organisationIdType = null;
 
     /**
      * The Processing Activity ID that identifies the specific processing operation
      *
      * @var string|null The Processing Activity ID that identifies the specific processing operation
      */
-    protected ?string $processingActivityId = NULL;
+    protected ?string $processingActivityId = null;
 
     /**
      * The URL where the processing activity is registered
      *
      * @var string|null The URL where the processing activity is registered
      */
-    protected ?string $processingActivityUrl = NULL;
+    protected ?string $processingActivityUrl = null;
 
     /**
      * The unique identifier for this specific processing operation
      *
      * @var string|null The unique identifier for this specific processing operation
      */
-    protected ?string $processingId = NULL;
+    protected ?string $processingId = null;
 
     /**
      * The confidentiality level of the processed data
      *
      * @var string|null The confidentiality level of the processed data (e.g., 'public', 'internal', 'confidential')
      */
-    protected ?string $confidentiality = NULL;
+    protected ?string $confidentiality = null;
 
     /**
      * The retention period for the processed data in ISO 8601 duration format
      *
      * @var string|null The retention period for the processed data in ISO 8601 duration format
      */
-    protected ?string $retentionPeriod = NULL;
+    protected ?string $retentionPeriod = null;
 
     /**
      * Constructor for the AuditTrail class
@@ -277,8 +280,8 @@ class AuditTrail extends Entity implements JsonSerializable
         $jsonFields = $this->getJsonFields();
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === TRUE && $value === []) {
-                $value = NULL;
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
             }
 
             $method = 'set'.ucfirst($key);
@@ -303,8 +306,8 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $created = NULL;
-        if (isset($this->created) === TRUE) {
+        $created = null;
+        if (isset($this->created) === true) {
             $created = $this->created->format('c');
         }
 

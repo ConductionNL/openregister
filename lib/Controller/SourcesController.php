@@ -6,10 +6,13 @@
  *
  * @category  Controller
  * @package   OCA\OpenRegister\AppInfo
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -57,6 +60,7 @@ class SourcesController extends Controller
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse The rendered template response
@@ -77,6 +81,7 @@ class SourcesController extends Controller
      * This method returns a JSON response containing an array of all sources in the system.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param ObjectService $objectService The object service
@@ -104,8 +109,8 @@ class SourcesController extends Controller
         return new JSONResponse(
             [
                 'results' => $this->sourceMapper->findAll(
-                    limit: NULL,
-                    offset: NULL,
+                    limit: null,
+                    offset: null,
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams
@@ -121,6 +126,7 @@ class SourcesController extends Controller
      * This method returns a JSON response containing the details of a specific source.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $id The ID of the source to retrieve
@@ -145,6 +151,7 @@ class SourcesController extends Controller
      * This method creates a new source based on POST data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse A JSON response containing the created source
@@ -177,6 +184,7 @@ class SourcesController extends Controller
      * This method updates an existing source based on its ID.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the source to update
@@ -211,12 +219,14 @@ class SourcesController extends Controller
      * This method deletes a source based on its ID.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the source to delete
      *
-     * @return JSONResponse An empty JSON response
      * @throws Exception If there is an error deleting the source
+     *
+     * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {

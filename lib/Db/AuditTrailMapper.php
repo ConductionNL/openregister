@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -86,13 +89,13 @@ class AuditTrailMapper extends QBMapper
      * @return array The audit trails
      */
     public function findAll(
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = [],
         ?array $sort = [],
-        ?string $search = NULL
+        ?string $search = null
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -111,7 +114,7 @@ class AuditTrailMapper extends QBMapper
             }
         }
 
-        if (empty($searchConditions) === FALSE) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -119,14 +122,14 @@ class AuditTrailMapper extends QBMapper
         }
 
         // Add search on ext fields if search term provided.
-        if ($search !== NULL) {
+        if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->like('ext', $qb->createNamedParameter('%'.$search.'%'))
             );
         }
 
         // Add sorting if specified.
-        if (empty($sort) === FALSE) {
+        if (empty($sort) === false) {
             foreach ($sort as $field => $direction) {
                 if (strtoupper($direction) === 'DESC') {
                     $direction = 'DESC';
@@ -156,8 +159,8 @@ class AuditTrailMapper extends QBMapper
      */
     public function findAllUuid(
         string $identifier,
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = []
@@ -187,7 +190,7 @@ class AuditTrailMapper extends QBMapper
         $log->hydrate(object: $object);
 
         // Set uuid if not provided.
-        if ($log->getUuid() === NULL) {
+        if ($log->getUuid() === null) {
             $log->setUuid(Uuid::v4());
         }
 
@@ -203,14 +206,14 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      */
-    public function createAuditTrail(?ObjectEntity $old = NULL, ?ObjectEntity $new = NULL): AuditTrail
+    public function createAuditTrail(?ObjectEntity $old = null, ?ObjectEntity $new = null): AuditTrail
     {
         // Determine the action based on the presence of old and new objects.
         $action = 'update';
-        if ($new === NULL) {
+        if ($new === null) {
             $action = 'delete';
             $objectEntity = $old;
-        } elseif ($old === NULL) {
+        } elseif ($old === null) {
             $action = 'create';
             $objectEntity = $new;
         } else {
@@ -220,7 +223,7 @@ class AuditTrailMapper extends QBMapper
         // Initialize an array to store changed fields.
         $changed = [];
         if ($action !== 'delete') {
-            if ($old !== NULL) {
+            if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             } else {
                 $oldArray = [];
@@ -230,9 +233,9 @@ class AuditTrailMapper extends QBMapper
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
-                if ((isset($oldArray[$key]) === FALSE) || ($oldArray[$key] !== $value)) {
+                if ((isset($oldArray[$key]) === false) || ($oldArray[$key] !== $value)) {
                     $changed[$key] = [
-                        'old' => ($oldArray[$key] ?? NULL),
+                        'old' => ($oldArray[$key] ?? null),
                         'new' => $value,
                     ];
                 }
@@ -241,10 +244,10 @@ class AuditTrailMapper extends QBMapper
             // For updates, check for removed fields.
             if ($action === 'update') {
                 foreach ($oldArray as $key => $value) {
-                    if (isset($newArray[$key]) === FALSE) {
+                    if (isset($newArray[$key]) === false) {
                         $changed[$key] = [
                             'old' => $value,
-                            'new' => NULL,
+                            'new' => null,
                         ];
                     }
                 }
@@ -262,7 +265,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);
 
-        if ($user !== NULL) {
+        if ($user !== null) {
             $auditTrail->setUser($user->getUID());
             $auditTrail->setUserName($user->getDisplayName());
         } else {
@@ -291,7 +294,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return array Array of AuditTrail objects
      */
-    public function findByObjectUntil(int $objectId, string $objectUuid, $until = NULL): array
+    public function findByObjectUntil(int $objectId, string $objectUuid, $until = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -317,8 +320,8 @@ class AuditTrailMapper extends QBMapper
                     )
                 )
             );
-        } elseif (is_string($until) === TRUE) {
-            if ($this->isSemanticVersion($until) === TRUE) {
+        } elseif (is_string($until) === true) {
+            if ($this->isSemanticVersion($until) === true) {
                 // Handle semantic version.
                 $qb->andWhere(
                     $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -367,11 +370,12 @@ class AuditTrailMapper extends QBMapper
      * @param DateTime|string|null $until            DateTime or AuditTrail ID to revert to
      * @param bool                 $overwriteVersion Whether to overwrite the version or increment it
      *
-     * @return ObjectEntity The reverted object (unsaved)
      * @throws DoesNotExistException If object not found
      * @throws \Exception If revert fails
+     *
+     * @return ObjectEntity The reverted object (unsaved)
      */
-    public function revertObject($identifier, $until = NULL, bool $overwriteVersion = FALSE): ObjectEntity
+    public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity
     {
         // Get the current object.
         $object = $this->objectEntityMapper->find($identifier);
@@ -383,7 +387,7 @@ class AuditTrailMapper extends QBMapper
             $until
         );
 
-        if (empty($auditTrails) === TRUE && $until !== NULL) {
+        if (empty($auditTrails) === true && $until !== null) {
             throw new \Exception('No audit trail entries found for the specified reversion point.');
         }
 
@@ -396,7 +400,7 @@ class AuditTrailMapper extends QBMapper
         }
 
         // Handle versioning.
-        if ($overwriteVersion === FALSE) {
+        if ($overwriteVersion === false) {
             $version = explode('.', $revertedObject->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $revertedObject->setVersion(implode('.', $version));
@@ -420,11 +424,11 @@ class AuditTrailMapper extends QBMapper
 
         // Iterate through each change and apply the reverse.
         foreach ($changes as $field => $change) {
-            if (isset($change['old']) === TRUE) {
+            if (isset($change['old']) === true) {
                 // Use reflection to set the value if it's a protected property.
                 $reflection = new \ReflectionClass($object);
                 $property = $reflection->getProperty($field);
-                $property->setAccessible(TRUE);
+                $property->setAccessible(true);
                 $property->setValue($object, $change['old']);
             }
         }

@@ -6,10 +6,13 @@
  *
  * @category  Search
  * @package   OCA\OpenRegister\Search
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -62,14 +65,16 @@ class ObjectsProvider implements IFilteringProvider
     {
         $this->l10n = $l10n;
         $this->urlGenerator = $urlGenerator;
-    }
+
+    }//end __construct()
 
     /**
      * Returns the list of supported filters for the search provider
      *
      * @return string[] List of supported filter names
      *
-     * @psalm-return array<string>
+     * @psalm-return   array<string>
+     *
      * @phpstan-return array<string>
      */
     public function getSupportedFilters(): array
@@ -84,27 +89,31 @@ class ObjectsProvider implements IFilteringProvider
             'register',
             'schema',
         ];
-    }
+
+    }//end getSupportedFilters()
 
     /**
      * Returns the list of alternate IDs for the search provider
      *
      * @return string[] List of alternate IDs
      *
-     * @psalm-return array<string>
+     * @psalm-return   array<string>
+     *
      * @phpstan-return array<string>
      */
     public function getAlternateIds(): array
     {
         return [];
-    }
+
+    }//end getAlternateIds()
 
     /**
      * Returns the list of custom filters for the search provider
      *
      * @return FilterDefinition[] List of custom filter definitions
      *
-     * @psalm-return array<FilterDefinition>
+     * @psalm-return   array<FilterDefinition>
+     *
      * @phpstan-return array<FilterDefinition>
      */
     public function getCustomFilters(): array
@@ -113,7 +122,8 @@ class ObjectsProvider implements IFilteringProvider
             new FilterDefinition('register', FilterDefinition::TYPE_STRING),
             new FilterDefinition('schema', FilterDefinition::TYPE_STRING),
         ];
-    }
+
+    }//end getCustomFilters()
 
     /**
      * Performs a search based on the provided query
@@ -123,19 +133,20 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return SearchResult The search results
      *
-     * @psalm-suppress PropertyNotSetInConstructor
+     * @psalm-suppress           PropertyNotSetInConstructor
+     *
      * @phpstan-ignore-next-line
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
         // Retrieve filters
         $filters = [];
-        
+
         /**
          * @var string|null $register
          */
         $register = $query->getFilter('register')?->get();
-        if ($register !== NULL) {
+        if ($register !== null) {
             $filters['register'] = $register;
         }
 
@@ -143,7 +154,7 @@ class ObjectsProvider implements IFilteringProvider
          * @var string|null $schema
          */
         $schema = $query->getFilter('schema')?->get();
-        if ($schema !== NULL) {
+        if ($schema !== null) {
             $filters['schema'] = $schema;
         }
 
@@ -151,21 +162,21 @@ class ObjectsProvider implements IFilteringProvider
          * @var string|null $search
          */
         $search = $query->getFilter('term')?->get();
-        
+
         /**
          * @var string|null $since
          */
         $since = $query->getFilter('since')?->get();
-        
+
         /**
          * @var string|null $until
          */
         $until = $query->getFilter('until')?->get();
 
         // @todo: implement pagination
-        $limit = NULL;
-        $offset = NULL;
-        $order = NULL;
+        $limit = null;
+        $offset = null;
+        $order = null;
 
         // Get the objects
         $results = $this->objectEntityMapper->findAll(
@@ -198,5 +209,7 @@ class ObjectsProvider implements IFilteringProvider
             $this->l10n->t('Open Register'),
             $searchResultEntries
         );
-    }
-}
+
+    }//end search()
+
+}//end class

@@ -7,10 +7,13 @@
  *
  * @category  Event
  * @package   OCA\OpenRegister\Event
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -46,7 +49,7 @@ class ObjectRevertedEvent extends Event
      *
      * @return void
      */
-    public function __construct(ObjectEntity $object, $until = NULL)
+    public function __construct(ObjectEntity $object, $until = null)
     {
         parent::__construct();
         $this->object = $object;

@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -51,10 +54,11 @@ class FileMapper extends QBMapper
      *
      * @param int $id The ID of the file to find.
      *
-     * @return \OCA\OpenRegister\Db\File The found file entity.
      * @throws Exception If a database error occurs.
      * @throws DoesNotExistException If no file is found with the given ID.
      * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
+     *
+     * @return \OCA\OpenRegister\Db\File The found file entity.
      */
     public function find(int $id): File
     {
@@ -79,12 +83,13 @@ class FileMapper extends QBMapper
      * @param array|null $searchConditions Search conditions for query.
      * @param array|null $searchParams     Parameters for search conditions.
      *
-     * @return array List of File entities.
      * @throws Exception If a database error occurs.
+     *
+     * @return array List of File entities.
      */
     public function findAll(
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = []
@@ -107,7 +112,7 @@ class FileMapper extends QBMapper
             }
         }
 
-        if (empty($searchConditions) === FALSE) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -125,8 +130,9 @@ class FileMapper extends QBMapper
      *
      * @param \OCA\OpenRegister\Db\File|Entity $entity The entity to insert
      *
-     * @return \OCA\OpenRegister\Db\File The inserted entity with updated ID
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return \OCA\OpenRegister\Db\File The inserted entity with updated ID
      */
     public function insert(File | Entity $entity): File
     {
@@ -134,7 +140,7 @@ class FileMapper extends QBMapper
         $entity->setCreated(new DateTime());
         $entity->setUpdated(new DateTime());
 
-        if ($entity->getUuid() === NULL) {
+        if ($entity->getUuid() === null) {
             $entity->setUuid(Uuid::v4());
         }
 
@@ -149,8 +155,9 @@ class FileMapper extends QBMapper
      *
      * @param \OCA\OpenRegister\Db\File|Entity $entity The entity to update
      *
-     * @return \OCA\OpenRegister\Db\File The updated entity
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return \OCA\OpenRegister\Db\File The updated entity
      */
     public function update(File | Entity $entity): File
     {
@@ -166,15 +173,16 @@ class FileMapper extends QBMapper
      *
      * @param array $object The data to create the entity from.
      *
-     * @return \OCA\OpenRegister\Db\File The created File entity.
      * @throws Exception If a database error occurs.
+     *
+     * @return \OCA\OpenRegister\Db\File The created File entity.
      */
     public function createFromArray(array $object): File
     {
         $obj = new File();
         $obj->hydrate($object);
         // Set UUID.
-        if ($obj->getUuid() === NULL) {
+        if ($obj->getUuid() === null) {
             $obj->setUuid(Uuid::v4());
         }
 
@@ -188,10 +196,11 @@ class FileMapper extends QBMapper
      * @param int   $id     The ID of the file to update.
      * @param array $object The data to update the entity with.
      *
-     * @return \OCA\OpenRegister\Db\File The updated File entity.
      * @throws DoesNotExistException If no file is found with the given ID.
      * @throws Exception If a database error occurs.
      * @throws MultipleObjectsReturnedException If multiple files are found with the given ID.
+     *
+     * @return \OCA\OpenRegister\Db\File The updated File entity.
      */
     public function updateFromArray(int $id, array $object): File
     {
@@ -210,8 +219,9 @@ class FileMapper extends QBMapper
     /**
      * Gets the total count of files.
      *
-     * @return int The total number of files in the database.
      * @throws Exception If a database error occurs.
+     *
+     * @return int The total number of files in the database.
      */
     public function countAll(): int
     {

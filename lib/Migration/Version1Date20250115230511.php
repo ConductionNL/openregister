@@ -4,10 +4,13 @@
  *
  * @category  Migration
  * @package   OCA\OpenRegister\Migration
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -47,11 +50,12 @@ class Version1Date20250115230511 extends SimpleMigrationStep
      * @param  IOutput                   $output
      * @param  Closure(): ISchemaWrapper $schemaClosure
      * @param  array                     $options
+     *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
+        /**
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -60,24 +64,24 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_objects');
 
         // Add locked column to store lock tokens as JSON array
-        if ($table->hasColumn('locked') === FALSE) {
+        if ($table->hasColumn('locked') === false) {
             $table->addColumn(
                 'locked',
                 Types::JSON,
                 [
-               'notnull' => FALSE,
-               'default' => NULL,
+               'notnull' => false,
+               'default' => null,
            ]
             );
         }
 
         // Add owner column to store user ID of object owner
-        if ($table->hasColumn('owner') === FALSE) {
+        if ($table->hasColumn('owner') === false) {
             $table->addColumn(
                 'owner',
                 Types::STRING,
                 [
-               'notnull' => FALSE,
+               'notnull' => false,
                'length' => 64,
                'default' => '',
            ]
@@ -85,24 +89,24 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         }
 
         // Add authorization column to store access permissions as JSON object
-        if ($table->hasColumn('authorization') === FALSE) {
+        if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
                 'authorization',
                 Types::TEXT,
                 [
-               'notnull' => FALSE,
-               'default' => NULL,
+               'notnull' => false,
+               'default' => null,
            ]
             );
         }
 
         // Add folder column to store Nextcloud folder path
-        if ($table->hasColumn('folder') === FALSE) {
+        if ($table->hasColumn('folder') === false) {
             $table->addColumn(
                 'folder',
                 Types::STRING,
                 [
-               'notnull' => FALSE,
+               'notnull' => false,
                'length' => 4000,
                'default' => '',
            ]
@@ -113,12 +117,12 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         $registersTable = $schema->getTable('openregister_registers');
 
         // Add folder column to store Nextcloud folder path for registers
-        if ($registersTable->hasColumn('folder') === FALSE) {
+        if ($registersTable->hasColumn('folder') === false) {
             $registersTable->addColumn(
                 'folder',
                 Types::STRING,
                 [
-               'notnull' => FALSE,
+               'notnull' => false,
                'length' => 4000,
                'default' => '',
            ]

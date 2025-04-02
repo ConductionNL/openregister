@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -72,8 +75,8 @@ class SourceMapper extends QBMapper
      * @return array The sources
      */
     public function findAll(
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = []
@@ -95,7 +98,7 @@ class SourceMapper extends QBMapper
             }
         }
 
-        if (empty($searchConditions) === FALSE) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -119,7 +122,7 @@ class SourceMapper extends QBMapper
         $source->hydrate(object: $object);
 
         // Set uuid if not provided.
-        if ($source->getUuid() === NULL) {
+        if ($source->getUuid() === null) {
             $source->setUuid(Uuid::v4());
         }
 
@@ -141,7 +144,7 @@ class SourceMapper extends QBMapper
         $obj->hydrate($object);
 
         // Set or update the version.
-        if (isset($object['version']) === FALSE) {
+        if (isset($object['version']) === false) {
             $version = explode('.', $obj->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $obj->setVersion(implode('.', $version));

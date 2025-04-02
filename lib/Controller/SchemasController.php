@@ -6,10 +6,13 @@
  *
  * @category  Controller
  * @package   OCA\OpenRegister\AppInfo
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -65,6 +68,7 @@ class SchemasController extends Controller
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse The rendered template response
@@ -85,6 +89,7 @@ class SchemasController extends Controller
      * This method returns a JSON response containing an array of all schemas in the system.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param ObjectService $objectService The object service
@@ -127,6 +132,7 @@ class SchemasController extends Controller
      * This method returns a JSON response containing the details of a specific schema.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $id The ID of the schema to retrieve
@@ -151,6 +157,7 @@ class SchemasController extends Controller
      * This method creates a new schema based on POST data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse A JSON response containing the created schema
@@ -183,6 +190,7 @@ class SchemasController extends Controller
      * This method updates an existing schema based on its ID.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the schema to update
@@ -217,12 +225,14 @@ class SchemasController extends Controller
      * This method deletes a schema based on its ID.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the schema to delete
      *
-     * @return JSONResponse An empty JSON response
      * @throws Exception If there is an error deleting the schema
+     *
+     * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {
@@ -240,15 +250,17 @@ class SchemasController extends Controller
      * Uses 'file', 'url' or else 'json' from POST body.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int|null $id The ID of the schema to update, or null for a new schema
      *
-     * @return JSONResponse The JSON response with the updated schema
      * @throws Exception If there is a database error
      * @throws GuzzleException If there is an HTTP request error
+     *
+     * @return JSONResponse The JSON response with the updated schema
      */
-    public function uploadUpdate(?int $id = NULL): JSONResponse
+    public function uploadUpdate(?int $id = null): JSONResponse
     {
         return $this->upload($id);
 
@@ -260,17 +272,19 @@ class SchemasController extends Controller
      * Uses 'file', 'url' or else 'json' from POST body.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int|null $id The ID of the schema to update, or null for a new schema
      *
-     * @return JSONResponse The JSON response with the created or updated schema
      * @throws Exception If there is a database error
      * @throws GuzzleException If there is an HTTP request error
+     *
+     * @return JSONResponse The JSON response with the created or updated schema
      */
-    public function upload(?int $id = NULL): JSONResponse
+    public function upload(?int $id = null): JSONResponse
     {
-        if ($id !== NULL) {
+        if ($id !== null) {
             // If ID is provided, find the existing schema
             $schema = $this->schemaMapper->find($id);
         } else {
@@ -287,14 +301,14 @@ class SchemasController extends Controller
         }
 
         // Set default title if not provided or empty
-        if (empty($phpArray['title']) === TRUE) {
+        if (empty($phpArray['title']) === true) {
             $phpArray['title'] = 'New Schema';
         }
 
         // Update the schema with the data from the uploaded JSON
         $schema->hydrate($phpArray);
 
-        if ($schema->getId() === NULL) {
+        if ($schema->getId() === null) {
             // Insert a new schema if no ID is set
             $schema = $this->schemaMapper->insert($schema);
         } else {
@@ -310,12 +324,14 @@ class SchemasController extends Controller
      * Creates and return a json file for a Schema
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the schema to return json file for
      *
-     * @return JSONResponse A JSON response containing the schema as JSON
      * @throws Exception If there is an error retrieving the schema
+     *
+     * @return JSONResponse A JSON response containing the schema as JSON
      */
     public function download(int $id): JSONResponse
     {

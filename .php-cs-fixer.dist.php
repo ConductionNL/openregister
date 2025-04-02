@@ -15,7 +15,7 @@ return $config->setRules([
 	'binary_operator_spaces' => true,
 	'blank_line_after_namespace' => true,
 	'class_attributes_separation' => ['elements' => ['const' => 'one', 'method' => 'one', 'property' => 'one']],
-	'constant_case' => ['case' => 'upper'],
+	'constant_case' => ['case' => 'lower'],
 	'concat_space' => ['spacing' => 'none'],
 	'declare_equal_normalize' => ['space' => 'none'],
 	'elseif' => true,
@@ -42,13 +42,19 @@ return $config->setRules([
 	'no_trailing_whitespace_in_comment' => true,
 	'no_unused_imports' => true,
 	'ordered_imports' => ['sort_algorithm' => 'alpha'],
+	'phpdoc_separation' => true,
+	'phpdoc_order' => true,
 	'single_blank_line_at_eof' => true,
 	'single_blank_line_before_namespace' => true,
 	'single_import_per_statement' => true,
 	'single_line_after_imports' => true,
+	'strict_comparison' => true,
 	'switch_case_semicolon_to_colon' => true,
 	'switch_case_space' => true,
+	'trailing_comma_in_multiline' => true,
 	'visibility_required' => ['elements' => ['property', 'method']],
+	'comment_to_phpdoc' => true,
+	'php_unit_construct' => true,
 ])
 	->setFinder($finder)
 	->setIndent("    ")

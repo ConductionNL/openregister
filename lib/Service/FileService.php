@@ -11,10 +11,13 @@
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -114,12 +117,13 @@ class FileService
      *
      * @param Register|int $register The Register to create the folder for
      *
-     * @return string The path to the folder
      * @throws Exception In case we can't create the folder because it is not permitted
+     *
+     * @return string The path to the folder
      */
     public function createRegisterFolder(Register|int $register): string
     {
-        if (is_int($register) === TRUE) {
+        if (is_int($register) === true) {
             $register = $this->registerMapper->find($register);
         }
 
@@ -132,7 +136,7 @@ class FileService
         $this->createFolder(folderPath: $folderPath);
 
         return $folderPath;
-    }
+    }//end createRegisterFolder
 
     /**
      * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
@@ -150,7 +154,7 @@ class FileService
         }
 
         return "$title Register";
-    }
+    }//end getRegisterFolderName
 
     /**
      * Creates a folder for a Schema (used for storing files of Objects).
@@ -158,19 +162,20 @@ class FileService
      * @param Register|int $register The Register to create the schema folder for
      * @param Schema|int   $schema   The Schema to create the folder for
      *
-     * @return string The path to the folder
      * @throws Exception In case we can't create the folder because it is not permitted
+     *
+     * @return string The path to the folder
      */
     public function createSchemaFolder(Register|int $register, Schema|int $schema): string
     {
-        if (is_int($register) === TRUE) {
+        if (is_int($register) === true) {
             $register = $this->registerMapper->find($register);
         }
 
-        if (is_int($schema) === TRUE) {
+        if (is_int($schema) === true) {
             $schema = $this->schemaMapper->find($schema);
         }
-        // @todo we could check here if Register contains/has Schema else throw Exception.
+        /** @todo we could check here if Register contains/has Schema else throw Exception. */
 
         $registerFolderName = $this->getRegisterFolderName($register);
         // @todo maybe we want to use ShareLink here for register->folder as well?
@@ -183,7 +188,7 @@ class FileService
         $this->createFolder(folderPath: $folderPath);
 
         return $folderPath;
-    }
+    } //end createSchemaFolder
 
     /**
      * Get the name for the folder used for storing files of objects of a specific Schema.
@@ -195,7 +200,7 @@ class FileService
     private function getSchemaFolderName(Schema $schema): string
     {
         return $schema->getTitle();
-    }
+    }//end getSchemaFolderName
 
     /**
      * Creates a folder for an Object (used for storing files of this Object).
@@ -205,16 +210,17 @@ class FileService
      * @param Schema|int|null   $schema       The Schema to create the Object folder for (optional)
      * @param string|null       $folderPath   Optional path to use instead of generating one
      *
-     * @return Node|null The NextCloud Node object of the folder, or null if creation failed
      * @throws Exception In case we can't create the folder because it is not permitted
+     *
+     * @return Node|null The NextCloud Node object of the folder, or null if creation failed
      */
     public function createObjectFolder(
         ObjectEntity      $objectEntity,
-        Register|int|NULL $register = NULL,
-        Schema|int|NULL   $schema = NULL,
-        string            $folderPath = NULL
+        Register|int|null $register = null,
+        Schema|int|null   $schema = null,
+        string            $folderPath = null
     ): ?Node {
-        if ($folderPath === NULL) {
+        if ($folderPath === null) {
             $folderPath = $this->getObjectFolderPath(
                 objectEntity: $objectEntity,
                 register: $register,
@@ -236,7 +242,7 @@ class FileService
         // }
 
         return $this->getNode($folderPath);
-    }
+    }//end createObjectFolder
 
     /**
      * Gets the NextCloud Node object for the folder of an Object.
@@ -245,15 +251,16 @@ class FileService
      * @param Register|int|null $register     The Register to get the Object folder for (optional)
      * @param Schema|int|null   $schema       The Schema to get the Object folder for (optional)
      *
-     * @return Node|null The NextCloud Node object of the folder, or null if getting/creating failed
      * @throws Exception In case we can't create the folder because it is not permitted
+     *
+     * @return Node|null The NextCloud Node object of the folder, or null if getting/creating failed
      */
     public function getObjectFolder(
         ObjectEntity      $objectEntity,
-        Register|int|NULL $register = NULL,
-        Schema|int|NULL   $schema = NULL
+        Register|int|null $register = null,
+        Schema|int|null   $schema = null
     ): ?Node {
-        if (empty($objectEntity->getFolder()) === TRUE) {
+        if (empty($objectEntity->getFolder()) === true) {
             $folderPath = $this->getObjectFolderPath(
                 objectEntity: $objectEntity,
                 register: $register,
@@ -267,7 +274,7 @@ class FileService
 
         $node = $this->getNode($folderPath);
 
-        if ($node === NULL) {
+        if ($node === null) {
             return $this->createObjectFolder(
                 objectEntity: $objectEntity,
                 register: $register,
@@ -276,7 +283,7 @@ class FileService
             );
         }
         return $node;
-    }
+    }//end getObjectFolder
 
     /**
      * Gets the path to the folder of an object.
@@ -285,19 +292,20 @@ class FileService
      * @param Register|int|null $register     The Register to get the Object folder path for (must match Object->register)
      * @param Schema|int|null   $schema       The Schema to get the Object folder path for (must match Object->schema)
      *
-     * @return string The path to the folder
      * @throws Exception If something went wrong getting the path, a mismatch in object register/schema & function parameters
+     *
+     * @return string The path to the folder
      */
     private function getObjectFolderPath(
         ObjectEntity      $objectEntity,
-        Register|int|NULL $register = NULL,
-        Schema|int|NULL   $schema = NULL
+        Register|int|null $register = null,
+        Schema|int|null   $schema = null
     ): string {
         $objectRegister = (int)$objectEntity->getRegister();
-        if ($register === NULL) {
+        if ($register === null) {
             $register = $objectRegister;
         }
-        if (is_int($register) === TRUE) {
+        if (is_int($register) === true) {
             if ($register !== $objectRegister) {
                 $message = "Mismatch in Object->Register ($objectRegister) & Register given in function: getObjectFolderPath() ($register)";
                 $this->logger->error(message: $message);
@@ -307,10 +315,10 @@ class FileService
         }
 
         $objectSchema = (int)$objectEntity->getSchema();
-        if ($schema === NULL) {
+        if ($schema === null) {
             $schema = $objectSchema;
         }
-        if (is_int($schema) === TRUE) {
+        if (is_int($schema) === true) {
             if ($schema !== $objectSchema) {
                 $message = "Mismatch in Object->Schema ($objectSchema) & Schema given in function: getObjectFolderPath() ($schema)";
                 $this->logger->error(message: $message);
@@ -328,7 +336,7 @@ class FileService
         $objectFolderName = $this->getObjectFolderName($objectEntity);
 
         return $this::ROOT_FOLDER."/$registerFolderName/$schemaFolderName/$objectFolderName";
-    }
+    }//end getObjectFolderPath
 
     /**
      * Get the name for the folder used for storing files of the given object.
@@ -339,12 +347,12 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity $objectEntity): string
     {
-        // @todo check if property Title or Name exists and use that as object title
+        /** @todo check if property Title or Name exists and use that as object title. */
         $objectTitle = 'object';
 
         // return "{$objectEntity->getUuid()} ($objectTitle)";
         return $objectEntity->getUuid();
-    }
+    }//end getObjectFolderName
 
     /**
      * Returns a link to the given folder path.
@@ -357,7 +365,7 @@ class FileService
     {
         $folderPath = str_replace('%2F', '/', urlencode($folderPath));
         return $this->getCurrentDomain()."/index.php/apps/files/files?dir=$folderPath";
-    }
+    } //end getFolderLink
 
     /**
      * Returns a share link for the given IShare object.
@@ -369,7 +377,7 @@ class FileService
     public function getShareLink(IShare $share): string
     {
         return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
-    }
+    }//end getShareLink
 
     /**
      * Gets and returns the current host/domain with correct protocol.
@@ -381,33 +389,34 @@ class FileService
         $baseUrl = $this->urlGenerator->getBaseUrl();
         $trustedDomains = $this->config->getSystemValue('trusted_domains');
 
-        if (isset($trustedDomains[1]) === TRUE) {
+        if (isset($trustedDomains[1]) === true) {
             $baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
         }
 
         return $baseUrl;
-    }
+    }//end getCurrentDomain
 
     /**
-     * Gets or creates the OpenCatalogi user for file operations
+     * Gets or creates the OpenCatalogi user for file operations.
+     *
+     * @throws Exception If OpenCatalogi user cannot be created
      *
      * @return IUser The OpenCatalogi user
-     * @throws Exception If OpenCatalogi user cannot be created
      */
     private function getUser(): IUser
     {
         $openCatalogiUser = $this->userManager->get(self::APP_USER);
 
         if (!$openCatalogiUser) {
-            // Create OpenCatalogi user if it doesn't exist
-            $password = bin2hex(random_bytes(16)); // Generate random password
+            // Create OpenCatalogi user if it doesn't exist.
+            $password = bin2hex(random_bytes(16)); // Generate random password.
             $openCatalogiUser = $this->userManager->createUser(self::APP_USER, $password);
 
             if (!$openCatalogiUser) {
                 throw new \Exception('Failed to create OpenCatalogi user account.');
             }
 
-            // Add user to OpenCatalogi group
+            // Add user to OpenCatalogi group.
             $group = $this->groupManager->get(self::APP_GROUP);
             if (!$group) {
                 $group = $this->groupManager->createGroup(self::APP_GROUP);
@@ -416,7 +425,7 @@ class FileService
         }
 
         return $openCatalogiUser;
-    }
+    }//end getUser
 
     /**
      * Gets a NextCloud Node object for the given file or folder path.
@@ -428,63 +437,64 @@ class FileService
             return $userFolder->get(path: $path);
         } catch (NotFoundException|NotPermittedException $e) {
             $this->logger->error(message: $e->getMessage());
-            return NULL;
+            return null;
         }
-    }
+    }//end getNode
 
     /**
      * Formats a single Node file into a metadata array.
      *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
      * @param Node $file The Node file to format
+     *
      * @return array The formatted file metadata array
      */
     public function formatFile(Node $file): array
     {
-        // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+        // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
         $shares = $this->findShares($file);
 
-        // Get base metadata array
+        // Get base metadata array.
         $metadata = [
             'id' => $file->getId(),
             'path' => $file->getPath(),
             'title' => $file->getName(),
-            'accessUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]) : NULL,
-            'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : NULL,
+            'accessUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]) : null,
+            'downloadUrl' => count($shares) > 0 ? $this->getShareLink($shares[0]).'/download' : null,
             'type' => $file->getMimetype(),
             'extension' => $file->getExtension(),
             'size' => $file->getSize(),
             'hash' => $file->getEtag(),
-            'published' => count($shares) > 0 ? $shares[0]->getShareTime()->format('c') : NULL,
+            'published' => count($shares) > 0 ? $shares[0]->getShareTime()->format('c') : null,
             'modified' => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
-            'labels' => $this->getFileTags(fileId: $file->getId())
+            'labels' => $this->getFileTags(fileId: $file->getId()),
         ];
 
-        // Process labels that contain ':' to add as separate metadata fields
+        // Process labels that contain ':' to add as separate metadata fields.
         $remainingLabels = [];
         foreach ($metadata['labels'] as $label) {
-            if (strpos($label, ':') !== FALSE) {
+            if (strpos($label, ':') !== false) {
                 list($key, $value) = explode(':', $label, 2);
                 $key = trim($key);
                 $value = trim($value);
 
-                // Skip if key exists in base metadata
+                // Skip if key exists in base metadata.
                 if (isset($metadata[$key])) {
                     $remainingLabels[] = $label;
                     continue;
                 }
 
-                // If key already exists as array, append value
+                // If key already exists as array, append value.
                 if (isset($metadata[$key]) && is_array($metadata[$key])) {
                     $metadata[$key][] = $value;
                 }
-                // If key exists but not as array, convert to array with both values
+                // If key exists but not as array, convert to array with both values.
                 elseif (isset($metadata[$key])) {
                     $metadata[$key] = [$metadata[$key], $value];
                 }
-                // If key doesn't exist, create new entry
+                // If key doesn't exist, create new entry.
                 else {
                     $metadata[$key] = $value;
                 }
@@ -493,68 +503,69 @@ class FileService
             }
         }
 
-        // Update labels array to only contain non-processed labels
+        // Update labels array to only contain non-processed labels.
         $metadata['labels'] = $remainingLabels;
 
         return $metadata;
-    }
+    } //end formatFile
 
     /**
      * Formats an array of Node files into an array of metadata arrays.
      *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
      * @param Node[] $files Array of Node files to format
      * @param array $requestParams Optional request parameters
      *
-     * @return array Array of formatted file metadata arrays
      * @throws InvalidPathException
      * @throws NotFoundException
+     *
+     * @return array Array of formatted file metadata arrays
      */
     public function formatFiles(array $files, ?array $requestParams = []): array
     {
-        // Extract specific parameters
+        // Extract specific parameters.
         $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
         $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
-        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? NULL;
-        $page = $requestParams['page'] ?? $requestParams['_page'] ?? NULL;
-        $search = $requestParams['_search'] ?? NULL;
+        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+        $search = $requestParams['_search'] ?? null;
 
-        if ($page !== NULL && isset($limit)) {
+        if ($page !== null && isset($limit)) {
             $page = (int) $page;
             $offset = $limit * ($page - 1);
         }
 
-        // Ensure order and extend are arrays
-        if (is_string($order) === TRUE) {
+        // Ensure order and extend are arrays.
+        if (is_string($order) === true) {
             $order = array_map('trim', explode(',', $order));
         }
-        if (is_string($extend) === TRUE) {
+        if (is_string($extend) === true) {
             $extend = array_map('trim', explode(',', $extend));
         }
 
-        // Remove unnecessary parameters from filters
+        // Remove unnecessary parameters from filters.
         $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed.
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
         $formattedFiles = [];
 
-        // Counts total before slicing
+        // Counts total before slicing.
         $total = count($files);
 
-        // Apply offset and limit to files array if specified
+        // Apply offset and limit to files array if specified.
         $files = array_slice($files, $offset, $limit);
 
         foreach ($files as $file) {
             $formattedFiles[] = $this->formatFile($file);
         }
 
-        // @todo search
-        $pages = $limit !== NULL ? ceil($total / $limit) : 1;
+        /** @todo search. */
+        $pages = $limit !== null ? ceil($total / $limit) : 1;
 
         return [
             'results' => $formattedFiles,
@@ -562,7 +573,7 @@ class FileService
             'page' => $page ?? 1,
             'pages' => $pages,
         ];
-    }
+    }//end formatFiles
 
     /**
     * Get the tags associated with a file.
@@ -574,7 +585,7 @@ class FileService
     private function getFileTags(string $fileId): array
     {
         $tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
-        if (isset($tagIds[$fileId]) === FALSE || empty($tagIds[$fileId]) === TRUE) {
+        if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
             return [];
         }
 
@@ -585,7 +596,7 @@ class FileService
         }, $tags);
 
         return array_values($tagNames);
-    }
+    }//end getFileTags
 
     /**
      * Finds shares associated with a file or folder.
@@ -601,8 +612,8 @@ class FileService
         $currentUser = $this->userSession->getUser();
         $userId = $currentUser ? $currentUser->getUID() : 'Guest';
 
-        return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: TRUE);
-    }
+        return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
+    }//end findShares
 
     /**
      * Try to find a IShare object with given $path & $shareType.
@@ -620,82 +631,84 @@ class FileService
         try {
             $userFolder = $this->rootFolder->getUserFolder(userId: $userId);
         } catch (NotPermittedException) {
-            $this->logger->error("Can't find share for $path because user (folder) for user $userId couldn't be found");
-            return NULL;
+            $this->logger->error("Can't find share for $path because user (folder) for user $userId couldn't be found.");
+            return null;
         }
 
         try {
             // Note: if we ever want to find shares for folders instead of files, this should work for folders as well?
             $file = $userFolder->get(path: $path);
         } catch (NotFoundException $e) {
-            $this->logger->error("Can't find share for $path because file doesn't exist");
+            $this->logger->error("Can't find share for $path because file doesn't exist.");
 
-            return NULL;
+            return null;
         }
 
         if ($file instanceof File) {
-            $shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: TRUE);
+            $shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
             if (count($shares) > 0) {
                 return $shares[0];
             }
         }
 
-        return NULL;
-    }
+        return null;
+    }//end findShare
 
     /**
      * Creates a IShare object using the $shareData array data.
      *
      * @param array $shareData The data to create a IShare with, should contain 'path', 'file', 'shareType', 'permissions' and 'userid'
      *
-     * @return IShare The Created IShare object
      * @throws Exception If creating the share fails
+     *
+     * @return IShare The Created IShare object
      */
     private function createShare(array $shareData): IShare
     {
         $userId = $this->getUser()->getUID();
 
-        // Create a new share
+        // Create a new share.
         $share = $this->shareManager->newShare();
         $share->setTarget(target: '/'.$shareData['path']);
-        if (empty($shareData['file']) === FALSE) {
+        if (empty($shareData['file']) === false) {
             $share->setNodeId(fileId: $shareData['file']->getId());
         }
-        if (empty($shareData['nodeId']) === FALSE) {
+        if (empty($shareData['nodeId']) === false) {
             $share->setNodeId(fileId: $shareData['nodeId']);
         }
         $share->setNodeType(type: $shareData['nodeType'] ?? 'file');
         $share->setShareType(shareType: $shareData['shareType']);
-        if ($shareData['permissions'] !== NULL) {
+        if ($shareData['permissions'] !== null) {
             $share->setPermissions(permissions: $shareData['permissions']);
         }
         $share->setSharedBy(sharedBy: $userId);
         $share->setShareOwner(shareOwner: $userId);
         $share->setShareTime(shareTime: new DateTime());
-        if (empty($shareData['sharedWith']) === FALSE) {
+        if (empty($shareData['sharedWith']) === false) {
             $share->setSharedWith(sharedWith: $shareData['sharedWith']);
         }
         $share->setStatus(status: $share::STATUS_ACCEPTED);
 
         return $this->shareManager->createShare(share: $share);
-    }
+    }//end createShare
 
     /**
      * Creates and returns a share link for a file (or folder).
      *
-     * @see https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share
+     * @see https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
      *
      * @param string   $path        Path (from root) to the file/folder which should be shared
      * @param int|null $shareType   The share type (0=user, 1=group, 3=public link, 4=email, etc.)
      * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
      *
-     * @return string The share link
      * @throws Exception If creating the share link fails
+     *
+     * @return string The share link
      */
-    public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = NULL): string
+    public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string
     {
         $path = trim(string: $path, characters: '/');
-        if ($permissions === NULL) {
+        if ($permissions === null) {
             $permissions = 31;
             if ($shareType === 3) {
                 $permissions = 1;
@@ -707,15 +720,15 @@ class FileService
         try {
             $userFolder = $this->rootFolder->getUserFolder(userId: $userId);
         } catch (NotPermittedException) {
-            $this->logger->error("Can't create share link for $path because user (folder) for user $userId couldn't be found");
-            return "User (folder) couldn't be found";
+            $this->logger->error("Can't create share link for $path because user (folder) for user $userId couldn't be found.");
+            return "User (folder) couldn't be found.";
         }
 
         try {
             $file = $this->rootFolder->get($path);
             // $file = $userFolder->get(path: $path);
         } catch (NotFoundException $e) {
-            $this->logger->error("Can't create share link for $path because file doesn't exist");
+            $this->logger->error("Can't create share link for $path because file doesn't exist.");
 
             return 'File not found at '.$path;
         }
@@ -725,36 +738,38 @@ class FileService
                 'path' => $path,
                 'file' => $file,
                 'shareType' => $shareType,
-                'permissions' => $permissions
+                'permissions' => $permissions,
             ]);
             return $this->getShareLink($share);
         } catch (Exception $exception) {
             $this->logger->error("Can't create share link for $path: ".$exception->getMessage());
 
-            throw new Exception('Can\'t create share link');
+            throw new Exception('Can\'t create share link.');
         }
-    }
+    }//end createShareLink
 
     /**
      * Deletes all share links for a file or folder.
      *
      * @param Node $file The file or folder whose shares should be deleted
      *
-     * @return Node The file with shares deleted
      * @throws Exception If the shares cannot be deleted
      *
+     * @return Node The file with shares deleted
+     *
      * @psalm-return Node
+     *
      * @phpstan-return Node
      */
     public function deleteShareLinks(Node $file): Node
     {
-        // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare
+        // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
         $shares = $this->findShares($file);
 
         foreach ($shares as $share) {
             try {
                 $this->shareManager->deleteShare($share);
-                $this->logger->info("Successfully deleted share for path: $share->getPath()");
+                $this->logger->info("Successfully deleted share for path: $share->getPath().");
             } catch (Exception $e) {
                 $this->logger->error("Failed to delete share for path $share->getPath(): ".$e->getMessage());
                 throw new Exception("Failed to delete share for path $share->getPath(): ".$e->getMessage());
@@ -762,15 +777,16 @@ class FileService
         }
 
         return $file;
-    }
+    }//end deleteShareLinks
 
     /**
      * Creates a new folder in NextCloud, unless it already exists.
      *
      * @param string $folderPath Path (from root) to where you want to create a folder, include the name of the folder
      *
-     * @return bool True if successfully created a new folder, false if folder already exists
      * @throws Exception If creating the folder is not permitted
+     *
+     * @return bool True if successfully created a new folder, false if folder already exists
      */
     public function createFolder(string $folderPath): bool
     {
@@ -787,7 +803,7 @@ class FileService
             } catch (NotFoundException $exception) {
                 $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
 
-                if ($this->groupManager->groupExists(self::APP_GROUP) === FALSE) {
+                if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
                     $this->groupManager->createGroup(self::APP_GROUP);
                 }
 
@@ -797,7 +813,7 @@ class FileService
                     'nodeType' => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
                     'shareType' => 1,
                     'permissions' => 31,
-                    'sharedWith' => self::APP_GROUP
+                    'sharedWith' => self::APP_GROUP,
                 ]);
             }
 
@@ -806,19 +822,19 @@ class FileService
             } catch (NotFoundException $e) {
                 $userFolder->newFolder(path: $folderPath);
 
-                return TRUE;
+                return true;
             }
 
             // Folder already exists.
             $this->logger->info("This folder already exits $folderPath");
-            return FALSE;
+            return false;
 
         } catch (NotPermittedException $e) {
             $this->logger->error("Can't create folder $folderPath: ".$e->getMessage());
 
             throw new Exception("Can\'t create folder $folderPath");
         }
-    }
+    }//end createFolder()
 
     /**
      * Overwrites an existing file in NextCloud.
@@ -827,10 +843,11 @@ class FileService
      * @param mixed  $content  Optional content of the file. If null, only metadata like tags will be updated
      * @param array  $tags     Optional array of tags to attach to the file
      *
-     * @return File The updated file
      * @throws Exception If the file doesn't exist or if file operations fail
+     *
+     * @return File The updated file
      */
-    public function updateFile(string $filePath, mixed $content = NULL, array $tags = []): File
+    public function updateFile(string $filePath, mixed $content = null, array $tags = []): File
     {
         $filePath = trim(string: $filePath, characters: '/');
 
@@ -843,7 +860,7 @@ class FileService
                     $file = $userFolder->get(path: $filePath);
 
                     // If content is not null, update the file content
-                    if ($content !== NULL) {
+                    if ($content !== null) {
                         try {
                             $file->putContent(data: $content);
                         } catch (NotPermittedException $e) {
@@ -871,7 +888,7 @@ class FileService
 
             throw new Exception("Can't update file $filePath");
         }
-    }
+    }//end updateFile()
 
     /**
      * Constructs a file path for a specific object.
@@ -884,15 +901,16 @@ class FileService
     public function getObjectFilePath(string|ObjectEntity $object, string $filePath): string
     {
         return $object->getFolder().'/'.$filePath;
-    }
+    }//end getObjectFilePath()
 
     /**
      * Deletes a file from NextCloud.
      *
      * @param string $filePath Path (from root) to the file you want to delete
      *
-     * @return bool True if successful, false if the file didn't exist
      * @throws Exception If deleting the file is not permitted
+     *
+     * @return bool True if successful, false if the file didn't exist
      */
     public function deleteFile(string $filePath): bool
     {
@@ -907,12 +925,12 @@ class FileService
                     $file = $userFolder->get(path: $filePath);
                     $file->delete();
 
-                    return TRUE;
+                    return true;
                 } catch (NotFoundException $e) {
                     // File does not exist.
                     $this->logger->warning("File $filePath does not exist.");
 
-                    return FALSE;
+                    return false;
                 }
             } catch (NotPermittedException|InvalidPathException $e) {
                 $this->logger->error("Can't delete file $filePath: ".$e->getMessage());
@@ -924,7 +942,7 @@ class FileService
 
             throw new Exception("Can't delete file $filePath");
         }
-    }
+    }//end deleteFile()
 
     /**
      * Attach tags to a file.
@@ -938,7 +956,7 @@ class FileService
     {
         // Get all existing tags for the file and convert to array of just the IDs
         $oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
-        if (isset($oldTagIds[$fileId]) === FALSE || empty($oldTagIds[$fileId]) === TRUE) {
+        if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
             $oldTagIds = [];
         } else {
             $oldTagIds = $oldTagIds[$fileId];
@@ -953,16 +971,16 @@ class FileService
             }
 
             try {
-                $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: TRUE, userAssignable: TRUE);
+                $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
             } catch (Exception $exception) {
-                $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: TRUE, userAssignable: TRUE);
+                $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
             }
 
             $newTagIds[] = $tag->getId();
         }
 
         // Only assign new tags if we have any
-        if (empty($newTagIds) === FALSE) {
+        if (empty($newTagIds) === false) {
             $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $newTagIds);
         }
 
@@ -974,12 +992,12 @@ class FileService
         });
 
         // Remove old tags that aren't in new tags
-        if (empty($tagsToRemove) === FALSE) {
+        if (empty($tagsToRemove) === false) {
             $this->systemTagMapper->unassignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $tagsToRemove);
         }
 
         // @todo Let's check if there are now existing tags without files (orphans) that need to be deleted
-    }
+    }//end attachTagsToFile()
 
     /**
      * Adds a new file to an object's folder with the OpenCatalogi user as owner.
@@ -990,11 +1008,12 @@ class FileService
      * @param bool         $share        Whether to create a share link for the file
      * @param array        $tags         Optional array of tags to attach to the file
      *
-     * @return File The created file
      * @throws NotPermittedException If file creation fails due to permissions
      * @throws Exception If file creation fails for other reasons
+     *
+     * @return File The created file
      */
-    public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = FALSE, array $tags = []): File
+    public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
     {
         try {
             // Create new file in the folder
@@ -1013,12 +1032,12 @@ class FileService
             $file->putContent($content);
 
             // Create a share link for the file if requested
-            if ($share === TRUE) {
+            if ($share === true) {
                 $this->createShareLink(path: $file->getPath());
             }
 
             // Add tags to the file if provided
-            if (empty($tags) === FALSE) {
+            if (empty($tags) === false) {
                 $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
             }
 
@@ -1031,7 +1050,7 @@ class FileService
             $this->logger->error("Failed to create file $fileName: ".$e->getMessage());
             throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
         }
-    }
+    }//end addFile()
 
     /**
      * Retrieves all available tags in the system.
@@ -1039,17 +1058,19 @@ class FileService
      * This method fetches all tags that are visible and assignable by users
      * from the system tag manager.
      *
-     * @return array An array of tag names
      * @throws \Exception If there's an error retrieving the tags
      *
+     * @return array An array of tag names
+     *
      * @psalm-return array<int, string>
+     *
      * @phpstan-return array<int, string>
      */
     public function getAllTags(): array
     {
         try {
             // Get all tags that are visible and assignable by users
-            $tags = $this->systemTagManager->getAllTags(visibilityFilter: TRUE);
+            $tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
 
             // Extract just the tag names
             $tagNames = array_map(static function ($tag) {
@@ -1063,5 +1084,6 @@ class FileService
             $this->logger->error('Failed to retrieve tags: '.$e->getMessage());
             throw new \Exception('Failed to retrieve tags: '.$e->getMessage());
         }
-    }
-}
+    }//end getAllTags()
+
+}//end class

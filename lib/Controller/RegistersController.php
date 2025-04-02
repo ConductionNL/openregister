@@ -6,10 +6,13 @@
  *
  * @category  Controller
  * @package   OCA\OpenRegister\AppInfo
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -62,6 +65,7 @@ class RegistersController extends Controller
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse The rendered template response
@@ -82,6 +86,7 @@ class RegistersController extends Controller
      * This method returns a JSON response containing an array of all registers in the system.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param ObjectService $objectService The object service
@@ -109,8 +114,8 @@ class RegistersController extends Controller
         return new JSONResponse(
             [
                 'results' => $this->registerMapper->findAll(
-                    limit: NULL,
-                    offset: NULL,
+                    limit: null,
+                    offset: null,
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams
@@ -126,6 +131,7 @@ class RegistersController extends Controller
      * This method returns a JSON response containing the details of a specific register.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $id The ID of the register to retrieve
@@ -150,6 +156,7 @@ class RegistersController extends Controller
      * This method creates a new register based on POST data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse A JSON response containing the created register
@@ -182,6 +189,7 @@ class RegistersController extends Controller
      * This method updates an existing register based on its ID.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the register to update
@@ -216,12 +224,14 @@ class RegistersController extends Controller
      * This method deletes a register based on its ID.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $id The ID of the register to delete
      *
-     * @return JSONResponse An empty JSON response
      * @throws Exception If there is an error deleting the register
+     *
+     * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
     {
@@ -239,6 +249,7 @@ class RegistersController extends Controller
      * Get all the objects for a register and schema
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $register The ID of the register
@@ -261,15 +272,17 @@ class RegistersController extends Controller
      * Uses 'file', 'url' or else 'json' from POST body.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int|null $id The ID of the register to update, or null for a new register
      *
-     * @return JSONResponse The JSON response with the updated register
      * @throws Exception If there is a database error
      * @throws GuzzleException If there is an HTTP request error
+     *
+     * @return JSONResponse The JSON response with the updated register
      */
-    public function uploadUpdate(?int $id = NULL): JSONResponse
+    public function uploadUpdate(?int $id = null): JSONResponse
     {
         return $this->upload($id);
 
@@ -281,17 +294,19 @@ class RegistersController extends Controller
      * Uses 'file', 'url' or else 'json' from POST body.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int|null $id The ID of the register to update, or null for a new register
      *
-     * @return JSONResponse The JSON response with the created or updated register
      * @throws GuzzleException If there is an HTTP request error
      * @throws Exception If there is a database error
+     *
+     * @return JSONResponse The JSON response with the created or updated register
      */
-    public function upload(?int $id = NULL): JSONResponse
+    public function upload(?int $id = null): JSONResponse
     {
-        if ($id !== NULL) {
+        if ($id !== null) {
             // If ID is provided, find the existing register
             $register = $this->registerMapper->find($id);
         } else {
@@ -308,7 +323,7 @@ class RegistersController extends Controller
         }
 
         // Validate that the jsonArray is a valid OAS3 object containing schemas
-        if (isset($phpArray['openapi']) === FALSE || isset($phpArray['components']['schemas']) === FALSE) {
+        if (isset($phpArray['openapi']) === false || isset($phpArray['components']['schemas']) === false) {
             return new JSONResponse(
                 data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'],
                 statusCode: 400
@@ -316,14 +331,14 @@ class RegistersController extends Controller
         }
 
         // Set default title if not provided or empty
-        if (empty($phpArray['info']['title']) === TRUE) {
+        if (empty($phpArray['info']['title']) === true) {
             $phpArray['info']['title'] = 'New Register';
         }
 
         // Update the register with the data from the uploaded JSON
         $register->hydrate($phpArray);
 
-        if ($register->getId() === NULL) {
+        if ($register->getId() === null) {
             // Insert a new register if no ID is set
             $register = $this->registerMapper->insert($register);
         } else {

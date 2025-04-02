@@ -4,10 +4,13 @@
  *
  * @category  Migration
  * @package   OCA\OpenRegister\Migration
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -45,54 +48,55 @@ class Version1Date20241030131427 extends SimpleMigrationStep
      * @param  IOutput                   $output
      * @param  Closure(): ISchemaWrapper $schemaClosure
      * @param  array                     $options
+     *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
+        /**
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
 
         // Update the openregister_schemas table
         $table = $schema->getTable('openregister_schemas');
-        if ($table->hasColumn('hard_validation') === FALSE) {
-            $table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: ['notnull' => TRUE])->setDefault(default: FALSE);
+        if ($table->hasColumn('hard_validation') === false) {
+            $table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: ['notnull' => true])->setDefault(default: false);
         }
 
-        if ($table->hasColumn('archive') === FALSE) {
-            $table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => FALSE])->setDefault(default: '{}');
+        if ($table->hasColumn('archive') === false) {
+            $table->addColumn(name: 'archive', typeName: Types::JSON, options: ['notnull' => false])->setDefault(default: '{}');
         }
 
-        if ($table->hasColumn('source') === FALSE) {
-            $table->addColumn(name: 'source', typeName: Types::STRING, options: ['notnull' => FALSE])->setDefault(default: '');
+        if ($table->hasColumn('source') === false) {
+            $table->addColumn(name: 'source', typeName: Types::STRING, options: ['notnull' => false])->setDefault(default: '');
         }
 
         // Update the openregister_registers table
         $table = $schema->getTable('openregister_registers');
-        if ($table->hasColumn('source') === TRUE) {
+        if ($table->hasColumn('source') === true) {
             $column = $table->getColumn('source');
-            $column->setNotnull(FALSE);
+            $column->setNotnull(false);
             $column->setDefault('');
         }
 
-        if ($table->hasColumn('table_prefix') === TRUE) {
+        if ($table->hasColumn('table_prefix') === true) {
             $column = $table->getColumn('table_prefix');
-            $column->setNotnull(FALSE);
+            $column->setNotnull(false);
             $column->setDefault('');
         }
 
-        if ($schema->hasTable('openregister_object_audit_logs') === FALSE) {
+        if ($schema->hasTable('openregister_object_audit_logs') === false) {
             $table = $schema->createTable('openregister_object_audit_logs');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => TRUE, 'notnull' => TRUE]);
-            $table->addColumn('uuid', Types::STRING, ['notnull' => TRUE, 'length' => 255]);
-            $table->addColumn('schema_id', Types::STRING, ['notnull' => TRUE, 'length' => 255]);
-            $table->addColumn('object_id', Types::STRING, ['notnull' => TRUE, 'length' => 255]);
-            $table->addColumn('user_id', Types::STRING, ['notnull' => FALSE, 'length' => 255]);
-            $table->addColumn('session_id', Types::STRING, ['notnull' => FALSE, 'length' => 255]);
-            $table->addColumn('changes', Types::JSON, ['notnull' => FALSE]);
-            $table->addColumn('expires', Types::DATETIME, ['notnull' => FALSE]);
-            $table->addColumn('created', Types::DATETIME, ['notnull' => TRUE, 'default' => 'CURRENT_TIMESTAMP']);
+            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+            $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+            $table->addColumn('schema_id', Types::STRING, ['notnull' => true, 'length' => 255]);
+            $table->addColumn('object_id', Types::STRING, ['notnull' => true, 'length' => 255]);
+            $table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+            $table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+            $table->addColumn('changes', Types::JSON, ['notnull' => false]);
+            $table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
+            $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
             $table->setPrimaryKey(['id']);
             $table->addIndex(['uuid'], 'object_audit_log_uuid');

@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -36,91 +39,91 @@ class File extends Entity implements JsonSerializable
      *
      * @var string|null The unique identifier for the file
      */
-    protected ?string $uuid = NULL;
+    protected ?string $uuid = null;
 
     /**
      * The name of the file
      *
      * @var string|null The name of the file
      */
-    protected ?string $filename = NULL;
+    protected ?string $filename = null;
 
     /**
      * The URL to download the file
      *
      * @var string|null The URL to download the file
      */
-    protected ?string $downloadUrl = NULL;
+    protected ?string $downloadUrl = null;
 
     /**
      * The URL to share the file
      *
      * @var string|null The URL to share the file
      */
-    protected ?string $shareUrl = NULL;
+    protected ?string $shareUrl = null;
 
     /**
      * The URL to access the file
      *
      * @var string|null The URL to access the file
      */
-    protected ?string $accessUrl = NULL;
+    protected ?string $accessUrl = null;
 
     /**
      * The file extension (e.g., .txt, .jpg)
      *
      * @var string|null The file extension (e.g., .txt, .jpg)
      */
-    protected ?string $extension = NULL;
+    protected ?string $extension = null;
 
     /**
      * The checksum of the file for integrity verification
      *
      * @var string|null The checksum of the file for integrity verification
      */
-    protected ?string $checksum = NULL;
+    protected ?string $checksum = null;
 
     /**
      * The source of the file
      *
      * @var integer|null The source of the file
      */
-    protected ?int $source = NULL;
+    protected ?int $source = null;
 
     /**
      * The ID of the user associated with the file
      *
      * @var string|null The ID of the user associated with the file
      */
-    protected ?string $userId = NULL;
+    protected ?string $userId = null;
 
     /**
      * The base64 string for this file
      *
      * @var string|null The base64 string for this file
      */
-    protected ?string $base64 = NULL;
+    protected ?string $base64 = null;
 
     /**
      * The path to this file
      *
      * @var string|null The path to this file
      */
-    protected ?string $filePath = NULL;
+    protected ?string $filePath = null;
 
     /**
      * The date and time when the file was created
      *
      * @var DateTime|null The date and time when the file was created
      */
-    protected ?DateTime $created = NULL;
+    protected ?DateTime $created = null;
 
     /**
      * The date and time when the file was last updated
      *
      * @var DateTime|null The date and time when the file was last updated
      */
-    protected ?DateTime $updated = NULL;
+    protected ?DateTime $updated = null;
 
     /**
      * Constructor for the File entity
@@ -175,7 +178,7 @@ class File extends Entity implements JsonSerializable
         $jsonFields = $this->getJsonFields();
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === TRUE && $value === []) {
+            if (in_array($key, $jsonFields) === true && $value === []) {
                 $value = [];
             }
 
@@ -199,13 +202,13 @@ class File extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $created = NULL;
-        if (isset($this->created) === TRUE) {
+        $created = null;
+        if (isset($this->created) === true) {
             $created = $this->created->format('c');
         }
 
-        $updated = NULL;
-        if (isset($this->updated) === TRUE) {
+        $updated = null;
+        if (isset($this->updated) === true) {
             $updated = $this->updated->format('c');
         }
 

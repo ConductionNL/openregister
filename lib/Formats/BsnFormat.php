@@ -6,10 +6,13 @@
  *
  * @category  Format
  * @package   OCA\OpenRegister\Formats
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -31,8 +34,8 @@ class BsnFormat implements Format
             pad_type: STR_PAD_LEFT,
         );
 
-        if (ctype_digit($data) === FALSE) {
-            return FALSE;
+        if (ctype_digit($data) === false) {
+            return false;
         }
 
         $control = 0;

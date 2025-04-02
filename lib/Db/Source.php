@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -32,56 +35,56 @@ class Source extends Entity implements JsonSerializable
      *
      * @var string|null Unique identifier for the source
      */
-    protected ?string $uuid = NULL;
+    protected ?string $uuid = null;
 
     /**
      * Title of the source
      *
      * @var string|null Title of the source
      */
-    protected ?string $title = NULL;
+    protected ?string $title = null;
 
     /**
      * Version of the source
      *
      * @var string|null Version of the source
      */
-    protected ?string $version = NULL;
+    protected ?string $version = null;
 
     /**
      * Description of the source
      *
      * @var string|null Description of the source
      */
-    protected ?string $description = NULL;
+    protected ?string $description = null;
 
     /**
      * Database URL of the source
      *
      * @var string|null Database URL of the source
      */
-    protected ?string $databaseUrl = NULL;
+    protected ?string $databaseUrl = null;
 
     /**
      * Type of the source
      *
      * @var string|null Type of the source
      */
-    protected ?string $type = NULL;
+    protected ?string $type = null;
 
     /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
      */
-    protected ?DateTime $updated = NULL;
+    protected ?DateTime $updated = null;
 
     /**
      * Creation timestamp
      *
      * @var DateTime|null Creation timestamp
      */
-    protected ?DateTime $created = NULL;
+    protected ?DateTime $created = null;
 
     /**
      * Constructor for the Source class
@@ -134,13 +137,13 @@ class Source extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === FALSE) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === TRUE && $value === []) {
-                $value = NULL;
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
             }
 
             $method = 'set'.ucfirst($key);
@@ -165,13 +168,13 @@ class Source extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $updated = NULL;
-        if (isset($this->updated) === TRUE) {
+        $updated = null;
+        if (isset($this->updated) === true) {
             $updated = $this->updated->format('c');
         }
 
-        $created = NULL;
-        if (isset($this->created) === TRUE) {
+        $created = null;
+        if (isset($this->created) === true) {
             $created = $this->created->format('c');
         }
 

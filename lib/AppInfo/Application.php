@@ -8,10 +8,13 @@
  *
  * @category  AppInfo
  * @package   OCA\OpenRegister\AppInfo
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -31,8 +34,10 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  *
  * @category AppInfo
  * @package  OCA\OpenRegister\AppInfo
+ *
  * @author   Nextcloud Dev Team
  * @license  AGPL-3.0-or-later
+ *
  * @link     https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  */
 class Application extends App implements IBootstrap

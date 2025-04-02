@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -106,8 +109,8 @@ class RegisterMapper extends QBMapper
      * @return array Array of found registers
      */
     public function findAll(
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = []
@@ -132,7 +135,7 @@ class RegisterMapper extends QBMapper
         }
 
         // Apply search conditions.
-        if (empty($searchConditions) === FALSE) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -172,12 +175,12 @@ class RegisterMapper extends QBMapper
     private function cleanObject(Register $register): void
     {
         // Check if UUID is set, if not, generate a new one.
-        if ($register->getUuid() === NULL) {
+        if ($register->getUuid() === null) {
             $register->setUuid(Uuid::v4());
         }
 
         // Ensure the object has a slug.
-        if (empty($register->getSlug()) === TRUE) {
+        if (empty($register->getSlug()) === true) {
             // Convert to lowercase and replace spaces with dashes.
             $slug = strtolower(trim($register->getTitle()));
             // Assuming title is used for slug.
@@ -192,7 +195,7 @@ class RegisterMapper extends QBMapper
         }
 
         // Ensure the object has a version.
-        if ($register->getVersion() === NULL) {
+        if ($register->getVersion() === null) {
             $register->setVersion('1.0.0');
         } else {
             // Split the version into major, minor, and patch.
@@ -334,7 +337,7 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        return FALSE;
+        return false;
 
     }//end hasSchemaWithTitle()
 

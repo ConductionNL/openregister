@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -60,10 +63,11 @@ class SchemaMapper extends QBMapper
      *
      * @param int|string $id The id of the schema
      *
-     * @return Schema The schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return Schema The schema
      */
     public function find(string | int $id): Schema
     {
@@ -88,10 +92,11 @@ class SchemaMapper extends QBMapper
      *
      * @param array $ids The ids of the schemas
      *
-     * @return array The schemas
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array The schemas
      */
     public function findMultiple(array $ids): array
     {
@@ -113,12 +118,13 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      *
-     * @return array The schemas
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array The schemas
      */
     public function findAll(
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = []
@@ -140,7 +146,7 @@ class SchemaMapper extends QBMapper
             }
         }
 
-        if (empty($searchConditions) === FALSE) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -156,8 +162,9 @@ class SchemaMapper extends QBMapper
      *
      * @param Entity $entity The entity to insert
      *
-     * @return Entity The inserted entity
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return Entity The inserted entity
      */
     public function insert(Entity $entity): Entity
     {
@@ -180,12 +187,12 @@ class SchemaMapper extends QBMapper
     private function cleanObject(Schema $schema): void
     {
         // Check if UUID is set, if not, generate a new one.
-        if ($schema->getUuid() === NULL) {
+        if ($schema->getUuid() === null) {
             $schema->setUuid(Uuid::v4());
         }
 
         // Ensure the object has a slug.
-        if (empty($schema->getSlug()) === TRUE) {
+        if (empty($schema->getSlug()) === true) {
             // Convert to lowercase and replace spaces with dashes.
             $slug = strtolower(trim($schema->getTitle()));
             // Assuming title is used for slug.
@@ -200,7 +207,7 @@ class SchemaMapper extends QBMapper
         }
 
         // Ensure the object has a version.
-        if ($schema->getVersion() === NULL) {
+        if ($schema->getVersion() === null) {
             $schema->setVersion('1.0.0');
         } else {
             // Split the version into major, minor, and patch.
@@ -219,8 +226,9 @@ class SchemaMapper extends QBMapper
      *
      * @param array $object The object to create
      *
-     * @return Schema The created schema
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return Schema The created schema
      */
     public function createFromArray(array $object): Schema
     {
@@ -241,10 +249,11 @@ class SchemaMapper extends QBMapper
      *
      * @param Entity $entity The entity to update
      *
-     * @return Entity The updated entity
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple entities are found
+     *
+     * @return Entity The updated entity
      */
     public function update(Entity $entity): Entity
     {
@@ -268,9 +277,10 @@ class SchemaMapper extends QBMapper
      * @param int   $id     The id of the schema to update
      * @param array $object The object to update
      *
-     * @return Schema The updated schema
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+     *
+     * @return Schema The updated schema
      */
     public function updateFromArray(int $id, array $object): Schema
     {
@@ -291,8 +301,9 @@ class SchemaMapper extends QBMapper
      *
      * @param Entity $schema The schema to delete
      *
-     * @return Schema The deleted schema
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return Schema The deleted schema
      */
     public function delete(Entity $schema): Schema
     {

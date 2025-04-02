@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -37,42 +40,42 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var string|null Unique identifier for the schema
      */
-    protected ?string $uuid = NULL;
+    protected ?string $uuid = null;
 
     /**
      * Slug of the schema
      *
      * @var string|null Slug of the schema
      */
-    protected ?string $slug = NULL;
+    protected ?string $slug = null;
 
     /**
      * Title of the schema
      *
      * @var string|null Title of the schema
      */
-    protected ?string $title = NULL;
+    protected ?string $title = null;
 
     /**
      * Description of the schema
      *
      * @var string|null Description of the schema
      */
-    protected ?string $description = NULL;
+    protected ?string $description = null;
 
     /**
      * Version of the schema
      *
      * @var string|null Version of the schema
      */
-    protected ?string $version = NULL;
+    protected ?string $version = null;
 
     /**
      * Summary of the schema
      *
      * @var string|null Summary of the schema
      */
-    protected ?string $summary = NULL;
+    protected ?string $summary = null;
 
     /**
      * Required fields of the schema
@@ -100,28 +103,28 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var string|null Source of the schema
      */
-    protected ?string $source = NULL;
+    protected ?string $source = null;
 
     /**
      * Whether hard validation is enabled
      *
      * @var boolean Whether hard validation is enabled
      */
-    protected bool $hardValidation = FALSE;
+    protected bool $hardValidation = false;
 
     /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
      */
-    protected ?DateTime $updated = NULL;
+    protected ?DateTime $updated = null;
 
     /**
      * Creation timestamp
      *
      * @var DateTime|null Creation timestamp
      */
-    protected ?DateTime $created = NULL;
+    protected ?DateTime $created = null;
 
     /**
      * Maximum depth of the schema
@@ -135,21 +138,21 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var string|null The Nextcloud user that owns this schema
      */
-    protected ?string $owner = NULL;
+    protected ?string $owner = null;
 
     /**
      * The application name
      *
      * @var string|null The application name
      */
-    protected ?string $application = NULL;
+    protected ?string $application = null;
 
     /**
      * The organisation name
      *
      * @var string|null The organisation name
      */
-    protected ?string $organisation = NULL;
+    protected ?string $organisation = null;
 
     /**
      * JSON object describing authorizations
@@ -163,7 +166,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var DateTime|null Deletion timestamp
      */
-    protected ?DateTime $deleted = NULL;
+    protected ?DateTime $deleted = null;
 
     /**
      * Constructor for the Schema class
@@ -261,13 +264,13 @@ class Schema extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (isset($object['metadata']) === FALSE) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === TRUE && $value === []) {
-                $value = NULL;
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
             }
 
             $method = 'set'.ucfirst($key);
@@ -295,14 +298,14 @@ class Schema extends Entity implements JsonSerializable
         $required = ($this->required ?? []);
         $properties = [];
 
-        if (isset($this->properties) === TRUE) {
+        if (isset($this->properties) === true) {
             foreach ($this->properties as $title => $property) {
                 $title = ($property['title'] ?? $title);
 
-                $isRequired = (isset($property['required']) === TRUE && $property['required'] === TRUE);
-                $notInRequired = in_array($title, $required) === FALSE;
+                $isRequired = (isset($property['required']) === true && $property['required'] === true);
+                $notInRequired = in_array($title, $required) === false;
 
-                if ($isRequired === TRUE && $notInRequired === TRUE) {
+                if ($isRequired === true && $notInRequired === true) {
                     $required[] = $title;
                 }
 
@@ -310,18 +313,18 @@ class Schema extends Entity implements JsonSerializable
             }
         }
 
-        $updated = NULL;
-        if (isset($this->updated) === TRUE) {
+        $updated = null;
+        if (isset($this->updated) === true) {
             $updated = $this->updated->format('c');
         }
 
-        $created = NULL;
-        if (isset($this->created) === TRUE) {
+        $created = null;
+        if (isset($this->created) === true) {
             $created = $this->created->format('c');
         }
 
-        $deleted = NULL;
-        if (isset($this->deleted) === TRUE) {
+        $deleted = null;
+        if (isset($this->deleted) === true) {
             $deleted = $this->deleted->format('c');
         }
 
@@ -372,16 +375,16 @@ class Schema extends Entity implements JsonSerializable
         $schema->properties = new stdClass();
 
         foreach ($this->properties as $propertyName => $property) {
-            if (isset($property['properties']) === TRUE) {
+            if (isset($property['properties']) === true) {
                 $nestedProperties = new stdClass();
                 $nestedProperty = new stdClass();
                 $nestedProperty->type = 'object';
                 $nestedProperty->title = $property['title'];
                 $nestedProperty->required = [];
 
-                if (isset($property['properties']) === TRUE) {
+                if (isset($property['properties']) === true) {
                     foreach ($property['properties'] as $subName => $subProperty) {
-                        if ((isset($subProperty['required']) === TRUE) && ($subProperty['required'] === TRUE)) {
+                        if ((isset($subProperty['required']) === true) && ($subProperty['required'] === true)) {
                             $nestedProperty->required[] = $subName;
                         }
 

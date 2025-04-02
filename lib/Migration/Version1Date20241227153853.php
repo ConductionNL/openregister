@@ -4,10 +4,13 @@
  *
  * @category  Migration
  * @package   OCA\OpenRegister\Migration
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -45,19 +48,20 @@ class Version1Date20241227153853 extends SimpleMigrationStep
      * @param  IOutput                   $output
      * @param  Closure(): ISchemaWrapper $schemaClosure
      * @param  array                     $options
+     *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
+        /**
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
 
         // Update the openregister_schemas table
         $table = $schema->getTable('openregister_schemas');
-        if ($table->hasColumn('max_depth') === FALSE) {
-            $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => TRUE])->setDefault(default: 0);
+        if ($table->hasColumn('max_depth') === false) {
+            $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true])->setDefault(default: 0);
         }
 
         return $schema;

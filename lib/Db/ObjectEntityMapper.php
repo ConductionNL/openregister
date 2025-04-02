@@ -7,10 +7,13 @@
  *
  * @category  Database
  * @package   OCA\OpenRegister\Db
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -80,7 +83,7 @@ class ObjectEntityMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
-        if ($db->getDatabasePlatform() instanceof MySQLPlatform === TRUE) {
+        if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
             $this->databaseJsonService = $mySQLJsonService;
         }
 
@@ -94,10 +97,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param int|string $identifier The ID or UUID of the object to find
      *
-     * @return ObjectEntity The ObjectEntity
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return ObjectEntity The ObjectEntity
      */
     public function find(string | int $identifier): ObjectEntity
     {
@@ -105,7 +109,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Determine ID parameter based on whether identifier is numeric.
         $idParam = -1;
-        if (is_numeric($identifier) === TRUE) {
+        if (is_numeric($identifier) === true) {
             $idParam = $identifier;
         }
 
@@ -133,10 +137,11 @@ class ObjectEntityMapper extends QBMapper
      * @param Schema   $schema   The schema to search in
      * @param string   $uuid     The UUID of the object to find
      *
-     * @return ObjectEntity|null The object if found, null otherwise
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return ObjectEntity|null The object if found, null otherwise
      */
-    public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity | NULL
+    public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity | null
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -155,7 +160,7 @@ class ObjectEntityMapper extends QBMapper
         try {
             return $this->findEntity($qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return NULL;
+            return null;
         }
 
     }//end findByUuid()
@@ -165,10 +170,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param string $uuid The UUID of the object to find
      *
-     * @return ObjectEntity|null The object if found, null otherwise
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return ObjectEntity|null The object if found, null otherwise
      */
-    public function findByUuidOnly(string $uuid): ObjectEntity | NULL
+    public function findByUuidOnly(string $uuid): ObjectEntity | null
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -181,7 +187,7 @@ class ObjectEntityMapper extends QBMapper
         try {
             return $this->findEntity($qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return NULL;
+            return null;
         }
 
     }//end findByUuidOnly()
@@ -192,8 +198,9 @@ class ObjectEntityMapper extends QBMapper
      * @param string $register The register to find objects for
      * @param string $schema   The schema to find objects for
      *
-     * @return array An array of ObjectEntity objects
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array An array of ObjectEntity objects
      */
     public function findByRegisterAndSchema(string $register, string $schema): array
     {
@@ -221,7 +228,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects
      */
-    public function countAll(?array $filters = [], ?string $search = NULL, bool $includeDeleted = FALSE): int
+    public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -229,16 +236,16 @@ class ObjectEntityMapper extends QBMapper
             ->from(from: 'openregister_objects');
 
         // Conditionally count objects based on $includeDeleted.
-        if ($includeDeleted === FALSE) {
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
         foreach ($filters as $filter => $value) {
-            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === TRUE) {
+            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === TRUE) {
+            } elseif ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNull($filter));
-            } elseif (in_array($filter, self::MAIN_FILTERS) === TRUE) {
+            } elseif (in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
@@ -266,20 +273,21 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $uses             Value that must be present in relations
      * @param bool        $includeDeleted   Whether to include deleted objects
      *
-     * @return array An array of ObjectEntity objects
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array An array of ObjectEntity objects
      */
     public function findAll(
-        ?int $limit = NULL,
-        ?int $offset = NULL,
+        ?int $limit = null,
+        ?int $offset = null,
         ?array $filters = [],
         ?array $searchConditions = [],
         ?array $searchParams = [],
         array $sort = [],
-        ?string $search = NULL,
-        ?array $ids = NULL,
-        ?string $uses = NULL,
-        bool $includeDeleted = FALSE
+        ?string $search = null,
+        ?array $ids = null,
+        ?string $uses = null,
+        bool $includeDeleted = false
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -289,12 +297,12 @@ class ObjectEntityMapper extends QBMapper
             ->setFirstResult($offset);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
-        if ($includeDeleted === FALSE) {
+        if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
         // Handle filtering by IDs/UUIDs if provided.
-        if ($ids !== NULL && empty($ids) === FALSE) {
+        if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
             $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
@@ -302,7 +310,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Handle filtering by uses in relations if provided.
-        if ($uses !== NULL) {
+        if ($uses !== null) {
             $qb->andWhere(
                 $qb->expr()->isNotNull(
                     $qb->createFunction(
@@ -313,16 +321,16 @@ class ObjectEntityMapper extends QBMapper
         }
 
         foreach ($filters as $filter => $value) {
-            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === TRUE) {
+            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === TRUE) {
+            } elseif ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->isNull($filter));
-            } elseif (in_array($filter, self::MAIN_FILTERS) === TRUE) {
+            } elseif (in_array($filter, self::MAIN_FILTERS) === true) {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
 
-        if (empty($searchConditions) === FALSE) {
+        if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
@@ -331,7 +339,7 @@ class ObjectEntityMapper extends QBMapper
 
         // @todo: tidy this code up please and make it mongodb compatible.
         // Check if _relations filter exists to search in relations column.
-        if (isset($filters['_relations']) === TRUE) {
+        if (isset($filters['_relations']) === true) {
             // Handle both single string and array of relations.
             $relations = (array) $filters['_relations'];
 
@@ -366,8 +374,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param Entity $entity The entity to insert.
      *
-     * @return Entity The inserted entity.
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @return Entity The inserted entity.
      */
     public function insert(Entity $entity): Entity
     {
@@ -389,8 +398,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $object The object to create
      *
-     * @return ObjectEntity The created object
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return ObjectEntity The created object
      */
     public function createFromArray(array $object): ObjectEntity
     {
@@ -407,9 +417,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param Entity $entity The entity to update
      *
-     * @return Entity The updated entity
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
+     *
+     * @return Entity The updated entity
      */
     public function update(Entity $entity): Entity
     {
@@ -435,9 +446,10 @@ class ObjectEntityMapper extends QBMapper
      * @param int   $id     The id of the object to update
      * @param array $object The object to update
      *
-     * @return ObjectEntity The updated object
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
+     *
+     * @return ObjectEntity The updated object
      */
     public function updateFromArray(int $id, array $object): ObjectEntity
     {
@@ -455,8 +467,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param ObjectEntity $object The object to delete
      *
-     * @return ObjectEntity The deleted object
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return ObjectEntity The deleted object
      */
     public function delete(Entity $object): ObjectEntity
     {
@@ -478,24 +491,25 @@ class ObjectEntityMapper extends QBMapper
      * @param array       $filters The filters to apply
      * @param string|null $search  The search string to apply
      *
-     * @return array The facets
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array The facets
      */
-    public function getFacets(array $filters = [], ?string $search = NULL): array
+    public function getFacets(array $filters = [], ?string $search = null): array
     {
-        $register = NULL;
-        $schema = NULL;
+        $register = null;
+        $schema = null;
 
-        if (array_key_exists('register', $filters) === TRUE) {
+        if (array_key_exists('register', $filters) === true) {
             $register = $filters['register'];
         }
 
-        if (array_key_exists('schema', $filters) === TRUE) {
+        if (array_key_exists('schema', $filters) === true) {
             $schema = $filters['schema'];
         }
 
         $fields = [];
-        if (isset($filters['_queries']) === TRUE) {
+        if (isset($filters['_queries']) === true) {
             $fields = $filters['_queries'];
         }
 
@@ -525,10 +539,11 @@ class ObjectEntityMapper extends QBMapper
      * @param string $search       The URI or UUID to search for in relations
      * @param bool   $partialMatch Whether to search for partial matches (default: false)
      *
-     * @return array An array of ObjectEntities that have the specified URI/UUID
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array An array of ObjectEntities that have the specified URI/UUID
      */
-    public function findByRelationUri(string $search, bool $partialMatch = FALSE): array
+    public function findByRelationUri(string $search, bool $partialMatch = false): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -537,13 +552,13 @@ class ObjectEntityMapper extends QBMapper
         $mode = 'one';
         $searchTerm = $search;
 
-        if ($partialMatch === TRUE) {
+        if ($partialMatch === true) {
             $mode = 'all';
             $searchTerm = '%'.$search.'%';
         }
 
         $searchFunction = "JSON_SEARCH(relations, '".$mode."', ".$qb->createNamedParameter($searchTerm);
-        if ($partialMatch === TRUE) {
+        if ($partialMatch === true) {
             $searchFunction .= ", NULL, '$')";
         } else {
             $searchFunction .= ")";
@@ -568,20 +583,21 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $process    Optional process identifier
      * @param int|null    $duration   Lock duration in seconds
      *
-     * @return ObjectEntity The locked object
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      * @throws \Exception If locking fails
+     *
+     * @return ObjectEntity The locked object
      */
-    public function lockObject($identifier, ?string $process = NULL, ?int $duration = NULL): ObjectEntity
+    public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
     {
         $object = $this->find($identifier);
 
-        if ($duration === NULL) {
+        if ($duration === null) {
             $duration = $this::DEFAULT_LOCK_DURATION;
         }
 
         // Check if user has permission to lock.
-        if ($this->userSession->isLoggedIn() === FALSE) {
+        if ($this->userSession->isLoggedIn() === false) {
             throw new \Exception('Must be logged in to lock objects');
         }
 
@@ -606,16 +622,17 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param string|int $identifier Object ID, UUID, or URI
      *
-     * @return ObjectEntity The unlocked object
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      * @throws \Exception If unlocking fails
+     *
+     * @return ObjectEntity The unlocked object
      */
     public function unlockObject($identifier): ObjectEntity
     {
         $object = $this->find($identifier);
 
         // Check if user has permission to unlock.
-        if ($this->userSession->isLoggedIn() === FALSE) {
+        if ($this->userSession->isLoggedIn() === false) {
             throw new \Exception('Must be logged in to unlock objects');
         }
 
@@ -640,8 +657,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param string|int $identifier Object ID, UUID, or URI
      *
-     * @return bool True if object is locked, false otherwise
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
+     *
+     * @return bool True if object is locked, false otherwise
      */
     public function isObjectLocked($identifier): bool
     {
@@ -655,8 +673,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $ids Array of IDs, UUIDs, or URIs to find
      *
-     * @return array An array of ObjectEntity objects
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array An array of ObjectEntity objects
      */
     public function findMultiple(array $ids): array
     {

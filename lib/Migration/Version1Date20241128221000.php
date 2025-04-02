@@ -4,10 +4,13 @@
  *
  * @category  Migration
  * @package   OCA\OpenRegister\Migration
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -45,41 +48,42 @@ class Version1Date20241128221000 extends SimpleMigrationStep
      * @param  IOutput                   $output
      * @param  Closure(): ISchemaWrapper $schemaClosure
      * @param  array                     $options
+     *
      * @return null|ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
+        /**
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
 
         // Update the openregister_objects table
         $table = $schema->getTable('openregister_objects');
-        if ($table->hasColumn('uri') === FALSE) {
+        if ($table->hasColumn('uri') === false) {
             $table->addColumn(
                 name: 'uri',
                 typeName: Types::STRING,
                 options: [
-                    'notnull' => TRUE,
+                    'notnull' => true,
                     'length' => 255,
                 ]
             )->setDefault('');
         }
 
-        if ($table->hasColumn('files') === FALSE) {
+        if ($table->hasColumn('files') === false) {
             $table->addColumn(
                 name: 'files',
                 typeName: Types::JSON,
-                options: ['notnull' => FALSE]
+                options: ['notnull' => false]
             )->setDefault('{}');
         }
 
-        if ($table->hasColumn('relations') === FALSE) {
+        if ($table->hasColumn('relations') === false) {
             $table->addColumn(
                 name: 'relations',
                 typeName: Types::JSON,
-                options: ['notnull' => FALSE]
+                options: ['notnull' => false]
             )->setDefault('{}');
             
         }

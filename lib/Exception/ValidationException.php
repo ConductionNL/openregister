@@ -6,10 +6,13 @@
  *
  * @category  Exception
  * @package   OCA\OpenRegister\Exception
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -24,8 +27,8 @@ class ValidationException extends Exception
     public function __construct(
         string $message,
         int $code = 0,
-        ?Throwable $previous = NULL,
-        private ?ValidationError $errors = NULL
+        ?Throwable $previous = null,
+        private ?ValidationError $errors = null
     ) {
         parent::__construct($message, $code, $previous);
 

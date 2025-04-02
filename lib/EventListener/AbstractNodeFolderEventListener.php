@@ -7,10 +7,13 @@
  *
  * @category  EventListener
  * @package   OCA\OpenRegister\Event
+ *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   GIT: <git-id>
+ *
  * @link      https://OpenRegister.app
  */
 
@@ -41,7 +44,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        if ($event instanceof AbstractNodeEvent === FALSE) {
+        if ($event instanceof AbstractNodeEvent === false) {
             return;
         }
 
@@ -50,7 +53,7 @@ class AbstractNodeFolderEventListener implements IEventListener
             return;
         }
 
-        match (TRUE) {
+        match (true) {
             $event instanceof NodeCreatedEvent => $this->handleNodeCreated(event: $event),
             $event instanceof NodeDeletedEvent => $this->handleNodeDeleted(event: $event),
             $event instanceof NodeTouchedEvent => $this->handleNodeTouched(event: $event),
