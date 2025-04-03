@@ -110,6 +110,7 @@ class ObjectService
      * @param string $filePath Optional file path for the OpenConnector service.
      *
      * @return mixed|null The OpenConnector service instance or null if not available.
+     * 
      * @throws ContainerExceptionInterface If there is a container exception.
      * @throws NotFoundExceptionInterface If the service is not found.
      */
@@ -134,6 +135,7 @@ class ObjectService
      * @param Uri $uri The URI pointing to the schema.
      *
      * @return string The schema content in JSON format.
+     * 
      * @throws GuzzleException If there is an error during schema fetching.
      */
     public function resolveSchema(Uri $uri): string
@@ -206,6 +208,7 @@ class ObjectService
      * @param array|null $extend Properties to extend the object with.
      *
      * @return ObjectEntity|null The found object or null if not found.
+     * 
      * @throws Exception If the object is not found.
      */
     public function find(int | string $id, ?array $extend=[], bool $files=false): ?ObjectEntity
@@ -242,6 +245,7 @@ class ObjectService
      * @param array $object The object data.
      *
      * @return ObjectEntity The created object entity.
+     * 
      * @throws ValidationException If validation fails.
      * @throws CustomValidationException If custom validation fails.
      * @throws GuzzleException If there is an error during file upload.
@@ -277,6 +281,7 @@ class ObjectService
      * @param array|null $extend        Properties to extend with related data.
      *
      * @return ObjectEntity The updated object entity.
+     * 
      * @throws ValidationException If validation fails.
      * @throws CustomValidationException If custom validation fails.
      * @throws GuzzleException If there is an error during file upload.
@@ -339,6 +344,7 @@ class ObjectService
      * @param array|JsonSerializable $object The object to delete.
      *
      * @return bool True if deletion is successful, false otherwise.
+     * 
      * @throws Exception If deletion fails.
      */
     public function delete(array | JsonSerializable $object): bool
@@ -435,6 +441,7 @@ class ObjectService
      * @param array $ids List of object IDs to retrieve.
      *
      * @return array List of retrieved objects.
+     * 
      * @throws Exception If an error occurs during retrieval.
      */
     public function findMultiple(array $ids): array
@@ -602,6 +609,7 @@ class ObjectService
      * @param array|null  $extend     Properties to extend with related data.
      *
      * @return array An array of objects matching the specified criteria.
+     * 
      * @throws InvalidArgumentException If an invalid object type is specified.
      */
     public function getObjects(
@@ -714,6 +722,7 @@ class ObjectService
      * @param array               $object   The data of the object to save.
      *
      * @return ObjectEntity The saved object entity.
+     * 
      * @throws ValidationException If the object fails validation.
      * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
      * @throws CustomValidationException If the object fails custom validation.
@@ -1014,6 +1023,7 @@ class ObjectService
      * @param int|null     $index        Optional index of the subobject if it resides in an array.
      *
      * @return string The UUID of the nested subobject.
+     * 
      * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
      * @throws GuzzleException
      */
@@ -1082,6 +1092,7 @@ class ObjectService
      * @param int          $schema       The schema identifier for the property.
      *
      * @return string The updated property data, typically a reference UUID.
+     * 
      * @throws ValidationException|CustomValidationException When schema or object validation fails.
      * @throws GuzzleException
      */
@@ -1121,6 +1132,7 @@ class ObjectService
      * @param int          $schema       The schema identifier for the array elements.
      *
      * @return array The processed array with updated references or data.
+     * 
      * @throws GuzzleException|ValidationException|CustomValidationException When schema validation or file handling fails.
      */
     private function handleArrayProperty(
@@ -1205,6 +1217,7 @@ class ObjectService
      * @param int|null     $index        Optional index for array-based oneOf properties.
      *
      * @return string|array The processed data, resolved to a reference or updated structure.
+     * 
      * @throws GuzzleException|ValidationException When schema validation or file handling fails.
      */
     private function handleOneOfProperty(
@@ -1290,6 +1303,7 @@ class ObjectService
      * @param ObjectEntity $objectEntity The object entity being processed.
      *
      * @return array The updated object with processed properties.
+     * 
      * @throws GuzzleException|ValidationException When schema validation or file handling fails.
      */
     private function handleProperty(
@@ -1369,6 +1383,7 @@ class ObjectService
      * @param int          $schema       The schema ID associated with the object.
      *
      * @return ObjectEntity The updated object entity with resolved relations and file references.
+     * 
      * @throws Exception|ValidationException|GuzzleException When file handling or schema processing fails.
      */
     private function handleObjectRelations(
@@ -1405,7 +1420,7 @@ class ObjectService
 
 
     /**
-     * @todo
+     * Writes a file to the NextCloud storage.
      *
      * @param string       $fileContent
      * @param string       $propertyName
@@ -1413,6 +1428,7 @@ class ObjectService
      * @param File         $file
      *
      * @return File
+     * 
      * @throws Exception
      */
     private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
@@ -1493,6 +1509,7 @@ class ObjectService
      * @param ObjectEntity $objectEntity
      *
      * @return File
+     * 
      * @throws ContainerExceptionInterface
      * @throws GuzzleException
      */
@@ -1556,6 +1573,7 @@ class ObjectService
      * @param string|null  $format
      *
      * @return string The updated object with resolved file references.
+     * 
      * @throws ContainerExceptionInterface
      * @throws GuzzleException When file handling fails
      * @throws \OCP\DB\Exception
@@ -1670,7 +1688,9 @@ class ObjectService
      *
      * @param  ObjectEntity|string $object   The object or object ID to fetch the file for
      * @param  string              $filePath The path to the specific file
+     * 
      * @return Node|null The file if found, null otherwise
+     * 
      * @throws NotFoundException If the folder or file is not found
      * @throws DoesNotExistException If the object ID is not found
      */
@@ -1710,6 +1730,7 @@ class ObjectService
      * @param array               $tags          Optional array of tags to attach to the file
      *
      * @return \OCP\Files\File The added file
+     * 
      * @throws Exception If file addition fails
      */
     public function addFile(ObjectEntity | string $object, string $fileName, string $base64Content, bool $share=false, array $tags=[]): \OCP\Files\File
@@ -1731,6 +1752,7 @@ class ObjectService
      * @param  string              $filePath Path to the file to update
      * @param  string|null         $content  Optional new file content
      * @param  array               $tags     Optional tags to update
+     * 
      * @return \OCP\Files\File The updated file
      * @throws Exception If file update fails
      */
@@ -1757,6 +1779,7 @@ class ObjectService
      * from the system tag manager.
      *
      * @return array An array of tag names
+     * 
      * @throws \Exception If there's an error retrieving the tags
      *
      * @psalm-return   array<int, string>
@@ -1774,7 +1797,9 @@ class ObjectService
      *
      * @param  ObjectEntity|string $object   The object or object ID
      * @param  string              $filePath Path to the file to delete
+     * 
      * @return bool True if successful
+     * 
      * @throws Exception If file deletion fails
      */
     public function deleteFile(ObjectEntity | string $object, string $filePath): bool
@@ -1798,7 +1823,9 @@ class ObjectService
      *
      * @param  ObjectEntity|string $object   The object or object ID
      * @param  string              $filePath Path to the file to publish
+     * 
      * @return \OCP\Files\File The published file
+     * 
      * @throws Exception If file publishing fails
      */
     public function publishFile(ObjectEntity | string $object, string $filePath): \OCP\Files\File
@@ -1830,7 +1857,9 @@ class ObjectService
      *
      * @param  ObjectEntity|string $object   The object or object ID
      * @param  string              $filePath Path to the file to unpublish
+     * 
      * @return \OCP\Files\File The unpublished file
+     * 
      * @throws Exception If file unpublishing fails
      */
     public function unpublishFile(ObjectEntity | string $object, string $filePath): \OCP\Files\File
@@ -1866,6 +1895,7 @@ class ObjectService
      * @param array  $requestParams Optional request parameters
      *
      * @return array Array of formatted file metadata arrays
+     * 
      * @throws InvalidPathException
      * @throws NotFoundException
      */
@@ -1902,6 +1932,7 @@ class ObjectService
      *
      * @param  ObjectEntity $object The object to hydrate the files array of.
      * @param  Node[]       $files  The files to hydrate the files array with.
+     * 
      * @return ObjectEntity The object with hydrated files array.
      */
     public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
@@ -1928,6 +1959,7 @@ class ObjectService
      * @param array|null $extend   Optional properties to include in the retrieved object.
      *
      * @return ObjectEntity The retrieved object as an entity.
+     * 
      * @throws Exception If the source type is unsupported.
      */
     public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend=[], bool $files=false): ObjectEntity
@@ -2032,6 +2064,7 @@ class ObjectService
      * @param string|null $originalObjectId The UUID of the parent object so we dont delete the object we come from and cause a loop
      *
      * @return bool      True if deletion was successful
+     * 
      * @throws Exception If source type is unsupported
      */
     public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId=null): bool
@@ -2076,6 +2109,7 @@ class ObjectService
      * @param int|null    $schema     Optional schema ID to set for the mapper.
      *
      * @return mixed The mapper for the specified object type.
+     * 
      * @throws InvalidArgumentException If the object type is unknown.
      */
     public function getMapper(?string $objectType=null, ?int $register=null, ?int $schema=null): mixed
@@ -2114,6 +2148,7 @@ class ObjectService
      * @param array  $ids        The list of object IDs to retrieve.
      *
      * @return array The retrieved objects.
+     * 
      * @throws InvalidArgumentException If the object type is unknown.
      */
     public function getMultipleObjects(string $objectType, array $ids): array
@@ -2165,6 +2200,7 @@ class ObjectService
      * @param array|null $fields Optional array of property names to be included in the result.
      *
      * @return array The rendered entity with expanded properties.
+     * 
      * @throws InvalidArgumentException If both filters and fields are used simultaneously or if extend and fields/filters conflict.
      * @throws Exception If rendering or extending fails.
      *
@@ -2354,6 +2390,7 @@ class ObjectService
      * Get all registers extended with their schemas
      *
      * @return array The registers with schema data
+     * 
      * @throws Exception If extension fails
      */
     public function getRegisters(): array
@@ -2615,6 +2652,7 @@ class ObjectService
      * @param  int|null $register      Optional register ID to override current register
      * @param  int|null $schema        Optional schema ID to override current schema
      * @param  array    $requestParams Optional request parameters
+     * 
      * @return array The objects this object references
      */
     public function getPaginatedUses(string $id, ?int $register=null, ?int $schema=null, ?array $requestParams=[]): array
@@ -2671,6 +2709,7 @@ class ObjectService
      * @param ObjectEntity $objectEntity The object to set default values in.
      *
      * @return ObjectEntity The resulting objectEntity.
+     * 
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\SyntaxError
      */
@@ -2702,7 +2741,9 @@ class ObjectService
      * @param  string|int  $identifier Object ID, UUID, or URI
      * @param  string|null $process    Optional process identifier
      * @param  int|null    $duration   Lock duration in seconds (default: 1 hour)
+     * 
      * @return ObjectEntity The locked object
+     * 
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
      * @throws LockedException If object already locked by another user
@@ -2732,7 +2773,9 @@ class ObjectService
      * Unlock an object
      *
      * @param  string|int $identifier Object ID, UUID, or URI
+     * 
      * @return ObjectEntity The unlocked object
+     * 
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
      * @throws LockedException If object locked by another user
@@ -2758,7 +2801,9 @@ class ObjectService
      * Check if an object is locked
      *
      * @param  string|int $identifier Object ID, UUID, or URI
+     * 
      * @return bool True if object is locked, false otherwise
+     * 
      * @throws NotFoundException If object not found
      */
     public function isLocked($identifier): bool
@@ -2778,7 +2823,9 @@ class ObjectService
      * @param  string|int           $identifier       Object ID, UUID, or URI
      * @param  DateTime|string|null $until            DateTime or AuditTrail ID to revert to
      * @param  bool                 $overwriteVersion Whether to overwrite the version or increment it
+     * 
      * @return ObjectEntity The reverted object
+     * 
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
      * @throws \Exception If revert fails
@@ -2786,7 +2833,7 @@ class ObjectService
     public function revertObject($identifier, $until=null, bool $overwriteVersion=false): ObjectEntity
     {
         try {
-            // Get the reverted object (unsaved)
+            // Get the reverted object (unsaved).
             $revertedObject = $this->auditTrailMapper->revertObject(
                 $identifier,
                 $until,
@@ -2806,7 +2853,7 @@ class ObjectService
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Must be logged in')) {
+            if (str_contains($e->getMessage(), 'Must be logged in') === true) {
                 throw new NotAuthorizedException($e->getMessage());
             }
 
