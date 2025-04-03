@@ -1587,6 +1587,13 @@ class ObjectService
 		return $files;
 	}
 
+    public function createFileVersion (string $filePath, ObjectEntity $object, ?string $filename = null):File
+    {
+        $file = $this->getFile($object, $filePath);
+
+        return $this->fileService->createNewVersion($file, $filename);
+    }
+
 	/**
 	 * Get a single file for an object by filepath
 	 *
