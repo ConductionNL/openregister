@@ -559,7 +559,8 @@ class ObjectService
 
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_route']); 
+// TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
@@ -748,8 +749,7 @@ class ObjectService
             $objectEntity = $this->objectEntityMapper->find(
                 $object['id']
             );
-        }
-        else {
+        } else {
             $objectEntity = new ObjectEntity();
             $objectEntity->setRegister($register->getId());
             $objectEntity->setSchema($schema->getId());
@@ -764,7 +764,7 @@ class ObjectService
 
         if ($validationResult->isValid() === false) {
             $objectEntity->setValidation($validationResult->error());
-            //throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
+            // throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
         }
 
         // Set the UUID if it is not set
@@ -803,7 +803,7 @@ class ObjectService
         // Create the uri for the object
         if ($objectEntity->getUri() === null) {
             // @todo: this needs to be fixed
-            //$objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+            // $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
         }
 
         // Make sure we create a folder in NC for this object if it doesn't already have one
@@ -824,7 +824,8 @@ class ObjectService
 
         // Handle object properties that are either nested objects or files
         if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
-            $objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
+            $objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); 
+// @todo: register and schema are not needed here we should refactor and remove them
         }
 
         // Let grap any links that we can
@@ -1244,7 +1245,8 @@ class ObjectService
             );
         }
 
-        if (array_column(array: $property, column_key: '$ref') === []) {
+        if (array_column(array:
+$property, column_key: '$ref') === [])                           {
             return $item;
         }
 
@@ -1301,7 +1303,7 @@ class ObjectService
             return $object;
         }
 
-        switch($property['type']) {
+        switch ($property['type']) {
             case 'object':
                 $object[$propertyName] = $this->handleObjectProperty(
                     property: $property,
@@ -1935,9 +1937,7 @@ class ObjectService
             return $this->hydrateFiles($object, $files);
         }
 
-        //@todo mongodb support
-
-        throw new Exception('Unsupported source type');
+        // @todo mongodb support        throw new Exception('Unsupported source type');
     }//end getObject()
 
 
@@ -2047,15 +2047,11 @@ class ObjectService
 
             $this->cascadeDeleteObjects(register: $register, schema: $schema, object: $object, originalObjectId: $originalObjectId);
 
-            //Todo: delete files
-
-            $this->objectEntityMapper->delete($object);
+            // Todo: delete files            $this->objectEntityMapper->delete($object);
             return true;
         }//end if
 
-        //@todo mongodb support
-
-        throw new Exception('Unsupported source type');
+        // @todo mongodb support        throw new Exception('Unsupported source type');
     }//end deleteObject()
 
 
@@ -2114,7 +2110,7 @@ class ObjectService
                 function ($id) {
             if (is_object($id) && method_exists($id, 'getId')) {
                 return $id->getId();
-            } elseif (is_array($id) && isset($id['id'])) {
+            } else if (is_array($id) && isset($id['id'])) {
                 return $id['id'];
             } else {
                 return $id;
@@ -2240,11 +2236,7 @@ class ObjectService
 
         // Only process inverted relations if we have inverted properties
         if (empty($invertedProperties) === false) {
-            // Get objects that reference this entity
-
-            $usedByObjects = $this->objectEntityMapper->findAll(uses: $entity['uuid']);
-
-            // Loop through inverted properties and add referenced objects
+            // Get objects that reference this entity            $usedByObjects = $this->objectEntityMapper->findAll(uses: $entity['uuid']);            // Loop through inverted properties and add referenced objects
             foreach ($invertedProperties as $key => $property) {
                 // Filter objects that reference this entity through the specified inverted property
                 $referencingObjects = array_filter(
@@ -2304,7 +2296,8 @@ class ObjectService
                 $extend = array_keys($dotEntity->all());
             }
 
-            $errors = []; // Initialize an array to store any errors encountered during the process
+            $errors = []; 
+// Initialize an array to store any errors encountered during the process
 
             // Iterate over each property in the 'extend' array
             foreach ($extend as $property) {
@@ -2405,13 +2398,15 @@ class ObjectService
             $singularProperty = rtrim($property, 's');
 
             // Check if property exists
-            if (array_key_exists(key: $property, array: $result) === true) {
+            if (array_key_exists(key: $property, array:
+$result) === true)                          {
                 $value = $result[$property];
                 if (empty($value)) {
                     continue;
                 }
 
-            } elseif (array_key_exists(key: $singularProperty, array: $result)) {
+            } else if (array_key_exists(key: $singularProperty, array:
+$result))                          {
                 $value = $result[$singularProperty];
             } else {
                 throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
@@ -2455,7 +2450,8 @@ class ObjectService
                         $found = $this->objectEntityMapper->find($value);
                         if ($found) {
                             // Serialize and recursively extend the found object (apply depth tracking here)
-                            $result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1
+                            $result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); 
+// Start with depth 1
                         }
                     }//end if
                 } catch (Exception $e2) {
@@ -2594,7 +2590,8 @@ class ObjectService
 
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_route']); 
+// TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
@@ -2604,13 +2601,9 @@ class ObjectService
         $filters           = [];
         $filters['object'] = $object['id'];
 
-        //var_dump($filters);
-        //die;
-
-        //$filters['registerUuid'] = $object->getRegisterUuid();
-        //$filters['schemaUuid'] = $object->getSchemaUuid();
-
-        // @todo this is not working, it fails to find the logs
+        // var_dump($filters);
+        // die;        // $filters['registerUuid'] = $object->getRegisterUuid();
+        // $filters['schemaUuid'] = $object->getSchemaUuid();        // @todo this is not working, it fails to find the logs
         $auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
 
         // Format the audit trails
@@ -2707,7 +2700,8 @@ class ObjectService
 
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_route']); 
+// TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
@@ -2741,10 +2735,8 @@ class ObjectService
     public function getPaginatedUses(string $id, ?int $register=null, ?int $schema=null, ?array $requestParams=[]): array
     {
         // First get the object to access its relations
-        //$object = $this->find($id);
-        //$relations = $object->getRelations() ?? [];
-
-        // Extract specific parameters
+        // $object = $this->find($id);
+        // $relations = $object->getRelations() ?? [];        // Extract specific parameters
         $limit  = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
         $order  = $requestParams['order'] ?? $requestParams['_order'] ?? [];
@@ -2768,37 +2760,32 @@ class ObjectService
 
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_route']); 
+// TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
         // Lets force the object id to be the object id of the object we are getting the audit trail for
-        //$filters['object'] = $object->getId();
-
-        // @todo this is not working, it fails to find the logs
-        //$auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
-
-        // Get all referenced objects
-        //$referencedObjects = [];
-        //foreach ($relations as $path => $relationId) {
-        //    $referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
-        //    if ($referencedObjects[$path] === null){
-        //        $referencedObjects[$path] = $relationId;
-        //    }
-        //}
+        // $filters['object'] = $object->getId();        // @todo this is not working, it fails to find the logs
+        // $auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);        // Get all referenced objects
+        // $referencedObjects = [];
+        // foreach ($relations as $path => $relationId) {
+        // $referencedObjects[$path] = $this->objectEntityMapper->find($relationId);
+        // if ($referencedObjects[$path] === null){
+        // $referencedObjects[$path] = $relationId;
+        // }
+        // }
         $objects = $this->objectEntityMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, uses: $id);
         $total   = $this->objectEntityMapper->countAll(filters: $filters);
         $pages   = $limit !== null ? ceil($total / $limit) : 1;
 
-//        $facets  = $this->getAggregations(
-//            filters: $filters,
-//            search: $search
-//        );
-
-        return [
+// $facets  = $this->getAggregations(
+// filters: $filters,
+// search: $search
+// );        return [
             'results' => $objects,
-//            'facets' => $facets,
+// 'facets' => $facets,
             'total'   => $total,
             'page'    => $page ?? 1,
             'pages'   => $pages,
