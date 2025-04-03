@@ -12,6 +12,7 @@ export const mockRegisterData = (): TRegister[] => [
 		tablePrefix: 'character_',
 		created: new Date().toISOString(),
 		updated: new Date().toISOString(),
+		slug: 'character-register',
 	},
 	{
 		id: '5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
@@ -23,6 +24,7 @@ export const mockRegisterData = (): TRegister[] => [
 		tablePrefix: 'item_',
 		created: new Date().toISOString(),
 		updated: new Date().toISOString(),
+		slug: 'item-register',
 	},
 ]
 
