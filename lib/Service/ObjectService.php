@@ -2367,113 +2367,15 @@ class ObjectService
     }//end renderEntity()
 
 
+
+
+
     /**
-     * Extends an entity with related objects based on the extend array.
+     * Get all registers extended with their schemas
      *
-     * @deprecated Use renderEntity
-     *
-     * @param  mixed $entity The entity to extend
-     * @param  array $extend Properties to extend with related data
-     * @return array The extended entity as an array
-     * @throws Exception If property not found
+     * @return array The registers with schema data
+     * @throws Exception If extension fails
      */
-    public function extendEntity(array $entity, array $extend, ?int $depth=0): array
-    {
-    if ($depth > 3) {
-        return $entity;
-
-
-    }
-
-        // Convert entity to array if needed
-    if (is_array($entity)) {
-        $result = $entity;
-    } else {
-        $result = $entity->jsonSerialize();
-    }
-
-    if (in_array('all', $extend)) {
-        $extendProperties = array_keys($result);
-    }
-
-        // Process each property to extend
-    foreach ($extendProperties as $property) {
-        $singularProperty = rtrim($property, 's');
-
-        // Check if property exists
-        if (array_key_exists(key: $property, array:
-            $result) === true)                          {
-            $value = $result[$property];
-        if (empty($value)) {
-            continue;
-        }
-
-            } else if (array_key_exists(key: $singularProperty, array:
-                $result))                          {
-                $value = $result[$singularProperty];
-            } else {
-                throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
-            }
-
-            // Try to get mapper for property
-            try {
-                $mapper         = $this->getMapper(objectType: $property);
-                $propertyObject = $singularProperty;
-
-                // Extend with related objects using specific mapper
-                if (is_array($value) === true) {
-                    $result[$property] = $this->getMultipleObjects(objectType: $propertyObject, ids: $value);
-                } else {
-                    $objectId          = is_object(value: $value) ? $value->getId() : $value;
-                    $result[$property] = $mapper->find($objectId);
-                }
-            } catch (Exception $e) {
-                // If no specific mapper found, try to look up values in default database
-                try {
-                    if (is_array($value)) {
-                        // Handle array of values
-                        $extendedValues = [];
-                        foreach ($value as $val) {
-                            try {
-                                $found = $this->objectEntityMapper->find($val);
-                                if ($found) {
-                                    $extendedFound    = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1);
-                                    $extendedValues[] = $extendedFound;
-                                }
-                            } catch (Exception $e) {
-                                continue;
-                            }
-                        }
-
-                        if (!empty($extendedValues)) {
-                            $result[$property] = $extendedValues;
-                        }
-                    } else {
-                        // Handle single value
-                        $found = $this->objectEntityMapper->find($value);
-                        if ($found) {
-                            // Serialize and recursively extend the found object (apply depth tracking here)
-                            $result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); 
-                            // Start with depth 1
-                        }
-                    }//end if
-                } catch (Exception $e2) {
-                    // If lookup fails, keep original value
-                    continue;
-                }//end try
-            }//end try
-            }
-
-            return $result;
-        }//end foreach
-
-
-        /**
-         * Get all registers extended with their schemas
-         *
-         * @return array The registers with schema data
-         * @throws Exception If extension fails
-         */
     public function getRegisters(): array
         {
             // Get all registers
@@ -2949,5 +2851,5 @@ class ObjectService
     }//end revertObject()
 
 
-    }//end extendEntity()
+}//end class
 
