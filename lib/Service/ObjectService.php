@@ -2505,7 +2505,7 @@ class ObjectService
         $page   = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
 
-        if ($page !== null && isset($limit)) {
+        if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
             $offset = $limit * ($page - 1);
         }
@@ -2522,7 +2522,7 @@ class ObjectService
         // Remove unnecessary parameters from filters.
         $filters = $requestParams;
         unset($filters['_route']); 
-        // TODO: Investigate why this is here and if it's needed
+        // TODO: Investigate why this is here and if it's needed.
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
@@ -2892,4 +2892,3 @@ class ObjectService
 
 
 }//end class
-
