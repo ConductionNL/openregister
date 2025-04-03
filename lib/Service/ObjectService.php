@@ -56,10 +56,14 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
  */
 class ObjectService
 {
-    /** @var int The current register ID */
+    /**
+ * @var int The current register ID 
+*/
     private int $register;
 
-    /** @var int The current schema ID */
+    /**
+ * @var int The current schema ID 
+*/
     private int $schema;
 
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
@@ -71,15 +75,15 @@ class ObjectService
      * Initializes the service with dependencies required for database and object operations.
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param RegisterMapper $registerMapper Register data mapper.
-     * @param SchemaMapper $schemaMapper Schema data mapper.
-     * @param AuditTrailMapper $auditTrailMapper Audit trail data mapper.
-     * @param ContainerInterface $container Dependency injection container.
-     * @param IURLGenerator $urlGenerator URL generator service.
-     * @param FileService $fileService File service for managing files.
-     * @param IAppManager $appManager Application manager service.
-     * @param IAppConfig $config Configuration manager.
-     * @param IUserSession $userSession User session service.
+     * @param RegisterMapper     $registerMapper     Register data mapper.
+     * @param SchemaMapper       $schemaMapper       Schema data mapper.
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail data mapper.
+     * @param ContainerInterface $container          Dependency injection container.
+     * @param IURLGenerator      $urlGenerator       URL generator service.
+     * @param FileService        $fileService        File service for managing files.
+     * @param IAppManager        $appManager         Application manager service.
+     * @param IAppConfig         $config             Configuration manager.
+     * @param IUserSession       $userSession        User session service.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -96,8 +100,8 @@ class ObjectService
         ArrayLoader $loader
     ) {
         $this->twig = new Environment($loader);
-    }//end __construct()
 
+    }//end __construct()
 
 
     /**
@@ -120,8 +124,8 @@ class ObjectService
         }
 
         return null;
-    }//end getOpenConnector()
 
+    }//end getOpenConnector()
 
 
     /**
@@ -135,7 +139,7 @@ class ObjectService
     public function resolveSchema(Uri $uri): string
     {
         // Local schema resolution
-        if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
+        if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
             && str_contains($uri->path(), '/api/schemas')
         ) {
             $exploded = explode('/', $uri->path());
@@ -145,7 +149,7 @@ class ObjectService
         }
 
         // File schema resolution
-        if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
+        if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
             && str_contains($uri->path(), '/api/files/schema')
         ) {
             return File::getSchema($this->urlGenerator);
@@ -160,16 +164,16 @@ class ObjectService
         }
 
         return '';
-    }//end resolveSchema()
 
+    }//end resolveSchema()
 
 
     /**
      * Validates an object against a schema.
      *
-     * @param array $object The object to validate.
-     * @param int|null $schemaId The schema ID to validate against.
-     * @param object $schemaObject A custom schema object for validation.
+     * @param array    $object       The object to validate.
+     * @param int|null $schemaId     The schema ID to validate against.
+     * @param object   $schemaObject A custom schema object for validation.
      *
      * @return ValidationResult The result of the validation.
      */
@@ -191,14 +195,14 @@ class ObjectService
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);
-    }//end validateObject()
 
+    }//end validateObject()
 
 
     /**
      * Finds an object by ID or UUID.
      *
-     * @param int|string $id The object ID or UUID.
+     * @param int|string $id     The object ID or UUID.
      * @param array|null $extend Properties to extend the object with.
      *
      * @return ObjectEntity|null The found object or null if not found
@@ -213,8 +217,8 @@ class ObjectService
             $extend,
             files: $files
         );
-    }//end find()
 
+    }//end find()
 
 
     /**
@@ -228,8 +232,8 @@ class ObjectService
     public function findByUuid(string $uuid): ?ObjectEntity
     {
         return $this->objectEntityMapper->findByUuidOnly(uuid: $uuid);
-    }//end findByUuid()
 
+    }//end findByUuid()
 
 
     /**
@@ -259,18 +263,18 @@ class ObjectService
         }
 
         return $objectEntity;
-    }//end createFromArray()
 
+    }//end createFromArray()
 
 
     /**
      * Updates an existing object with new data.
      *
-     * @param string $id The object ID to update
-     * @param array $object The new object data
-     * @param bool $updateVersion Whether this is an update operation
-     * @param bool $patch Whether this is a patch operation
-     * @param array|null $extend Properties to extend with related data
+     * @param string     $id            The object ID to update
+     * @param array      $object        The new object data
+     * @param bool       $updateVersion Whether this is an update operation
+     * @param bool       $patch         Whether this is a patch operation
+     * @param array|null $extend        Properties to extend with related data
      *
      * @return ObjectEntity The updated object entity.
      * @throws ValidationException If validation fails.
@@ -325,8 +329,8 @@ class ObjectService
         }
 
         return $objectEntity;
-    }//end updateFromArray()
 
+    }//end updateFromArray()
 
 
     /**
@@ -348,19 +352,19 @@ class ObjectService
             schema: $this->getSchema(),
             uuid: $object['id']
         );
-    }//end delete()
 
+    }//end delete()
 
 
     /**
      * Retrieves all objects matching criteria.
      *
-     * @param int|null $limit Maximum number of results.
-     * @param int|null $offset Starting offset for pagination.
-     * @param array $filters Criteria to filter the objects.
-     * @param array $sort Sorting options.
-     * @param string|null $search Search term.
-     * @param array|null $extend Properties to extend the results with.
+     * @param int|null    $limit   Maximum number of results.
+     * @param int|null    $offset  Starting offset for pagination.
+     * @param array       $filters Criteria to filter the objects.
+     * @param array       $sort    Sorting options.
+     * @param string|null $search  Search term.
+     * @param array|null  $extend  Properties to extend the results with.
      *
      * @return array List of matching objects.
      */
@@ -390,24 +394,24 @@ class ObjectService
         if (!empty($extend)) {
             $objects = array_map(
                     function ($object) use ($extend) {
-                // Convert object to array if needed
-                $objectArray = is_array($object) ? $object : $object->jsonSerialize();
-                return $this->renderEntity(entity: $objectArray, extend: $extend);
-            },
+                        // Convert object to array if needed
+                        $objectArray = is_array($object) ? $object : $object->jsonSerialize();
+                        return $this->renderEntity(entity: $objectArray, extend: $extend);
+                    },
                     $objects
                     );
         }
 
         return $objects;
-    }//end findAll()
 
+    }//end findAll()
 
 
     /**
      * Counts the total number of objects matching criteria.
      *
-     * @param array $filters Criteria to filter the objects.
-     * @param string|null $search Search term.
+     * @param array       $filters Criteria to filter the objects.
+     * @param string|null $search  Search term.
      *
      * @return int The total count of matching objects.
      */
@@ -421,8 +425,8 @@ class ObjectService
 
         return $this->objectEntityMapper
             ->countAll(filters: $filters, search: $search);
-    }//end count()
 
+    }//end count()
 
 
     /**
@@ -443,14 +447,14 @@ class ObjectService
         }
 
         return $result;
-    }//end findMultiple()
 
+    }//end findMultiple()
 
 
     /**
      * Find subobjects for a certain property with given ids
      *
-     * @param array $ids The IDs to fetch the subobjects for
+     * @param array  $ids      The IDs to fetch the subobjects for
      * @param string $property The property in which the objects reside.
      *
      * @return array The resulting subobjects.
@@ -480,18 +484,18 @@ class ObjectService
         $subSchemaMapper = $this->getMapper(register: $this->getRegister(), schema: $subSchema);
 
         return $subSchemaMapper->findMultiple($ids);
-    }//end findSubObjects()
 
+    }//end findSubObjects()
 
 
     /**
      * Get aggregations for objects matching filters
      *
-     * @param array $filters Filter criteria
-     * @param string|null $search Search term
+     * @param array       $filters Filter criteria
+     * @param string|null $search  Search term
      *
-     * @param array $filters Criteria to filter objects.
-     * @param string|null $search Search term.
+     * @param array       $filters Criteria to filter objects.
+     * @param string|null $search  Search term.
      *
      * @return array Aggregated data results.
      */
@@ -507,14 +511,14 @@ class ObjectService
         }
 
         return [];
-    }//end getAggregations()
 
+    }//end getAggregations()
 
 
     /**
      * Extracts object data from an entity.
      *
-     * @param mixed $object The object entity.
+     * @param mixed      $object The object entity.
      * @param array|null $extend Properties to extend the object data with.
      *
      * @return mixed The extracted object data.
@@ -522,8 +526,8 @@ class ObjectService
     private function getDataFromObject(mixed $object, ?array $extend=[]): mixed
     {
         return $object->getObject();
-    }//end getDataFromObject()
 
+    }//end getDataFromObject()
 
 
     /**
@@ -560,7 +564,7 @@ class ObjectService
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
         unset($filters['_route']); 
-// TODO: Investigate why this is here and if it's needed
+        // TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
@@ -580,22 +584,22 @@ class ObjectService
             'page'    => $page ?? 1,
             'pages'   => $pages,
         ];
-    }//end findAllPaginated()
 
+    }//end findAllPaginated()
 
 
     /**
      * Gets all objects of a specific type.
      *
      * @param string|null $objectType The type of objects to retrieve. Defaults to 'objectEntity' if register and schema are provided.
-     * @param int|null $register The ID of the register to filter objects by.
-     * @param int|null $schema The ID of the schema to filter objects by.
-     * @param int|null $limit The maximum number of objects to retrieve. Null for no limit.
-     * @param int|null $offset The offset for pagination. Null for no offset.
-     * @param array $filters Additional filters for retrieving objects.
-     * @param array $sort Sorting criteria for the retrieved objects.
-     * @param string|null $search Search term for filtering objects.
-     * @param array|null $extend Properties to extend with related data.
+     * @param int|null    $register   The ID of the register to filter objects by.
+     * @param int|null    $schema     The ID of the schema to filter objects by.
+     * @param int|null    $limit      The maximum number of objects to retrieve. Null for no limit.
+     * @param int|null    $offset     The offset for pagination. Null for no offset.
+     * @param array       $filters    Additional filters for retrieving objects.
+     * @param array       $sort       Sorting criteria for the retrieved objects.
+     * @param string|null $search     Search term for filtering objects.
+     * @param array|null  $extend     Properties to extend with related data.
      *
      * @return array An array of objects matching the specified criteria.
      * @throws InvalidArgumentException If an invalid object type is specified.
@@ -637,15 +641,15 @@ class ObjectService
 
         $objects = array_map(
                 function ($object) {
-            $files = $this->getFiles($object);
-            return $this->hydrateFiles($object, $files);
-        },
+                    $files = $this->getFiles($object);
+                    return $this->hydrateFiles($object, $files);
+                },
                 $objects
                 );
 
         return $objects;
-    }//end getObjects()
 
+    }//end getObjects()
 
 
     /**
@@ -673,8 +677,8 @@ class ObjectService
         if (empty($errors) === false) {
             throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
         }
-    }//end validateCustomRules()
 
+    }//end validateCustomRules()
 
 
     /**
@@ -698,16 +702,16 @@ class ObjectService
         }
 
         return new JSONResponse(['message' => $exception->getMessage(), 'validationErrors' => $validationErrors], 400);
-    }//end handleValidationException()
 
+    }//end handleValidationException()
 
 
     /**
      * Saves an object to the database.
      *
      * @param int|string|Register $register The ID, UUID, or object of the register to save the object to.
-     * @param int|string|Schema $schema The ID, UUID, or object of the schema to save the object to.
-     * @param array $object The data of the object to save.
+     * @param int|string|Schema   $schema   The ID, UUID, or object of the schema to save the object to.
+     * @param array               $object   The data of the object to save.
      *
      * @return ObjectEntity The saved object entity.
      * @throws ValidationException If the object fails validation.
@@ -720,8 +724,8 @@ class ObjectService
         $object = array_filter(
                 $object,
                 function ($key) {
-            return !str_starts_with($key, '_');
-        },
+                    return !str_starts_with($key, '_');
+                },
                 ARRAY_FILTER_USE_KEY
                 );
 
@@ -825,7 +829,7 @@ class ObjectService
         // Handle object properties that are either nested objects or files
         if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
             $objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); 
-// @todo: register and schema are not needed here we should refactor and remove them
+            // @todo: register and schema are not needed here we should refactor and remove them
         }
 
         // Let grap any links that we can
@@ -844,8 +848,8 @@ class ObjectService
         }
 
         return $objectEntity;
-    }//end saveObject()
 
+    }//end saveObject()
 
 
     /**
@@ -918,14 +922,14 @@ class ObjectService
 
         $objectEntity->setRelations($relations);
         return $objectEntity;
-    }//end handleLinkRelations()
 
+    }//end handleLinkRelations()
 
 
     /**
      * Extracts and validates a UUID from a given string or URI.
      *
-     * @param string $item The item to validate (UUID or URL containing a UUID).
+     * @param string $item         The item to validate (UUID or URL containing a UUID).
      * @param string $propertyName The property name for error messages.
      *
      * @return string The validated UUID.
@@ -955,16 +959,16 @@ class ObjectService
 
         $error = [sprintf("/%s", $propertyName) => sprintf("%s not found with given id or uri", $propertyName)];
         throw new CustomValidationException(message: self::VALIDATION_ERROR_MESSAGE, errors: [$error]);
-    }//end getIdFromString()
 
+    }//end getIdFromString()
 
 
     /**
      * Gets schema id from a reference in a property
      *
-     * @param array $property
+     * @param array  $property
      * @param string $propertyName
-     * @param int $schema
+     * @param int    $schema
      *
      * @return string schemaId
      *
@@ -991,8 +995,8 @@ class ObjectService
         }
 
         throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
-    }//end getSchemaFromPropertyReference()
 
+    }//end getSchemaFromPropertyReference()
 
 
     /**
@@ -1001,13 +1005,13 @@ class ObjectService
      * Handles $ref resolution for schema subtypes, stores relations, and replaces nested subobject
      * data with its reference URI or UUID.
      *
-     * @param array $property The property schema details for the nested object.
-     * @param string $propertyName The name of the property in the parent object.
-     * @param array|string $item The nested subobject data to process.
+     * @param array        $property     The property schema details for the nested object.
+     * @param string       $propertyName The name of the property in the parent object.
+     * @param array|string $item         The nested subobject data to process.
      * @param ObjectEntity $objectEntity The parent object entity to associate the nested subobject with.
-     * @param int $register The register associated with the schema.
-     * @param int $schema The schema identifier for the subobject.
-     * @param int|null $index Optional index of the subobject if it resides in an array.
+     * @param int          $register     The register associated with the schema.
+     * @param int          $schema       The schema identifier for the subobject.
+     * @param int|null     $index        Optional index of the subobject if it resides in an array.
      *
      * @return string The UUID of the nested subobject.
      * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
@@ -1054,7 +1058,7 @@ class ObjectService
             $objectEntity->setRelations($relations);
         } else {
             $relations = $objectEntity->getRelations() ?? [];
-            $relations[$propertyName . '.' . $index] = $nestedObject->getUri();
+            $relations[$propertyName.'.'.$index] = $nestedObject->getUri();
             $objectEntity->setRelations($relations);
         }
 
@@ -1063,19 +1067,19 @@ class ObjectService
         }
 
         return $nestedObject->getUuid();
-    }//end addObject()
 
+    }//end addObject()
 
 
     /**
      * Processes an object property by delegating it to a subobject handling mechanism.
      *
-     * @param array $property The schema definition for the object property.
-     * @param string $propertyName The name of the object property.
-     * @param array|string $item The data corresponding to the property in the parent object.
+     * @param array        $property     The schema definition for the object property.
+     * @param string       $propertyName The name of the object property.
+     * @param array|string $item         The data corresponding to the property in the parent object.
      * @param ObjectEntity $objectEntity The object entity to link the processed data to.
-     * @param int $register The register associated with the schema.
-     * @param int $schema The schema identifier for the property.
+     * @param int          $register     The register associated with the schema.
+     * @param int          $schema       The schema identifier for the property.
      *
      * @return string The updated property data, typically a reference UUID.
      * @throws ValidationException|CustomValidationException When schema or object validation fails.
@@ -1099,8 +1103,8 @@ class ObjectService
             schema: $schema,
             depth: $depth
         );
-    }//end handleObjectProperty()
 
+    }//end handleObjectProperty()
 
 
     /**
@@ -1109,12 +1113,12 @@ class ObjectService
      * Supports nested objects, files, or oneOf schema types, delegating to specific handlers
      * for each element in the array.
      *
-     * @param array $property The schema definition for the array property.
-     * @param string $propertyName The name of the array property.
-     * @param array $items The elements of the array to process.
+     * @param array        $property     The schema definition for the array property.
+     * @param string       $propertyName The name of the array property.
+     * @param array        $items        The elements of the array to process.
      * @param ObjectEntity $objectEntity The object entity the data belongs to.
-     * @param int $register The register associated with the schema.
-     * @param int $schema The schema identifier for the array elements.
+     * @param int          $register     The register associated with the schema.
+     * @param int          $schema       The schema identifier for the array elements.
      *
      * @return array The processed array with updated references or data.
      * @throws GuzzleException|ValidationException|CustomValidationException When schema validation or file handling fails.
@@ -1160,7 +1164,7 @@ class ObjectService
                 $items[$index] = $this->handleFileProperty(
                     objectEntity: $objectEntity,
                     object: [$propertyName => [$index => $item]],
-                    propertyName: $propertyName . '.' . $index,
+                    propertyName: $propertyName.'.'.$index,
                     format: $item['format'] ?? null
                 )[$propertyName];
             }
@@ -1182,8 +1186,8 @@ class ObjectService
         }
 
         return $items;
-    }//end handleArrayProperty()
 
+    }//end handleArrayProperty()
 
 
     /**
@@ -1192,13 +1196,13 @@ class ObjectService
      * Handles various types of schemas, including files and references, to correctly process
      * and replace the input data with the resolved references or processed results.
      *
-     * @param array $property The oneOf schema definition.
-     * @param string $propertyName The name of the property in the parent object.
-     * @param string|array $item The data to process, either as a scalar or a nested array.
+     * @param array        $property     The oneOf schema definition.
+     * @param string       $propertyName The name of the property in the parent object.
+     * @param string|array $item         The data to process, either as a scalar or a nested array.
      * @param ObjectEntity $objectEntity The object entity the data belongs to.
-     * @param int $register The register associated with the schema.
-     * @param int $schema The schema identifier for the property.
-     * @param int|null $index Optional index for array-based oneOf properties.
+     * @param int          $register     The register associated with the schema.
+     * @param int          $schema       The schema identifier for the property.
+     * @param int|null     $index        Optional index for array-based oneOf properties.
      *
      * @return string|array The processed data, resolved to a reference or updated structure.
      * @throws GuzzleException|ValidationException When schema validation or file handling fails.
@@ -1214,11 +1218,11 @@ class ObjectService
         int $depth=0
     ): string | array
     {
-        if (array_is_list($property) === false) {
-            return $item;
+    if (array_is_list($property) === false) {
+        return $item;
 
 
-        }
+    }
 
         if (in_array(needle:'file', haystack: array_column(array: $property, column_key: 'type')) === true
             && is_array($item) === true
@@ -1231,11 +1235,11 @@ class ObjectService
                 propertyName: $propertyName,
                 format: $property[$fileIndex]['format'] ?? null
             );
-        }
-        if (in_array(needle: 'file', haystack: array_column(array: $property, column_key: 'type')) === true
+            }
+            if (in_array(needle: 'file', haystack: array_column(array: $property, column_key: 'type')) === true
             && is_array($item) === true
             && $index === null
-        ) {
+            ) {
             $fileIndex = array_search(needle: 'file', haystack: array_column(array: $property, column_key: 'type'));
             return $this->handleFileProperty(
                 objectEntity: $objectEntity,
@@ -1243,10 +1247,10 @@ class ObjectService
                 propertyName: $propertyName,
                 format: $property[$fileIndex]['format'] ?? null
             );
-        }
+            }
 
-        if (array_column(array:
-$property, column_key: '$ref') === [])                           {
+            if (array_column(array:
+                $property, column_key: '$ref') === [])                           {
             return $item;
         }
 
@@ -1259,45 +1263,45 @@ $property, column_key: '$ref') === [])                           {
             callback: function (array $option) {
                 return isset($option['$ref']) === true;
             }
-        )[0];
+                )[0];
 
-        return $this->addObject(
-            property: $oneOf,
-            propertyName: $propertyName,
-            item: $item,
-            objectEntity: $objectEntity,
-            register: $register,
-            schema: $schema,
-            index: $index,
-            depth: $depth
-        );
-    }//end if
+                return $this->addObject(
+                property: $oneOf,
+                propertyName: $propertyName,
+                item: $item,
+                objectEntity: $objectEntity,
+                register: $register,
+                schema: $schema,
+                index: $index,
+                depth: $depth
+                );
+            }//end if
 
 
-    /**
-     * Processes and rewrites properties within an object based on their schema definitions.
-     *
-     * Determines the type of each property (object, array, oneOf, or file) and delegates to the
-     * corresponding handler. Updates the object data with references or processed results.
-     *
-     * @param array $property The schema definition of the property.
-     * @param string $propertyName The name of the property in the object.
-     * @param int $register The register ID associated with the schema.
-     * @param int $schema The schema ID associated with the property.
-     * @param array $object The parent object data to update.
-     * @param ObjectEntity $objectEntity The object entity being processed.
-     *
-     * @return array The updated object with processed properties.
-     * @throws GuzzleException|ValidationException When schema validation or file handling fails.
-     */
+            /**
+             * Processes and rewrites properties within an object based on their schema definitions.
+             *
+             * Determines the type of each property (object, array, oneOf, or file) and delegates to the
+             * corresponding handler. Updates the object data with references or processed results.
+             *
+             * @param array        $property     The schema definition of the property.
+             * @param string       $propertyName The name of the property in the object.
+             * @param int          $register     The register ID associated with the schema.
+             * @param int          $schema       The schema ID associated with the property.
+             * @param array        $object       The parent object data to update.
+             * @param ObjectEntity $objectEntity The object entity being processed.
+             *
+             * @return array The updated object with processed properties.
+             * @throws GuzzleException|ValidationException When schema validation or file handling fails.
+             */
     private function handleProperty(
-        array $property,
-        string $propertyName,
-        int $register,
-        int $schema,
-        array $object,
-        ObjectEntity $objectEntity,
-        int $depth=0
+            array $property,
+            string $propertyName,
+            int $register,
+            int $schema,
+            array $object,
+            ObjectEntity $objectEntity,
+            int $depth=0
     ): array {
         if (isset($property['type']) === false) {
             return $object;
@@ -1349,8 +1353,8 @@ $property, column_key: '$ref') === [])                           {
         }//end switch
 
         return $object;
-    }//end handleProperty()
 
+    }//end handleProperty()
 
 
     /**
@@ -1360,10 +1364,10 @@ $property, column_key: '$ref') === [])                           {
      * array items, and file-based data. Updates the object entity with resolved references.
      *
      * @param ObjectEntity $objectEntity The object entity being processed.
-     * @param array $object The parent object data to analyze.
-     * @param array $properties The schema properties defining the object structure.
-     * @param int $register The register ID associated with the schema.
-     * @param int $schema The schema ID associated with the object.
+     * @param array        $object       The parent object data to analyze.
+     * @param array        $properties   The schema properties defining the object structure.
+     * @param int          $register     The register ID associated with the schema.
+     * @param int          $schema       The schema ID associated with the object.
      *
      * @return ObjectEntity The updated object entity with resolved relations and file references.
      * @throws Exception|ValidationException|GuzzleException When file handling or schema processing fails.
@@ -1397,17 +1401,17 @@ $property, column_key: '$ref') === [])                           {
         $objectEntity->setObject($object);
 
         return $objectEntity;
-    }//end handleObjectRelations()
 
+    }//end handleObjectRelations()
 
 
     /**
      * @todo
      *
-     * @param string $fileContent
-     * @param string $propertyName
+     * @param string       $fileContent
+     * @param string       $propertyName
      * @param ObjectEntity $objectEntity
-     * @param File $file
+     * @param File         $file
      *
      * @return File
      * @throws Exception
@@ -1439,10 +1443,10 @@ $property, column_key: '$ref') === [])                           {
             $share = $this->fileService->findShare(path: $filePath);
             if ($share !== null) {
                 $shareLink    = $this->fileService->getShareLink($share);
-                $downloadLink = $shareLink . '/download';
+                $downloadLink = $shareLink.'/download';
             } else {
                 $shareLink    = $this->fileService->createShareLink(path: $filePath);
-                $downloadLink = $shareLink . '/download';
+                $downloadLink = $shareLink.'/download';
             }
 
             $filesDot = new Dot($objectEntity->getFiles() ?? []);
@@ -1454,12 +1458,12 @@ $property, column_key: '$ref') === [])                           {
             $file->setShareUrl($shareLink);
             $file->setFilePath($filePath);
         } catch (Exception $e) {
-            throw new Exception('Failed to store file: ' . $e->getMessage());
+            throw new Exception('Failed to store file: '.$e->getMessage());
         }//end try
 
         return $file;
-    }//end writeFile()
 
+    }//end writeFile()
 
 
     /**
@@ -1478,15 +1482,15 @@ $property, column_key: '$ref') === [])                           {
         }
 
         return $file;
-    }//end setExtension()
 
+    }//end setExtension()
 
 
     /**
      * @todo
      *
-     * @param File $file
-     * @param string $propertyName
+     * @param File         $file
+     * @param string       $propertyName
      * @param ObjectEntity $objectEntity
      *
      * @return File
@@ -1530,15 +1534,15 @@ $property, column_key: '$ref') === [])                           {
                     $fileContent = $response->getBody()->getContents();
                 }//end if
             } catch (Exception | NotFoundExceptionInterface $e) {
-                throw new Exception('Failed to download file from URL: ' . $e->getMessage());
+                throw new Exception('Failed to download file from URL: '.$e->getMessage());
             }//end try
         }//end if
 
         $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $file);
 
         return $file;
-    }//end fetchFile()
 
+    }//end fetchFile()
 
 
     /**
@@ -1548,9 +1552,9 @@ $property, column_key: '$ref') === [])                           {
      * updating the object data with the resulting file references.
      *
      * @param ObjectEntity $objectEntity The object entity containing the file property.
-     * @param array $object The parent object data containing the file reference.
-     * @param string $propertyName The name of the file property.
-     * @param string|null $format
+     * @param array        $object       The parent object data containing the file reference.
+     * @param string       $propertyName The name of the file property.
+     * @param string|null  $format
      *
      * @return string The updated object with resolved file references.
      * @throws ContainerExceptionInterface
@@ -1617,8 +1621,8 @@ $property, column_key: '$ref') === [])                           {
             default:
                 return $fileEntity->getDownloadUrl();
         }
-    }//end handleFileProperty()
 
+    }//end handleFileProperty()
 
 
     /**
@@ -1653,15 +1657,15 @@ $property, column_key: '$ref') === [])                           {
         }
 
         return $files;
-    }//end getFiles()
 
+    }//end getFiles()
 
 
     /**
      * Get a single file for an object by filepath
      *
-     * @param ObjectEntity|string $object The object or object ID to fetch the file for
-     * @param string $filePath The path to the specific file
+     * @param  ObjectEntity|string $object   The object or object ID to fetch the file for
+     * @param  string              $filePath The path to the specific file
      * @return Node|null The file if found, null otherwise
      * @throws NotFoundException If the folder or file is not found
      * @throws DoesNotExistException If the object ID is not found
@@ -1688,18 +1692,18 @@ $property, column_key: '$ref') === [])                           {
         }
 
         return null;
-    }//end getFile()
 
+    }//end getFile()
 
 
     /**
      * Add a file to the object
      *
-     * @param ObjectEntity|string $object The object to add the file to
-     * @param string $fileName The name of the file to add
-     * @param string $base64Content The base64 encoded content of the file
-     * @param bool $share Whether to create a share link for the file
-     * @param array $tags Optional array of tags to attach to the file
+     * @param ObjectEntity|string $object        The object to add the file to
+     * @param string              $fileName      The name of the file to add
+     * @param string              $base64Content The base64 encoded content of the file
+     * @param bool                $share         Whether to create a share link for the file
+     * @param array               $tags          Optional array of tags to attach to the file
      *
      * @return \OCP\Files\File The added file
      * @throws Exception If file addition fails
@@ -1712,17 +1716,17 @@ $property, column_key: '$ref') === [])                           {
         }
 
         return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: base64_decode($base64Content), share: $share, tags: $tags);
-    }//end addFile()
 
+    }//end addFile()
 
 
     /**
      * Update an existing file for an object
      *
-     * @param ObjectEntity|string $object The object or object ID
-     * @param string $filePath Path to the file to update
-     * @param string|null $content Optional new file content
-     * @param array $tags Optional tags to update
+     * @param  ObjectEntity|string $object   The object or object ID
+     * @param  string              $filePath Path to the file to update
+     * @param  string|null         $content  Optional new file content
+     * @param  array               $tags     Optional tags to update
      * @return \OCP\Files\File The updated file
      * @throws Exception If file update fails
      */
@@ -1738,8 +1742,8 @@ $property, column_key: '$ref') === [])                           {
             content: $content,
             tags: $tags
         );
-    }//end updateFile()
 
+    }//end updateFile()
 
 
     /**
@@ -1751,21 +1755,21 @@ $property, column_key: '$ref') === [])                           {
      * @return array An array of tag names
      * @throws \Exception If there's an error retrieving the tags
      *
-     * @psalm-return array<int, string>
+     * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
     public function getAllTags(): array
     {
         return $this->fileService->getAllTags();
-    }//end getAllTags()
 
+    }//end getAllTags()
 
 
     /**
      * Delete a file from an object
      *
-     * @param ObjectEntity|string $object The object or object ID
-     * @param string $filePath Path to the file to delete
+     * @param  ObjectEntity|string $object   The object or object ID
+     * @param  string              $filePath Path to the file to delete
      * @return bool True if successful
      * @throws Exception If file deletion fails
      */
@@ -1779,8 +1783,8 @@ $property, column_key: '$ref') === [])                           {
         return $this->fileService->deleteFile(
             filePath: $this->fileService->getObjectFilePath($object, $filePath)
         );
-    }//end deleteFile()
 
+    }//end deleteFile()
 
 
     /**
@@ -1788,8 +1792,8 @@ $property, column_key: '$ref') === [])                           {
      *
      * @todo Should be in file service
      *
-     * @param ObjectEntity|string $object The object or object ID
-     * @param string $filePath Path to the file to publish
+     * @param  ObjectEntity|string $object   The object or object ID
+     * @param  string              $filePath Path to the file to publish
      * @return \OCP\Files\File The published file
      * @throws Exception If file publishing fails
      */
@@ -1811,8 +1815,8 @@ $property, column_key: '$ref') === [])                           {
         $shareLink = $this->fileService->createShareLink(path: $file->getPath());
 
         return $file;
-    }//end publishFile()
 
+    }//end publishFile()
 
 
     /**
@@ -1820,8 +1824,8 @@ $property, column_key: '$ref') === [])                           {
      *
      * @todo Should be in file service
      *
-     * @param ObjectEntity|string $object The object or object ID
-     * @param string $filePath Path to the file to unpublish
+     * @param  ObjectEntity|string $object   The object or object ID
+     * @param  string              $filePath Path to the file to unpublish
      * @return \OCP\Files\File The unpublished file
      * @throws Exception If file unpublishing fails
      */
@@ -1843,8 +1847,8 @@ $property, column_key: '$ref') === [])                           {
         $this->fileService->deleteShareLinks(file: $file);
 
         return $file;
-    }//end unpublishFile()
 
+    }//end unpublishFile()
 
 
     /**
@@ -1854,8 +1858,8 @@ $property, column_key: '$ref') === [])                           {
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
      *
-     * @param Node[] $files Array of Node files to format
-     * @param array $requestParams Optional request parameters
+     * @param Node[] $files         Array of Node files to format
+     * @param array  $requestParams Optional request parameters
      *
      * @return array Array of formatted file metadata arrays
      * @throws InvalidPathException
@@ -1864,8 +1868,8 @@ $property, column_key: '$ref') === [])                           {
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
         return $this->fileService->formatFiles($files, $requestParams);
-    }//end formatFiles()
 
+    }//end formatFiles()
 
 
     /**
@@ -1882,8 +1886,8 @@ $property, column_key: '$ref') === [])                           {
     public function formatFile(Node $file): array
     {
         return $this->fileService->formatFile($file);
-    }//end formatFile()
 
+    }//end formatFile()
 
 
     /**
@@ -1892,8 +1896,8 @@ $property, column_key: '$ref') === [])                           {
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
      *
-     * @param ObjectEntity $object The object to hydrate the files array of.
-     * @param Node[] $files The files to hydrate the files array with.
+     * @param  ObjectEntity $object The object to hydrate the files array of.
+     * @param  Node[]       $files  The files to hydrate the files array with.
      * @return ObjectEntity The object with hydrated files array.
      */
     public function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
@@ -1905,8 +1909,8 @@ $property, column_key: '$ref') === [])                           {
 
         $object->setFiles($formattedFiles);
         return $object;
-    }//end hydrateFiles()
 
+    }//end hydrateFiles()
 
 
     /**
@@ -1914,10 +1918,10 @@ $property, column_key: '$ref') === [])                           {
      *
      * Supports only internal sources and raises an exception for unsupported source types.
      *
-     * @param Register $register The register from which the object is retrieved.
-     * @param Schema $schema The schema defining the object structure.
-     * @param string $uuid The unique identifier of the object to retrieve.
-     * @param array|null $extend Optional properties to include in the retrieved object.
+     * @param Register   $register The register from which the object is retrieved.
+     * @param Schema     $schema   The schema defining the object structure.
+     * @param string     $uuid     The unique identifier of the object to retrieve.
+     * @param array|null $extend   Optional properties to include in the retrieved object.
      *
      * @return ObjectEntity The retrieved object as an entity.
      * @throws Exception If the source type is unsupported.
@@ -1938,8 +1942,8 @@ $property, column_key: '$ref') === [])                           {
         }
 
         // @todo mongodb support        throw new Exception('Unsupported source type');
-    }//end getObject()
 
+    }//end getObject()
 
 
     /**
@@ -1956,8 +1960,8 @@ $property, column_key: '$ref') === [])                           {
 
         // Return the substring before the dot, or the original string if no dot is found
         return $dotPosition !== false ? substr($input, 0, $dotPosition) : $input;
-    }//end getStringBeforeDot()
 
+    }//end getStringBeforeDot()
 
 
     /**
@@ -1974,8 +1978,8 @@ $property, column_key: '$ref') === [])                           {
 
         // Return the substring after the last slash, or the original string if no slash is found
         return $lastSlashPos !== false ? substr($input, $lastSlashPos + 1) : $input;
-    }//end getStringAfterLastSlash()
 
+    }//end getStringAfterLastSlash()
 
 
     /**
@@ -1984,9 +1988,9 @@ $property, column_key: '$ref') === [])                           {
      * This method identifies properties in the schema marked for cascade deletion and deletes
      * related objects associated with those properties in the given object.
      *
-     * @param Register $register The register containing the objects.
-     * @param Schema $schema The schema defining the properties and relationships.
-     * @param ObjectEntity $object The object entity whose related objects should be deleted.
+     * @param Register     $register The register containing the objects.
+     * @param Schema       $schema   The schema defining the properties and relationships.
+     * @param ObjectEntity $object   The object entity whose related objects should be deleted.
      *
      * @return void
      *
@@ -2009,16 +2013,16 @@ $property, column_key: '$ref') === [])                           {
                 $this->deleteObject(register: $register->getId(), schema: $schema->getId(), uuid: $relatedObjectId, originalObjectId: $originalObjectId);
             }
         }
-    }//end cascadeDeleteObjects()
 
+    }//end cascadeDeleteObjects()
 
 
     /**
      * Delete an object
      *
-     * @param string|int $register The register to delete from
-     * @param string|int $schema The schema of the object
-     * @param string $uuid The UUID of the object to delete
+     * @param string|int  $register         The register to delete from
+     * @param string|int  $schema           The schema of the object
+     * @param string      $uuid             The UUID of the object to delete
      * @param string|null $originalObjectId The UUID of the parent object so we dont delete the object we come from and cause a loop
      *
      * @return bool      True if deletion was successful
@@ -2052,8 +2056,8 @@ $property, column_key: '$ref') === [])                           {
         }//end if
 
         // @todo mongodb support        throw new Exception('Unsupported source type');
-    }//end deleteObject()
 
+    }//end deleteObject()
 
 
     /**
@@ -2062,8 +2066,8 @@ $property, column_key: '$ref') === [])                           {
      * Optionally sets the current register and schema when both are provided.
      *
      * @param string|null $objectType The type of the object for which a mapper is needed.
-     * @param int|null $register Optional register ID to set for the mapper.
-     * @param int|null $schema Optional schema ID to set for the mapper.
+     * @param int|null    $register   Optional register ID to set for the mapper.
+     * @param int|null    $schema     Optional schema ID to set for the mapper.
      *
      * @return mixed The mapper for the specified object type.
      * @throws InvalidArgumentException If the object type is unknown.
@@ -2088,8 +2092,8 @@ $property, column_key: '$ref') === [])                           {
             default:
                 throw new InvalidArgumentException("Unknown object type: $objectType");
         }
-    }//end getMapper()
 
+    }//end getMapper()
 
 
     /**
@@ -2098,7 +2102,7 @@ $property, column_key: '$ref') === [])                           {
      * Processes and cleans input IDs to ensure compatibility with the mapper.
      *
      * @param string $objectType The type of objects to retrieve.
-     * @param array $ids The list of object IDs to retrieve.
+     * @param array  $ids        The list of object IDs to retrieve.
      *
      * @return array The retrieved objects.
      * @throws InvalidArgumentException If the object type is unknown.
@@ -2108,35 +2112,35 @@ $property, column_key: '$ref') === [])                           {
         // Process the ids to handle different formats
         $processedIds = array_map(
                 function ($id) {
-            if (is_object($id) && method_exists($id, 'getId')) {
-                return $id->getId();
-            } else if (is_array($id) && isset($id['id'])) {
-                return $id['id'];
-            } else {
-                return $id;
-            }
-        },
+                    if (is_object($id) && method_exists($id, 'getId')) {
+                        return $id->getId();
+                    } else if (is_array($id) && isset($id['id'])) {
+                        return $id['id'];
+                    } else {
+                        return $id;
+                    }
+                },
                 $ids
                 );
 
         // Clean up URIs to get just the ID portion
         $cleanedIds = array_map(
                 function ($id) {
-            if (filter_var($id, FILTER_VALIDATE_URL)) {
-                $parts = explode('/', rtrim($id, '/'));
-                return end($parts);
-            }
+                    if (filter_var($id, FILTER_VALIDATE_URL)) {
+                        $parts = explode('/', rtrim($id, '/'));
+                        return end($parts);
+                    }
 
-            return $id;
-        },
+                    return $id;
+                },
                 $processedIds
                 );
 
         // Get mapper and find objects
         $mapper = $this->getMapper($objectType);
         return $mapper->findMultiple($cleanedIds);
-    }//end getMultipleObjects()
 
+    }//end getMultipleObjects()
 
 
     /**
@@ -2145,9 +2149,9 @@ $property, column_key: '$ref') === [])                           {
      * Expands files and relations within the entity based on the provided extend array.
      * Optionally filters out specified properties from the entity and returns only specified fields.
      *
-     * @param array $entity The serialized entity.
+     * @param array      $entity The serialized entity.
      * @param array|null $extend Optional properties to expand within the entity.
-     * @param int $depth The depth to which relations should be expanded.
+     * @param int        $depth  The depth to which relations should be expanded.
      * @param array|null $filter Optional array of property names to be excluded from the entity.
      * @param array|null $fields Optional array of property names to be included in the result.
      *
@@ -2173,12 +2177,12 @@ $property, column_key: '$ref') === [])                           {
         if (empty($extend) === false && empty($fields) === false) {
             $missingFields = array_diff($extend, $fields);
             if (!empty($missingFields)) {
-                throw new InvalidArgumentException("Properties in extend must also be in fields: " . implode(', ', $missingFields));
+                throw new InvalidArgumentException("Properties in extend must also be in fields: ".implode(', ', $missingFields));
             }
         } else if (empty($extend) === false && empty($filter) === false) {
             $conflictingFilters = array_intersect($extend, $filter);
             if (!empty($conflictingFilters)) {
-                throw new InvalidArgumentException("Properties in extend must not be in filters: " . implode(', ', $conflictingFilters));
+                throw new InvalidArgumentException("Properties in extend must not be in filters: ".implode(', ', $conflictingFilters));
             }
         }
 
@@ -2195,8 +2199,8 @@ $property, column_key: '$ref') === [])                           {
                     array_filter(
                     $dotEntity->flatten(),
                     function ($key) use ($fields) {
-                return in_array($key, $fields);
-            },
+                        return in_array($key, $fields);
+                    },
                     ARRAY_FILTER_USE_KEY
                     ),
                     parse: true
@@ -2225,7 +2229,6 @@ $property, column_key: '$ref') === [])                           {
          * properties in the entity based on the inverted relation configuration.
          *
          * This function only sets the uuid of the referencing objects in the entity. (exendt is defined at another point)
-         *
          */
 
         // Get all properties from the schema that have inverted=true
@@ -2297,9 +2300,7 @@ $property, column_key: '$ref') === [])                           {
             }
 
             $errors = []; 
-// Initialize an array to store any errors encountered during the process
-
-            // Iterate over each property in the 'extend' array
+            // Initialize an array to store any errors encountered during the process            // Iterate over each property in the 'extend' array
             foreach ($extend as $property) {
                 // Check if the current property exists in the dotEntity
                 if ($dotEntity->has($property) === false) {
@@ -2314,9 +2315,9 @@ $property, column_key: '$ref') === [])                           {
                 $relatedObject = array_filter(
                         $relatedObjects,
                         function ($obj) use ($value) {
-                    // Check if the object's id, uuid, or url matches the value
-                    return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
-                }
+                            // Check if the object's id, uuid, or url matches the value
+                            return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
+                        }
                         );
 
                 // Check if a related object was found
@@ -2362,8 +2363,8 @@ $property, column_key: '$ref') === [])                           {
         // Update the entity with all modified values from the dotEntity
         // Lets return the entity with the extended properties
         return $dotEntity->all();
-    }//end renderEntity()
 
+    }//end renderEntity()
 
 
     /**
@@ -2371,42 +2372,44 @@ $property, column_key: '$ref') === [])                           {
      *
      * @deprecated Use renderEntity
      *
-     * @param mixed $entity The entity to extend
-     * @param array $extend Properties to extend with related data
+     * @param  mixed $entity The entity to extend
+     * @param  array $extend Properties to extend with related data
      * @return array The extended entity as an array
      * @throws Exception If property not found
      */
     public function extendEntity(array $entity, array $extend, ?int $depth=0): array
     {
-        if ($depth > 3) {
-            return $entity;
-        }
+    if ($depth > 3) {
+        return $entity;
+
+
+    }
 
         // Convert entity to array if needed
-        if (is_array($entity)) {
-            $result = $entity;
-        } else {
-            $result = $entity->jsonSerialize();
-        }
+    if (is_array($entity)) {
+        $result = $entity;
+    } else {
+        $result = $entity->jsonSerialize();
+    }
 
-        if (in_array('all', $extend)) {
-            $extendProperties = array_keys($result);
-        }
+    if (in_array('all', $extend)) {
+        $extendProperties = array_keys($result);
+    }
 
         // Process each property to extend
-        foreach ($extendProperties as $property) {
-            $singularProperty = rtrim($property, 's');
+    foreach ($extendProperties as $property) {
+        $singularProperty = rtrim($property, 's');
 
-            // Check if property exists
-            if (array_key_exists(key: $property, array:
-$result) === true)                          {
-                $value = $result[$property];
-                if (empty($value)) {
-                    continue;
-                }
+        // Check if property exists
+        if (array_key_exists(key: $property, array:
+            $result) === true)                          {
+            $value = $result[$property];
+        if (empty($value)) {
+            continue;
+        }
 
             } else if (array_key_exists(key: $singularProperty, array:
-$result))                          {
+                $result))                          {
                 $value = $result[$singularProperty];
             } else {
                 throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
@@ -2451,7 +2454,7 @@ $result))                          {
                         if ($found) {
                             // Serialize and recursively extend the found object (apply depth tracking here)
                             $result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); 
-// Start with depth 1
+                            // Start with depth 1
                         }
                     }//end if
                 } catch (Exception $e2) {
@@ -2459,51 +2462,51 @@ $result))                          {
                     continue;
                 }//end try
             }//end try
-        }
-
-        return $result;
-    }//end foreach
-
-
-    /**
-     * Get all registers extended with their schemas
-     *
-     * @return array The registers with schema data
-     * @throws Exception If extension fails
-     */
-    public function getRegisters(): array
-    {
-        // Get all registers
-        $registers = $this->registerMapper->findAll();
-
-        // Convert to arrays and extend schemas
-        $registers = array_map(
-                function ($register) {
-            $registerArray = is_array($register) ? $register : $register->jsonSerialize();
-
-            // Replace schema IDs with actual schema objects if schemas property exists
-            if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
-                $registerArray['schemas'] = array_map(
-                    function ($schemaId) {
-                        try {
-                            return $this->schemaMapper->find($schemaId)->jsonSerialize();
-                        } catch (Exception $e) {
-                            // If schema can't be found, return the ID
-                            return $schemaId;
-                        }
-                    },
-                    $registerArray['schemas']
-                );
             }
 
-            return $registerArray;
-        },
+            return $result;
+        }//end foreach
+
+
+        /**
+         * Get all registers extended with their schemas
+         *
+         * @return array The registers with schema data
+         * @throws Exception If extension fails
+         */
+    public function getRegisters(): array
+        {
+            // Get all registers
+            $registers = $this->registerMapper->findAll();
+
+            // Convert to arrays and extend schemas
+            $registers = array_map(
+                function ($register) {
+                    $registerArray = is_array($register) ? $register : $register->jsonSerialize();
+
+                    // Replace schema IDs with actual schema objects if schemas property exists
+                    if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
+                        $registerArray['schemas'] = array_map(
+                            function ($schemaId) {
+                                try {
+                                    return $this->schemaMapper->find($schemaId)->jsonSerialize();
+                                } catch (Exception $e) {
+                                    // If schema can't be found, return the ID
+                                    return $schemaId;
+                                }
+                            },
+                        $registerArray['schemas']
+                        );
+                    }
+
+                    return $registerArray;
+                },
                 $registers
                 );
 
-        return $registers;
-    }//end getRegisters()
+            return $registers;
 
+    }//end getRegisters()
 
 
     /**
@@ -2514,8 +2517,8 @@ $result))                          {
     public function getRegister(): int
     {
         return $this->register;
-    }//end getRegister()
 
+    }//end getRegister()
 
 
     /**
@@ -2526,8 +2529,8 @@ $result))                          {
     public function setRegister(int $register): void
     {
         $this->register = $register;
-    }//end setRegister()
 
+    }//end setRegister()
 
 
     /**
@@ -2538,8 +2541,8 @@ $result))                          {
     public function getSchema(): int
     {
         return $this->schema;
-    }//end getSchema()
 
+    }//end getSchema()
 
 
     /**
@@ -2550,17 +2553,17 @@ $result))                          {
     public function setSchema(int $schema): void
     {
         $this->schema = $schema;
-    }//end setSchema()
 
+    }//end setSchema()
 
 
     /**
      * Get the audit trail for a specific object
      *
-     * @param string $id The object ID
-     * @param int|null $register Optional register ID to override current register
-     * @param int|null $schema Optional schema ID to override current schema
-     * @param array $requestParams Optional request parameters
+     * @param string   $id            The object ID
+     * @param int|null $register      Optional register ID to override current register
+     * @param int|null $schema        Optional schema ID to override current schema
+     * @param array    $requestParams Optional request parameters
      *
      * @return array The audit trail entries
      */
@@ -2591,7 +2594,7 @@ $result))                          {
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
         unset($filters['_route']); 
-// TODO: Investigate why this is here and if it's needed
+        // TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
@@ -2618,18 +2621,18 @@ $result))                          {
         ];
 
         return $auditTrails;
-    }//end getPaginatedAuditTrail()
 
+    }//end getPaginatedAuditTrail()
 
 
     /**
      * Get all relations for a specific object
      * Returns objects that link to this object (incoming references)
      *
-     * @param string $id The object ID
-     * @param int|null $register Optional register ID to override current register
-     * @param int|null $schema Optional schema ID to override current schema
-     * @param array $requestParams Optional request parameters
+     * @param string   $id            The object ID
+     * @param int|null $register      Optional register ID to override current register
+     * @param int|null $schema        Optional schema ID to override current schema
+     * @param array    $requestParams Optional request parameters
      *
      * @return array The objects that reference this object
      */
@@ -2651,23 +2654,23 @@ $result))                          {
         $referencingObjects = array_filter(
                 $referencingObjects,
                 function ($referencingObject) use ($id) {
-            return $referencingObject->getUuid() !== $id;
-        }
+                    return $referencingObject->getUuid() !== $id;
+                }
                 );
 
         return $referencingObjects;
-    }//end getRelations()
 
+    }//end getRelations()
 
 
     /**
      * Get paginated relations for a specific object
      * Returns a paginated list of objects that link to this object (incoming references)
      *
-     * @param string $id The object ID
-     * @param int|null $register Optional register ID to override current register
-     * @param int|null $schema Optional schema ID to override current schema
-     * @param array $requestParams Optional request parameters for pagination, filtering and sorting
+     * @param string   $id            The object ID
+     * @param int|null $register      Optional register ID to override current register
+     * @param int|null $schema        Optional schema ID to override current schema
+     * @param array    $requestParams Optional request parameters for pagination, filtering and sorting
      *
      * @return array The paginated list of objects that reference this object, with metadata
      */
@@ -2701,7 +2704,7 @@ $result))                          {
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
         unset($filters['_route']); 
-// TODO: Investigate why this is here and if it's needed
+        // TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
@@ -2718,18 +2721,18 @@ $result))                          {
             'page'    => $page ?? 1,
             'pages'   => $pages,
         ];
-    }//end getPaginatedRelations()
 
+    }//end getPaginatedRelations()
 
 
     /**
      * Get all uses of a specific object
      * Returns objects that this object links to (outgoing references)
      *
-     * @param string $id The object ID
-     * @param int|null $register Optional register ID to override current register
-     * @param int|null $schema Optional schema ID to override current schema
-     * @param array $requestParams Optional request parameters
+     * @param  string   $id            The object ID
+     * @param  int|null $register      Optional register ID to override current register
+     * @param  int|null $schema        Optional schema ID to override current schema
+     * @param  array    $requestParams Optional request parameters
      * @return array The objects this object references
      */
     public function getPaginatedUses(string $id, ?int $register=null, ?int $schema=null, ?array $requestParams=[]): array
@@ -2761,7 +2764,7 @@ $result))                          {
         // Remove unnecessary parameters from filters
         $filters = $requestParams;
         unset($filters['_route']); 
-// TODO: Investigate why this is here and if it's needed
+        // TODO: Investigate why this is here and if it's needed
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
 
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
@@ -2780,18 +2783,18 @@ $result))                          {
         $total   = $this->objectEntityMapper->countAll(filters: $filters);
         $pages   = $limit !== null ? ceil($total / $limit) : 1;
 
-// $facets  = $this->getAggregations(
-// filters: $filters,
-// search: $search
-// );        return [
+        // $facets  = $this->getAggregations(
+        // filters: $filters,
+        // search: $search
+        // );        return [
             'results' => $objects,
-// 'facets' => $facets,
+        // 'facets' => $facets,
             'total'   => $total,
             'page'    => $page ?? 1,
             'pages'   => $pages,
         ];
-    }//end getPaginatedUses()
 
+    }//end getPaginatedUses()
 
 
     /**
@@ -2821,16 +2824,16 @@ $result))                          {
         $objectEntity->setObject($data);
 
         return $objectEntity;
-    }//end setDefaults()
 
+    }//end setDefaults()
 
 
     /**
      * Lock an object
      *
-     * @param string|int $identifier Object ID, UUID, or URI
-     * @param string|null $process Optional process identifier
-     * @param int|null $duration Lock duration in seconds (default: 1 hour)
+     * @param  string|int  $identifier Object ID, UUID, or URI
+     * @param  string|null $process    Optional process identifier
+     * @param  int|null    $duration   Lock duration in seconds (default: 1 hour)
      * @return ObjectEntity The locked object
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
@@ -2853,14 +2856,14 @@ $result))                          {
 
             throw new LockedException($e->getMessage());
         }
-    }//end lockObject()
 
+    }//end lockObject()
 
 
     /**
      * Unlock an object
      *
-     * @param string|int $identifier Object ID, UUID, or URI
+     * @param  string|int $identifier Object ID, UUID, or URI
      * @return ObjectEntity The unlocked object
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
@@ -2879,14 +2882,14 @@ $result))                          {
 
             throw new LockedException($e->getMessage());
         }
-    }//end unlockObject()
 
+    }//end unlockObject()
 
 
     /**
      * Check if an object is locked
      *
-     * @param string|int $identifier Object ID, UUID, or URI
+     * @param  string|int $identifier Object ID, UUID, or URI
      * @return bool True if object is locked, false otherwise
      * @throws NotFoundException If object not found
      */
@@ -2897,16 +2900,16 @@ $result))                          {
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
         }
-    }//end isLocked()
 
+    }//end isLocked()
 
 
     /**
      * Revert an object to a previous state
      *
-     * @param string|int $identifier Object ID, UUID, or URI
-     * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
-     * @param bool $overwriteVersion Whether to overwrite the version or increment it
+     * @param  string|int           $identifier       Object ID, UUID, or URI
+     * @param  DateTime|string|null $until            DateTime or AuditTrail ID to revert to
+     * @param  bool                 $overwriteVersion Whether to overwrite the version or increment it
      * @return ObjectEntity The reverted object
      * @throws NotFoundException If object not found
      * @throws NotAuthorizedException If user not authorized
@@ -2941,9 +2944,9 @@ $result))                          {
 
             throw $e;
         }//end try
+
     }//end revertObject()
 
 
-
-}//end extendEntity()
+    }//end extendEntity()
 
