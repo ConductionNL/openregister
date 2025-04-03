@@ -2449,6 +2449,8 @@ class ObjectService
      * Sets the current register ID.
      *
      * @param int $register The register ID to set.
+     * 
+     * @return void
      */
     public function setRegister(int $register): void
     {
@@ -2473,6 +2475,8 @@ class ObjectService
      * Sets the current schema ID.
      *
      * @param int $schema The schema ID to set.
+     * 
+     * @return void
      */
     public function setSchema(int $schema): void
     {
@@ -2493,7 +2497,7 @@ class ObjectService
      */
     public function getPaginatedAuditTrail(string $id, ?int $register=null, ?int $schema=null, ?array $requestParams=[]): array
     {
-        // Extract specific parameters
+        // Extract specific parameters.
         $limit  = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
         $order  = $requestParams['order'] ?? $requestParams['_order'] ?? [];
@@ -2506,7 +2510,7 @@ class ObjectService
             $offset = $limit * ($page - 1);
         }
 
-        // Ensure order and extend are arrays
+        // Ensure order and extend are arrays.
         if (is_string($order) === true) {
             $order = array_map('trim', explode(',', $order));
         }
@@ -2515,7 +2519,7 @@ class ObjectService
             $extend = array_map('trim', explode(',', $extend));
         }
 
-        // Remove unnecessary parameters from filters
+        // Remove unnecessary parameters from filters.
         $filters = $requestParams;
         unset($filters['_route']); 
         // TODO: Investigate why this is here and if it's needed
@@ -2528,14 +2532,15 @@ class ObjectService
         $filters           = [];
         $filters['object'] = $object['id'];
 
-        // var_dump($filters);
-        // die;        // $filters['registerUuid'] = $object->getRegisterUuid();
-        // $filters['schemaUuid'] = $object->getSchemaUuid();        // @todo this is not working, it fails to find the logs
         $auditTrails = $this->auditTrailMapper->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search);
 
         // Format the audit trails.
         $total = count($auditTrails);
-        $pages = $limit !== null ? ceil($total / $limit) : 1;
+        if ($limit !== null) {
+            $pages = ceil($total / $limit);
+        } else {
+            $pages = 1;
+        }
 
         return [
             'results' => $auditTrails,
