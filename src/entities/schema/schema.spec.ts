@@ -8,6 +8,7 @@ describe('Schema Entity', () => {
 		expect(schema).toBeInstanceOf(Schema)
 		expect(schema).toEqual(mockSchemaData()[0])
 		expect(schema.validate().success).toBe(true)
+		expect(schema.slug).toBe(mockSchemaData()[0].slug) // Added slug property check
 	})
 
 	it('should create a Schema entity with partial data', () => {
@@ -17,6 +18,7 @@ describe('Schema Entity', () => {
 		expect(schema.id).toBe('')
 		expect(schema.title).toBe(mockSchemaData()[0].title)
 		expect(schema.validate().success).toBe(true)
+		expect(schema.slug).toBe(mockSchemaData()[0].slug) // Added slug property check
 	})
 
 	it('should fail validation with invalid data', () => {
@@ -24,5 +26,6 @@ describe('Schema Entity', () => {
 
 		expect(schema).toBeInstanceOf(Schema)
 		expect(schema.validate().success).toBe(false)
+		expect(schema.slug).toBe(mockSchemaData()[1].slug) // Added slug property check
 	})
 })

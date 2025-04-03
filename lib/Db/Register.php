@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenRegister Register
+ *
+ * This file contains the class for handling register related operations
+ * in the OpenRegister application.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
@@ -8,126 +25,268 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * Entity class representing a Register
- * 
- * @property string|null $uuid Unique identifier for the register
- * @property string|null $slug Slug of the register
- * @property string|null $title Title of the register
- * @property string|null $version Version of the register
- * @property string|null $description Description of the register
- * @property array|null $schemas Schemas associated with the register
- * @property string|null $source Source of the register
- * @property string|null $tablePrefix Prefix for database tables
- * @property string|null $folder Nextcloud folder path where register is stored
- * @property DateTime|null $updated Last update timestamp
- * @property DateTime|null $created Creation timestamp
- * @property string|null $owner The Nextcloud user that owns this register
- * @property string|null $application The application name
- * @property string|null $organisation The organisation name
- * @property array|null $authorization JSON object describing authorizations
- * @property DateTime|null $deleted Deletion timestamp
+ *
+ * Manages register-related data and operations
+ *
+ * @package OCA\OpenRegister\Db
  */
 class Register extends Entity implements JsonSerializable
 {
-	protected ?string $uuid = null;
-	protected ?string $slug = null;
-	protected ?string $title = null;
-	protected ?string $version = null;
-	protected ?string $description = null;
-	protected ?array $schemas = [];
-	protected ?string $source = null;
-	protected ?string $tablePrefix = null;
-	protected ?string $folder = null; // Nextcloud folder path where register is stored
-	protected ?DateTime $updated = null;
-	protected ?DateTime $created = null;
-	protected ?string $owner = null;
-	protected ?string $application = null;
-	protected ?string $organisation = null;
-	protected ?array $authorization = [];
-	protected ?DateTime $deleted = null;
 
-	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'schemas', type: 'json');
-		$this->addType(fieldName: 'source', type: 'string');
-		$this->addType(fieldName: 'tablePrefix', type: 'string');
-		$this->addType(fieldName: 'folder', type: 'string');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'application', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'deleted', type: 'datetime');
-	}
+    /**
+     * Unique identifier for the register
+     *
+     * @var string|null Unique identifier for the register
+     */
+    protected ?string $uuid = null;
 
-	/**
-	 * Get the schemas data
-	 *
-	 * @return array The schemas data or empty array if null
-	 */
-	public function getSchemas(): array
-	{
-		return $this->schemas ?? [];
-	}
+    /**
+     * Slug of the register
+     *
+     * @var string|null Slug of the register
+     */
+    protected ?string $slug = null;
 
-	public function getJsonFields(): array
-	{
-		return array_keys(
-			array_filter($this->getFieldTypes(), function ($field) {
-				return $field === 'json';
-			})
-		);
-	}
+    /**
+     * Title of the register
+     *
+     * @var string|null Title of the register
+     */
+    protected ?string $title = null;
 
-	public function hydrate(array $object): self
-	{
-		$jsonFields = $this->getJsonFields();
+    /**
+     * Version of the register
+     *
+     * @var string|null Version of the register
+     */
+    protected ?string $version = null;
 
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
+    /**
+     * Description of the register
+     *
+     * @var string|null Description of the register
+     */
+    protected ?string $description = null;
 
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
+    /**
+     * Schemas associated with the register
+     *
+     * @var array|null Schemas associated with the register
+     */
+    protected ?array $schemas = [];
 
-			$method = 'set'.ucfirst($key);
+    /**
+     * Source of the register
+     *
+     * @var string|null Source of the register
+     */
+    protected ?string $source = null;
 
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-			}
-		}
+    /**
+     * Prefix for database tables
+     *
+     * @var string|null Prefix for database tables
+     */
+    protected ?string $tablePrefix = null;
 
-		return $this;
-	}
+    /**
+     * Nextcloud folder path where register is stored
+     *
+     * @var string|null Nextcloud folder path where register is stored
+     */
+    protected ?string $folder = null;
+
+    /**
+     * Last update timestamp
+     *
+     * @var DateTime|null Last update timestamp
+     */
+    protected ?DateTime $updated = null;
+
+    /**
+     * Creation timestamp
+     *
+     * @var DateTime|null Creation timestamp
+     */
+    protected ?DateTime $created = null;
+
+    /**
+     * The Nextcloud user that owns this register
+     *
+     * @var string|null The Nextcloud user that owns this register
+     */
+    protected ?string $owner = null;
+
+    /**
+     * The application name
+     *
+     * @var string|null The application name
+     */
+    protected ?string $application = null;
+
+    /**
+     * The organisation name
+     *
+     * @var string|null The organisation name
+     */
+    protected ?string $organisation = null;
+
+    /**
+     * JSON object describing authorizations
+     *
+     * @var array|null JSON object describing authorizations
+     */
+    protected ?array $authorization = [];
+
+    /**
+     * Deletion timestamp
+     *
+     * @var DateTime|null Deletion timestamp
+     */
+    protected ?DateTime $deleted = null;
 
 
-	public function jsonSerialize(): array
-	{
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'slug' => $this->slug,
-			'title' => $this->title,
-			'version'     => $this->version,
-			'description' => $this->description,
-			'schemas' => $this->schemas,
-			'source' => $this->source,
-			'tablePrefix' => $this->tablePrefix,
-			'folder' => $this->folder,
-			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-			'created' => isset($this->created) ? $this->created->format('c') : null,
-			'owner' => $this->owner,
-			'application' => $this->application,
-			'organisation' => $this->organisation,
-			'authorization' => $this->authorization,
-			'deleted' => isset($this->deleted) ? $this->deleted->format('c') : null
-		];
-	}
-}
+    /**
+     * Constructor for the Register class
+     *
+     * Sets up field types for all properties
+     */
+    public function __construct()
+    {
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'slug', type: 'string');
+        $this->addType(fieldName: 'title', type: 'string');
+        $this->addType(fieldName: 'version', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'schemas', type: 'json');
+        $this->addType(fieldName: 'source', type: 'string');
+        $this->addType(fieldName: 'tablePrefix', type: 'string');
+        $this->addType(fieldName: 'folder', type: 'string');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'application', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'deleted', type: 'datetime');
+
+    }//end __construct()
+
+
+    /**
+     * Get the schemas data
+     *
+     * @return array The schemas data or empty array if null
+     */
+    public function getSchemas(): array
+    {
+        return ($this->schemas ?? []);
+
+    }//end getSchemas()
+
+
+    /**
+     * Get JSON fields from the entity
+     *
+     * Returns all fields that are of type 'json'
+     *
+     * @return array<string> List of JSON field names
+     */
+    public function getJsonFields(): array
+    {
+        return array_keys(
+            array_filter(
+                $this->getFieldTypes(),
+                function ($field) {
+                    return $field === 'json';
+                }
+            )
+        );
+
+    }//end getJsonFields()
+
+
+    /**
+     * Hydrate the entity with data from an array
+     *
+     * Sets entity properties based on input array values
+     *
+     * @param array $object The data array to hydrate from
+     *
+     * @return self Returns $this for method chaining
+     */
+    public function hydrate(array $object): self
+    {
+        $jsonFields = $this->getJsonFields();
+
+        if (isset($object['metadata']) === false) {
+            $object['metadata'] = [];
+        }
+
+        foreach ($object as $key => $value) {
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
+            }
+
+            $method = 'set'.ucfirst($key);
+
+            try {
+                $this->$method($value);
+            } catch (\Exception $exception) {
+                // Silently ignore invalid properties.
+            }
+        }
+
+        return $this;
+
+    }//end hydrate()
+
+
+    /**
+     * Convert entity to JSON serializable array
+     *
+     * Prepares the entity data for JSON serialization
+     *
+     * @return array<string, mixed> Array of serializable entity data
+     */
+    public function jsonSerialize(): array
+    {
+        $updated = null;
+        if (isset($this->updated) === true) {
+            $updated = $this->updated->format('c');
+        }
+
+        $created = null;
+        if (isset($this->created) === true) {
+            $created = $this->created->format('c');
+        }
+
+        $deleted = null;
+        if (isset($this->deleted) === true) {
+            $deleted = $this->deleted->format('c');
+        }
+
+        return [
+            'id'            => $this->id,
+            'uuid'          => $this->uuid,
+            'slug'          => $this->slug,
+            'title'         => $this->title,
+            'version'       => $this->version,
+            'description'   => $this->description,
+            'schemas'       => $this->schemas,
+            'source'        => $this->source,
+            'tablePrefix'   => $this->tablePrefix,
+            'folder'        => $this->folder,
+            'updated'       => $updated,
+            'created'       => $created,
+            'owner'         => $this->owner,
+            'application'   => $this->application,
+            'organisation'  => $this->organisation,
+            'authorization' => $this->authorization,
+            'deleted'       => $deleted,
+        ];
+
+    }//end jsonSerialize()
+
+
+}//end class
