@@ -2477,9 +2477,6 @@ class ObjectService
 		$filters = [];
 		$filters['object'] = $object['id'];
 
-		//var_dump($filters);
-		//die;
-
 		//$filters['registerUuid'] = $object->getRegisterUuid();
 		//$filters['schemaUuid'] = $object->getSchemaUuid();
 
