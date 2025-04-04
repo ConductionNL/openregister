@@ -1832,7 +1832,7 @@ class ObjectService
 	 * @param array|null $extend Optional properties to include in the retrieved object.
 	 *
 	 * @return ObjectEntity The retrieved object as an entity.
-	 * @throws Exception If the source type is unsupported.
+	 * @throws Exception If the source type is unsupported or if the object not found.
 	 */
 	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = [], bool $files = false): ObjectEntity
 	{
@@ -1840,8 +1840,11 @@ class ObjectService
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
 			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+            if ($object === null) {
+                throw new Exception(sprintf('Could not find object with uuid: %s for target: %d/%d', $uuid, $register->getId(), $schema->getId()));
+            }
 
-			if ($files === false) {
+			if ($files === false) { 
 				return $object;
 			}
 
