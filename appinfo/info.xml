@@ -1,54 +1,118 @@
-<?xml version="1.0"?>
-<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-    <id>openregister</id>
-    <name>Open Register</name>
-    <summary>Quickly build data registers based on schema.json</summary>
-    <description><![CDATA[📰 An OpenRegister App for Nextcloud
+name: Beta Release
 
-The OpenRegister Nextcloud app provides a framework for federated registers to work together in an open data ecosystem
+on:
+  push:
+    branches:
+      - code-refactor/ObjectService
 
-- 📲 Synchronize your sources with multiple registers
-- 🔄 Automatic publications of your open data
-- 🆓 Free and open source under EUPL
+jobs:
+  release-management:
+    runs-on: ubuntu-latest
 
-**System Cron is currently required for this app to work**
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
-Requirements can be found [here](https://conduction.gitbook.io/openregister-nextcloud/installatie)
+      - name: Set app env
+        run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
 
-The Roadmap is available [here](https://github.com/orgs/OpenRegister/projects/1/views/2)
+      - name: Generate beta version
+        id: generate_version
+        run: |
+          raw_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
+          # Strip any existing -beta suffix
+          base_version=$(echo "$raw_version" | sed 's/-beta.*//')
+          IFS='.' read -ra version_parts <<< "$base_version"
+          ((version_parts[2]++))
+          new_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
+          beta_version="${new_version}-beta.${{ github.run_number }}"
+          sed -i "s|<version>.*</version>|<version>$beta_version</version>|" appinfo/info.xml
+          echo "NEW_VERSION=$beta_version" >> $GITHUB_ENV
+          echo "new_version=$beta_version" >> $GITHUB_OUTPUT
 
-Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
+      - name: Commit version update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Bump beta version to ${{ env.NEW_VERSION }} [skip ci]"
+          git push
 
-Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
-    ]]></description>
-    <version>-beta.5</version>
-    <licence>agpl</licence>
-    <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-    <namespace>OpenRegister</namespace>
-    <category>organization</category>
-    <category>tools</category>
-    <website>https://github.com/ConductionNL/OpenRegister</website>
-    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenRegister</repository>
-    <documentation>
-        <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
-        <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
-        <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
-    </documentation>
-    <dependencies>
-        <php min-version="8.0" min-int-size="64"/>
-        <database min-version="10">pgsql</database>
-        <database>sqlite</database>
-        <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="30"/>
-    </dependencies>
-    <navigations>
-        <navigation>
-            <id>openregister</id>
-            <name>Register</name>
-            <route>openregister.dashboard.page</route>
-            <icon>app.svg</icon>
-        </navigation>
-    </navigations>
-</info>
+      - name: Prepare Signing Certificate and Key
+        run: |
+          echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+          echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+
+      - name: Install npm dependencies
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Set up PHP and install extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, gd
+
+      - run: npm ci
+      - run: npm run build
+      - run: composer install --no-dev
+
+      - name: Copy package files
+        run: |
+          mkdir -p package/${{ github.event.repository.name }}
+          rsync -av --progress \
+            --exclude='package' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='test' \
+            --exclude='docs' \
+            --exclude='*.lock' \
+            --exclude='*.json' \
+            --exclude='*.yml' \
+            --exclude='*.xml' \
+            --exclude='.vscode' \
+            ./ package/${{ github.event.repository.name }}/
+
+      - name: Create Tarball
+        run: |
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
+
+      - name: Sign tarball
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          tag: v${{ env.NEW_VERSION }}
+          name: Beta Release ${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: true
+
+      - name: Attach tarball to GitHub Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: nextcloud-release.tar.gz
+          asset_name: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          tag: v${{ env.NEW_VERSION }}
+          overwrite: true
+
+      - name: Upload to Nextcloud App Store
+        uses: nextcloud-releases/nextcloud-appstore-push-action@v1
+        with:
+          app_name: ${{ env.APP_NAME }}
+          appstore_token: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
+          download_url: https://github.com/${{ github.repository }}/releases/download/v${{ env.NEW_VERSION }}/${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          app_private_key: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
+          nightly: false
+
+      - name: Verify package
+        run: |
+          echo "Version: ${{ env.NEW_VERSION }}"
+          echo "info.xml:"
+          tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml | grep version
