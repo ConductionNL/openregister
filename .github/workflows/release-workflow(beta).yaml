@@ -1,11 +1,6 @@
 name: Beta Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Beta version to release (e.g. 1.2.3-beta1)'
-        required: true
   push:
     branches:
       - code-refactor/ObjectService
@@ -23,27 +18,22 @@ jobs:
       - name: Set app env
         run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
 
-      - name: Determine version
+      - name: Generate beta version
+        id: version
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            version="${{ github.event.inputs.version }}"
-            sed -i "s|<version>.*</version>|<version>$version</version>|" appinfo/info.xml
-          else
-            version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
-          fi
-          echo "NEW_VERSION=$version" >> $GITHUB_ENV
-          echo "Using version: $version"
+          base_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml | sed 's/-beta[0-9]*//')
+          suffix="beta.${{ github.run_number }}"
+          full_version="${base_version}-${suffix}"
+          sed -i "s|<version>.*</version>|<version>$full_version</version>|" appinfo/info.xml
+          echo "NEW_VERSION=$full_version" >> $GITHUB_ENV
+          echo "new_version=$full_version" >> $GITHUB_OUTPUT
 
-      - name: Commit version update (if changed)
+      - name: Commit version update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          if ! git diff --quiet; then
-            git commit -am "Set beta version ${{ env.NEW_VERSION }}"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+          git commit -am "Bump to beta version ${{ env.NEW_VERSION }} [skip ci]"
+          git push
 
       - name: Prepare Signing Certificate and Key
         run: |
@@ -81,9 +71,7 @@ jobs:
 
       - name: Verify tarball
         run: |
-          echo "=== info.xml ==="
           tar -xOf ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml | grep version
-          echo "=== signature.json ==="
           tar -tzf ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz | grep signature.json
 
       - name: Create GitHub Release
