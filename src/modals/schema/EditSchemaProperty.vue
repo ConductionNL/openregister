@@ -51,7 +51,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					type="text"
 					label="Schema reference of object ($ref)"
 					:value.sync="properties.$ref" />
-			</div>
+                <NcInputField :disabled="loading"
+                    type="text"
+                    label="Property name of inversed relation"
+                    :value.sync="properties.inversedBy" />
+        </div>
 
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
@@ -293,6 +297,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						type="text"
 						label="Schema reference of object ($ref)"
 						:value.sync="properties.items.$ref" />
+                    <NcInputField :disabled="loading"
+                        type="text"
+                        label="Property name of inversed relation"
+                        :value.sync="properties.inversedBy" />
 					<NcCheckboxRadioSwitch
 						:disabled="loading"
 						:checked.sync="properties.items.cascadeDelete">
@@ -431,6 +439,7 @@ export default {
 				minItems: 0,
 				maxItems: 0,
 				cascadeDelete: false,
+                inversedBy: '', 
 				$ref: '',
 				items: {
 					cascadeDelete: false,
