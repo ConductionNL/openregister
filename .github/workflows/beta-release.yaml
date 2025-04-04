@@ -9,32 +9,38 @@ jobs:
   release-management:
     runs-on: ubuntu-latest
     steps:
-
+    
+      # Stap 1: Code ophalen
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           ssh-key: ${{ secrets.DEPLOY_KEY }}
 
+      # Stap 2: Stel de appnaam in (gebruik de repo-naam)
       - name: Set app env
         run: |
           echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
 
+      # Stap 3: Haal huidige versie uit info.xml, verhoog de patch en voeg beta-suffix toe
       - name: Get current version and append beta suffix
         id: increment_version
         run: |
           current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
           IFS='.' read -ra version_parts <<< "$current_version"
           ((version_parts[2]++))
-          base_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
-          beta_version="${base_version}-beta.${{ github.run_number }}"
+          new_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
+          beta_version="${new_version}-beta.${{ github.run_number }}"
           echo "NEW_VERSION=$beta_version" >> $GITHUB_ENV
           echo "new_version=$beta_version" >> $GITHUB_OUTPUT
+          echo "Using beta version: $beta_version"
 
+      # Stap 4: Update de versie in info.xml
       - name: Update version in info.xml
         run: |
           sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" appinfo/info.xml
 
+      # Stap 5: Commit de nieuwe versie (indien er wijzigingen zijn)
       - name: Commit version update
         run: |
           git config --local user.email "action@github.com"
@@ -42,26 +48,31 @@ jobs:
           git commit -am "Bump beta version to ${{ env.NEW_VERSION }} [skip ci]"
           git push
 
+      # Stap 6: Bereid de signing certificaten voor
       - name: Prepare Signing Certificate and Key
         run: |
           echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
           echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
 
+      # Stap 7: Installeer npm dependencies
       - name: Install npm dependencies
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
 
+      # Stap 8: Stel PHP in en installeer benodigde extensies
       - name: Set up PHP and install extensions
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: zip, gd
 
+      # Stap 9: Voer npm install, build en composer install uit
       - run: npm ci
       - run: npm run build
       - run: composer install --no-dev
 
+      # Stap 10: Kopieer de bestanden naar de package directory
       - name: Copy the package files into the package
         run: |
           mkdir -p package/${{ github.event.repository.name }}
@@ -103,35 +114,42 @@ jobs:
             --exclude='.nvmrc' \
             ./ package/${{ github.event.repository.name }}/
 
+      # Stap 11: Maak het TAR.GZ archief
       - name: Create Tarball
         run: |
           cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
 
+      # Stap 12: Sign het TAR.GZ bestand met OpenSSL
       - name: Sign the TAR.GZ file with OpenSSL
         run: |
           openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
 
+      # Stap 13: Genereer Git versie informatie (optioneel, voor logging)
       - name: Git Version
         id: version
         uses: codacy/git-version@2.7.1
         with:
           release-branch: code-refactor/ObjectService
 
+      # Stap 14: Extraheer repository description (optioneel)
       - name: Extract repository description
         id: repo-description
         run: |
           description=$(jq -r '.description' <(curl -s https://api.github.com/repos/${{ github.repository }}))
           echo "REPO_DESCRIPTION=$description" >> $GITHUB_ENV
 
+      # Stap 15: Output de versie (voor logging)
       - name: Use the version
         run: |
-          echo ${{ steps.version.outputs.version }}
+          echo "Git Version info: ${{ steps.version.outputs.version }}"
 
-      - name: Copy the package files into the package (again)
+      # Stap 16: (Optioneel) Kopieer opnieuw de package files
+      - name: Copy the package files into the package (redundant, can be removed)
         run: |
           mkdir -p package/${{ github.event.repository.name }}
           rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
 
+      # Stap 17: Maak een nieuwe GitHub release (als prerelease)
       - name: Upload Beta Release
         uses: ncipollo/release-action@v1.12.0
         with:
@@ -140,9 +158,9 @@ jobs:
           draft: false
           prerelease: true
 
+      # Stap 18: Voeg het tarball toe als asset aan de GitHub release
       - name: Attach tarball to GitHub release
         uses: svenstaro/upload-release-action@v2
-        id: attach_to_release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: nextcloud-release.tar.gz
@@ -150,8 +168,9 @@ jobs:
           tag: v${{ env.NEW_VERSION }}
           overwrite: true
 
-      - name: Upload app to Nextcloud App Store (beta)
-        uses: nextcloud-releases/nextcloud-appstore-push-action@v1
+      # Stap 19: Upload de app naar de Nextcloud App Store
+      - name: Upload app to Nextcloud appstore
+        uses: nextcloud-releases/nextcloud-appstore-push-action@a011fe619bcf6e77ddebc96f9908e1af4071b9c1
         with:
           app_name: ${{ env.APP_NAME }}
           appstore_token: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
@@ -159,6 +178,7 @@ jobs:
           app_private_key: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
           nightly: false
 
+      # Stap 20: Verifieer de release
       - name: Verify version and contents
         run: |
           echo "App version: ${{ env.NEW_VERSION }}"
