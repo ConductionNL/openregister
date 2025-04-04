@@ -1,0 +1,99 @@
+name: Beta Release
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Beta version to release (e.g. 1.2.3-beta1)'
+        required: true
+
+jobs:
+  beta-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set app env
+        run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Set Beta Version
+        run: |
+          sed -i "s|<version>.*</version>|<version>${{ github.event.inputs.version }}</version>|" appinfo/info.xml
+          echo "NEW_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Commit version update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Set beta version ${{ env.NEW_VERSION }}"
+          git push
+
+      - name: Prepare Signing Certificate and Key
+        run: |
+          echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
+          echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, gd
+
+      - run: npm ci
+      - run: npm run build
+      - run: composer install --no-dev
+
+      - name: Package App
+        run: |
+          mkdir -p package/${{ env.APP_NAME }}
+          rsync -av --progress \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='test' \
+            ./ package/${{ env.APP_NAME }}/
+
+      - name: Create Tarball
+        run: |
+          cd package
+          tar -czf ../nextcloud-release.tar.gz ${{ env.APP_NAME }}
+
+      - name: Sign Tarball
+        run: |
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          tag: v${{ env.NEW_VERSION }}
+          name: Release ${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: true
+
+      - name: Attach tarball to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: nextcloud-release.tar.gz
+          asset_name: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          tag: v${{ env.NEW_VERSION }}
+          overwrite: true
+
+      - name: Upload to Nextcloud App Store
+        uses: nextcloud-releases/nextcloud-appstore-push-action@v1
+        with:
+          app_name: ${{ env.APP_NAME }}
+          appstore_token: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
+          download_url: https://github.com/${{ github.repository }}/releases/download/v${{ env.NEW_VERSION }}/${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          app_private_key: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
+          nightly: false  # CRUCIAAL: niet als nightly uploaden
