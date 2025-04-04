@@ -24,8 +24,11 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
@@ -54,6 +57,7 @@ class ObjectService
 {
     private ?Register $currentRegister = null;
     private ?Schema $currentSchema = null;
+    private ?ObjectEntity $currentObject = null;
 
     /**
      * Constructor for ObjectService.
@@ -69,7 +73,10 @@ class ObjectService
         private readonly GetObject $getHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
-        private readonly ValidateObject $validateHandler
+        private readonly ValidateObject $validateHandler,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly ObjectEntityMapper $objectEntityMapper
     ) {
     }
 
@@ -84,7 +91,7 @@ class ObjectService
     {
         if (is_string($register) || is_int($register)) {
             // Look up the register by ID or UUID
-            $register = $this->getHandler->getRegisterByIdOrUuid($register);
+            $register = $this->registerMapper->find($register);
         }
 
         $this->currentRegister = $register;
@@ -102,7 +109,7 @@ class ObjectService
     {
         if (is_string($schema) || is_int($schema)) {
             // Look up the schema by ID or UUID
-            $schema = $this->getHandler->getSchemaByIdOrUuid($schema);
+            $schema = $this->schemaMapper->find($schema);
         }
 
         $this->currentSchema = $schema;
@@ -302,9 +309,11 @@ class ObjectService
      * @param array|null  $extend   Properties to extend the objects with.
      * @param bool        $files    Whether to include file information.
      * @param string|null $uses     Filter by object usage.
-     * @param Register|null $register Optional register to filter objects.
-     * @param Schema|null $schema   Optional schema to filter objects.
+     * @param Register|string|null $register Optional register object or UUID/ID to filter objects.
+     * @param Schema|string|null $schema   Optional schema object or UUID/ID to filter objects.
      * @param array|null  $fields   Specific fields to include in the result.
+     * @param array|null  $unset    Specific fields to unset in the result.
+     * @param array|null  $ids      Specific IDs to filter objects.
      *
      * @return array The found objects.
      */
@@ -317,9 +326,11 @@ class ObjectService
         ?array $extend = [],
         bool $files = false,
         ?string $uses = null,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?array $fields = null
+        Register|string|null $register = null,
+        Schema|string|null $schema = null,
+        ?array $fields = null,
+        ?array $unset = null,
+        ?array $ids = null
     ): array {
         // Set the current register context if a register is provided
         if ($register !== null) {
@@ -332,13 +343,13 @@ class ObjectService
         }
 
         // Add register ID to filters if a register is provided
-        if ($register !== null) {
-            $filters['register_id'] = $register->getId();
+        if ($this->currentRegister !== null) {
+            $filters['register_id'] = $this->currentRegister->getId();
         }
 
         // Add schema ID to filters if a schema is provided
-        if ($schema !== null) {
-            $filters['schema_id'] = $schema->getId();
+        if ($this->currentSchema !== null) {
+            $filters['schema_id'] = $this->currentSchema->getId();
         }
 
         // Delegate the findAll operation to the handler
@@ -381,8 +392,8 @@ class ObjectService
     ): int {
 
         // Add this point in time we should always have a register and schema.
-        $filters['register_id'] = $register->getId();
-        $filters['schema_id'] = $schema->getId();
+        $filters['register_id'] = $this->currentRegister->getId();
+        $filters['schema_id'] = $this->currentSchema->getId();
 
         return $this->getHandler->count($filters, $search);
     }
@@ -396,7 +407,7 @@ class ObjectService
      * @param array       $filters Filter criteria.
      * @param string|null $search  Search term.
      *
-     * @return int The number of matching objects.
+     * @return array The paginated results.
      */
     public function paginated(
         array $results,
@@ -404,7 +415,7 @@ class ObjectService
         ?int $offset = null,
         array $filters = [],
         ?string $search = null
-    ): int {
+    ): array {
 
         // Add this point in time we should always have a register and schema.
         $total = $this->count($filters, $search);
@@ -452,7 +463,7 @@ class ObjectService
             $results['prev'] = $prevUrl;
         }
 
-        return $this->getHandler->count($filters, $search);
+        return $results;
     }
 
 

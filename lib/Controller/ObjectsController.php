@@ -159,7 +159,9 @@ class ObjectsController extends Controller
             sort: $order,
             search: $search,
             fields: $fields,
-            unset: $unset
+            unset: $unset,
+            schema: $schema,
+            register: $register
         );
 
         $results = $objectService->paginated(

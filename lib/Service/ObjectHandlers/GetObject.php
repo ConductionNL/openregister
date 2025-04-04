@@ -128,7 +128,17 @@ class GetObject
         ?array $ids = null
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids
-        $objects = $this->objectEntityMapper->findAll($limit, $offset, $filters, $sort, $search, $uses, $register, $schema, $ids);
+        $objects = $this->objectEntityMapper->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            sort: $sort,
+            search: $search,
+            uses: $uses,
+            register: $register,
+            schema: $schema,
+            ids: $ids
+        );
 
         // If files are to be included, hydrate each object with its file information
         if ($files === true) {
