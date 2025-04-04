@@ -16,7 +16,7 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -27,12 +27,15 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\BadResponseException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Yaml\Yaml;
@@ -68,17 +71,17 @@ class UploadService
     }//end __construct()
 
 
-    /**
-     * Gets the uploaded json from the request data. And returns it as a PHP array.
-     * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
-     *
-     * @param array $data All request params.
-     *
-     * @throws GuzzleException
-     *
-     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     */
-    public function getUploadedJson(array $data): array
+	/**
+	 * Gets the uploaded json from the request data. And returns it as a PHP array.
+	 * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
+	 *
+	 * @param array $data All request params.
+	 *
+	 * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
+	 * @throws Exception
+	 * @throws GuzzleException
+	 */
+    public function getUploadedJson(array $data): array|JSONResponse
     {
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_') === true) {
@@ -113,9 +116,27 @@ class UploadService
             $phpArray = json_decode($phpArray, associative: true);
         }
 
-        return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
+		if ($phpArray === null || $phpArray === false) {
+			return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
+		}
+
+		return $phpArray;
 
     }//end getUploadedJson()
+
+
+    /**
+     * Gets JSON content from an uploaded file.
+     *
+     * @return array|JSONResponse The parsed JSON content from the file or an error response.
+     * @throws Exception If the file cannot be read or its content cannot be parsed as JSON.
+     */
+    private function getJSONfromFile(): array|JSONResponse
+    {
+        // Implement file reading logic here
+        // For now, return a simple array to ensure code consistency
+        throw new Exception('File upload handling is not yet implemented');
+    }//end getJSONfromFile()
 
 
     /**
@@ -127,11 +148,11 @@ class UploadService
      *
      * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
      */
-    private function getJSONfromURL(string $url): JSONResponse
+    private function getJSONfromURL(string $url): array|JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
-        } catch (GuzzleHttp\Exception\BadResponseException $e) {
+        } catch (BadResponseException $e) {
             return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
         }
 
@@ -155,7 +176,11 @@ class UploadService
                 break;
         }
 
-        return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
+		if ($phpArray === null || $phpArray === false) {
+			return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
+		}
+
+		return $phpArray;
 
     }//end getJSONfromURL()
 
@@ -204,7 +229,7 @@ class UploadService
             $schemas   = $register->getSchemas();
             $schemas[] = $schema->getId();
             $register->setSchemas($schemas);
-            // Lets save the updated register.
+            // Let's save the updated register.
             $register = $this->registerMapper->update($register);
         }//end foreach
 

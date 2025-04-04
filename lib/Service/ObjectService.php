@@ -13,7 +13,7 @@
  *
  * @category  Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -25,10 +25,10 @@
 namespace OCA\OpenRegister\Service;
 
 use Adbar\Dot;
-use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\File;
 use OCA\OpenRegister\Db\FileMapper;
@@ -46,7 +46,9 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
 use OCP\Files\Node;
@@ -76,8 +78,8 @@ class ObjectService
     /** @var Environment Twig environment for template rendering */
     private Environment $twig;
 
-    /** @var \OCP\EventDispatcher\IEventDispatcher Event dispatcher for sending events */
-    private \OCP\EventDispatcher\IEventDispatcher $eventDispatcher;
+    /** @var IEventDispatcher Event dispatcher for sending events */
+    private IEventDispatcher $eventDispatcher;
 
     /** @var string Validation error message constant */
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
@@ -99,7 +101,7 @@ class ObjectService
      * @param FileMapper                            $fileMapper         file mapper for database operations
      * @param IUserSession                          $userSession        user session service
      * @param ArrayLoader                           $loader             twig array loader for templates
-     * @param \OCP\EventDispatcher\IEventDispatcher $eventDispatcher    event dispatcher service
+     * @param IEventDispatcher                      $eventDispatcher    event dispatcher service
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -114,28 +116,31 @@ class ObjectService
         private readonly FileMapper $fileMapper,
         private readonly IUserSession $userSession,
         ArrayLoader $loader,
-        \OCP\EventDispatcher\IEventDispatcher $eventDispatcher,
+        IEventDispatcher $eventDispatcher,
     ) {
         $this->twig = new Environment($loader);
         $this->eventDispatcher = $eventDispatcher;
     }// end __construct()
 
     /**
-     * Retrieves the OpenConnector service from the container.
+     * Retrieves an OpenConnector service instance from the container.
      *
-     * @param string $filePath optional file path for the OpenConnector service
+     * This method tries to get a service from the OpenConnector app if it's installed.
+     * Used for integration with the OpenConnector functionality.
      *
-     * @return mixed|null the OpenConnector service instance or null if not available
+     * @param string|null $filePath The relative path to the service class (optional).
      *
      * @throws ContainerExceptionInterface if there is a container exception
      * @throws NotFoundExceptionInterface  if the service is not found
+     *
+     * @return mixed|null The service instance or null if not available
      */
-    public function getOpenConnector(string $filePath = '\Service\ObjectService'): mixed
+    public function getOpenConnector(?string $filePath = '\Service\ObjectService'): mixed
     {
         if (true === in_array('openconnector', $this->appManager->getInstalledApps())) {
             try {
                 return $this->container->get("OCA\OpenConnector$filePath");
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return null;
             }
         }
@@ -144,13 +149,15 @@ class ObjectService
     }// end getOpenConnector()
 
     /**
-     * Resolves a schema from a given URI.
+     * Resolves a schema URI to a schema identifier.
      *
-     * @param Uri $uri the URI pointing to the schema
+     * This method takes a URI and attempts to resolve it to a valid schema identifier.
+     * Used for handling schema references in JSON Schema documents.
      *
-     * @return string the schema content in JSON format
+     * @param Uri $uri The URI to resolve.
      *
-     * @throws GuzzleException if there is an error during schema fetching
+     * @return string The resolved schema identifier.
+     * @throws GuzzleException if there is an error during schema fetching.
      */
     public function resolveSchema(Uri $uri): string
     {
@@ -183,15 +190,18 @@ class ObjectService
     }// end resolveSchema()
 
     /**
-     * Validates an object against a schema.
+     * Validates an object against a schema
      *
-     * @param array  $object       the object to validate
-     * @param int    $schemaId     the schema ID to validate against
-     * @param object $schemaObject a custom schema object for validation
+     * This method validates a data object against a JSON Schema to ensure it
+     * conforms to the expected structure and constraints.
      *
-     * @return ValidationResult the result of the validation
+     * @param array        $object       The object to validate
+     * @param int|null     $schemaId     Optional schema ID to validate against
+     * @param object|null  $schemaObject Optional schema object to use instead of retrieving by ID
+     *
+     * @return ValidationResult The result of the validation operation
      */
-    public function validateObject(array $object, ?int $schemaId = null, object $schemaObject = new \stdClass()): ValidationResult
+    public function validateObject(array $object, ?int $schemaId = null, ?object $schemaObject = new \stdClass()): ValidationResult
     {
         if ($schemaObject === new \stdClass() || null !== $schemaId) {
             $schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
@@ -220,7 +230,7 @@ class ObjectService
      *
      * @return ObjectEntity|null The found object or null if not found
      *
-     * @throws \Exception If the object is not found
+     * @throws Exception If the object is not found
      */
     public function find(int|string $id, ?array $extend = [], bool $files = false): ?ObjectEntity
     {
@@ -240,7 +250,7 @@ class ObjectService
      *
      * @return ObjectEntity|null The found object or null if not found
      *
-     * @throws \Exception If the object is not found
+     * @throws Exception If the object is not found
      */
     public function findByUuid(string $uuid): ?ObjectEntity
     {
@@ -271,7 +281,7 @@ class ObjectService
             object: $object
         );
 
-        // Lets turn the whole thing into an array.
+        // Let's turn the whole thing into an array.
         $objectEntity = $objectEntity->jsonSerialize();
 
         // Extend object with properties if requested.
@@ -296,7 +306,7 @@ class ObjectService
      * @throws ValidationException       If validation fails
      * @throws CustomValidationException If custom validation fails
      * @throws GuzzleException           If there is an error during file upload
-     * @throws \Exception                If the schema is not found
+     * @throws Exception                If the schema is not found
      *
      * @psalm-return array<string, mixed>
      *
@@ -308,7 +318,7 @@ class ObjectService
 
         $schema = $this->schemaMapper->find($this->getSchema());
         if (null === $schema) {
-            throw new \Exception('Schema not found');
+            throw new Exception('Schema not found');
         }
 
         $properties = $schema->getProperties();
@@ -341,7 +351,7 @@ class ObjectService
             object: $object,
         );
 
-        // Lets turn the whole thing into an array.
+        // Let's turn the whole thing into an array.
         $objectEntity = $objectEntity->jsonSerialize();
 
         // Extend object with properties if requested.
@@ -355,15 +365,15 @@ class ObjectService
     /**
      * Deletes an object.
      *
-     * @param array|\JsonSerializable $object The object to delete
+     * @param array|JsonSerializable $object The object to delete
      *
      * @return bool True if deletion is successful, false otherwise
      *
-     * @throws \Exception If deletion fails
+     * @throws Exception If deletion fails
      */
-    public function delete(array|\JsonSerializable $object): bool
+    public function delete(array|JsonSerializable $object): bool
     {
-        if ($object instanceof \JsonSerializable) {
+        if ($object instanceof JsonSerializable) {
             $object = $object->jsonSerialize();
         }
 
@@ -388,7 +398,7 @@ class ObjectService
      *
      * @return array list of matching objects
      *
-     * @throws \Exception if a database error occurs
+     * @throws Exception if a database error occurs
      *
      * @psalm-return array<int, mixed>
      *
@@ -439,9 +449,7 @@ class ObjectService
      * @param string|null $search  Search term
      *
      * @return int The total count of matching objects
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     */
+	 */
     public function count(array $filters = [], ?string $search = null): int
     {
         // Add register and schema filters if set.
@@ -461,7 +469,7 @@ class ObjectService
      *
      * @return array List of retrieved objects
      *
-     * @throws \Exception If an error occurs during retrieval
+     * @throws Exception If an error occurs during retrieval
      *
      * @psalm-return array<int, ObjectEntity>
      *
@@ -479,14 +487,17 @@ class ObjectService
         return $result;
     }// end findMultiple()
 
-    /**
-     * Find subobjects for a certain property with given ids.
-     *
-     * @param array  $ids      The IDs to fetch the subobjects for
-     * @param string $property the property in which the objects reside
-     *
-     * @return array the resulting subobjects
-     */
+	/**
+	 * Find subobjects for a certain property with given ids.
+	 *
+	 * @param array $ids The IDs to fetch the subobjects for
+	 * @param string $property the property in which the objects reside
+	 *
+	 * @return array the resulting subobjects
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 * @throws \OCP\DB\Exception
+	 */
     public function findSubObjects(array $ids, string $property): array
     {
         $schemaObject = $this->schemaMapper->find($this->schema);
@@ -548,13 +559,14 @@ class ObjectService
         return $object->getObject();
     }// end getDataFromObject()
 
-    /**
-     * Find all objects conforming to the request parameters, surrounded with pagination data.
-     *
-     * @param array $requestParams the request parameters to search with
-     *
-     * @return array the result including pagination data
-     */
+	/**
+	 * Find all objects conforming to the request parameters, surrounded with pagination data.
+	 *
+	 * @param array $requestParams the request parameters to search with
+	 *
+	 * @return array the result including pagination data
+	 * @throws \OCP\DB\Exception
+	 */
     public function findAllPaginated(array $requestParams): array
     {
         // Extract specific parameters.
@@ -614,6 +626,8 @@ class ObjectService
      * @param array       $filters    additional filters for retrieving objects
      * @param array       $sort       sorting criteria for the retrieved objects
      * @param string|null $search     search term for filtering objects
+     * @param bool        $files      whether to include files in the response
+     * @param string|null $uses       the uses to filter objects by
      *
      * @return array an array of objects matching the specified criteria
      *
@@ -630,7 +644,8 @@ class ObjectService
         ?string $search = null,
         bool $files = true,
         ?string $uses = null,
-    ) {
+    ): array
+	{
         // Set object type and filters if register and schema are provided.
         if (null === $objectType && null !== $register && null !== $schema) {
             $objectType = 'objectEntity';
@@ -654,13 +669,15 @@ class ObjectService
             return $objects;
         }
 
-        $objects = array_map(function ($object) {
-            $files = $this->getFiles($object);
+		return array_map(function ($object) {
+			try {
+				$files = $this->getFiles($object);
+			} catch (DoesNotExistException|NotFoundException $e) {
 
-            return $this->hydrateFiles($object, $files);
-        }, $objects);
+			}
 
-        return $objects;
+			return $this->hydrateFiles($object, $files);
+		}, $objects);
     }// end getObjects()
 
     /**
@@ -722,7 +739,7 @@ class ObjectService
      * @return ObjectEntity The saved object entity
      *
      * @throws ValidationException        If the object fails validation
-     * @throws \Exception|GuzzleException If an error occurs during object saving or file handling
+     * @throws Exception|GuzzleException If an error occurs during object saving or file handling
      * @throws CustomValidationException  If the object fails custom validation
      */
     public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null): ObjectEntity
@@ -736,7 +753,7 @@ class ObjectService
         if (!$register instanceof Register) {
             $register = $this->registerMapper->find($register);
             if (null === $register) {
-                throw new \Exception('Register not found');
+                throw new Exception('Register not found');
             }
         }
 
@@ -744,7 +761,7 @@ class ObjectService
         if (!$schema instanceof Schema) {
             $schema = $this->schemaMapper->find($schema);
             if (null === $schema) {
-                throw new \Exception('Schema not found');
+                throw new Exception('Schema not found');
             }
         }
 
@@ -966,13 +983,13 @@ class ObjectService
      *
      * @return string schemaId
      *
-     * @throws \Exception If no reference found
+     * @throws Exception If no reference found
      */
     private function getSchemaFromPropertyReference(array $property, string $propertyName, int $schema): string
     {
         $reference = $property['$ref'] ?? $property['items']['$ref'] ?? null;
         if (null === $reference) {
-            throw new \Exception(sprintf('Could not find a $ref for schema $d property %s', $schema, $propertyName));
+            throw new Exception(sprintf('Could not find a $ref for schema $d property %s', $schema, $propertyName));
         }
 
         if (true === is_numeric($reference)) {
@@ -988,7 +1005,7 @@ class ObjectService
             }
         }
 
-        throw new \Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
+        throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
     }// end getSchemaFromPropertyReference()
 
     /**
@@ -1008,7 +1025,7 @@ class ObjectService
      *
      * @return string|array the UUID of the nested subobject or the full object data
      *
-     * @throws ValidationException|CustomValidationException|\Exception when schema or object validation fails
+     * @throws ValidationException|CustomValidationException|Exception when schema or object validation fails
      * @throws GuzzleException                                          when HTTP request fails
      */
     private function addObject(
@@ -1367,7 +1384,7 @@ class ObjectService
      *
      * @return ObjectEntity the updated object entity with resolved relations and file references
      *
-     * @throws \Exception          when general processing error occurs
+     * @throws Exception          when general processing error occurs
      * @throws ValidationException when schema validation fails
      * @throws GuzzleException     when HTTP request fails
      */
@@ -1415,7 +1432,7 @@ class ObjectService
      *
      * @return File The updated file entity with storage and sharing information
      *
-     * @throws \Exception If file storage or sharing fails
+     * @throws Exception If file storage or sharing fails
      */
     private function writeFile(string $fileContent, string $propertyName, ObjectEntity $objectEntity, File $file): File
     {
@@ -1437,7 +1454,7 @@ class ObjectService
             );
 
             if (false === $succes) {
-                throw new \Exception('Failed to upload this file: $filePath to NextCloud');
+                throw new Exception('Failed to upload this file: $filePath to NextCloud');
             }
 
             // Create or find ShareLink.
@@ -1458,8 +1475,8 @@ class ObjectService
             $file->setDownloadUrl($downloadLink);
             $file->setShareUrl($shareLink);
             $file->setFilePath($filePath);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to store file: '.$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception('Failed to store file: '.$e->getMessage());
         }
 
         return $file;
@@ -1500,7 +1517,7 @@ class ObjectService
      *
      * @throws ContainerExceptionInterface When container resolution fails
      * @throws GuzzleException             When HTTP request fails during download
-     * @throws \Exception                  When file download or storage fails
+     * @throws Exception                  When file download or storage fails
      */
     private function fetchFile(File $file, string $propertyName, ObjectEntity $objectEntity): File
     {
@@ -1521,7 +1538,7 @@ class ObjectService
 
                     $callService = $this->getOpenConnector(filePath: '\Service\CallService');
                     if (null === $callService) {
-                        throw new \Exception('OpenConnector service not available');
+                        throw new Exception('OpenConnector service not available');
                     }
                     $endpoint = str_replace($source->getLocation(), '', $encodedUrl);
                     $endpoint = urldecode($endpoint);
@@ -1537,8 +1554,8 @@ class ObjectService
                     $response = $client->get($encodedUrl);
                     $fileContent = $response->getBody()->getContents();
                 }
-            } catch (\Exception|NotFoundExceptionInterface $e) {
-                throw new \Exception('Failed to download file from URL: '.$e->getMessage());
+            } catch (Exception|NotFoundExceptionInterface $e) {
+                throw new Exception('Failed to download file from URL: '.$e->getMessage());
             }
         }
 
@@ -1585,7 +1602,7 @@ class ObjectService
             $this->fileMapper->insert($fileEntity);
             $fileContent = base64_decode($matches[2], true);
             if (false === $fileContent) {
-                throw new \Exception('Invalid base64 encoded file');
+                throw new Exception('Invalid base64 encoded file');
             }
 
             $fileEntity = $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $fileEntity);
@@ -1710,7 +1727,7 @@ class ObjectService
      *
      * @return \OCP\Files\File The added file
      *
-     * @throws \Exception If file addition fails
+     * @throws Exception If file addition fails
      */
     public function addFile(ObjectEntity|string $object, string $fileName, string $base64Content, bool $share = false, array $tags = []): \OCP\Files\File
     {
@@ -1732,7 +1749,7 @@ class ObjectService
      *
      * @return \OCP\Files\File The updated file
      *
-     * @throws \Exception If file update fails
+     * @throws Exception If file update fails
      */
     public function updateFile(ObjectEntity|string $object, string $filePath, ?string $content = null, array $tags = []): \OCP\Files\File
     {
@@ -1756,7 +1773,7 @@ class ObjectService
      *
      * @return array An array of tag names
      *
-     * @throws \Exception If there's an error retrieving the tags
+     * @throws Exception If there's an error retrieving the tags
      *
      * @psalm-return array<int, string>
      *
@@ -1775,7 +1792,7 @@ class ObjectService
      *
      * @return bool True if successful
      *
-     * @throws \Exception If file deletion fails
+     * @throws Exception If file deletion fails
      */
     public function deleteFile(ObjectEntity|string $object, string $filePath): bool
     {
@@ -1792,14 +1809,14 @@ class ObjectService
     /**
      * Publish a file by creating a public share link.
      *
-     * @todo Should be in file service.
-     *
      * @param ObjectEntity|string $object   The object or object ID
      * @param string              $filePath Path to the file to publish
      *
      * @return \OCP\Files\File The published file
      *
-     * @throws \Exception If file publishing fails
+     * @throws Exception If file publishing fails
+     *@todo Should be in file service.
+     *
      */
     public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
     {
@@ -1813,7 +1830,7 @@ class ObjectService
         $file = $this->fileService->getNode($fullPath);
 
         if (!$file instanceof \OCP\Files\File) {
-            throw new \Exception('File not found');
+            throw new Exception('File not found');
         }
 
         $shareLink = $this->fileService->createShareLink(path: $file->getPath());
@@ -1824,14 +1841,14 @@ class ObjectService
     /**
      * Unpublish a file by removing its public share link.
      *
-     * @todo Should be in file service.
-     *
      * @param ObjectEntity|string $object   The object or object ID
      * @param string              $filePath Path to the file to unpublish
      *
      * @return \OCP\Files\File The unpublished file
      *
-     * @throws \Exception If file unpublishing fails
+     * @throws Exception If file unpublishing fails
+     *@todo Should be in file service.
+     *
      */
     public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
     {
@@ -1845,7 +1862,7 @@ class ObjectService
         $file = $this->fileService->getNode($fullPath);
 
         if (!$file instanceof \OCP\Files\File) {
-            throw new \Exception('File not found');
+            throw new Exception('File not found');
         }
 
         $this->fileService->deleteShareLinks(file: $file);
@@ -1927,7 +1944,7 @@ class ObjectService
      *
      * @return ObjectEntity the retrieved object as an entity
      *
-     * @throws \Exception if the source type is unsupported
+     * @throws Exception if the source type is unsupported
      */
     public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = [], bool $files = false): ObjectEntity
     {
@@ -1946,7 +1963,7 @@ class ObjectService
 
         // @todo mongodb support.
 
-        throw new \Exception('Unsupported source type');
+        throw new Exception('Unsupported source type');
     }
 
     /**
@@ -1992,7 +2009,7 @@ class ObjectService
      * @param ObjectEntity $object           the object entity whose related objects should be deleted
      * @param string       $originalObjectId the ID of the original object being deleted
      *
-     * @throws \Exception if any errors occur during the deletion process
+     * @throws Exception if any errors occur during the deletion process
      */
     private function cascadeDeleteObjects(Register $register, Schema $schema, ObjectEntity $object, string $originalObjectId): void
     {
@@ -2023,7 +2040,7 @@ class ObjectService
      *
      * @return bool True if deletion was successful
      *
-     * @throws \Exception If source type is unsupported
+     * @throws Exception If source type is unsupported
      */
     public function deleteObject($register, $schema, string $uuid, ?string $originalObjectId = null): bool
     {
@@ -2057,7 +2074,7 @@ class ObjectService
 
         // @todo mongodb support.
 
-        throw new \Exception('Unsupported source type');
+        throw new Exception('Unsupported source type');
     }// end deleteObject()
 
     /**
@@ -2153,7 +2170,7 @@ class ObjectService
      * @return array the rendered entity with expanded properties
      *
      * @throws \InvalidArgumentException if both filters and fields are used simultaneously or if extend and fields/filters conflict
-     * @throws \Exception                if rendering or extending fails
+     * @throws Exception                if rendering or extending fails
      *
      * @phpstan-param array<string, mixed> $entity
      * @phpstan-param array<string>|null $extend
@@ -2356,15 +2373,15 @@ class ObjectService
     /**
      * Extends an entity with related objects based on the extend array.
      *
-     * @deprecated Use renderEntity
-     *
      * @param mixed    $entity The entity to extend
      * @param array    $extend Properties to extend with related data
      * @param int|null $depth  Maximum recursion depth
      *
      * @return array The extended entity as an array
      *
-     * @throws \Exception If property not found
+     * @throws Exception If property not found
+     *@deprecated Use renderEntity
+     *
      */
     public function extendEntity(array $entity, array $extend, ?int $depth = 0): array
     {
@@ -2396,7 +2413,7 @@ class ObjectService
             } elseif (array_key_exists(key: $singularProperty, array: $result)) {
                 $value = $result[$singularProperty];
             } else {
-                throw new \Exception("Property '$property' or '$singularProperty' is not present in the entity.");
+                throw new Exception("Property '$property' or '$singularProperty' is not present in the entity.");
             }
 
             // Try to get mapper for property.
@@ -2411,7 +2428,7 @@ class ObjectService
                     $objectId = is_object(value: $value) ? $value->getId() : $value;
                     $result[$property] = $mapper->find($objectId);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // If no specific mapper found, try to look up values in default database.
                 try {
                     if (is_array($value)) {
@@ -2424,7 +2441,7 @@ class ObjectService
                                     $extendedFound = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1);
                                     $extendedValues[] = $extendedFound;
                                 }
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 continue;
                             }
                         }
@@ -2439,7 +2456,7 @@ class ObjectService
                             $result[$property] = $this->renderEntity($found->jsonSerialize(), $extend, $depth + 1); // Start with depth 1.
                         }
                     }
-                } catch (\Exception $e2) {
+                } catch (Exception $e2) {
                     // If lookup fails, keep original value.
                     continue;
                 }
@@ -2454,7 +2471,7 @@ class ObjectService
      *
      * @return array The registers with schema data
      *
-     * @throws \Exception If extension fails
+     * @throws Exception If extension fails
      */
     public function getRegisters(): array
     {
@@ -2471,7 +2488,7 @@ class ObjectService
                     function ($schemaId) {
                         try {
                             return $this->schemaMapper->find($schemaId)->jsonSerialize();
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             // If schema can't be found, return the ID.
                             return $schemaId;
                         }
@@ -2822,7 +2839,7 @@ class ObjectService
             );
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (true === str_contains($e->getMessage(), 'Must be logged in')) {
                 throw new NotAuthorizedException($e->getMessage());
             }
@@ -2847,7 +2864,7 @@ class ObjectService
             return $this->objectEntityMapper->unlockObject($identifier);
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (true === str_contains($e->getMessage(), 'Must be logged in')) {
                 throw new NotAuthorizedException($e->getMessage());
             }
@@ -2884,7 +2901,7 @@ class ObjectService
      *
      * @throws NotFoundException      If object not found
      * @throws NotAuthorizedException If user not authorized
-     * @throws \Exception             If revert fails
+     * @throws Exception             If revert fails
      */
     public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity
     {
@@ -2908,7 +2925,7 @@ class ObjectService
             return $revertedObject;
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Object not found');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (true === str_contains($e->getMessage(), 'Must be logged in')) {
                 throw new NotAuthorizedException($e->getMessage());
             }

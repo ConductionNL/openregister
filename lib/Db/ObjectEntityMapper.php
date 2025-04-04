@@ -8,7 +8,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -27,13 +27,15 @@ use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\IDatabaseJsonService;
 use OCA\OpenRegister\Service\MySQLJsonService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * The ObjectEntityMapper class
@@ -100,11 +102,10 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param int|string $identifier The ID or UUID of the object to find
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
      * @return ObjectEntity The ObjectEntity
+     * @throws MultipleObjectsReturnedException If multiple objects are found
+     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws DoesNotExistException If the object is not found
      */
     public function find(string | int $identifier): ObjectEntity
     {
@@ -124,8 +125,8 @@ class ObjectEntityMapper extends QBMapper
                         'id',
                         $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)
                     ),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier))
                 )
             );
 
@@ -163,7 +164,7 @@ class ObjectEntityMapper extends QBMapper
 
         try {
             return $this->findEntity($qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+        } catch (DoesNotExistException $e) {
             return null;
         }
 
@@ -191,7 +192,7 @@ class ObjectEntityMapper extends QBMapper
 
         try {
             return $this->findEntity($qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+        } catch (DoesNotExistException $e) {
             return null;
         }
 
@@ -312,8 +313,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
-            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, IQuerybuilder::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, IQuerybuilder::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
 
@@ -389,7 +390,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Lets make sure that @self and id never enter the database.
+        // Let's make sure that @self and id never enter the database.
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
@@ -428,16 +429,15 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param Entity $entity The entity to update
      *
-     * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
-     *
      * @return Entity The updated entity
+     * @throws DoesNotExistException If the entity does not exist
+     * @throws \OCP\DB\Exception|MultipleObjectsReturnedException If a database error occurs
      */
     public function update(Entity $entity): Entity
     {
         $oldObject = $this->find($entity->getId());
 
-        // Lets make sure that @self and id never enter the database.
+        // Let's make sure that @self and id never enter the database.
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
@@ -458,10 +458,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int   $id     The id of the object to update
      * @param array $object The object to update
      *
-     * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
-     *
      * @return ObjectEntity The updated object
+     * @throws DoesNotExistException If the object is not found
+     * @throws \OCP\DB\Exception|MultipleObjectsReturnedException If a database error occurs
      */
     public function updateFromArray(int $id, array $object): ObjectEntity
     {
@@ -504,9 +503,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array       $filters The filters to apply
      * @param string|null $search  The search string to apply
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
+	 *
      * @return array The facets
      */
     public function getFacets(array $filters=[], ?string $search=null): array
@@ -595,16 +592,15 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Lock an object
      *
-     * @param string|int  $identifier Object ID, UUID, or URI
+     * @param int|string $identifier Object ID, UUID, or URI
      * @param string|null $process    Optional process identifier
      * @param int|null    $duration   Lock duration in seconds
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
-     * @throws \Exception If locking fails
-     *
      * @return ObjectEntity The locked object
+     * @throws \Exception If locking fails
+     * @throws DoesNotExistException If object not found
      */
-    public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
+    public function lockObject(int|string $identifier, ?string $process=null, ?int $duration=null): ObjectEntity
     {
         $object = $this->find($identifier);
 
@@ -637,14 +633,13 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Unlock an object
      *
-     * @param string|int $identifier Object ID, UUID, or URI
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
-     * @throws \Exception If unlocking fails
+     * @param int|string $identifier Object ID, UUID, or URI
      *
      * @return ObjectEntity The unlocked object
+     * @throws \Exception If unlocking fails
+     * @throws DoesNotExistException If object not found
      */
-    public function unlockObject($identifier): ObjectEntity
+    public function unlockObject(int|string $identifier): ObjectEntity
     {
         $object = $this->find($identifier);
 
@@ -670,16 +665,17 @@ class ObjectEntityMapper extends QBMapper
     }//end unlockObject()
 
 
-    /**
-     * Check if an object is locked
-     *
-     * @param string|int $identifier Object ID, UUID, or URI
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
-     *
-     * @return bool True if object is locked, false otherwise
-     */
-    public function isObjectLocked($identifier): bool
+	/**
+	 * Check if an object is locked
+	 *
+	 * @param int|string $identifier Object ID, UUID, or URI
+	 *
+	 * @return bool True if object is locked, false otherwise
+	 * @throws DoesNotExistException If object not found
+	 * @throws MultipleObjectsReturnedException
+	 * @throws Exception
+	 */
+    public function isObjectLocked(int|string $identifier): bool
     {
         $object = $this->find($identifier);
         return $object->isLocked();
@@ -702,9 +698,9 @@ class ObjectEntityMapper extends QBMapper
 
         $qb->select('*')
             ->from('openregister_objects')
-            ->orWhere($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)))
-            ->orWhere($qb->expr()->in('uri', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            ->orWhere($qb->expr()->in('id', $qb->createNamedParameter($ids, IQuerybuilder::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uuid', $qb->createNamedParameter($ids, IQuerybuilder::PARAM_STR_ARRAY)))
+            ->orWhere($qb->expr()->in('uri', $qb->createNamedParameter($ids, IQuerybuilder::PARAM_STR_ARRAY)));
 
         return $this->findEntities($qb);
 
