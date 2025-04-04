@@ -371,13 +371,11 @@ class ObjectService
         );
 
         // If extend is provided, extend each object
-        if (!empty($extend)) {
-            $objects = array_map(function($object) use ($extend) {
-                // Convert object to array if needed
-                $objectArray = is_array($object) ? $object : $object->jsonSerialize();
-                return $this->renderEntity(entity: $objectArray, extend: $extend);
-            }, $objects);
-        }
+        $objects = array_map(function($object) use ($extend) {
+            // Convert object to array if needed
+            $objectArray = is_array($object) ? $object : $object->jsonSerialize();
+            return $this->renderEntity(entity: $objectArray, extend: $extend);
+        }, $objects);
 
         return $objects;
     }
@@ -778,7 +776,16 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-		// Handle object properties that are either nested objects or files
+		$this->setDefaults($objectEntity);
+
+        // Create or update base object for first time so we have a uuid
+		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
+			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+		} else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
+			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
+		}
+
+		// Handle object properties that are either nested objects or files, we do this after creating/updating object so that we can pass parent id for sub objects.
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
@@ -786,9 +793,8 @@ class ObjectService
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
-		$this->setDefaults($objectEntity);
-
-		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
+        // Second time so the object is updated with object relations.
+        if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			// Create audit trail for update
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
@@ -941,6 +947,53 @@ class ObjectService
         throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
     }
 
+    /**
+     * Sets the inversedBy relation on a sub-schema object and returns a list of updated relations.
+     *
+     * This method updates the given $item (which represents a child object) to establish a 
+     * back-reference to the parent $objectEntity using the 'inversedBy' configuration.
+     * It handles both single and array-type inverse relations and supports setting a specific index.
+     *
+     * @param string|array $item The child item reference. If it's a string (e.g., UUID), it is assumed to be a reference to an existing object and will be skipped.
+     * @param ObjectEntity $objectEntity The parent object to relate back to.
+     * @param string $subSchema The name or identifier of the sub-schema for the child object.
+     * @param array $property The parent property definition, expected to contain 'inversedBy' if applicable.
+     * @param int|null $index Optional index for array-type inverse relations.
+     *
+     * @return array An associative array of relation paths (e.g., 'relatedField.0' => UUID) that were set.
+     */
+    private function setInversedByRelation(string|array &$item, ObjectEntity $objectEntity, string $subSchema, array $property, ?int $index = null): array
+    {
+        $relations = [];
+        // @todo Set relations and inversedBy properties for existing objects (string $item)
+        if (is_string($item) === true) {
+            return $relations;
+        }
+
+        $subSchema = $this->schemaMapper->find($subSchema);
+        $subSchemaProperties = $subSchema->getProperties();
+        if (isset($property['inversedBy']) === false) {
+            return $relations;
+        }
+
+        foreach ($subSchemaProperties as $subSchemaPropertyName => $subSchemaProperty) {
+            if ($property['inversedBy'] !== $subSchemaPropertyName) {
+                continue;
+            }
+
+            if (isset($subSchemaProperty['type']) === true && $subSchemaProperty['type'] === 'array') {
+                $relations[$subSchemaPropertyName . '.' . $index] = $objectEntity->getUuid();
+                $item[$subSchemaPropertyName][$index] = $objectEntity->getUuid();
+                continue;
+            }
+
+            $relations[$subSchemaPropertyName] = $objectEntity->getUuid();
+            $item[$subSchemaPropertyName] = $objectEntity->getUuid();
+        }
+
+        return $relations;
+    }
+
 	/**
 	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
@@ -955,7 +1008,7 @@ class ObjectService
 	 * @param int $schema The schema identifier for the subobject.
 	 * @param int|null $index Optional index of the subobject if it resides in an array.
 	 *
-	 * @return string The UUID of the nested subobject.
+	 * @return string|array The UUID of the nested subobject.
 	 * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
 	 * @throws GuzzleException
 	 */
@@ -976,15 +1029,17 @@ class ObjectService
             $itemIsID = true;
         }
 
+        // Setting inversedBy on sub object to parent currently will only work if the object is cascaded created for the first time!
         $subSchema = $this->getSchemaFromPropertyReference(property: $property, propertyName: $propertyName, schema: $schema);
+        $relations = $this->setInversedByRelation(item: $item, objectEntity: $objectEntity, subSchema: $subSchema, property: $property, index: $index);
 
 		// Handle nested object in array
 		if ($itemIsID === true) {
-			$nestedObject = $this->getObject(
-				register: $this->registerMapper->find((int) $register),
-				schema: $this->schemaMapper->find((int) $subSchema),
-				uuid: $item
-			);
+            $nestedObject = $this->getObject(
+                register: $this->registerMapper->find((int) $register),
+                schema: $this->schemaMapper->find((int) $subSchema),
+                uuid: $item
+            );
 		} else {
 			$nestedObject = $this->saveObject(
 				register: $register,
@@ -994,15 +1049,20 @@ class ObjectService
 			);
 		}
 
+        if (empty($relations) === false) {
+            $nestedObject->setRelations(array_merge($nestedObject->getRelations(), $relations));
+			$nestedObject = $this->objectEntityMapper->update($nestedObject);
+        }
+
 		if ($index === null) {
 			// Store relation and replace with reference
-			$relations = $objectEntity->getRelations() ?? [];
-			$relations[$propertyName] = $nestedObject->getUri();
-			$objectEntity->setRelations($relations);
+			$parentRelations = $objectEntity->getRelations() ?? [];
+			$parentRelations[$propertyName] = $nestedObject->getUri();
+			$objectEntity->setRelations($parentRelations);
 		} else {
-			$relations = $objectEntity->getRelations() ?? [];
-			$relations[$propertyName . '.' . $index] = $nestedObject->getUri();
-			$objectEntity->setRelations($relations);
+			$parentRelations = $objectEntity->getRelations() ?? [];
+			$parentRelations[$propertyName . '.' . $index] = $nestedObject->getUri();
+			$objectEntity->setRelations($parentRelations);
 		}
 
 		if ($depth !== 0) {
@@ -1826,7 +1886,7 @@ class ObjectService
 	 * @param array|null $extend Optional properties to include in the retrieved object.
 	 *
 	 * @return ObjectEntity The retrieved object as an entity.
-	 * @throws Exception If the source type is unsupported.
+	 * @throws Exception If the source type is unsupported or if the object not found.
 	 */
 	public function getObject(Register $register, Schema $schema, string $uuid, ?array $extend = [], bool $files = false): ObjectEntity
 	{
@@ -1834,8 +1894,11 @@ class ObjectService
 		// Handle internal source
 		if ($register->getSource() === 'internal' || $register->getSource() === '') {
 			$object = $this->objectEntityMapper->findByUuid($register, $schema, $uuid);
+            if ($object === null) {
+                throw new Exception(sprintf('Could not find object with uuid: %s for target: %d/%d', $uuid, $register->getId(), $schema->getId()));
+            }
 
-			if ($files === false) {
+			if ($files === false) { 
 				return $object;
 			}
 
@@ -2127,14 +2190,15 @@ class ObjectService
 		if (empty($invertedProperties) === false) {
 			// Get objects that reference this entity
 
-			$usedByObjects = $this->objectEntityMapper->findAll(uses: $entity['uuid']);
+            $identifier = $entity['@self']['id'];
+			$usedByObjects = $this->objectEntityMapper->findAll(uses: $identifier);
 
 			// Loop through inverted properties and add referenced objects
 			foreach ($invertedProperties as $key => $property) {
 				// Filter objects that reference this entity through the specified inverted property
 				$referencingObjects = array_filter(
 					$usedByObjects,
-					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $entity['uuid']
+					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $identifier
 				);
 
 				// Extract only the UUIDs from the referencing objects instead of the entire objects
@@ -2202,11 +2266,15 @@ class ObjectService
                 // Filter the relatedObjects array to find the object that matches the value
                 $relatedObject = array_filter($relatedObjects, function($obj) use ($value) {
                     // Check if the object's id, uuid, or url matches the value
-                    return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
+                    if (is_array($obj) === true) {
+                        return (isset($obj['@self']['id']) && $obj['@self']['id'] === $value) || (isset($obj['@self']['uuid']) && $obj['@self']['uuid'] === $value) || (isset($obj['@self']['url']) && $obj['@self']['url'] === $value);
+                    } elseif ($obj instanceof ObjectEntity === true) {
+                        return ($obj->getId() === $value || $obj->getUuid() === $value || $obj->getUri() === $value);
+                    }
                 });
 
                 // Check if a related object was found
-                if (empty($relatedObject) === true) {
+                if ($relatedObject instanceof ObjectEntity === false && empty($relatedObject) === true) {
                     // Add an error message if the related object could not be found
                     $errors[] = "Property '$property' could not be extended.";
                     continue;
@@ -2463,9 +2531,6 @@ class ObjectService
 		$object = $this->objectEntityMapper->find($id)->getObjectArray();
 		$filters = [];
 		$filters['object'] = $object['id'];
-
-		//var_dump($filters);
-		//die;
 
 		//$filters['registerUuid'] = $object->getRegisterUuid();
 		//$filters['schemaUuid'] = $object->getSchemaUuid();

@@ -621,7 +621,13 @@ class ObjectsController extends Controller
     {
         try {
             // Get the object with files included
-            $object = $this->objectEntityMapper->find((int) $id);
+            if (is_numeric($id) === true) {
+                $object = $this->objectEntityMapper->find((int) $id);
+            } elseif (Uuid::isValid($id) === true) {
+                $object = $this->objectEntityMapper->findByUuidOnly($id);
+            } else {
+                return new JSONResponse(['error' => 'Given id is not a numeric or uuid value'], 400);
+            }
             $files = $objectService->getFiles($object);
 
             // Format files with pagination support
