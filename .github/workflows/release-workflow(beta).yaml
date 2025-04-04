@@ -6,33 +6,40 @@ on:
       - code-refactor/ObjectService
 
 jobs:
-  beta-release:
+  release-management:
     runs-on: ubuntu-latest
-
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Set app env
-        run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
-
-      - name: Generate beta version
-        id: version
         run: |
-          base_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml | sed 's/-beta[0-9]*//')
-          suffix="beta.${{ github.run_number }}"
-          full_version="${base_version}-${suffix}"
-          sed -i "s|<version>.*</version>|<version>$full_version</version>|" appinfo/info.xml
-          echo "NEW_VERSION=$full_version" >> $GITHUB_ENV
-          echo "new_version=$full_version" >> $GITHUB_OUTPUT
+          echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Get current version and append beta suffix
+        id: increment_version
+        run: |
+          current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
+          IFS='.' read -ra version_parts <<< "$current_version"
+          ((version_parts[2]++))
+          base_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
+          beta_version="${base_version}-beta.${{ github.run_number }}"
+          echo "NEW_VERSION=$beta_version" >> $GITHUB_ENV
+          echo "new_version=$beta_version" >> $GITHUB_OUTPUT
+
+      - name: Update version in info.xml
+        run: |
+          sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" appinfo/info.xml
 
       - name: Commit version update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Bump to beta version ${{ env.NEW_VERSION }} [skip ci]"
+          git commit -am "Bump beta version to ${{ env.NEW_VERSION }} [skip ci]"
           git push
 
       - name: Prepare Signing Certificate and Key
@@ -40,12 +47,12 @@ jobs:
           echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
           echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
 
-      - name: Setup Node.js
+      - name: Install npm dependencies
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
 
-      - name: Setup PHP
+      - name: Set up PHP and install extensions
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -55,43 +62,95 @@ jobs:
       - run: npm run build
       - run: composer install --no-dev
 
-      - name: Sign the app
+      - name: Copy the package files into the package
         run: |
-          php ./occ integrity:sign-app \
-            --privateKey=signing-key.key \
-            --certificate=signing-cert.crt \
-            --path=.
+          mkdir -p package/${{ github.event.repository.name }}
+          rsync -av --progress \
+            --exclude='package' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.vscode' \
+            --exclude='docker' \
+            --exclude='docs' \
+            --exclude='website' \
+            --exclude='node_modules' \
+            --exclude='/src' \
+            --exclude='test' \
+            --exclude='package-lock.json' \
+            --exclude='composer.lock' \
+            --exclude='composer-setup.php' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='phpmd.xml' \
+            --exclude='signing-key.key' \
+            --exclude='package.json' \
+            --exclude='composer.json' \
+            --exclude='coverage.txt' \
+            --exclude='signing-cert.crt' \
+            --exclude='docker-compose.yml' \
+            --exclude='webpack.config.js' \
+            --exclude='.prettierrc' \
+            --exclude='psalm.xml' \
+            --exclude='phpunit.xml' \
+            --exclude='tsconfig.json' \
+            --exclude='changelog-ci-config.json' \
+            --exclude='jest.config.js' \
+            --exclude='.gitattributes' \
+            --exclude='.php-cs-fixer.dist.php' \
+            --exclude='.gitignore' \
+            --exclude='.eslintrc.js' \
+            --exclude='stylelint.config.js' \
+            --exclude='.babelrc' \
+            --exclude='.nvmrc' \
+            ./ package/${{ github.event.repository.name }}/
 
-      - name: Package the app
+      - name: Create Tarball
         run: |
-          mkdir -p package/${{ env.APP_NAME }}
-          rsync -a --exclude='.*' --exclude='node_modules' --exclude='test' ./ package/${{ env.APP_NAME }}/
-          cd package
-          tar -czf ../${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz ${{ env.APP_NAME }}
+          cd package && tar -czf ../nextcloud-release.tar.gz ${{ github.event.repository.name }}
 
-      - name: Verify tarball
+      - name: Sign the TAR.GZ file with OpenSSL
         run: |
-          tar -xOf ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml | grep version
-          tar -tzf ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz | grep signature.json
+          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
 
-      - name: Create GitHub Release
+      - name: Git Version
+        id: version
+        uses: codacy/git-version@2.7.1
+        with:
+          release-branch: code-refactor/ObjectService
+
+      - name: Extract repository description
+        id: repo-description
+        run: |
+          description=$(jq -r '.description' <(curl -s https://api.github.com/repos/${{ github.repository }}))
+          echo "REPO_DESCRIPTION=$description" >> $GITHUB_ENV
+
+      - name: Use the version
+        run: |
+          echo ${{ steps.version.outputs.version }}
+
+      - name: Copy the package files into the package (again)
+        run: |
+          mkdir -p package/${{ github.event.repository.name }}
+          rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
+
+      - name: Upload Beta Release
         uses: ncipollo/release-action@v1.12.0
         with:
           tag: v${{ env.NEW_VERSION }}
-          name: Release ${{ env.NEW_VERSION }}
+          name: Beta Release ${{ env.NEW_VERSION }}
           draft: false
           prerelease: true
 
-      - name: Upload tarball to GitHub Release
+      - name: Attach tarball to GitHub release
         uses: svenstaro/upload-release-action@v2
+        id: attach_to_release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
+          file: nextcloud-release.tar.gz
           asset_name: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
           tag: v${{ env.NEW_VERSION }}
           overwrite: true
 
-      - name: Upload to Nextcloud App Store
+      - name: Upload app to Nextcloud App Store (beta)
         uses: nextcloud-releases/nextcloud-appstore-push-action@v1
         with:
           app_name: ${{ env.APP_NAME }}
@@ -99,3 +158,11 @@ jobs:
           download_url: https://github.com/${{ github.repository }}/releases/download/v${{ env.NEW_VERSION }}/${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
           app_private_key: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
           nightly: false
+
+      - name: Verify version and contents
+        run: |
+          echo "App version: ${{ env.NEW_VERSION }}"
+          echo "Tarball contents:"
+          tar -tvf nextcloud-release.tar.gz
+          echo "info.xml contents:"
+          tar -xOf nextcloud-release.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml
