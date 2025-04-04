@@ -776,7 +776,16 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-		// Handle object properties that are either nested objects or files
+		$this->setDefaults($objectEntity);
+
+        // Create or update base object for first time so we have a uuid
+		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
+			$objectEntity = $this->objectEntityMapper->update($objectEntity);
+		} else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
+			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
+		}
+
+		// Handle object properties that are either nested objects or files, we do this after creating/updating object so that we can pass parent id for sub objects.
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
@@ -784,9 +793,8 @@ class ObjectService
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
 
-		$this->setDefaults($objectEntity);
-
-		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
+        // Second time so the object is updated with object relations.
+        if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
 			// Create audit trail for update
 			$this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
