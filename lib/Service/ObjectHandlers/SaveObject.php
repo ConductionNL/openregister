@@ -99,7 +99,7 @@ class SaveObject
             $registerId = $register;
         }
 
-        $objectEntity->setRegisterId($registerId);
+        $objectEntity->setRegister($registerId);
 
         // Set schema ID based on input type.
         $schemaId = null;
@@ -109,17 +109,16 @@ class SaveObject
             $schemaId = $schema;
         }
 
-        $objectEntity->setSchemaId($schemaId);
+        $objectEntity->setSchema($schemaId);
 
         $objectEntity->setObject($object);
-        $objectEntity->setCreatedAt(new DateTime());
-        $objectEntity->setUpdatedAt(new DateTime());
+        $objectEntity->setCreated(new DateTime());
+        $objectEntity->setUpdated(new DateTime());
 
         // Set user information if available.
         $user = $this->userSession->getUser();
         if ($user !== null) {
-            $objectEntity->setCreatedBy($user->getUID());
-            $objectEntity->setUpdatedBy($user->getUID());
+            $objectEntity->setOwner($user->getUID());
         }
 
         // Handle object relations.
@@ -190,18 +189,23 @@ class SaveObject
      * @param ObjectEntity $objectEntity The object entity being saved.
      * @param array        $object       The object data.
      * @param array        $properties   The schema properties.
-     * @param int          $register     The register ID.
-     * @param int          $schema       The schema ID.
+     * @param Register|int|string $register The register to save the object to.
+     * @param Schema|int|string   $schema   The schema to validate against.
      * @param int          $depth        The depth level for nested relations.
      *
      * @return ObjectEntity The object entity with relations handled.
+     *
+     * @phpstan-param Register|int|string $register
+     * @phpstan-param Schema|int|string   $schema
+     * @psalm-param Register|int|string $register
+     * @psalm-param Schema|int|string   $schema
      */
     private function handleObjectRelations(
         ObjectEntity $objectEntity,
         array $object,
         array $properties,
-        int $register,
-        int $schema,
+        Register | int | string $register,
+        Schema | int | string $schema,
         int $depth=0
     ): ObjectEntity {
         foreach ($object as $propertyName => $value) {
@@ -212,7 +216,15 @@ class SaveObject
             $property = $properties[$propertyName];
             if ($this->isRelationProperty($property) === true) {
                 $objectEntity->setObject(
-                    $this->handleProperty($property, $propertyName, $register, $schema, $object, $objectEntity, $depth)
+                    $this->handleProperty(
+                        $property,
+                        $propertyName,
+                        $register,
+                        $schema,
+                        $object,
+                        $objectEntity,
+                        $depth
+                    )
                 );
             }
         }

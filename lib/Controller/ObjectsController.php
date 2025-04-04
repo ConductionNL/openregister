@@ -274,9 +274,7 @@ class ObjectsController extends Controller
         try {
             // Use the object service to validate and save the object.
             $objectEntity = $objectService->saveObject(
-                register: $register,
-                schema: $schema,
-                object: $object
+                data: $object
             );
 
             // Unlock the object after saving.
