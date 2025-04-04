@@ -44,13 +44,18 @@ use OCP\AppFramework\Http\JSONResponse;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 
 /**
- * Object Service for managing data objects in the OpenRegister application.
+ * Service class for managing objects in the OpenRegister application.
+ *
+ * This service handles CRUD operations, validation, file management, and relations
+ * for objects stored in registers according to their schemas.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
  * @author   Conduction b.v. <info@conduction.nl>
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/OpenCatalogi/OpenRegister
+ * @version  1.0.0
+ * @copyright 2024 Conduction b.v.
  */
 class ObjectService
 {
@@ -88,15 +93,17 @@ class ObjectService
      * Initializes the service with dependencies required for database and object operations.
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param RegisterMapper     $registerMapper     Register data mapper.
-     * @param SchemaMapper       $schemaMapper       Schema data mapper.
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail data mapper.
-     * @param ContainerInterface $container          Dependency injection container.
-     * @param IURLGenerator      $urlGenerator       URL generator service.
-     * @param FileService        $fileService        File service for managing files.
-     * @param IAppManager        $appManager         Application manager service.
-     * @param IAppConfig         $config             Configuration manager.
-     * @param IUserSession       $userSession        User session service.
+     * @param RegisterMapper    $registerMapper     Register data mapper.
+     * @param SchemaMapper      $schemaMapper       Schema data mapper.
+     * @param AuditTrailMapper  $auditTrailMapper   Audit trail data mapper.
+     * @param ContainerInterface $container         Dependency injection container.
+     * @param IURLGenerator     $urlGenerator      URL generator service.
+     * @param FileService       $fileService       File service for managing files.
+     * @param IAppManager       $appManager        Application manager service.
+     * @param IAppConfig        $config            Configuration manager.
+     * @param FileMapper        $fileMapper        File data mapper.
+     * @param IUserSession      $userSession       User session service.
+     * @param ArrayLoader       $loader            Twig template loader.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -155,7 +162,7 @@ class ObjectService
     {
         // Local schema resolution.
         if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
-            && str_contains($uri->path(), '/api/schemas')
+            && str_contains($uri->path(), '/api/schemas') === true
         ) {
             $exploded = explode('/', $uri->path());
             $schema   = $this->schemaMapper->find(end($exploded));
@@ -165,13 +172,13 @@ class ObjectService
 
         // File schema resolution.
         if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
-            && str_contains($uri->path(), '/api/files/schema')
+            && str_contains($uri->path(), '/api/files/schema') === true
         ) {
             return File::getSchema($this->urlGenerator);
         }
 
         // External schema resolution.
-        if ($this->config->getValueBool('openregister', 'allowExternalSchemas')) {
+        if ($this->config->getValueBool('openregister', 'allowExternalSchemas') === true) {
             $client = new Client();
             $result = $client->get(\GuzzleHttp\Psr7\Uri::fromParts($uri->components()));
 
@@ -189,17 +196,22 @@ class ObjectService
      * @param array    $object       The object to validate.
      * @param int|null $schemaId     The schema ID to validate against.
      * @param object   $schemaObject A custom schema object for validation.
+     * @param int      $depth        The depth level for validation.
      *
      * @return ValidationResult The result of the validation.
      */
-    public function validateObject(array $object, ?int $schemaId=null, object $schemaObject=new stdClass()): ValidationResult
-    {
+    public function validateObject(
+        array $object,
+        ?int $schemaId = null,
+        object $schemaObject = new stdClass(),
+        int $depth = 0
+    ): ValidationResult {
         if ($schemaObject === new stdClass() || $schemaId !== null) {
             $schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
         }
 
         // if there are no properties we dont have to validate.
-        if (!isset($schemaObject->properties) || empty($schemaObject->properties)) {
+        if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Return a default ValidationResult indicating success.
             return new ValidationResult(null);
         }
@@ -210,8 +222,7 @@ class ObjectService
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);
-
-    }//end validateObject()
+    }
 
 
     /**
@@ -322,7 +333,7 @@ class ObjectService
             throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
         }
 
-        if ($patch) {
+        if ($patch === true) {
             $oldObject = $this->getObject(
                 $this->registerMapper->find($this->getRegister()),
                 $this->schemaMapper->find($this->getSchema()),
@@ -414,7 +425,11 @@ class ObjectService
             $objects = array_map(
                     function ($object) use ($extend) {
                         // Convert object to array if needed.
-                        $objectArray = is_array($object) ? $object : $object->jsonSerialize();
+                        if (is_array($object)) {
+                            $objectArray = $object;
+                        } else {
+                            $objectArray = $object->jsonSerialize();
+                        }
                         return $this->renderEntity(entity: $objectArray, extend: $extend);
                     },
                     $objects
@@ -451,24 +466,25 @@ class ObjectService
     /**
      * Retrieves multiple objects by their IDs.
      *
-     * @param array $ids List of object IDs to retrieve.
+     * @param array      $ids    List of object IDs to retrieve.
+     * @param array|null $extend Properties to extend with related data.
+     * @param bool       $files  Whether to include file information.
      *
      * @return array List of retrieved objects.
      *
      * @throws Exception If an error occurs during retrieval.
      */
-    public function findMultiple(array $ids): array
+    public function findMultiple(array $ids, ?array $extend = [], bool $files = false): array
     {
         $result = [];
         foreach ($ids as $id) {
-            if (is_string($id) || is_int($id)) {
-                $result[] = $this->find($id);
+            if (is_string($id) || is_int($id) === true) {
+                $result[] = $this->find($id, $extend, $files);
             }
         }
 
         return $result;
-
-    }//end findMultiple()
+    }
 
 
     /**
@@ -513,13 +529,11 @@ class ObjectService
      *
      * @param array       $filters Filter criteria.
      * @param string|null $search  Search term.
-     *
-     * @param array       $filters Criteria to filter objects.
-     * @param string|null $search  Search term.
+     * @param int|null    $depth   The depth level for aggregations.
      *
      * @return array Aggregated data results.
      */
-    public function getAggregations(array $filters, ?string $search=null): array
+    public function getAggregations(array $filters, ?string $search = null, ?int $depth = 0): array
     {
         $mapper = $this->getMapper(objectType: 'objectEntity');
 
@@ -611,21 +625,30 @@ class ObjectService
     /**
      * Gets all objects of a specific type.
      *
-     * @param string|null $objectType The type of objects to retrieve. Defaults to 'objectEntity' if register and schema are provided.
-     * @param int|null    $register   The ID of the register to filter objects by.
-     * @param int|null    $schema     The ID of the schema to filter objects by.
-     * @param int|null    $limit      The maximum number of objects to retrieve. Null for no limit.
-     * @param int|null    $offset     The offset for pagination. Null for no offset.
-     * @param array       $filters    Additional filters for retrieving objects.
-     * @param array       $sort       Sorting criteria for the retrieved objects.
-     * @param string|null $search     Search term for filtering objects.
-     * @param array|null  $extend     Properties to extend with related data.
+     * @param string|null $objectType The type of objects to retrieve.
+     * @param int|null    $register   The register ID to filter by.
+     * @param int|null    $schema     The schema ID to filter by.
+     * @param int|null    $limit      Maximum number of objects to retrieve.
+     * @param int|null    $offset     Starting offset for pagination.
+     * @param array       $filters    Additional filters for objects.
+     * @param array       $sort       Sorting criteria for objects.
+     * @param string|null $search     Search term for filtering.
+     * @param bool        $files      Whether to include file information.
+     * @param string|null $uses       Filter by object usage.
+     * @param int|null    $depth      The depth level for object retrieval.
      *
-     * @return array An array of objects matching the specified criteria.
+     * @return array List of objects matching criteria.
      *
-     * @throws InvalidArgumentException If an invalid object type is specified.
+     * @throws InvalidArgumentException If object type is invalid.
      */
     public function getObjects(
+        ?string $objectType = null,
+        ?int $register = null,
+        ?int $schema = null,
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        array $sort = [],
         ?string $objectType=null,
         ?int $register=null,
         ?int $schema=null,
@@ -786,11 +809,13 @@ class ObjectService
 
         $this->validateCustomRules(object: $object, schema: $schema);
 
-        $validationResult = $this->validateObject(object: $object, schemaId: $schema->getId());
+        $validationResult = $this->validateObject(
+            object: $object,
+            schemaId: $schema->getId()
+        );
 
         if ($validationResult->isValid() === false) {
             $objectEntity->setValidation($validationResult->error());
-            // throw new ValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $validationResult->error());
         }
 
         // Set the UUID if it is not set.
@@ -829,7 +854,18 @@ class ObjectService
         // Create the uri for the object.
         if ($objectEntity->getUri() === null) {
             // @todo: this needs to be fixed.
-            // $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute('openregister.Objects.show', ['id' => $objectEntity->getUuid(), 'register' => $register->getSlug(), 'schema' => $schema->getSlug()])));
+            // $objectEntity->setUri(
+            //     $this->urlGenerator->getAbsoluteURL(
+            //         $this->urlGenerator->linkToRoute(
+            //             'openregister.Objects.show',
+            //             [
+            //                 'id' => $objectEntity->getUuid(),
+            //                 'register' => $register->getSlug(),
+            //                 'schema' => $schema->getSlug()
+            //             ]
+            //         )
+            //     )
+            // );
         }
 
         // Make sure we create a folder in NC for this object if it doesn't already have one.
@@ -837,7 +873,8 @@ class ObjectService
             $this->fileService->createObjectFolder($objectEntity);
         }
 
-        // For backawards compatibility with the old url structure we need to check if the registers and schema have a slug and create one if not.
+        // For backawards compatibility with the old url structure we need to check if the registers and schema have a slug
+        // and create one if not.
         if ($register->getSlug() === null) {
             $this->registerMapper->update($register);
         }
@@ -1484,36 +1521,38 @@ class ObjectService
         // Decode valid path separators and reserved characters.
         $encodedUrl = str_replace(['%2F', '%3A', '%28', '%29'], ['/', ':', '(', ')'], $encodedUrl);
 
-        if (filter_var($encodedUrl, FILTER_VALIDATE_URL)) {
-            $this->setExtension($file);
-            try {
-                if ($file->getSource() !== null) {
-                    $sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
-                    $source       = $sourceMapper->find($file->getSource());
+        if (filter_var($encodedUrl, FILTER_VALIDATE_URL) === false) {
+            throw new Exception('Invalid URL');
+        }
 
-                    $callService = $this->getOpenConnector(filePath: '\Service\CallService');
-                    if ($callService === null) {
-                        throw new Exception("OpenConnector service not available");
-                    }
+        $this->setExtension($file);
+        try {
+            if ($file->getSource() !== null) {
+                $sourceMapper = $this->getOpenConnector(filePath: '\Db\SourceMapper');
+                $source       = $sourceMapper->find($file->getSource());
 
-                    $endpoint = str_replace($source->getLocation(), "", $encodedUrl);
-                    $endpoint = urldecode($endpoint);
-                    $response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
+                $callService = $this->getOpenConnector(filePath: '\Service\CallService');
+                if ($callService === null) {
+                    throw new Exception("OpenConnector service not available");
+                }
 
-                    $fileContent = $response['body'];
+                $endpoint = str_replace($source->getLocation(), "", $encodedUrl);
+                $endpoint = urldecode($endpoint);
+                $response = $callService->call(source: $source, endpoint: $endpoint, method: 'GET')->getResponse();
 
-                    if ($response['encoding'] === 'base64') {
-                        $fileContent = base64_decode(string: $fileContent);
-                    }
-                } else {
-                    $client      = new Client();
-                    $response    = $client->get($encodedUrl);
-                    $fileContent = $response->getBody()->getContents();
-                }//end if
-            } catch (Exception | NotFoundExceptionInterface $e) {
-                throw new Exception('Failed to download file from URL: '.$e->getMessage());
-            }//end try
-        }//end if
+                $fileContent = $response['body'];
+
+                if ($response['encoding'] === 'base64') {
+                    $fileContent = base64_decode(string: $fileContent);
+                }
+            } else {
+                $client      = new Client();
+                $response    = $client->get($encodedUrl);
+                $fileContent = $response->getBody()->getContents();
+            }//end if
+        } catch (Exception | NotFoundExceptionInterface $e) {
+            throw new Exception('Failed to download file from URL: '.$e->getMessage());
+        }//end try
 
         $this->writeFile(fileContent: $fileContent, propertyName: $propertyName, objectEntity: $objectEntity, file: $file);
 
@@ -1901,6 +1940,7 @@ class ObjectService
         try {
             $formattedFiles = $this->fileService->formatFiles($files);
         } catch (InvalidPathException | NotFoundException $e) {
+            // Ignore file formatting errors as they are not critical for object functionality
         }
 
         $object->setFiles($formattedFiles);
@@ -1971,15 +2011,14 @@ class ObjectService
      *
      * @return string The substring after the last slash, or the original string if no slash is found.
      */
-    function getStringAfterLastSlash(string $input): string
+    private function getStringAfterLastSlash(string $input): string
     {
         // Find the position of the last slash.
         $lastSlashPos = strrpos($input, '/');
 
         // Return the substring after the last slash, or the original string if no slash is found.
         return $lastSlashPos !== false ? substr($input, $lastSlashPos + 1) : $input;
-
-    }//end getStringAfterLastSlash()
+    }
 
 
     /**
