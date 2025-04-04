@@ -300,7 +300,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
                     <NcInputField :disabled="loading"
                         type="text"
                         label="Property name of inversed relation"
-                        :value.sync="properties.inversedBy" />
+                        :value.sync="properties.items.inversedBy" />
 					<NcCheckboxRadioSwitch
 						:disabled="loading"
 						:checked.sync="properties.items.cascadeDelete">
