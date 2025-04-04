@@ -16,6 +16,7 @@ export const mockSchemaData = (): TSchema[] => [
 		archive: [],
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
+		slug: 'character-schema', // Added slug property
 	},
 	{
 		id: '9012a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
@@ -31,6 +32,7 @@ export const mockSchemaData = (): TSchema[] => [
 		archive: [],
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
+		slug: 'item-schema', // Added slug property
 	},
 ]
 

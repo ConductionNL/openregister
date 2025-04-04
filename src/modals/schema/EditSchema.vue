@@ -17,6 +17,9 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextField :disabled="loading"
 				label="Title *"
 				:value.sync="schemaItem.title" />
+			<NcTextField :disabled="loading"
+				label="Slug *"
+				:value.sync="schemaItem.slug" />
 			<NcTextArea :disabled="loading"
 				label="Description"
 				:value.sync="schemaItem.description" />
@@ -39,7 +42,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
 			<NcButton v-if="createAnother ||!success"
-				:disabled="loading || !schemaItem.title"
+				:disabled="loading || !schemaItem.title || !schemaItem.slug"
 				type="primary"
 				@click="editSchema()">
 				<template #icon>
@@ -90,6 +93,7 @@ export default {
 				version: '0.0.0',
 				description: '',
 				summary: '',
+				slug: '',
 			},
 			createAnother: false,
 			success: false,
@@ -109,6 +113,7 @@ export default {
 					title: schemaStore.schemaItem.title || '',
 					description: schemaStore.schemaItem.description || '',
 					summary: schemaStore.schemaItem.summary || '',
+					slug: schemaStore.schemaItem.slug || '',
 				}
 			}
 		},
@@ -134,6 +139,7 @@ export default {
 							version: '0.0.0',
 							description: '',
 							summary: '',
+							slug: '',
 						}
 					}, 500)
 

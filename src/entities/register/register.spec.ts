@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect } from '@jest/globals/build'
 import { Register } from './register'
 import { mockRegisterData } from './register.mock'
 
@@ -18,6 +18,7 @@ describe('Register Entity', () => {
 		expect(register.id).toBe('')
 		expect(register.title).toBe(mockRegisterData()[0].title)
 		expect(register.tablePrefix).toBe('')
+		expect(register.slug).toBe(mockRegisterData()[0].slug)
 		expect(register.validate().success).toBe(true)
 	})
 

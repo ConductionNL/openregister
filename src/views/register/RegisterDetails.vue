@@ -42,6 +42,10 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 						<b>Table Prefix:</b>
 						<p>{{ registerStore.registerItem.tablePrefix }}</p>
 					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Slug:</b>
+						<p>{{ registerStore.registerItem.slug }}</p>
+					</div>
 				</div>
 				<!-- Add more register-specific details here -->
 				<div class="tabContainer">
