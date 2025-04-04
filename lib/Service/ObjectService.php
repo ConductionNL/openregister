@@ -2190,14 +2190,15 @@ class ObjectService
 		if (empty($invertedProperties) === false) {
 			// Get objects that reference this entity
 
-			$usedByObjects = $this->objectEntityMapper->findAll(uses: $entity['uuid']);
+            $identifier = $entity['@self']['id'];
+			$usedByObjects = $this->objectEntityMapper->findAll(uses: $identifier);
 
 			// Loop through inverted properties and add referenced objects
 			foreach ($invertedProperties as $key => $property) {
 				// Filter objects that reference this entity through the specified inverted property
 				$referencingObjects = array_filter(
 					$usedByObjects,
-					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $entity['uuid']
+					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $identifier
 				);
 
 				// Extract only the UUIDs from the referencing objects instead of the entire objects
