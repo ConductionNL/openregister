@@ -25,20 +25,21 @@ import { AppInstallService } from '../../services/appInstallService.js'
 					:loading="registerLoading"
 					:disabled="registerLoading"
 					placeholder="Select a register"
-					@update:model-value="selectedRegisterValue = $event" />
+					@update:model-value="handleRegisterChange" />
 
 				<NcSelect v-bind="schemaOptions"
 					:model-value="selectedSchemaValue"
 					input-label="Schema"
 					:loading="schemaLoading"
-					:disabled="!selectedRegister || schemaLoading"
-					@update:model-value="selectedSchemaValue = $event" />
+					:disabled="!registerStore.registerItem || schemaLoading"
+					placeholder="Select a schema"
+					@update:model-value="handleSchemaChange" />
 
 				<NcTextField
 					v-model="searchQuery"
 					label="Search objects"
 					type="search"
-					:disabled="!selectedRegister || !selectedSchema"
+					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
 					placeholder="Type to search..."
 					class="search-input"
 					@update:modelValue="handleSearch" />
@@ -131,37 +132,58 @@ export default {
 			appInstallService: new AppInstallService(),
 			openConnectorInstalled: true,
 			openConnectorInstallError: false,
+			ignoreNextPageWatch: false,
+			searchQuery: '',
 		}
 	},
 	computed: {
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
-					value: register, // The full object goes in value
+					value: register.id,
 					label: register.title,
+					register,
 				})),
+				reduce: option => option.register,
+				label: 'title',
+				getOptionLabel: option => option.title || option.label,
 			}
 		},
 		schemaOptions() {
-			const fullSelectedRegister = registerStore.registerList.find(
-				register => register.id === (this.selectedRegister?.id || Symbol('no selected register')),
-			)
-			if (!fullSelectedRegister) return { options: [] }
+			if (!registerStore.registerItem) return { options: [] }
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => fullSelectedRegister.schemas.includes(schema.id))
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
 					.map(schema => ({
-						value: schema, // The full object goes in value
+						value: schema.id,
 						label: schema.title,
+						schema,
 					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => option.title || option.label,
 			}
 		},
-		selectedRegister() {
-			return registerStore.registerItem || false
+		selectedRegisterValue() {
+			if (!registerStore.registerItem) return null
+			const register = registerStore.registerItem
+			return {
+				value: register.id,
+				label: register.title,
+				title: register.title,
+				register,
+			}
 		},
-		selectedSchema() {
-			return schemaStore.schemaItem || false
+		selectedSchemaValue() {
+			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
+			return {
+				value: schema.id,
+				label: schema.title,
+				title: schema.title,
+				schema,
+			}
 		},
 		metadataColumns() {
 			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
@@ -170,43 +192,24 @@ export default {
 			}))
 		},
 	},
-	watch: {
-		selectedRegister(newValue) {
-			if (!newValue) {
-				schemaStore.setSchemaItem(false)
-			}
-		},
-		selectedSchema(newValue) {
-			if (newValue) {
-				objectStore.setPagination(1)
-				this.ignoreNextPageWatch = true
-
-				objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-				})
-
-				const unwatch = this.$watch(
-					() => objectStore.loading,
-					(newVal) => {
-						if (newVal === false) {
-							this.ignoreNextPageWatch = false
-							unwatch()
-						}
-					},
-				)
-			}
-		},
-	},
 	mounted() {
 		this.registerLoading = true
 		this.schemaLoading = true
 
-		registerStore.refreshRegisterList()
-			.finally(() => (this.registerLoading = false))
+		// Only load lists if they're empty
+		if (!registerStore.registerList.length) {
+			registerStore.refreshRegisterList()
+				.finally(() => (this.registerLoading = false))
+		} else {
+			this.registerLoading = false
+		}
 
-		schemaStore.refreshSchemaList()
-			.finally(() => (this.schemaLoading = false))
+		if (!schemaStore.schemaList.length) {
+			schemaStore.refreshSchemaList()
+				.finally(() => (this.schemaLoading = false))
+		} else {
+			this.schemaLoading = false
+		}
 
 		this.initAppInstallService()
 	},
@@ -226,6 +229,47 @@ export default {
 					console.error('Failed to install app:', error)
 				}
 				this.openConnectorInstallError = true
+			}
+		},
+		handleSchemaChange(option) {
+			if (option && option.schema) {
+				const schema = option.schema
+				schemaStore.setSchemaItem(schema)
+				objectStore.setPagination(1)
+				this.ignoreNextPageWatch = true
+
+				objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schema.id,
+				})
+
+				const unwatch = this.$watch(
+					() => objectStore.loading,
+					(newVal) => {
+						if (newVal === false) {
+							this.ignoreNextPageWatch = false
+							unwatch()
+						}
+					},
+				)
+			} else {
+				schemaStore.setSchemaItem(null)
+			}
+		},
+		handleRegisterChange(option) {
+			if (option && option.register) {
+				registerStore.setRegisterItem(option.register)
+			} else {
+				registerStore.setRegisterItem(null)
+			}
+		},
+		handleSearch() {
+			if (registerStore.registerItem && schemaStore.schemaItem) {
+				objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+					search: this.searchQuery,
+				})
 			}
 		},
 	},
