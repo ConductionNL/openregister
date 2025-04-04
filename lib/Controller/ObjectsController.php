@@ -114,7 +114,6 @@ class ObjectsController extends Controller
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
-     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of objects
      *
@@ -125,115 +124,51 @@ class ObjectsController extends Controller
     public function index(
         string $register,
         string $schema,
-        ObjectService $objectService,
-        SearchService $searchService
+        ObjectService $objectService
     ): JSONResponse {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters.
-        $limit  = ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = ($requestParams['offset'] ?? $requestParams['_offset'] ?? null);
+        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
         $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $page   = ($requestParams['page'] ?? $requestParams['_page'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
         $search = ($requestParams['_search'] ?? null);
 
-        // Initialize filters array.
-        $filters = [];
-
-        // Check if $register is not an integer and look it up.
-        if (is_numeric($register) === false) {
-            $registerEntity = $this->registerMapper->find($register);
-            if ($registerEntity === null) {
-                return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
-            }
-
-            $register            = $registerEntity->getId();
-            $filters['register'] = $register;
+        // If we have a page but no offset, calculate the offset based on page and limit.
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
         }
 
-        // Check if $schema is not an integer and look it up.
-        if (is_numeric($schema) === false) {
-            $schemaEntity = $this->schemaMapper->find($schema);
-            if ($schemaEntity === null) {
-                return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
-            }
-
-            $schema            = $schemaEntity->getId();
-            $filters['schema'] = $schema;
-        }
-
-        // Calculate offset from page number if provided.
-        if ($page !== null && isset($limit) === true) {
-            $page   = (int) $page;
-            $offset = ($limit * ($page - 1));
-        }
-
-        // Ensure order and extend are arrays.
-        if (is_string($order) === true) {
-            $order = array_map('trim', explode(',', $order));
-        }
-
-        if (is_string($extend) === true) {
-            $extend = array_map('trim', explode(',', $extend));
-        }
-
-        // Remove unnecessary parameters from filters.
         $filters = $requestParams;
-        unset($filters['_route']);
-        // Remove route parameter.
-        unset(
-            $filters['_extend'],
-            $filters['_limit'],
-            $filters['_offset'],
-            $filters['_order'],
-            $filters['_page'],
-            $filters['_search']
-        );
-        unset(
-            $filters['extend'],
-            $filters['limit'],
-            $filters['offset'],
-            $filters['order'],
-            $filters['page']
-        );
-
+        
         // Fetch objects and count total.
-        $objects = $this->objectEntityMapper->findAll(
+        $objects = $objectService->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             sort: $order,
+            search: $search,
+            fields: $fields,
+            unset: $unset
+        );
+
+        $results = $objectService->paginated(
+            results: $objects,
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
             search: $search
         );
-        $total   = $this->objectEntityMapper->countAll($filters);
-        // Calculate the number of pages based on total results and limit.
-        if ($limit !== null) {
-            $pages = ceil($total / $limit);
-        } else {
-            $pages = 1;
-        }
-
-        // Process each object through the object service.
-        foreach ($objects as $key => $object) {
-            $objects[$key] = $this->objectService->renderEntity(
-                entity: $object->jsonSerialize(),
-                extend: $extend,
-                depth: 0,
-                filter: $filter,
-                fields: $fields
-            );
-        }
-
-        // Build results array with pagination information.
-        $results = [
-            'results' => $objects,
-            'total'   => $total,
-            'page'    => ($page ?? 1),
-            'pages'   => $pages,
-        ];
 
         return new JSONResponse($results);
 
@@ -246,9 +181,10 @@ class ObjectsController extends Controller
      * Retrieves and returns a single object from the specified register and schema,
      * with support for field filtering and related object extension.
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
      * @param string $id       The object ID
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier      
+     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the object
      *
@@ -256,46 +192,27 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function show(string $register, string $schema, string $id): JSONResponse
-    {
+    public function show(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
 
         // Extract parameters for rendering.
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-
-        // Check if $register is not an integer and look it up.
-        if (is_numeric($register) === false) {
-            $registerEntity = $this->registerMapper->find($register);
-            if ($registerEntity === null) {
-                return new JSONResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
-            }
-
-            $register = $registerEntity->getId();
-        }
-
-        // Check if $schema is not an integer and look it up.
-        if (is_numeric($schema) === false) {
-            $schemaEntity = $this->schemaMapper->find($schema);
-            if ($schemaEntity === null) {
-                return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
-            }
-
-            $schema = $schemaEntity->getId();
-        }
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);      
 
         // Find and validate the object.
         try {
             $object = $this->objectEntityMapper->find($id);
-
-            // Verify that the object belongs to the specified register and schema.
-            if ((int) $object->getRegister() !== $register || (int) $object->getSchema() !== $schema) {
-                return new JSONResponse(
-                    ['error' => 'Object not found in specified register/schema'],
-                    404
-                );
-            }
 
             // Render the object with requested extensions and filters.
             return new JSONResponse(
@@ -335,6 +252,10 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
         // Get object data from request parameters.
         $object = $this->request->getParams();
 
@@ -396,6 +317,10 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
         // Get object data from request parameters.
         $object = $this->request->getParams();
 
@@ -505,38 +430,14 @@ class ObjectsController extends Controller
 
 
     /**
-     * Retrieves a list of logs for an object
-     *
-     * This method returns a JSON response containing the logs for a specific object.
-     *
-     * @param int $id The ID of the object to get AuditTrails for
-     *
-     * @return JSONResponse A JSON response containing the audit trail entries
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function auditTrails(string $id): JSONResponse
-    {
-        try {
-            $requestParams = $this->request->getParams();
-            return new JSONResponse($this->objectService->getPaginatedAuditTrail($id, null, null, $requestParams));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-
-    }//end auditTrails()
-
-
-    /**
      * Retrieves call logs for a object
      *
      * This method returns all the call logs associated with a object based on its ID.
      *
      * @param int $id The ID of the object to retrieve logs for
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier      
+     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the call logs
      *
@@ -546,9 +447,30 @@ class ObjectsController extends Controller
      */
     public function contracts(string $id): JSONResponse
     {
-        // Create a log entry.
-        $oldObject = $this->objectEntityMapper->find($id);
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject);
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get request parameters for filtering and searching.
+        $requestParams = $this->request->getParams();
+
+        // Extract specific parameters.
+        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
+        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
+        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
+        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+        $search = ($requestParams['_search'] ?? null);
+
+        // If we have a page but no offset, calculate the offset based on page and limit.
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
+        }
+
+        $filters = $requestParams;
 
         return new JSONResponse(['error' => 'Not yet implemented'], 501);
 
@@ -560,7 +482,10 @@ class ObjectsController extends Controller
      *
      * This method returns all objects that reference this object.
      *
-     * @param int $id The ID of the object to retrieve relations for
+     * @param string $id The ID of the object to retrieve relations for
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier      
+     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the related objects
      *
@@ -568,18 +493,39 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function relations(string $id): JSONResponse
+    public function relations(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        try {
-            $requestParams = $this->request->getParams();
-            return new JSONResponse($this->objectService->getPaginatedRelations($id, null, null, $requestParams));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get request parameters for filtering and searching.
+        $requestParams = $this->request->getParams();
+
+        // Extract specific parameters.
+        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
+        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
+        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
+        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+        $search = ($requestParams['_search'] ?? null);
+
+        // If we have a page but no offset, calculate the offset based on page and limit.
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
         }
 
-    }//end relations()
+        $filters = $requestParams;
+
+        $objects = $objectService->getRelations($id, $filters);
+
+        $response = $objectService->paginate($objects, $limit, $offset, $page, $order, $extend, $filter, $fields, $unset, $search);
+
+        return new JSONResponse($response);
+    }
 
 
     /**
@@ -587,7 +533,10 @@ class ObjectsController extends Controller
      *
      * This method returns all objects that this object uses/references.
      *
-     * @param int $id The ID of the object to retrieve uses for
+     * @param string $id The ID of the object to retrieve uses for
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier      
+     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the referenced objects
      *
@@ -595,44 +544,90 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uses(string $id): JSONResponse
+    public function used(string $id): JSONResponse
     {
-        try {
-            $requestParams = $this->request->getParams();
-            unset($requestParams['id']);
-            return new JSONResponse($this->objectService->getPaginatedUses($id, null, null, $requestParams));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['ERROR' => $e->getMessage(), 'trace' => $e->getTrace()], 500);
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get request parameters for filtering and searching.
+        $requestParams = $this->request->getParams();
+
+        // Extract specific parameters.
+        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
+        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
+        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
+        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+        $search = ($requestParams['_search'] ?? null);
+
+        // If we have a page but no offset, calculate the offset based on page and limit.
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
         }
 
-    }//end uses()
+        $filters = $requestParams;
+
+        $objects = $objectService->getUsed($id, $filters);
+
+        $response = $objectService->paginate($objects, $limit, $offset, $page, $order, $extend, $filter, $fields, $unset, $search);
+
+        return new JSONResponse($response);
+    }
 
 
     /**
-     * Retrieves call logs for an object
+     * Retrieves logs for an object
      *
      * This method returns a JSON response containing the logs for a specific object.
      *
-     * @param int $id The ID of the object to retrieve logs for
+     * @param string $id The ID of the object to retrieve logs for
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier      
+     * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the call logs
+     * @return JSONResponse A JSON response containing the logs
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
     public function logs(string $id): JSONResponse
-    {
-        try {
-            $jobLogs = $this->auditTrailMapper->findAll(null, null, ['object_id' => $id]);
-            return new JSONResponse($jobLogs);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Logs not found'], 404);
+    {        
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get request parameters for filtering and searching.
+        $requestParams = $this->request->getParams();
+
+        // Extract specific parameters.
+        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
+        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
+        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
+        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
+        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+        $search = ($requestParams['_search'] ?? null);
+
+        // If we have a page but no offset, calculate the offset based on page and limit.
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
         }
 
-    }//end logs()
+        $filters = $requestParams;
+
+        $objects = $objectService->getLogs($id, $filters);
+
+        $response = $objectService->paginate($objects, $limit, $offset, $page, $order, $extend, $filter, $fields, $unset, $search);
+
+        return new JSONResponse($response);
+    }
 
 
     /**

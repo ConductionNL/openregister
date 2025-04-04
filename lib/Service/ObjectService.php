@@ -76,12 +76,17 @@ class ObjectService
     /**
      * Set the current register context.
      *
-     * @param Register $register The register to use
+     * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return self
      */
-    public function setRegister(Register $register): self
+    public function setRegister(Register|string|int $register): self
     {
+        if (is_string($register) || is_int($register)) {
+            // Look up the register by ID or UUID
+            $register = $this->getHandler->getRegisterByIdOrUuid($register);
+        }
+
         $this->currentRegister = $register;
         return $this;
     }
@@ -89,111 +94,186 @@ class ObjectService
     /**
      * Set the current schema context.
      *
-     * @param Schema $schema The schema to use
+     * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return self
      */
-    public function setSchema(Schema $schema): self
+    public function setSchema(Schema|string|int $schema): self
     {
+        if (is_string($schema) || is_int($schema)) {
+            // Look up the schema by ID or UUID
+            $schema = $this->getHandler->getSchemaByIdOrUuid($schema);
+        }
+
         $this->currentSchema = $schema;
         return $this;
     }
 
     /**
-     * Finds an object by ID or UUID.
+     * Set the current object context.
      *
-     * @param int|string $id     The object ID or UUID.
-     * @param array|null $extend Properties to extend the object with.
-     * @param bool       $files  Whether to include file information.
+     * @param ObjectEntity|string|int $object The object entity or its ID/UUID
      *
-     * @return ObjectEntity|null The found object or null.
+     * @return self
+     */
+    public function setObject(ObjectEntity|string|int $object): self
+    {
+        if (is_string($object) || is_int($object)) {
+            // Look up the object by ID or UUID
+            $object = $this->getHandler->getObjectByIdOrUuid($object);
+        }
+
+        $this->currentObject = $object;
+        return $this;
+    }
+
+    /**
+     * Finds an object by ID or UUID and renders it.
+     *
+     * @param int|string      $id       The object ID or UUID.
+     * @param array|null      $extend   Properties to extend the object with.
+     * @param bool            $files    Whether to include file information.
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     *
+     * @return ObjectEntity|null The rendered object or null.
      *
      * @throws Exception If the object is not found.
      */
-    public function find(int | string $id, ?array $extend=[], bool $files=false): ?ObjectEntity
+    public function find(int | string $id, ?array $extend=[], bool $files=false, Register|string|int|null $register=null, Schema|string|int|null $schema=null): ?ObjectEntity
     {
-        return $this->getHandler->getObject(
+        // Check if a register is provided and set the current register context
+        if ($register !== null) {
+            $this->setRegister($register);
+        }
+
+        // Check if a schema is provided and set the current schema context
+        if ($schema !== null) {
+            $this->setSchema($schema);
+        }
+
+        // Retrieve the object using the current register, schema, ID, extend properties, and file information
+        $object = $this->getHandler->getObject(
             $this->currentRegister,
             $this->currentSchema,
             $id,
             $extend,
             $files
         );
-    }
 
-    /**
-     * Finds an object by UUID.
-     *
-     * @param string $uuid The UUID of the object to find.
-     *
-     * @return ObjectEntity|null The found object or null.
-     */
-    public function findByUuid(string $uuid): ?ObjectEntity
-    {
-        return $this->getHandler->findByUuid($uuid);
+        // If the object is not found, return null
+        if ($object === null) {
+            return null;
+        }
+
+        // Render the object before returning
+        return $this->renderHandler->renderEntity($object, $extend);
     }
 
     /**
      * Creates a new object from an array.
      *
-     * @param array      $object The object data to create.
-     * @param array|null $extend Properties to extend the object with.
+     * @param array                  $object   The object data to create.
+     * @param array|null             $extend   Properties to extend the object with.
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
      *
      * @return array The created object.
      *
      * @throws Exception If there is an error during creation.
      */
-    public function createFromArray(array $object, ?array $extend=[]): array
-    {
+    public function createFromArray(
+        array $object,
+        ?array $extend = [],
+        Register|string|int|null $register = null,
+        Schema|string|int|null $schema = null
+    ): array {
+        // Check if a register is provided and set the current register context
+        if ($register !== null) {
+            $this->setRegister($register);
+        }
+
+        // Check if a schema is provided and set the current schema context
+        if ($schema !== null) {
+            $this->setSchema($schema);
+        }
+
+        // Validate the object against the current schema
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false) {
             throw new ValidationException($result->error()->message());
         }
 
+        // Save the object using the current register and schema
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
             $object
         );
 
+        // Render and return the saved object
         return $this->renderHandler->renderEntity($savedObject, $extend);
     }
 
     /**
      * Updates an object from an array.
      *
-     * @param string     $id            The ID of the object to update.
-     * @param array      $object        The updated object data.
-     * @param bool       $updateVersion Whether to update the version.
-     * @param bool       $patch         Whether this is a patch update.
-     * @param array|null $extend        Properties to extend the object with.
+     * @param string                  $id            The ID of the object to update.
+     * @param array                   $object        The updated object data.
+     * @param bool                    $updateVersion Whether to update the version.
+     * @param bool                    $patch         Whether this is a patch update.
+     * @param array|null              $extend        Properties to extend the object with.
+     * @param Register|string|int|null $register     The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema       The schema object or its ID/UUID.
      *
      * @return array The updated object.
      *
      * @throws Exception If there is an error during update.
      */
-    public function updateFromArray(string $id, array $object, bool $updateVersion, bool $patch=false, ?array $extend=[]): array
-    {
+    public function updateFromArray(
+        string $id,
+        array $object,
+        bool $updateVersion,
+        bool $patch = false,
+        ?array $extend = [],
+        Register|string|int|null $register = null,
+        Schema|string|int|null $schema = null
+    ): array {
+        // Check if a register is provided and set the current register context
+        if ($register !== null) {
+            $this->setRegister($register);
+        }
+
+        // Check if a schema is provided and set the current schema context
+        if ($schema !== null) {
+            $this->setSchema($schema);
+        }
+
+        // Retrieve the existing object by its UUID
         $existingObject = $this->getHandler->findByUuid($id);
         if ($existingObject === null) {
             throw new DoesNotExistException('Object not found');
         }
 
+        // If patch is true, merge the existing object with the new data
         if ($patch === true) {
             $object = array_merge($existingObject->getObject(), $object);
         }
 
+        // Validate the object against the current schema
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false) {
             throw new ValidationException($result->error()->message());
         }
 
+        // Save the object using the current register and schema
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
             $object
         );
 
+        // Render and return the saved object
         return $this->renderHandler->renderEntity($savedObject, $extend);
     }
 
@@ -214,28 +294,55 @@ class ObjectService
     /**
      * Finds all objects matching the given criteria.
      *
-     * @param int|null    $limit   Maximum number of objects to return.
-     * @param int|null    $offset  Number of objects to skip.
-     * @param array       $filters Filter criteria.
-     * @param array       $sort    Sort criteria.
-     * @param string|null $search  Search term.
-     * @param array|null  $extend  Properties to extend the objects with.
-     * @param bool        $files   Whether to include file information.
-     * @param string|null $uses    Filter by object usage.
+     * @param int|null    $limit    Maximum number of objects to return.
+     * @param int|null    $offset   Number of objects to skip.
+     * @param array       $filters  Filter criteria.
+     * @param array       $sort     Sort criteria.
+     * @param string|null $search   Search term.
+     * @param array|null  $extend   Properties to extend the objects with.
+     * @param bool        $files    Whether to include file information.
+     * @param string|null $uses     Filter by object usage.
+     * @param Register|null $register Optional register to filter objects.
+     * @param Schema|null $schema   Optional schema to filter objects.
+     * @param array|null  $fields   Specific fields to include in the result.
      *
      * @return array The found objects.
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        array $filters=[],
-        array $sort=[],
-        ?string $search=null,
-        ?array $extend=[],
-        bool $files=false,
-        ?string $uses=null,
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        array $sort = [],
+        ?string $search = null,
+        ?array $extend = [],
+        bool $files = false,
+        ?string $uses = null,
+        ?Register $register = null,
+        ?Schema $schema = null,
+        ?array $fields = null
     ): array {
-        return $this->getHandler->findAll(
+        // Set the current register context if a register is provided
+        if ($register !== null) {
+            $this->setRegister($register);
+        }
+
+        // Set the current schema context if a schema is provided
+        if ($schema !== null) {
+            $this->setSchema($schema);
+        }
+
+        // Add register ID to filters if a register is provided
+        if ($register !== null) {
+            $filters['register_id'] = $register->getId();
+        }
+
+        // Add schema ID to filters if a schema is provided
+        if ($schema !== null) {
+            $filters['schema_id'] = $schema->getId();
+        }
+
+        // Delegate the findAll operation to the handler
+        $objects = $this->getHandler->findAll(
             $limit,
             $offset,
             $filters,
@@ -245,20 +352,110 @@ class ObjectService
             $files,
             $uses
         );
+
+        // Render each object through the object service
+        foreach ($objects as $key => $object) {
+            $objects[$key] = $this->renderObject->render(
+                entity: $object->jsonSerialize(),
+                extend: $extend,
+                depth: 0,
+                filter: $unset,
+                fields: $fields
+            );
+        }
+
+        return $objects;
     }
 
     /**
      * Counts the number of objects matching the given criteria.
      *
+     * @param array       $filters  Filter criteria.
+     * @param string|null $search   Search term.
+     *
+     * @return int The number of matching objects.
+     */
+    private function count(
+        array $filters = [],
+        ?string $search = null,
+    ): int {
+
+        // Add this point in time we should always have a register and schema.
+        $filters['register_id'] = $register->getId();
+        $filters['schema_id'] = $schema->getId();
+
+        return $this->getHandler->count($filters, $search);
+    }
+
+    /**
+     * Counts the number of objects matching the given criteria with pagination support.
+     *
+     * @param array       $results The array of objects to paginate.
+     * @param int|null    $limit   The number of objects to return.
+     * @param int|null    $offset  The offset of the objects to return.
      * @param array       $filters Filter criteria.
      * @param string|null $search  Search term.
      *
      * @return int The number of matching objects.
      */
-    public function count(array $filters=[], ?string $search=null): int
-    {
+    public function paginated(
+        array $results,
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        ?string $search = null
+    ): int {
+
+        // Add this point in time we should always have a register and schema.
+        $total = $this->count($filters, $search);
+
+        // Calculate the number of pages based on total results and limit.
+        if ($limit !== null) {
+            $pages = ceil($total / $limit);
+        } else {
+            $pages = 1;
+        }
+
+        // Calculate the current page based on limit and offset.
+        if ($limit !== null && $offset !== null) {
+            $page = floor($offset / $limit) + 1;
+        } else {
+            $page = 1;
+        }
+
+        // Initialize the results array with pagination information.
+        $results = [
+            'results' => $results,
+            'total'   => $total,
+            'page'    => $page,
+            'pages'   => $pages,
+        ];
+
+        // If there is a next page, add the next property with the current URL and incremented page parameter.
+        if ($page < $pages) {
+            $currentUrl = $_SERVER['REQUEST_URI'];
+            $nextPage = $page + 1;
+            $nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
+            if (strpos($nextUrl, 'page=') === false) {
+                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&') . 'page=' . $nextPage;
+            }
+            $results['next'] = $nextUrl;
+        }
+
+        // If there is a previous page, add the prev property with the current URL and decremented page parameter.
+        if ($page > 1) {
+            $prevPage = $page - 1;
+            $prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
+            if (strpos($prevUrl, 'page=') === false) {
+                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&') . 'page=' . $prevPage;
+            }
+            $results['prev'] = $prevUrl;
+        }
+
         return $this->getHandler->count($filters, $search);
     }
+
+
 
     /**
      * Finds multiple objects by their UUIDs.

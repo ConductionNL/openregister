@@ -96,9 +96,11 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Find an object by ID or UUID
+     * Find an object by ID or UUID with optional register and schema
      *
      * @param int|string $identifier The ID or UUID of the object to find
+     * @param Register|null $register Optional register to filter by
+     * @param Schema|null $schema Optional schema to filter by
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found
@@ -106,7 +108,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The ObjectEntity
      */
-    public function find(string | int $identifier): ObjectEntity
+    public function find(string | int $identifier, ?Register $register = null, ?Schema $schema = null): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -129,114 +131,42 @@ class ObjectEntityMapper extends QBMapper
                 )
             );
 
+        // Add optional register filter if provided
+        if ($register !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
+        // Add optional schema filter if provided
+        if ($schema !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
         return $this->findEntity($qb);
 
     }//end find()
 
-
     /**
-     * Find an object by UUID
-     *
-     * @param Register $register The register to search in
-     * @param Schema   $schema   The schema to search in
-     * @param string   $uuid     The UUID of the object to find
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return ObjectEntity|null The object if found, null otherwise
-     */
-    public function findByUuid(Register $register, Schema $schema, string $uuid): ?ObjectEntity
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from('openregister_objects')
-            ->where(
-                $qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
-            )
-            ->andWhere(
-                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId()))
-            )
-            ->andWhere(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId()))
-            );
-
-        try {
-            return $this->findEntity($qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        }
-
-    }//end findByUuid()
-
-
-    /**
-     * Find an object by UUID only
-     *
-     * @param string $uuid The UUID of the object to find
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return ObjectEntity|null The object if found, null otherwise
-     */
-    public function findByUuidOnly(string $uuid): ?ObjectEntity
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from('openregister_objects')
-            ->where(
-                $qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
-            );
-
-        try {
-            return $this->findEntity($qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        }
-
-    }//end findByUuidOnly()
-
-
-    /**
-     * Find objects by register and schema
-     *
-     * @param string $register The register to find objects for
-     * @param string $schema   The schema to find objects for
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return array An array of ObjectEntity objects
-     */
-    public function findByRegisterAndSchema(string $register, string $schema): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from('openregister_objects')
-            ->where(
-                $qb->expr()->eq('register', $qb->createNamedParameter($register))
-            )
-            ->andWhere(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schema))
-            );
-
-        return $this->findEntities(query: $qb);
-
-    }//end findByRegisterAndSchema()
-
-
-    /**
-     * Counts all objects
+     * Counts all objects with optional register and schema filters
      *
      * @param array|null  $filters        The filters to apply
-     * @param string|null $search         The search string to apply     *
+     * @param string|null $search         The search string to apply
      * @param bool        $includeDeleted Whether to include deleted objects
+     * @param Register|null $register     Optional register to filter by
+     * @param Schema|null $schema         Optional schema to filter by
      *
      * @return int The number of objects
      */
-    public function countAll(?array $filters=[], ?string $search=null, bool $includeDeleted=false): int
-    {
+    public function countAll(
+        ?array $filters = [],
+        ?string $search = null,
+        bool $includeDeleted = false,
+        ?Register $register = null,
+        ?Schema $schema = null
+    ): int {
         $qb = $this->db->getQueryBuilder();
 
         $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
@@ -245,6 +175,20 @@ class ObjectEntityMapper extends QBMapper
         // Conditionally count objects based on $includeDeleted.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // Add optional register filter if provided
+        if ($register !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
+        // Add optional schema filter if provided
+        if ($schema !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
+            );
         }
 
         foreach ($filters as $filter => $value) {
@@ -280,23 +224,47 @@ class ObjectEntityMapper extends QBMapper
      * @param array|null  $ids              Array of IDs or UUIDs to filter by
      * @param string|null $uses             Value that must be present in relations
      * @param bool        $includeDeleted   Whether to include deleted objects
+     * @param Register|null $register       Optional register to filter objects
+     * @param Schema|null $schema           Optional schema to filter objects
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array An array of ObjectEntity objects
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        array $sort=[],
-        ?string $search=null,
-        ?array $ids=null,
-        ?string $uses=null,
-        bool $includeDeleted=false
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        array $sort = [],
+        ?string $search = null,
+        ?array $ids = null,
+        ?string $uses = null,
+        bool $includeDeleted = false,
+        ?Register $register = null,
+        ?Schema $schema = null
     ): array {
+    
+        // Remove special parameter.
+        unset(
+            $filters['_route'],
+            $filters['_extend'],
+            $filters['_limit'],
+            $filters['_offset'],
+            $filters['_order'],
+            $filters['_page'],
+            $filters['_search']
+        );
+        // Remove pagination parameters.
+        unset(
+            $filters['extend'],
+            $filters['limit'],
+            $filters['offset'],
+            $filters['order'],
+            $filters['page']
+        );
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -309,11 +277,26 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
+        // Handle filtering by register if provided.
+        if ($register !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
+        // Handle filtering by schema if provided.
+        if ($schema !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
+            );
+        }
+
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
             $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
 
