@@ -1,12 +1,10 @@
 name: Beta Release
 
 on:
-  push:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Beta version to release (e.g. 1.2.3-beta1)'
-        required: true
+  push:
+    branches:
+      - code-refactor/ObjectService
 
 jobs:
   beta-release:
@@ -21,10 +19,11 @@ jobs:
       - name: Set app env
         run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
 
-      - name: Set Beta Version
+      - name: Set Beta Version in info.xml
         run: |
           sed -i "s|<version>.*</version>|<version>${{ github.event.inputs.version }}</version>|" appinfo/info.xml
           echo "NEW_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          grep "<version>" appinfo/info.xml
 
       - name: Commit version update
         run: |
@@ -38,7 +37,7 @@ jobs:
           echo "${{ secrets.NEXTCLOUD_SIGNING_CERT }}" > signing-cert.crt
           echo "${{ secrets.NEXTCLOUD_SIGNING_KEY }}" > signing-key.key
 
-      - name: Install Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
@@ -53,24 +52,26 @@ jobs:
       - run: npm run build
       - run: composer install --no-dev
 
-      - name: Package App
+      - name: Sign the app
+        run: |
+          php ./occ integrity:sign-app \
+            --privateKey=signing-key.key \
+            --certificate=signing-cert.crt \
+            --path=.
+
+      - name: Package the app
         run: |
           mkdir -p package/${{ env.APP_NAME }}
-          rsync -av --progress \
-            --exclude='node_modules' \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='test' \
-            ./ package/${{ env.APP_NAME }}/
-
-      - name: Create Tarball
-        run: |
+          rsync -a --exclude='.*' --exclude='node_modules' --exclude='test' ./ package/${{ env.APP_NAME }}/
           cd package
-          tar -czf ../nextcloud-release.tar.gz ${{ env.APP_NAME }}
+          tar -czf ../${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz ${{ env.APP_NAME }}
 
-      - name: Sign Tarball
+      - name: Verify tarball
         run: |
-          openssl dgst -sha512 -sign signing-key.key nextcloud-release.tar.gz | openssl base64 -out nextcloud-release.signature
+          echo "=== info.xml ==="
+          tar -xOf ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz ${{ env.APP_NAME }}/appinfo/info.xml | grep version
+          echo "=== signature.json ==="
+          tar -tzf ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz | grep signature.json
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1.12.0
@@ -80,11 +81,11 @@ jobs:
           draft: false
           prerelease: true
 
-      - name: Attach tarball to GitHub release
+      - name: Upload tarball to GitHub Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: nextcloud-release.tar.gz
+          file: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
           asset_name: ${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
           tag: v${{ env.NEW_VERSION }}
           overwrite: true
@@ -96,4 +97,4 @@ jobs:
           appstore_token: ${{ secrets.NEXTCLOUD_APPSTORE_TOKEN }}
           download_url: https://github.com/${{ github.repository }}/releases/download/v${{ env.NEW_VERSION }}/${{ env.APP_NAME }}-${{ env.NEW_VERSION }}.tar.gz
           app_private_key: ${{ secrets.NEXTCLOUD_SIGNING_KEY }}
-          nightly: false  # CRUCIAAL: niet als nightly uploaden
+          nightly: false
