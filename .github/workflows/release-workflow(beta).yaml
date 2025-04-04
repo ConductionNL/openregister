@@ -19,18 +19,29 @@ jobs:
       - name: Set app env
         run: echo "APP_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
 
-      - name: Set Beta Version in info.xml
+      - name: Determine version
         run: |
-          sed -i "s|<version>.*</version>|<version>${{ github.event.inputs.version }}</version>|" appinfo/info.xml
-          echo "NEW_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-          grep "<version>" appinfo/info.xml
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+            sed -i "s|<version>.*</version>|<version>$version</version>|" appinfo/info.xml
+          else
+            version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
+          fi
+          echo "NEW_VERSION=$version" >> $GITHUB_ENV
+          echo "Using version: $version"
 
-      - name: Commit version update
+
+      - name: Commit version update (if changed)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Set beta version ${{ env.NEW_VERSION }}"
-          git push
+          if ! git diff --quiet; then
+            git commit -am "Set beta version ${{ env.NEW_VERSION }}"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+
 
       - name: Prepare Signing Certificate and Key
         run: |
