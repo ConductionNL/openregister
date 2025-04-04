@@ -143,10 +143,6 @@ jobs:
         run: |
           echo "Git Version info: ${{ steps.version.outputs.version }}"
 
-      # Stap 16: (Optioneel) Kopieer opnieuw de package files
-      - name: Copy the package files into the package (redundant, can be removed)
-        run: |
-          mkdir -p package/${{ github.event.repository.name }}
           rsync -av --progress --exclude='package' --exclude='.git' ./ package/${{ github.event.repository.name }}/
 
       # Stap 17: Maak een nieuwe GitHub release (als prerelease)
