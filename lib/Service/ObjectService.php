@@ -961,7 +961,7 @@ class ObjectService
 	 * @param int $schema The schema identifier for the subobject.
 	 * @param int|null $index Optional index of the subobject if it resides in an array.
 	 *
-	 * @return string The UUID of the nested subobject.
+	 * @return string|array The UUID of the nested subobject.
 	 * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
 	 * @throws GuzzleException
 	 */
