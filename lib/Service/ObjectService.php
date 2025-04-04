@@ -947,6 +947,53 @@ class ObjectService
         throw new Exception(sprintf('Could not get schema from $ref %s for schema %d property %s', $reference, $schema, $propertyName));
     }
 
+    /**
+     * Sets the inversedBy relation on a sub-schema object and returns a list of updated relations.
+     *
+     * This method updates the given $item (which represents a child object) to establish a 
+     * back-reference to the parent $objectEntity using the 'inversedBy' configuration.
+     * It handles both single and array-type inverse relations and supports setting a specific index.
+     *
+     * @param string|array $item The child item reference. If it's a string (e.g., UUID), it is assumed to be a reference to an existing object and will be skipped.
+     * @param ObjectEntity $objectEntity The parent object to relate back to.
+     * @param string $subSchema The name or identifier of the sub-schema for the child object.
+     * @param array $property The parent property definition, expected to contain 'inversedBy' if applicable.
+     * @param int|null $index Optional index for array-type inverse relations.
+     *
+     * @return array An associative array of relation paths (e.g., 'relatedField.0' => UUID) that were set.
+     */
+    private function setInversedByRelation(string|array &$item, ObjectEntity $objectEntity, string $subSchema, array $property, ?int $index = null): array
+    {
+        $relations = [];
+        // @todo Set relations and inversedBy properties for existing objects (string $item)
+        if (is_string($item) === true) {
+            return $relations;
+        }
+
+        $subSchema = $this->schemaMapper->find($subSchema);
+        $subSchemaProperties = $subSchema->getProperties();
+        if (isset($property['inversedBy']) === false) {
+            return $relations;
+        }
+
+        foreach ($subSchemaProperties as $subSchemaPropertyName => $subSchemaProperty) {
+            if ($property['inversedBy'] !== $subSchemaPropertyName) {
+                continue;
+            }
+
+            if (isset($subSchemaProperty['type']) === true && $subSchemaProperty['type'] === 'array') {
+                $relations[$subSchemaPropertyName . '.' . $index] = $objectEntity->getUuid();
+                $item[$subSchemaPropertyName][$index] = $objectEntity->getUuid();
+                continue;
+            }
+
+            $relations[$subSchemaPropertyName] = $objectEntity->getUuid();
+            $item[$subSchemaPropertyName] = $objectEntity->getUuid();
+        }
+
+        return $relations;
+    }
+
 	/**
 	 * Adds a nested subobject based on schema and property details and incorporates it into the main object.
 	 *
@@ -982,15 +1029,17 @@ class ObjectService
             $itemIsID = true;
         }
 
+        // Setting inversedBy on sub object to parent currently will only work if the object is cascaded created for the first time!
         $subSchema = $this->getSchemaFromPropertyReference(property: $property, propertyName: $propertyName, schema: $schema);
+        $relations = $this->setInversedByRelation(item: $item, objectEntity: $objectEntity, subSchema: $subSchema, property: $property, index: $index);
 
 		// Handle nested object in array
 		if ($itemIsID === true) {
-			$nestedObject = $this->getObject(
-				register: $this->registerMapper->find((int) $register),
-				schema: $this->schemaMapper->find((int) $subSchema),
-				uuid: $item
-			);
+            $nestedObject = $this->getObject(
+                register: $this->registerMapper->find((int) $register),
+                schema: $this->schemaMapper->find((int) $subSchema),
+                uuid: $item
+            );
 		} else {
 			$nestedObject = $this->saveObject(
 				register: $register,
@@ -1000,15 +1049,20 @@ class ObjectService
 			);
 		}
 
+        if (empty($relations) === false) {
+            $nestedObject->setRelations(array_merge($nestedObject->getRelations(), $relations));
+			$nestedObject = $this->objectEntityMapper->update($nestedObject);
+        }
+
 		if ($index === null) {
 			// Store relation and replace with reference
-			$relations = $objectEntity->getRelations() ?? [];
-			$relations[$propertyName] = $nestedObject->getUri();
-			$objectEntity->setRelations($relations);
+			$parentRelations = $objectEntity->getRelations() ?? [];
+			$parentRelations[$propertyName] = $nestedObject->getUri();
+			$objectEntity->setRelations($parentRelations);
 		} else {
-			$relations = $objectEntity->getRelations() ?? [];
-			$relations[$propertyName . '.' . $index] = $nestedObject->getUri();
-			$objectEntity->setRelations($relations);
+			$parentRelations = $objectEntity->getRelations() ?? [];
+			$parentRelations[$propertyName . '.' . $index] = $nestedObject->getUri();
+			$objectEntity->setRelations($parentRelations);
 		}
 
 		if ($depth !== 0) {
