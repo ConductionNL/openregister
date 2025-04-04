@@ -2202,11 +2202,15 @@ class ObjectService
                 // Filter the relatedObjects array to find the object that matches the value
                 $relatedObject = array_filter($relatedObjects, function($obj) use ($value) {
                     // Check if the object's id, uuid, or url matches the value
-                    return $obj['@self']['id'] === $value || $obj['@self']['uuid'] === $value || $obj['@self']['url'] === $value;
+                    if (is_array($obj) === true) {
+                        return (isset($obj['@self']['id']) && $obj['@self']['id'] === $value) || (isset($obj['@self']['uuid']) && $obj['@self']['uuid'] === $value) || (isset($obj['@self']['url']) && $obj['@self']['url'] === $value);
+                    } elseif ($obj instanceof ObjectEntity === true) {
+                        return ($obj->getId() === $value || $obj->getUuid() === $value || $obj->getUri() === $value);
+                    }
                 });
 
                 // Check if a related object was found
-                if (empty($relatedObject) === true) {
+                if ($relatedObject instanceof ObjectEntity === false && empty($relatedObject) === true) {
                     // Add an error message if the related object could not be found
                     $errors[] = "Property '$property' could not be extended.";
                     continue;
