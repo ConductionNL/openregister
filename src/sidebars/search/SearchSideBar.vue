@@ -1,6 +1,5 @@
 <script setup>
 import { objectStore, registerStore, schemaStore } from '../../store/store.js'
-import { AppInstallService } from '../../services/appInstallService.js'
 </script>
 
 <template>
@@ -129,9 +128,6 @@ export default {
 		return {
 			registerLoading: false,
 			schemaLoading: false,
-			appInstallService: new AppInstallService(),
-			openConnectorInstalled: true,
-			openConnectorInstallError: false,
 			ignoreNextPageWatch: false,
 			searchQuery: '',
 		}
@@ -142,11 +138,14 @@ export default {
 				options: registerStore.registerList.map(register => ({
 					value: register.id,
 					label: register.title,
+					title: register.title,
 					register,
 				})),
 				reduce: option => option.register,
 				label: 'title',
-				getOptionLabel: option => option.title || option.label,
+				getOptionLabel: option => {
+					return option.title || (option.register && option.register.title) || option.label || ''
+				},
 			}
 		},
 		schemaOptions() {
@@ -158,11 +157,14 @@ export default {
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
+						title: schema.title,
 						schema,
 					})),
 				reduce: option => option.schema,
 				label: 'title',
-				getOptionLabel: option => option.title || option.label,
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
 			}
 		},
 		selectedRegisterValue() {
@@ -211,57 +213,19 @@ export default {
 			this.schemaLoading = false
 		}
 
-		this.initAppInstallService()
+		// Load objects if register and schema are already selected
+		if (registerStore.registerItem && schemaStore.schemaItem) {
+			objectStore.refreshObjectList()
+		}
 	},
 	methods: {
-		async initAppInstallService() {
-			await this.appInstallService.init()
-			this.openConnectorInstalled = await this.appInstallService.isAppInstalled('openconnector')
-		},
-		async installApp(appId) {
-			try {
-				await this.appInstallService.forceInstallApp(appId)
-				this.openConnectorInstalled = true
-			} catch (error) {
-				if (error.status === 403 && error.data?.message === 'Password confirmation is required') {
-					console.error('Password confirmation needed before installing apps')
-				} else {
-					console.error('Failed to install app:', error)
-				}
-				this.openConnectorInstallError = true
-			}
+		handleRegisterChange(option) {
+			registerStore.setRegisterItem(option)
+			schemaStore.setSchemaItem(null)
 		},
 		handleSchemaChange(option) {
-			if (option && option.schema) {
-				const schema = option.schema
-				schemaStore.setSchemaItem(schema)
-				objectStore.setPagination(1)
-				this.ignoreNextPageWatch = true
-
-				objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schema.id,
-				})
-
-				const unwatch = this.$watch(
-					() => objectStore.loading,
-					(newVal) => {
-						if (newVal === false) {
-							this.ignoreNextPageWatch = false
-							unwatch()
-						}
-					},
-				)
-			} else {
-				schemaStore.setSchemaItem(null)
-			}
-		},
-		handleRegisterChange(option) {
-			if (option && option.register) {
-				registerStore.setRegisterItem(option.register)
-			} else {
-				registerStore.setRegisterItem(null)
-			}
+			schemaStore.setSchemaItem(option)
+			objectStore.refreshObjectList()
 		},
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {
