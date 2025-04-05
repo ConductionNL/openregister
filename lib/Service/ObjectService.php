@@ -342,15 +342,6 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        // Add register ID to filters if a register is provided
-        if ($this->currentRegister !== null) {
-            $filters['register_id'] = $this->currentRegister->getId();
-        }
-
-        // Add schema ID to filters if a schema is provided
-        if ($this->currentSchema !== null) {
-            $filters['schema_id'] = $this->currentSchema->getId();
-        }
 
         // Delegate the findAll operation to the handler
         $objects = $this->getHandler->findAll(
@@ -366,7 +357,7 @@ class ObjectService
 
         // Render each object through the object service
         foreach ($objects as $key => $object) {
-            $objects[$key] = $this->renderObject->render(
+            $objects[$key] = $this->renderHandler->renderEntity(
                 entity: $object->jsonSerialize(),
                 extend: $extend,
                 depth: 0,

@@ -163,6 +163,7 @@ class ObjectsController extends Controller
             schema: $schema,
             register: $register
         );
+        
 
         $results = $objectService->paginated(
             results: $objects,

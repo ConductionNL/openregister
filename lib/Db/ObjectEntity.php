@@ -324,7 +324,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        $jsonFields = $this->getJsonFields();
+        $jsonFields = $this->getJsonFields();    
 
         if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
