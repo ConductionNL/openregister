@@ -373,8 +373,7 @@ class ObjectsController extends Controller
 
         // Return the created object.
         return new JSONResponse($objectEntity->jsonSerialize());
-
-    }//end create()
+    }
 
 
     /**
@@ -449,12 +448,11 @@ class ObjectsController extends Controller
             return new JSONResponse(['error' => 'Not Found'], 404);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
-        }//end try
+        }
 
         // Update the object.
         try {
             // Use the object service to validate and update the object.
-            // Use the object service to validate and save the object.
             $objectEntity = $objectService->saveObject(
                 data: $object
             );
@@ -472,8 +470,7 @@ class ObjectsController extends Controller
 
         // Return the updated object.
         return new JSONResponse($objectEntity->jsonSerialize());
-
-    }//end update()
+    }
 
 
     /**
@@ -708,7 +705,9 @@ class ObjectsController extends Controller
     /**
      * Unlock an object
      *
-     * @param int $id The ID of the object to unlock
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to unlock
      *
      * @return JSONResponse A JSON response containing the unlocked object
      *
@@ -716,119 +715,33 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function unlock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
-    {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
-
-         $object = $this->objectEntityMapper->unlockObject($id);
-
-        return new JSONResponse($object);
-        
-    }//end unlock()
+    public function unlock(string $register, string $schema, string $id): JSONResponse {
+        $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $this->objectService->unlock($id);
+        return new JSONResponse(['message' => 'Object unlocked successfully']);
+    }
 
 
     /**
-     * Revert an object to a previous state
+     * Retrieves files for an object
      *
-     * This endpoint allows reverting an object to a previous state based on different criteria:
-     * 1. DateTime - Revert to the state at a specific point in time
-     * 2. Audit Trail ID - Revert to the state after a specific audit trail entry
-     * 3. Semantic Version - Revert to a specific version of the object
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to retrieve files for
      *
-     * Request body should contain one of:
-     * - datetime: ISO 8601 datetime string (e.g., "2024-03-01T12:00:00Z")
-     * - auditTrailId: UUID of an audit trail entry
-     * - version: Semantic version string (e.g., "1.0.0")
-     *
-     * Optional parameters:
-     * - overwriteVersion: boolean (default: false) - If true, keeps the version number,
-     *                     if false, increments the patch version
-     *
-     * Example requests:
-     * ```json
-     * {
-     *     "datetime": "2024-03-01T12:00:00Z"
-     * }
-     * ```
-     * ```json
-     * {
-     *     "auditTrailId": "550e8400-e29b-41d4-a716-446655440000"
-     * }
-     * ```
-     * ```json
-     * {
-     *     "version": "1.0.0",
-     *     "overwriteVersion": true
-     * }
-     * ```
-     *
-     * @param int $id The ID of the object to revert
-     *
-     * @throws DoesNotExistException If object not found
-     * @throws NotAuthorizedException If user not authorized
-     * @throws \Exception If no valid reversion point specified
-     * @throws LockedException If object is locked
-     *
-     * @return JSONResponse A JSON response containing the reverted object
+     * @return JSONResponse A JSON response containing the files
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function revert(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
-    {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
-        
-        try {
-            $data = $this->request->getParams();
-
-            // Parse the revert point.
-            $until = null;
-            if (isset($data['datetime']) === true) {
-                $until = new \DateTime($data['datetime']);
-            } else if (isset($data['auditTrailId']) === true) {
-                $until = $data['auditTrailId'];
-            } else if (isset($data['version']) === true) {
-                $until = $data['version'];
-            }
-
-            if ($until === null) {
-                return new JSONResponse(
-                    ['error' => 'Must specify either datetime, auditTrailId, or version'],
-                    400
-                );
-            }
-
-            // Determine if we should overwrite the version based on the input data.
-            $overwriteVersion = false;
-            if (isset($data['overwriteVersion']) === true) {
-                $overwriteVersion = (bool) $data['overwriteVersion'];
-            }
-
-            // Get the reverted object using AuditTrailMapper instead.
-            $revertedObject = $this->auditTrailMapper->revertObject(
-                $id,
-                $until,
-                $overwriteVersion
-            );
-
-            // Save the reverted object.
-            $savedObject = $this->objectEntityMapper->update($revertedObject);
-
-            return new JSONResponse($savedObject->getObjectArray());
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 403);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }//end try
-
-    }//end revert()
+    public function files(string $register, string $schema, string $id): JSONResponse {
+        $this->objectService->setRegister($register);
+        $this->objectService->setSchema($schema);
+        $files = $this->objectService->getFiles($id);
+        return new JSONResponse($files);
+    }
 
 
 }//end class
