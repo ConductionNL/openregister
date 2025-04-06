@@ -64,59 +64,79 @@ class RenderObject
     /**
      * Renders an entity with optional extensions and filters.
      *
-     * @param array      $entity The entity to render.
-     * @param array|null $extend Properties to extend the entity with.
-     * @param int        $depth  The depth level for nested rendering.
-     * @param array|null $filter Filters to apply to the rendered entity.
-     * @param array|null $fields Specific fields to include in the output.
+     * This method takes an ObjectEntity and applies extensions and filters to it.
+     * It maintains the object's structure while allowing for property extension
+     * and filtering based on the provided parameters.
      *
-     * @return array The rendered entity.
+     * @param ObjectEntity $entity The entity to render
+     * @param array|null  $extend Properties to extend the entity with
+     * @param int        $depth  The depth level for nested rendering
+     * @param array|null $filter Filters to apply to the rendered entity
+     * @param array|null $fields Specific fields to include in the output
+     *
+     * @return ObjectEntity The rendered entity with applied extensions and filters
+     *
+     * @throws \InvalidArgumentException If the entity fails validation
      *
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedAssignment
      */
-    public function renderEntity(array $entity, ?array $extend=[], int $depth=0, ?array $filter=[], ?array $fields=[]): array
-    {
-        // Convert entity to array if it's an object.
-        if ($entity instanceof JsonSerializable) {
-            $entity = $entity->jsonSerialize();
-        }
+    public function renderEntity(
+        ObjectEntity $entity,
+        ?array $extend = [],
+        int $depth = 0,
+        ?array $filter = [],
+        ?array $fields = []
+    ): ObjectEntity {
+        // Get the object data as an array for manipulation
+        $objectData = $entity->getObject();
 
-        // Apply field filtering if specified.
-        if (empty($fields) === false) {
-            $filteredEntity = [];
+        // Apply field filtering if specified
+        if (!empty($fields)) {
+            $filteredData = [];
             foreach ($fields as $field) {
-                if (isset($entity[$field]) === true) {
-                    $filteredEntity[$field] = $entity[$field];
+                if (isset($objectData[$field])) {
+                    $filteredData[$field] = $objectData[$field];
                 }
             }
-
-            $entity = $filteredEntity;
+            $objectData = $filteredData;
+            $entity->setObject($objectData);
         }
 
-        // Apply filters if specified.
-        if (empty($filter) === false) {
+        // Apply filters if specified
+        if (!empty($filter)) {
             foreach ($filter as $key => $value) {
-                if (isset($entity[$key]) === true && $entity[$key] !== $value) {
-                    return [];
+                if (isset($objectData[$key]) && $objectData[$key] !== $value) {
+                    // If filter doesn't match, clear the object data
+                    $entity->setObject([]);
+                    return $entity;
                 }
             }
         }
 
-        // Handle extensions if depth limit not reached.
-        if (empty($extend) === false && $depth < 10) {
+        // Handle extensions if depth limit not reached
+        if (!empty($extend) && $depth < 10) {
             foreach ($extend as $key => $value) {
-                if (isset($entity[$key]) === true) {
-                    if (is_array($value) === true) {
-                        $entity[$key] = $this->renderEntity($entity[$key], $value, $depth + 1);
+                if (isset($objectData[$key])) {
+                    if (is_array($value)) {
+                        // Recursively handle nested objects
+                        if ($objectData[$key] instanceof ObjectEntity) {
+                            $objectData[$key] = $this->renderEntity(
+                                $objectData[$key],
+                                $value,
+                                $depth + 1,
+                                $filter,
+                                $fields
+                            );
+                        }
                     }
                 }
             }
+            $entity->setObject($objectData);
         }
 
         return $entity;
-
-    }//end renderEntity()
+    }
 
 
     /**

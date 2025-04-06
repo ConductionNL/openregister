@@ -578,6 +578,10 @@ class ObjectsController extends Controller
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        // Set the register and schema context first
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
         // Get the relations for the object
         $relationsArray = $objectService->find($id)->getRelations();
         $relations = array_values($relationsArray);
@@ -612,6 +616,10 @@ class ObjectsController extends Controller
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
         // Get the relations for the object
         $relationsArray = $objectService->findByRelations($id);
         $relations = array_map(static fn($relation) => $relation->getId(), $relationsArray);
@@ -652,12 +660,13 @@ class ObjectsController extends Controller
 
         // Get config and fetch logs
         $config = $this->getConfig($register, $schema);
-        $objects = $objectService->getLogs($id, $config['filters']);
-        //$total = $objectService->count($config['filters']);
-        $total = count($objects); // @todo: arange an log service to actually fix this
+        $logs = $objectService->getLogs($id, $config['filters']);
+        
+        // Get total count of logs
+        $total = count($logs);
 
         // Return paginated results
-        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
+        return new JSONResponse($this->paginate($logs, $total, $config['limit'], $config['offset'], $config['page']));
     }
 
 
@@ -674,33 +683,25 @@ class ObjectsController extends Controller
      */
     public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        try {
-            $data    = $this->request->getParams();
-            $process = ($data['process'] ?? null);
-            // Check if duration is set in the request data.
-            $duration = null;
-            if (isset($data['duration']) === true) {
-                $duration = (int) $data['duration'];
-            }
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
 
-            $object = $this->objectEntityMapper->lockObject(
-                $id,
-                $process,
-                $duration
-            );
+        $data    = $this->request->getParams();
+        $process = ($data['process'] ?? null);
+        // Check if duration is set in the request data.
+        $duration = null;
+        if (isset($data['duration']) === true) {
+            $duration = (int) $data['duration'];
+        }
 
-            return new JSONResponse($object->getObjectArray());
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 403);
-        } catch (LockedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 423);
-            // 423 Locked.
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }//end try
+        $object = $this->objectEntityMapper->lockObject(
+            $id,
+            $process,
+            $duration
+        );
 
+        return new JSONResponse($object);
     }//end lock()
 
 
@@ -717,19 +718,14 @@ class ObjectsController extends Controller
      */
     public function unlock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        try {
-            $object = $this->objectEntityMapper->unlockObject($id);
-            return new JSONResponse($object->getObjectArray());
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 403);
-        } catch (LockedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 423);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
 
+         $object = $this->objectEntityMapper->unlockObject($id);
+
+        return new JSONResponse($object);
+        
     }//end unlock()
 
 
@@ -783,6 +779,10 @@ class ObjectsController extends Controller
      */
     public function revert(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+        
         try {
             $data = $this->request->getParams();
 

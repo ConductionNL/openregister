@@ -345,9 +345,8 @@ class ObjectService
         // Render each object through the object service
         foreach ($objects as $key => $object) {
             $objects[$key] = $this->renderHandler->renderEntity(
-                entity: $object->jsonSerialize(),
+                entity: $object,
                 extend: $config['extend'] ?? [],
-                depth: 0,
                 filter: $config['unset'] ?? null,
                 fields: $config['fields'] ?? null
             );
@@ -403,14 +402,16 @@ class ObjectService
      * Get logs for an object.
      *
      * @param string $uuid The UUID of the object
+     * @param array $filters Optional filters to apply
      *
-     * @return ObjectResponse
+     * @return array Array of log entries
      */
-    public function getLogs(string $uuid): ObjectResponse
+    public function getLogs(string $uuid, array $filters = []): array
     {
         $object = $this->objectEntityMapper->find($uuid);
         $logs = $this->getHandler->findLogs($object);
-        return new ObjectResponse($logs);
+        
+        return $logs;
     }
 
     /**
