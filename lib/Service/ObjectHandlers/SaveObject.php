@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\DoesNotExistException;
@@ -60,11 +61,13 @@ class SaveObject
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param FileService        $fileService        File service for managing files.
      * @param IUserSession       $userSession        User session service.
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging changes.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly AuditTrailMapper $auditTrailMapper
     ) {
 
     }//end __construct()
@@ -141,6 +144,9 @@ class SaveObject
 
         // Save the object to database.
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
+
+        // Create audit trail for creation
+        $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
 
         // Handle file properties.
         foreach ($data as $propertyName => $value) {
@@ -307,6 +313,9 @@ class SaveObject
         array $data,
         ObjectEntity $existingObject
     ): ObjectEntity {
+        // Store the old state for audit trail
+        $oldObject = clone $existingObject;
+
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {
@@ -341,6 +350,9 @@ class SaveObject
 
         // Save the object to database.
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
+
+        // Create audit trail for update
+        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
 
         // Handle file properties.
         foreach ($data as $propertyName => $value) {
