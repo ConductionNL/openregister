@@ -223,8 +223,12 @@ export default {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
-		handleSchemaChange(option) {
+		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
+			// Initialize properties based on the selected schema
+			if (option) {
+				objectStore.initializeProperties(option)
+			}
 			objectStore.refreshObjectList()
 		},
 		handleSearch() {

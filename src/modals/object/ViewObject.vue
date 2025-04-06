@@ -38,7 +38,6 @@ const error = ref(false)
 const closeModalTimeout = ref(null)
 const activeAttachment = ref(null)
 const fileLoading = ref(false)
-const relationsLoading = ref(false)
 const auditTrailLoading = ref(false)
 
 // Add a ref for the editor content
@@ -70,7 +69,17 @@ const pagination = ref({
 		currentPage: 1,
 		totalPages: 1,
 	},
-	relations: {
+	contracts: {
+		limit: 200,
+		currentPage: 1,
+		totalPages: 1,
+	},
+	uses: {
+		limit: 200,
+		currentPage: 1,
+		totalPages: 1,
+	},
+	used: {
 		limit: 200,
 		currentPage: 1,
 		totalPages: 1,
@@ -88,7 +97,7 @@ const closeModal = () => {
 }
 
 const getFiles = async () => {
-	if (!objectStore.objectItem['@self'].id) return
+	if (!objectStore.objectItem?.['@self']?.id) return
 	fileLoading.value = true
 	try {
 		await objectStore.getFiles(objectStore.objectItem['@self'].id, {
@@ -101,7 +110,7 @@ const getFiles = async () => {
 }
 
 const getAuditTrails = async () => {
-	if (!objectStore.objectItem['@self'].id) return
+	if (!objectStore.objectItem?.['@self']?.id) return
 	auditTrailLoading.value = true
 	try {
 		await objectStore.getAuditTrails(objectStore.objectItem['@self'].id, {
@@ -113,18 +122,9 @@ const getAuditTrails = async () => {
 	}
 }
 
-const getRelations = async () => {
-	if (!objectStore.objectItem['@self'].id) return
-	relationsLoading.value = true
-	try {
-		await objectStore.getRelations(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.relations.limit,
-			page: pagination.value.relations.currentPage,
-		})
-	} finally {
-		relationsLoading.value = false
-	}
-}
+// Watch for pagination changes
+watch(() => pagination.value.files.currentPage, getFiles)
+watch(() => pagination.value.auditTrails.currentPage, getAuditTrails)
 
 const openFile = (file) => {
 	// Extract the directory path without the filename
@@ -155,7 +155,6 @@ onMounted(() => {
 		objectItem.value = objectStore.objectItem
 		getFiles()
 		getAuditTrails()
-		getRelations()
 	}
 })
 </script>
@@ -241,58 +240,111 @@ onMounted(() => {
 							</div>
 						</BTab>
 						<BTab title="Uses">
-							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0" class="search-list-table">
-								<table class="table">
-									<thead>
-										<tr class="table-row">
-											<th>Relation</th>
-											<th>Value</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(relation, key) in objectStore.objectItem.relations"
-											:key="key"
-											class="table-row">
-											<td>{{ key }}</td>
-											<td>{{ relation }}</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-							<NcEmptyContent v-else>
-								No relations found
-							</NcEmptyContent>
-						</BTab>
-						<BTab title="Used by">
-							<div v-if="objectStore.relations.length" class="search-list-table">
+							<div v-if="objectStore.uses.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
 											<th>ID</th>
 											<th>URI</th>
+											<th>Schema</th>
+											<th>Register</th>
+											<th>Actions</th>
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="relation in objectStore.relations"
-											:key="relation.id"
+										<tr v-for="use in objectStore.uses"
+											:key="use['@self'].id"
 											class="table-row">
-											<td>{{ relation.id }}</td>
-											<td>{{ relation.uri }}</td>
+											<td>{{ use['@self'].id }}</td>
+											<td>{{ use['@self'].uri }}</td>
+											<td>{{ use['@self'].schema }}</td>
+											<td>{{ use['@self'].register }}</td>
+											<td>
+												<NcButton @click="objectStore.setObjectItem(use); navigationStore.setModal('viewObject')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View Object
+												</NcButton>
+											</td>
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="!relationsLoading && objectStore.relations.total > pagination.relations.limit" class="pagination">
-									<NcButton :disabled="pagination.relations.currentPage === 1" @click="pagination.relations.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.relations.currentPage }}</span>
-									<NcButton :disabled="pagination.relations.currentPage >= Math.ceil(objectStore.relations.total / pagination.relations.limit)" @click="pagination.relations.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
 							<NcEmptyContent v-else>
-								No relations found
+								No uses found
+							</NcEmptyContent>
+						</BTab>
+						<BTab title="Used by">
+							<div v-if="objectStore.used.length > 0" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>ID</th>
+											<th>URI</th>
+											<th>Schema</th>
+											<th>Register</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="usedBy in objectStore.used"
+											:key="usedBy['@self'].id"
+											class="table-row">
+											<td>{{ usedBy['@self'].id }}</td>
+											<td>{{ usedBy['@self'].uri }}</td>
+											<td>{{ usedBy['@self'].schema }}</td>
+											<td>{{ usedBy['@self'].register }}</td>
+											<td>
+												<NcButton @click="objectStore.setObjectItem(usedBy); navigationStore.setModal('viewObject')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View Object
+												</NcButton>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<NcEmptyContent v-else>
+								No objects using this object
+							</NcEmptyContent>
+						</BTab>
+						<BTab title="Contracts">
+							<div v-if="objectStore.contracts.length > 0" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>ID</th>
+											<th>URI</th>
+											<th>Schema</th>
+											<th>Register</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="contract in objectStore.contracts"
+											:key="contract['@self'].id"
+											class="table-row">
+											<td>{{ contract['@self'].id }}</td>
+											<td>{{ contract['@self'].uri }}</td>
+											<td>{{ contract['@self'].schema }}</td>
+											<td>{{ contract['@self'].register }}</td>
+											<td>
+												<NcButton @click="objectStore.setObjectItem(contract); navigationStore.setModal('viewObject')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View Object
+												</NcButton>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<NcEmptyContent v-else>
+								No contracts found
 							</NcEmptyContent>
 						</BTab>
 						<BTab title="Files">

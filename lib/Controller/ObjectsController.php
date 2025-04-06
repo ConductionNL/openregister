@@ -263,6 +263,7 @@ class ObjectsController extends Controller
         $object = $this->request->getParams();
 
         // Filter out special parameters and reserved fields.
+        // @todo shouldn't this be part of the object service?
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
@@ -326,6 +327,7 @@ class ObjectsController extends Controller
         $object = $this->request->getParams();
 
         // Filter out special parameters and reserved fields.
+        // @todo shouldn't this be part of the object service?
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
@@ -335,6 +337,7 @@ class ObjectsController extends Controller
         );
 
         // Check if the object exists and can be updated.
+        // @todo shouldn't this be part of the object service?
         try {
             $existingObject = $this->objectEntityMapper->find($id);
 
@@ -370,11 +373,9 @@ class ObjectsController extends Controller
         // Update the object.
         try {
             // Use the object service to validate and update the object.
-            $objectEntity = $objectService->updateObject(
-                id: $id,
-                register: $register,
-                schema: $schema,
-                object: $object
+            // Use the object service to validate and save the object.
+            $objectEntity = $objectService->saveObject(
+                data: $object
             );
 
             // Unlock the object after saving.
@@ -479,9 +480,9 @@ class ObjectsController extends Controller
 
 
     /**
-     * Retrieves all objects that use a object
+     * Retrieves all objects that this object references
      *
-     * This method returns all objects that reference this object.
+     * This method returns all objects that this object uses/references. A -> B means that A (This object) references B (Another object).
      *
      * @param string $id The ID of the object to retrieve relations for
      * @param string $register The register slug or identifier
@@ -494,7 +495,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function relations(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
@@ -530,9 +531,9 @@ class ObjectsController extends Controller
 
 
     /**
-     * Retrieves all objects that this object references
+     * Retrieves all objects that use a object
      *
-     * This method returns all objects that this object uses/references.
+     * This method returns all objects that reference (use) this object. B -> A means that B (Another object) references A (This object).
      *
      * @param string $id The ID of the object to retrieve uses for
      * @param string $register The register slug or identifier
@@ -545,7 +546,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function used(string $id): JSONResponse
+    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
@@ -596,7 +597,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function logs(string $id): JSONResponse
+    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {        
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
@@ -642,7 +643,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function lock(string $id): JSONResponse
+    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             $data    = $this->request->getParams();
@@ -685,7 +686,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function unlock(string $id): JSONResponse
+    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             $object = $this->objectEntityMapper->unlockObject($id);
@@ -751,7 +752,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function revert(string $id): JSONResponse
+    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             $data = $this->request->getParams();
@@ -799,39 +800,6 @@ class ObjectsController extends Controller
         }//end try
 
     }//end revert()
-
-
-    /**
-     * Retrieves files associated with an object
-     *
-     * @param string        $id            The ID of the object to get files for
-     * @param ObjectService $objectService The object service
-     *
-     * @return JSONResponse A JSON response containing the object's files
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function files(string $id, ObjectService $objectService): JSONResponse
-    {
-        try {
-            // Get the object with files included.
-            $object = $this->objectEntityMapper->find((int) $id);
-            $files  = $objectService->getFiles($object);
-
-            // Format files with pagination support.
-            $requestParams  = $this->request->getParams();
-            $formattedFiles = $objectService->formatFiles($files, $requestParams);
-
-            return new JSONResponse($formattedFiles);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-
-    }//end files()
 
 
 }//end class

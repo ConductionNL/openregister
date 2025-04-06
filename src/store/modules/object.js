@@ -9,11 +9,12 @@ export const useObjectStore = defineStore('object', {
 		objectList: [],
 		auditTrailItem: false,
 		auditTrails: [],
-		relationItem: false,
-		relations: [],
-		fileItem: false, // Single file item
-		files: [], // List of files
-		filters: {}, // List of query paramters
+		contracts: [], // Objects that have a contract with this object
+		uses: [], // Objects that this object uses
+		used: [], // Objects that use this object
+		fileItem: false,
+		files: [],
+		filters: {},
 		pagination: {
 			page: 1,
 			limit: 20,
@@ -115,30 +116,72 @@ export const useObjectStore = defineStore('object', {
 			// If we have a valid object item, fetch related data
 			if (objectItem?.['@self']?.id) {
 				try {
-					// Fetch audit trails
-					const auditTrailsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/audit-trails`
-					const auditTrailsResponse = await fetch(auditTrailsEndpoint)
-					const auditTrailsData = await auditTrailsResponse.json()
+					// Fetch all related data in parallel
+					const [auditTrailsResponse, contractsResponse, usesResponse, usedResponse, filesResponse] = await Promise.all([
+						// Fetch audit trails
+						fetch(this._buildObjectPath({
+							register: objectItem['@self'].register,
+							schema: objectItem['@self'].schema,
+							objectId: objectItem['@self'].id + '/audit-trails'
+						})),
+						// Fetch contracts (objects that have a contract with this object)
+						fetch(this._buildObjectPath({
+							register: objectItem['@self'].register,
+							schema: objectItem['@self'].schema,
+							objectId: objectItem['@self'].id + '/contracts'
+						})),
+						// Fetch uses (objects that this object uses)
+						fetch(this._buildObjectPath({
+							register: objectItem['@self'].register,
+							schema: objectItem['@self'].schema,
+							objectId: objectItem['@self'].id + '/uses'
+						})),
+						// Fetch used (objects that use this object)
+						fetch(this._buildObjectPath({
+							register: objectItem['@self'].register,
+							schema: objectItem['@self'].schema,
+							objectId: objectItem['@self'].id + '/used'
+						})),
+						// Fetch files
+						fetch(this._buildObjectPath({
+							register: objectItem['@self'].register,
+							schema: objectItem['@self'].schema,
+							objectId: objectItem['@self'].id + '/files'
+						}))
+					])
+
+					// Process all responses in parallel
+					const [auditTrailsData, contractsData, usesData, usedData, filesData] = await Promise.all([
+						auditTrailsResponse.json(),
+						contractsResponse.json(),
+						usesResponse.json(),
+						usedData.json(),
+						filesResponse.json()
+					])
+
+					// Set all the data
 					this.setAuditTrails(auditTrailsData)
-
-					// Fetch relations (used by)
-					const relationsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/relations`
-					const relationsResponse = await fetch(relationsEndpoint)
-					const relationsData = await relationsResponse.json()
-					this.setRelations(relationsData)
-
-					// Fetch files
-					const filesEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/files`
-					const filesResponse = await fetch(filesEndpoint)
-					const filesData = await filesResponse.json()
+					this.setContracts(contractsData)
+					this.setUses(usesData)
+					this.setUsed(usedData)
 					this.setFiles(filesData)
+
+					console.info('Successfully fetched all related data for object', objectItem['@self'].id)
 				} catch (error) {
 					console.error('Error fetching related data:', error)
+					// Clear data in case of error
+					this.setAuditTrails([])
+					this.setContracts([])
+					this.setUses([])
+					this.setUsed([])
+					this.setFiles([])
 				}
 			} else {
 				// Clear related data when no object is selected
 				this.setAuditTrails([])
-				this.setRelations([])
+				this.setContracts([])
+				this.setUses([])
+				this.setUsed([])
 				this.setFiles([])
 			}
 		},
@@ -156,23 +199,32 @@ export const useObjectStore = defineStore('object', {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
 		},
 		setAuditTrails(auditTrails) {
-			this.auditTrails = auditTrails
+			this.auditTrails = auditTrails.results ? auditTrails.results.map(
+				(auditTrail) => new AuditTrail(auditTrail)
+			) : []
+			console.info('Audit trails set to', this.auditTrails.length, 'items')
 		},
-		setRelationItem(relationItem) {
-			this.relationItem = relationItem && new ObjectEntity(relationItem)
+		setContracts(contracts) {
+			this.contracts = contracts.results ? contracts.results.map(
+				(contract) => new ObjectEntity(contract)
+			) : []
+			console.info('Contracts set to', this.contracts.length, 'items')
 		},
-		setRelations(relations) {
-			this.relations = relations.results.map(
-				(relation) => new ObjectEntity(relation),
-			)
+		setUses(uses) {
+			this.uses = uses.results ? uses.results.map(
+				(use) => new ObjectEntity(use)
+			) : []
+			console.info('Uses set to', this.uses.length, 'items')
 		},
-		setFileItem(fileItem) {
-			this.fileItem = fileItem
-			console.info('File item set to', fileItem)
+		setUsed(used) {
+			this.used = used.results ? used.results.map(
+				(usedBy) => new ObjectEntity(usedBy)
+			) : []
+			console.info('Used by set to', this.used.length, 'items')
 		},
 		setFiles(files) {
-			this.files = files
-			console.info('Files set to', files)
+			this.files = files.results || []
+			console.info('Files set to', this.files.length, 'items')
 		},
 		/**
 		 * Set pagination details
