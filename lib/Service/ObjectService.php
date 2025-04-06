@@ -363,12 +363,22 @@ class ObjectService
      * @param string|null $search   Search term.
      *
      * @return int The number of matching objects.
+     * @throws \Exception If register or schema is not set
      */
     public function count(
         array $filters = [],
         ?string $search = null,
     ): int {
-        // Add this point in time we should always have a register and schema.
+        // Ensure we have both register and schema set
+        if ($this->currentRegister === null) {
+            throw new \Exception('Register must be set before counting objects');
+        }
+
+        if ($this->currentSchema === null) {
+            throw new \Exception('Schema must be set before counting objects');
+        }
+
+        // Add register and schema IDs to filters
         $filters['register_id'] = $this->currentRegister->getId();
         $filters['schema_id'] = $this->currentSchema->getId();
 

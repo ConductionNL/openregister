@@ -646,10 +646,15 @@ class ObjectsController extends Controller
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {        
+        // Set the register and schema context first
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
         // Get config and fetch logs
         $config = $this->getConfig($register, $schema);
         $objects = $objectService->getLogs($id, $config['filters']);
-        $total = $objectService->count($config['filters']);
+        //$total = $objectService->count($config['filters']);
+        $total = count($objects); // @todo: arange an log service to actually fix this
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
