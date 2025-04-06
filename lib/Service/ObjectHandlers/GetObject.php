@@ -134,10 +134,10 @@ class GetObject
             filters: $filters,
             sort: $sort,
             search: $search,
+            ids: $ids,
             uses: $uses,
             register: $register,
-            schema: $schema,
-            ids: $ids
+            schema: $schema
         );
 
         // If files are to be included, hydrate each object with its file information

@@ -47,8 +47,12 @@ class LogService {
      *                         - offset: (int|null) Number of items to skip
      *                         - page: (int|null) Current page number
      *                         - filters: (array) Filter parameters
+     *                         - sort: (array) Sort parameters ['field' => 'ASC|DESC']
+     *                         - search: (string|null) Search term
      *
      * @return array Array of log entries
+     * @throws \InvalidArgumentException If object does not belong to specified register/schema
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      */
     public function getLogs(string $register, string $schema, string $id, array $config = []): array {
         // Get the object to ensure it exists and belongs to the correct register/schema
@@ -58,12 +62,17 @@ class LogService {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
+        // Add object ID to filters
+        $filters = $config['filters'] ?? [];
+        $filters['object'] = $object->getId();
+
         // Get logs from audit trail mapper
-        return $this->auditTrailMapper->findByObject(
-            $object,
-            $config['limit'] ?? 20,
-            $config['offset'] ?? 0,
-            $config['filters'] ?? []
+        return $this->auditTrailMapper->findAll(
+            limit: $config['limit'] ?? 20,
+            offset: $config['offset'] ?? 0,
+            filters: $filters,
+            sort: $config['sort'] ?? ['created' => 'DESC'],
+            search: $config['search'] ?? null
         );
     }
 
@@ -75,6 +84,8 @@ class LogService {
      * @param string $id       The object ID
      *
      * @return int Number of logs
+     * @throws \InvalidArgumentException If object does not belong to specified register/schema
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      */
     public function count(string $register, string $schema, string $id): int {
         // Get the object to ensure it exists and belongs to the correct register/schema
@@ -84,7 +95,11 @@ class LogService {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
-        // Get count from audit trail mapper
-        return $this->auditTrailMapper->countByObject($object);
+        // Get logs using findAll with a filter for the object
+        $logs = $this->auditTrailMapper->findAll(
+            filters: ['object' => $object->getId()]
+        );
+
+        return count($logs);
     }
 } 

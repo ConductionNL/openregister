@@ -35,9 +35,6 @@ use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
 use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
 use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCA\OpenRegister\Service\Response\SingleObjectResponse;
-use OCA\OpenRegister\Service\Response\MultipleObjectResponse;
-use OCA\OpenRegister\Service\Response\ObjectResponse;
 
 /**
  * Service class for managing objects in the OpenRegister application.
@@ -239,7 +236,7 @@ class ObjectService
      */
     public function updateFromArray(
         string $id,
-        array $object,
+            array $object,
         bool $updateVersion,
         bool $patch = false,
         ?array $extend = [],
@@ -299,26 +296,26 @@ class ObjectService
     }
 
     /**
-     * Finds all objects matching the given criteria.
+     * Find all objects matching the configuration.
      *
-     * @param array $config Configuration array containing search parameters:
-     *                      - limit: (int|null) Maximum number of objects to return
-     *                      - offset: (int|null) Number of objects to skip
-     *                      - filters: (array) Filter criteria
-     *                      - sort: (array) Sort criteria
-     *                      - search: (string|null) Search term
-     *                      - extend: (array|null) Properties to extend the objects with
-     *                      - files: (bool) Whether to include file information
-     *                      - uses: (string|null) Filter by object usage
-     *                      - register: (Register|string|int|null) Register object or UUID/ID
-     *                      - schema: (Schema|string|int|null) Schema object or UUID/ID
-     *                      - fields: (array|null) Specific fields to include
-     *                      - unset: (array|null) Specific fields to unset
-     *                      - ids: (array|null) Specific IDs to filter objects
+     * @param array $config Configuration array containing:
+     *                      - limit: Maximum number of objects to return
+     *                      - offset: Number of objects to skip
+     *                      - filters: Filter criteria
+     *                      - sort: Sort criteria
+     *                      - search: Search term
+     *                      - extend: Properties to extend
+     *                      - files: Whether to include file information
+     *                      - uses: Filter by object usage
+     *                      - register: Optional register to filter by
+     *                      - schema: Optional schema to filter by
+     *                      - unset: Fields to unset from results
+     *                      - fields: Fields to include in results
+     *                      - ids: Array of IDs or UUIDs to filter by
      *
-     * @return array The found objects
+     * @return array Array of objects matching the configuration
      */
-    public function findAll(array $config): array
+    public function findAll(array $config = []): array
     {
         // Set the current register context if a register is provided
         if (isset($config['register'])) {
@@ -339,7 +336,10 @@ class ObjectService
             $config['search'] ?? null,
             $config['extend'] ?? [],
             $config['files'] ?? false,
-            $config['uses'] ?? null
+            $config['uses'] ?? null,
+            $this->currentRegister,
+            $this->currentSchema,
+            $config['ids'] ?? null
         );
 
         // Render each object through the object service
@@ -415,20 +415,51 @@ class ObjectService
     }
 
     /**
-     * Save an object.
+     * Saves an object from an array.
      *
-     * @param array $data The object data to save
+     * @param array                   $object    The object data to save.
+     * @param array|null              $extend    Properties to extend the object with.
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     * @param string|null             $uuid      The UUID of the object to update (if updating).
      *
-     * @return SingleObjectResponse
+     * @return ObjectEntity The saved object.
+     *
+     * @throws Exception If there is an error during save.
      */
-    public function saveObject(array $data): SingleObjectResponse
-    {
-        $object = $this->saveHandler->saveObject(
+    public function saveObject(
+        array $object,
+        ?array $extend = [],
+        Register|string|int|null $register = null,
+        Schema|string|int|null $schema = null,
+        ?string $uuid = null
+    ): ObjectEntity {
+        // Check if a register is provided and set the current register context
+        if ($register !== null) {
+            $this->setRegister($register);
+        }
+
+        // Check if a schema is provided and set the current schema context
+        if ($schema !== null) {
+            $this->setSchema($schema);
+        }
+
+        // Validate the object against the current schema
+        $result = $this->validateHandler->validateObject($object, $this->currentSchema);
+        if ($result->isValid() === false) {
+            throw new ValidationException($result->error()->message());
+        }
+
+        // Save the object using the current register and schema
+        $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
-            $data
+            $object,
+            $uuid
         );
-        return new SingleObjectResponse($object, $this->getHandler);
+
+        // Render and return the saved object
+        return $this->renderHandler->renderEntity($savedObject, $extend);
     }
 
     /**

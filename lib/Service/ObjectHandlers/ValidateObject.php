@@ -76,27 +76,31 @@ class ValidateObject
     /**
      * Validates an object against a schema.
      *
-     * @param array    $object       The object to validate.
-     * @param int|null $schemaId     The schema ID to validate against.
-     * @param object   $schemaObject A custom schema object for validation.
-     * @param int      $depth        The depth level for validation.
+     * @param array                $object       The object to validate.
+     * @param Schema|int|null      $schema      The schema or schema ID to validate against.
+     * @param object              $schemaObject A custom schema object for validation.
+     * @param int                 $depth        The depth level for validation.
      *
      * @return ValidationResult The result of the validation.
      */
     public function validateObject(
         array $object,
-        ?int $schemaId=null,
-        object $schemaObject=new stdClass(),
-        int $depth=0
+        Schema|int|null $schema = null,
+        object $schemaObject = new stdClass(),
+        int $depth = 0
     ): ValidationResult {
-        if ($schemaObject === new stdClass() || $schemaId !== null) {
-            $schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
+        if ($schemaObject === new stdClass()) {
+            if ($schema instanceof Schema) {
+                $schemaObject = $schema->getSchemaObject($this->urlGenerator);
+            } elseif (is_int($schema)) {
+                $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
+            }
         }
 
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
-            // Return a default ValidationResult indicating success.
-            return new ValidationResult(null);
+            // Return a ValidationResult with null data indicating success
+            return new ValidationResult(null, null);
         }
 
         $validator = new Validator();

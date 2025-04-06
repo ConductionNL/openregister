@@ -357,7 +357,7 @@ class ObjectsController extends Controller
         try {
             // Use the object service to validate and save the object.
             $objectEntity = $objectService->saveObject(
-                data: $object
+                object: $object
             );
 
             // Unlock the object after saving.
@@ -379,12 +379,9 @@ class ObjectsController extends Controller
     /**
      * Updates an existing object
      *
-     * Takes the request data, validates it against the schema, and updates an existing object
-     * in the database. Handles validation errors appropriately.
-     *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
-     * @param string        $id            The ID of the object to update
+     * @param string        $id            The object ID or UUID
      * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the updated object
@@ -407,7 +404,6 @@ class ObjectsController extends Controller
         $object = $this->request->getParams();
 
         // Filter out special parameters and reserved fields.
-        // @todo shouldn't this be part of the object service?
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
@@ -416,8 +412,6 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
-        // Check if the object exists and can be updated.
-        // @todo shouldn't this be part of the object service?
         try {
             $existingObject = $this->objectEntityMapper->find($id);
 
@@ -454,7 +448,8 @@ class ObjectsController extends Controller
         try {
             // Use the object service to validate and update the object.
             $objectEntity = $objectService->saveObject(
-                data: $object
+                object: $object,
+                uuid: $id
             );
 
             // Unlock the object after saving.
@@ -463,13 +458,13 @@ class ObjectsController extends Controller
             } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful.
             }
+
+            // Return the updated object as JSON.
+            return new JSONResponse($objectEntity->jsonSerialize());
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
         }
-
-        // Return the updated object.
-        return new JSONResponse($objectEntity->jsonSerialize());
     }
 
 

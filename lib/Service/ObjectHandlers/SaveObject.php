@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\DoesNotExistException;
 
 /**
  * Handler class for saving objects in the OpenRegister application.
@@ -70,12 +71,12 @@ class SaveObject
 
 
     /**
-     * Saves an object to the database.
+     * Saves an object.
      *
-     * @param Register|int|string $register The register to save the object to.
+     * @param Register|int|string $register The register containing the object.
      * @param Schema|int|string   $schema   The schema to validate against.
-     * @param array               $object   The object data to save.
-     * @param int|null            $depth    The depth level for nested saves (default: null).
+     * @param array              $data     The object data to save.
+     * @param string|null        $uuid     The UUID of the object to update (if updating).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -84,13 +85,9 @@ class SaveObject
     public function saveObject(
         Register | int | string $register,
         Schema | int | string $schema,
-        array $object,
-        ?int $depth=null
+        array $data,
+        ?string $uuid = null
     ): ObjectEntity {
-        // Create a new object entity with basic properties.
-        $objectEntity = new ObjectEntity();
-        $objectEntity->setUuid(Uuid::v4()->toRfc4122());
-
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {
@@ -98,8 +95,6 @@ class SaveObject
         } else {
             $registerId = $register;
         }
-
-        $objectEntity->setRegister($registerId);
 
         // Set schema ID based on input type.
         $schemaId = null;
@@ -109,41 +104,53 @@ class SaveObject
             $schemaId = $schema;
         }
 
-        $objectEntity->setSchema($schemaId);
+        // If UUID is provided, try to find and update existing object
+        if ($uuid !== null) {
+            try {
+                $existingObject = $this->objectEntityMapper->find($uuid);
+                return $this->updateObject($register, $schema, $data, $existingObject);
+            } catch (DoesNotExistException $e) {
+                // Object not found, proceed with creating new object
+            }
+        }
 
-        $objectEntity->setObject($object);
+        // Create a new object entity.
+        $objectEntity = new ObjectEntity();
+        $objectEntity->setRegister($registerId);
+        $objectEntity->setSchema($schemaId);
+        $objectEntity->setObject($data);
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
         // Set user information if available.
         $user = $this->userSession->getUser();
         if ($user !== null) {
-            $objectEntity->setOwner($user->getUID());
+            $objectEntity->setCreatedBy($user->getUID());
+            $objectEntity->setUpdatedBy($user->getUID());
         }
 
         // Handle object relations.
         $objectEntity = $this->handleObjectRelations(
             $objectEntity,
-            $object,
+            $data,
             $schema->getProperties(),
             $register,
             $schema,
-            $depth ?? 0
+            0
         );
 
         // Save the object to database.
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
 
         // Handle file properties.
-        foreach ($object as $propertyName => $value) {
+        foreach ($data as $propertyName => $value) {
             if ($this->isFileProperty($value) === true) {
-                $this->handleFileProperty($savedEntity, $object, $propertyName);
+                $this->handleFileProperty($savedEntity, $data, $propertyName);
             }
         }
 
         return $savedEntity;
-
-    }//end saveObject()
+    }
 
 
     /**
@@ -281,5 +288,68 @@ class SaveObject
 
     }//end handleFileProperty()
 
+
+    /**
+     * Updates an existing object.
+     *
+     * @param Register|int|string $register The register containing the object.
+     * @param Schema|int|string   $schema   The schema to validate against.
+     * @param array              $data     The updated object data.
+     * @param ObjectEntity       $existingObject The existing object to update.
+     *
+     * @return ObjectEntity The updated object entity.
+     *
+     * @throws Exception If there is an error during update.
+     */
+    public function updateObject(
+        Register | int | string $register,
+        Schema | int | string $schema,
+        array $data,
+        ObjectEntity $existingObject
+    ): ObjectEntity {
+        // Set register ID based on input type.
+        $registerId = null;
+        if ($register instanceof Register) {
+            $registerId = $register->getId();
+        } else {
+            $registerId = $register;
+        }
+
+        // Set schema ID based on input type.
+        $schemaId = null;
+        if ($schema instanceof Schema) {
+            $schemaId = $schema->getId();
+        } else {
+            $schemaId = $schema;
+        }
+
+        // Update the object properties
+        $existingObject->setRegister($registerId);
+        $existingObject->setSchema($schemaId);
+        $existingObject->setObject($data);
+        $existingObject->setUpdated(new DateTime());
+
+        // Handle object relations.
+        $existingObject = $this->handleObjectRelations(
+            $existingObject,
+            $data,
+            $schema->getProperties(),
+            $register,
+            $schema,
+            0
+        );
+
+        // Save the object to database.
+        $updatedEntity = $this->objectEntityMapper->update($existingObject);
+
+        // Handle file properties.
+        foreach ($data as $propertyName => $value) {
+            if ($this->isFileProperty($value) === true) {
+                $this->handleFileProperty($updatedEntity, $data, $propertyName);
+            }
+        }
+
+        return $updatedEntity;
+    }
 
 }//end class

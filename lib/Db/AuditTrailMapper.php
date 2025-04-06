@@ -85,8 +85,6 @@ class AuditTrailMapper extends QBMapper
      * @param int|null    $limit            The limit of the results
      * @param int|null    $offset           The offset of the results
      * @param array|null  $filters          The filters to apply
-     * @param array|null  $searchConditions The search conditions to apply
-     * @param array|null  $searchParams     The search parameters to apply
      * @param array|null  $sort             The sort to apply
      * @param string|null $search           Optional search term to filter by ext fields
      *
@@ -96,58 +94,77 @@ class AuditTrailMapper extends QBMapper
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        ?array $sort=[],
+        ?array $sort=['created' => 'DESC'],
         ?string $search=null
     ): array {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
-            ->from('openregister_audit_trails')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
+            ->from('openregister_audit_trails');
 
-        foreach ($filters as $filter => $value) {
+        // Filter out system variables (starting with _)
+        $filters = array_filter(
+            $filters ?? [],
+            function ($key) {
+                return !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Apply filters
+        foreach ($filters as $field => $value) {
+            // Ensure the field is a valid column name
+            if (!in_array($field, [
+                'id', 'uuid', 'schema', 'register', 'object',
+                'action', 'changed', 'user', 'user_name',
+                'session', 'request', 'ip_address', 'version',
+                'created'
+            ])) {
+                continue;
+            }
+
             if ($value === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull($filter));
+                $qb->andWhere($qb->expr()->isNotNull($field));
             } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
+                $qb->andWhere($qb->expr()->isNull($field));
             } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
             }
         }
 
-        if (empty($searchConditions) === false) {
-            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams as $param => $value) {
-                $qb->setParameter($param, $value);
-            }
-        }
-
-        // Add search on ext fields if search term provided.
+        // Add search on changed field if search term provided
         if ($search !== null) {
             $qb->andWhere(
-                $qb->expr()->like('ext', $qb->createNamedParameter('%'.$search.'%'))
+                $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
             );
         }
 
-        // Add sorting if specified.
-        if (empty($sort) === false) {
-            foreach ($sort as $field => $direction) {
-                if (strtoupper($direction) === 'DESC') {
-                    $direction = 'DESC';
-                } else {
-                    $direction = 'ASC';
-                }
-
-                $qb->addOrderBy($field, $direction);
+        // Add sorting
+        foreach ($sort as $field => $direction) {
+            // Ensure the field is a valid column name
+            if (!in_array($field, [
+                'id', 'uuid', 'schema', 'register', 'object',
+                'action', 'changed', 'user', 'user_name',
+                'session', 'request', 'ip_address', 'version',
+                'created'
+            ])) {
+                continue;
             }
+
+            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+            $qb->addOrderBy($field, $direction);
         }
 
-        return $this->findEntities(query: $qb);
+        // Apply pagination
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+        if ($offset !== null) {
+            $qb->setFirstResult($offset);
+        }
 
-    }//end findAll()
+        return $this->findEntities($qb);
+    }
 
 
     /**
@@ -174,7 +191,7 @@ class AuditTrailMapper extends QBMapper
             $object            = $this->objectEntityMapper->find(identifier: $identifier);
             $objectId          = $object->getId();
             $filters['object'] = $objectId;
-            return $this->findAll($limit, $offset, $filters, $searchConditions, $searchParams);
+            return $this->findAll($limit, $offset, $filters);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object not found.
             return [];

@@ -245,17 +245,15 @@ class ObjectEntityMapper extends QBMapper
         ?Register $register = null,
         ?Schema $schema = null
     ): array {
-    
-        // Remove special parameter.
-        unset(
-            $filters['_route'],
-            $filters['_extend'],
-            $filters['_limit'],
-            $filters['_offset'],
-            $filters['_order'],
-            $filters['_page'],
-            $filters['_search']
+        // Filter out system variables (starting with _)
+        $filters = array_filter(
+            $filters ?? [],
+            function ($key) {
+                return !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
         );
+
         // Remove pagination parameters.
         unset(
             $filters['extend'],
@@ -328,37 +326,13 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        // @todo: tidy this code up please and make it mongodb compatible.
-        // Check if _relations filter exists to search in relations column.
-        if (isset($filters['_relations']) === true) {
-            // Handle both single string and array of relations.
-            $relations = (array) $filters['_relations'];
-
-            // Build OR conditions for each relation.
-            $orConditions = [];
-            foreach ($relations as $relation) {
-                $orConditions[] = $qb->expr()->isNotNull(
-                    $qb->createFunction(
-                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($relation).", NULL, '$')"
-                    )
-                );
-            }
-
-            // Add the combined OR conditions to query.
-            $qb->andWhere($qb->expr()->orX(...$orConditions));
-
-            // Remove _relations from filters since it's handled separately.
-            unset($filters['_relations']);
-        }//end if
-
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
         $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
 
         return $this->findEntities(query: $qb);
-
-    }//end findAll()
+    }
 
 
     /**
