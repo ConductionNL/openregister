@@ -160,7 +160,7 @@ class ObjectService
         }
 
         // Retrieve the object using the current register, schema, ID, extend properties, and file information
-        $object = $this->getHandler->getObject(
+        $object = $this->getHandler->find(
             $this->currentRegister,
             $this->currentSchema,
             $id,
@@ -257,7 +257,7 @@ class ObjectService
         }
 
         // Retrieve the existing object by its UUID
-        $existingObject = $this->getHandler->findByUuid($id);
+        $existingObject = $this->getHandler->find($id);
         if ($existingObject === null) {
             throw new DoesNotExistException('Object not found');
         }
@@ -301,68 +301,55 @@ class ObjectService
     /**
      * Finds all objects matching the given criteria.
      *
-     * @param int|null    $limit    Maximum number of objects to return.
-     * @param int|null    $offset   Number of objects to skip.
-     * @param array       $filters  Filter criteria.
-     * @param array       $sort     Sort criteria.
-     * @param string|null $search   Search term.
-     * @param array|null  $extend   Properties to extend the objects with.
-     * @param bool        $files    Whether to include file information.
-     * @param string|null $uses     Filter by object usage.
-     * @param Register|string|null $register Optional register object or UUID/ID to filter objects.
-     * @param Schema|string|null $schema   Optional schema object or UUID/ID to filter objects.
-     * @param array|null  $fields   Specific fields to include in the result.
-     * @param array|null  $unset    Specific fields to unset in the result.
-     * @param array|null  $ids      Specific IDs to filter objects.
+     * @param array $config Configuration array containing search parameters:
+     *                      - limit: (int|null) Maximum number of objects to return
+     *                      - offset: (int|null) Number of objects to skip
+     *                      - filters: (array) Filter criteria
+     *                      - sort: (array) Sort criteria
+     *                      - search: (string|null) Search term
+     *                      - extend: (array|null) Properties to extend the objects with
+     *                      - files: (bool) Whether to include file information
+     *                      - uses: (string|null) Filter by object usage
+     *                      - register: (Register|string|int|null) Register object or UUID/ID
+     *                      - schema: (Schema|string|int|null) Schema object or UUID/ID
+     *                      - fields: (array|null) Specific fields to include
+     *                      - unset: (array|null) Specific fields to unset
+     *                      - ids: (array|null) Specific IDs to filter objects
      *
-     * @return array The found objects.
+     * @return array The found objects
      */
-    public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        array $filters = [],
-        array $sort = [],
-        ?string $search = null,
-        ?array $extend = [],
-        bool $files = false,
-        ?string $uses = null,
-        Register|string|null $register = null,
-        Schema|string|null $schema = null,
-        ?array $fields = null,
-        ?array $unset = null,
-        ?array $ids = null
-    ): array {
+    public function findAll(array $config): array
+    {
         // Set the current register context if a register is provided
-        if ($register !== null) {
-            $this->setRegister($register);
+        if (isset($config['register'])) {
+            $this->setRegister($config['register']);
         }
 
         // Set the current schema context if a schema is provided
-        if ($schema !== null) {
-            $this->setSchema($schema);
+        if (isset($config['schema'])) {
+            $this->setSchema($config['schema']);
         }
-
 
         // Delegate the findAll operation to the handler
         $objects = $this->getHandler->findAll(
-            $limit,
-            $offset,
-            $filters,
-            $sort,
-            $search,
-            $extend,
-            $files,
-            $uses
+            $config['limit'] ?? null,
+            $config['offset'] ?? null,
+            $config['filters'] ?? [],
+            $config['sort'] ?? [],
+            $config['search'] ?? null,
+            $config['extend'] ?? [],
+            $config['files'] ?? false,
+            $config['uses'] ?? null
         );
 
         // Render each object through the object service
         foreach ($objects as $key => $object) {
             $objects[$key] = $this->renderHandler->renderEntity(
                 entity: $object->jsonSerialize(),
-                extend: $extend,
+                extend: $config['extend'] ?? [],
                 depth: 0,
-                filter: $unset,
-                fields: $fields
+                filter: $config['unset'] ?? null,
+                fields: $config['fields'] ?? null
             );
         }
 
@@ -377,11 +364,10 @@ class ObjectService
      *
      * @return int The number of matching objects.
      */
-    private function count(
+    public function count(
         array $filters = [],
         ?string $search = null,
     ): int {
-
         // Add this point in time we should always have a register and schema.
         $filters['register_id'] = $this->currentRegister->getId();
         $filters['schema_id'] = $this->currentSchema->getId();
@@ -390,118 +376,17 @@ class ObjectService
     }
 
     /**
-     * Counts the number of objects matching the given criteria with pagination support.
+     * Finds objects by their relations.
      *
-     * @param array       $results The array of objects to paginate.
-     * @param int|null    $limit   The number of objects to return.
-     * @param int|null    $offset  The offset of the objects to return.
-     * @param array       $filters Filter criteria.
-     * @param string|null $search  Search term.
+     * @param string $search       The URI or UUID to search for in relations.
+     * @param bool   $partialMatch Whether to search for partial matches (default: true).
      *
-     * @return array The paginated results.
+     * @return array An array of ObjectEntities that have the specified URI/UUID in their relations.
      */
-    public function paginated(
-        array $results,
-        ?int $limit = null,
-        ?int $offset = null,
-        array $filters = [],
-        ?string $search = null
-    ): array {
-
-        // Add this point in time we should always have a register and schema.
-        $total = $this->count($filters, $search);
-
-        // Calculate the number of pages based on total results and limit.
-        if ($limit !== null) {
-            $pages = ceil($total / $limit);
-        } else {
-            $pages = 1;
-        }
-
-        // Calculate the current page based on limit and offset.
-        if ($limit !== null && $offset !== null) {
-            $page = floor($offset / $limit) + 1;
-        } else {
-            $page = 1;
-        }
-
-        // Initialize the results array with pagination information.
-        $results = [
-            'results' => $results,
-            'total'   => $total,
-            'page'    => $page,
-            'pages'   => $pages,
-        ];
-
-        // If there is a next page, add the next property with the current URL and incremented page parameter.
-        if ($page < $pages) {
-            $currentUrl = $_SERVER['REQUEST_URI'];
-            $nextPage = $page + 1;
-            $nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
-            if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&') . 'page=' . $nextPage;
-            }
-            $results['next'] = $nextUrl;
-        }
-
-        // If there is a previous page, add the prev property with the current URL and decremented page parameter.
-        if ($page > 1) {
-            $prevPage = $page - 1;
-            $prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
-            if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&') . 'page=' . $prevPage;
-            }
-            $results['prev'] = $prevUrl;
-        }
-
-        return $results;
-    }
-
-
-
-    /**
-     * Finds multiple objects by their UUIDs.
-     *
-     * @param array $uuids List of UUIDs to find.
-     * @param array|null $extend Properties to extend.
-     * @param bool $includeFiles Whether to include file information.
-     * @return array List of found objects.
-     */
-    public function findMultiple(array $uuids, ?array $extend = null, bool $includeFiles = false): array
+    public function findByRelations(string $search, bool $partialMatch = true): array
     {
-        return $this->getHandler->findMultiple($uuids, $extend, $includeFiles);
-    }
-
-    /**
-     * Get a single object by UUID.
-     *
-     * @param string $uuid The UUID of the object
-     *
-     * @return SingleObjectResponse
-     */
-    public function getObject(string $uuid): SingleObjectResponse
-    {
-        $object = $this->getHandler->getObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $uuid
-        );
-        return new SingleObjectResponse($object, $this->getHandler);
-    }
-
-    /**
-     * Get multiple objects.
-     *
-     * @param array $criteria The search criteria
-     *
-     * @return MultipleObjectResponse
-     */
-    public function getObjects(array $criteria = []): MultipleObjectResponse
-    {
-        $objects = $this->getHandler->findAll(
-            filters: $criteria
-        );
-        return new MultipleObjectResponse($objects, $this->getHandler);
+        // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
+        return $this->objectEntityMapper->findByRelation($search, $partialMatch); 
     }
 
     /**
@@ -513,7 +398,7 @@ class ObjectService
      */
     public function getLogs(string $uuid): ObjectResponse
     {
-        $object = $this->getHandler->findByUuid($uuid);
+        $object = $this->objectEntityMapper->find($uuid);
         $logs = $this->getHandler->findLogs($object);
         return new ObjectResponse($logs);
     }

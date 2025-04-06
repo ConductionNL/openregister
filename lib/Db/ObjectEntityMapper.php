@@ -541,7 +541,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array An array of ObjectEntities that have the specified URI/UUID
      */
-    public function findByRelationUri(string $search, bool $partialMatch=false): array
+    public function findByRelation(string $search, bool $partialMatch=true): array
     {
         $qb = $this->db->getQueryBuilder();
 

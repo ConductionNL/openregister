@@ -80,7 +80,7 @@ class GetObject
      *
      * @throws DoesNotExistException If object not found.
      */
-    public function getObject(
+    public function find(
         Register $register,
         Schema $schema,
         string $uuid,

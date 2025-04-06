@@ -106,6 +106,130 @@ class ObjectsController extends Controller
 
 
     /**
+     * Private helper method to handle pagination of results
+     *
+     * @param array       $results The array of objects to paginate
+     * @param int        $total   The total number of items (before pagination)
+     * @param int        $limit   The number of items per page
+     * @param int|null   $offset  The offset of items
+     * @param int|null   $page    The current page number
+     *
+     * @return array The paginated results with metadata
+     */
+    private function paginate(array $results, int $total, int $limit, ?int $offset = null, ?int $page = null): array
+    {
+        // Calculate the number of pages
+        $pages = ceil($total / $limit);
+
+        // If we have a page but no offset, calculate the offset
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
+        }
+
+        // If we have an offset but no page, calculate the page
+        if ($offset !== null && $page === null) {
+            $page = floor($offset / $limit) + 1;
+        }
+
+        // Default to page 1 if neither offset nor page is set
+        if ($page === null) {
+            $page = 1;
+        }
+
+        // Initialize the results array with pagination information
+        $paginatedResults = [
+            'results' => $results,
+            'total'   => $total,
+            'page'    => $page,
+            'pages'   => $pages,
+            'limit'   => $limit,
+            'offset'  => $offset
+        ];
+
+        // Add next/prev page URLs if applicable
+        $currentUrl = $_SERVER['REQUEST_URI'];
+
+        // Add next page link if there are more pages
+        if ($page < $pages) {
+            $nextPage = $page + 1;
+            $nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
+            if (strpos($nextUrl, 'page=') === false) {
+                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&') . 'page=' . $nextPage;
+            }
+            $paginatedResults['next'] = $nextUrl;
+        }
+
+        // Add previous page link if not on first page
+        if ($page > 1) {
+            $prevPage = $page - 1;
+            $prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
+            if (strpos($prevUrl, 'page=') === false) {
+                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&') . 'page=' . $prevPage;
+            }
+            $paginatedResults['prev'] = $prevUrl;
+        }
+
+        return $paginatedResults;
+    }
+
+
+    /**
+     * Helper method to get configuration array from the current request
+     *
+     * @param string|null $register Optional register identifier
+     * @param string|null $schema   Optional schema identifier
+     * @param array|null  $ids      Optional array of specific IDs to filter
+     *
+     * @return array Configuration array containing:
+     *               - limit: (int) Maximum number of items per page
+     *               - offset: (int|null) Number of items to skip
+     *               - page: (int|null) Current page number
+     *               - filters: (array) Filter parameters
+     *               - sort: (array) Sort parameters
+     *               - search: (string|null) Search term
+     *               - extend: (array|null) Properties to extend
+     *               - fields: (array|null) Fields to include
+     *               - unset: (array|null) Fields to exclude
+     *               - register: (string|null) Register identifier
+     *               - schema: (string|null) Schema identifier
+     *               - ids: (array|null) Specific IDs to filter
+     */
+    private function getConfig(?string $register = null, ?string $schema = null, ?array $ids = null): array
+    {
+        $params = $this->request->getParams();
+
+        // Extract and normalize parameters
+        $limit = (int)($params['limit'] ?? $params['_limit'] ?? 20);
+        $offset = isset($params['offset']) 
+            ? (int)$params['offset'] 
+            : (isset($params['_offset']) ? (int)$params['_offset'] : null);
+        $page = isset($params['page'])
+            ? (int)$params['page']
+            : (isset($params['_page']) ? (int)$params['_page'] : null);
+
+        // If we have a page but no offset, calculate the offset
+        if ($page !== null && $offset === null) {
+            $offset = ($page - 1) * $limit;
+        }
+
+        return [
+            'limit' => $limit,
+            'offset' => $offset,
+            'page' => $page,
+            'filters' => $params,
+            'sort' => ($params['order'] ?? $params['_order'] ?? []),
+            'search' => ($params['_search'] ?? null),
+            'extend' => ($params['extend'] ?? $params['_extend'] ?? null),
+            'fields' => ($params['fields'] ?? $params['_fields'] ?? null),
+            'unset' => ($params['unset'] ?? $params['_unset'] ?? null),
+            'register' => $register,
+            'schema' => $schema,
+            'ids' => $ids
+        ];
+    }
+
+
+    /**
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
@@ -121,61 +245,18 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(
-        string $register,
-        string $schema,
-        ObjectService $objectService
-    ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+    public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        // Get config and fetch objects
+        $config = $this->getConfig($register, $schema);
+        $objects = $objectService->findAll($config);
 
-        // Get request parameters for filtering and searching.
-        $requestParams = $this->request->getParams();
+        // Get total count for pagination
+        $total = $objectService->count($config['filters'], $config['search']);
 
-        // Extract specific parameters.
-        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
-        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
-        $search = ($requestParams['_search'] ?? null);
-
-        // If we have a page but no offset, calculate the offset based on page and limit.
-        if ($page !== null && $offset === null) {
-            $offset = ($page - 1) * $limit;
-        }
-
-        $filters = $requestParams;
-        
-        // Fetch objects and count total.
-        $objects = $objectService->findAll(
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $order,
-            search: $search,
-            fields: $fields,
-            unset: $unset,
-            schema: $schema,
-            register: $register
-        );
-        
-
-        $results = $objectService->paginated(
-            results: $objects,
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            search: $search
-        );
-
-        return new JSONResponse($results);
-
-    }//end index()
+        // Return paginated results
+        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
+    }
 
 
     /**
@@ -447,7 +528,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function contracts(string $id): JSONResponse
+    public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
@@ -497,36 +578,19 @@ class ObjectsController extends Controller
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Get the relations for the object
+        $relationsArray = $objectService->find($id)->getRelations();
+        $relations = array_values($relationsArray);
 
-        // Get request parameters for filtering and searching.
-        $requestParams = $this->request->getParams();
+        // Get config and fetch objects
+        $config = $this->getConfig($register, $schema, $relations);
+        $objects = $objectService->findAll($config);
 
-        // Extract specific parameters.
-        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
-        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
-        $search = ($requestParams['_search'] ?? null);
+        // Get total count for pagination
+        $total = $objectService->count($config['filters']);
 
-        // If we have a page but no offset, calculate the offset based on page and limit.
-        if ($page !== null && $offset === null) {
-            $offset = ($page - 1) * $limit;
-        }
-
-        $filters = $requestParams;
-
-        $objects = $objectService->getRelations($id, $filters);
-
-        $response = $objectService->paginate($objects, $limit, $offset, $page, $order, $extend, $filter, $fields, $unset, $search);
-
-        return new JSONResponse($response);
+        // Return paginated results
+        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
     }
 
 
@@ -546,38 +610,21 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Get the relations for the object
+        $relationsArray = $objectService->findByRelations($id);
+        $relations = array_map(static fn($relation) => $relation->getId(), $relationsArray);
 
-        // Get request parameters for filtering and searching.
-        $requestParams = $this->request->getParams();
+        // Get config and fetch objects
+        $config = $this->getConfig($register, $schema, $relations);
+        $objects = $objectService->findAll($config);
 
-        // Extract specific parameters.
-        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
-        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
-        $search = ($requestParams['_search'] ?? null);
+        // Get total count for pagination
+        $total = $objectService->count($config['filters']);
 
-        // If we have a page but no offset, calculate the offset based on page and limit.
-        if ($page !== null && $offset === null) {
-            $offset = ($page - 1) * $limit;
-        }
-
-        $filters = $requestParams;
-
-        $objects = $objectService->getUsed($id, $filters);
-
-        $response = $objectService->paginate($objects, $limit, $offset, $page, $order, $extend, $filter, $fields, $unset, $search);
-
-        return new JSONResponse($response);
+        // Return paginated results
+        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
     }
 
 
@@ -597,38 +644,15 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {        
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Get config and fetch logs
+        $config = $this->getConfig($register, $schema);
+        $objects = $objectService->getLogs($id, $config['filters']);
+        $total = $objectService->count($config['filters']);
 
-        // Get request parameters for filtering and searching.
-        $requestParams = $this->request->getParams();
-
-        // Extract specific parameters.
-        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
-        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
-        $search = ($requestParams['_search'] ?? null);
-
-        // If we have a page but no offset, calculate the offset based on page and limit.
-        if ($page !== null && $offset === null) {
-            $offset = ($page - 1) * $limit;
-        }
-
-        $filters = $requestParams;
-
-        $objects = $objectService->getLogs($id, $filters);
-
-        $response = $objectService->paginate($objects, $limit, $offset, $page, $order, $extend, $filter, $fields, $unset, $search);
-
-        return new JSONResponse($response);
+        // Return paginated results
+        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
     }
 
 
@@ -643,7 +667,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             $data    = $this->request->getParams();
@@ -686,7 +710,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function unlock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             $object = $this->objectEntityMapper->unlockObject($id);
@@ -752,7 +776,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function revert(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             $data = $this->request->getParams();
