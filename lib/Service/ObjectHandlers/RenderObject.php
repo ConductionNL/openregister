@@ -69,10 +69,10 @@ class RenderObject
      * and filtering based on the provided parameters.
      *
      * @param ObjectEntity $entity The entity to render
-     * @param array|null  $extend Properties to extend the entity with
-     * @param int        $depth  The depth level for nested rendering
-     * @param array|null $filter Filters to apply to the rendered entity
-     * @param array|null $fields Specific fields to include in the output
+     * @param array|null   $extend Properties to extend the entity with
+     * @param int          $depth  The depth level for nested rendering
+     * @param array|null   $filter Filters to apply to the rendered entity
+     * @param array|null   $fields Specific fields to include in the output
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      *
@@ -83,10 +83,10 @@ class RenderObject
      */
     public function renderEntity(
         ObjectEntity $entity,
-        ?array $extend = [],
-        int $depth = 0,
-        ?array $filter = [],
-        ?array $fields = []
+        ?array $extend=[],
+        int $depth=0,
+        ?array $filter=[],
+        ?array $fields=[]
     ): ObjectEntity {
         // Get the object data as an array for manipulation
         $objectData = $entity->getObject();
@@ -99,6 +99,7 @@ class RenderObject
                     $filteredData[$field] = $objectData[$field];
                 }
             }
+
             $objectData = $filteredData;
             $entity->setObject($objectData);
         }
@@ -132,11 +133,13 @@ class RenderObject
                     }
                 }
             }
+
             $entity->setObject($objectData);
         }
 
         return $entity;
-    }
+
+    }//end renderEntity()
 
 
     /**

@@ -1,12 +1,12 @@
 <?php
 /**
- * @file RevertService.php
+ * @file        RevertService.php
  * @description Service for handling object reversion in the OpenRegister app
- * @package OCA\OpenRegister\Service
- * @author Ruben Linde <ruben@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version 1.0.0
- * @link https://github.com/OpenCatalogi/OpenRegister
+ * @package     OCA\OpenRegister\Service
+ * @author      Ruben Linde <ruben@conduction.nl>
+ * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version     1.0.0
+ * @link        https://github.com/OpenCatalogi/OpenRegister
  */
 
 namespace OCA\OpenRegister\Service;
@@ -25,15 +25,18 @@ use Psr\Container\ContainerInterface;
  * Class RevertService
  * Service for handling object reversion
  */
-class RevertService {
+class RevertService
+{
+
+
     /**
      * Constructor for RevertService
      *
      * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper      $schemaMapper       The schema mapper
-     * @param ContainerInterface $container         The DI container
+     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @param ContainerInterface $container          The DI container
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -41,16 +44,19 @@ class RevertService {
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ContainerInterface $container
-    ) {}
+    ) {
+
+    }//end __construct()
+
 
     /**
      * Revert an object to a previous state
      *
-     * @param string          $register        The register identifier
-     * @param string          $schema          The schema identifier
-     * @param string          $id              The object ID
-     * @param mixed           $until           The point to revert to (DateTime|string)
-     * @param bool            $overwriteVersion Whether to overwrite the version
+     * @param string $register         The register identifier
+     * @param string $schema           The schema identifier
+     * @param string $id               The object ID
+     * @param mixed  $until            The point to revert to (DateTime|string)
+     * @param bool   $overwriteVersion Whether to overwrite the version
      *
      * @return ObjectEntity The reverted object
      *
@@ -64,7 +70,7 @@ class RevertService {
         string $schema,
         string $id,
         mixed $until,
-        bool $overwriteVersion = false
+        bool $overwriteVersion=false
     ): ObjectEntity {
         // Get the object
         $object = $this->objectEntityMapper->find($id);
@@ -93,5 +99,8 @@ class RevertService {
 
         // Save the reverted object
         return $this->objectEntityMapper->update($revertedObject);
-    }
-} 
+
+    }//end revert()
+
+
+}//end class

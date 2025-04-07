@@ -108,15 +108,15 @@ class ObjectsController extends Controller
     /**
      * Private helper method to handle pagination of results
      *
-     * @param array       $results The array of objects to paginate
-     * @param int        $total   The total number of items (before pagination)
-     * @param int        $limit   The number of items per page
-     * @param int|null   $offset  The offset of items
-     * @param int|null   $page    The current page number
+     * @param array    $results The array of objects to paginate
+     * @param int      $total   The total number of items (before pagination)
+     * @param int      $limit   The number of items per page
+     * @param int|null $offset  The offset of items
+     * @param int|null $page    The current page number
      *
      * @return array The paginated results with metadata
      */
-    private function paginate(array $results, int $total, int $limit, ?int $offset = null, ?int $page = null): array
+    private function paginate(array $results, int $total, int $limit, ?int $offset=null, ?int $page=null): array
     {
         // Calculate the number of pages
         $pages = ceil($total / $limit);
@@ -143,7 +143,7 @@ class ObjectsController extends Controller
             'page'    => $page,
             'pages'   => $pages,
             'limit'   => $limit,
-            'offset'  => $offset
+            'offset'  => $offset,
         ];
 
         // Add next/prev page URLs if applicable
@@ -152,25 +152,28 @@ class ObjectsController extends Controller
         // Add next page link if there are more pages
         if ($page < $pages) {
             $nextPage = $page + 1;
-            $nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
+            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&') . 'page=' . $nextPage;
+                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
             }
+
             $paginatedResults['next'] = $nextUrl;
         }
 
         // Add previous page link if not on first page
         if ($page > 1) {
             $prevPage = $page - 1;
-            $prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
+            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&') . 'page=' . $prevPage;
+                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
             }
+
             $paginatedResults['prev'] = $prevUrl;
         }
 
         return $paginatedResults;
-    }
+
+    }//end paginate()
 
 
     /**
@@ -194,7 +197,7 @@ class ObjectsController extends Controller
      *               - schema: (string|null) Schema identifier
      *               - ids: (array|null) Specific IDs to filter
      */
-    private function getConfig(?string $register = null, ?string $schema = null, ?array $ids = null): array
+    private function getConfig(?string $register=null, ?string $schema=null, ?array $ids=null): array
     {
         $params = $this->request->getParams();
 
@@ -202,13 +205,9 @@ class ObjectsController extends Controller
         unset($params['_route']);
 
         // Extract and normalize parameters
-        $limit = (int)($params['limit'] ?? $params['_limit'] ?? 20);
-        $offset = isset($params['offset']) 
-            ? (int)$params['offset'] 
-            : (isset($params['_offset']) ? (int)$params['_offset'] : null);
-        $page = isset($params['page'])
-            ? (int)$params['page']
-            : (isset($params['_page']) ? (int)$params['_page'] : null);
+        $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
+        $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
+        $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
 
         // If we have a page but no offset, calculate the offset
         if ($page !== null && $offset === null) {
@@ -216,20 +215,21 @@ class ObjectsController extends Controller
         }
 
         return [
-            'limit' => $limit,
-            'offset' => $offset,
-            'page' => $page,
-            'filters' => $params,
-            'sort' => ($params['order'] ?? $params['_order'] ?? []),
-            'search' => ($params['_search'] ?? null),
-            'extend' => ($params['extend'] ?? $params['_extend'] ?? null),
-            'fields' => ($params['fields'] ?? $params['_fields'] ?? null),
-            'unset' => ($params['unset'] ?? $params['_unset'] ?? null),
+            'limit'    => $limit,
+            'offset'   => $offset,
+            'page'     => $page,
+            'filters'  => $params,
+            'sort'     => ($params['order'] ?? $params['_order'] ?? []),
+            'search'   => ($params['_search'] ?? null),
+            'extend'   => ($params['extend'] ?? $params['_extend'] ?? null),
+            'fields'   => ($params['fields'] ?? $params['_fields'] ?? null),
+            'unset'    => ($params['unset'] ?? $params['_unset'] ?? null),
             'register' => $register,
-            'schema' => $schema,
-            'ids' => $ids
+            'schema'   => $schema,
+            'ids'      => $ids,
         ];
-    }
+
+    }//end getConfig()
 
 
     /**
@@ -251,7 +251,7 @@ class ObjectsController extends Controller
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         // Get config and fetch objects
-        $config = $this->getConfig($register, $schema);
+        $config  = $this->getConfig($register, $schema);
         $objects = $objectService->findAll($config);
 
         // Get total count for pagination
@@ -259,7 +259,8 @@ class ObjectsController extends Controller
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
-    }
+
+    }//end index()
 
 
     /**
@@ -268,9 +269,9 @@ class ObjectsController extends Controller
      * Retrieves and returns a single object from the specified register and schema,
      * with support for field filtering and related object extension.
      *
-     * @param string $id       The object ID
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier      
+     * @param string        $id            The object ID
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the object
@@ -295,7 +296,7 @@ class ObjectsController extends Controller
         // Extract parameters for rendering.
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);      
+        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
 
         // Find and validate the object.
         try {
@@ -376,7 +377,8 @@ class ObjectsController extends Controller
 
         // Return the created object.
         return new JSONResponse($objectEntity->jsonSerialize());
-    }
+
+    }//end create()
 
 
     /**
@@ -451,7 +453,7 @@ class ObjectsController extends Controller
             return new JSONResponse(['error' => 'Not Found'], 404);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
-        }
+        }//end try
 
         // Update the object.
         try {
@@ -474,7 +476,8 @@ class ObjectsController extends Controller
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
         }
-    }
+
+    }//end update()
 
 
     /**
@@ -518,9 +521,9 @@ class ObjectsController extends Controller
      *
      * This method returns all the call logs associated with a object based on its ID.
      *
-     * @param int $id The ID of the object to retrieve logs for
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier      
+     * @param int           $id            The ID of the object to retrieve logs for
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the call logs
@@ -539,9 +542,9 @@ class ObjectsController extends Controller
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters.
-        $limit  = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) ? (int)$requestParams['offset'] : (isset($requestParams['_offset']) ? (int)$requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) ? (int)$requestParams['page'] : (isset($requestParams['_page']) ? (int)$requestParams['_page'] : null);
+        $limit  = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+        $offset = isset($requestParams['offset']) ? (int) $requestParams['offset'] : (isset($requestParams['_offset']) ? (int) $requestParams['_offset'] : null);
+        $page   = isset($requestParams['page']) ? (int) $requestParams['page'] : (isset($requestParams['_page']) ? (int) $requestParams['_page'] : null);
         $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
         $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
@@ -566,9 +569,9 @@ class ObjectsController extends Controller
      *
      * This method returns all objects that this object uses/references. A -> B means that A (This object) references B (Another object).
      *
-     * @param string $id The ID of the object to retrieve relations for
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier      
+     * @param string        $id            The ID of the object to retrieve relations for
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the related objects
@@ -585,10 +588,10 @@ class ObjectsController extends Controller
 
         // Get the relations for the object
         $relationsArray = $objectService->find($id)->getRelations();
-        $relations = array_values($relationsArray);
+        $relations      = array_values($relationsArray);
 
         // Get config and fetch objects
-        $config = $this->getConfig($register, $schema, $relations);
+        $config  = $this->getConfig($register, $schema, $relations);
         $objects = $objectService->findAll($config);
 
         // Get total count for pagination
@@ -596,7 +599,8 @@ class ObjectsController extends Controller
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
-    }
+
+    }//end uses()
 
 
     /**
@@ -604,9 +608,9 @@ class ObjectsController extends Controller
      *
      * This method returns all objects that reference (use) this object. B -> A means that B (Another object) references A (This object).
      *
-     * @param string $id The ID of the object to retrieve uses for
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier      
+     * @param string        $id            The ID of the object to retrieve uses for
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the referenced objects
@@ -623,10 +627,10 @@ class ObjectsController extends Controller
 
         // Get the relations for the object
         $relationsArray = $objectService->findByRelations($id);
-        $relations = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
+        $relations      = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
 
         // Get config and fetch objects
-        $config = $this->getConfig($register, $schema, $relations);
+        $config  = $this->getConfig($register, $schema, $relations);
         $objects = $objectService->findAll($config);
 
         // Get total count for pagination
@@ -634,7 +638,8 @@ class ObjectsController extends Controller
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
-    }
+
+    }//end used()
 
 
     /**
@@ -642,9 +647,9 @@ class ObjectsController extends Controller
      *
      * This method returns a JSON response containing the logs for a specific object.
      *
-     * @param string $id The ID of the object to retrieve logs for
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier      
+     * @param string        $id            The ID of the object to retrieve logs for
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the logs
@@ -654,21 +659,22 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
-    {        
+    {
         // Set the register and schema context first
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
         // Get config and fetch logs
         $config = $this->getConfig($register, $schema);
-        $logs = $objectService->getLogs($id, $config['filters']);
-        
+        $logs   = $objectService->getLogs($id, $config['filters']);
+
         // Get total count of logs
         $total = count($logs);
 
         // Return paginated results
         return new JSONResponse($this->paginate($logs, $total, $config['limit'], $config['offset'], $config['page']));
-    }
+
+    }//end logs()
 
 
     /**
@@ -703,6 +709,7 @@ class ObjectsController extends Controller
         );
 
         return new JSONResponse($object);
+
     }//end lock()
 
 
@@ -719,12 +726,14 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function unlock(string $register, string $schema, string $id): JSONResponse {
+    public function unlock(string $register, string $schema, string $id): JSONResponse
+    {
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
         $this->objectService->unlock($id);
         return new JSONResponse(['message' => 'Object unlocked successfully']);
-    }
+
+    }//end unlock()
 
 
     /**
@@ -740,12 +749,14 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function files(string $register, string $schema, string $id): JSONResponse {
+    public function files(string $register, string $schema, string $id): JSONResponse
+    {
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
         $files = $this->objectService->getFiles($id);
         return new JSONResponse($files);
-    }
+
+    }//end files()
 
 
 }//end class

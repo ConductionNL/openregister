@@ -52,9 +52,13 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class ObjectService
 {
+
     private ?Register $currentRegister = null;
+
     private ?Schema $currentSchema = null;
+
     private ?ObjectEntity $currentObject = null;
+
 
     /**
      * Constructor for ObjectService.
@@ -75,7 +79,9 @@ class ObjectService
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper
     ) {
-    }
+
+    }//end __construct()
+
 
     /**
      * Set the current register context.
@@ -84,7 +90,7 @@ class ObjectService
      *
      * @return self
      */
-    public function setRegister(Register|string|int $register): self
+    public function setRegister(Register | string | int $register): self
     {
         if (is_string($register) || is_int($register)) {
             // Look up the register by ID or UUID
@@ -93,7 +99,9 @@ class ObjectService
 
         $this->currentRegister = $register;
         return $this;
-    }
+
+    }//end setRegister()
+
 
     /**
      * Set the current schema context.
@@ -102,7 +110,7 @@ class ObjectService
      *
      * @return self
      */
-    public function setSchema(Schema|string|int $schema): self
+    public function setSchema(Schema | string | int $schema): self
     {
         if (is_string($schema) || is_int($schema)) {
             // Look up the schema by ID or UUID
@@ -111,7 +119,9 @@ class ObjectService
 
         $this->currentSchema = $schema;
         return $this;
-    }
+
+    }//end setSchema()
+
 
     /**
      * Set the current object context.
@@ -120,7 +130,7 @@ class ObjectService
      *
      * @return self
      */
-    public function setObject(ObjectEntity|string|int $object): self
+    public function setObject(ObjectEntity | string | int $object): self
     {
         if (is_string($object) || is_int($object)) {
             // Look up the object by ID or UUID
@@ -129,14 +139,16 @@ class ObjectService
 
         $this->currentObject = $object;
         return $this;
-    }
+
+    }//end setObject()
+
 
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string      $id       The object ID or UUID.
-     * @param array|null      $extend   Properties to extend the object with.
-     * @param bool            $files    Whether to include file information.
+     * @param int|string               $id       The object ID or UUID.
+     * @param array|null               $extend   Properties to extend the object with.
+     * @param bool                     $files    Whether to include file information.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
      *
@@ -144,7 +156,7 @@ class ObjectService
      *
      * @throws Exception If the object is not found.
      */
-    public function find(int | string $id, ?array $extend=[], bool $files=false, Register|string|int|null $register=null, Schema|string|int|null $schema=null): ?ObjectEntity
+    public function find(int | string $id, ?array $extend=[], bool $files=false, Register | string | int | null $register=null, Schema | string | int | null $schema=null): ?ObjectEntity
     {
         // Check if a register is provided and set the current register context
         if ($register !== null) {
@@ -172,13 +184,15 @@ class ObjectService
 
         // Render the object before returning
         return $this->renderHandler->renderEntity($object, $extend);
-    }
+
+    }//end find()
+
 
     /**
      * Creates a new object from an array.
      *
-     * @param array                  $object   The object data to create.
-     * @param array|null             $extend   Properties to extend the object with.
+     * @param array                    $object   The object data to create.
+     * @param array|null               $extend   Properties to extend the object with.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
      *
@@ -188,9 +202,9 @@ class ObjectService
      */
     public function createFromArray(
         array $object,
-        ?array $extend = [],
-        Register|string|int|null $register = null,
-        Schema|string|int|null $schema = null
+        ?array $extend=[],
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): array {
         // Check if a register is provided and set the current register context
         if ($register !== null) {
@@ -217,18 +231,20 @@ class ObjectService
 
         // Render and return the saved object
         return $this->renderHandler->renderEntity($savedObject, $extend);
-    }
+
+    }//end createFromArray()
+
 
     /**
      * Updates an object from an array.
      *
-     * @param string                  $id            The ID of the object to update.
-     * @param array                   $object        The updated object data.
-     * @param bool                    $updateVersion Whether to update the version.
-     * @param bool                    $patch         Whether this is a patch update.
-     * @param array|null              $extend        Properties to extend the object with.
-     * @param Register|string|int|null $register     The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema       The schema object or its ID/UUID.
+     * @param string                   $id            The ID of the object to update.
+     * @param array                    $object        The updated object data.
+     * @param bool                     $updateVersion Whether to update the version.
+     * @param bool                     $patch         Whether this is a patch update.
+     * @param array|null               $extend        Properties to extend the object with.
+     * @param Register|string|int|null $register      The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      *
      * @return array The updated object.
      *
@@ -236,12 +252,12 @@ class ObjectService
      */
     public function updateFromArray(
         string $id,
-            array $object,
+        array $object,
         bool $updateVersion,
-        bool $patch = false,
-        ?array $extend = [],
-        Register|string|int|null $register = null,
-        Schema|string|int|null $schema = null
+        bool $patch=false,
+        ?array $extend=[],
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): array {
         // Check if a register is provided and set the current register context
         if ($register !== null) {
@@ -279,7 +295,9 @@ class ObjectService
 
         // Render and return the saved object
         return $this->renderHandler->renderEntity($savedObject, $extend);
-    }
+
+    }//end updateFromArray()
+
 
     /**
      * Deletes an object.
@@ -293,7 +311,9 @@ class ObjectService
     public function delete(array | JsonSerializable $object): bool
     {
         return $this->deleteHandler->delete($object);
-    }
+
+    }//end delete()
+
 
     /**
      * Find all objects matching the configuration.
@@ -315,7 +335,7 @@ class ObjectService
      *
      * @return array Array of objects matching the configuration
      */
-    public function findAll(array $config = []): array
+    public function findAll(array $config=[]): array
     {
         // Set the current register context if a register is provided
         if (isset($config['register'])) {
@@ -353,20 +373,22 @@ class ObjectService
         }
 
         return $objects;
-    }
+
+    }//end findAll()
+
 
     /**
      * Counts the number of objects matching the given criteria.
      *
-     * @param array       $filters  Filter criteria.
-     * @param string|null $search   Search term.
+     * @param array       $filters Filter criteria.
+     * @param string|null $search  Search term.
      *
      * @return int The number of matching objects.
      * @throws \Exception If register or schema is not set
      */
     public function count(
-        array $filters = [],
-        ?string $search = null,
+        array $filters=[],
+        ?string $search=null,
     ): int {
         // Ensure we have both register and schema set
         if ($this->currentRegister === null) {
@@ -379,10 +401,12 @@ class ObjectService
 
         // Add register and schema IDs to filters
         $filters['register_id'] = $this->currentRegister->getId();
-        $filters['schema_id'] = $this->currentSchema->getId();
+        $filters['schema_id']   = $this->currentSchema->getId();
 
         return $this->getHandler->count($filters, $search);
-    }
+
+    }//end count()
+
 
     /**
      * Finds objects by their relations.
@@ -392,36 +416,40 @@ class ObjectService
      *
      * @return array An array of ObjectEntities that have the specified URI/UUID in their relations.
      */
-    public function findByRelations(string $search, bool $partialMatch = true): array
+    public function findByRelations(string $search, bool $partialMatch=true): array
     {
         // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
-        return $this->objectEntityMapper->findByRelation($search, $partialMatch); 
-    }
+        return $this->objectEntityMapper->findByRelation($search, $partialMatch);
+
+    }//end findByRelations()
+
 
     /**
      * Get logs for an object.
      *
-     * @param string $uuid The UUID of the object
-     * @param array $filters Optional filters to apply
+     * @param string $uuid    The UUID of the object
+     * @param array  $filters Optional filters to apply
      *
      * @return array Array of log entries
      */
-    public function getLogs(string $uuid, array $filters = []): array
+    public function getLogs(string $uuid, array $filters=[]): array
     {
         $object = $this->objectEntityMapper->find($uuid);
-        $logs = $this->getHandler->findLogs($object);
-        
+        $logs   = $this->getHandler->findLogs($object);
+
         return $logs;
-    }
+
+    }//end getLogs()
+
 
     /**
      * Saves an object from an array.
      *
-     * @param array                   $object    The object data to save.
-     * @param array|null              $extend    Properties to extend the object with.
+     * @param array                    $object   The object data to save.
+     * @param array|null               $extend   Properties to extend the object with.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
-     * @param string|null             $uuid      The UUID of the object to update (if updating).
+     * @param string|null              $uuid     The UUID of the object to update (if updating).
      *
      * @return ObjectEntity The saved object.
      *
@@ -429,10 +457,10 @@ class ObjectService
      */
     public function saveObject(
         array $object,
-        ?array $extend = [],
-        Register|string|int|null $register = null,
-        Schema|string|int|null $schema = null,
-        ?string $uuid = null
+        ?array $extend=[],
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        ?string $uuid=null
     ): ObjectEntity {
         // Check if a register is provided and set the current register context
         if ($register !== null) {
@@ -460,7 +488,9 @@ class ObjectService
 
         // Render and return the saved object
         return $this->renderHandler->renderEntity($savedObject, $extend);
-    }
+
+    }//end saveObject()
+
 
     /**
      * Delete an object.
@@ -476,5 +506,8 @@ class ObjectService
             $this->currentSchema,
             $uuid
         );
-    }
-}
+
+    }//end deleteObject()
+
+
+}//end class

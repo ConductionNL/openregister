@@ -1,12 +1,12 @@
 <?php
 /**
- * @file LogService.php
+ * @file        LogService.php
  * @description Service for handling audit trail logs in the OpenRegister app
- * @package OCA\OpenRegister\Service
- * @author Ruben Linde <ruben@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version 1.0.0
- * @link https://github.com/OpenCatalogi/OpenRegister
+ * @package     OCA\OpenRegister\Service
+ * @author      Ruben Linde <ruben@conduction.nl>
+ * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version     1.0.0
+ * @link        https://github.com/OpenCatalogi/OpenRegister
  */
 
 namespace OCA\OpenRegister\Service;
@@ -20,21 +20,27 @@ use OCA\OpenRegister\Db\SchemaMapper;
  * Class LogService
  * Service for handling audit trail logs
  */
-class LogService {
+class LogService
+{
+
+
     /**
      * Constructor for LogService
      *
      * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper      $schemaMapper       The schema mapper
+     * @param SchemaMapper       $schemaMapper       The schema mapper
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper
-    ) {}
+    ) {
+
+    }//end __construct()
+
 
     /**
      * Get logs for an object
@@ -54,16 +60,17 @@ class LogService {
      * @throws \InvalidArgumentException If object does not belong to specified register/schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      */
-    public function getLogs(string $register, string $schema, string $id, array $config = []): array {
+    public function getLogs(string $register, string $schema, string $id, array $config=[]): array
+    {
         // Get the object to ensure it exists and belongs to the correct register/schema
         $object = $this->objectEntityMapper->find($id);
-        
+
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
         // Add object ID to filters
-        $filters = $config['filters'] ?? [];
+        $filters           = $config['filters'] ?? [];
         $filters['object'] = $object->getId();
 
         // Get logs from audit trail mapper
@@ -74,7 +81,9 @@ class LogService {
             sort: $config['sort'] ?? ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
-    }
+
+    }//end getLogs()
+
 
     /**
      * Count logs for an object
@@ -87,10 +96,11 @@ class LogService {
      * @throws \InvalidArgumentException If object does not belong to specified register/schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
      */
-    public function count(string $register, string $schema, string $id): int {
+    public function count(string $register, string $schema, string $id): int
+    {
         // Get the object to ensure it exists and belongs to the correct register/schema
         $object = $this->objectEntityMapper->find($id);
-        
+
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
@@ -101,5 +111,8 @@ class LogService {
         );
 
         return count($logs);
-    }
-} 
+
+    }//end count()
+
+
+}//end class

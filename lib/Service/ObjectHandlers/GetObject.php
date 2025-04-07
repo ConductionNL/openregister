@@ -67,6 +67,7 @@ class GetObject
 
     }//end __construct()
 
+
     /**
      * Gets an object by its UUID with optional extensions.
      *
@@ -95,37 +96,38 @@ class GetObject
 
         return $object;
 
-    }//end getObject()
+    }//end find()
+
 
     /**
      * Finds all objects matching the given criteria.
      *
-     * @param int|null    $limit    Maximum number of objects to return.
-     * @param int|null    $offset   Number of objects to skip.
-     * @param array       $filters  Filter criteria.
-     * @param array       $sort     Sort criteria.
-     * @param string|null $search   Search term.
-     * @param array|null  $extend   Properties to extend the objects with.
-     * @param bool        $files    Whether to include file information.
-     * @param string|null $uses     Filter by object usage.
+     * @param int|null      $limit    Maximum number of objects to return.
+     * @param int|null      $offset   Number of objects to skip.
+     * @param array         $filters  Filter criteria.
+     * @param array         $sort     Sort criteria.
+     * @param string|null   $search   Search term.
+     * @param array|null    $extend   Properties to extend the objects with.
+     * @param bool          $files    Whether to include file information.
+     * @param string|null   $uses     Filter by object usage.
      * @param Register|null $register Optional register to filter objects.
-     * @param Schema|null $schema   Optional schema to filter objects.
-     * @param array|null  $ids      Array of IDs or UUIDs to filter by.
+     * @param Schema|null   $schema   Optional schema to filter objects.
+     * @param array|null    $ids      Array of IDs or UUIDs to filter by.
      *
      * @return array The found objects.
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        array $filters = [],
-        array $sort = [],
-        ?string $search = null,
-        ?array $extend = [],
-        bool $files = false,
-        ?string $uses = null,
-        ?Register $register = null,
-        ?Schema $schema = null,
-        ?array $ids = null
+        ?int $limit=null,
+        ?int $offset=null,
+        array $filters=[],
+        array $sort=[],
+        ?string $search=null,
+        ?array $extend=[],
+        bool $files=false,
+        ?string $uses=null,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?array $ids=null
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids
         $objects = $this->objectEntityMapper->findAll(
@@ -148,20 +150,21 @@ class GetObject
         }
 
         return $objects;
+
     }//end findAll()
 
 
     /**
      * Counts the number of objects matching the given criteria.
      *
-     * @param array       $filters  Filter criteria.
-     * @param string|null $search   Search term.
+     * @param array         $filters  Filter criteria.
+     * @param string|null   $search   Search term.
      * @param Register|null $register Optional register to filter objects.
-     * @param Schema|null $schema   Optional schema to filter objects.
+     * @param Schema|null   $schema   Optional schema to filter objects.
      *
      * @return int The number of matching objects.
      */
-    public function count(array $filters = [], ?string $search = null, ?Register $register = null, ?Schema $schema = null): int
+    public function count(array $filters=[], ?string $search=null, ?Register $register=null, ?Schema $schema=null): int
     {
         return $this->objectEntityMapper->countAll($filters, $search, false, $register, $schema);
 
@@ -199,6 +202,7 @@ class GetObject
 
     }//end hydrateFiles()
 
+
     /**
      * Find related objects for a given object.
      *
@@ -214,57 +218,59 @@ class GetObject
         // Iterate over each related object
         foreach ($relatedObjects as $propertyName => $id) {
             // Check if the ID is an array (indicating multiple related objects)
-            if (is_array($id) === true){
+            if (is_array($id) === true) {
                 // Find multiple related objects by their IDs
                 $value = $this->objectEntityMapper->findMultiple(ids: $id);
-            }
-            else {
+            } else {
                 // Find a single related object by its ID
                 $value = $this->objectEntityMapper->find(id: $id);
-            }          
+            }
+
             // Update the related objects array with the found value(s)
             $relatedObjects[$propertyName] = $value;
         }
 
         // Return the array of related objects
         return $relatedObjects;
-    }
+
+    }//end findRelated()
+
 
     /**
      * Find objects that use/reference a specific object.
      *
-     * @param ObjectEntity $object         The object to find references to
-     * @param bool        $partialMatch    Whether to search for partial matches in relations
-     * @param array|null  $filters         Additional filters to apply
-     * @param array|null  $searchConditions Search conditions to apply
-     * @param array|null  $searchParams     Search parameters to apply
-     * @param array|null  $sort            Sort criteria ['field' => 'ASC|DESC']
-     * @param string|null $search          Optional search term
-     * @param int|null    $limit           Maximum number of objects to return
-     * @param int|null    $offset          Number of objects to skip
-     * @param array|null  $extend          Properties to extend the objects with
-     * @param bool        $files           Whether to include file information
-     * @param string|null $uses            Filter by object usage
-     * @param Register|null $register      Optional register to filter objects
-     * @param Schema|null $schema          Optional schema to filter objects
+     * @param ObjectEntity  $object           The object to find references to
+     * @param bool          $partialMatch     Whether to search for partial matches in relations
+     * @param array|null    $filters          Additional filters to apply
+     * @param array|null    $searchConditions Search conditions to apply
+     * @param array|null    $searchParams     Search parameters to apply
+     * @param array|null    $sort             Sort criteria ['field' => 'ASC|DESC']
+     * @param string|null   $search           Optional search term
+     * @param int|null      $limit            Maximum number of objects to return
+     * @param int|null      $offset           Number of objects to skip
+     * @param array|null    $extend           Properties to extend the objects with
+     * @param bool          $files            Whether to include file information
+     * @param string|null   $uses             Filter by object usage
+     * @param Register|null $register         Optional register to filter objects
+     * @param Schema|null   $schema           Optional schema to filter objects
      *
      * @return array Array of objects that reference this object
      */
     public function findUsed(
         ObjectEntity $object,
-        bool $partialMatch = false,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        ?array $sort = ['created' => 'DESC'],
-        ?string $search = null,
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $extend = [],
-        bool $files = false,
-        ?string $uses = null,
-        ?Register $register = null,
-        ?Schema $schema = null
+        bool $partialMatch=false,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $sort=['created' => 'DESC'],
+        ?string $search=null,
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $extend=[],
+        bool $files=false,
+        ?string $uses=null,
+        ?Register $register=null,
+        ?Schema $schema=null
     ): array {
         // First find all objects that reference this object's URI or UUID
         $referencingObjects = $this->objectEntityMapper->findByRelationUri(
@@ -274,7 +280,7 @@ class GetObject
 
         // If additional parameters are set, filter the IDs from $referencingObjects
         if (!empty($filters) || !empty($searchConditions) || !empty($searchParams) || !empty($sort) || $search !== null || $limit !== null || $offset !== null || !empty($extend) || $files !== false || $uses !== null || $register !== null || $schema !== null) {
-            $ids = array_map(fn($obj) => $obj->getId(), $referencingObjects);
+            $ids           = array_map(fn($obj) => $obj->getId(), $referencingObjects);
             $filters['id'] = $ids;
 
             // Use findAll to apply additional filters and return the response
@@ -294,31 +300,33 @@ class GetObject
         }
 
         return $referencingObjects;
-    }
+
+    }//end findUsed()
+
 
     /**
      * Find logs for a given object.
      *
      * @param ObjectEntity $object           The object to find logs for
-     * @param int|null    $limit            Maximum number of logs to return
-     * @param int|null    $offset           Number of logs to skip
-     * @param array|null  $filters          Additional filters to apply
-     * @param array|null  $searchConditions Search conditions to apply
-     * @param array|null  $searchParams     Search parameters to apply
-     * @param array|null  $sort             Sort criteria ['field' => 'ASC|DESC']
-     * @param string|null $search           Optional search term
+     * @param int|null     $limit            Maximum number of logs to return
+     * @param int|null     $offset           Number of logs to skip
+     * @param array|null   $filters          Additional filters to apply
+     * @param array|null   $searchConditions Search conditions to apply
+     * @param array|null   $searchParams     Search parameters to apply
+     * @param array|null   $sort             Sort criteria ['field' => 'ASC|DESC']
+     * @param string|null  $search           Optional search term
      *
      * @return array Array of log entries
      */
     public function findLogs(
         ObjectEntity $object,
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        ?array $sort = ['created' => 'DESC'],
-        ?string $search = null
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $sort=['created' => 'DESC'],
+        ?string $search=null
     ): array {
         // Ensure object ID is always included in filters
         $filters['object'] = $object->getId();
@@ -333,6 +341,8 @@ class GetObject
             sort: $sort,
             search: $search
         );
-    }
+
+    }//end findLogs()
+
 
 }//end class

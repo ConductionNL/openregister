@@ -82,11 +82,11 @@ class AuditTrailMapper extends QBMapper
     /**
      * Find all audit trails with filters and sorting
      *
-     * @param int|null    $limit            The limit of the results
-     * @param int|null    $offset           The offset of the results
-     * @param array|null  $filters          The filters to apply
-     * @param array|null  $sort             The sort to apply
-     * @param string|null $search           Optional search term to filter by ext fields
+     * @param int|null    $limit   The limit of the results
+     * @param int|null    $offset  The offset of the results
+     * @param array|null  $filters The filters to apply
+     * @param array|null  $sort    The sort to apply
+     * @param string|null $search  Optional search term to filter by ext fields
      *
      * @return array The audit trails
      */
@@ -114,12 +114,26 @@ class AuditTrailMapper extends QBMapper
         // Apply filters
         foreach ($filters as $field => $value) {
             // Ensure the field is a valid column name
-            if (!in_array($field, [
-                'id', 'uuid', 'schema', 'register', 'object',
-                'action', 'changed', 'user', 'user_name',
-                'session', 'request', 'ip_address', 'version',
-                'created'
-            ])) {
+            if (!in_array(
+                    $field,
+                    [
+                        'id',
+                        'uuid',
+                        'schema',
+                        'register',
+                        'object',
+                        'action',
+                        'changed',
+                        'user',
+                        'user_name',
+                        'session',
+                        'request',
+                        'ip_address',
+                        'version',
+                        'created',
+                    ]
+                    )
+            ) {
                 continue;
             }
 
@@ -130,7 +144,7 @@ class AuditTrailMapper extends QBMapper
             } else {
                 $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
             }
-        }
+        }//end foreach
 
         // Add search on changed field if search term provided
         if ($search !== null) {
@@ -142,29 +156,45 @@ class AuditTrailMapper extends QBMapper
         // Add sorting
         foreach ($sort as $field => $direction) {
             // Ensure the field is a valid column name
-            if (!in_array($field, [
-                'id', 'uuid', 'schema', 'register', 'object',
-                'action', 'changed', 'user', 'user_name',
-                'session', 'request', 'ip_address', 'version',
-                'created'
-            ])) {
+            if (!in_array(
+                    $field,
+                    [
+                        'id',
+                        'uuid',
+                        'schema',
+                        'register',
+                        'object',
+                        'action',
+                        'changed',
+                        'user',
+                        'user_name',
+                        'session',
+                        'request',
+                        'ip_address',
+                        'version',
+                        'created',
+                    ]
+                    )
+            ) {
                 continue;
             }
 
             $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
             $qb->addOrderBy($field, $direction);
-        }
+        }//end foreach
 
         // Apply pagination
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
+
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
 
         return $this->findEntities($qb);
-    }
+
+    }//end findAll()
 
 
     /**

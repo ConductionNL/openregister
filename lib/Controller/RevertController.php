@@ -1,12 +1,12 @@
 <?php
 /**
- * @file RevertController.php
+ * @file        RevertController.php
  * @description Controller for handling object reversion in the OpenRegister app
- * @package OCA\OpenRegister\Controller
- * @author Ruben Linde <ruben@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version 1.0.0
- * @link https://github.com/OpenCatalogi/OpenRegister
+ * @package     OCA\OpenRegister\Controller
+ * @author      Ruben Linde <ruben@conduction.nl>
+ * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version     1.0.0
+ * @link        https://github.com/OpenCatalogi/OpenRegister
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -23,7 +23,10 @@ use OCA\OpenRegister\Exception\LockedException;
  * Class RevertController
  * Handles all object reversion operations
  */
-class RevertController extends Controller {
+class RevertController extends Controller
+{
+
+
     /**
      * Constructor for RevertController
      *
@@ -37,7 +40,9 @@ class RevertController extends Controller {
         private readonly RevertService $revertService
     ) {
         parent::__construct($appName, $request);
-    }
+
+    }//end __construct()
+
 
     /**
      * Revert an object to a previous state
@@ -56,7 +61,8 @@ class RevertController extends Controller {
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function revert(string $register, string $schema, string $id): JSONResponse {
+    public function revert(string $register, string $schema, string $id): JSONResponse
+    {
         try {
             $data = $this->request->getParams();
 
@@ -98,6 +104,9 @@ class RevertController extends Controller {
             return new JSONResponse(['error' => $e->getMessage()], 423);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }
-} 
+        }//end try
+
+    }//end revert()
+
+
+}//end class

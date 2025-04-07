@@ -76,23 +76,23 @@ class ValidateObject
     /**
      * Validates an object against a schema.
      *
-     * @param array                $object       The object to validate.
-     * @param Schema|int|null      $schema      The schema or schema ID to validate against.
-     * @param object              $schemaObject A custom schema object for validation.
-     * @param int                 $depth        The depth level for validation.
+     * @param array           $object       The object to validate.
+     * @param Schema|int|null $schema       The schema or schema ID to validate against.
+     * @param object          $schemaObject A custom schema object for validation.
+     * @param int             $depth        The depth level for validation.
      *
      * @return ValidationResult The result of the validation.
      */
     public function validateObject(
         array $object,
-        Schema|int|null $schema = null,
-        object $schemaObject = new stdClass(),
-        int $depth = 0
+        Schema | int | null $schema=null,
+        object $schemaObject=new stdClass(),
+        int $depth=0
     ): ValidationResult {
         if ($schemaObject === new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } elseif (is_int($schema)) {
+            } else if (is_int($schema)) {
                 $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
             }
         }

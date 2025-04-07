@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Object Entity Mapper
  *
@@ -98,9 +99,9 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by ID or UUID with optional register and schema
      *
-     * @param int|string $identifier The ID or UUID of the object to find
-     * @param Register|null $register Optional register to filter by
-     * @param Schema|null $schema Optional schema to filter by
+     * @param int|string    $identifier The ID or UUID of the object to find
+     * @param Register|null $register   Optional register to filter by
+     * @param Schema|null   $schema     Optional schema to filter by
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found
@@ -108,7 +109,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The ObjectEntity
      */
-    public function find(string | int $identifier, ?Register $register = null, ?Schema $schema = null): ObjectEntity
+    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -149,23 +150,24 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Counts all objects with optional register and schema filters
      *
-     * @param array|null  $filters        The filters to apply
-     * @param string|null $search         The search string to apply
-     * @param bool        $includeDeleted Whether to include deleted objects
-     * @param Register|null $register     Optional register to filter by
-     * @param Schema|null $schema         Optional schema to filter by
+     * @param array|null    $filters        The filters to apply
+     * @param string|null   $search         The search string to apply
+     * @param bool          $includeDeleted Whether to include deleted objects
+     * @param Register|null $register       Optional register to filter by
+     * @param Schema|null   $schema         Optional schema to filter by
      *
      * @return int The number of objects
      */
     public function countAll(
-        ?array $filters = [],
-        ?string $search = null,
-        bool $includeDeleted = false,
-        ?Register $register = null,
-        ?Schema $schema = null
+        ?array $filters=[],
+        ?string $search=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -214,36 +216,36 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find all ObjectEntitys
      *
-     * @param int|null    $limit            The number of objects to return
-     * @param int|null    $offset           The offset of the objects to return
-     * @param array|null  $filters          The filters to apply to the objects
-     * @param array|null  $searchConditions The search conditions to apply to the objects
-     * @param array|null  $searchParams     The search parameters to apply to the objects
-     * @param array       $sort             The sort order to apply
-     * @param string|null $search           The search string to apply
-     * @param array|null  $ids              Array of IDs or UUIDs to filter by
-     * @param string|null $uses             Value that must be present in relations
-     * @param bool        $includeDeleted   Whether to include deleted objects
-     * @param Register|null $register       Optional register to filter objects
-     * @param Schema|null $schema           Optional schema to filter objects
+     * @param int|null      $limit            The number of objects to return
+     * @param int|null      $offset           The offset of the objects to return
+     * @param array|null    $filters          The filters to apply to the objects
+     * @param array|null    $searchConditions The search conditions to apply to the objects
+     * @param array|null    $searchParams     The search parameters to apply to the objects
+     * @param array         $sort             The sort order to apply
+     * @param string|null   $search           The search string to apply
+     * @param array|null    $ids              Array of IDs or UUIDs to filter by
+     * @param string|null   $uses             Value that must be present in relations
+     * @param bool          $includeDeleted   Whether to include deleted objects
+     * @param Register|null $register         Optional register to filter objects
+     * @param Schema|null   $schema           Optional schema to filter objects
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array An array of ObjectEntity objects
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = [],
-        array $sort = [],
-        ?string $search = null,
-        ?array $ids = null,
-        ?string $uses = null,
-        bool $includeDeleted = false,
-        ?Register $register = null,
-        ?Schema $schema = null
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $sort=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null
     ): array {
         // Filter out system variables (starting with _)
         $filters = array_filter(
@@ -331,7 +333,8 @@ class ObjectEntityMapper extends QBMapper
         $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
 
         return $this->findEntities(query: $qb);
-    }
+
+    }//end findAll()
 
 
     /**
@@ -545,7 +548,7 @@ class ObjectEntityMapper extends QBMapper
 
         return $this->findEntities($qb);
 
-    }//end findByRelationUri()
+    }//end findByRelation()
 
 
     /**
@@ -570,7 +573,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Check if user has permission to lock.
         if ($this->userSession->isLoggedIn() === false) {
-            throw new \Exception('Must be logged in to lock objects');
+            throw new() \Exception('Must be logged in to lock objects');
         }
 
         // Attempt to lock the object.
@@ -606,7 +609,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Check if user has permission to unlock.
         if ($this->userSession->isLoggedIn() === false) {
-            throw new \Exception('Must be logged in to unlock objects');
+            throw new() \Exception('Must be logged in to unlock objects');
         }
 
         // Attempt to unlock the object.

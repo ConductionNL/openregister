@@ -81,36 +81,38 @@ class SaveObject
      *
      * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
      */
-    private function scanForRelations(array $data, string $prefix = ''): array
+    private function scanForRelations(array $data, string $prefix=''): array
     {
         $relations = [];
 
         foreach ($data as $key => $value) {
-            $currentPath = $prefix ? $prefix . '.' . $key : $key;
+            $currentPath = $prefix ? $prefix.'.'.$key : $key;
 
             if (is_array($value)) {
                 // Recursively scan nested arrays
                 $relations = array_merge($relations, $this->scanForRelations($value, $currentPath));
-            } elseif (is_string($value)) {
+            } else if (is_string($value)) {
                 // Check for UUID pattern
                 if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
                     $relations[$currentPath] = $value;
                 }
                 // Check for URL pattern
-                elseif (filter_var($value, FILTER_VALIDATE_URL)) {
+                else if (filter_var($value, FILTER_VALIDATE_URL)) {
                     $relations[$currentPath] = $value;
                 }
             }
         }
 
         return $relations;
-    }
+
+    }//end scanForRelations()
+
 
     /**
      * Updates the relations property of an object entity
      *
      * @param ObjectEntity $objectEntity The object entity to update
-     * @param array       $data         The object data to scan for relations
+     * @param array        $data         The object data to scan for relations
      *
      * @return ObjectEntity The updated object entity
      */
@@ -123,15 +125,17 @@ class SaveObject
         $objectEntity->setRelations($relations);
 
         return $objectEntity;
-    }
+
+    }//end updateObjectRelations()
+
 
     /**
      * Saves an object.
      *
      * @param Register|int|string $register The register containing the object.
      * @param Schema|int|string   $schema   The schema to validate against.
-     * @param array              $data     The object data to save.
-     * @param string|null        $uuid     The UUID of the object to update (if updating).
+     * @param array               $data     The object data to save.
+     * @param string|null         $uuid     The UUID of the object to update (if updating).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -141,7 +145,7 @@ class SaveObject
         Register | int | string $register,
         Schema | int | string $schema,
         array $data,
-        ?string $uuid = null
+        ?string $uuid=null
     ): ObjectEntity {
         // Set register ID based on input type.
         $registerId = null;
@@ -211,7 +215,8 @@ class SaveObject
         }
 
         return $savedEntity;
-    }
+
+    }//end saveObject()
 
 
     /**
@@ -254,19 +259,19 @@ class SaveObject
     /**
      * Handles object relations during save.
      *
-     * @param ObjectEntity $objectEntity The object entity being saved.
-     * @param array        $object       The object data.
-     * @param array        $properties   The schema properties.
-     * @param Register|int|string $register The register to save the object to.
-     * @param Schema|int|string   $schema   The schema to validate against.
-     * @param int          $depth        The depth level for nested relations.
+     * @param ObjectEntity        $objectEntity The object entity being saved.
+     * @param array               $object       The object data.
+     * @param array               $properties   The schema properties.
+     * @param Register|int|string $register     The register to save the object to.
+     * @param Schema|int|string   $schema       The schema to validate against.
+     * @param int                 $depth        The depth level for nested relations.
      *
      * @return ObjectEntity The object entity with relations handled.
      *
      * @phpstan-param Register|int|string $register
      * @phpstan-param Schema|int|string   $schema
-     * @psalm-param Register|int|string $register
-     * @psalm-param Schema|int|string   $schema
+     * @psalm-param   Register|int|string $register
+     * @psalm-param   Schema|int|string   $schema
      */
     private function handleObjectRelations(
         ObjectEntity $objectEntity,
@@ -353,10 +358,10 @@ class SaveObject
     /**
      * Updates an existing object.
      *
-     * @param Register|int|string $register The register containing the object.
-     * @param Schema|int|string   $schema   The schema to validate against.
-     * @param array              $data     The updated object data.
-     * @param ObjectEntity       $existingObject The existing object to update.
+     * @param Register|int|string $register       The register containing the object.
+     * @param Schema|int|string   $schema         The schema to validate against.
+     * @param array               $data           The updated object data.
+     * @param ObjectEntity        $existingObject The existing object to update.
      *
      * @return ObjectEntity The updated object entity.
      *
@@ -420,6 +425,8 @@ class SaveObject
         }
 
         return $updatedEntity;
-    }
+
+    }//end updateObject()
+
 
 }//end class
