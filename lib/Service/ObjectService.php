@@ -137,7 +137,7 @@ class ObjectService
      */
     public function getOpenConnector(?string $filePath = '\Service\ObjectService'): mixed
     {
-        if (true === in_array('openconnector', $this->appManager->getInstalledApps())) {
+        if (in_array('openconnector', $this->appManager->getInstalledApps()) === true) {
             try {
                 return $this->container->get("OCA\OpenConnector$filePath");
             } catch (Exception $e) {
@@ -179,7 +179,7 @@ class ObjectService
         }
 
         // External schema resolution.
-        if (true === $this->config->getValueBool('openregister', 'allowExternalSchemas')) {
+        if ($this->config->getValueBool('openregister', 'allowExternalSchemas') === true) {
             $client = new Client();
             $result = $client->get(\GuzzleHttp\Psr7\Uri::fromParts($uri->components()));
 
@@ -203,12 +203,12 @@ class ObjectService
      */
     public function validateObject(array $object, ?int $schemaId = null, ?object $schemaObject = new \stdClass()): ValidationResult
     {
-        if ($schemaObject === new \stdClass() || null !== $schemaId) {
+        if ($schemaObject === new \stdClass() || $schemaId !== null) {
             $schemaObject = $this->schemaMapper->find($schemaId)->getSchemaObject($this->urlGenerator);
         }
 
         // If there are no properties we don't have to validate.
-        if (false === isset($schemaObject->properties) || true === empty($schemaObject->properties)) {
+        if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Return a default ValidationResult indicating success.
             return new ValidationResult(null);
         }
@@ -285,7 +285,7 @@ class ObjectService
         $objectEntity = $objectEntity->jsonSerialize();
 
         // Extend object with properties if requested.
-        if (false === empty($extend)) {
+        if (empty($extend) === false) {
             $objectEntity = $this->renderEntity(entity: $objectEntity, extend: $extend);
         }
 
@@ -326,16 +326,16 @@ class ObjectService
         $errors = [];
         foreach ($properties as $propertyName => $propertyConfig) {
             // Validate immutable.
-            if (true === isset($propertyConfig['immutable']) && true === $propertyConfig['immutable'] && true === isset($object[$propertyName])) {
+            if (isset($propertyConfig['immutable']) === true && $propertyConfig['immutable'] === true && isset($object[$propertyName]) === true) {
                 $errors[sprintf('/%s', $propertyName)][] = sprintf('%s is immutable and may not be overwritten', $propertyName);
             }
         }
 
-        if (false === empty($errors)) {
+        if (empty($errors) === false) {
             throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
         }
 
-        if (true === $patch) {
+        if ($patch === true) {
             $oldObject = $this->getObject(
                 $this->registerMapper->find($this->getRegister()),
                 $this->schemaMapper->find($this->getSchema()),
@@ -355,7 +355,7 @@ class ObjectService
         $objectEntity = $objectEntity->jsonSerialize();
 
         // Extend object with properties if requested.
-        if (false === empty($extend)) {
+        if (empty($extend) === false) {
             $objectEntity = $this->renderEntity(entity: $objectEntity, extend: $extend);
         }
 
@@ -427,7 +427,7 @@ class ObjectService
         );
 
         // If extend is provided, extend each object.
-        if (false === empty($extend)) {
+        if (empty($extend) === false) {
             $objects = array_map(
                 function ($object) use ($extend) {
                     // Convert object to array if needed.
@@ -453,7 +453,7 @@ class ObjectService
     public function count(array $filters = [], ?string $search = null): int
     {
         // Add register and schema filters if set.
-        if (null !== $this->getSchema() && null !== $this->getRegister()) {
+        if ($this->getSchema() !== null && $this->getRegister() !== null) {
             $filters['register'] = $this->getRegister();
             $filters['schema'] = $this->getSchema();
         }
@@ -479,7 +479,7 @@ class ObjectService
     {
         $result = [];
         foreach ($ids as $id) {
-            if (true === is_string($id) || true === is_int($id)) {
+            if (is_string($id) === true || is_int($id) === true) {
                 $result[] = $this->find($id);
             }
         }
@@ -503,7 +503,7 @@ class ObjectService
         $schemaObject = $this->schemaMapper->find($this->schema);
 
         $properties = $schemaObject->getProperties();
-        if (true === empty($properties)) {
+        if (empty($properties) === true) {
             return [];
         }
 
@@ -512,7 +512,7 @@ class ObjectService
             return [];
         }
 
-        if (true === isset($property['items'])) {
+        if (isset($property['items']) === true) {
             $ref = explode('/', $property['items']['$ref']);
         } else {
             $subSchema = explode('/', $property['$ref']);
@@ -577,16 +577,16 @@ class ObjectService
         $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
 
-        if (null !== $page && isset($limit)) {
+        if ($page !== null && isset($limit)) {
             $page = (int) $page;
             $offset = $limit * ($page - 1);
         }
 
         // Ensure order and extend are arrays.
-        if (true === is_string($order)) {
+        if (is_string($order) === true) {
             $order = array_map('trim', explode(',', $order));
         }
-        if (true === is_string($extend)) {
+        if (is_string($extend) === true) {
             $extend = array_map('trim', explode(',', $extend));
         }
 
@@ -599,7 +599,7 @@ class ObjectService
 
         $objects = $this->findAll(limit: $limit, offset: $offset, filters: $filters, sort: $order, search: $search, extend: $extend);
         $total = $this->count($filters);
-        $pages = null !== $limit ? ceil($total / $limit) : 1;
+        $pages = $limit !== null ? ceil($total / $limit) : 1;
 
         $facets = $this->getAggregations(
             filters: $filters,
@@ -647,7 +647,7 @@ class ObjectService
     ): array
 	{
         // Set object type and filters if register and schema are provided.
-        if (null === $objectType && null !== $register && null !== $schema) {
+        if ($objectType === null && $register !== null && $schema !== null) {
             $objectType = 'objectEntity';
             $filters['register'] = $register;
             $filters['schema'] = $schema;
@@ -691,7 +691,7 @@ class ObjectService
     private function validateCustomRules(array $object, Schema $schema): void
     {
         $properties = $schema->getProperties();
-        if (null === $properties || true === empty($properties)) {
+        if ($properties === null || empty($properties) === true) {
             return;
         }
 
@@ -700,7 +700,7 @@ class ObjectService
             // @todo do something for object properties because the validator will always expect an object instead of uri (string) or id.
         }
 
-        if (false === empty($errors)) {
+        if (empty($errors) === false) {
             throw new CustomValidationException(message: $this::VALIDATION_ERROR_MESSAGE, errors: $errors);
         }
     }// end validateCustomRules()
@@ -769,7 +769,7 @@ class ObjectService
             $depth = $schema->getMaxDepth();
         }
 
-        if (true === isset($object['id'])) {
+        if (isset($object['id']) === true) {
             $objectEntity = $this->objectEntityMapper->find(
                 $object['id']
             );
@@ -847,7 +847,7 @@ class ObjectService
         $objectEntity->setObject($object);
 
         // Handle object properties that are either nested objects or files.
-        if (null !== $schema->getProperties() && true === is_array($schema->getProperties())) {
+        if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
             $objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them.
         }
 
@@ -856,11 +856,11 @@ class ObjectService
 
         $this->setDefaults($objectEntity);
 
-        if ($objectEntity->getId() && (false === $schema->getHardValidation() || true === $validationResult->isValid())) {
+        if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
             $objectEntity = $this->objectEntityMapper->update($objectEntity);
             // Create audit trail for update.
             $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-        } elseif (false === $schema->getHardValidation() || true === $validationResult->isValid()) {
+        } elseif ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
             $objectEntity = $this->objectEntityMapper->insert($objectEntity);
             // Create audit trail for creation.
             $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
@@ -894,9 +894,9 @@ class ObjectService
         $validRelationProperties = [];
         $schema = $this->schemaMapper->find($objectEntity->getSchema());
         foreach ($schema->getProperties() as $propertyName => $property) {
-            if (true === isset($property['type']) && (
-                'object' === $property['type']
-                || ('array' === $property['type']) && true === isset($property['items']['type']) && 'object' === $property['items']['type']
+            if (isset($property['type']) === true && (
+                $property['type'] === 'object'
+                || ($property['type'] === 'array' && isset($property['items']['type']) === true && $property['items']['type'] === 'object')
             )) {
                 $validRelationProperties[] = $propertyName;
             }
@@ -911,19 +911,19 @@ class ObjectService
 
                 $currentPath = $path ? "$path.$key" : $key;
 
-                if (true === is_array($value)) {
-                    if (true === isset($value['@self']['id'])) {
+                if (is_array($value) === true) {
+                    if (isset($value['@self']['id']) === true) {
                         $relations[$currentPath] = $value['@self']['id'];
                     }
 
-                    if (true === isset($value[0]['@self']['id'])) {
+                    if (isset($value[0]['@self']['id']) === true) {
                         foreach ($value as $key2 => $subObject) {
-                            if (true === isset($subObject['@self']['id'])) {
+                            if (isset($subObject['@self']['id']) === true) {
                                 $relations["$currentPath.$key2"] = $subObject['@self']['id'];
                             }
                         }
                     }
-                } elseif (true === is_string($value)) {
+                } elseif (is_string($value) === true) {
                     // Check for URLs and UUIDs.
                     if ((false !== filter_var($value, FILTER_VALIDATE_URL)
                             || true === Uuid::isValid($value))
@@ -956,7 +956,7 @@ class ObjectService
     private function getIdFromString(string $item, string $propertyName): string
     {
         // Check if item is a valid UUID.
-        if (true === Uuid::isValid($item)) {
+        if (Uuid::isValid($item) === true) {
             return $item;
         }
 
@@ -992,7 +992,7 @@ class ObjectService
             throw new Exception(sprintf('Could not find a $ref for schema $d property %s', $schema, $propertyName));
         }
 
-        if (true === is_numeric($reference)) {
+        if (is_numeric($reference) === true) {
             return $reference;
         }
 
@@ -1039,7 +1039,7 @@ class ObjectService
         int $depth = 0,
     ): string|array {
         $itemIsID = false;
-        if (true === is_string($item)) {
+        if (is_string($item) === true) {
             $item = $this->getIdFromString($item, $propertyName);
             $itemIsID = true;
         }
@@ -1047,7 +1047,7 @@ class ObjectService
         $subSchema = $this->getSchemaFromPropertyReference(property: $property, propertyName: $propertyName, schema: $schema);
 
         // Handle nested object in array.
-        if (true === $itemIsID) {
+        if ($itemIsID === true) {
             $nestedObject = $this->getObject(
                 register: $this->registerMapper->find((int) $register),
                 schema: $this->schemaMapper->find((int) $subSchema),
@@ -1144,7 +1144,7 @@ class ObjectService
         int $schema,
         int $depth = 0,
     ): array {
-        if (false === isset($property['items'])) {
+        if (isset($property['items']) === false) {
             return $items;
         }
 
