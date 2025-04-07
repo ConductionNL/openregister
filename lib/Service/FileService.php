@@ -1023,6 +1023,32 @@ class FileService
                 schema: $objectEntity->getSchema()
             );
 
+	/**
+	 * Adds a new file to an object's folder with the OpenCatalogi user as owner
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to add the file to
+	 * @param string $fileName The name of the file to create
+	 * @param string $content The content to write to the file
+	 * @param bool $share Whether to create a share link for the file
+	 * @param array $tags Optional array of tags to attach to the file
+	 *
+	 * @return File The created file
+	 * @throws NotPermittedException If file creation fails due to permissions
+	 * @throws Exception If file creation fails for other reasons
+	 */
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+	{
+		try {
+			// Create new file in the folder
+			$folder = $this->getObjectFolder(
+				objectEntity: $objectEntity,
+				register: $objectEntity->getRegister(),
+				schema: $objectEntity->getSchema()
+			);
+            if (empty($fileName) === true) {
+                throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
+            }
+
             /**
              * @var File $file
              */
