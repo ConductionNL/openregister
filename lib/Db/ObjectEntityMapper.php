@@ -294,7 +294,6 @@ class ObjectEntityMapper extends QBMapper
             $orX = $qb->expr()->orX();
             $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            $orX->add($qb->expr()->in('slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
 

@@ -74,6 +74,58 @@ class SaveObject
 
 
     /**
+     * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
+     *
+     * @param array  $data   The object data to scan
+     * @param string $prefix The current prefix for dot notation (used in recursion)
+     *
+     * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
+     */
+    private function scanForRelations(array $data, string $prefix = ''): array
+    {
+        $relations = [];
+
+        foreach ($data as $key => $value) {
+            $currentPath = $prefix ? $prefix . '.' . $key : $key;
+
+            if (is_array($value)) {
+                // Recursively scan nested arrays
+                $relations = array_merge($relations, $this->scanForRelations($value, $currentPath));
+            } elseif (is_string($value)) {
+                // Check for UUID pattern
+                if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
+                    $relations[$currentPath] = $value;
+                }
+                // Check for URL pattern
+                elseif (filter_var($value, FILTER_VALIDATE_URL)) {
+                    $relations[$currentPath] = $value;
+                }
+            }
+        }
+
+        return $relations;
+    }
+
+    /**
+     * Updates the relations property of an object entity
+     *
+     * @param ObjectEntity $objectEntity The object entity to update
+     * @param array       $data         The object data to scan for relations
+     *
+     * @return ObjectEntity The updated object entity
+     */
+    private function updateObjectRelations(ObjectEntity $objectEntity, array $data): ObjectEntity
+    {
+        // Scan for relations in the object data
+        $relations = $this->scanForRelations($data);
+
+        // Set the relations on the object entity
+        $objectEntity->setRelations($relations);
+
+        return $objectEntity;
+    }
+
+    /**
      * Saves an object.
      *
      * @param Register|int|string $register The register containing the object.
@@ -131,6 +183,9 @@ class SaveObject
             $objectEntity->setCreatedBy($user->getUID());
             $objectEntity->setUpdatedBy($user->getUID());
         }
+
+        // Update object relations
+        $objectEntity = $this->updateObjectRelations($objectEntity, $data);
 
         // Handle object relations.
         $objectEntity = $this->handleObjectRelations(
@@ -337,6 +392,9 @@ class SaveObject
         $existingObject->setSchema($schemaId);
         $existingObject->setObject($data);
         $existingObject->setUpdated(new DateTime());
+
+        // Update object relations
+        $existingObject = $this->updateObjectRelations($existingObject, $data);
 
         // Handle object relations.
         $existingObject = $this->handleObjectRelations(

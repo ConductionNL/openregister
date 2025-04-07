@@ -198,6 +198,9 @@ class ObjectsController extends Controller
     {
         $params = $this->request->getParams();
 
+        unset($params['id']);
+        unset($params['_route']);
+
         // Extract and normalize parameters
         $limit = (int)($params['limit'] ?? $params['_limit'] ?? 20);
         $offset = isset($params['offset']) 
@@ -379,6 +382,9 @@ class ObjectsController extends Controller
     /**
      * Updates an existing object
      *
+     * Takes the request data, validates it against the schema, and updates an existing object
+     * in the database. Handles validation errors appropriately.
+     *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
      * @param string        $id            The object ID or UUID
@@ -404,6 +410,7 @@ class ObjectsController extends Controller
         $object = $this->request->getParams();
 
         // Filter out special parameters and reserved fields.
+        // @todo shouldn't this be part of the object service?
         $object = array_filter(
             $object,
             fn ($key) => !str_starts_with($key, '_')
@@ -412,6 +419,8 @@ class ObjectsController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
+        // Check if the object exists and can be updated.
+        // @todo shouldn't this be part of the object service?
         try {
             $existingObject = $this->objectEntityMapper->find($id);
 
@@ -614,7 +623,7 @@ class ObjectsController extends Controller
 
         // Get the relations for the object
         $relationsArray = $objectService->findByRelations($id);
-        $relations = array_map(static fn($relation) => $relation->getId(), $relationsArray);
+        $relations = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
 
         // Get config and fetch objects
         $config = $this->getConfig($register, $schema, $relations);
