@@ -573,7 +573,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Check if user has permission to lock.
         if ($this->userSession->isLoggedIn() === false) {
-            throw new() \Exception('Must be logged in to lock objects');
+            throw new \Exception('Must be logged in to lock objects');
         }
 
         // Attempt to lock the object.
@@ -609,7 +609,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Check if user has permission to unlock.
         if ($this->userSession->isLoggedIn() === false) {
-            throw new() \Exception('Must be logged in to unlock objects');
+            throw new \Exception('Must be logged in to unlock objects');
         }
 
         // Attempt to unlock the object.
