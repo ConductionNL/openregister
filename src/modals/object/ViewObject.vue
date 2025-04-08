@@ -14,7 +14,6 @@ import {
 	NcDialog,
 	NcButton,
 	NcNoteCard,
-	NcEmptyContent,
 	NcCounterBubble,
 } from '@nextcloud/vue'
 import { json } from '@codemirror/lang-json'
@@ -280,9 +279,9 @@ onMounted(() => {
 									</NcButton>
 								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No uses found
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No uses found for this object</p>
+							</NcNoteCard>
 						</BTab>
 						<BTab title="Used by">
 							<div v-if="objectStore.used.results?.length > 0" class="search-list-table">
@@ -325,9 +324,9 @@ onMounted(() => {
 									</NcButton>
 								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No objects using this object
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No objects are using this object</p>
+							</NcNoteCard>
 						</BTab>
 						<BTab title="Contracts">
 							<div v-if="objectStore.contracts.length > 0" class="search-list-table">
@@ -361,9 +360,9 @@ onMounted(() => {
 									</tbody>
 								</table>
 							</div>
-							<NcEmptyContent v-else>
-								No contracts found
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No contracts found for this object</p>
+							</NcNoteCard>
 						</BTab>
 						<BTab title="Files">
 							<div v-if="objectStore.files.results?.length > 0" class="search-list-table">
@@ -421,9 +420,9 @@ onMounted(() => {
 									</NcButton>
 								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No attachments added yet
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No files have been attached to this object</p>
+							</NcNoteCard>
 						</BTab>
 						<BTab title="Audit Trails">
 							<div v-if="objectStore.auditTrails.results?.length" class="search-list-table">
@@ -466,9 +465,9 @@ onMounted(() => {
 									</NcButton>
 								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No audit trails found
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No audit trails found for this object</p>
+							</NcNoteCard>
 						</BTab>
 					</BTabs>
 				</div>
