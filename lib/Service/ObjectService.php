@@ -371,10 +371,10 @@ class ObjectService
         );
 
         // If extend is provided, extend each object
-        if (!empty($extend)) {
+        if (empty($extend) === false) {
             $objects = array_map(function($object) use ($extend) {
                 // Convert object to array if needed
-                $objectArray = is_array($object) ? $object : $object->jsonSerialize();
+                $objectArray = is_array($object) === true ? $object : $object->jsonSerialize();
                 return $this->renderEntity(entity: $objectArray, extend: $extend);
             }, $objects);
         }
