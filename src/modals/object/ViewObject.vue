@@ -240,7 +240,7 @@ onMounted(() => {
 							</div>
 						</BTab>
 						<BTab title="Uses">
-							<div v-if="objectStore.uses.length > 0" class="search-list-table">
+							<div v-if="objectStore.uses.results?.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
@@ -252,7 +252,7 @@ onMounted(() => {
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="use in objectStore.uses"
+										<tr v-for="use in objectStore.uses.results"
 											:key="use['@self'].id"
 											class="table-row">
 											<td>{{ use['@self'].id }}</td>
@@ -270,13 +270,22 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
+								<div v-if="objectStore.uses.total > pagination.uses.limit" class="pagination">
+									<NcButton :disabled="pagination.uses.currentPage === 1" @click="pagination.uses.currentPage--">
+										Previous
+									</NcButton>
+									<span>Page {{ pagination.uses.currentPage }}</span>
+									<NcButton :disabled="pagination.uses.currentPage >= Math.ceil(objectStore.uses.total / pagination.uses.limit)" @click="pagination.uses.currentPage++">
+										Next
+									</NcButton>
+								</div>
 							</div>
 							<NcEmptyContent v-else>
 								No uses found
 							</NcEmptyContent>
 						</BTab>
 						<BTab title="Used by">
-							<div v-if="objectStore.used.length > 0" class="search-list-table">
+							<div v-if="objectStore.used.results?.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
@@ -288,7 +297,7 @@ onMounted(() => {
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="usedBy in objectStore.used"
+										<tr v-for="usedBy in objectStore.used.results"
 											:key="usedBy['@self'].id"
 											class="table-row">
 											<td>{{ usedBy['@self'].id }}</td>
@@ -306,6 +315,15 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
+								<div v-if="objectStore.used.total > pagination.used.limit" class="pagination">
+									<NcButton :disabled="pagination.used.currentPage === 1" @click="pagination.used.currentPage--">
+										Previous
+									</NcButton>
+									<span>Page {{ pagination.used.currentPage }}</span>
+									<NcButton :disabled="pagination.used.currentPage >= Math.ceil(objectStore.used.total / pagination.used.limit)" @click="pagination.used.currentPage++">
+										Next
+									</NcButton>
+								</div>
 							</div>
 							<NcEmptyContent v-else>
 								No objects using this object

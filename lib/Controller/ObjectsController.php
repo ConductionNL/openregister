@@ -42,6 +42,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\FileService;
 
 /**
  * Class ObjectsController
@@ -106,34 +107,51 @@ class ObjectsController extends Controller
 
 
     /**
-     * Private helper method to handle pagination of results
+     * Private helper method to handle pagination of results.
      *
-     * @param array    $results The array of objects to paginate
-     * @param int      $total   The total number of items (before pagination)
-     * @param int      $limit   The number of items per page
-     * @param int|null $offset  The offset of items
-     * @param int|null $page    The current page number
+     * This method paginates the given results array based on the provided total, limit, offset, and page parameters.
+     * It calculates the number of pages, sets the appropriate offset and page values, and returns the paginated results
+     * along with metadata such as total items, current page, total pages, limit, and offset.
      *
-     * @return array The paginated results with metadata
+     * @param array    $results The array of objects to paginate.
+     * @param int|null $total   The total number of items (before pagination). Defaults to 0.
+     * @param int|null $limit   The number of items per page. Defaults to 20.
+     * @param int|null $offset  The offset of items. Defaults to 0.
+     * @param int|null $page    The current page number. Defaults to 1.
+     *
+     * @return array The paginated results with metadata.
+     *
+     * @phpstan-param array<int, mixed> $results
+     * @phpstan-return array<string, mixed>
+     * @psalm-param array<int, mixed> $results
+     * @psalm-return array<string, mixed>
      */
-    private function paginate(array $results, int $total, int $limit, ?int $offset=null, ?int $page=null): array
+    private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
-        // Calculate the number of pages
-        $pages = ceil($total / $limit);
+        // Ensure we have valid values (never null)
+        $total = max(0, $total ?? 0);
+        $limit = max(1, $limit ?? 20);  // Minimum limit of 1
+        $offset = max(0, $offset ?? 0);
+        $page = max(1, $page ?? 1);     // Minimum page of 1
+
+        // Calculate the number of pages (minimum 1 page)
+        $pages = max(1, ceil($total / $limit));
 
         // If we have a page but no offset, calculate the offset
-        if ($page !== null && $offset === null) {
+        if ($offset === 0) {
             $offset = ($page - 1) * $limit;
         }
 
-        // If we have an offset but no page, calculate the page
-        if ($offset !== null && $page === null) {
+        // If we have an offset but page is 1, calculate the page
+        if ($page === 1 && $offset > 0) {
             $page = floor($offset / $limit) + 1;
         }
 
-        // Default to page 1 if neither offset nor page is set
-        if ($page === null) {
-            $page = 1;
+        // If total is smaller than the number of results, set total to the number of results
+        // @todo: this is a hack to ensure the pagination is correct when the total is not known. That sugjest that the underlaying count service has a problem that needs to be fixed instead
+        if ($total < count($results)) {
+            $total = count($results);
+            $pages = max(1, ceil($total / $limit));
         }
 
         // Initialize the results array with pagination information
@@ -531,6 +549,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @todo Implement contract functionality to handle object contracts and their relationships
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -545,23 +565,16 @@ class ObjectsController extends Controller
         $limit  = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
         $offset = isset($requestParams['offset']) ? (int) $requestParams['offset'] : (isset($requestParams['_offset']) ? (int) $requestParams['_offset'] : null);
         $page   = isset($requestParams['page']) ? (int) $requestParams['page'] : (isset($requestParams['_page']) ? (int) $requestParams['_page'] : null);
-        $order  = ($requestParams['order'] ?? $requestParams['_order'] ?? []);
-        $extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-        $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-        $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-        $unset  = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
-        $search = ($requestParams['_search'] ?? null);
 
-        // If we have a page but no offset, calculate the offset based on page and limit.
-        if ($page !== null && $offset === null) {
-            $offset = ($page - 1) * $limit;
-        }
-
-        $filters = $requestParams;
-
-        return new JSONResponse(['error' => 'Not yet implemented'], 501);
-
-    }//end contracts()
+        // Return empty paginated response
+        return new JSONResponse($this->paginate(
+            results: [],
+            total: 0,
+            limit: $limit,
+            offset: $offset,
+            page: $page
+        ));
+    }
 
 
     /**
@@ -739,9 +752,11 @@ class ObjectsController extends Controller
     /**
      * Retrieves files for an object
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object to retrieve files for
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param string        $id            The ID of the object to retrieve files for
+     * @param FileService   $fileService   The file service
+     * @param ObjectService $objectService The object service
      *
      * @return JSONResponse A JSON response containing the files
      *
@@ -749,14 +764,33 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function files(string $register, string $schema, string $id): JSONResponse
-    {
-        $this->objectService->setRegister($register);
-        $this->objectService->setSchema($schema);
-        $files = $this->objectService->getFiles($id);
-        return new JSONResponse($files);
+    public function files(
+        string $register,
+        string $schema,
+        string $id,
+        FileService $fileService,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the register and schema context
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
 
-    }//end files()
+        try {
+            // Get the raw files from the file service
+            $files = $fileService->getFiles($id);
+
+            // Format the files with pagination using request parameters
+            $formattedFiles = $fileService->formatFiles($files, $this->request->getParams());
+
+            return new JSONResponse($formattedFiles);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (NotFoundException $e) {
+            return new JSONResponse(['error' => 'Files folder not found'], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
 
 
 }//end class

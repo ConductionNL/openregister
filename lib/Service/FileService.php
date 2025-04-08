@@ -1086,4 +1086,41 @@ class FileService
         }
     }//end getAllTags()
 
+    /**
+     * Get files for object
+     *
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     *
+     * @param ObjectEntity|string $object The object or object ID to fetch files for
+     *
+     * @return Node[] The files found
+     *
+     * @throws NotFoundException If the folder is not found
+     * @throws DoesNotExistException If the object ID is not found
+     *
+     * @psalm-return array<int, Node>
+     * @phpstan-return array<int, Node>
+     */
+    public function getFiles(ObjectEntity|string $object): array
+    {
+        // If string ID provided, try to find the object entity
+        if (is_string($object)) {
+            $object = $this->objectEntityMapper->find($object);
+        }
+
+        $folder = $this->getObjectFolder(
+            objectEntity: $object,
+            register: $object->getRegister(),
+            schema: $object->getSchema()
+        );
+
+        $files = [];
+        if ($folder instanceof \OCP\Files\Folder === true) {
+            $files = $folder->getDirectoryListing();
+        }
+
+        return $files;
+    }
+
 }//end class
