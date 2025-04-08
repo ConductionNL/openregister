@@ -603,12 +603,19 @@ class ObjectsController extends Controller
         $relationsArray = $objectService->find($id)->getRelations();
         $relations      = array_values($relationsArray);
 
-        // Get config and fetch objects
-        $config  = $this->getConfig($register, $schema, $relations);
-        $objects = $objectService->findAll($config);
+        // Check if relations array is empty
+        if (empty($relations)) {
+            // If relations is empty, set objects to an empty array
+            $objects = [];
+            $total = 0;
+        } else {
+            // Get config and fetch objects
+            $config  = $this->getConfig($register, $schema, $relations);
+            $objects = $objectService->findAll($config);
+            // Get total count for pagination
+            $total = $objectService->count($config['filters']);
+        }
 
-        // Get total count for pagination
-        $total = $objectService->count($config['filters']);
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
@@ -642,12 +649,19 @@ class ObjectsController extends Controller
         $relationsArray = $objectService->findByRelations($id);
         $relations      = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
 
-        // Get config and fetch objects
-        $config  = $this->getConfig($register, $schema, $relations);
-        $objects = $objectService->findAll($config);
+        // Check if relations array is empty
+        if (empty($relations)) {
+            // If relations is empty, set objects to an empty array
+            $objects = [];
+            $total = 0;
+        } else {
+            // Get config and fetch objects
+            $config  = $this->getConfig($register, $schema, $relations);
+            $objects = $objectService->findAll($config);
+            // Get total count for pagination
+            $total = $objectService->count($config['filters']);
+        }
 
-        // Get total count for pagination
-        $total = $objectService->count($config['filters']);
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
