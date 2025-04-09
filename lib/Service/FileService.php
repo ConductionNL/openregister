@@ -990,6 +990,9 @@ class FileService
 				register: $objectEntity->getRegister(),
 				schema: $objectEntity->getSchema()
 			);
+            if (empty($fileName) === true) {
+                throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
+            }
 
             /**
              * @var File $file
