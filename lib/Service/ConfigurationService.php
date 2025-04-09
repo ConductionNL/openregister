@@ -23,6 +23,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\ObjectMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ILogger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -46,6 +48,11 @@ class ConfigurationService {
     private RegisterMapper $registerMapper;
 
     /**
+     * @var ObjectMapper The object mapper instance
+     */
+    private ObjectMapper $objectMapper;
+
+    /**
      * @var SchemaPropertyValidator The schema property validator instance
      */
     private SchemaPropertyValidator $validator;
@@ -58,19 +65,22 @@ class ConfigurationService {
     /**
      * Constructor
      *
-     * @param SchemaMapper           $schemaMapper   The schema mapper instance
-     * @param RegisterMapper         $registerMapper The register mapper instance
-     * @param SchemaPropertyValidator $validator     The schema property validator instance
-     * @param LoggerInterface        $logger        The logger instance
+     * @param SchemaMapper           $schemaMapper    The schema mapper instance
+     * @param RegisterMapper         $registerMapper  The register mapper instance
+     * @param ObjectMapper          $objectMapper    The object mapper instance
+     * @param SchemaPropertyValidator $validator       The schema property validator instance
+     * @param LoggerInterface        $logger          The logger instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
+        ObjectMapper $objectMapper,
         SchemaPropertyValidator $validator,
         LoggerInterface $logger
     ) {
         $this->schemaMapper = $schemaMapper;
         $this->registerMapper = $registerMapper;
+        $this->objectMapper = $objectMapper;
         $this->validator = $validator;
         $this->logger = $logger;
     }
@@ -178,4 +188,202 @@ class ConfigurationService {
         return $object->jsonSerialize();
     }
 
+    /**
+     * Import configuration from a JSON file
+     *
+     * @param string      $jsonContent    The configuration JSON content
+     * @param bool       $includeObjects Whether to include objects in the import
+     * @param string|null $owner         The owner of the schemas and registers
+     *
+     * @throws JsonException If JSON parsing fails
+     * @throws Exception If schema validation fails or format is unsupported
+     * @return array Array of created/updated entities
+     */
+    public function importFromJson(string $jsonContent, bool $includeObjects = false, ?string $owner = null): array {
+        try {
+            $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->logger->error('Failed to parse JSON: ' . $e->getMessage());
+            throw new Exception('Invalid JSON format: ' . $e->getMessage());
+        }
+
+        $result = [
+            'registers' => [],
+            'schemas' => [],
+            'objects' => []
+        ];
+
+        // Import registers first
+        if (isset($data['components']['registers'])) {
+            foreach ($data['components']['registers'] as $registerData) {
+                $register = $this->importRegister($registerData, $owner);
+                if ($register) {
+                    $result['registers'][] = $register;
+                }
+            }
+        }
+
+        // Import schemas
+        if (isset($data['components']['schemas'])) {
+            foreach ($data['components']['schemas'] as $schemaData) {
+                $schema = $this->importSchema($schemaData, $owner);
+                if ($schema) {
+                    $result['schemas'][] = $schema;
+                }
+            }
+        }
+
+        // Import objects if includeObjects is true
+        if ($includeObjects && isset($data['components']['objects'])) {
+            foreach ($data['components']['objects'] as $objectData) {
+                $object = $this->importObject($objectData, $owner);
+                if ($object) {
+                    $result['objects'][] = $object;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Import a register from configuration data
+     *
+     * @param array       $data  The register data
+     * @param string|null $owner The owner of the register
+     *
+     * @return Register|null The imported register or null if skipped
+     */
+    private function importRegister(array $data, ?string $owner = null): ?Register {
+        try {
+            // Check if register already exists by slug
+            $existingRegister = null;
+            try {
+                $existingRegister = $this->registerMapper->findBySlug($data['slug']);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Register doesn't exist, we'll create a new one
+            }
+
+            if ($existingRegister) {
+                // Compare versions using version_compare for proper semver comparison
+                if (version_compare($data['version'], $existingRegister->getVersion(), '<=')) {
+                    $this->logger->info('Skipping register import as existing version is newer or equal');
+                    return null;
+                }
+                
+                // Update existing register
+                $existingRegister->hydrate($data);
+                if ($owner) {
+                    $existingRegister->setOwner($owner);
+                }
+                return $this->registerMapper->update($existingRegister);
+            }
+
+            // Create new register
+            $register = new Register();
+            $register->hydrate($data);
+            if ($owner) {
+                $register->setOwner($owner);
+            }
+            return $this->registerMapper->insert($register);
+
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import register: ' . $e->getMessage());
+            throw new Exception('Failed to import register: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Import a schema from configuration data
+     *
+     * @param array       $data  The schema data
+     * @param string|null $owner The owner of the schema
+     *
+     * @return Schema|null The imported schema or null if skipped
+     */
+    private function importSchema(array $data, ?string $owner = null): ?Schema {
+        try {
+            // Check if schema already exists by slug
+            $existingSchema = null;
+            try {
+                $existingSchema = $this->schemaMapper->findBySlug($data['slug']);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Schema doesn't exist, we'll create a new one
+            }
+
+            if ($existingSchema) {
+                // Compare versions using version_compare for proper semver comparison
+                if (version_compare($data['version'], $existingSchema->getVersion(), '<=')) {
+                    $this->logger->info('Skipping schema import as existing version is newer or equal');
+                    return null;
+                }
+                
+                // Update existing schema
+                $existingSchema->hydrate($data, $this->validator);
+                if ($owner) {
+                    $existingSchema->setOwner($owner);
+                }
+                return $this->schemaMapper->update($existingSchema);
+            }
+
+            // Create new schema
+            $schema = new Schema();
+            $schema->hydrate($data, $this->validator);
+            if ($owner) {
+                $schema->setOwner($owner);
+            }
+            return $this->schemaMapper->insert($schema);
+
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import schema: ' . $e->getMessage());
+            throw new Exception('Failed to import schema: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Import an object from configuration data
+     *
+     * @param array       $data  The object data
+     * @param string|null $owner The owner of the object
+     *
+     * @return ObjectEntity|null The imported object or null if skipped
+     */
+    private function importObject(array $data, ?string $owner = null): ?ObjectEntity {
+        try {
+            // Check if object already exists by UUID
+            $existingObject = null;
+            try {
+                $existingObject = $this->objectMapper->findByUuid($data['uuid']);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Object doesn't exist, we'll create a new one
+            }
+
+            if ($existingObject) {
+                // Compare versions using version_compare for proper semver comparison
+                if (version_compare($data['version'], $existingObject->getVersion(), '<=')) {
+                    $this->logger->info('Skipping object import as existing version is newer or equal');
+                    return null;
+                }
+                
+                // Update existing object
+                $existingObject->hydrate($data);
+                if ($owner) {
+                    $existingObject->setOwner($owner);
+                }
+                return $this->objectMapper->update($existingObject);
+            }
+
+            // Create new object
+            $object = new ObjectEntity();
+            $object->hydrate($data);
+            if ($owner) {
+                $object->setOwner($owner);
+            }
+            return $this->objectMapper->insert($object);
+
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import object: ' . $e->getMessage());
+            throw new Exception('Failed to import object: ' . $e->getMessage());
+        }
+    }
 } 
