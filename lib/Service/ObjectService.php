@@ -1584,7 +1584,19 @@ class ObjectService
         return $files;
     }
 
-    public function createFileVersion (string $filePath, ObjectEntity $object, ?string $filename = null):File
+    /**
+     * Creates a new version of a file
+     *
+     * @param string $filePath The filepath of the file to update
+     * @param ObjectEntity $object The objectEntity the file relates to
+     * @param string|null $filename If the file is renamed, the new filename.
+     *
+     * @return \OCP\Files\File The updated file
+     *
+     * @throws DoesNotExistException
+     * @throws NotFoundException
+     */
+    public function createFileVersion (string $filePath, ObjectEntity $object, ?string $filename = null): \OCP\Files\File
     {
         $file = $this->getFile($object, $filePath);
 
