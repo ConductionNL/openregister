@@ -25,6 +25,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
 use stdClass;
+use OCA\OpenRegister\Service\SchemaPropertyValidator;
 
 /**
  * Class Schema
@@ -169,6 +170,12 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?DateTime $deleted = null;
 
+    /**
+     * Configuration of the schema
+     *
+     * @var array|null Configuration of the schema
+     */
+    protected ?array $configuration = null;
 
     /**
      * Constructor for the Schema class
@@ -197,9 +204,8 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
-
-    }//end __construct()
-
+        $this->addType(fieldName: 'configuration', type: 'array');
+    }
 
     /**
      * Get the required data
@@ -209,9 +215,7 @@ class Schema extends Entity implements JsonSerializable
     public function getRequired(): array
     {
         return ($this->required ?? []);
-
-    }//end getRequired()
-
+    }
 
     /**
      * Get the properties data
@@ -221,9 +225,7 @@ class Schema extends Entity implements JsonSerializable
     public function getProperties(): array
     {
         return ($this->properties ?? []);
-
-    }//end getProperties()
-
+    }
 
     /**
      * Get the archive data
@@ -233,9 +235,7 @@ class Schema extends Entity implements JsonSerializable
     public function getArchive(): array
     {
         return ($this->archive ?? []);
-
-    }//end getArchive()
-
+    }
 
     /**
      * Get JSON fields from the entity
@@ -254,20 +254,33 @@ class Schema extends Entity implements JsonSerializable
                 }
             )
         );
+    }
 
-    }//end getJsonFields()
-
+    /**
+     * Validate the schema properties
+     *
+     * @param SchemaPropertyValidator $validator The schema property validator
+     *
+     * @throws Exception If the properties are invalid
+     * @return bool True if the properties are valid
+     */
+    public function validateProperties(SchemaPropertyValidator $validator): bool
+    {
+        return $validator->validateProperties($this->properties);
+    }
 
     /**
      * Hydrate the entity with data from an array
      *
      * Sets entity properties based on input array values
      *
-     * @param array $object The data array to hydrate from
+     * @param array                   $object    The data array to hydrate from
+     * @param SchemaPropertyValidator $validator Optional validator for properties
      *
+     * @throws Exception If property validation fails
      * @return self Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object, ?SchemaPropertyValidator $validator = null): self
     {
         $jsonFields = $this->getJsonFields();
 
@@ -289,10 +302,13 @@ class Schema extends Entity implements JsonSerializable
             }
         }
 
+        // Validate properties if validator is provided
+        if ($validator !== null && isset($object['properties'])) {
+            $this->validateProperties($validator);
+        }
+
         return $this;
-
-    }//end hydrate()
-
+    }
 
     /**
      * Serializes the schema to an array
@@ -357,10 +373,9 @@ class Schema extends Entity implements JsonSerializable
             'organisation'   => $this->organisation,
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
+            'configuration'  => $this->configuration,
         ];
-
-    }//end jsonSerialize()
-
+    }
 
     /**
      * Converts schema to an object representation
@@ -418,12 +433,9 @@ class Schema extends Entity implements JsonSerializable
                 }
 
                 $schema->properties->$propertyName = $prop;
-            }//end if
-        }//end foreach
+            }
+        }
 
         return $schema;
-
-    }//end getSchemaObject()
-
-
-}//end class
+    }
+}

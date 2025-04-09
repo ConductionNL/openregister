@@ -28,6 +28,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\SchemaPropertyValidator;
 
 /**
  * The SchemaMapper class
@@ -44,21 +45,29 @@ class SchemaMapper extends QBMapper
      */
     private $eventDispatcher;
 
+    /**
+     * The schema property validator instance
+     *
+     * @var SchemaPropertyValidator
+     */
+    private $validator;
 
     /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection    $db              The database connection
-     * @param IEventDispatcher $eventDispatcher The event dispatcher
+     * @param IDBConnection          $db              The database connection
+     * @param IEventDispatcher       $eventDispatcher The event dispatcher
+     * @param SchemaPropertyValidator $validator       The schema property validator
      */
     public function __construct(
         IDBConnection $db,
-        IEventDispatcher $eventDispatcher
+        IEventDispatcher $eventDispatcher,
+        SchemaPropertyValidator $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher = $eventDispatcher;
-
-    }//end __construct()
+        $this->validator = $validator;
+    }
 
 
     /**
@@ -235,18 +244,19 @@ class SchemaMapper extends QBMapper
      * @param array $object The object to create
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws Exception If property validation fails
      *
      * @return Schema The created schema
      */
     public function createFromArray(array $object): Schema
     {
         $schema = new Schema();
-        $schema->hydrate(object: $object);
+        $schema->hydrate($object, $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);
 
-        $schema = $this->insert(entity: $schema);
+        $schema = $this->insert($schema);
 
         return $schema;
 
@@ -289,13 +299,14 @@ class SchemaMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+     * @throws Exception If property validation fails
      *
      * @return Schema The updated schema
      */
     public function updateFromArray(int $id, array $object): Schema
     {
         $newSchema = $this->find($id);
-        $newSchema->hydrate($object);
+        $newSchema->hydrate($object, $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($newSchema);

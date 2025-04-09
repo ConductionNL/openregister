@@ -181,6 +181,13 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
+    /**
+     * Version of the schema when this object was created
+     *
+     * @var string|null Version of the schema when this object was created
+     */
+    protected ?string $schemaVersion = null;
+
 
     /**
      * Initialize the entity and define field types
@@ -208,6 +215,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'retention', type: 'json');
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
+        $this->addType(fieldName:'schemaVersion', type: 'string');
 
     }//end __construct()
 
@@ -364,6 +372,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $object          = $this->object;
         $object['@self'] = $this->getObjectArray();
         $object['@self']['id'] = $this->getUuid();
+        $object['@self']['schemaVersion'] = $this->schemaVersion;
         $object['id']          = $this->getUuid();
 
         // Let's merge and return.
@@ -385,6 +394,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'version'      => $this->version,
             'register'     => $this->register,
             'schema'       => $this->schema,
+            'schemaVersion' => $this->schemaVersion,
             'files'        => $this->files,
             'relations'    => $this->relations,
             'locked'       => $this->locked,
