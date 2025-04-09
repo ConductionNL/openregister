@@ -616,7 +616,6 @@ class ObjectsController extends Controller
             $total = $objectService->count($config['filters']);
         }
 
-
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
 

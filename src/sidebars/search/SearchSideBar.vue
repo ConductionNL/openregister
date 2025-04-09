@@ -5,6 +5,7 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 <template>
 	<NcAppSidebar
 		ref="sidebar"
+		v-model="activeTab"
 		name="Object selection"
 		subtitle="Select register and schema"
 		subname="Within the federative network">
@@ -44,12 +45,7 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 					@update:modelValue="handleSearch" />
 
 				<NcNoteCard type="info" class="column-hint">
-					You can customize visible columns in the
-					<NcButton type="tertiary"
-						class="inline-button"
-						@click="$refs.sidebar.showTab('columns-tab')">
-						Columns tab
-					</NcButton>
+					You can customize visible columns in the Columns tab
 				</NcNoteCard>
 			</div>
 		</NcAppSidebarTab>
@@ -106,7 +102,7 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 
@@ -116,7 +112,6 @@ export default {
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
-		NcButton,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcTextField,
@@ -130,6 +125,7 @@ export default {
 			schemaLoading: false,
 			ignoreNextPageWatch: false,
 			searchQuery: '',
+			activeTab: 'search-tab',
 		}
 	},
 	computed: {
