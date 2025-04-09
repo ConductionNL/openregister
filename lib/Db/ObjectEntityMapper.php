@@ -32,242 +32,242 @@ use OCA\OpenRegister\Exception\LockedException;
  */
 class ObjectEntityMapper extends QBMapper
 {
-	private IDatabaseJsonService $databaseJsonService;
-	private IEventDispatcher $eventDispatcher;
-	private IUserSession $userSession;
+    private IDatabaseJsonService $databaseJsonService;
+    private IEventDispatcher $eventDispatcher;
+    private IUserSession $userSession;
 
-	public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
-	public const DEFAULT_LOCK_DURATION = 3600;
+    public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
+    public const DEFAULT_LOCK_DURATION = 3600;
 
-	/**
-	 * Constructor for the ObjectEntityMapper
-	 *
-	 * @param IDBConnection $db The database connection
-	 * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
-	 * @param IEventDispatcher $eventDispatcher The event dispatcher
-	 * @param IUserSession $userSession The user session
-	 */
-	public function __construct(
-		IDBConnection $db,
-		MySQLJsonService $mySQLJsonService,
-		IEventDispatcher $eventDispatcher,
-		IUserSession $userSession,
-	) {
-		parent::__construct($db, 'openregister_objects');
+    /**
+     * Constructor for the ObjectEntityMapper
+     *
+     * @param IDBConnection $db The database connection
+     * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
+     * @param IEventDispatcher $eventDispatcher The event dispatcher
+     * @param IUserSession $userSession The user session
+     */
+    public function __construct(
+        IDBConnection $db,
+        MySQLJsonService $mySQLJsonService,
+        IEventDispatcher $eventDispatcher,
+        IUserSession $userSession,
+    ) {
+        parent::__construct($db, 'openregister_objects');
 
-		if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
-			$this->databaseJsonService = $mySQLJsonService;
-		}
-		$this->eventDispatcher = $eventDispatcher;
-		$this->userSession = $userSession;
-	}
+        if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
+            $this->databaseJsonService = $mySQLJsonService;
+        }
+        $this->eventDispatcher = $eventDispatcher;
+        $this->userSession = $userSession;
+    }
 
-	/**
-	 * Find an object by ID or UUID
-	 *
-	 * @param int|string $idOrUuid The ID or UUID of the object to find
-	 * @return ObjectEntity The ObjectEntity
-	 */
-	public function find(string|int $identifier): ObjectEntity
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Find an object by ID or UUID
+     *
+     * @param int|string $idOrUuid The ID or UUID of the object to find
+     * @return ObjectEntity The ObjectEntity
+     */
+    public function find(string|int $identifier): ObjectEntity
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->eq('id', $qb->createNamedParameter(is_numeric($identifier) ? $identifier : -1, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
-					$qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
-				)
-			);
-
-		return $this->findEntity($qb);
-	}
-
-	/**
-	 * Find an object by UUID
-	 *
-	 * @param string $uuid The UUID of the object to find
-	 * @return ObjectEntity The object
-	 */
-	public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity|null
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
-			)
-			->andWhere(
-				$qb->expr()->eq('register', $qb->createNamedParameter($register->getId()))
-			)
-			->andWhere(
-				$qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId()))
-			);
-
-		try {
-			return $this->findEntity($qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
-		}
-	}
-
-	/**
-	 * Find an object by UUID only
-	 *
-	 * @param string $uuid The UUID of the object to find
-	 * @return ObjectEntity The object
-	 */
-	public function findByUuidOnly(string $uuid): ObjectEntity|null
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('id', $qb->createNamedParameter(is_numeric($identifier) ? $identifier : -1, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+                )
             );
 
-		try {
-			return $this->findEntity($qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
-		}
-	}
+        return $this->findEntity($qb);
+    }
 
-	/**
-	 * Find objects by register and schema
-	 *
-	 * @param string $register The register to find objects for
-	 * @param string $schema The schema to find objects for
-	 * @return array An array of ObjectEntitys
-	 */
-	public function findByRegisterAndSchema(string $register, string $schema): ObjectEntity
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Find an object by UUID
+     *
+     * @param string $uuid The UUID of the object to find
+     * @return ObjectEntity The object
+     */
+    public function findByUuid(Register $register, Schema $schema, string $uuid): ObjectEntity|null
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->eq('register', $qb->createNamedParameter($register))
-			)
-			->andWhere(
-				$qb->expr()->eq('schema', $qb->createNamedParameter($schema))
-			);
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+            )
+            ->andWhere(
+                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId()))
+            )
+            ->andWhere(
+                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId()))
+            );
 
-		return $this->findEntities(query: $qb);
-	}
+        try {
+            return $this->findEntity($qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        }
+    }
 
-	/**
-	 * Counts all objects
-	 *
-	 * @param array|null $filters The filters to apply
-	 * @param string|null $search The search string to apply	 *
-	 * @param bool $includeDeleted Whether to include deleted objects
-	 *
-	 * @return int The number of objects
-	 */
-	public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Find an object by UUID only
+     *
+     * @param string $uuid The UUID of the object to find
+     * @return ObjectEntity The object
+     */
+    public function findByUuidOnly(string $uuid): ObjectEntity|null
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
-			->from(from: 'openregister_objects');
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+            );
 
-		// Conditionally count objects based on $includeDeleted
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('deleted'));
-		}
+        try {
+            return $this->findEntity($qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        }
+    }
 
-		foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-			}
-		}
+    /**
+     * Find objects by register and schema
+     *
+     * @param string $register The register to find objects for
+     * @param string $schema The schema to find objects for
+     * @return array An array of ObjectEntitys
+     */
+    public function findByRegisterAndSchema(string $register, string $schema): ObjectEntity
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb = $this->databaseJsonService->filterJson($qb, $filters);
-		$qb = $this->databaseJsonService->searchJson($qb, $search);
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where(
+                $qb->expr()->eq('register', $qb->createNamedParameter($register))
+            )
+            ->andWhere(
+                $qb->expr()->eq('schema', $qb->createNamedParameter($schema))
+            );
 
-		$result = $qb->executeQuery();
+        return $this->findEntities(query: $qb);
+    }
 
-		return $result->fetchAll()[0]['count'];
-	}
+    /**
+     * Counts all objects
+     *
+     * @param array|null $filters The filters to apply
+     * @param string|null $search The search string to apply	 *
+     * @param bool $includeDeleted Whether to include deleted objects
+     *
+     * @return int The number of objects
+     */
+    public function countAll(?array $filters = [], ?string $search = null, bool $includeDeleted = false): int
+    {
+        $qb = $this->db->getQueryBuilder();
 
-	/**
-	 * Find all ObjectEntitys
-	 *
-	 * @param int|null $limit The number of objects to return
-	 * @param int|null $offset The offset of the objects to return
-	 * @param array|null $filters The filters to apply to the objects
-	 * @param array|null $searchConditions The search conditions to apply to the objects
-	 * @param array|null $searchParams The search parameters to apply to the objects
-	 * @param array $sort The sort order to apply
-	 * @param string|null $search The search string to apply
-	 * @param array|null $ids Array of IDs or UUIDs to filter by
-	 * @param string|null $uses Value that must be present in relations
-	 * @param bool $includeDeleted Whether to include deleted objects
-	 *
-	 * @return array An array of ObjectEntitys
-	 */
-	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-		array $sort = [],
-		?string $search = null,
-		?array $ids = null,
-		?string $uses = null,
-		bool $includeDeleted = false
-	): array {
-		$qb = $this->db->getQueryBuilder();
+        $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
+            ->from(from: 'openregister_objects');
 
-		$qb->select('*')
-			->from('openregister_objects')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
-
-		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
-		if (!$includeDeleted) {
-			$qb->andWhere($qb->expr()->isNull('deleted'));
-		}
-
-		// Handle filtering by IDs/UUIDs if provided
-		if ($ids !== null && !empty($ids)) {
-			$orX = $qb->expr()->orX();
-			$orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-			$orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-			$qb->andWhere($orX);
-		}
-
-		// Handle filtering by uses in relations if provided
-		if ($uses !== null) {
-			$qb->andWhere(
-				$qb->expr()->isNotNull(
-					$qb->createFunction(
-						"JSON_SEARCH(relations, 'one', " .
-						$qb->createNamedParameter($uses) .
-						", NULL, '$')"
-					)
-				)
-			);
-		}
+        // Conditionally count objects based on $includeDeleted
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
 
         foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-			}
+            if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+            }
+        }
+
+        $qb = $this->databaseJsonService->filterJson($qb, $filters);
+        $qb = $this->databaseJsonService->searchJson($qb, $search);
+
+        $result = $qb->executeQuery();
+
+        return $result->fetchAll()[0]['count'];
+    }
+
+    /**
+     * Find all ObjectEntitys
+     *
+     * @param int|null $limit The number of objects to return
+     * @param int|null $offset The offset of the objects to return
+     * @param array|null $filters The filters to apply to the objects
+     * @param array|null $searchConditions The search conditions to apply to the objects
+     * @param array|null $searchParams The search parameters to apply to the objects
+     * @param array $sort The sort order to apply
+     * @param string|null $search The search string to apply
+     * @param array|null $ids Array of IDs or UUIDs to filter by
+     * @param string|null $uses Value that must be present in relations
+     * @param bool $includeDeleted Whether to include deleted objects
+     *
+     * @return array An array of ObjectEntitys
+     */
+    public function findAll(
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        array $sort = [],
+        ?string $search = null,
+        ?array $ids = null,
+        ?string $uses = null,
+        bool $includeDeleted = false
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+        if (!$includeDeleted) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // Handle filtering by IDs/UUIDs if provided
+        if ($ids !== null && !empty($ids)) {
+            $orX = $qb->expr()->orX();
+            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $qb->andWhere($orX);
+        }
+
+        // Handle filtering by uses in relations if provided
+        if ($uses !== null) {
+            $qb->andWhere(
+                $qb->expr()->isNotNull(
+                    $qb->createFunction(
+                        "JSON_SEARCH(relations, 'one', " .
+                        $qb->createNamedParameter($uses) .
+                        ", NULL, '$')"
+                    )
+                )
+            );
+        }
+
+        foreach ($filters as $filter => $value) {
+            if ($value === 'IS NOT NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } elseif ($value === 'IS NULL' && in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else if (in_array(needle: $filter, haystack: self::MAIN_FILTERS) === true) {
+                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+            }
         }
 
         if (!empty($searchConditions)) {
@@ -277,285 +277,285 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-		// @roto: tody this code up please and make ik monogdb compatible
-		// Check if _relations filter exists to search in relations column
-		if (isset($filters['_relations']) === true) {
-			// Handle both single string and array of relations
-			$relations = (array) $filters['_relations'];
+        // @roto: tody this code up please and make ik monogdb compatible
+        // Check if _relations filter exists to search in relations column
+        if (isset($filters['_relations']) === true) {
+            // Handle both single string and array of relations
+            $relations = (array) $filters['_relations'];
 
-			// Build OR conditions for each relation
-			$orConditions = [];
-			foreach ($relations as $relation) {
-				$orConditions[] = $qb->expr()->isNotNull(
-					$qb->createFunction(
-						"JSON_SEARCH(relations, 'one', " .
-						$qb->createNamedParameter($relation) .
-						", NULL, '$')"
-					)
-				);
-			}
+            // Build OR conditions for each relation
+            $orConditions = [];
+            foreach ($relations as $relation) {
+                $orConditions[] = $qb->expr()->isNotNull(
+                    $qb->createFunction(
+                        "JSON_SEARCH(relations, 'one', " .
+                        $qb->createNamedParameter($relation) .
+                        ", NULL, '$')"
+                    )
+                );
+            }
 
-			// Add the combined OR conditions to query
-			$qb->andWhere($qb->expr()->orX(...$orConditions));
+            // Add the combined OR conditions to query
+            $qb->andWhere($qb->expr()->orX(...$orConditions));
 
-			// Remove _relations from filters since it's handled separately
-			unset($filters['_relations']);
-		}
+            // Remove _relations from filters since it's handled separately
+            unset($filters['_relations']);
+        }
 
-		// Filter and search the objects
-		$qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
-		$qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
-		$qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+        // Filter and search the objects
+        $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
+        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
+        $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
 
-		return $this->findEntities(query: $qb);
-	}
+        return $this->findEntities(query: $qb);
+    }
 
-	
 
-	/**
-	 * Inserts a new entity into the database.
-	 *
-	 * @param Entity $entity The entity to insert.
-	 * @return Entity The inserted entity.
-	 */
-	public function insert(Entity $entity): Entity
-	{
+
+    /**
+     * Inserts a new entity into the database.
+     *
+     * @param Entity $entity The entity to insert.
+     * @return Entity The inserted entity.
+     */
+    public function insert(Entity $entity): Entity
+    {
         // Lets make sure that @self and id never enter the database
-		$object = $entity->getObject();		
-		unset($object['@self'], $object['id']);
-		$entity->setObject($object);
+        $object = $entity->getObject();
+        unset($object['@self'], $object['id']);
+        $entity->setObject($object);
 
-		$entity = parent::insert($entity);
-		// Dispatch creation event
-		$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+        $entity = parent::insert($entity);
+        // Dispatch creation event
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
-		return $entity;
-	}
+        return $entity;
+    }
 
-	/**
-	 * Creates an object from an array
-	 *
-	 * @param array $object The object to create
-	 * @return ObjectEntity The created object
-	 */
-	public function createFromArray(array $object): ObjectEntity
-	{
-		$obj = new ObjectEntity();
-		$obj->hydrate(object: $object);
+    /**
+     * Creates an object from an array
+     *
+     * @param array $object The object to create
+     * @return ObjectEntity The created object
+     */
+    public function createFromArray(array $object): ObjectEntity
+    {
+        $obj = new ObjectEntity();
+        $obj->hydrate(object: $object);
 
-		// Prepare the object before insertion
-		return $this->insert($obj);
-	}
+        // Prepare the object before insertion
+        return $this->insert($obj);
+    }
 
-	/**
-	 * @inheritDoc
-	 */
-	public function update(Entity $entity): Entity
-	{
-		$oldObject = $this->find($entity->getId());
-		
+    /**
+     * @inheritDoc
+     */
+    public function update(Entity $entity): Entity
+    {
+        $oldObject = $this->find($entity->getId());
+
         // Lets make sure that @self and id never enter the database
-		$object = $entity->getObject();		
-		unset($object['@self'], $object['id']);
-		$entity->setObject($object);
+        $object = $entity->getObject();
+        unset($object['@self'], $object['id']);
+        $entity->setObject($object);
 
-		$entity = parent::update($entity);
-		
-		// Dispatch update event
-		$this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+        $entity = parent::update($entity);
 
-		return $entity;
-	}
+        // Dispatch update event
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
-	/**
-	 * Updates an object from an array
-	 *
-	 * @param int $id The id of the object to update
-	 * @param array $object The object to update
-	 * @return ObjectEntity The updated object
-	 */
-	public function updateFromArray(int $id, array $object): ObjectEntity
-	{
-		$oldObject = $this->find($id);
-		$newObject = clone $oldObject;
-		$newObject->hydrate($object);
+        return $entity;
+    }
 
-		// Prepare the object before updating
-		return $this->update($this->prepareEntity($newObject));
-	}
+    /**
+     * Updates an object from an array
+     *
+     * @param int $id The id of the object to update
+     * @param array $object The object to update
+     * @return ObjectEntity The updated object
+     */
+    public function updateFromArray(int $id, array $object): ObjectEntity
+    {
+        $oldObject = $this->find($id);
+        $newObject = clone $oldObject;
+        $newObject->hydrate($object);
 
-	/**
-	 * Delete an object
-	 *
-	 * @param ObjectEntity $object The object to delete
-	 * @return ObjectEntity The deleted object
-	 */
-	public function delete(Entity $object): ObjectEntity
-	{
-		$result = parent::delete($object);
+        // Prepare the object before updating
+        return $this->update($this->prepareEntity($newObject));
+    }
 
-		// Dispatch deletion event
-		$this->eventDispatcher->dispatch(
-			ObjectDeletedEvent::class,
-			new ObjectDeletedEvent($object)
-		);
+    /**
+     * Delete an object
+     *
+     * @param ObjectEntity $object The object to delete
+     * @return ObjectEntity The deleted object
+     */
+    public function delete(Entity $object): ObjectEntity
+    {
+        $result = parent::delete($object);
 
-		return $result;
-	}
+        // Dispatch deletion event
+        $this->eventDispatcher->dispatch(
+            ObjectDeletedEvent::class,
+            new ObjectDeletedEvent($object)
+        );
 
-	/**
-	 * Gets the facets for the objects
-	 *
-	 * @param array $filters The filters to apply
-	 * @param string|null $search The search string to apply
-	 * @return array The facets
-	 */
-	public function getFacets(array $filters = [], ?string $search = null)
-	{
-		if (key_exists(key: 'register', array: $filters) === true) {
-			$register = $filters['register'];
-		}
-		if (key_exists(key: 'schema', array: $filters) === true) {
-			$schema = $filters['schema'];
-		}
+        return $result;
+    }
 
-		$fields = [];
-		if (isset($filters['_queries'])) {
-			$fields = $filters['_queries'];
-		}
+    /**
+     * Gets the facets for the objects
+     *
+     * @param array $filters The filters to apply
+     * @param string|null $search The search string to apply
+     * @return array The facets
+     */
+    public function getFacets(array $filters = [], ?string $search = null)
+    {
+        if (key_exists(key: 'register', array: $filters) === true) {
+            $register = $filters['register'];
+        }
+        if (key_exists(key: 'schema', array: $filters) === true) {
+            $schema = $filters['schema'];
+        }
 
-		unset(
-			$filters['_fields'],
-			$filters['register'],
-			$filters['schema'],
-			$filters['created'],
-			$filters['updated'],
-			$filters['uuid']
-		);
+        $fields = [];
+        if (isset($filters['_queries'])) {
+            $fields = $filters['_queries'];
+        }
 
-		return $this->databaseJsonService->getAggregations(
-			builder: $this->db->getQueryBuilder(),
-			fields: $fields,
-			register: $register,
-			schema: $schema,
-			filters: $filters,
-			search: $search
-		);
-	}
+        unset(
+            $filters['_fields'],
+            $filters['register'],
+            $filters['schema'],
+            $filters['created'],
+            $filters['updated'],
+            $filters['uuid']
+        );
 
-	/**
-	 * Find objects that have a specific URI or UUID in their relations
-	 *
-	 * @param string $search The URI or UUID to search for in relations
-	 * @param bool $partialMatch Whether to search for partial matches (default: false)
-	 * @return array An array of ObjectEntities that have the specified URI/UUID
-	 */
-	public function findByRelationUri(string $search, bool $partialMatch = false): array
-	{
-		$qb = $this->db->getQueryBuilder();
+        return $this->databaseJsonService->getAggregations(
+            builder: $this->db->getQueryBuilder(),
+            fields: $fields,
+            register: $register,
+            schema: $schema,
+            filters: $filters,
+            search: $search
+        );
+    }
 
-		// For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON
-		// For exact matches, we use 'one' mode which finds exact string matches
-		$mode = $partialMatch ? 'all' : 'one';
-		$searchTerm = $partialMatch ? '%' . $search . '%' : $search;
+    /**
+     * Find objects that have a specific URI or UUID in their relations
+     *
+     * @param string $search The URI or UUID to search for in relations
+     * @param bool $partialMatch Whether to search for partial matches (default: false)
+     * @return array An array of ObjectEntities that have the specified URI/UUID
+     */
+    public function findByRelationUri(string $search, bool $partialMatch = false): array
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openregister_objects')
-			->where(
-				$qb->expr()->isNotNull(
-					$qb->createFunction(
-						"JSON_SEARCH(relations, '" . $mode . "', " .
-						$qb->createNamedParameter($searchTerm) .
-						($partialMatch ? ", NULL, '$')" : ")")
-					)
-				)
-			);
+        // For partial matches, we use '%' wildcards and 'all' mode to search anywhere in the JSON
+        // For exact matches, we use 'one' mode which finds exact string matches
+        $mode = $partialMatch ? 'all' : 'one';
+        $searchTerm = $partialMatch ? '%' . $search . '%' : $search;
 
-		return $this->findEntities($qb);
-	}
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where(
+                $qb->expr()->isNotNull(
+                    $qb->createFunction(
+                        "JSON_SEARCH(relations, '" . $mode . "', " .
+                        $qb->createNamedParameter($searchTerm) .
+                        ($partialMatch ? ", NULL, '$')" : ")")
+                    )
+                )
+            );
 
-	/**
-	 * Lock an object
-	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
-	 * @param string|null $process Optional process identifier
-	 * @param int|null $duration Lock duration in seconds
-	 * @return ObjectEntity The locked object
-	 * @throws DoesNotExistException If object not found
-	 * @throws \Exception If locking fails
-	 */
-	public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
-	{
-		$object = $this->find($identifier);
+        return $this->findEntities($qb);
+    }
 
-		if ($duration === null) {
-			$duration = $this::DEFAULT_LOCK_DURATION;
-		}
+    /**
+     * Lock an object
+     *
+     * @param string|int $identifier Object ID, UUID, or URI
+     * @param string|null $process Optional process identifier
+     * @param int|null $duration Lock duration in seconds
+     * @return ObjectEntity The locked object
+     * @throws DoesNotExistException If object not found
+     * @throws \Exception If locking fails
+     */
+    public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
+    {
+        $object = $this->find($identifier);
 
-		// Check if user has permission to lock
-		if (!$this->userSession->isLoggedIn()) {
-			throw new \Exception('Must be logged in to lock objects');
-		}
+        if ($duration === null) {
+            $duration = $this::DEFAULT_LOCK_DURATION;
+        }
 
-		// Attempt to lock the object
-		$object->lock($this->userSession, $process, $duration);
+        // Check if user has permission to lock
+        if (!$this->userSession->isLoggedIn()) {
+            throw new \Exception('Must be logged in to lock objects');
+        }
 
-		// Save the locked object
-		$object = $this->update($object);
+        // Attempt to lock the object
+        $object->lock($this->userSession, $process, $duration);
 
-		// Dispatch lock event
-		$this->eventDispatcher->dispatch(
-			ObjectLockedEvent::class,
-			new ObjectLockedEvent($object)
-		);
+        // Save the locked object
+        $object = $this->update($object);
 
-		return $object;
-	}
+        // Dispatch lock event
+        $this->eventDispatcher->dispatch(
+            ObjectLockedEvent::class,
+            new ObjectLockedEvent($object)
+        );
 
-	/**
-	 * Unlock an object
-	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
-	 * @return ObjectEntity The unlocked object
-	 * @throws DoesNotExistException If object not found
-	 * @throws \Exception If unlocking fails
-	 */
-	public function unlockObject($identifier): ObjectEntity
-	{
-		$object = $this->find($identifier);
+        return $object;
+    }
 
-		// Check if user has permission to unlock
-		if (!$this->userSession->isLoggedIn()) {
-			throw new \Exception('Must be logged in to unlock objects');
-		}
+    /**
+     * Unlock an object
+     *
+     * @param string|int $identifier Object ID, UUID, or URI
+     * @return ObjectEntity The unlocked object
+     * @throws DoesNotExistException If object not found
+     * @throws \Exception If unlocking fails
+     */
+    public function unlockObject($identifier): ObjectEntity
+    {
+        $object = $this->find($identifier);
 
-		// Attempt to unlock the object
-		$object->unlock($this->userSession);
+        // Check if user has permission to unlock
+        if (!$this->userSession->isLoggedIn()) {
+            throw new \Exception('Must be logged in to unlock objects');
+        }
 
-		// Save the unlocked object
-		$object = $this->update($object);
+        // Attempt to unlock the object
+        $object->unlock($this->userSession);
 
-		// Dispatch unlock event
-		$this->eventDispatcher->dispatch(
-			ObjectUnlockedEvent::class,
-			new ObjectUnlockedEvent($object)
-		);
+        // Save the unlocked object
+        $object = $this->update($object);
 
-		return $object;
-	}
+        // Dispatch unlock event
+        $this->eventDispatcher->dispatch(
+            ObjectUnlockedEvent::class,
+            new ObjectUnlockedEvent($object)
+        );
 
-	/**
-	 * Check if an object is locked
-	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
-	 * @return bool True if object is locked, false otherwise
-	 * @throws DoesNotExistException If object not found
-	 */
-	public function isObjectLocked($identifier): bool
-	{
-		$object = $this->find($identifier);
-		return $object->isLocked();
-	}
+        return $object;
+    }
+
+    /**
+     * Check if an object is locked
+     *
+     * @param string|int $identifier Object ID, UUID, or URI
+     * @return bool True if object is locked, false otherwise
+     * @throws DoesNotExistException If object not found
+     */
+    public function isObjectLocked($identifier): bool
+    {
+        $object = $this->find($identifier);
+        return $object->isLocked();
+    }
 
     public function findMultiple(array $ids): array
     {
