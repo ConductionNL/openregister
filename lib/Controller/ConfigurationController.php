@@ -38,14 +38,16 @@ use Symfony\Component\Uid\Uuid;
  */
 class ConfigurationController extends Controller
 {
+
+
     /**
      * Constructor for ConfigurationController
      *
-     * @param string              $appName             The name of the app
-     * @param IRequest            $request             The request object
-     * @param ConfigurationMapper $configurationMapper The configuration mapper
+     * @param string               $appName              The name of the app
+     * @param IRequest             $request              The request object
+     * @param ConfigurationMapper  $configurationMapper  The configuration mapper
      * @param ConfigurationService $configurationService The configuration service
-     * @param UploadService       $uploadService       The upload service
+     * @param UploadService        $uploadService        The upload service
      */
     public function __construct(
         string $appName,
@@ -55,43 +57,49 @@ class ConfigurationController extends Controller
         private readonly UploadService $uploadService
     ) {
         parent::__construct($appName, $request);
-    }
+
+    }//end __construct()
+
 
     /**
      * List all configurations
      *
-     * @param SearchService $searchService The search service
+     * @param SearchService $searchService The search service.
      *
-     * @return JSONResponse List of configurations
+     * @return JSONResponse List of configurations.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function index(SearchService $searchService): JSONResponse
     {
-        // Get request parameters for filtering and searching
-        $filters = $this->request->getParams();
+        // Get request parameters for filtering and searching.
+        $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
-        // Create search parameters and conditions
-        $searchParams = $searchService->createMySQLSearchParams($filters);
+        // Create search parameters and conditions.
+        $searchParams     = $searchService->createMySQLSearchParams($filters);
         $searchConditions = $searchService->createMySQLSearchConditions(
             $filters,
             $fieldsToSearch
         );
-        $filters = $searchService->unsetSpecialQueryParams($filters);
+        $filters          = $searchService->unsetSpecialQueryParams($filters);
 
-        // Return all configurations that match the search conditions
-        return new JSONResponse([
-            'results' => $this->configurationMapper->findAll(
+        // Return all configurations that match the search conditions.
+        return new JSONResponse(
+                [
+                    'results' => $this->configurationMapper->findAll(
                 limit: null,
                 offset: null,
                 filters: $filters,
                 searchConditions: $searchConditions,
                 searchParams: $searchParams
             ),
-        ]);
-    }
+                ]
+                );
+
+    }//end index()
+
 
     /**
      * Show a specific configuration
@@ -113,12 +121,14 @@ class ConfigurationController extends Controller
                 404
             );
         }
-    }
+
+    }//end show()
+
 
     /**
      * Create a new configuration
      *
-     * @return JSONResponse The created configuration
+     * @return JSONResponse The created configuration.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -127,14 +137,14 @@ class ConfigurationController extends Controller
     {
         $data = $this->request->getParams();
 
-        // Remove internal parameters
+        // Remove internal parameters.
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_')) {
                 unset($data[$key]);
             }
         }
 
-        // Ensure we have a UUID
+        // Ensure we have a UUID.
         if (!isset($data['uuid'])) {
             $data['uuid'] = Uuid::v4();
         }
@@ -145,11 +155,13 @@ class ConfigurationController extends Controller
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to create configuration: ' . $e->getMessage()],
+                ['error' => 'Failed to create configuration: '.$e->getMessage()],
                 400
             );
         }
-    }
+
+    }//end create()
+
 
     /**
      * Update an existing configuration
@@ -178,11 +190,13 @@ class ConfigurationController extends Controller
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to update configuration: ' . $e->getMessage()],
+                ['error' => 'Failed to update configuration: '.$e->getMessage()],
                 400
             );
         }
-    }
+
+    }//end update()
+
 
     /**
      * Delete a configuration
@@ -202,46 +216,48 @@ class ConfigurationController extends Controller
             return new JSONResponse();
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to delete configuration: ' . $e->getMessage()],
+                ['error' => 'Failed to delete configuration: '.$e->getMessage()],
                 400
             );
         }
-    }
+
+    }//end destroy()
+
 
     /**
      * Export a configuration
      *
-     * @param int  $id            Configuration ID
-     * @param bool $includeObjects Whether to include objects in the export
+     * @param int  $id             Configuration ID.
+     * @param bool $includeObjects Whether to include objects in the export.
      *
-     * @return DataDownloadResponse|JSONResponse The exported configuration
+     * @return DataDownloadResponse|JSONResponse The exported configuration.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function export(int $id, bool $includeObjects = false): DataDownloadResponse|JSONResponse
+    public function export(int $id, bool $includeObjects=false): DataDownloadResponse | JSONResponse
     {
         try {
-            // Find the configuration
+            // Find the configuration.
             $configuration = $this->configurationMapper->find($id);
 
-            // Export the configuration and its related data
+            // Export the configuration and its related data.
             $exportData = $this->configurationService->exportConfig($configuration, $includeObjects);
 
-            // Convert to JSON
+            // Convert to JSON.
             $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            if ($jsonContent === false) {
+            if ($jsonContent === FALSE) {
                 throw new Exception('Failed to encode configuration data to JSON');
             }
 
-            // Generate filename
+            // Generate filename.
             $filename = sprintf(
                 'configuration_%s_%s.json',
                 $configuration->getSlug(),
                 (new \DateTime())->format('Y-m-d_His')
             );
 
-            // Return as downloadable file
+            // Return as downloadable file.
             return new DataDownloadResponse(
                 $jsonContent,
                 $filename,
@@ -249,53 +265,60 @@ class ConfigurationController extends Controller
             );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to export configuration: ' . $e->getMessage()],
+                ['error' => 'Failed to export configuration: '.$e->getMessage()],
                 400
             );
-        }
-    }
+        }//end try
+
+    }//end export()
+
 
     /**
      * Import a configuration
      *
-     * @param bool $includeObjects Whether to include objects in the import
+     * @param bool $includeObjects Whether to include objects in the import.
      *
-     * @return JSONResponse The import result
+     * @return JSONResponse The import result.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(bool $includeObjects = false): JSONResponse
+    public function import(bool $includeObjects=false): JSONResponse
     {
         try {
-            // Get the uploaded JSON data
+            // Get the uploaded JSON data.
             $jsonData = $this->uploadService->getUploadedJson($this->request->getParams());
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }
 
-            // Convert array to JSON string
+            // Convert array to JSON string.
             $jsonContent = json_encode($jsonData);
-            if ($jsonContent === false) {
+            if ($jsonContent === FALSE) {
                 throw new Exception('Failed to encode upload data to JSON');
             }
 
-            // Import the data
+            // Import the data.
             $result = $this->configurationService->importFromJson(
                 $jsonContent,
                 $includeObjects,
                 $this->request->getParam('owner')
             );
 
-            return new JSONResponse([
-                'message' => 'Import successful',
-                'imported' => $result
-            ]);
+            return new JSONResponse(
+                    [
+                        'message'  => 'Import successful',
+                        'imported' => $result,
+                    ]
+                    );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to import configuration: ' . $e->getMessage()],
+                ['error' => 'Failed to import configuration: '.$e->getMessage()],
                 400
             );
-        }
-    }
-} 
+        }//end try
+
+    }//end import()
+
+
+}//end class
