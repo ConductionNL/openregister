@@ -158,12 +158,9 @@ class ConfigurationMapper extends QBMapper {
      */
     public function createFromArray(array $data): Configuration {
         $config = new Configuration();
-        $config->setTitle($data['title']);
-        $config->setDescription($data['description'] ?? '');
-        $config->setType($data['type']);
-        $config->setData($data['data'] ?? []);
-        $config->setOwner($data['owner'] ?? null);
+        $config->hydrate(object: $data);
 
+        // Prepare the object before insertion.
         return $this->insert($config);
     }
 
@@ -178,22 +175,7 @@ class ConfigurationMapper extends QBMapper {
      */
     public function updateFromArray(int $id, array $data): Configuration {
         $config = $this->find($id);
-        
-        if (isset($data['title'])) {
-            $config->setTitle($data['title']);
-        }
-        if (isset($data['description'])) {
-            $config->setDescription($data['description']);
-        }
-        if (isset($data['type'])) {
-            $config->setType($data['type']);
-        }
-        if (isset($data['data'])) {
-            $config->setData($data['data']);
-        }
-        if (isset($data['owner'])) {
-            $config->setOwner($data['owner']);
-        }
+        $config->hydrate(object: $data);
 
         return $this->update($config);
     }

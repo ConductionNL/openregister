@@ -25,24 +25,6 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Configuration entity class
  *
- * @method string getTitle()
- * @method void setTitle(string $title)
- * @method string|null getDescription()
- * @method void setDescription(?string $description)
- * @method string getType()
- * @method void setType(string $type)
- * @method array|null getData()
- * @method void setData(?array $data)
- * @method string getOwner()
- * @method void setOwner(string $owner)
- * @method DateTime getCreated()
- * @method void setCreated(DateTime $created)
- * @method DateTime getUpdated()
- * @method void setUpdated(DateTime $updated)
- *
- * @package OCA\OpenRegister\Db
- *
- * @psalm-suppress PropertyNotSetInConstructor
  */
 class Configuration extends Entity implements JsonSerializable {
     /** @var string Title of the configuration */
@@ -79,6 +61,59 @@ class Configuration extends Entity implements JsonSerializable {
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
     }
+
+
+    /**
+     * Get JSON fields from the entity
+     *
+     * Returns all fields that are of type 'json'
+     *
+     * @return array<string> List of JSON field names
+     */
+    public function getJsonFields(): array
+    {
+        return array_keys(
+            array_filter(
+                $this->getFieldTypes(),
+                function ($field) {
+                    return $field === 'json';
+                }
+            )
+        );
+
+    }//end getJsonFields()
+
+
+    /**
+     * Hydrate the entity with data from an array
+     *
+     * Sets entity properties based on input array values
+     *
+     * @param array $object The data array to hydrate from
+     *
+     * @return self Returns $this for method chaining
+     */
+    public function hydrate(array $object): self
+    {
+        $jsonFields = $this->getJsonFields();
+
+        foreach ($object as $key => $value) {
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
+            }
+
+            $method = 'set'.ucfirst($key);
+
+            try {
+                $this->$method($value);
+            } catch (\Exception $exception) {
+                // Silently ignore invalid properties.
+            }
+        }
+
+        return $this;
+
+    }//end hydrate()
 
     /**
      * Serialize the entity to JSON

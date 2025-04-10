@@ -65,7 +65,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'length' => 64,
             ]);
             $table->addColumn('version', Types::STRING, [
-                'notnull' => true,
+                'notnull' => false,
                 'length' => 255,
                 'default' => '0.0.1',
             ]);

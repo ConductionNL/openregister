@@ -30,13 +30,6 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				placeholder="Enter configuration type"
 				:value="configurationStore.configurationItem?.type"
 				@update:value="updateType" />
-
-			<NcTextField
-				type="textarea"
-				label="Configuration Data (JSON)"
-				placeholder="Enter configuration data as JSON"
-				:value="JSON.stringify(configurationStore.configurationItem?.data || {}, null, 2)"
-				@update:value="updateData" />
 		</div>
 
 		<template #actions>
@@ -93,26 +86,38 @@ export default {
 	computed: {
 		isValid() {
 			const item = configurationStore.configurationItem
-			return item?.title && item?.type
+			return Boolean(item?.title?.trim()) && Boolean(item?.type?.trim())
 		},
+	},
+	created() {
+		// Initialize configurationItem if it doesn't exist
+		if (!configurationStore.configurationItem) {
+			configurationStore.configurationItem = {
+				title: '',
+				description: null,
+				type: '',
+				owner: '',
+			}
+		}
 	},
 	methods: {
 		updateTitle(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
 			configurationStore.configurationItem.title = value
 		},
 		updateDescription(value) {
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
+			}
 			configurationStore.configurationItem.description = value
 		},
 		updateType(value) {
-			configurationStore.configurationItem.type = value
-		},
-		updateData(value) {
-			try {
-				configurationStore.configurationItem.data = JSON.parse(value)
-				this.error = null
-			} catch (error) {
-				this.error = 'Invalid JSON format'
+			if (!configurationStore.configurationItem) {
+				configurationStore.configurationItem = {}
 			}
+			configurationStore.configurationItem.type = value
 		},
 		closeModal() {
 			navigationStore.setModal(false)
@@ -142,4 +147,4 @@ export default {
 	flex-direction: column;
 	gap: 1rem;
 }
-</style> 
+</style>
