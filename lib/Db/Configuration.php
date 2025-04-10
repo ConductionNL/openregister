@@ -28,25 +28,28 @@ use OCP\AppFramework\Db\Entity;
  */
 class Configuration extends Entity implements JsonSerializable {
     /** @var string Title of the configuration */
-    protected $title;
+    protected $title = null;
 
     /** @var string|null Description of the configuration */
-    protected $description;
+    protected $description = null;
 
     /** @var string Type of the configuration */
-    protected $type;
+    protected $type = null;
 
     /** @var string Owner of the configuration */
-    protected $owner;
+    protected $owner = null;
 
     /** @var string Version of the configuration */
-    protected $version;
+    protected $version = null;
+
+    /** @var array|null Array of registers of the configuration */
+    protected ?array $registers = [];
 
     /** @var DateTime Creation timestamp */
-    protected $created;
+    protected $created = null;
 
     /** @var DateTime Last update timestamp */
-    protected $updated;
+    protected $updated = null;
 
     /**
      * Constructor to set up the entity with required types
@@ -58,11 +61,26 @@ class Configuration extends Entity implements JsonSerializable {
         $this->addType('type', 'string');
         $this->addType('owner', 'string');
         $this->addType('version', 'string');
+        $this->addType('registers', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-    }
+    }//end __construct()
 
+    /**
+     * Get the registers of the configuration
+     *
+     * @return array<string> Array of registers
+     */
+    public function getRegisters(): array
+    {
+        return ($this->registers ?? []);
+    }//end getRegisters()
 
+    /**
+     * Set the registers of the configuration
+     *
+     * @param array<string> $registers Array of registers
+     */
     /**
      * Get JSON fields from the entity
      *
@@ -126,8 +144,9 @@ class Configuration extends Entity implements JsonSerializable {
             'title' => $this->title,
             'description' => $this->description,
             'type' => $this->type,
-            'version' => $this->version,
             'owner' => $this->owner,
+            'version' => $this->version,
+            'registers' => $this->registers,
             'created' => $this->created ? $this->created->format('c') : null,
             'updated' => $this->updated ? $this->updated->format('c') : null,
         ];

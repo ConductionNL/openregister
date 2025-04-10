@@ -214,7 +214,7 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Find all ObjectEntitys
+     * Find all ObjectEntities
      *
      * @param int|null      $limit            The number of objects to return
      * @param int|null      $offset           The offset of the objects to return

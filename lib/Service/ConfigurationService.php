@@ -129,7 +129,7 @@ class ConfigurationService
      * @phpstan-param array<string, mixed>|Configuration|Register $input
      * @psalm-param   array<string, mixed>|Configuration|Register $input
      */
-    private function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
+    public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
         // Reset the maps for this export.
         $this->registersMap = [];
@@ -139,13 +139,15 @@ class ConfigurationService
         $openApiSpec = [
             'openapi'    => '3.0.0',
             'components' => [
-                'schemas'   => [],
-                'registers' => [],
-                'endpoints' => [],
-                'rules'     => [],
-                'jobs'      => [],
-                'sources'   => [],
-                'objects'   => [],
+                'registers'        => [],
+                'schemas'          => [],
+                'endpoints'        => [],
+                'sources'          => [],
+                'mappings'         => [],
+                'jobs'             => [],
+                'synchronizations' => [],
+                'rules'            => [],
+                'objects'          => [],
             ],
         ];
 
@@ -292,9 +294,15 @@ class ConfigurationService
         }
 
         $result = [
-            'registers' => [],
-            'schemas'   => [],
-            'objects'   => [],
+            'registers'        => [],
+            'schemas'          => [],
+            'endpoints'        => [],
+            'sources'          => [],
+            'mappings'         => [],
+            'jobs'             => [],
+            'synchronizations' => [],
+            'rules'            => [],
+            'objects'          => [],
         ];
 
         // Import schemas first.
