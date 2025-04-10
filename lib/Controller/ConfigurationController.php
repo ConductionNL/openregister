@@ -139,13 +139,13 @@ class ConfigurationController extends Controller
 
         // Remove internal parameters.
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
         // Ensure we have a UUID.
-        if (!isset($data['uuid'])) {
+        if (isset($data['uuid']) === false) {
             $data['uuid'] = Uuid::v4();
         }
 
@@ -177,9 +177,9 @@ class ConfigurationController extends Controller
     {
         $data = $this->request->getParams();
 
-        // Remove internal parameters
+        // Remove internal parameters.
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
@@ -246,7 +246,7 @@ class ConfigurationController extends Controller
 
             // Convert to JSON.
             $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            if ($jsonContent === FALSE) {
+            if ($jsonContent === false) {
                 throw new Exception('Failed to encode configuration data to JSON');
             }
 
@@ -294,7 +294,7 @@ class ConfigurationController extends Controller
 
             // Convert array to JSON string.
             $jsonContent = json_encode($jsonData);
-            if ($jsonContent === FALSE) {
+            if ($jsonContent === false) {
                 throw new Exception('Failed to encode upload data to JSON');
             }
 
