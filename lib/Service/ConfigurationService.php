@@ -21,10 +21,12 @@ use Exception;
 use JsonException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\ObjectMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCP\ILogger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -63,6 +65,16 @@ class ConfigurationService {
     private LoggerInterface $logger;
 
     /**
+     * @var array<string, Register> Registers indexed by slug during import, by id during export
+     */
+    private array $registersMap = [];
+
+    /**
+     * @var array<string, Schema> Schemas indexed by slug during import, by id during export
+     */
+    private array $schemasMap = [];
+
+    /**
      * Constructor
      *
      * @param SchemaMapper           $schemaMapper    The schema mapper instance
@@ -85,29 +97,27 @@ class ConfigurationService {
         $this->logger = $logger;
     }
 
-
     /**
-     * Build OpenAPI Specification from configuration
+     * Build OpenAPI Specification from configuration or register
      *
-     * @param array $configuration The configuration array to build the OAS from
+     * @param array|Configuration|Register $input The configuration array, Configuration object, or Register object to build the OAS from
      * @param bool $includeObjects Whether to include objects in the registers
      *
      * @return array The OpenAPI specification
      *
      * @throws Exception If configuration is invalid
      *
-     * @phpstan-param array<string, mixed> $configuration
-     * @psalm-param array<string, mixed> $configuration
+     * @phpstan-param array<string, mixed>|Configuration|Register $input
+     * @psalm-param array<string, mixed>|Configuration|Register $input
      */
-    private function exportConfig(array $configuration = [], bool $includeObjects = false): array {
+    private function exportConfig(array|Configuration|Register $input = [], bool $includeObjects = false): array {
+        // Reset the maps for this export
+        $this->registersMap = [];
+        $this->schemasMap = [];
+        
         // Initialize OpenAPI specification with default values
         $openApiSpec = [
             'openapi' => '3.0.0',
-            'info' => [
-                'title' => $configuration['title'] ?? 'Default Title',
-                'description' => $configuration['description'] ?? 'Default Description',
-                'version' => $configuration['version'] ?? '1.0.0'
-            ],
             'components' => [
                 'schemas' => [],
                 'registers' => [],
@@ -119,21 +129,58 @@ class ConfigurationService {
             ]
         ];
 
-        // Get all registers associated with this configuration
-        $registers = $this->registerMapper->findAll(
-            filters: ['configuration' => $configuration['id'] ?? null]
-        );
+        // Determine if input is an array, Configuration, or Register object
+        if ($input instanceof Configuration) {
+            //Get all registers associated with this configuration
+            $registers = $this->registerMapper->findAll(
+                filters: ['configuration' => $input->getId()]
+            );
+            //Set the info from the configuration
+            $openApiSpec['info'] = [
+                'id' => $input->getId(),
+                'title' => $input->getTitle(),
+                'description' => $input->getDescription(),
+                'version' => $input->getVersion(),
+            ];
+        } elseif ($input instanceof Register) {
+            //Pass the register as an array to the exportConfig function
+            $registers = [$input];
+            //Set the info from the register
+            $openApiSpec['info'] = [
+                'id' => $input->getId(),
+                'title' => $input->getTitle(),
+                'description' => $input->getDescription(),
+                'version' => $input->getVersion(),
+            ];
+        } else {
+            //Get all registers associated with this configuration
+            $registers = $this->registerMapper->findAll(
+                filters: ['configuration' => $input['id'] ?? null]
+            );
+            //Set the info from the configuration
+            $openApiSpec['info'] = [
+                'title' => $input['title'] ?? 'Default Title',
+                'description' => $input['description'] ?? 'Default Description',
+                'version' => $input['version'] ?? '1.0.0'
+            ];
+        }
 
         // Export each register and its schemas
         foreach ($registers as $register) {
+            // Store register in map by ID for reference
+            $this->registersMap[$register->getId()] = $register;
+            
             // Set the base register
             $openApiSpec['components']['registers'][$register->getSlug()] = $this->exportRegister($register);
-            // Drop the schemas from the register (we need to slugifi those)
+            // Drop the schemas from the register (we need to slugify those)
             $openApiSpec['components']['registers'][$register->getSlug()]['schemas'] = [];
 
             // Get and export schemas associated with this register
             $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
             foreach ($schemas as $schema) {
+                // Store schema in map by ID for reference
+                $this->schemasMap[$schema->getId()] = $schema;
+                
                 $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema);
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
             }
@@ -143,8 +190,9 @@ class ConfigurationService {
                 $objects = $this->registerMapper->getObjectsByRegisterId($register->getId());
                 foreach ($objects as $object) {
                     $openApiSpec['components']['objects'][$object->getSlug()] = $this->exportObject($object);
-                    $openApiSpec['components']['objects'][$object->getSlug()]['register'] = $register->getSlug();
-                    $openApiSpec['components']['objects'][$object->getSlug()]['schema'] = $schema->getSlug();
+                    // Use maps to get slugs
+                    $openApiSpec['components']['objects'][$object->getSlug()]['register'] = $this->registersMap[$object->getRegisterId()]->getSlug();
+                    $openApiSpec['components']['objects'][$object->getSlug()]['schema'] = $this->schemasMap[$object->getSchemaId()]->getSlug();
                 }
             }
         }
@@ -200,6 +248,10 @@ class ConfigurationService {
      * @return array Array of created/updated entities
      */
     public function importFromJson(string $jsonContent, bool $includeObjects = false, ?string $owner = null): array {
+        // Reset the maps for this import
+        $this->registersMap = [];
+        $this->schemasMap = [];
+
         try {
             $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
@@ -213,29 +265,61 @@ class ConfigurationService {
             'objects' => []
         ];
 
-        // Import registers first
-        if (isset($data['components']['registers'])) {
-            foreach ($data['components']['registers'] as $registerData) {
-                $register = $this->importRegister($registerData, $owner);
-                if ($register) {
-                    $result['registers'][] = $register;
+        // Import schemas first
+        if (isset($data['components']['schemas'])) {
+            foreach ($data['components']['schemas'] as $slug => $schemaData) {
+                $schema = $this->importSchema($schemaData, $owner);
+                if ($schema) {
+                    // Store schema in map by slug for reference
+                    $this->schemasMap[$slug] = $schema;
+                    $result['schemas'][] = $schema;
                 }
             }
         }
 
-        // Import schemas
-        if (isset($data['components']['schemas'])) {
-            foreach ($data['components']['schemas'] as $schemaData) {
-                $schema = $this->importSchema($schemaData, $owner);
-                if ($schema) {
-                    $result['schemas'][] = $schema;
+        // Import registers after schemas so we can link them
+        if (isset($data['components']['registers'])) {
+            foreach ($data['components']['registers'] as $slug => $registerData) {
+                // Convert schema slugs to IDs
+                if (isset($registerData['schemas']) && is_array($registerData['schemas'])) {
+                    $schemaIds = [];
+                    foreach ($registerData['schemas'] as $schemaSlug) {
+                        if (isset($this->schemasMap[$schemaSlug])) {
+                            $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
+                        } else {
+                            $this->logger->warning('Schema with slug ' . $schemaSlug . ' not found during register import');
+                        }
+                    }
+                    $registerData['schemas'] = $schemaIds;
+                }
+
+                $register = $this->importRegister($registerData, $owner);
+                if ($register) {
+                    // Store register in map by slug for reference
+                    $this->registersMap[$slug] = $register;
+                    $result['registers'][] = $register;
                 }
             }
         }
 
         // Import objects if includeObjects is true
         if ($includeObjects && isset($data['components']['objects'])) {
-            foreach ($data['components']['objects'] as $objectData) {
+            foreach ($data['components']['objects'] as $slug => $objectData) {
+                // Use maps to get IDs from slugs
+                if (isset($objectData['register']) && isset($this->registersMap[$objectData['register']])) {
+                    $objectData['registerId'] = $this->registersMap[$objectData['register']]->getId();
+                } else {
+                    $this->logger->warning('Register with slug ' . $objectData['register'] . ' not found during object import');
+                    continue; // Skip this object as we can't link it to a register
+                }
+
+                if (isset($objectData['schema']) && isset($this->schemasMap[$objectData['schema']])) {
+                    $objectData['schemaId'] = $this->schemasMap[$objectData['schema']]->getId();
+                } else {
+                    $this->logger->warning('Schema with slug ' . $objectData['schema'] . ' not found during object import');
+                    continue; // Skip this object as we can't link it to a schema
+                }
+                
                 $object = $this->importObject($objectData, $owner);
                 if ($object) {
                     $result['objects'][] = $object;

@@ -1,33 +1,36 @@
 <?php
+// phpcs:ignoreFile
 /**
- * OpenRegister Configuration Migration
+ * Migration to add and modify columns in various tables and drop unused tables.
  *
- * This file contains the migration for creating the configurations table
- * in the OpenRegister application.
+ * This migration adds columns to the openregister_objects, openregister_schemas,
+ * openregister_registers, and openregister_audit_trails tables. It also drops the
+ * openregister_object_audit_logs table as it is no longer used.
  *
- * @category Migration
- * @package  OCA\OpenRegister\Migration
+ * @category  Migration
+ * @package   OCA\OpenRegister\Migration
  *
- * @author    Ruben Linde <ruben@nextcloud.com>
- * @copyright Copyright (c) 2024, Ruben Linde (https://github.com/rubenlinde)
- * @license   AGPL-3.0
- * @version   1.0.0
- * @link      https://github.com/cloud-py-api/openregister
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version   GIT: <git-id>
+ *
+ * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-/**
- * Class Version000000Date20240315000000
- *
- * @package OCA\OpenRegister\Migration
- */
-class Version000000Date20240315000000 extends SimpleMigrationStep {
+class Version1Date20250410070338 extends SimpleMigrationStep
+{
     /**
      * Change the database schema
      *

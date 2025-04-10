@@ -5,6 +5,7 @@ return [
         'Registers' => ['url' => 'api/registers'],
         'Schemas' => ['url' => 'api/schemas'],
         'Sources' => ['url' => 'api/sources'],
+        'Configurations' => ['url' => 'api/configurations'],
     ],
     'routes' => [
         ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
@@ -35,6 +36,11 @@ return [
         ['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
         ['name' => 'registers#uploadUpdate', 'url' => '/api/registers/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Configurations
+        ['name' => 'configurations#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
     ],

@@ -25,9 +25,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -42,11 +44,12 @@ class RegistersController extends Controller
     /**
      * Constructor for the RegistersController
      *
-     * @param string             $appName            The name of the app
-     * @param IRequest           $request            The request object
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param UploadService      $uploadService      The upload service
+     * @param string              $appName             The name of the app
+     * @param IRequest            $request             The request object
+     * @param RegisterMapper      $registerMapper      The register mapper
+     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
+     * @param UploadService       $uploadService       The upload service
+     * @param ConfigurationService $configurationService The configuration service
      *
      * @return void
      */
@@ -55,11 +58,12 @@ class RegistersController extends Controller
         IRequest $request,
         private readonly RegisterMapper $registerMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly UploadService $uploadService
+        private readonly UploadService $uploadService,
+        ConfigurationService $configurationService
     ) {
         parent::__construct($appName, $request);
-
-    }//end __construct()
+        $this->configurationService = $configurationService;
+    }
 
 
     /**
@@ -361,5 +365,107 @@ class RegistersController extends Controller
 
     }//end upload()
 
+
+    /**
+     * Export a register and its related data
+     *
+     * This method exports a register, its schemas, and optionally its objects
+     * in OpenAPI format.
+     *
+     * @param int  $id            The ID of the register to export
+     * @param bool $includeObjects Whether to include objects in the export
+     *
+     * @return DataDownloadResponse|JSONResponse The exported register data as a downloadable file or error response
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function export(int $id, bool $includeObjects = false): DataDownloadResponse|JSONResponse
+    {
+        try {
+            // Find the register
+            $register = $this->registerMapper->find($id);
+
+            // Export the register and its related data
+            $exportData = $this->configurationService->exportConfig($register, $includeObjects);
+
+            // Convert to JSON
+            $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            if ($jsonContent === false) {
+                throw new Exception('Failed to encode register data to JSON');
+            }
+
+            // Generate filename based on register slug and current date
+            $filename = sprintf(
+                '%s_%s.json',
+                $register->getSlug(),
+                (new \DateTime())->format('Y-m-d_His')
+            );
+
+            // Return as downloadable file
+            return new DataDownloadResponse(
+                $jsonContent,
+                $filename,
+                'application/json'
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Failed to export register: ' . $e->getMessage()],
+                400
+            );
+        }
+    }
+
+
+    /**
+     * Import data into a register
+     *
+     * This method imports schemas and optionally objects into an existing register
+     * from an OpenAPI format file.
+     *
+     * @param int  $id            The ID of the register to import into
+     * @param bool $includeObjects Whether to include objects in the import
+     *
+     * @return JSONResponse The result of the import operation
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function import(int $id, bool $includeObjects = false): JSONResponse
+    {
+        try {
+            // Get the uploaded JSON data
+            $jsonData = $this->uploadService->getUploadedJson($this->request->getParams());
+            if ($jsonData instanceof JSONResponse) {
+                return $jsonData;
+            }
+
+            // Convert array to JSON string
+            $jsonContent = json_encode($jsonData);
+            if ($jsonContent === false) {
+                throw new Exception('Failed to encode upload data to JSON');
+            }
+
+            // Find the register to get the owner
+            $register = $this->registerMapper->find($id);
+            
+            // Import the data
+            $result = $this->configurationService->importFromJson(
+                $jsonContent,
+                $includeObjects,
+                $register->getOwner()
+            );
+
+            return new JSONResponse([
+                'message' => 'Import successful',
+                'imported' => $result
+            ]);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Failed to import data: ' . $e->getMessage()],
+                400
+            );
+        }
+    }
 
 }//end class
