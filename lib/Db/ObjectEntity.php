@@ -197,7 +197,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 		$object['@self'] = $this->getObjectArray();
 		$object['@self']['id'] = $this->getUuid();
 		$object['id'] = $this->getUuid();
-		
+
 		// lets merge and return
 		return $object;
 	}
@@ -231,91 +231,91 @@ class ObjectEntity extends Entity implements JsonSerializable
 		];
 	}
 
-	/**
-	 * Lock the object for a specific duration
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string|null $process Optional process identifier
-	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
-	 * @return bool True if lock was successful
-	 * @throws Exception If object is already locked by another user
-	 */
-	public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
-	{
-		$currentUser = $userSession->getUser();
-		if (!$currentUser) {
-			throw new Exception('No user logged in');
-		}
+    /**
+     * Lock the object for a specific duration
+     *
+     * @param IUserSession $userSession Current user session
+     * @param string|null $process Optional process identifier
+     * @param int|null $duration Lock duration in seconds (default: 1 hour)
+     * @return bool True if lock was successful
+     * @throws Exception If object is already locked by another user
+     */
+    public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
+    {
+        $currentUser = $userSession->getUser();
+        if (!$currentUser) {
+            throw new Exception('No user logged in');
+        }
 
-		$userId = $currentUser->getUID();
-		$now = new \DateTime();
+        $userId = $currentUser->getUID();
+        $now = new \DateTime();
 
-		// If already locked, check if it's the same user and not expired
-		if ($this->isLocked()) {
-			$lock = $this->locked;
+        // If already locked, check if it's the same user and not expired
+        if ($this->isLocked()) {
+            $lock = $this->locked;
 
-			// If locked by different user
-			if ($lock['user'] !== $userId) {
-				throw new Exception('Object is locked by another user');
-			}
+            // If locked by different user
+            if ($lock['user'] !== $userId) {
+                throw new Exception('Object is locked by another user');
+            }
 
-			// If same user, extend the lock
-			$expirationDate = new \DateTime($lock['expiration']);
-			$newExpiration = clone $now;
-			$newExpiration->add(new \DateInterval('PT' . $duration . 'S'));
+            // If same user, extend the lock
+            $expirationDate = new \DateTime($lock['expiration']);
+            $newExpiration = clone $now;
+            $newExpiration->add(new \DateInterval('PT' . $duration . 'S'));
 
-			$this->locked = [
-				'user' => $userId,
-				'process' => $process ?? $lock['process'],
-				'created' => $lock['created'],
-				'duration' => $duration,
-				'expiration' => $newExpiration->format('c')
-			];
-		} else {
-			// Create new lock
-			$expiration = clone $now;
-			$expiration->add(new \DateInterval('PT' . $duration . 'S'));
+            $this->setLocked([
+                'user' => $userId,
+                'process' => $process ?? $lock['process'],
+                'created' => $lock['created'],
+                'duration' => $duration,
+                'expiration' => $newExpiration->format('c')
+            ]);
+        } else {
+            // Create new lock
+            $expiration = clone $now;
+            $expiration->add(new \DateInterval('PT' . $duration . 'S'));
 
-			$this->locked = [
-				'user' => $userId,
-				'process' => $process,
-				'created' => $now->format('c'),
-				'duration' => $duration,
-				'expiration' => $expiration->format('c')
-			];
-		}
+            $this->setLocked([
+                'user' => $userId,
+                'process' => $process,
+                'created' => $now->format('c'),
+                'duration' => $duration,
+                'expiration' => $expiration->format('c')
+            ]);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * Unlock the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @return bool True if unlock was successful
-	 * @throws Exception If object is locked by another user
-	 */
-	public function unlock(IUserSession $userSession): bool
-	{
-		if (!$this->isLocked()) {
-			return true;
-		}
+    /**
+     * Unlock the object
+     *
+     * @param IUserSession $userSession Current user session
+     * @return bool True if unlock was successful
+     * @throws Exception If object is locked by another user
+     */
+    public function unlock(IUserSession $userSession): bool
+    {
+        if (!$this->isLocked()) {
+            return true;
+        }
 
-		$currentUser = $userSession->getUser();
-		if (!$currentUser) {
-			throw new Exception('No user logged in');
-		}
+        $currentUser = $userSession->getUser();
+        if (!$currentUser) {
+            throw new Exception('No user logged in');
+        }
 
-		$userId = $currentUser->getUID();
+        $userId = $currentUser->getUID();
 
-		// Check if locked by different user
-		if ($this->locked['user'] !== $userId) {
-			throw new Exception('Object is locked by another user');
-		}
+        // Check if locked by different user
+        if ($this->locked['user'] !== $userId) {
+            throw new Exception('Object is locked by another user');
+        }
 
-		$this->locked = null;
-		return true;
-	}
+        $this->setLocked(null);
+        return true;
+    }
 
 	/**
 	 * Check if the object is currently locked
