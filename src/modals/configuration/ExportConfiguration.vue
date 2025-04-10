@@ -113,7 +113,7 @@ export default {
 
 			try {
 				// Generate the export URL with query parameters
-				const url = generateUrl(`/apps/openregister/configurations/${item.id}/export`)
+				const url = generateUrl(`/apps/openregister/api/configurations/${item.id}/export`)
 				const params = { includeObjects: this.includeObjects }
 
 				// Make the API call

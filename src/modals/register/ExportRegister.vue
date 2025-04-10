@@ -1,26 +1,28 @@
 <script setup>
 import { registerStore, navigationStore } from '../../store/store.js'
+import { generateUrl } from '@nextcloud/router'
+import axios from '@nextcloud/axios'
 </script>
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
-		name="Export Register"
-		size="normal"
+		name="export-register-dialog"
+		title="Export Register"
+		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
 		<div class="formContainer">
+			<p>Export register "{{ registerTitle }}"?</p>
+
 			<NcCheckboxRadioSwitch
-				:checked="includeSchemas"
-				@update:checked="includeSchemas = $event"
+				:checked="includeObjects"
+				@update:checked="includeObjects = $event"
 				type="switch">
-				Include schemas
+				Include objects
 			</NcCheckboxRadioSwitch>
-			<NcNoteCard type="info">
-				<p>The register will be exported as a JSON file.</p>
-			</NcNoteCard>
 		</div>
 
 		<template #actions>
@@ -33,10 +35,10 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				:disabled="loading"
 				type="primary"
-				@click="exportRegister()">
+				@click="exportRegister">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<Download v-if="!loading" :size="20" />
+					<Export v-else :size="20" />
 				</template>
 				Export
 			</NcButton>
@@ -54,7 +56,7 @@ import {
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Download from 'vue-material-design-icons/Download.vue'
+import Export from 'vue-material-design-icons/Export.vue'
 
 export default {
 	name: 'ExportRegister',
@@ -65,41 +67,73 @@ export default {
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
-		Download,
+		Export,
 		Cancel,
 	},
 	data() {
 		return {
-			includeSchemas: true,
 			loading: false,
-			error: false,
+			error: null,
+			includeObjects: true,
 		}
+	},
+	computed: {
+		registerTitle() {
+			const item = registerStore.registerItem
+			return item?.title || 'Unknown'
+		},
 	},
 	methods: {
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
-			this.error = false
-			this.includeSchemas = true
+			this.error = null
+			this.includeObjects = true
 		},
 		async exportRegister() {
+			const item = registerStore.registerItem
+			if (!item?.id) {
+				this.error = 'Invalid register selected'
+				return
+			}
+
 			this.loading = true
-			this.error = false
+			this.error = null
 
 			try {
-				const { data } = await registerStore.exportRegister(this.includeSchemas)
-				const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-				const url = window.URL.createObjectURL(blob)
+				// Generate the export URL with query parameters
+				const url = generateUrl(`/apps/openregister/api/registers/${item.id}/export`)
+				const params = { includeObjects: this.includeObjects }
+
+				// Make the API call
+				const response = await axios({
+					url,
+					method: 'GET',
+					params,
+					responseType: 'blob', // Important for file download
+				})
+
+				// Create a download link
+				const blob = new Blob([response.data], { type: 'application/json' })
+				const downloadUrl = window.URL.createObjectURL(blob)
 				const link = document.createElement('a')
-				link.href = url
-				link.download = `register_${data.id}_${new Date().toISOString().split('T')[0]}.json`
+
+				// Get filename from response headers or generate a default one
+				const contentDisposition = response.headers['content-disposition']
+				const filename = contentDisposition
+					? contentDisposition.split('filename=')[1].replace(/"/g, '')
+					: `register_${item.id}_${new Date().toISOString().split('T')[0]}.json`
+
+				link.href = downloadUrl
+				link.download = filename
 				document.body.appendChild(link)
 				link.click()
 				document.body.removeChild(link)
-				window.URL.revokeObjectURL(url)
+				window.URL.revokeObjectURL(downloadUrl)
+
 				this.closeModal()
 			} catch (error) {
-				this.error = error.message || 'An error occurred while exporting the register'
+				this.error = error.response?.data?.error || error.message || 'Failed to export register'
 			} finally {
 				this.loading = false
 			}
