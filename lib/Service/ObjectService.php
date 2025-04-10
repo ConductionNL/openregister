@@ -252,7 +252,7 @@ class ObjectService
      */
     public function updateFromArray(
         string $id,
-        array $object,
+            array $object,
         bool $updateVersion,
         bool $patch=false,
         ?array $extend=[],

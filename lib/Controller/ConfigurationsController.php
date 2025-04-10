@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Controller
  */
-class ConfigurationController extends Controller
+class ConfigurationsController extends Controller
 {
 
 

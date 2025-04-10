@@ -58,9 +58,9 @@ class ConfigurationService
     /**
      * Object mapper instance for handling object operations.
      *
-     * @var ObjectMapper The object mapper instance.
+     * @var ObjectEntityMapper The object mapper instance.
      */
-    private ObjectMapper $objectMapper;
+    private ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Schema property validator instance for validating schema properties.
@@ -96,20 +96,20 @@ class ConfigurationService
      *
      * @param SchemaMapper            $schemaMapper   The schema mapper instance
      * @param RegisterMapper          $registerMapper The register mapper instance
-     * @param ObjectMapper            $objectMapper   The object mapper instance
+     * @param ObjectEntityMapper            $objectEntityMapper   The object mapper instance
      * @param SchemaPropertyValidator $validator      The schema property validator instance
      * @param LoggerInterface         $logger         The logger instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        ObjectMapper $objectMapper,
+        ObjectEntityMapper $objectEntityMapper,
         SchemaPropertyValidator $validator,
         LoggerInterface $logger
     ) {
         $this->schemaMapper   = $schemaMapper;
         $this->registerMapper = $registerMapper;
-        $this->objectMapper   = $objectMapper;
+        $this->objectEntityMapper   = $objectEntityMapper;
         $this->validator      = $validator;
         $this->logger         = $logger;
 
@@ -481,7 +481,7 @@ class ConfigurationService
             // Check if object already exists by UUID.
             $existingObject = null;
             try {
-                $existingObject = $this->objectMapper->findByUuid($data['uuid']);
+                $existingObject = $this->objectEntityMapper->findByUuid($data['uuid']);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object doesn't exist, we'll create a new one.
             }
@@ -499,7 +499,7 @@ class ConfigurationService
                     $existingObject->setOwner($owner);
                 }
 
-                return $this->objectMapper->update($existingObject);
+                return $this->objectEntityMapper->update($existingObject);
             }
 
             // Create new object.
@@ -509,7 +509,7 @@ class ConfigurationService
                 $object->setOwner($owner);
             }
 
-            return $this->objectMapper->insert($object);
+            return $this->objectEntityMapper->insert($object);
         } catch (Exception $e) {
             $this->logger->error('Failed to import object: '.$e->getMessage());
             throw new Exception('Failed to import object: '.$e->getMessage());

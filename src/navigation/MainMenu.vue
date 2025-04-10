@@ -38,6 +38,11 @@ import { navigationStore } from '../store/store.js'
 					<DatabaseArrowRightOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'configurations'" name="Configurations" @click="navigationStore.setSelected('configurations')">
+				<template #icon>
+					<CogOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
@@ -57,6 +62,7 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
 export default {
 	name: 'MainMenu',
@@ -65,6 +71,7 @@ export default {
 		NcAppNavigation,
 		NcAppNavigationList,
 		NcAppNavigationItem,
+		NcAppNavigationSettings,
 		// icons
 		Finance,
 		DatabaseOutline,
@@ -72,6 +79,7 @@ export default {
 		FileTreeOutline,
 		TableMultiple,
 		LayersSearchOutline,
+		CogOutline,
 	},
 	methods: {
 		openLink(url, type = '') {

@@ -6,8 +6,14 @@ import { navigationStore } from '../store/store.js'
 	<!-- Placeholder Div -->
 	<div>
 		<EditRegister />
+		<ImportRegister />
+		<ExportRegister />
 		<UploadRegister />
 		<DeleteRegister />
+		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
+		<DeleteConfiguration />
+		<ImportConfiguration />
+		<ExportConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<DeleteSchema />
 		<UploadSchema />
@@ -27,8 +33,14 @@ import { navigationStore } from '../store/store.js'
 
 <script>
 import EditRegister from './register/EditRegister.vue'
+import ImportRegister from './register/ImportRegister.vue'
+import ExportRegister from './register/ExportRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
 import UploadRegister from './register/UploadRegister.vue'
+import EditConfiguration from './configuration/EditConfiguration.vue'
+import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
+import ImportConfiguration from './configuration/ImportConfiguration.vue'
+import ExportConfiguration from './configuration/ExportConfiguration.vue'
 import EditSchema from './schema/EditSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import UploadSchema from './schema/UploadSchema.vue'
@@ -48,8 +60,14 @@ export default {
 	name: 'Modals',
 	components: {
 		EditRegister,
+		ImportRegister,
+		ExportRegister,
 		DeleteRegister,
 		UploadRegister,
+		EditConfiguration,
+		DeleteConfiguration,
+		ImportConfiguration,
+		ExportConfiguration,
 		EditSchema,
 		DeleteSchema,
 		UploadSchema,
@@ -62,6 +80,8 @@ export default {
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,
+		ViewObject,
+		DownloadObject,
 	},
 }
 </script>
