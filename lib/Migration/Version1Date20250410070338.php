@@ -64,10 +64,12 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'notnull' => true,
                 'length' => 64,
             ]);
-            $table->addColumn('data', 'json', [
+            $table->addColumn('version', Types::STRING, [
                 'notnull' => true,
-                'default' => '{}',
+                'length' => 255,
+                'default' => '0.0.1',
             ]);
+           
             $table->addColumn('owner', 'string', [
                 'notnull' => false,
                 'length' => 64,

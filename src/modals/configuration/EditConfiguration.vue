@@ -47,7 +47,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				Cancel
 			</NcButton>
 			<NcButton
-				:disabled="loading"
+				:disabled="loading || !isValid"
 				type="primary"
 				@click="saveConfiguration">
 				<template #icon>
@@ -89,6 +89,12 @@ export default {
 			loading: false,
 			error: null,
 		}
+	},
+	computed: {
+		isValid() {
+			const item = configurationStore.configurationItem
+			return item?.title && item?.type
+		},
 	},
 	methods: {
 		updateTitle(value) {

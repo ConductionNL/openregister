@@ -54,11 +54,11 @@ class Configuration extends Entity implements JsonSerializable {
     /** @var string Type of the configuration */
     protected $type;
 
-    /** @var array|null Configuration data */
-    protected $data;
-
     /** @var string Owner of the configuration */
     protected $owner;
+
+    /** @var string Version of the configuration */
+    protected $version;
 
     /** @var DateTime Creation timestamp */
     protected $created;
@@ -74,8 +74,8 @@ class Configuration extends Entity implements JsonSerializable {
         $this->addType('title', 'string');
         $this->addType('description', 'string');
         $this->addType('type', 'string');
-        $this->addType('data', 'array');
         $this->addType('owner', 'string');
+        $this->addType('version', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
     }
@@ -91,7 +91,7 @@ class Configuration extends Entity implements JsonSerializable {
             'title' => $this->title,
             'description' => $this->description,
             'type' => $this->type,
-            'data' => $this->data,
+            'version' => $this->version,
             'owner' => $this->owner,
             'created' => $this->created ? $this->created->format('c') : null,
             'updated' => $this->updated ? $this->updated->format('c') : null,

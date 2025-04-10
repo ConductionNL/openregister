@@ -5,8 +5,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
 		title="Import Configuration"
-		size="normal"
+		size="large"
 		:can-close="false">
+		<NcNoteCard v-if="success" type="success">
+			<p>Configuration imported successfully!</p>
+		</NcNoteCard>
+
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -16,25 +20,18 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				ref="fileInput"
 				type="file"
 				accept=".json"
-				@change="handleFileUpload"
-				style="display: none">
+				style="display: none"
+				@change="handleFileUpload">
 
-			<NcButton
-				type="secondary"
-				@click="$refs.fileInput.click()">
-				<template #icon>
-					<Upload :size="20" />
-				</template>
-				Select JSON File
-			</NcButton>
-
-			<div v-if="selectedFile" class="selectedFile">
-				<p>Selected file: {{ selectedFile.name }}</p>
+			<div class="fileSelection">
+				<NcButton @click="$refs.fileInput.click()">
+					<template #icon>
+						<Upload :size="20" />
+					</template>
+					Select JSON File
+				</NcButton>
+				<span v-if="selectedFile">{{ selectedFile.name }}</span>
 			</div>
-
-			<NcNoteCard type="info">
-				<p>Please select a JSON file containing a valid configuration.</p>
-			</NcNoteCard>
 		</div>
 
 		<template #actions>
@@ -86,33 +83,23 @@ export default {
 		return {
 			selectedFile: null,
 			loading: false,
+			success: false,
 			error: null,
 		}
 	},
 	methods: {
 		handleFileUpload(event) {
-			const file = event.target.files[0]
-			if (file && file.type === 'application/json') {
-				this.selectedFile = file
-				this.error = null
-			} else {
-				this.error = 'Please select a valid JSON file'
-				this.selectedFile = null
-			}
+			this.selectedFile = event.target.files[0]
+			this.error = null
 		},
 		closeModal() {
 			navigationStore.setModal(false)
-			this.loading = false
-			this.error = null
 			this.selectedFile = null
-			this.$refs.fileInput.value = ''
+			this.loading = false
+			this.success = false
+			this.error = null
 		},
 		async importConfiguration() {
-			if (!this.selectedFile) {
-				this.error = 'Please select a file to import'
-				return
-			}
-
 			this.loading = true
 			this.error = null
 
@@ -120,21 +107,18 @@ export default {
 				const reader = new FileReader()
 				reader.onload = async (e) => {
 					try {
-						const configuration = JSON.parse(e.target.result)
-						await configurationStore.uploadConfiguration(configuration)
-						this.closeModal()
+						const data = JSON.parse(e.target.result)
+						await configurationStore.importConfiguration(data)
+						this.success = true
+						setTimeout(() => this.closeModal(), 1500)
 					} catch (error) {
-						this.error = 'Invalid JSON format'
+						this.error = error.message || 'Invalid JSON format'
 						this.loading = false
 					}
 				}
-				reader.onerror = () => {
-					this.error = 'Error reading file'
-					this.loading = false
-				}
 				reader.readAsText(this.selectedFile)
 			} catch (error) {
-				this.error = error.message || 'Failed to import configuration'
+				this.error = error.message || 'Failed to read file'
 				this.loading = false
 			}
 		},
@@ -149,9 +133,9 @@ export default {
 	gap: 1rem;
 }
 
-.selectedFile {
-	padding: 0.5rem;
-	background-color: var(--color-background-dark);
-	border-radius: var(--border-radius);
+.fileSelection {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
 }
 </style> 

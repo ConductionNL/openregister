@@ -1,29 +1,26 @@
 export type TConfiguration = {
-    '@self': {
-        id: string
-        uuid: string
-        title: string
-        description: string | null
-        version: string
-        slug: string
-        owner: string | null
-        organisation: string | null
-        application: string | null
-        updated: string
-        created: string
-    }
-    configuration: {
-        registers?: string[]
-        schemas?: string[]
-        endpoints?: string[]
-        rules?: string[]
-        jobs?: string[]
-        sources?: string[]
-        objects?: string[]
-    }
-    [key: string]: unknown // Allow for additional properties
+	id: string
+	title: string
+	description: string | null
+	type: string
+	owner: string
+	created: string
+	updated: string
 }
 
 export type TConfigurationPath = {
-    configurationId?: string
-} 
+	configurationId?: string
+}
+
+export type TConfigurationExport = {
+	'@self': TConfiguration
+	configuration: {
+		registers?: string[]
+		schemas?: string[]
+		endpoints?: string[]
+		rules?: string[]
+		jobs?: string[]
+		sources?: string[]
+		objects?: string[]
+	}
+}
