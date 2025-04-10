@@ -121,20 +121,20 @@ class ObjectsController extends Controller
      *
      * @return array The paginated results with metadata.
      *
-     * @phpstan-param array<int, mixed> $results
+     * @phpstan-param  array<int, mixed> $results
      * @phpstan-return array<string, mixed>
-     * @psalm-param array<int, mixed> $results
-     * @psalm-return array<string, mixed>
+     * @psalm-param    array<int, mixed> $results
+     * @psalm-return   array<string, mixed>
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
         // Ensure we have valid values (never null)
         $total = max(0, $total ?? 0);
-        $limit = max(1, $limit ?? 20);  // Minimum limit of 1
+        $limit = max(1, $limit ?? 20);
+        // Minimum limit of 1
         $offset = max(0, $offset ?? 0);
-        $page = max(1, $page ?? 1);     // Minimum page of 1
-
-        // Calculate the number of pages (minimum 1 page)
+        $page   = max(1, $page ?? 1);
+        // Minimum page of 1        // Calculate the number of pages (minimum 1 page)
         $pages = max(1, ceil($total / $limit));
 
         // If we have a page but no offset, calculate the offset
@@ -567,14 +567,17 @@ class ObjectsController extends Controller
         $page   = isset($requestParams['page']) ? (int) $requestParams['page'] : (isset($requestParams['_page']) ? (int) $requestParams['_page'] : null);
 
         // Return empty paginated response
-        return new JSONResponse($this->paginate(
+        return new JSONResponse(
+                $this->paginate(
             results: [],
             total: 0,
             limit: $limit,
             offset: $offset,
             page: $page
-        ));
-    }
+        )
+                );
+
+    }//end contracts()
 
 
     /**
@@ -607,7 +610,7 @@ class ObjectsController extends Controller
         if (empty($relations)) {
             // If relations is empty, set objects to an empty array
             $objects = [];
-            $total = 0;
+            $total   = 0;
         } else {
             // Get config and fetch objects
             $config  = $this->getConfig($register, $schema, $relations);
@@ -652,7 +655,7 @@ class ObjectsController extends Controller
         if (empty($relations)) {
             // If relations is empty, set objects to an empty array
             $objects = [];
-            $total = 0;
+            $total   = 0;
         } else {
             // Get config and fetch objects
             $config  = $this->getConfig($register, $schema, $relations);
@@ -660,7 +663,6 @@ class ObjectsController extends Controller
             // Get total count for pagination
             $total = $objectService->count($config['filters']);
         }
-
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
@@ -803,7 +805,8 @@ class ObjectsController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end files()
 
 
 }//end class
