@@ -100,7 +100,7 @@ class FileService
      */
     public function getVersion (Node $file, string $version):?Node
     {
-        if($file instanceof File === false) {
+        if ($file instanceof File === false) {
             return $file;
         }
 
