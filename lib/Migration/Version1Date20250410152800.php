@@ -46,12 +46,20 @@ class Version1Date20250410152800 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Update the openregister_registers table
+        // Update the openregister_configurations table
         $table = $schema->getTable('openregister_registers');
 
+        // Add the registers column
+        if ($table->hasColumn('configurations')) {
+            $table->dropColumn('configurations');
+        }
+
+        // Update the openregister_registers table
+        $table = $schema->getTable('openregister_configurations');
+
         // Add the configurations column
-        if (!$table->hasColumn('configurations')) {
-            $table->addColumn('configurations', Types::JSON, [
+        if (!$table->hasColumn('registers')) {
+            $table->addColumn('registers', Types::JSON, [
                 'notnull' => false,
             ]);
         }
