@@ -239,4 +239,54 @@ class ConfigurationMapper extends QBMapper {
 
         return (int)$count;
     }
+
+    /**
+     * Find all configurations
+     *
+     * @param int|null   $limit            The limit of the results
+     * @param int|null   $offset           The offset of the results
+     * @param array|null $filters          The filters to apply
+     * @param array|null $searchConditions Array of search conditions
+     * @param array|null $searchParams     Array of search parameters
+     *
+     * @return Configuration[] Array of found configurations
+     */
+    public function findAll(
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = []
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        // Build the base query
+        $qb->select('*')
+            ->from($this->tableName)
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->orderBy('created', 'DESC');
+
+        // Apply filters
+        foreach ($filters as $filter => $value) {
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } else if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else {
+                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+            }
+        }
+
+        // Apply search conditions
+        if (empty($searchConditions) === false) {
+            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+            foreach ($searchParams as $param => $value) {
+                $qb->setParameter($param, $value);
+            }
+        }
+
+        // Execute the query and return the results
+        return $this->findEntities($qb);
+    }
 } 

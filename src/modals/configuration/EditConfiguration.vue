@@ -13,30 +13,30 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 		<div class="formContainer">
 			<NcTextField
-				:value="configurationStore.configurationItem?.title"
-				@update:value="updateTitle"
 				label="Title"
-				placeholder="Enter configuration title" />
+				placeholder="Enter configuration title"
+				:value="configurationStore.configurationItem?.title"
+				@update:value="updateTitle" />
 
 			<NcTextField
-				:value="configurationStore.configurationItem?.description"
-				@update:value="updateDescription"
 				type="textarea"
 				label="Description"
-				placeholder="Enter configuration description" />
+				placeholder="Enter configuration description"
+				:value="configurationStore.configurationItem?.description"
+				@update:value="updateDescription" />
 
 			<NcTextField
-				:value="configurationStore.configurationItem?.type"
-				@update:value="updateType"
 				label="Type"
-				placeholder="Enter configuration type" />
+				placeholder="Enter configuration type"
+				:value="configurationStore.configurationItem?.type"
+				@update:value="updateType" />
 
 			<NcTextField
-				:value="JSON.stringify(configurationStore.configurationItem?.data || {}, null, 2)"
-				@update:value="updateData"
 				type="textarea"
 				label="Configuration Data (JSON)"
-				placeholder="Enter configuration data as JSON" />
+				placeholder="Enter configuration data as JSON"
+				:value="JSON.stringify(configurationStore.configurationItem?.data || {}, null, 2)"
+				@update:value="updateData" />
 		</div>
 
 		<template #actions>
