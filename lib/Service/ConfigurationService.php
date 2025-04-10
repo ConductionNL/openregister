@@ -63,6 +63,13 @@ class ConfigurationService
     private ObjectEntityMapper $objectEntityMapper;
 
     /**
+     * Configuration mapper instance for handling configuration operations.
+     *
+     * @var ConfigurationMapper The configuration mapper instance.
+     */
+    private ConfigurationMapper $configurationMapper;
+
+    /**
      * Schema property validator instance for validating schema properties.
      *
      * @var SchemaPropertyValidator The schema property validator instance.
@@ -94,24 +101,27 @@ class ConfigurationService
     /**
      * Constructor
      *
-     * @param SchemaMapper            $schemaMapper   The schema mapper instance
-     * @param RegisterMapper          $registerMapper The register mapper instance
-     * @param ObjectEntityMapper            $objectEntityMapper   The object mapper instance
-     * @param SchemaPropertyValidator $validator      The schema property validator instance
-     * @param LoggerInterface         $logger         The logger instance
+     * @param SchemaMapper            $schemaMapper        The schema mapper instance
+     * @param RegisterMapper          $registerMapper      The register mapper instance
+     * @param ObjectEntityMapper      $objectEntityMapper  The object mapper instance
+     * @param ConfigurationMapper     $configurationMapper The configuration mapper instance
+     * @param SchemaPropertyValidator $validator           The schema property validator instance
+     * @param LoggerInterface         $logger              The logger instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
         ObjectEntityMapper $objectEntityMapper,
+        ConfigurationMapper $configurationMapper,
         SchemaPropertyValidator $validator,
         LoggerInterface $logger
     ) {
-        $this->schemaMapper   = $schemaMapper;
-        $this->registerMapper = $registerMapper;
-        $this->objectEntityMapper   = $objectEntityMapper;
-        $this->validator      = $validator;
-        $this->logger         = $logger;
+        $this->schemaMapper        = $schemaMapper;
+        $this->registerMapper      = $registerMapper;
+        $this->objectEntityMapper  = $objectEntityMapper;
+        $this->configurationMapper = $configurationMapper;
+        $this->validator           = $validator;
+        $this->logger              = $logger;
 
     }//end __construct()
 
@@ -153,10 +163,8 @@ class ConfigurationService
 
         // Determine if input is an array, Configuration, or Register object.
         if ($input instanceof Configuration) {
-            // Get all registers associated with this configuration.
-            $registers = $this->registerMapper->findAll(
-                filters: ['configuration' => $input->getId()]
-            );
+            $configuration = $input;
+
             // Set the info from the configuration.
             $openApiSpec['info'] = [
                 'id'          => $input->getId(),
@@ -176,9 +184,8 @@ class ConfigurationService
             ];
         } else {
             // Get all registers associated with this configuration.
-            $registers = $this->registerMapper->findAll(
-                filters: ['configuration' => $input['id'] ?? null]
-            );
+            $configuration = $this->configurationMapper->find($input['id']);
+            
             // Set the info from the configuration.
             $openApiSpec['info'] = [
                 'title'       => $input['title'] ?? 'Default Title',
@@ -187,8 +194,15 @@ class ConfigurationService
             ];
         }//end if
 
+        // Get all registers associated with this configuration.
+        $registers = $configuration->getRegisters();
+
         // Export each register and its schemas.
         foreach ($registers as $register) {
+            if ($register instanceof Register === false && is_int($register) === true) {
+                $register = $this->registerMapper->find($register);
+            }
+
             // Store register in map by ID for reference.
             $this->registersMap[$register->getId()] = $register;
 
@@ -209,7 +223,10 @@ class ConfigurationService
 
             // Optionally include objects in the register.
             if ($includeObjects === true) {
-                $objects = $this->registerMapper->getObjectsByRegisterId($register->getId());
+                $objects = $this->objectEntityMapper->findAll(
+                    filters: ['registerId' => $register->getId()],
+                    includeDeleted: false
+                );
                 foreach ($objects as $object) {
                     $openApiSpec['components']['objects'][$object->getSlug()] = $this->exportObject($object);
                     // Use maps to get slugs.
@@ -387,7 +404,7 @@ class ConfigurationService
             // Check if register already exists by slug.
             $existingRegister = null;
             try {
-                $existingRegister = $this->registerMapper->findBySlug($data['slug']);
+                $existingRegister = $this->registerMapper->find($data['slug']);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Register doesn't exist, we'll create a new one.
             }
@@ -438,7 +455,7 @@ class ConfigurationService
             // Check if schema already exists by slug.
             $existingSchema = null;
             try {
-                $existingSchema = $this->schemaMapper->findBySlug($data['slug']);
+                $existingSchema = $this->schemaMapper->find($data['slug']);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Schema doesn't exist, we'll create a new one.
             }
@@ -489,7 +506,7 @@ class ConfigurationService
             // Check if object already exists by UUID.
             $existingObject = null;
             try {
-                $existingObject = $this->objectEntityMapper->findByUuid($data['uuid']);
+                $existingObject = $this->objectEntityMapper->find($data['uuid']);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object doesn't exist, we'll create a new one.
             }

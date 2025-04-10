@@ -253,7 +253,7 @@ class ConfigurationsController extends Controller
             // Generate filename.
             $filename = sprintf(
                 'configuration_%s_%s.json',
-                $configuration->getSlug(),
+                $configuration->getTitle(),
                 (new \DateTime())->format('Y-m-d_His')
             );
 

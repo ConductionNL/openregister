@@ -145,13 +145,6 @@ class Register extends Entity implements JsonSerializable
      */
     protected ?DateTime $deleted = null;
 
-    /**
-     * Configuration of the register
-     *
-     * @var array|null Configuration of the register
-     */
-    protected ?array $configurations = [];
-
 
     /**
      * Constructor for the Register class
@@ -176,7 +169,6 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
-        $this->addType(fieldName: 'configurations', type: 'array');
 
     }//end __construct()
 
@@ -191,17 +183,6 @@ class Register extends Entity implements JsonSerializable
         return ($this->schemas ?? []);
 
     }//end getSchemas()
-
-    /**
-     * Get the configurations data
-     *
-     * @return array The configurations data or empty array if null
-     */
-    public function getConfigurations(): array
-    {
-        return ($this->configurations ?? []);
-
-    }//end getConfigurations()
 
 
     /**
@@ -303,7 +284,6 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'deleted'       => $deleted,
-            'configurations' => $this->configurations,
         ];
 
     }//end jsonSerialize()
