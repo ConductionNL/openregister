@@ -3,7 +3,7 @@ import { navigationStore } from '../store/store.js'
 </script>
 
 <template>
-	<SearchSideBar v-if="navigationStore.selected === 'search'" />
+	<SearchSideBar v-if="navigationStore.selected === 'tableSearch'" />
 </template>
 
 <script>
