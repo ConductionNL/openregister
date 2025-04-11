@@ -224,15 +224,7 @@ class SchemaMapper extends QBMapper
 
         // Ensure the object has a version.
         if ($schema->getVersion() === null) {
-            $schema->setVersion('1.0.0');
-        } else {
-            // Split the version into major, minor, and patch.
-            $versionParts = explode('.', $schema->getVersion());
-            // Increment the patch version.
-            $versionParts[2] = ((int) $versionParts[2] + 1);
-            // Reassemble the version string.
-            $newVersion = implode('.', $versionParts);
-            $schema->setVersion($newVersion);
+            $schema->setVersion('0.0.1');
         }
 
     }//end cleanObject()
@@ -305,15 +297,28 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $newSchema = $this->find($id);
-        $newSchema->hydrate($object, $this->validator);
+        $schema = $this->find($id);
+
+        // Update version if not set in the object array.
+        if (empty($object['version']) === true) {
+            // Split the version into major, minor, and patch.
+            $version = explode('.', $schema->getVersion());
+            // Increment the patch version.
+            if (isset($version[2]) === true) {
+                $version[2]        = ((int) $version[2] + 1);
+                // Reassemble the version string.
+                $object['version'] = implode('.', $version);
+            }
+        }
+
+        $schema->hydrate($object, $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
-        $this->cleanObject($newSchema);
+        $this->cleanObject($schema);
 
-        $newSchema = $this->update($newSchema);
+        $schema = $this->update($schema);
 
-        return $newSchema;
+        return $schema;
 
     }//end updateFromArray()
 

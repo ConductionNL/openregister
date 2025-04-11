@@ -50,6 +50,7 @@ class SchemaPropertyValidator {
      * @var array<string> List of valid string formats
      */
     private array $validStringFormats = [
+        '',
         'date-time',
         'date',
         'time',

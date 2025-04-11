@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -40,6 +41,12 @@ use Symfony\Component\Uid\Uuid;
 class RegistersController extends Controller
 {
 
+    /**
+     * Configuration service for handling import/export operations
+     *
+     * @var ConfigurationService
+     */
+    private readonly ConfigurationService $configurationService;
 
     /**
      * Constructor for the RegistersController
@@ -350,6 +357,9 @@ class RegistersController extends Controller
     public function import(int $id, bool $includeObjects=false): JSONResponse
     {        
         try {
+            // Initialize the uploaded files array
+            $uploadedFiles = [];
+            
             // Get the uploaded file from the request if a single file has been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
             if (empty($uploadedFile) === false) {
@@ -362,15 +372,9 @@ class RegistersController extends Controller
                 return $jsonData;
             }
 
-            // Convert array to JSON string.
-            $jsonContent = json_encode($jsonData);
-            if ($jsonContent === false) {
-                throw new Exception('Failed to encode upload data to JSON');
-            }
-
             // Import the data.
             $result = $this->configurationService->importFromJson(
-                $jsonContent,
+                $jsonData,
                 $includeObjects,
                 $this->request->getParam('owner')
             );

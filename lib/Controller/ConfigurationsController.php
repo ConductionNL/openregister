@@ -298,15 +298,9 @@ class ConfigurationsController extends Controller
                 return $jsonData;
             }
 
-            // Convert array to JSON string.
-            $jsonContent = json_encode($jsonData);
-            if ($jsonContent === false) {
-                throw new Exception('Failed to encode upload data to JSON');
-            }
-
             // Import the data.
             $result = $this->configurationService->importFromJson(
-                $jsonContent,
+                $jsonData,
                 $includeObjects,
                 $this->request->getParam('owner')
             );

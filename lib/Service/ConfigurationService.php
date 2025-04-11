@@ -551,7 +551,7 @@ class ConfigurationService
     /**
      * Import configuration from a JSON file
      *
-     * @param string      $jsonContent    The configuration JSON content.
+     * @param string      $data           The configuration JSON content.
      * @param bool        $includeObjects Whether to include objects in the import.
      * @param string|null $owner          The owner of the schemas and registers.
      *
@@ -559,18 +559,11 @@ class ConfigurationService
      * @throws Exception If schema validation fails or format is unsupported.
      * @return array Array of created/updated entities.
      */
-    public function importFromJson(string $jsonContent, bool $includeObjects=false, ?string $owner=null): array
+    public function importFromJson(array $data, bool $includeObjects=false, ?string $owner=null): array
     {
         // Reset the maps for this import.
         $this->registersMap = [];
         $this->schemasMap   = [];
-
-        try {
-            $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            $this->logger->error('Failed to parse JSON: '.$e->getMessage());
-            throw new Exception('Invalid JSON format: '.$e->getMessage());
-        }
 
         $result = [
             'registers'        => [],
@@ -585,7 +578,7 @@ class ConfigurationService
         ];
 
         // Import schemas first.
-        if (isset($data['components']['schemas']) === true) {
+        if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas'])) {
             foreach ($data['components']['schemas'] as $slug => $schemaData) {
                 $schema = $this->importSchema($schemaData, $owner);
                 if ($schema !== null) {
@@ -597,7 +590,7 @@ class ConfigurationService
         }
 
         // Import registers after schemas so we can link them.
-        if (isset($data['components']['registers']) === true) {
+        if (isset($data['components']['registers']) === true && is_array($data['components']['registers'])) {
             foreach ($data['components']['registers'] as $slug => $registerData) {
                 // Convert schema slugs to IDs.
                 if (isset($registerData['schemas']) === true && is_array($registerData['schemas']) === true) {
@@ -622,8 +615,10 @@ class ConfigurationService
             }//end foreach
         }//end if
 
+        // @todo: import Configuration... and link registers to it?
+
         // Import objects if includeObjects is true.
-        if ($includeObjects === true && isset($data['components']['objects']) === true) {
+        if ($includeObjects === true && isset($data['components']['objects']) === true && is_array($data['components']['objects'])) {
             foreach ($data['components']['objects'] as $slug => $objectData) {
                 // Use maps to get IDs from slugs.
                 if (isset($objectData['register']) === true && isset($this->registersMap[$objectData['register']]) === true) {
@@ -694,7 +689,7 @@ class ConfigurationService
                 }
 
                 // Update existing register.
-                $existingRegister->hydrate($data);
+                $existingRegister = $this->registerMapper->updateFromArray($existingRegister->getId(), $data);
                 if ($owner !== null) {
                     $existingRegister->setOwner($owner);
                 }
@@ -703,13 +698,13 @@ class ConfigurationService
             }
 
             // Create new register.
-            $register = new Register();
-            $register->hydrate($data);
+            $register = $this->registerMapper->createFromArray($data);
             if ($owner !== null) {
                 $register->setOwner($owner);
+                $register = $this->registerMapper->update($register);
             }
 
-            return $this->registerMapper->insert($register);
+            return $register;
         } catch (Exception $e) {
             $this->logger->error('Failed to import register: '.$e->getMessage());
             throw new Exception('Failed to import register: '.$e->getMessage());
@@ -748,7 +743,7 @@ class ConfigurationService
                 }
 
                 // Update existing schema.
-                $existingSchema->hydrate($data, $this->validator);
+                $existingSchema = $this->schemaMapper->updateFromArray($existingSchema->getId(), $data);
                 if ($owner !== null) {
                     $existingSchema->setOwner($owner);
                 }
@@ -757,13 +752,13 @@ class ConfigurationService
             }
 
             // Create new schema.
-            $schema = new Schema();
-            $schema->hydrate($data, $this->validator);
+            $schema = $this->schemaMapper->createFromArray($data);
             if ($owner !== null) {
                 $schema->setOwner($owner);
+                $schema = $this->schemaMapper->update($schema);
             }
 
-            return $this->schemaMapper->insert($schema);
+            return $schema;
         } catch (Exception $e) {
             $this->logger->error('Failed to import schema: '.$e->getMessage());
             throw new Exception('Failed to import schema: '.$e->getMessage());
@@ -799,7 +794,7 @@ class ConfigurationService
                 }
 
                 // Update existing object.
-                $existingObject->hydrate($data);
+                $existingObject = $this->objectEntityMapper->updateFromArray($existingObject->getId(), $data);
                 if ($owner !== null) {
                     $existingObject->setOwner($owner);
                 }
@@ -808,13 +803,13 @@ class ConfigurationService
             }
 
             // Create new object.
-            $object = new ObjectEntity();
-            $object->hydrate($data);
+            $object = $this->objectEntityMapper->createFromArray($data);
             if ($owner !== null) {
                 $object->setOwner($owner);
+                $object = $this->objectEntityMapper->update($object);
             }
 
-            return $this->objectEntityMapper->insert($object);
+            return $object;
         } catch (Exception $e) {
             $this->logger->error('Failed to import object: '.$e->getMessage());
             throw new Exception('Failed to import object: '.$e->getMessage());

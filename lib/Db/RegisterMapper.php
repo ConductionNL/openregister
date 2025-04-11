@@ -202,15 +202,7 @@ class RegisterMapper extends QBMapper
 
         // Ensure the object has a version.
         if ($register->getVersion() === null) {
-            $register->setVersion('1.0.0');
-        } else {
-            // Split the version into major, minor, and patch.
-            $versionParts = explode('.', $register->getVersion());
-            // Increment the patch version.
-            $versionParts[2] = ((int) $versionParts[2] + 1);
-            // Reassemble the version string.
-            $newVersion = implode('.', $versionParts);
-            $register->setVersion($newVersion);
+            $register->setVersion('0.0.1');
         }
 
     }//end cleanObject()
@@ -272,15 +264,28 @@ class RegisterMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Register
     {
-        $newRegister = $this->find($id);
-        $newRegister->hydrate($object);
+        $register = $this->find($id);
+
+        // Update version if not set in the object array.
+        if (empty($object['version']) === true) {
+            // Split the version into major, minor, and patch.
+            $version = explode('.', $register->getVersion());
+            // Increment the patch version.
+            if (isset($version[2]) === true) {
+                $version[2]        = ((int) $version[2] + 1);
+                // Reassemble the version string.
+                $object['version'] = implode('.', $version);
+            }
+        }
+
+        $register->hydrate($object);
 
         // Clean the register object to ensure UUID, slug, and version are set.
-        $this->cleanObject($newRegister);
+        $this->cleanObject($register);
 
-        $newRegister = $this->update($newRegister);
+        $register = $this->update($register);
 
-        return $newRegister;
+        return $register;
 
     }//end updateFromArray()
 
