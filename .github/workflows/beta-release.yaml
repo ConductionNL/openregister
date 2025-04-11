@@ -27,13 +27,20 @@ jobs:
       - name: Get current version and append beta suffix
         id: increment_version
         run: |
-          current_version=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml)
-          IFS='.' read -ra version_parts <<< "$current_version"
-          ((version_parts[2]++))
-          new_version="${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
-          beta_version="${new_version}-beta.${{ github.run_number }}"
+          # Get version from main branch
+          git fetch origin main
+          main_version=$(git show origin/main:appinfo/info.xml | grep -oP '(?<=<version>)[^<]+' || echo "")
+          
+          # Split main version into parts
+          IFS='.' read -ra main_version_parts <<< "$main_version"
+          
+          # Increment patch version by 1 from main
+          next_patch=$((main_version_parts[2] + 1))
+          beta_version="${main_version_parts[0]}.${main_version_parts[1]}.${next_patch}-beta.${{ github.run_number }}"
+          
           echo "NEW_VERSION=$beta_version" >> $GITHUB_ENV
           echo "new_version=$beta_version" >> $GITHUB_OUTPUT
+          echo "Main version: $main_version"
           echo "Using beta version: $beta_version"
 
       # Stap 4: Update de versie in info.xml
