@@ -229,7 +229,7 @@ class SchemasController extends Controller
 
 
         $phpArray['properties'] = array_map(function($property){
-            if(isset($property['title'])) {
+            if (isset($property['title'])) {
                 unset($property['title']);
             }
             return $property;
