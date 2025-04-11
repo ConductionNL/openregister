@@ -427,6 +427,18 @@ class ConfigurationService
             }//end foreach
         }//end if
 
+        // Get the OpenConnector service.
+        $openConnector = $this->getOpenConnector();
+        if ($openConnector === true) {
+            $openConnectorResult = $this->openConnectorConfigurationService->importConfig($data);
+            
+            // Merge the OpenAPI specification over the OpenConnector configuration.
+            $result = array_replace_recursive(
+                $openConnectorResult,
+                $result
+            );
+        }
+
         return $result;
 
     }//end importFromJson()
