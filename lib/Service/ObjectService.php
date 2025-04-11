@@ -1882,7 +1882,7 @@ class ObjectService
                 throw new Exception(sprintf('Could not find object with uuid: %s for target: %d/%d', $uuid, $register->getId(), $schema->getId()));
             }
 
-			if ($files === false) { 
+			if ($files === false) {
 				return $object;
 			}
 
@@ -2177,14 +2177,6 @@ class ObjectService
             // Get objects that reference this entity
             $identifier = $entity['@self']['id'];
 			$usedByObjects = $this->objectEntityMapper->findAll(uses: $identifier);
-
-			// Loop through inverted properties and add referenced objects
-			foreach ($invertedProperties as $key => $property) {
-				// Filter objects that reference this entity through the specified inverted property
-				$referencingObjects = array_filter(
-					$usedByObjects,
-					fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && $obj->getRelations()[$property['inversedBy']] === $identifier
-				);
 
             // Loop through inverted properties and add referenced objects
             foreach ($invertedProperties as $key => $property) {
