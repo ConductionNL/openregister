@@ -785,8 +785,6 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-		$this->setDefaults($objectEntity);
-
         // Create or update base object for first time so we have a uuid
 		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
 			$objectEntity = $this->objectEntityMapper->update($objectEntity);
@@ -801,6 +799,8 @@ class ObjectService
 
 		// Let grap any links that we can
 		$objectEntity = $this->handleLinkRelations($objectEntity, $object);
+
+        $objectEntity = $this->setDefaults($objectEntity);
 
         // Second time so the object is updated with object relations.
         if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
