@@ -27,9 +27,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCP\ILogger;
+use OCP\App\IAppManager;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Class ConfigurationService
@@ -74,7 +76,21 @@ class ConfigurationService
      *
      * @var OCA\OpenConnector\Service\ConfigurationService The OpenConnector service instance.
      */
-    private OCA\OpenConnector\Service\ConfigurationService $openConnectorConfigurationService;
+    private $openConnectorConfigurationService;
+
+    /**
+     * App manager for checking installed apps.
+     *
+     * @var \OCP\App\IAppManager The app manager instance.
+     */
+    private $appManager;
+
+    /**
+     * Container for getting services.
+     *
+     * @var \Psr\Container\ContainerInterface The container instance.
+     */
+    private $container;
 
     /**
      * Schema property validator instance for validating schema properties.
@@ -114,6 +130,8 @@ class ConfigurationService
      * @param ConfigurationMapper     $configurationMapper The configuration mapper instance
      * @param SchemaPropertyValidator $validator           The schema property validator instance
      * @param LoggerInterface         $logger              The logger instance
+     * @param \OCP\App\IAppManager    $appManager          The app manager instance
+     * @param \Psr\Container\ContainerInterface $container The container instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -121,7 +139,9 @@ class ConfigurationService
         ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
         SchemaPropertyValidator $validator,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IAppManager $appManager,
+        ContainerInterface $container
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -129,17 +149,18 @@ class ConfigurationService
         $this->configurationMapper = $configurationMapper;
         $this->validator           = $validator;
         $this->logger              = $logger;
-
+        $this->appManager          = $appManager;
+        $this->container           = $container;
     }//end __construct()
 
     
 	/**
 	 * Attempts to retrieve the OpenConnector service from the container.
 	 *
-	 * @return mixed|null The OpenConnector service if available, null otherwise.
+	 * @return bool True if the OpenConnector service is available, false otherwise.
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
 	 */
-	public function getOpenConnector(): ?\OCA\OpenRegister\Service\ObjectService
+	public function getOpenConnector(): bool
 	{
 		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
 			try {
@@ -147,13 +168,13 @@ class ConfigurationService
 				$this->openConnectorConfigurationService = $this->container->get('OCA\OpenConnector\Service\ConfigurationService');
                 return true;
 			} catch (Exception $e) {
-				// If the service is not available, return null
+				// If the service is not available, return false
 				return false;
 			}
 		}
 
 		return false;
-	}
+	}//end getOpenConnector()
 
 
     /**
