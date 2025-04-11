@@ -268,7 +268,7 @@ class ConfigurationService
             // Get the OpenConnector service.
             $openConnector = $this->getOpenConnector();
             if ($openConnector === true) {
-                $openConnectorConfig = $this->openConnectorConfigurationService->exportConfig($configuration);
+                $openConnectorConfig = $this->openConnectorConfigurationService->exportConfig($register->getId());
                 
                 // Merge the OpenAPI specification over the OpenConnector configuration.
                 $openApiSpec = array_replace_recursive(
@@ -293,7 +293,12 @@ class ConfigurationService
     private function exportRegister(Register $register): array
     {
         // Use jsonSerialize to get the JSON representation of the register.
-        return $register->jsonSerialize();
+        $registerArray = $register->jsonSerialize();
+
+        // Unset id and uuid if they are present.
+        unset($registerArray['id'], $registerArray['uuid']);
+
+        return $registerArray;
 
     }//end exportRegister()
 
@@ -308,7 +313,12 @@ class ConfigurationService
     private function exportSchema(Schema $schema): array
     {
         // Use jsonSerialize to get the JSON representation of the schema.
-        return $schema->jsonSerialize();
+        $schemaArray = $schema->jsonSerialize();
+
+        // Unset id and uuid if they are present.
+        unset($schemaArray['id'], $schemaArray['uuid']);
+
+        return $schemaArray;
 
     }//end exportSchema()
 
