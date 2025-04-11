@@ -18,7 +18,10 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
+use Symfony\Component\Yaml\Yaml;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
@@ -28,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http\JSONResponse;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -120,6 +124,12 @@ class ConfigurationService
      */
     private array $schemasMap = [];
 
+    /**
+     * HTTP Client for making external requests.
+     *
+     * @var Client The HTTP client instance.
+     */
+    private Client $client;
 
     /**
      * Constructor
@@ -132,6 +142,7 @@ class ConfigurationService
      * @param LoggerInterface         $logger              The logger instance
      * @param \OCP\App\IAppManager    $appManager          The app manager instance
      * @param \Psr\Container\ContainerInterface $container The container instance
+     * @param Client                  $client              The HTTP client instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -141,7 +152,8 @@ class ConfigurationService
         SchemaPropertyValidator $validator,
         LoggerInterface $logger,
         IAppManager $appManager,
-        ContainerInterface $container
+        ContainerInterface $container,
+        Client $client
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -151,6 +163,7 @@ class ConfigurationService
         $this->logger              = $logger;
         $this->appManager          = $appManager;
         $this->container           = $container;
+        $this->client              = $client;
     }//end __construct()
 
     
@@ -357,6 +370,95 @@ class ConfigurationService
         return $object->jsonSerialize();
 
     }//end exportObject()
+
+
+    /**
+	 * Gets the uploaded json from the request data. And returns it as a PHP array.
+	 * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
+	 *
+	 * @param array $data All request params.
+	 *
+	 * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
+	 * @throws Exception
+	 * @throws GuzzleException
+	 */
+    public function getUploadedJson(array $data): array|JSONResponse
+    {
+        // Define the allowed keys.
+        $allowedKeys = ['url', 'json'];
+
+        // Find which of the allowed keys are in the array.
+        $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
+
+        // Check if there is exactly one matching key.
+        if (count($matchingKeys) === 0) {
+            return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: url or json.'], statusCode: 400);
+        }
+
+        if (empty($data['url']) === false) {
+            $phpArray           = $this->getJSONfromURL($data['url']);
+            // $phpArray['source'] = $data['url'];
+            return $phpArray;
+        }
+
+        $phpArray = $data['json'];
+        if (is_string($phpArray) === true) {
+            $phpArray = json_decode($phpArray, associative: true);
+        }
+
+        if ($phpArray === null || $phpArray === false) {
+			return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
+		}
+
+		return $phpArray;
+
+    }//end getUploadedJson()
+
+
+    /**
+     * Uses Guzzle to call the given URL and returns response as PHP array.
+     *
+     * @param string $url The URL to call.
+     *
+     * @throws GuzzleException
+     *
+     * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
+     */
+    private function getJSONfromURL(string $url): array|JSONResponse
+    {
+        try {
+            $response = $this->client->request('GET', $url);
+        } catch (GuzzleException $e) {
+            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
+        }
+
+        $responseBody = $response->getBody()->getContents();
+
+        // Use Content-Type header to determine the format.
+        $contentType = $response->getHeaderLine('Content-Type');
+        switch ($contentType) {
+            case 'application/json':
+                $phpArray = json_decode(json: $responseBody, associative: true);
+                break;
+            case 'application/yaml':
+                $phpArray = Yaml::parse(input: $responseBody);
+                break;
+            default:
+                // If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
+                $phpArray = json_decode(json: $responseBody, associative: true);
+                if ($phpArray === null) {
+                    $phpArray = Yaml::parse(input: $responseBody);
+                }
+                break;
+        }
+
+        if ($phpArray === null || $phpArray === false) {
+			return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
+		}
+
+		return $phpArray;
+
+    }//end getJSONfromURL()
 
 
     /**

@@ -287,7 +287,7 @@ class ConfigurationsController extends Controller
     {
         try {
             // Get the uploaded JSON data.
-            $jsonData = $this->uploadService->getUploadedJson($this->request->getParams());
+            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams());
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }
