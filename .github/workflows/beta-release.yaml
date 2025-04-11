@@ -3,8 +3,8 @@ name: Beta Release
 on:
   push:
     branches:
-      - beta
-      # - code-refactor/ObjectService
+      # - beta
+      - code-refactor/ObjectService
 
 jobs:
   release-management:
