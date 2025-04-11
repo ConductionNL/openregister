@@ -3,8 +3,7 @@ name: Beta Release
 on:
   push:
     branches:
-      # - beta
-      - code-refactor/ObjectService
+      - beta
 
 jobs:
   release-management:
@@ -152,8 +151,7 @@ jobs:
         id: version
         uses: codacy/git-version@2.7.1
         with:
-          # release-branch: beta
-          release-branch: code-refactor/ObjectService
+          release-branch: beta
 
       # Stap 14: Extraheer repository description (optioneel)
       - name: Extract repository description
