@@ -382,37 +382,104 @@ class ConfigurationService
 	 * @throws Exception
 	 * @throws GuzzleException
 	 */
-    public function getUploadedJson(array $data): array|JSONResponse
+    public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {
-        // Define the allowed keys.
-        $allowedKeys = ['url', 'json'];
+        // Define the allowed keys
+		$allowedKeys = ['url', 'json'];
 
-        // Find which of the allowed keys are in the array.
-        $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
+		// Find which of the allowed keys are in the array
+		$matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
 
-        // Check if there is exactly one matching key.
-        if (count($matchingKeys) === 0) {
-            return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: url or json.'], statusCode: 400);
-        }
+		// Check if there is no matching key / no input.
+		if (count($matchingKeys) === 0 && empty($uploadedFiles) === true) {
+			return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: url or json. Or the key file in form-data.'], statusCode: 400);
+		}
 
-        if (empty($data['url']) === false) {
-            $phpArray           = $this->getJSONfromURL($data['url']);
-            // $phpArray['source'] = $data['url'];
-            return $phpArray;
-        }
+		// [if] Check if we need to create or update object(s) using uploaded file(s).
+		if (empty($uploadedFiles) === false) {
+			if (count($uploadedFiles) === 1) {
+				return $this->getJSONfromFile(uploadedFile: $uploadedFiles[array_key_first($uploadedFiles)]);
+			}
 
-        $phpArray = $data['json'];
-        if (is_string($phpArray) === true) {
-            $phpArray = json_decode($phpArray, associative: true);
-        }
+			return new JSONResponse(data: ['message' => 'Expected only 1 file.'], statusCode: 400);
+		}
 
-        if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
+		// [elseif] Check if we need to create or update object using given url from the post body.
+		if (empty($data['url']) === false) {
+			return $this->getJSONfromURL(url: $data['url']);
+		}
+
+		// [else] Create or update object using given json blob from the post body.
+		return $this->getJSONfromBody($data['json']);
+	}
+
+
+    /**
+	 * A function used to decode file content or the response of an url get call.
+	 * Before the data can be used to create or update an object.
+	 *
+	 * @param string $data The file content or the response body content.
+	 * @param string|null $type The file MIME type or the response Content-Type header.
+	 *
+	 * @return array|null The decoded data or null.
+	 */
+	private function decode(string $data, ?string $type): ?array
+	{
+		switch ($type) {
+			case 'application/json':
+				$phpArray = json_decode(json: $data, associative: true);
+				break;
+			case 'application/yaml':
+				$phpArray = Yaml::parse(input: $data);
+				break;
+			default:
+				// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
+				$phpArray = json_decode(json: $data, associative: true);
+				if ($phpArray === null || $phpArray === false) {
+					try {
+						$phpArray = Yaml::parse(input: $data);
+					} catch (Exception $exception) {
+						$phpArray = null;
+					}
+				}
+				break;
+		}
+
+		if ($phpArray === null || $phpArray === false) {
+			return null;
 		}
 
 		return $phpArray;
+	}
 
-    }//end getUploadedJson()
+    /**
+	 * Gets uploaded file content from a file in the api request as PHP array and use it for creating/updating an object.
+	 *
+	 * @param array $uploadedFile The uploaded file.
+	 * @param string|null $type If the uploaded file should be a specific type of object.
+	 *
+	 * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
+	 */
+	private function getJSONfromFile(array $uploadedFile, ?string $type = null): array|JSONResponse
+	{
+		// Check for upload errors
+		if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
+			return new JSONResponse(data: ['error' => 'File upload error: '.$uploadedFile['error']], statusCode: 400);
+		}
+
+		$fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
+		$fileContent = file_get_contents(filename: $uploadedFile['tmp_name']);
+
+		$phpArray = $this->decode(data: $fileContent, type: $fileExtension);
+		if ($phpArray === null) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
+				statusCode: 400
+			);
+		}
+
+		return $phpArray;
+	}//end getJSONfromFile()
 
 
     /**
@@ -434,31 +501,45 @@ class ConfigurationService
 
         $responseBody = $response->getBody()->getContents();
 
-        // Use Content-Type header to determine the format.
-        $contentType = $response->getHeaderLine('Content-Type');
-        switch ($contentType) {
-            case 'application/json':
-                $phpArray = json_decode(json: $responseBody, associative: true);
-                break;
-            case 'application/yaml':
-                $phpArray = Yaml::parse(input: $responseBody);
-                break;
-            default:
-                // If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
-                $phpArray = json_decode(json: $responseBody, associative: true);
-                if ($phpArray === null) {
-                    $phpArray = Yaml::parse(input: $responseBody);
-                }
-                break;
-        }
+		// Use Content-Type header to determine the format
+		$contentType = $response->getHeaderLine('Content-Type');
+		$phpArray = $this->decode(data: $responseBody, type: $contentType);
 
-        if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
+        if ($phpArray === null) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
+				statusCode: 400
+			);
 		}
 
 		return $phpArray;
 
     }//end getJSONfromURL()
+
+
+    /**
+	 * Uses the given string or array as PHP array for creating/updating an object.
+	 *
+	 * @param array|string $phpArray An array or string containing a json blob of data.
+	 * @param string|null $type If the object should be a specific type of object.
+	 *
+	 * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
+	 */
+	private function getJSONfromBody(array|string $phpArray): array|JSONResponse
+	{
+		if (is_string($phpArray) === true) {
+			$phpArray = json_decode($phpArray, associative: true);
+		}
+
+		if ($phpArray === null || $phpArray === false) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to decode JSON input'],
+				statusCode: 400
+			);
+		}
+
+		return $phpArray;
+	}//end getJSONfromBody()
 
 
     /**
@@ -588,6 +669,9 @@ class ConfigurationService
     private function importRegister(array $data, ?string $owner=null): ?Register
     {
         try {
+            // Remove id and uuid from the data.
+            unset($data['id'], $data['uuid']);
+            
             // Check if register already exists by slug.
             $existingRegister = null;
             try {
@@ -639,6 +723,9 @@ class ConfigurationService
     private function importSchema(array $data, ?string $owner=null): ?Schema
     {
         try {
+            // Remove id and uuid from the data.
+            unset($data['id'], $data['uuid']);
+
             // Check if schema already exists by slug.
             $existingSchema = null;
             try {

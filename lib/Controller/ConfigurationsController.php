@@ -286,8 +286,14 @@ class ConfigurationsController extends Controller
     public function import(bool $includeObjects=false): JSONResponse
     {
         try {
+            // Get the uploaded file from the request if a single file has been uploaded.
+            $uploadedFile = $this->request->getUploadedFile(key: 'file');
+            if (empty($uploadedFile) === false) {
+                $uploadedFiles[] = $uploadedFile;
+            }
+
             // Get the uploaded JSON data.
-            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams());
+            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }
