@@ -70,6 +70,13 @@ class ConfigurationService
     private ConfigurationMapper $configurationMapper;
 
     /**
+     * OpenConnector service instance for handling OpenConnector operations.
+     *
+     * @var OCA\OpenConnector\Service\ConfigurationService The OpenConnector service instance.
+     */
+    private OCA\OpenConnector\Service\ConfigurationService $openConnectorConfigurationService;
+
+    /**
      * Schema property validator instance for validating schema properties.
      *
      * @var SchemaPropertyValidator The schema property validator instance.
@@ -124,6 +131,29 @@ class ConfigurationService
         $this->logger              = $logger;
 
     }//end __construct()
+
+    
+	/**
+	 * Attempts to retrieve the OpenConnector service from the container.
+	 *
+	 * @return mixed|null The OpenConnector service if available, null otherwise.
+	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+	 */
+	public function getOpenConnector(): ?\OCA\OpenRegister\Service\ObjectService
+	{
+		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
+			try {
+				// Attempt to get the OpenConnector service from the container
+				$this->openConnectorConfigurationService = $this->container->get('OCA\OpenConnector\Service\ConfigurationService');
+                return true;
+			} catch (Exception $e) {
+				// If the service is not available, return null
+				return false;
+			}
+		}
+
+		return false;
+	}
 
 
     /**
@@ -233,6 +263,18 @@ class ConfigurationService
                     $openApiSpec['components']['objects'][$object->getSlug()]['register'] = $this->registersMap[$object->getRegisterId()]->getSlug();
                     $openApiSpec['components']['objects'][$object->getSlug()]['schema']   = $this->schemasMap[$object->getSchemaId()]->getSlug();
                 }
+            }
+
+            // Get the OpenConnector service.
+            $openConnector = $this->getOpenConnector();
+            if ($openConnector === true) {
+                $openConnectorConfig = $this->openConnectorConfigurationService->exportConfig($configuration);
+                
+                // Merge the OpenAPI specification over the OpenConnector configuration.
+                $openApiSpec = array_replace_recursive(
+                    $openConnectorConfig,
+                    $openApiSpec
+                );
             }
         }//end foreach
 
