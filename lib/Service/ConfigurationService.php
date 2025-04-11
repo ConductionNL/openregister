@@ -229,6 +229,9 @@ class ConfigurationService
         if ($input instanceof Configuration) {
             $configuration = $input;
 
+            // Get all registers associated with this configuration.
+            $registers = $configuration->getRegisters();
+
             // Set the info from the configuration.
             $openApiSpec['info'] = [
                 'id'          => $input->getId(),
@@ -249,6 +252,9 @@ class ConfigurationService
         } else {
             // Get all registers associated with this configuration.
             $configuration = $this->configurationMapper->find($input['id']);
+
+            // Get all registers associated with this configuration.
+            $registers = $configuration->getRegisters();
             
             // Set the info from the configuration.
             $openApiSpec['info'] = [
@@ -258,8 +264,6 @@ class ConfigurationService
             ];
         }//end if
 
-        // Get all registers associated with this configuration.
-        $registers = $configuration->getRegisters();
 
         // Export each register and its schemas.
         foreach ($registers as $register) {
@@ -288,14 +292,16 @@ class ConfigurationService
             // Optionally include objects in the register.
             if ($includeObjects === true) {
                 $objects = $this->objectEntityMapper->findAll(
-                    filters: ['registerId' => $register->getId()],
+                    filters: ['register' => $register->getId()],
                     includeDeleted: false
                 );
                 foreach ($objects as $object) {
-                    $openApiSpec['components']['objects'][$object->getSlug()] = $this->exportObject($object);
                     // Use maps to get slugs.
-                    $openApiSpec['components']['objects'][$object->getSlug()]['register'] = $this->registersMap[$object->getRegisterId()]->getSlug();
-                    $openApiSpec['components']['objects'][$object->getSlug()]['schema']   = $this->schemasMap[$object->getSchemaId()]->getSlug();
+                    $object = $object->jsonSerialize();
+                    $object['@self']['register'] = $this->registersMap[$object['@self']['register']]->getSlug();
+                    $object['@self']['schema']   = $this->schemasMap[$object['@self']['schema']]->getSlug();                    //unset($object['@self']);
+
+                    $openApiSpec['components']['objects'][] = $object;
                 }
             }
 
