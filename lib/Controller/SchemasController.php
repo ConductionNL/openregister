@@ -226,6 +226,15 @@ class SchemasController extends Controller
 			$phpArray['title'] = 'New Schema';
 		}
 
+
+
+        $phpArray['properties'] = array_map(function($property){
+            if (isset($property['title'])) {
+                unset($property['title']);
+            }
+            return $property;
+        }, $phpArray['properties']);
+
 		$schema->hydrate($phpArray);
         if ($schema->getId() === null) {
             $schema = $this->schemaMapper->insert($schema);
