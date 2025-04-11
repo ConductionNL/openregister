@@ -130,7 +130,7 @@ jobs:
         id: version
         uses: codacy/git-version@2.7.1
         with:
-          release-branch: code-refactor/ObjectService
+          release-branch: development
 
       # Stap 14: Extraheer repository description (optioneel)
       - name: Extract repository description
