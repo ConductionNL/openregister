@@ -199,5 +199,43 @@ export const useRegisterStore = defineStore('register', {
 			return { response, data }
 
 		},
+		async importRegister(file) {
+			if (!file) {
+				throw new Error('No file to import')
+			}
+
+			console.log('Importing register...')
+
+			const endpoint = '/index.php/apps/openregister/api/registers/import'
+			const formData = new FormData()
+			formData.append('file', file)
+
+			try {
+				const response = await fetch(
+					endpoint,
+					{
+						method: 'POST',
+						body: formData,
+					},
+				)
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				await this.refreshRegisterList()
+
+				return { response, responseData }
+			} catch (error) {
+				console.error('Error importing register:', error)
+				throw new Error(`Failed to import register: ${error.message}`)
+			}
+		},
 	},
 })

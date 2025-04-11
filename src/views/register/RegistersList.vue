@@ -22,11 +22,11 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('uploadRegister')">
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
-						Upload Register
+						Import Register
 					</NcActionButton>
 					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						<template #icon>

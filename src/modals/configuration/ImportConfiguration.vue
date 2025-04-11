@@ -4,6 +4,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
+		name="importConfiguration"
 		title="Import Configuration"
 		size="large"
 		:can-close="false">
@@ -104,21 +105,11 @@ export default {
 			this.error = null
 
 			try {
-				const reader = new FileReader()
-				reader.onload = async (e) => {
-					try {
-						const data = JSON.parse(e.target.result)
-						await configurationStore.importConfiguration(data)
-						this.success = true
-						setTimeout(() => this.closeModal(), 1500)
-					} catch (error) {
-						this.error = error.message || 'Invalid JSON format'
-						this.loading = false
-					}
-				}
-				reader.readAsText(this.selectedFile)
+				await configurationStore.importConfiguration(this.selectedFile)
+				this.success = true
+				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
-				this.error = error.message || 'Failed to read file'
+				this.error = error.message || 'Failed to import configuration'
 				this.loading = false
 			}
 		},

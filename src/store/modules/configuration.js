@@ -198,5 +198,43 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw new Error(`Failed to upload configuration: ${error.message}`)
 			}
 		},
+		async importConfiguration(file) {
+			if (!file) {
+				throw new Error('No file to import')
+			}
+
+			console.log('Importing configuration...')
+
+			const endpoint = '/index.php/apps/openregister/api/configurations/import'
+			const formData = new FormData()
+			formData.append('file', file)
+
+			try {
+				const response = await fetch(
+					endpoint,
+					{
+						method: 'POST',
+						body: formData,
+					},
+				)
+
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				const responseData = await response.json()
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				await this.refreshConfigurationList()
+
+				return { response, responseData }
+			} catch (error) {
+				console.error('Error importing configuration:', error)
+				throw new Error(`Failed to import configuration: ${error.message}`)
+			}
+		}
 	},
 }) 

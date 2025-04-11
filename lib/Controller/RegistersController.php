@@ -282,92 +282,6 @@ class RegistersController extends Controller
 
 
     /**
-     * Updates an existing Register object using a json text/string as input
-     *
-     * Uses 'file', 'url' or else 'json' from POST body.     *
-     *
-     * @param int|null $id The ID of the register to update, or null for a new register
-     *
-     * @throws Exception If there is a database error
-     * @throws GuzzleException If there is an HTTP request error
-     *
-     * @return JSONResponse The JSON response with the updated register
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function uploadUpdate(?int $id=null): JSONResponse
-    {
-        return $this->upload($id);
-
-    }//end uploadUpdate()
-
-
-    /**
-     * Creates a new Register object or updates an existing one
-     *
-     * Uses 'file', 'url' or else 'json' from POST body.
-     *
-     * @param int|null $id The ID of the register to update, or null for a new register
-     *
-     * @throws GuzzleException If there is an HTTP request error
-     * @throws Exception If there is a database error
-     *
-     * @return JSONResponse The JSON response with the created or updated register
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function upload(?int $id=null): JSONResponse
-    {
-        if ($id !== null) {
-            // If ID is provided, find the existing register.
-            $register = $this->registerMapper->find($id);
-        } else {
-            // Otherwise, create a new register.
-            $register = new Register();
-            $register->setUuid(Uuid::v4());
-        }
-
-        // Get the uploaded JSON data.
-        $phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
-        if ($phpArray instanceof JSONResponse) {
-            // Return any error response from the upload service.
-            return $phpArray;
-        }
-
-        // Validate that the jsonArray is a valid OAS3 object containing schemas.
-        if (isset($phpArray['openapi']) === false || isset($phpArray['components']['schemas']) === false) {
-            return new JSONResponse(
-                data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'],
-                statusCode: 400
-            );
-        }
-
-        // Set default title if not provided or empty.
-        if (empty($phpArray['info']['title']) === true) {
-            $phpArray['info']['title'] = 'New Register';
-        }
-
-        // Update the register with the data from the uploaded JSON.
-        $register->hydrate($phpArray);
-
-        if ($register->getId() === null) {
-            // Insert a new register if no ID is set.
-            $register = $this->registerMapper->insert($register);
-        } else {
-            // Update the existing register.
-            $register = $this->registerMapper->update($register);
-        }
-
-        return new JSONResponse($register);
-
-    }//end upload()
-
-
-    /**
      * Export a register and its related data
      *
      * This method exports a register, its schemas, and optionally its objects
@@ -434,10 +348,16 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      */
     public function import(int $id, bool $includeObjects=false): JSONResponse
-    {
+    {        
         try {
+            // Get the uploaded file from the request if a single file has been uploaded.
+            $uploadedFile = $this->request->getUploadedFile(key: 'file');
+            if (empty($uploadedFile) === false) {
+                $uploadedFiles[] = $uploadedFile;
+            }
+
             // Get the uploaded JSON data.
-            $jsonData = $this->uploadService->getUploadedJson($this->request->getParams());
+            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
             if ($jsonData instanceof JSONResponse) {
                 return $jsonData;
             }
@@ -448,14 +368,11 @@ class RegistersController extends Controller
                 throw new Exception('Failed to encode upload data to JSON');
             }
 
-            // Find the register to get the owner.
-            $register = $this->registerMapper->find($id);
-
             // Import the data.
             $result = $this->configurationService->importFromJson(
                 $jsonContent,
                 $includeObjects,
-                $register->getOwner()
+                $this->request->getParam('owner')
             );
 
             return new JSONResponse(
@@ -466,7 +383,7 @@ class RegistersController extends Controller
                     );
         } catch (Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to import data: '.$e->getMessage()],
+                ['error' => 'Failed to import configuration: '.$e->getMessage()],
                 400
             );
         }//end try
