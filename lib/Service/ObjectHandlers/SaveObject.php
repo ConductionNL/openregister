@@ -168,7 +168,7 @@ class SaveObject
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 return $this->updateObject($register, $schema, $data, $existingObject);
-            } catch (DoesNotExistException $e) {
+            } catch (\Exception $e) {
                 // Object not found, proceed with creating new object
             }
         }
@@ -180,7 +180,13 @@ class SaveObject
         $objectEntity->setObject($data);
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
-        $objectEntity->setUuid(Uuid::v4());
+
+        // Set UUID if provided, otherwise generate a new one
+        if ($uuid !== null) {
+            $objectEntity->setUuid($uuid); // @todo: check if this is a correct uuid
+        } else {
+            $objectEntity->setUuid(Uuid::v4());
+        }
 
         // Set user information if available.
         $user = $this->userSession->getUser();

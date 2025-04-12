@@ -810,17 +810,18 @@ class ConfigurationService
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
+            // Determine the UUID or ID to use for finding the existing object
+            $uuid = $data['uuid'] ?? $data['id'] ?? null;
+
             // Check if object already exists by UUID or ID
             $existingObject = null;
-            if (!empty($data['uuid']) || !empty($data['id'])) {
+            
+            if ($uuid !== null) {
                 try {
-                    if (!empty($data['uuid'])) {
-                        $existingObject = $this->objectEntityMapper->find($data['uuid']);
-                    } elseif (!empty($data['id'])) {
-                        $existingObject = $this->objectEntityMapper->find($data['id']);
-                    }
-                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                    // Object doesn't exist, we'll create a new one.
+                    $existingObject = $this->objectEntityMapper->find($uuid);
+                } catch (\Exception $e) {
+                    // Catch all exceptions, object doesn't exist or other error occurred, we'll create a new one.
+                    $this->logger->error('Error finding object: '.$e->getMessage());
                 }
             }
 
@@ -831,7 +832,7 @@ class ConfigurationService
             // Save the object using the object service
             $object = $this->objectService->saveObject(
                 object: $data,
-                uuid: $existingObject?->getUuid()
+                uuid: $uuid ?? null
             );
 
             return $object;
