@@ -369,7 +369,7 @@ class Schema extends Entity implements JsonSerializable
             'properties'     => $properties,
             'archive'        => $this->archive,
             'source'         => $this->source,
-            'hardValidation' => $this->hardValidation,
+            'hardValidation' => $this->hardValidation, //@todo: should be refactored to strict
             'updated'        => $updated,
             'created'        => $created,
             'maxDepth'       => $this->maxDepth,

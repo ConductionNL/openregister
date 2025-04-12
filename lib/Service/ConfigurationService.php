@@ -834,12 +834,6 @@ class ConfigurationService
                 uuid: $existingObject?->getUuid()
             );
 
-            // Set owner if provided
-            if ($owner !== null) {
-                $object->setOwner($owner);
-                $object = $this->objectEntityMapper->update($object);
-            }
-
             return $object;
         } catch (Exception $e) {
             $this->logger->error('Failed to import object: '.$e->getMessage());

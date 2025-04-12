@@ -474,7 +474,7 @@ class ObjectService
 
         // Validate the object against the current schema
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
-        if ($result->isValid() === false) {
+        if ($result->isValid() === false && $this->currentSchema->getHardValidation() === true) {
             throw new ValidationException($result->error()->message());
         }
 

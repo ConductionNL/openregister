@@ -180,12 +180,12 @@ class SaveObject
         $objectEntity->setObject($data);
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
+        $objectEntity->setUuid(Uuid::v4());
 
         // Set user information if available.
         $user = $this->userSession->getUser();
         if ($user !== null) {
-            $objectEntity->setCreatedBy($user->getUID());
-            $objectEntity->setUpdatedBy($user->getUID());
+            $objectEntity->setOwner($user->getUID());
         }
 
         // Update object relations
