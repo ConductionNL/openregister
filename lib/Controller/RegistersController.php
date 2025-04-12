@@ -354,7 +354,7 @@ class RegistersController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $id, bool $includeObjects=false): JSONResponse
+    public function import(bool $includeObjects=false): JSONResponse
     {        
         try {
             // Initialize the uploaded files array

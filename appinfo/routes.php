@@ -33,12 +33,9 @@ return [
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Registers
-        ['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
-        ['name' => 'registers#uploadUpdate', 'url' => '/api/registers/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#import', 'url' => '/api/registers/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        // Configurations
+       // Configurations
         ['name' => 'configurations#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
         // Search
