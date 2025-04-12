@@ -199,7 +199,7 @@ export const useRegisterStore = defineStore('register', {
 			return { response, data }
 
 		},
-		async importRegister(file) {
+		async importRegister(file, includeObjects = false) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
@@ -209,6 +209,7 @@ export const useRegisterStore = defineStore('register', {
 			const endpoint = '/index.php/apps/openregister/api/registers/import'
 			const formData = new FormData()
 			formData.append('file', file)
+			formData.append('includeObjects', includeObjects ? '1' : '0')
 
 			try {
 				const response = await fetch(

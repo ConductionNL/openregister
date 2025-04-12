@@ -198,7 +198,7 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw new Error(`Failed to upload configuration: ${error.message}`)
 			}
 		},
-		async importConfiguration(file) {
+		async importConfiguration(file, includeObjects = false) {
 			if (!file) {
 				throw new Error('No file to import')
 			}
@@ -208,6 +208,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			const endpoint = '/index.php/apps/openregister/api/configurations/import'
 			const formData = new FormData()
 			formData.append('file', file)
+			formData.append('includeObjects', includeObjects ? '1' : '0')
 
 			try {
 				const response = await fetch(

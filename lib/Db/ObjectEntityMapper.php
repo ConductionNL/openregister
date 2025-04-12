@@ -374,6 +374,12 @@ class ObjectEntityMapper extends QBMapper
     public function createFromArray(array $object): ObjectEntity
     {
         $obj = new ObjectEntity();
+
+        // Ensure we have a UUID
+        if (empty($object['uuid'])) {
+            $object['uuid'] = Uuid::v4();
+        }
+
         $obj->hydrate(object: $object);
 
         // Prepare the object before insertion.
@@ -426,6 +432,14 @@ class ObjectEntityMapper extends QBMapper
     {
         $oldObject = $this->find($id);
         $newObject = clone $oldObject;
+
+        // Ensure we preserve the UUID if it exists, or create a new one if it doesn't
+        if (empty($object['uuid']) && empty($oldObject->getUuid())) {
+            $object['uuid'] = Uuid::v4();
+        } elseif (empty($object['uuid'])) {
+            $object['uuid'] = $oldObject->getUuid();
+        }
+
         $newObject->hydrate($object);
 
         // Prepare the object before updating.

@@ -36,6 +36,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ObjectService;
 
 /**
  * Class ConfigurationService
@@ -132,6 +133,13 @@ class ConfigurationService
     private Client $client;
 
     /**
+     * Object service instance for handling object operations.
+     *
+     * @var ObjectService The object service instance.
+     */
+    private ObjectService $objectService;
+
+    /**
      * Constructor
      *
      * @param SchemaMapper            $schemaMapper        The schema mapper instance
@@ -143,6 +151,7 @@ class ConfigurationService
      * @param \OCP\App\IAppManager    $appManager          The app manager instance
      * @param \Psr\Container\ContainerInterface $container The container instance
      * @param Client                  $client              The HTTP client instance
+     * @param ObjectService           $objectService       The object service instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -153,7 +162,8 @@ class ConfigurationService
         LoggerInterface $logger,
         IAppManager $appManager,
         ContainerInterface $container,
-        Client $client
+        Client $client,
+        ObjectService $objectService
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -164,6 +174,7 @@ class ConfigurationService
         $this->appManager          = $appManager;
         $this->container           = $container;
         $this->client              = $client;
+        $this->objectService       = $objectService;
     }//end __construct()
 
     
@@ -620,25 +631,39 @@ class ConfigurationService
             }//end foreach
         }//end if
 
-        // @todo: import Configuration... and link registers to it?
-
         // Import objects if includeObjects is true.
         if ($includeObjects === true && isset($data['components']['objects']) === true && is_array($data['components']['objects'])) {
-            foreach ($data['components']['objects'] as $slug => $objectData) {
+            
+            
+
+            foreach ($data['components']['objects'] as $objectData) {
                 // Use maps to get IDs from slugs.
-                if (isset($objectData['register']) === true && isset($this->registersMap[$objectData['register']]) === true) {
-                    $objectData['registerId'] = $this->registersMap[$objectData['register']]->getId();
+                if (isset($objectData['@self']['register']) === true) {
+                    $registerSlug = strtolower($objectData['@self']['register']);
+                    if (isset($this->registersMap[$registerSlug]) === true) {
+                        $objectData['@self']['register'] = $this->registersMap[$registerSlug]->getId();
+                    } else {
+                        $this->logger->warning('Register with slug '.$registerSlug.' not found during object import.');
+                        continue;
+                    }
                 } else {
-                    $this->logger->warning('Register with slug '.$objectData['register'].' not found during object import.');
+                    $this->logger->warning('Object data missing register reference.');
                     continue;
                 }
 
-                if (isset($objectData['schema']) === true && isset($this->schemasMap[$objectData['schema']]) === true) {
-                    $objectData['schemaId'] = $this->schemasMap[$objectData['schema']]->getId();
+                if (isset($objectData['@self']['schema']) === true) {
+                    $schemaSlug = strtolower($objectData['@self']['schema']);
+                    if (isset($this->schemasMap[$schemaSlug]) === true) {
+                        $objectData['@self']['schema'] = $this->schemasMap[$schemaSlug]->getId();
+                    } else {
+                        $this->logger->warning('Schema with slug '.$schemaSlug.' not found during object import.');
+                        continue;
+                    }
                 } else {
-                    $this->logger->warning('Schema with slug '.$objectData['schema'].' not found during object import.');
+                    $this->logger->warning('Object data missing schema reference.');
                     continue;
                 }
+
 
                 $object = $this->importObject($objectData, $owner);
                 if ($object !== null) {
@@ -690,7 +715,8 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping register import as existing version is newer or equal.');
-                    return null;
+                    // Even though we're skipping the update, we still need to add it to the map
+                    return $existingRegister;
                 }
 
                 // Update existing register.
@@ -744,7 +770,8 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping schema import as existing version is newer or equal.');
-                    return null;
+                    // Even though we're skipping the update, we still need to add it to the map
+                    return $existingSchema;
                 }
 
                 // Update existing schema.
@@ -783,32 +810,31 @@ class ConfigurationService
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
-            // Check if object already exists by UUID.
+            // Check if object already exists by UUID or ID
             $existingObject = null;
-            try {
-                $existingObject = $this->objectEntityMapper->find($data['uuid']);
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Object doesn't exist, we'll create a new one.
+            if (!empty($data['uuid']) || !empty($data['id'])) {
+                try {
+                    if (!empty($data['uuid'])) {
+                        $existingObject = $this->objectEntityMapper->find($data['uuid']);
+                    } elseif (!empty($data['id'])) {
+                        $existingObject = $this->objectEntityMapper->find($data['id']);
+                    }
+                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                    // Object doesn't exist, we'll create a new one.
+                }
             }
 
-            if ($existingObject !== null) {
-                // Compare versions using version_compare for proper semver comparison.
-                if (version_compare($data['version'], $existingObject->getVersion(), '<=') === true) {
-                    $this->logger->info('Skipping object import as existing version is newer or equal.');
-                    return null;
-                }
+            // Set the register and schema context for the object service
+            $this->objectService->setRegister($data['@self']['register']);
+            $this->objectService->setSchema($data['@self']['schema']);
 
-                // Update existing object.
-                $existingObject = $this->objectEntityMapper->updateFromArray($existingObject->getId(), $data);
-                if ($owner !== null) {
-                    $existingObject->setOwner($owner);
-                }
+            // Save the object using the object service
+            $object = $this->objectService->saveObject(
+                object: $data,
+                uuid: $existingObject?->getUuid()
+            );
 
-                return $this->objectEntityMapper->update($existingObject);
-            }
-
-            // Create new object.
-            $object = $this->objectEntityMapper->createFromArray($data);
+            // Set owner if provided
             if ($owner !== null) {
                 $object->setOwner($owner);
                 $object = $this->objectEntityMapper->update($object);
