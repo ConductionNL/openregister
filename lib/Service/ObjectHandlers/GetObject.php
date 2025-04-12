@@ -154,22 +154,6 @@ class GetObject
     }//end findAll()
 
 
-    /**
-     * Counts the number of objects matching the given criteria.
-     *
-     * @param array         $filters  Filter criteria.
-     * @param string|null   $search   Search term.
-     * @param Register|null $register Optional register to filter objects.
-     * @param Schema|null   $schema   Optional schema to filter objects.
-     *
-     * @return int The number of matching objects.
-     */
-    public function count(array $filters=[], ?string $search=null, ?Register $register=null, ?Schema $schema=null): int
-    {
-        return $this->objectEntityMapper->countAll($filters, $search, false, $register, $schema);
-
-    }//end count()
-
 
     /**
      * Hydrates an object with its file information.

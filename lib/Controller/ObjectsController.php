@@ -273,7 +273,7 @@ class ObjectsController extends Controller
         // Get total count for pagination
         //$total = $objectService->count($config['filters'], $config['search']);
 
-        $total = $objectService->count(filters: $config['filters'], search: $config['search']);
+        $total = $objectService->count($config);
 
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
@@ -616,13 +616,12 @@ class ObjectsController extends Controller
             // Get config and fetch objects
             $config  = $this->getConfig($register, $schema, ids: $relations);
 
-            
-            var_dump($config);
-            die;
+            // We specifacllly want to look outside our current definitions
+            unset($config['filters']['register'],$config['filters']['schema'],$config['limit']);
 
             $objects = $objectService->findAll($config);
             // Get total count for pagination
-            $total = $objectService->count($config['filters']);
+            $total = $objectService->count($config);
         }
 
         // Return paginated results
@@ -665,9 +664,13 @@ class ObjectsController extends Controller
         } else {
             // Get config and fetch objects
             $config  = $this->getConfig($register, $schema, $relations);
+            
+            // We specifacllly want to look outside our current definitions
+            unset($config['filters']['register'],$config['filters']['schema']);
+
             $objects = $objectService->findAll($config);
             // Get total count for pagination
-            $total = $objectService->count($config['filters']);
+            $total = $objectService->count($config);
         }
 
         // Return paginated results
