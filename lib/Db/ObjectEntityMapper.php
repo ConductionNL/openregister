@@ -150,69 +150,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
-
-    /**
-     * Counts all objects with optional register and schema filters
-     *
-     * @param array|null    $filters        The filters to apply
-     * @param string|null   $search         The search string to apply
-     * @param bool          $includeDeleted Whether to include deleted objects
-     * @param Register|null $register       Optional register to filter by
-     * @param Schema|null   $schema         Optional schema to filter by
-     *
-     * @return int The number of objects
-     */
-    public function countAll(
-        ?array $filters=[],
-        ?string $search=null,
-        bool $includeDeleted=false,
-        ?Register $register=null,
-        ?Schema $schema=null
-    ): int {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
-            ->from(from: 'openregister_objects');
-
-        // Conditionally count objects based on $includeDeleted.
-        if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted'));
-        }
-
-        // Add optional register filter if provided
-        if ($register !== null) {
-            $qb->andWhere(
-                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
-            );
-        }
-
-        // Add optional schema filter if provided
-        if ($schema !== null) {
-            $qb->andWhere(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
-            );
-        }
-
-        foreach ($filters as $filter => $value) {
-            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
-                $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-            }
-        }
-
-        $qb = $this->databaseJsonService->filterJson($qb, $filters);
-        $qb = $this->databaseJsonService->searchJson($qb, $search);
-
-        $result = $qb->executeQuery();
-
-        return $result->fetchAll()[0]['count'];
-
-    }//end countAll()
-
-
     /**
      * Find all ObjectEntities
      *
@@ -239,11 +176,11 @@ class ObjectEntityMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        array $sort=[],
+        ?array $sort=[],
         ?string $search=null,
         ?array $ids=null,
         ?string $uses=null,
-        bool $includeDeleted=false,
+        ?bool $includeDeleted=false,
         ?Register $register=null,
         ?Schema $schema=null
     ): array {

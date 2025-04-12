@@ -400,10 +400,10 @@ class ObjectService
         }
 
         // Add register and schema IDs to filters
-        $filters['register_id'] = $this->currentRegister->getId();
-        $filters['schema_id']   = $this->currentSchema->getId();
+        $filters['register'] = $this->currentRegister->getId();
+        $filters['schema']   = $this->currentSchema->getId();
 
-        return $this->getHandler->count($filters, $search);
+        return count($this->getHandler->findAll(filters: $filters, search: $search));
 
     }//end count()
 

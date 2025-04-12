@@ -273,8 +273,9 @@ class ObjectsController extends Controller
         $objects = $objectService->findAll($config);
 
         // Get total count for pagination
-        $total = $objectService->count($config['filters'], $config['search']);
-
+        //$total = $objectService->count($config['filters'], $config['search']);
+        $total = $objectService->count();
+        
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
 
