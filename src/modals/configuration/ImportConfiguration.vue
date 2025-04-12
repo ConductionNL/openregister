@@ -33,6 +33,18 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				</NcButton>
 				<span v-if="selectedFile">{{ selectedFile.name }}</span>
 			</div>
+
+			<div class="includeObjects">
+				<NcCheckboxRadioSwitch 
+					:checked="includeObjects"
+					@update:checked="includeObjects = $event"
+					type="switch">
+					Include objectsin the import
+					<template #helper>
+						This will create or update objects on the register
+					</template>
+				</NcCheckboxRadioSwitch>
+			</div>
 		</div>
 
 		<template #actions>
@@ -62,6 +74,7 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -75,6 +88,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
+		NcCheckboxRadioSwitch,
 		// Icons
 		Cancel,
 		Import,
@@ -86,6 +100,7 @@ export default {
 			loading: false,
 			success: false,
 			error: null,
+			includeObjects: false,
 		}
 	},
 	methods: {
@@ -99,13 +114,14 @@ export default {
 			this.loading = false
 			this.success = false
 			this.error = null
+			this.includeObjects = false
 		},
 		async importConfiguration() {
 			this.loading = true
 			this.error = null
 
 			try {
-				await configurationStore.importConfiguration(this.selectedFile)
+				await configurationStore.importConfiguration(this.selectedFile, this.includeObjects)
 				this.success = true
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
@@ -128,5 +144,9 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 1rem;
+}
+
+.includeObjects {
+	margin-top: 1rem;
 }
 </style> 

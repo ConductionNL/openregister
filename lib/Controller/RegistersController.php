@@ -346,7 +346,6 @@ class RegistersController extends Controller
      * This method imports schemas and optionally objects into an existing register
      * from an OpenAPI format file.
      *
-     * @param int  $id             The ID of the register to import into
      * @param bool $includeObjects Whether to include objects in the import
      *
      * @return JSONResponse The result of the import operation
