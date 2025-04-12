@@ -580,6 +580,8 @@ class ConfigurationService
         // Import schemas first.
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas'])) {
             foreach ($data['components']['schemas'] as $slug => $schemaData) {
+                // Ensure slug is lowercase
+                $slug = strtolower($slug);
                 $schema = $this->importSchema($schemaData, $owner);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
@@ -592,11 +594,15 @@ class ConfigurationService
         // Import registers after schemas so we can link them.
         if (isset($data['components']['registers']) === true && is_array($data['components']['registers'])) {
             foreach ($data['components']['registers'] as $slug => $registerData) {
+                // Ensure slug is lowercase
+                $slug = strtolower($slug);
+
                 // Convert schema slugs to IDs.
                 if (isset($registerData['schemas']) === true && is_array($registerData['schemas']) === true) {
                     $schemaIds = [];
                     foreach ($registerData['schemas'] as $schemaSlug) {
                         if (isset($this->schemasMap[$schemaSlug]) === true) {
+                            $schemaSlug = strtolower($schemaSlug);
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
                         } else {
                             $this->logger->warning('Schema with slug '.$schemaSlug.' not found during register import.');
@@ -676,7 +682,7 @@ class ConfigurationService
             // Check if register already exists by slug.
             $existingRegister = null;
             try {
-                $existingRegister = $this->registerMapper->find($data['slug']);
+                $existingRegister = $this->registerMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Register doesn't exist, we'll create a new one.
             }
@@ -730,7 +736,7 @@ class ConfigurationService
             // Check if schema already exists by slug.
             $existingSchema = null;
             try {
-                $existingSchema = $this->schemaMapper->find($data['slug']);
+                $existingSchema = $this->schemaMapper->find(strtolower($data['slug']));
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Schema doesn't exist, we'll create a new one.
             }

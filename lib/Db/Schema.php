@@ -266,6 +266,11 @@ class Schema extends Entity implements JsonSerializable
      */
     public function validateProperties(SchemaPropertyValidator $validator): bool
     {
+        // Check if properties are set and not empty
+        if (empty($this->properties) === true) {
+            return true;
+        }
+
         return $validator->validateProperties($this->properties);
     }
 
@@ -437,5 +442,20 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return $schema;
+    }
+
+    /**
+     * Set the slug, ensuring it is always lowercase
+     *
+     * @param string|null $slug The slug to set
+     * @return void
+     */
+    public function setSlug(?string $slug): void
+    {
+        if ($slug !== null) {
+            $slug = strtolower($slug);
+        }
+        $this->slug = $slug;
+        $this->markFieldUpdated('slug');
     }
 }
