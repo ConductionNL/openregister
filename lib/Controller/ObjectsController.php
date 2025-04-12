@@ -242,8 +242,6 @@ class ObjectsController extends Controller
             'extend'   => ($params['extend'] ?? $params['_extend'] ?? null),
             'fields'   => ($params['fields'] ?? $params['_fields'] ?? null),
             'unset'    => ($params['unset'] ?? $params['_unset'] ?? null),
-            'register' => $register,
-            'schema'   => $schema,
             'ids'      => $ids,
         ];
 
@@ -274,8 +272,9 @@ class ObjectsController extends Controller
 
         // Get total count for pagination
         //$total = $objectService->count($config['filters'], $config['search']);
-        $total = $objectService->count();
-        
+
+        $total = $objectService->count(filters: $config['filters'], search: $config['search']);
+
         // Return paginated results
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
 
@@ -607,6 +606,7 @@ class ObjectsController extends Controller
         $relationsArray = $objectService->find($id)->getRelations();
         $relations      = array_values($relationsArray);
 
+
         // Check if relations array is empty
         if (empty($relations)) {
             // If relations is empty, set objects to an empty array
@@ -614,7 +614,12 @@ class ObjectsController extends Controller
             $total   = 0;
         } else {
             // Get config and fetch objects
-            $config  = $this->getConfig($register, $schema, $relations);
+            $config  = $this->getConfig($register, $schema, ids: $relations);
+
+            
+            var_dump($config);
+            die;
+
             $objects = $objectService->findAll($config);
             // Get total count for pagination
             $total = $objectService->count($config['filters']);

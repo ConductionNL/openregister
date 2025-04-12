@@ -391,17 +391,23 @@ class ObjectService
         ?string $search=null,
     ): int {
         // Ensure we have both register and schema set
-        if ($this->currentRegister === null) {
+        if ($this->currentRegister === null && empty($filters['register']) === true ) {
             throw new \Exception('Register must be set before counting objects');
         }
 
-        if ($this->currentSchema === null) {
+        if ($this->currentSchema === null && empty($filters['schema']) === true ) {
             throw new \Exception('Schema must be set before counting objects');
         }
 
-        // Add register and schema IDs to filters
-        $filters['register'] = $this->currentRegister->getId();
-        $filters['schema']   = $this->currentSchema->getId();
+        // Add register and schema IDs to filters// Ensure we have both register and schema set
+        if ($this->currentRegister !== null && empty($filters['register']) === true ) {
+            $filters['register'] = $this->currentRegister->getId();
+        }
+
+        if ($this->currentSchema !== null && empty($filters['schema']) === true ) {
+            $filters['schema']   = $this->currentSchema->getId();
+        }
+        
 
         return count($this->getHandler->findAll(filters: $filters, search: $search));
 
