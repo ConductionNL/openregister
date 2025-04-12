@@ -218,11 +218,15 @@ export const useConfigurationStore = defineStore('configuration', {
 					},
 				)
 
+				const responseData = await response.json()
+
 				if (!response.ok) {
+					// If we have an error message in the response, use that
+					if (responseData && responseData.error) {
+						throw new Error(responseData.error)
+					}
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-
-				const responseData = await response.json()
 
 				if (!responseData || typeof responseData !== 'object') {
 					throw new Error('Invalid response data')
@@ -233,7 +237,7 @@ export const useConfigurationStore = defineStore('configuration', {
 				return { response, responseData }
 			} catch (error) {
 				console.error('Error importing configuration:', error)
-				throw new Error(`Failed to import configuration: ${error.message}`)
+				throw error // Pass through the original error message
 			}
 		}
 	},

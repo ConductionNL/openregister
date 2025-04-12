@@ -64,6 +64,9 @@ class Version1Date20250410070338 extends SimpleMigrationStep
                 'notnull' => true,
                 'length' => 64,
             ]);
+            $table->addColumn('registers', Types::JSON, [
+                'notnull' => false,
+            ]);
             $table->addColumn('version', Types::STRING, [
                 'notnull' => false,
                 'length' => 255,
@@ -86,6 +89,26 @@ class Version1Date20250410070338 extends SimpleMigrationStep
             $table->addIndex(['owner'], 'openregister_config_owner_idx');
             $table->addIndex(['created'], 'openregister_config_created_idx');
             $table->addIndex(['updated'], 'openregister_config_updated_idx');
+        }
+        
+        // Update the openregister_configurations table
+        $table = $schema->getTable('openregister_schemas');
+
+        // Add the authorization column if it doesn't exist
+        if (!$table->hasColumn('authorization')) {
+            $table->addColumn('authorization', Types::JSON, [
+                'notnull' => false,
+            ]);
+        }
+
+        // Update the openregister_registers table
+        $table = $schema->getTable('openregister_registers');
+
+        // Add the authorization column if it doesn't exist
+        if (!$table->hasColumn('authorization')) {
+            $table->addColumn('authorization', Types::JSON, [
+                'notnull' => false,
+            ]);
         }
 
         return $schema;

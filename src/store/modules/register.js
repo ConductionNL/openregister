@@ -219,11 +219,15 @@ export const useRegisterStore = defineStore('register', {
 					},
 				)
 
+				const responseData = await response.json()
+
 				if (!response.ok) {
+					// If we have an error message in the response, use that
+					if (responseData && responseData.error) {
+						throw new Error(responseData.error)
+					}
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
-
-				const responseData = await response.json()
 
 				if (!responseData || typeof responseData !== 'object') {
 					throw new Error('Invalid response data')
@@ -234,7 +238,7 @@ export const useRegisterStore = defineStore('register', {
 				return { response, responseData }
 			} catch (error) {
 				console.error('Error importing register:', error)
-				throw new Error(`Failed to import register: ${error.message}`)
+				throw error // Pass through the original error message
 			}
 		},
 	},
