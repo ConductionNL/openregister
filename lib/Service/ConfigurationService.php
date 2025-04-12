@@ -579,13 +579,12 @@ class ConfigurationService
 
         // Import schemas first.
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas'])) {
-            foreach ($data['components']['schemas'] as $slug => $schemaData) {
+            foreach ($data['components']['schemas'] as $schemaData) {
                 // Ensure slug is lowercase
-                $slug = strtolower($slug);
                 $schema = $this->importSchema($schemaData, $owner);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
-                    $this->schemasMap[$slug] = $schema;
+                    $this->schemasMap[$schema->getSlug()] = $schema;
                     $result['schemas'][]     = $schema;
                 }
             }
