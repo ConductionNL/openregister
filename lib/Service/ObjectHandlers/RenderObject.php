@@ -69,10 +69,10 @@ class RenderObject
      * and filtering based on the provided parameters.
      *
      * @param ObjectEntity $entity The entity to render
-     * @param array|null   $extend Properties to extend the entity with
-     * @param int          $depth  The depth level for nested rendering
-     * @param array|null   $filter Filters to apply to the rendered entity
-     * @param array|null   $fields Specific fields to include in the output
+     * @param array|string|null $extend Properties to extend the entity with, can be an array or a comma-separated string
+     * @param int $depth The depth level for nested rendering
+     * @param array|null $filter Filters to apply to the rendered entity
+     * @param array|null $fields Specific fields to include in the output
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      *
@@ -83,11 +83,16 @@ class RenderObject
      */
     public function renderEntity(
         ObjectEntity $entity,
-        ?array $extend=[],
-        int $depth=0,
-        ?array $filter=[],
-        ?array $fields=[]
+        array|string|null $extend = [],
+        int $depth = 0,
+        ?array $filter = [],
+        ?array $fields = []
     ): ObjectEntity {
+        // Convert extend to an array if it's a string
+        if (is_string($extend)) {
+            $extend = explode(',', $extend);
+        }
+
         // Get the object data as an array for manipulation
         $objectData = $entity->getObject();
 

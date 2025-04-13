@@ -349,14 +349,13 @@ class ObjectService
 
         // Delegate the findAll operation to the handler
         $objects = $this->getHandler->findAll(
-            $config['limit'] ?? null,
-            $config['offset'] ?? null,
-            $config['filters'] ?? [],
-            $config['sort'] ?? [],
-            $config['search'] ?? null,
-            $config['extend'] ?? [],
-            $config['files'] ?? false,
-            $config['uses'] ?? null,
+            limit: $config['limit'] ?? null,
+            offset: $config['offset'] ?? null,
+            filters: $config['filters'] ?? [],
+            sort: $config['sort'] ?? [],
+            search: $config['search'] ?? null,
+            files: $config['files'] ?? false,
+            uses: $config['uses'] ?? null,
             ids: $config['ids'] ?? null
         );
 
@@ -503,6 +502,42 @@ class ObjectService
         );
 
     }//end deleteObject()
+
+    /**
+	 * Get all registers extended with their schemas
+	 *
+	 * @return array The registers with schema data
+	 * @throws Exception If extension fails
+	 */
+	public function getRegisters(): array
+	{
+		// Get all registers
+		$registers = $this->registerMapper->findAll();
+
+		// Convert to arrays and extend schemas
+		$registers = array_map(function($register) {
+			$registerArray = is_array($register) ? $register : $register->jsonSerialize();
+
+			// Replace schema IDs with actual schema objects if schemas property exists
+			if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
+				$registerArray['schemas'] = array_map(
+					function($schemaId) {
+						try {
+							return $this->schemaMapper->find($schemaId)->jsonSerialize();
+						} catch (Exception $e) {
+							// If schema can't be found, return the ID
+							return $schemaId;
+						}
+					},
+					$registerArray['schemas']
+				);
+			}
+
+			return $registerArray;
+		}, $registers);
+
+		return $registers;
+	}
 
 
 }//end class
