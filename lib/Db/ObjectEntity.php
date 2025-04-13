@@ -370,10 +370,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         // Backwards compatibility for old objects.
         $object          = $this->object;
-        $object['@self'] = $this->getObjectArray();
-        $object['@self']['id'] = $this->getUuid();
-        $object['@self']['schemaVersion'] = $this->schemaVersion;
-        $object['id']          = $this->getUuid();
+        $object['@self'] = $this->getObjectArray($object);
+        $object['id']  = $this->getUuid();
 
         // Let's merge and return.
         return $object;
@@ -386,10 +384,11 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @return array Array containing all object properties
      */
-    public function getObjectArray(): array
+    public function getObjectArray(array $object = []): array
     {
-        return [
-            'id'           => $this->id,
+        // Initialize the object array with default properties
+        $objectArray = [
+            'id'           => $this->uuid,
             'uri'          => $this->uri,
             'version'      => $this->version,
             'register'     => $this->register,
@@ -410,6 +409,29 @@ class ObjectEntity extends Entity implements JsonSerializable
             'deleted'      => $this->deleted,
         ];
 
+        // Check for '@self' in the provided object array (this is the case if the object metadata is extended)
+        if (isset($object['@self']) && is_array($object['@self'])) {
+            $self = $object['@self'];
+
+            // Use the '@self' values if they are arrays
+            if (isset($self['register']) && is_array($self['register'])) {
+                $objectArray['register'] = $self['register'];
+            }
+            if (isset($self['schema']) && is_array($self['schema'])) {
+                $objectArray['schema'] = $self['schema'];
+            }
+            if (isset($self['owner']) && is_array($self['owner'])) {
+                $objectArray['owner'] = $self['owner'];
+            }
+            if (isset($self['organisation']) && is_array($self['organisation'])) {
+                $objectArray['organisation'] = $self['organisation'];
+            }
+            if (isset($self['application']) && is_array($self['application'])) {
+                $objectArray['application'] = $self['application'];
+            }
+        }
+
+        return $objectArray;
     }//end getObjectArray()
 
 

@@ -183,7 +183,12 @@ class ObjectService
         }
 
         // Render the object before returning
-        return $this->renderHandler->renderEntity($object, $extend);
+        return $this->renderHandler->renderEntity(
+            entity: $object,
+            extend: $extend,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
+        );
 
     }//end find()
 
@@ -338,13 +343,13 @@ class ObjectService
     public function findAll(array $config=[]): array
     {
         // Set the current register context if a register is provided
-        if (isset($config['register'])) {
-            $this->setRegister($config['register']);
+        if (isset($config['filters']['register'])) {
+            $this->setRegister($config['filters']['register']);
         }
 
         // Set the current schema context if a schema is provided
-        if (isset($config['schema'])) {
-            $this->setSchema($config['schema']);
+        if (isset($config['filters']['schema'])) {
+            $this->setSchema($config['filters']['schema']);
         }
 
         // Delegate the findAll operation to the handler
@@ -365,7 +370,9 @@ class ObjectService
                 entity: $object,
                 extend: $config['extend'] ?? [],
                 filter: $config['unset'] ?? null,
-                fields: $config['fields'] ?? null
+                fields: $config['fields'] ?? null,
+                register: $this->currentRegister,
+                schema: $this->currentSchema
             );
         }
 
@@ -481,7 +488,12 @@ class ObjectService
         );
 
         // Render and return the saved object
-        return $this->renderHandler->renderEntity($savedObject, $extend);
+        return $this->renderHandler->renderEntity(
+            entity: $savedObject,
+            extend: $extend,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
+        );
 
     }//end saveObject()
 

@@ -73,6 +73,8 @@ class RenderObject
      * @param int $depth The depth level for nested rendering
      * @param array|null $filter Filters to apply to the rendered entity
      * @param array|null $fields Specific fields to include in the output
+     * @param \OCA\OpenRegister\Db\Register|null $register The register context for rendering
+     * @param \OCA\OpenRegister\Db\Schema|null $schema The schema context for rendering
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      *
@@ -86,7 +88,9 @@ class RenderObject
         array|string|null $extend = [],
         int $depth = 0,
         ?array $filter = [],
-        ?array $fields = []
+        ?array $fields = [],
+        ?\OCA\OpenRegister\Db\Register $register = null,
+        ?\OCA\OpenRegister\Db\Schema $schema = null
     ): ObjectEntity {
         // Convert extend to an array if it's a string
         if (is_string($extend)) {
@@ -132,7 +136,9 @@ class RenderObject
                                 $value,
                                 $depth + 1,
                                 $filter,
-                                $fields
+                                $fields,
+                                $register,
+                                $schema
                             );
                         }
                     }
@@ -141,6 +147,20 @@ class RenderObject
 
             $entity->setObject($objectData);
         }
+
+        // Add register and schema context to @self if specified in extend
+        if (!empty($extend) && (in_array('@self.register', $extend) || in_array('@self.schema', $extend))) {
+            $self = $objectData['@self'] ?? [];
+            if (in_array('@self.register', $extend) && $register !== null) {
+                $self['register'] = $register->jsonSerialize();
+            }
+            if (in_array('@self.schema', $extend) && $schema !== null) {
+                $self['schema'] = $schema->jsonSerialize();
+            }
+            $objectData['@self'] = $self;
+            //@todo: lets also extend pplicaiton, owner and organisatation
+            $entity->setObject($objectData);
+        }        
 
         return $entity;
 
