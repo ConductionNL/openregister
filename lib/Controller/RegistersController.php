@@ -271,7 +271,9 @@ class RegistersController extends Controller
     {
         // Find objects by register and schema IDs.
         return new JSONResponse(
-            $this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema)
+            $this->objectEntityMapper->findAll(
+                filters: ['register' => $register, 'schema' => $schema]
+            )
         );
 
     }//end objects()

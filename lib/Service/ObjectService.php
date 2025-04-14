@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;

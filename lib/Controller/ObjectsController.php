@@ -755,9 +755,12 @@ class ObjectsController extends Controller
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
+        // Set the schema and register to the object service.
         $this->objectService->setRegister($register);
         $this->objectService->setSchema($schema);
-        $this->objectService->unlock($id);
+
+        $this->objectEntityMapper->unlockObject($id);
+        
         return new JSONResponse(['message' => 'Object unlocked successfully']);
 
     }//end unlock()

@@ -288,8 +288,6 @@ class GetObject
                 limit: $limit,
                 offset: $offset,
                 filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams,
                 sort: $sort,
                 search: $search,
                 ids: $ids,
@@ -336,8 +334,6 @@ class GetObject
             limit: $limit,
             offset: $offset,
             filters: $filters,
-            searchConditions: $searchConditions,
-            searchParams: $searchParams,
             sort: $sort,
             search: $search
         );
