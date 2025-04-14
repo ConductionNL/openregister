@@ -10,7 +10,7 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -23,7 +23,6 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
-use JetBrains\PhpStorm\NoReturn;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;

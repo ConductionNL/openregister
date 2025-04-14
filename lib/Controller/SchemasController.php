@@ -7,7 +7,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;

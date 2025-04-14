@@ -9,7 +9,7 @@
  * @category EventListener
  * @package  OCA\OpenRegister\Event
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\EventListener;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\FileService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\AbstractNodeEvent;
@@ -92,7 +93,8 @@ class AbstractNodeFolderEventListener implements IEventListener
     private function handleNodeCreated(NodeCreatedEvent $event): void
     {
         // Call the object service to handle the node created event.
-        $this->objectService->nodeCreatedEventFunction(event: $event);
+        // phpcs:ignore
+        // $this->objectService->nodeCreatedEventFunction(event: $event);
 
     }//end handleNodeCreated()
 
@@ -107,7 +109,8 @@ class AbstractNodeFolderEventListener implements IEventListener
     private function handleNodeDeleted(NodeDeletedEvent $event): void
     {
         // Call the object service to handle the node deleted event.
-        $this->objectService->nodeDeletedEventFunction(event: $event);
+        // phpcs:ignore
+        // $this->objectService->nodeDeletedEventFunction(event: $event);
 
     }//end handleNodeDeleted()
 
@@ -122,7 +125,8 @@ class AbstractNodeFolderEventListener implements IEventListener
     private function handleNodeTouched(NodeTouchedEvent $event): void
     {
         // Call the object service to handle the node touched event.
-        $this->objectService->nodeTouchedEventFunction(event: $event);
+        // phpcs:ignore
+        // $this->objectService->nodeTouchedEventFunction(event: $event);
 
     }//end handleNodeTouched()
 
@@ -137,7 +141,8 @@ class AbstractNodeFolderEventListener implements IEventListener
     private function handleNodeWritten(NodeWrittenEvent $event): void
     {
         // Call the object service to handle the node written event.
-        $this->objectService->nodeWrittenEventFunction(event: $event);
+        // phpcs:ignore
+        // $this->objectService->nodeWrittenEventFunction(event: $event);
 
     }//end handleNodeWritten()
 

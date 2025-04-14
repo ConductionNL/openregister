@@ -8,7 +8,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -23,6 +23,8 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\IRequest;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -40,20 +42,40 @@ class AuditTrailMapper extends QBMapper
      */
     private ObjectEntityMapper $objectEntityMapper;
 
+    /**
+     * User session service
+     * 
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Request service
+     * 
+     * @var IRequest
+     */
+    private IRequest $request;
 
     /**
      * Constructor for the AuditTrailMapper
      *
      * @param IDBConnection      $db                 The database connection
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param IUserSession       $userSession        User session service
+     * @param IRequest           $request            Request service
      *
      * @return void
      */
-    public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
-    {
+    public function __construct(
+        IDBConnection $db,
+        ObjectEntityMapper $objectEntityMapper,
+        IUserSession $userSession,
+        IRequest $request
+    ) {
         parent::__construct($db, 'openregister_audit_trails');
         $this->objectEntityMapper = $objectEntityMapper;
-
+        $this->userSession = $userSession;
+        $this->request = $request;
     }//end __construct()
 
 
@@ -62,9 +84,9 @@ class AuditTrailMapper extends QBMapper
      *
      * @param int $id The id of the audit trail
      *
-     * @return Log The audit trail
+     * @return AuditTrail The audit trail
      */
-    public function find(int $id): Log
+    public function find(int $id): AuditTrail
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -235,11 +257,11 @@ class AuditTrailMapper extends QBMapper
      *
      * @param array $object The object to create the audit trail from
      *
-     * @return Log The created audit trail
+     * @return AuditTrail The created audit trail
      */
-    public function createFromArray(array $object): Log
+    public function createFromArray(array $object): AuditTrail
     {
-        $log = new Log();
+        $log = new AuditTrail();
         $log->hydrate(object: $object);
 
         // Set uuid if not provided.
@@ -309,7 +331,7 @@ class AuditTrailMapper extends QBMapper
         }//end if
 
         // Get the current user.
-        $user = \OC::$server->getUserSession()->getUser();
+        $user = $this->userSession->getUser();
 
         // Create and populate a new AuditTrail object.
         $auditTrail = new AuditTrail();
@@ -328,8 +350,8 @@ class AuditTrailMapper extends QBMapper
         }
 
         $auditTrail->setSession(session_id());
-        $auditTrail->setRequest(\OC::$server->getRequest()->getId());
-        $auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
+        $auditTrail->setRequest($this->request->getId());
+        $auditTrail->setIpAddress($this->request->getRemoteAddress());
         $auditTrail->setCreated(new \DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());

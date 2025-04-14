@@ -47,7 +47,7 @@ import { registerStore, schemaStore, sourceStore, navigationStore } from '../../
 				{{ success ? 'Sluiten' : 'Annuleer' }}
 			</NcButton>
 			<NcButton v-if="!success"
-				:disabled="loading || !registerItem.title"
+				:disabled="loading || !registerItem.title || !registerItem.slug"
 				type="primary"
 				@click="editRegister()">
 				<template #icon>
