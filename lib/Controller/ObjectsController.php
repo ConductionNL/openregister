@@ -520,7 +520,8 @@ class ObjectsController extends Controller
 
         // Clone the object to pass as the new state.
         $newObject = clone $oldObject;
-        $newObject->delete();
+        $newObject->setDeleted(true);
+        $newObject->setDeletedAt(new \DateTime());
 
         // Update the object in the mapper instead of deleting.
         $this->objectEntityMapper->update($newObject);
