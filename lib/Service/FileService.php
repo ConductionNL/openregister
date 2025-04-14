@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\Files_Versions\Versions\VersionManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -108,24 +109,61 @@ class FileService
         private readonly IGroupManager $groupManager,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
-    ) {
+        private readonly ObjectEntityMapper     $objectEntityMapper,
+        private readonly VersionManager         $versionManager,
+	)
+	{
+	}
+
+
+
+    /**
+     * Creates a new version of a file if the object is updated.
+     *
+     * @param File $file The file to update
+
+     * @return File
+     */
+    public function createNewVersion(File $file, ?string $filename = null): File
+    {
+        $this->versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
+
+        if ($filename !== null) {
+            $file->move(targetPath: $file->getParent()->getPath().'/'.$filename);
+        }
+
+        return $file;
     }
 
     /**
-     * Creates a folder for a Register (used for storing files of Schemas/Objects).
+     * Get a specific version of a file
      *
-     * @param Register|int $register The Register to create the folder for
-     *
-     * @throws Exception In case we can't create the folder because it is not permitted
-     *
-     * @return string The path to the folder
+     * @param Node $file The file to get a version for.
+     * @param string $version The version to retrieve.
+     * @return Node|null
      */
-    public function createRegisterFolder(Register|int $register): string
+    public function getVersion (Node $file, string $version):?Node
     {
-        if (is_int($register) === true) {
-            $register = $this->registerMapper->find($register);
+        if ($file instanceof File === false) {
+            return $file;
         }
+
+        return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
+    }
+
+	/**
+	 * Creates a folder for a Register (used for storing files of Schemas/Objects).
+	 *
+	 * @param Register|int $register The Register to create the folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createRegisterFolder(Register|int $register): string
+	{
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
 
         $registerFolderName = $this->getRegisterFolderName($register);
         // @todo maybe we want to use ShareLink here for register->folder as well?
@@ -1111,5 +1149,42 @@ class FileService
             throw new \Exception('Failed to retrieve tags: '.$e->getMessage());
         }
     }//end getAllTags()
+
+    /**
+     * Get files for object
+     *
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     *
+     * @param ObjectEntity|string $object The object or object ID to fetch files for
+     *
+     * @return Node[] The files found
+     *
+     * @throws NotFoundException If the folder is not found
+     * @throws DoesNotExistException If the object ID is not found
+     *
+     * @psalm-return array<int, Node>
+     * @phpstan-return array<int, Node>
+     */
+    public function getFiles(ObjectEntity|string $object): array
+    {
+        // If string ID provided, try to find the object entity
+        if (is_string($object)) {
+            $object = $this->objectEntityMapper->find($object);
+        }
+
+        $folder = $this->getObjectFolder(
+            objectEntity: $object,
+            register: $object->getRegister(),
+            schema: $object->getSchema()
+        );
+
+        $files = [];
+        if ($folder instanceof \OCP\Files\Folder === true) {
+            $files = $folder->getDirectoryListing();
+        }
+
+        return $files;
+    }
 
 }//end class

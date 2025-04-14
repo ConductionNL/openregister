@@ -321,6 +321,16 @@ class SchemasController extends Controller
         // Update the schema with the data from the uploaded JSON.
         $schema->hydrate($phpArray);
 
+
+
+        $phpArray['properties'] = array_map(function($property){
+            if (isset($property['title'])) {
+                unset($property['title']);
+            }
+            return $property;
+        }, $phpArray['properties']);
+
+		$schema->hydrate($phpArray);
         if ($schema->getId() === null) {
             // Insert a new schema if no ID is set.
             $schema = $this->schemaMapper->insert($schema);

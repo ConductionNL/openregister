@@ -223,6 +223,13 @@ class UploadService
                 }
             }//end if
 
+            $schemaData['properties'] = array_map(function($property){
+                if (isset($property['title'])) {
+                    unset($property['title']);
+                }
+                return $property;
+            }, $schemaData['properties']);
+
             $schema->hydrate($schemaData);
             $this->schemaMapper->update($schema);
             // Add the schema to the register.
