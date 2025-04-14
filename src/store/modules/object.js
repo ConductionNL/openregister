@@ -10,15 +10,54 @@ export const useObjectStore = defineStore('object', {
 		objectItem: false,
 		objectList: [],
 		auditTrailItem: false,
-		auditTrails: [],
-		relationItem: false,
-		relations: [],
-		fileItem: false, // Single file item
-		files: [], // List of files
-		filters: {}, // List of query paramters
-		pagination: {
+		fileItem: false,
+		auditTrails: {
+			results: [],
+			total: 0,
 			page: 1,
+			pages: 0,
 			limit: 20,
+			offset: 0,
+		},
+		contracts: {
+			results: [],
+			total: 0,
+			page: 1,
+			pages: 0,
+			limit: 20,
+			offset: 0,
+		},
+		uses: {
+			results: [],
+			total: 0,
+			page: 1,
+			pages: 0,
+			limit: 20,
+			offset: 0,
+		},
+		used: {
+			results: [],
+			total: 0,
+			page: 1,
+			pages: 0,
+			limit: 20,
+			offset: 0,
+		},
+		files: {
+			results: [],
+			total: 0,
+			page: 1,
+			pages: 0,
+			limit: 20,
+			offset: 0,
+		},
+		filters: {},
+		pagination: {
+			total: 0,
+			page: 1,
+			pages: 0,
+			limit: 20,
+			offset: 0,
 		},
 		selectedObjects: [],
 		metadata: {
@@ -117,31 +156,29 @@ export const useObjectStore = defineStore('object', {
 			// If we have a valid object item, fetch related data
 			if (objectItem?.['@self']?.id) {
 				try {
-					// Fetch audit trails
-					const auditTrailsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/audit-trails`
-					const auditTrailsResponse = await fetch(auditTrailsEndpoint)
-					const auditTrailsData = await auditTrailsResponse.json()
-					this.setAuditTrails(auditTrailsData)
+					const objectRef = {
+						id: objectItem['@self'].id,
+						register: objectItem['@self'].register,
+						schema: objectItem['@self'].schema,
+					}
+					// Use store actions to fetch related data
+					await Promise.all([
+						this.getAuditTrails(objectRef),
+						this.getContracts(objectRef),
+						this.getUses(objectRef),
+						this.getUsed(objectRef),
+						this.getFiles(objectRef),
+					])
 
-					// Fetch relations (used by)
-					const relationsEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/relations`
-					const relationsResponse = await fetch(relationsEndpoint)
-					const relationsData = await relationsResponse.json()
-					this.setRelations(relationsData)
-
-					// Fetch files
-					const filesEndpoint = `/index.php/apps/openregister/api/objects/${objectItem['@self'].register}/${objectItem['@self'].schema}/${objectItem['@self'].id}/files`
-					const filesResponse = await fetch(filesEndpoint)
-					const filesData = await filesResponse.json()
-					this.setFiles(filesData)
+					console.info('Successfully fetched all related data for object', objectItem['@self'].id)
 				} catch (error) {
 					console.error('Error fetching related data:', error)
+					// Clear data in case of error
+					this.clearRelatedData()
 				}
 			} else {
 				// Clear related data when no object is selected
-				this.setAuditTrails([])
-				this.setRelations([])
-				this.setFiles([])
+				this.clearRelatedData()
 			}
 		},
 		setObjectList(objectList) {
@@ -159,22 +196,44 @@ export const useObjectStore = defineStore('object', {
 		},
 		setAuditTrails(auditTrails) {
 			this.auditTrails = auditTrails
+			this.auditTrails.results = auditTrails.results
+				? auditTrails.results.map(
+					(auditTrail) => new AuditTrail(auditTrail),
+				)
+				: []
+			console.info('Audit trails set to', this.auditTrails.results.length, 'items')
 		},
-		setRelationItem(relationItem) {
-			this.relationItem = relationItem && new ObjectEntity(relationItem)
+		setContracts(contracts) {
+			this.contracts = contracts
+			this.contracts.results = contracts.results
+				? contracts.results.map(
+					(contract) => new ObjectEntity(contract),
+				)
+				: []
+			console.info('Contracts set to', this.contracts.results.length, 'items')
 		},
-		setRelations(relations) {
-			this.relations = relations.results.map(
-				(relation) => new ObjectEntity(relation),
-			)
+		setUses(uses) {
+			this.uses = uses
+			this.uses.results = uses.results
+				? uses.results.map(
+					(use) => new ObjectEntity(use),
+				)
+				: []
+			console.info('Uses set to', this.uses.results.length, 'items')
 		},
-		setFileItem(fileItem) {
-			this.fileItem = fileItem
-			console.info('File item set to', fileItem)
+		setUsed(used) {
+			this.used = used
+			this.used.results = used.results
+				? used.results.map(
+					(usedBy) => new ObjectEntity(usedBy),
+				)
+				: []
+			console.info('Used by set to', this.used.results.length, 'items')
 		},
 		setFiles(files) {
 			this.files = files
-			console.info('Files set to', files)
+			this.files.results = files.results || []
+			console.info('Files set to', this.files.results.length, 'items')
 		},
 		/**
 		 * Set pagination details
@@ -329,41 +388,49 @@ export const useObjectStore = defineStore('object', {
 			return result
 		},
 		// AUDIT TRAILS
-		async getAuditTrails(id, options = {}) {
-			if (!id) {
+		async getAuditTrails(object, options = {}) {
+			if (!object?.id) {
 				throw new Error('No object id to get audit trails for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/audit-trails}`
-			const params = []
+			try {
+				let endpoint = this._buildObjectPath({
+					register: object.register,
+					schema: object.schema,
+					objectId: object.id + '/audit-trails',
+				})
 
-			if (options.search && options.search !== '') {
-				params.push('_search=' + options.search)
+				const params = []
+				if (options.search && options.search !== '') {
+					params.push('_search=' + options.search)
+				}
+				if (options.limit && options.limit !== '') {
+					params.push('_limit=' + options.limit)
+				}
+				if (options.page && options.page !== '') {
+					params.push('_page=' + options.page)
+				}
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+				this.setAuditTrails(data)
+				return { response, data }
+			} catch (error) {
+				console.error('Error getting audit trails:', error)
+				this.setAuditTrails({
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 1,
+					limit: 20,
+					offset: 0,
+				})
+				throw error
 			}
-			if (options.limit && options.limit !== '') {
-				params.push('_limit=' + options.limit)
-			}
-			if (options.page && options.page !== '') {
-				params.push('_page=' + options.page)
-			}
-
-			if (params.length > 0) {
-				endpoint += '?' + params.join('&')
-			}
-
-			const response = await fetch(endpoint, {
-				method: 'GET',
-			})
-
-			const responseData = await response.json()
-			const data = {
-				...responseData,
-				results: responseData.results.map((auditTrail) => new AuditTrail(auditTrail)),
-			}
-
-			this.setAuditTrails(data)
-
-			return { response, data }
 		},
 		// RELATIONS
 		async getRelations(id, options = {}) {
@@ -403,48 +470,64 @@ export const useObjectStore = defineStore('object', {
 		/**
 		 * Get files for an object
 		 *
-		 * @param {number} id Object ID
+		 * @param {object} object Object containing id, register, and schema
 		 * @param {object} options Pagination options
 		 * @return {Promise} Promise that resolves with the object's files
 		 */
-		async getFiles(id, options = {}) {
-			if (!id) {
+		async getFiles(object, options = {}) {
+			if (!object?.id) {
 				throw new Error('No object id to get files for')
 			}
 
-			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files`
-			const params = []
-
-			if (options.search && options.search !== '') {
-				params.push('_search=' + options.search)
-			}
-			if (options.limit && options.limit !== '') {
-				params.push('_limit=' + options.limit)
-			}
-			if (options.page && options.page !== '') {
-				params.push('_page=' + options.page)
-			}
-
-			if (params.length > 0) {
-				endpoint += '?' + params.join('&')
-			}
-
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
+				let endpoint = this._buildObjectPath({
+					register: object.register,
+					schema: object.schema,
+					objectId: object.id + '/files',
 				})
 
+				const params = []
+				if (options.search && options.search !== '') {
+					params.push('_search=' + options.search)
+				}
+				if (options.limit && options.limit !== '') {
+					params.push('_limit=' + options.limit)
+				}
+				if (options.page && options.page !== '') {
+					params.push('_page=' + options.page)
+				}
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
 				const data = await response.json()
-				this.setFiles(data || [])
+				this.setFiles(data || {
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 1,
+					limit: 20,
+					offset: 0,
+				})
 
 				return { response, data }
 			} catch (error) {
 				console.error('Error getting files:', error)
-				throw new Error(`Failed to get files: ${error.message}`)
+				this.setFiles({
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 1,
+					limit: 20,
+					offset: 0,
+				})
+				throw error
 			}
 		},
 		// mappings
@@ -641,6 +724,161 @@ export const useObjectStore = defineStore('object', {
 				}, {}),
 			}
 			console.info('Initialized column filters:', this.columnFilters)
+		},
+		clearRelatedData() {
+			const emptyPaginatedData = {
+				results: [],
+				total: 0,
+				page: 1,
+				pages: 1,
+				limit: 20,
+				offset: 0,
+			}
+
+			// Clear all related data with proper pagination structure
+			this.auditTrails = { ...emptyPaginatedData }
+			this.contracts = { ...emptyPaginatedData }
+			this.uses = { ...emptyPaginatedData }
+			this.used = { ...emptyPaginatedData }
+			this.files = { ...emptyPaginatedData }
+
+			// Clear individual items
+			this.auditTrailItem = false
+			this.fileItem = false
+
+			console.info('All related data cleared')
+		},
+		async getContracts(object, options = {}) {
+			if (!object?.id) {
+				throw new Error('No object id to get contracts for')
+			}
+
+			try {
+				let endpoint = this._buildObjectPath({
+					register: object.register,
+					schema: object.schema,
+					objectId: object.id + '/contracts',
+				})
+
+				const params = []
+				if (options.search && options.search !== '') {
+					params.push('_search=' + options.search)
+				}
+				if (options.limit && options.limit !== '') {
+					params.push('_limit=' + options.limit)
+				}
+				if (options.page && options.page !== '') {
+					params.push('_page=' + options.page)
+				}
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+				this.setContracts(data)
+				return { response, data }
+			} catch (error) {
+				console.error('Error getting contracts:', error)
+				this.setContracts({
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 1,
+					limit: 20,
+					offset: 0,
+				})
+				throw error
+			}
+		},
+		async getUses(object, options = {}) {
+			if (!object?.id) {
+				throw new Error('No object id to get uses for')
+			}
+
+			try {
+				let endpoint = this._buildObjectPath({
+					register: object.register,
+					schema: object.schema,
+					objectId: object.id + '/uses',
+				})
+
+				const params = []
+				if (options.search && options.search !== '') {
+					params.push('_search=' + options.search)
+				}
+				if (options.limit && options.limit !== '') {
+					params.push('_limit=' + options.limit)
+				}
+				if (options.page && options.page !== '') {
+					params.push('_page=' + options.page)
+				}
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+				this.setUses(data)
+				return { response, data }
+			} catch (error) {
+				console.error('Error getting uses:', error)
+				this.setUses({
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 1,
+					limit: 20,
+					offset: 0,
+				})
+				throw error
+			}
+		},
+		async getUsed(object, options = {}) {
+			if (!object?.id) {
+				throw new Error('No object id to get used by for')
+			}
+
+			try {
+				let endpoint = this._buildObjectPath({
+					register: object.register,
+					schema: object.schema,
+					objectId: object.id + '/used',
+				})
+
+				const params = []
+				if (options.search && options.search !== '') {
+					params.push('_search=' + options.search)
+				}
+				if (options.limit && options.limit !== '') {
+					params.push('_limit=' + options.limit)
+				}
+				if (options.page && options.page !== '') {
+					params.push('_page=' + options.page)
+				}
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+				this.setUsed(data)
+				return { response, data }
+			} catch (error) {
+				console.error('Error getting used by:', error)
+				this.setUsed({
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 1,
+					limit: 20,
+					offset: 0,
+				})
+				throw error
+			}
 		},
 	},
 	getters: {

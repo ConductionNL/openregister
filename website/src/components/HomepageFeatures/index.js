@@ -15,7 +15,7 @@ const FeatureList = [
     title: 'Focus on What Matters',
     description: (
       <>
-        Open Register lets you focus on your data, while we handle the complexity of object management.
+        Open Register let's you focus on your data, while we handle the complexity of object management.
       </>
     ),
   },

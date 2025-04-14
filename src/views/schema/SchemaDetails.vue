@@ -62,6 +62,10 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 						<b>Version:</b>
 						<p>{{ schemaStore.schemaItem.version }}</p>
 					</div>
+					<div class="gridContent gridFullWidth">
+						<b>Slug:</b>
+						<p>{{ schemaStore.schemaItem.slug }}</p>
+					</div>
 				</div>
 				<!-- Add more schema-specific details here -->
 				<div class="tabContainer">

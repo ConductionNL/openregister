@@ -7,5 +7,6 @@ export type TRegister = {
     databaseId: string // Reference to the Database entity
     tablePrefix?: string
     updated?: string
-	created: string
+    created: string
+    slug: string // Slug for the register
 }

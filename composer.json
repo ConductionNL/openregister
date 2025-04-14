@@ -40,7 +40,6 @@
 		"twig/twig": "^3.18"
 	},
 	"require-dev": {
-		"nextcloud/ocp": "dev-stable29",
 		"roave/security-advisories": "dev-latest"
 	},
 	"config": {
