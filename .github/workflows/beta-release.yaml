@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - beta
+      # - code-refactor/ObjectService
 
 jobs:
   release-management:

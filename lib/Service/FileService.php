@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\Files_Versions\Versions\VersionManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -108,24 +109,61 @@ class FileService
         private readonly IGroupManager $groupManager,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
-    ) {
+        private readonly ObjectEntityMapper     $objectEntityMapper,
+        private readonly VersionManager         $versionManager,
+	)
+	{
+	}
+
+
+
+    /**
+     * Creates a new version of a file if the object is updated.
+     *
+     * @param File $file The file to update
+
+     * @return File
+     */
+    public function createNewVersion(File $file, ?string $filename = null): File
+    {
+        $this->versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
+
+        if ($filename !== null) {
+            $file->move(targetPath: $file->getParent()->getPath().'/'.$filename);
+        }
+
+        return $file;
     }
 
     /**
-     * Creates a folder for a Register (used for storing files of Schemas/Objects).
+     * Get a specific version of a file
      *
-     * @param Register|int $register The Register to create the folder for
-     *
-     * @throws Exception In case we can't create the folder because it is not permitted
-     *
-     * @return string The path to the folder
+     * @param Node $file The file to get a version for.
+     * @param string $version The version to retrieve.
+     * @return Node|null
      */
-    public function createRegisterFolder(Register|int $register): string
+    public function getVersion (Node $file, string $version):?Node
     {
-        if (is_int($register) === true) {
-            $register = $this->registerMapper->find($register);
+        if ($file instanceof File === false) {
+            return $file;
         }
+
+        return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
+    }
+
+	/**
+	 * Creates a folder for a Register (used for storing files of Schemas/Objects).
+	 *
+	 * @param Register|int $register The Register to create the folder for.
+	 *
+	 * @return string The path to the folder.
+	 * @throws Exception In case we can't create the folder because it is not permitted.
+	 */
+	public function createRegisterFolder(Register|int $register): string
+	{
+		if (is_int($register) === true) {
+			$register = $this->registerMapper->find($register);
+		}
 
         $registerFolderName = $this->getRegisterFolderName($register);
         // @todo maybe we want to use ShareLink here for register->folder as well?
@@ -1022,6 +1060,32 @@ class FileService
                 register: $objectEntity->getRegister(),
                 schema: $objectEntity->getSchema()
             );
+
+	/**
+	 * Adds a new file to an object's folder with the OpenCatalogi user as owner
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to add the file to
+	 * @param string $fileName The name of the file to create
+	 * @param string $content The content to write to the file
+	 * @param bool $share Whether to create a share link for the file
+	 * @param array $tags Optional array of tags to attach to the file
+	 *
+	 * @return File The created file
+	 * @throws NotPermittedException If file creation fails due to permissions
+	 * @throws Exception If file creation fails for other reasons
+	 */
+	public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+	{
+		try {
+			// Create new file in the folder
+			$folder = $this->getObjectFolder(
+				objectEntity: $objectEntity,
+				register: $objectEntity->getRegister(),
+				schema: $objectEntity->getSchema()
+			);
+            if (empty($fileName) === true) {
+                throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
+            }
 
             /**
              * @var File $file

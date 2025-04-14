@@ -789,8 +789,15 @@ class ObjectsController extends Controller
         $objectService->setSchema($schema);
 
         try {
-            // Get the raw files from the file service
-            $files = $fileService->getFiles($id);
+            // Get the object with files included
+            if (is_numeric($id) === true) {
+                $object = $this->objectEntityMapper->find((int) $id);
+            } elseif (Uuid::isValid($id) === true) {
+                $object = $this->objectEntityMapper->findByUuidOnly($id);
+            } else {
+                return new JSONResponse(['error' => 'Given id is not a numeric or uuid value'], 400);
+            }
+            $files = $objectService->getFiles($object);
 
             // Format the files with pagination using request parameters
             $formattedFiles = $fileService->formatFiles($files, $this->request->getParams());
