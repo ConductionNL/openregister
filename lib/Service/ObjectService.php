@@ -130,6 +130,15 @@ class ObjectService
      */
     public function resolveSchema(Uri $uri): string
     {
+        $schemas = $this->schemaMapper->findAll(filters: ['reference' => $uri]);
+        if (count($schemas) === 1) {
+            $schema = $schemas[0];
+            return json_encode($schema->getSchemaObject($this->urlGenerator));
+        } elseif (count($schemas) > 1) {
+            throw new Exception('Conflict: more than one schema found');
+        }
+
+
         // Local schema resolution
         if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
             && str_contains($uri->path(), '/api/schemas')
@@ -183,6 +192,7 @@ class ObjectService
         $validator->setMaxErrors(100);
         $validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
+        $validator->loader()->resolver()->registerProtocol('https', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);
     }
@@ -993,7 +1003,6 @@ class ObjectService
 
         // Setting inversedBy on sub object to parent currently will only work if the object is cascaded created for the first time!
         $subSchema = $this->getSchemaFromPropertyReference(property: $property, propertyName: $propertyName, schema: $schema);
-        $relations = $this->setInversedByRelation(item: $item, objectEntity: $objectEntity, subSchema: $subSchema, property: $property, index: $index);
 
         // Handle nested object in array
         if ($itemIsID === true) {
@@ -2184,6 +2193,19 @@ class ObjectService
                 $referencingObjects = array_filter(
                     $usedByObjects,
                     fn($obj) => isset($obj->getRelations()[$property['inversedBy']]) && ($obj->getRelations()[$property['inversedBy']] === $dotEntity->get('@self.id'))
+                );
+
+                $referencingObjects = array_filter($referencingObjects,
+                    function($object) use ($property) {
+                        if (isset($property['$ref']) === true) {
+                            $schemaId = substr(string: $property['$ref'], offset: strrpos($property['$ref'], '/') + 1);
+                        } elseif (isset($property['items']['$ref']) === true) {
+                            $schemaId = substr(string: $property['items']['$ref'], offset: strrpos($property['items']['$ref'], '/') + 1);
+                        } else {
+                            return false;
+                        }
+                        return $schemaId === $object->getSchema();
+                    }
                 );
 
                 // Extract only the UUIDs from the referencing objects instead of the entire objects
