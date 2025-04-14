@@ -229,96 +229,6 @@ class RenderObject
     }
 
     /**
-     * Gets the inversed properties from a schema
-     *
-     * @param Schema $schema The schema to check for inversed properties
-     *
-     * @return array Array of property names that have inversedBy configurations
-     */
-    private function getInversedProperties(Schema $schema): array
-    {
-        $properties = $schema->getProperties();
-
-        // Use array_filter to get properties with inversedBy configurations
-        $inversedProperties = array_filter($properties, function($property) {
-            return isset($property['inversedBy']) && !empty($property['inversedBy']);
-        });
-
-        // Extract the property names and their inversedBy values
-        return array_map(function($property) {
-            return $property['inversedBy'];
-        }, $inversedProperties);
-    }
-
-    /**
-     * Handles inversed properties for an object
-     *
-     * @param ObjectEntity      $entity    The entity to process
-     * @param array            $objectData The current object data
-     * @param int              $depth     Current depth level
-     * @param array|null       $filter    Filters to apply
-     * @param array|null       $fields    Fields to include
-     * @param array|null       $registers Preloaded registers
-     * @param array|null       $schemas   Preloaded schemas
-     * @param array|null       $objects   Preloaded objects
-     *
-     * @return array The updated object data with inversed properties
-     */
-    private function handleInversedProperties(
-        ObjectEntity $entity,
-        array $objectData,
-        int $depth,
-        ?array $filter = [],
-        ?array $fields = [],
-        ?array $registers = [],
-        ?array $schemas = [],
-        ?array $objects = []
-    ): array {
-        // Get the schema for this object
-        $schema = $this->getSchema($entity->getSchema());
-        if ($schema === null) {
-            return $objectData;
-        }
-
-        // Get properties that have inversedBy configurations
-        $inversedProperties = $this->getInversedProperties($schema);
-        if (empty($inversedProperties)) {
-            return $objectData;
-        }
-
-        // Find objects that reference this object
-        $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
-        
-        // Process each inversed property
-        foreach ($inversedProperties as $propertyName => $inversedBy) {
-            $objectData[$propertyName] = [];
-            
-            foreach ($referencingObjects as $referencingObject) {
-                // Check if the referencing object has the correct inversedBy property
-                $referencingData = $referencingObject->getObject();
-                if (isset($referencingData[$inversedBy]) && 
-                    (isset($referencingData[$inversedBy]['uuid']) && $referencingData[$inversedBy]['uuid'] === $entity->getUuid()) ||
-                    (isset($referencingData[$inversedBy]['id']) && $referencingData[$inversedBy]['id'] === $entity->getId())
-                ) {
-                    // Add to the inversed property array
-                    $objectData[$propertyName][] = $this->renderEntity(
-                        $referencingObject,
-                        [],  // No extensions for inversed properties to prevent loops
-                        $depth + 1,
-                        $filter,
-                        $fields,
-                        $registers,
-                        $schemas,
-                        $objects
-                    );
-                }
-            }
-        }
-
-        return $objectData;
-    }
-
-    /**
      * Renders an entity with optional extensions and filters.
      *
      * This method takes an ObjectEntity and applies extensions and filters to it.
@@ -479,6 +389,96 @@ class RenderObject
                             $fields
                         );
                     }
+                }
+            }
+        }
+
+        return $objectData;
+    }
+
+    /**
+     * Gets the inversed properties from a schema
+     *
+     * @param Schema $schema The schema to check for inversed properties
+     *
+     * @return array Array of property names that have inversedBy configurations
+     */
+    private function getInversedProperties(Schema $schema): array
+    {
+        $properties = $schema->getProperties();
+
+        // Use array_filter to get properties with inversedBy configurations
+        $inversedProperties = array_filter($properties, function($property) {
+            return isset($property['inversedBy']) && !empty($property['inversedBy']);
+        });
+
+        // Extract the property names and their inversedBy values
+        return array_map(function($property) {
+            return $property['inversedBy'];
+        }, $inversedProperties);
+    }
+
+    /**
+     * Handles inversed properties for an object
+     *
+     * @param ObjectEntity      $entity    The entity to process
+     * @param array            $objectData The current object data
+     * @param int              $depth     Current depth level
+     * @param array|null       $filter    Filters to apply
+     * @param array|null       $fields    Fields to include
+     * @param array|null       $registers Preloaded registers
+     * @param array|null       $schemas   Preloaded schemas
+     * @param array|null       $objects   Preloaded objects
+     *
+     * @return array The updated object data with inversed properties
+     */
+    private function handleInversedProperties(
+        ObjectEntity $entity,
+        array $objectData,
+        int $depth,
+        ?array $filter = [],
+        ?array $fields = [],
+        ?array $registers = [],
+        ?array $schemas = [],
+        ?array $objects = []
+    ): array {
+        // Get the schema for this object
+        $schema = $this->getSchema($entity->getSchema());
+        if ($schema === null) {
+            return $objectData;
+        }
+
+        // Get properties that have inversedBy configurations
+        $inversedProperties = $this->getInversedProperties($schema);
+        if (empty($inversedProperties)) {
+            return $objectData;
+        }
+
+        // Find objects that reference this object
+        $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
+        
+        // Process each inversed property
+        foreach ($inversedProperties as $propertyName => $inversedBy) {
+            $objectData[$propertyName] = [];
+            
+            foreach ($referencingObjects as $referencingObject) {
+                // Check if the referencing object has the correct inversedBy property
+                $referencingData = $referencingObject->getObject();
+                if (isset($referencingData[$inversedBy]) && 
+                    (isset($referencingData[$inversedBy]['uuid']) && $referencingData[$inversedBy]['uuid'] === $entity->getUuid()) ||
+                    (isset($referencingData[$inversedBy]['id']) && $referencingData[$inversedBy]['id'] === $entity->getId())
+                ) {
+                    // Add to the inversed property array
+                    $objectData[$propertyName][] = $this->renderEntity(
+                        $referencingObject,
+                        [],  // No extensions for inversed properties to prevent loops
+                        $depth + 1,
+                        $filter,
+                        $fields,
+                        $registers,
+                        $schemas,
+                        $objects
+                    );
                 }
             }
         }
