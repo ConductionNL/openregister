@@ -99,6 +99,10 @@ class Version1Date20250410070338 extends SimpleMigrationStep
             $table->addColumn('authorization', Types::JSON, [
                 'notnull' => false,
             ]);
+            $table->addColumn('icon', 'string', [
+                'notnull' => false,
+                'length' => 255,
+            ]);
         }
 
         // Update the openregister_registers table

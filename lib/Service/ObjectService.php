@@ -186,8 +186,8 @@ class ObjectService
         return $this->renderHandler->renderEntity(
             entity: $object,
             extend: $extend,
-            register: $this->currentRegister,
-            schema: $this->currentSchema
+            registers: [$this->currentRegister->getId() => $this->currentRegister],
+            schemas: [$this->currentSchema->getId() => $this->currentSchema]
         );
 
     }//end find()
@@ -234,8 +234,13 @@ class ObjectService
             $object
         );
 
-        // Render and return the saved object
-        return $this->renderHandler->renderEntity($savedObject, $extend);
+        // Render and return the saved object 
+        return $this->renderHandler->renderEntity(
+            entity: $object,
+            extend: $extend,
+            registers: [$this->currentRegister->getId() => $this->currentRegister],
+            schemas: [$this->currentSchema->getId() => $this->currentSchema]
+        );
 
     }//end createFromArray()
 
@@ -298,8 +303,13 @@ class ObjectService
             $object
         );
 
-        // Render and return the saved object
-        return $this->renderHandler->renderEntity($savedObject, $extend);
+        // Render and return the saved object 
+        return $this->renderHandler->renderEntity(
+            entity: $object,
+            extend: $extend,
+            registers: [$this->currentRegister->getId() => $this->currentRegister],
+            schemas: [$this->currentSchema->getId() => $this->currentSchema]
+        );
 
     }//end updateFromArray()
 
@@ -342,6 +352,11 @@ class ObjectService
      */
     public function findAll(array $config=[]): array
     {
+        // Convert extend to an array if it's a string
+        if (is_string($config['extend'])) {
+            $config['extend'] = explode(',', $config['extend']);
+        }
+
         // Set the current register context if a register is provided
         if (isset($config['filters']['register'])) {
             $this->setRegister($config['filters']['register']);
@@ -363,6 +378,23 @@ class ObjectService
             uses: $config['uses'] ?? null,
             ids: $config['ids'] ?? null
         );
+        
+        // Determine if register and schema should be passed to renderEntity
+        $registers = isset($config['filters']['register']) ? [$this->currentRegister->getId() => $this->currentRegister] : null;
+        $schemas = isset($config['filters']['schema']) ? [$this->currentSchema->getId() => $this->currentSchema] : null;
+
+        // Check if '@self.schema' or '@self.register' is in extend but not in filters
+        if (in_array('@self.schema', $config['extend']) && $schemas === null) {
+            $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
+            $schemas = $this->schemaMapper->findMultiple(ids: $schemaIds);
+            $schemas = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
+        }
+
+        if (in_array('@self.register', $config['extend']) && $registers === null) {
+            $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
+            $registers = $this->registerMapper->findMultiple(ids:  $registerIds);
+            $registers = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
+        }
 
         // Render each object through the object service
         foreach ($objects as $key => $object) {
@@ -371,8 +403,8 @@ class ObjectService
                 extend: $config['extend'] ?? [],
                 filter: $config['unset'] ?? null,
                 fields: $config['fields'] ?? null,
-                register: $this->currentRegister,
-                schema: $this->currentSchema
+                registers: $registers,
+                schemas: $schemas
             );
         }
 
@@ -487,12 +519,16 @@ class ObjectService
             $uuid
         );
 
+        // Determine if register and schema should be passed to renderEntity
+        $registers = isset($config['filters']['register']) ? [$this->currentRegister->getId() => $this->currentRegister] : null;
+        $schemas = isset($config['filters']['schema']) ? [$this->currentSchema->getId() => $this->currentSchema] : null;
+
         // Render and return the saved object
         return $this->renderHandler->renderEntity(
             entity: $savedObject,
             extend: $extend,
-            register: $this->currentRegister,
-            schema: $this->currentSchema
+            registers: $registers,
+            schemas: $schemas
         );
 
     }//end saveObject()

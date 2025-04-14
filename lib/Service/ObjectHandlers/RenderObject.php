@@ -73,8 +73,8 @@ class RenderObject
      * @param int $depth The depth level for nested rendering
      * @param array|null $filter Filters to apply to the rendered entity
      * @param array|null $fields Specific fields to include in the output
-     * @param \OCA\OpenRegister\Db\Register|null $register The register context for rendering
-     * @param \OCA\OpenRegister\Db\Schema|null $schema The schema context for rendering
+     * @param array|null $registers An array of registers where the key is the id
+     * @param array|null $schemas An array of schemas where the key is the id
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      *
@@ -89,8 +89,8 @@ class RenderObject
         int $depth = 0,
         ?array $filter = [],
         ?array $fields = [],
-        ?\OCA\OpenRegister\Db\Register $register = null,
-        ?\OCA\OpenRegister\Db\Schema $schema = null
+        ?array $registers = null,
+        ?array $schemas = null
     ): ObjectEntity {
         // Convert extend to an array if it's a string
         if (is_string($extend)) {
@@ -137,8 +137,8 @@ class RenderObject
                                 $depth + 1,
                                 $filter,
                                 $fields,
-                                $register,
-                                $schema
+                                $registers,
+                                $schemas
                             );
                         }
                     }
@@ -151,16 +151,21 @@ class RenderObject
         // Add register and schema context to @self if specified in extend
         if (!empty($extend) && (in_array('@self.register', $extend) || in_array('@self.schema', $extend))) {
             $self = $objectData['@self'] ?? [];
-            if (in_array('@self.register', $extend) && $register !== null) {
-                $self['register'] = $register->jsonSerialize();
+            $entityRegister = $entity->getRegister();
+            $entitySchema = $entity->getSchema();
+
+            if (in_array('@self.register', $extend) && $registers !== null && isset($registers[$entityRegister])) {
+                $self['register'] = $registers[$entityRegister]->jsonSerialize();
             }
-            if (in_array('@self.schema', $extend) && $schema !== null) {
-                $self['schema'] = $schema->jsonSerialize();
+
+            if (in_array('@self.schema', $extend) && $schemas !== null && isset($schemas[$entitySchema])) {
+                $self['schema'] = $schemas[$entitySchema]->jsonSerialize();
             }
+
             $objectData['@self'] = $self;
-            //@todo: lets also extend pplicaiton, owner and organisatation
+            //@todo: lets also extend application, owner and organisation
             $entity->setObject($objectData);
-        }        
+        }
 
         return $entity;
 

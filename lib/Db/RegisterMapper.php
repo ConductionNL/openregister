@@ -102,6 +102,35 @@ class RegisterMapper extends QBMapper
 
 
     /**
+     * Finds multiple schemas by id
+     *
+     * @param array $ids The ids of the schemas
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
+     * @throws \OCP\DB\Exception If a database error occurs
+     * 
+     * @todo: refactor this into find all
+     * 
+     * @return array The schemas
+     */
+    public function findMultiple(array $ids): array
+    {
+        $result = [];
+        foreach ($ids as $id) {
+            try {
+                $result[] = $this->find($id);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
+                // Catch all exceptions but do nothing
+            }
+        }
+
+        return $result;
+
+    }//end findMultiple()
+
+
+    /**
      * Find all registers
      *
      * @param int|null   $limit            The limit of the results

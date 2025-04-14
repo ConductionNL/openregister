@@ -178,6 +178,13 @@ class Schema extends Entity implements JsonSerializable
     protected ?array $configuration = null;
 
     /**
+     * The icon for the schema from Material Design Icons
+     *
+     * @var string|null The icon reference from https://pictogrammers.com/library/mdi/
+     */
+    protected ?string $icon = null;
+
+    /**
      * Constructor for the Schema class
      *
      * Sets up field types for all properties
@@ -190,6 +197,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'description', type: 'string');
         $this->addType(fieldName: 'version', type: 'string');
         $this->addType(fieldName: 'summary', type: 'string');
+        $this->addType(fieldName: 'icon', type: 'string');
         $this->addType(fieldName: 'required', type: 'json');
         $this->addType(fieldName: 'properties', type: 'json');
         $this->addType(fieldName: 'archive', type: 'json');
@@ -365,6 +373,7 @@ class Schema extends Entity implements JsonSerializable
             'description'    => $this->description,
             'version'        => $this->version,
             'summary'        => $this->summary,
+            'icon'           => $this->icon,
             'required'       => $required,
             'properties'     => $properties,
             'archive'        => $this->archive,
@@ -457,5 +466,27 @@ class Schema extends Entity implements JsonSerializable
         }
         $this->slug = $slug;
         $this->markFieldUpdated('slug');
+    }
+
+    /**
+     * Get the icon for the schema
+     *
+     * @return string|null The icon reference from Material Design Icons
+     */
+    public function getIcon(): ?string
+    {
+        return $this->icon;
+    }
+
+    /**
+     * Set the icon for the schema
+     *
+     * @param string|null $icon The icon reference from Material Design Icons
+     * @return void
+     */
+    public function setIcon(?string $icon): void
+    {
+        $this->icon = $icon;
+        $this->markFieldUpdated('icon');
     }
 }

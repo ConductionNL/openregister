@@ -108,14 +108,20 @@ class SchemaMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
      * @throws \OCP\DB\Exception If a database error occurs
-     *
+     * 
+     * @todo: refactor this into find all
+     * 
      * @return array The schemas
      */
     public function findMultiple(array $ids): array
     {
         $result = [];
         foreach ($ids as $id) {
-            $result[] = $this->find($id);
+            try {
+                $result[] = $this->find($id);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
+                // Catch all exceptions but do nothing
+            }
         }
 
         return $result;
