@@ -384,13 +384,13 @@ class ObjectService
         $schemas = isset($config['filters']['schema']) ? [$this->currentSchema->getId() => $this->currentSchema] : null;
 
         // Check if '@self.schema' or '@self.register' is in extend but not in filters
-        if (in_array('@self.schema', $config['extend']) && $schemas === null) {
+        if (isset($config['extend']) && in_array('@self.schema', (array)$config['extend'], true) && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
             $schemas = $this->schemaMapper->findMultiple(ids: $schemaIds);
             $schemas = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
-        if (in_array('@self.register', $config['extend']) && $registers === null) {
+        if (isset($config['extend']) && in_array('@self.register', (array)$config['extend'], true) && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
             $registers = $this->registerMapper->findMultiple(ids:  $registerIds);
             $registers = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);

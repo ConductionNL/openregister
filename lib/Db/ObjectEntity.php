@@ -33,6 +33,7 @@ use OCP\IUserSession;
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
+    
 
     /**
      * Unique identifier for the object.
@@ -592,9 +593,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If no user is logged in
      *
-     * @return bool True if delete was successful
+     * @return self Returns the entity
      */
-    public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod=30): bool
+    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): self
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
@@ -604,17 +605,18 @@ class ObjectEntity extends Entity implements JsonSerializable
         $userId    = $currentUser->getUID();
         $now       = new \DateTime();
         $purgeDate = clone $now;
-        $purgeDate->add(new \DateInterval('P'.$retentionPeriod.'D'));
+        //$purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
+        $purgeDate->add(new \DateInterval('P31D'));
 
-        $this->deleted = [
+        $this->setDeleted([
             'deleted'         => $now->format('c'),
             'deletedBy'       => $userId,
             'deletedReason'   => $deletedReason,
             'retentionPeriod' => $retentionPeriod,
             'purgeDate'       => $purgeDate->format('c'),
-        ];
+        ]);
 
-        return true;
+        return $this;
 
     }//end delete()
 

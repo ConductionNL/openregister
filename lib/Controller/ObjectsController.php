@@ -38,12 +38,12 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\FileService;
-
 /**
  * Class ObjectsController
  */
@@ -64,6 +64,7 @@ class ObjectsController extends Controller
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
      * @param ObjectService      $objectService      The object service
+     * @param IUserSession       $userSession        The user session
      *
      * @return void
      */
@@ -77,7 +78,8 @@ class ObjectsController extends Controller
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectService $objectService
+        private readonly ObjectService $objectService,
+        private readonly IUserSession $userSession
     ) {
         parent::__construct($appName, $request);
 
@@ -504,7 +506,7 @@ class ObjectsController extends Controller
      * This method deletes an object based on its ID.
      *
      * @param int $id The ID of the object to delete
-     *
+     * @param ObjectService $objectService The object service
      * @throws Exception
      *
      * @return JSONResponse An empty JSON response
@@ -513,14 +515,14 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function destroy(string $id): JSONResponse
+    public function destroy(string $id, ObjectService $objectService): JSONResponse
     {
         // Create a log entry.
         $oldObject = $this->objectEntityMapper->find($id);
 
         // Clone the object to pass as the new state.
         $newObject = clone $oldObject;
-        $newObject->delete();
+        $newObject->delete($this->userSession, $this->request->getParam('deletedReason'), $this->request->getParam('retentionPeriod'));
 
         // Update the object in the mapper instead of deleting.
         $this->objectEntityMapper->update($newObject);
