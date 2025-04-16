@@ -792,6 +792,8 @@ class ObjectService
 			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
 		}
 
+        $object = $objectEntity->jsonSerialize();
+
 		// Handle object properties that are either nested objects or files, we do this after creating/updating object so that we can pass parent id for sub objects.
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
 			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
