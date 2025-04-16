@@ -2756,6 +2756,10 @@ class ObjectService
         foreach ($schema->getProperties() as $name=>$property) {
             if (isset($data[$name]) === false && isset($property['default']) === true) {
                 $data[$name] = $this->twig->createTemplate($property['default'], "{$schema->getTitle()}.$name")->render($objectEntity->getObjectArray());
+
+                if(is_string($data[$name]) === true && ($property['type'] === 'bool' || $property['type'] === 'boolean')){
+                    $data[$name] = $data[$name] === 'true' || $data[$name] === '1';
+                }
             }
         }
 
