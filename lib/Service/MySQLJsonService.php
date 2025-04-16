@@ -159,6 +159,26 @@ class MySQLJsonService implements IDatabaseJsonService
 		);
 	}
 
+    /**
+     * Get the correct database type of a variable
+     *
+     * @param $value Mixed The value to check the type of.
+     * @return int|string The IQueryBuilder constant that corresponds to the value.
+     */
+    private function getType(mixed $value): int|string
+    {
+        switch (gettype($value)) {
+            case 'integer':
+                return IQueryBuilder::PARAM_INT;
+            case 'boolean':
+                return IQueryBuilder::PARAM_BOOL;
+            case 'array':
+                return IQueryBuilder::PARAM_STR_ARRAY;
+            default:
+                return IQueryBuilder::PARAM_STR;
+        }
+    }
+
 	/**
 	 * Add JSON filtering to a query
 	 *
@@ -194,8 +214,10 @@ class MySQLJsonService implements IDatabaseJsonService
 				continue;
 			}
 
+            $type = $this->getType($value);
+
 			// Handle simple equality filter
-			$builder->createNamedParameter(value: $value, placeHolder: ":value$filter");
+			$builder->createNamedParameter(value: $value, type: $type, placeHolder: ":value$filter");
 			$builder
 				->andWhere("json_extract(object, :path$filter) = :value$filter OR json_contains(json_extract(object, :path$filter), json_quote(:value$filter))");
 		}
