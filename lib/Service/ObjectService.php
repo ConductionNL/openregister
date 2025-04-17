@@ -2220,8 +2220,14 @@ class ObjectService
                 // Set only the UUIDs in the entity property
                 if ($property['type'] !== 'array') {
                     $dotEntity[$key] = end($referencingUuids);
+                    $relations = $dotEntity->get('@self.relations');
+                    $relations[$key] = end($referencingUuids);
+                    $dotEntity->set('@self.relations', $relations);
                 } else {
                     $dotEntity[$key] = array_values($referencingUuids);
+                    $relations = new Dot($dotEntity->get('@self.relations'));
+                    $relations[$key] = array_values($referencingUuids);
+                    $dotEntity->set('@self.relations', $relations->flatten());
                 }
             }
             // Store the referenced objects in the related objects array for potential later extension
