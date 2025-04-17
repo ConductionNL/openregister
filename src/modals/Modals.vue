@@ -27,6 +27,7 @@ import { navigationStore } from '../store/store.js'
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
+		<UploadFiles />
 	</div>
 </template>
 
@@ -53,7 +54,7 @@ import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 import LockObject from './object/LockObject.vue'
 import ViewObject from './object/ViewObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
-
+import UploadFiles from './file/UploadFiles.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -79,6 +80,7 @@ export default {
 		LockObject,
 		ViewObject,
 		DownloadObject,
+		UploadFiles,
 	},
 }
 </script>
