@@ -134,7 +134,7 @@ class ObjectService
     {
         if (is_string($object) || is_int($object)) {
             // Look up the object by ID or UUID
-            $object = $this->getHandler->getObjectByIdOrUuid($object);
+            $object = $this->objectEntityMapper->find($object);
         }
 
         $this->currentObject = $object;

@@ -86,10 +86,10 @@ class FilesController extends Controller
 
         try {
             // Get the raw files from the file service
-            $files = $fileService->getFiles($id);
+            $files = $this->fileService->getFiles($id);
 
             // Format the files with pagination using request parameters
-            $formattedFiles = $fileService->formatFiles($files, $this->request->getParams());
+            $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
 
             return new JSONResponse($formattedFiles);
         } catch (DoesNotExistException $e) {
