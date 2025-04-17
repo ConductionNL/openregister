@@ -426,7 +426,7 @@ class ObjectService
         $result = [];
         foreach ($ids as $id) {
             if (is_string($id) === true || is_int($id) === true) {
-                $result[] = $this->find($id);
+                $result[] = $this->objectEntityMapper->find($id);
             }
         }
 
