@@ -775,49 +775,4 @@ class ObjectsController extends Controller
     }//end unlock()
 
 
-    /**
-     * Retrieves files for an object
-     *
-     * @param string        $register      The register slug or identifier
-     * @param string        $schema        The schema slug or identifier
-     * @param string        $id            The ID of the object to retrieve files for
-     * @param FileService   $fileService   The file service
-     * @param ObjectService $objectService The object service
-     *
-     * @return JSONResponse A JSON response containing the files
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     */
-    public function files(
-        string $register,
-        string $schema,
-        string $id,
-        FileService $fileService,
-        ObjectService $objectService
-    ): JSONResponse {
-        // Set the register and schema context
-        $objectService->setRegister($register);
-        $objectService->setSchema($schema);
-
-        try {
-            // Get the raw files from the file service
-            $files = $fileService->getFiles($id);
-
-            // Format the files with pagination using request parameters
-            $formattedFiles = $fileService->formatFiles($files, $this->request->getParams());
-
-            return new JSONResponse($formattedFiles);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Object not found'], 404);
-        } catch (NotFoundException $e) {
-            return new JSONResponse(['error' => 'Files folder not found'], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-
-    }//end files()
-
-
 }//end class

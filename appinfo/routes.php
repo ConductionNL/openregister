@@ -26,8 +26,16 @@ return [
         ['name' => 'log#index', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Revert
         ['name' => 'revert#revert', 'url' => '/api/objects/{register}/{schema}/{id}/revert', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        // Files
-        ['name' => 'objects#files', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        
+        // Files operations under objects
+		['name' => 'objects#index', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET'],
+        ['name' => 'objects#show', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'GET'],
+		['name' => 'objects#create', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST'],
+		['name' => 'objects#createMultipart', 'url' => 'api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST'],	
+		['name' => 'objects#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'POST'],
+		['name' => 'objects#delete', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'DELETE'],
+		['name' => 'objects#publish', 'url' => 'api/objects/{register}/{schema}/{id}/publish/files/{filePath}', 'verb' => 'POST'],
+		['name' => 'objects#depublish', 'url' => 'api/objects/{register}/{schema}/{id}/files/depublish/{filePath}', 'verb' => 'POST'],	
         // Schemas
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
@@ -40,5 +48,7 @@ return [
         ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
+		// Tags
+		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
     ],
 ];

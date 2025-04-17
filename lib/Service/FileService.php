@@ -849,6 +849,7 @@ class FileService
      */
     public function updateFile(string $filePath, mixed $content = null, array $tags = []): File
     {
+        // @todo: this can update any file, we might want to check if the file is in the object folder first
         $filePath = trim(string: $filePath, characters: '/');
 
         try {
@@ -914,6 +915,7 @@ class FileService
      */
     public function deleteFile(string $filePath): bool
     {
+        // @todo: this can delete any file, we might want to check if the file is in the object folder first
         $filePath = trim(string: $filePath, characters: '/');
 
         try {
@@ -1122,5 +1124,105 @@ class FileService
 
         return $files;
     }
+    
+    /**
+     * Get files for object
+     *
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     *
+     * @param ObjectEntity|string $object The object or object ID to fetch files for
+     *
+     * @return Node[] The files found
+     *
+     * @throws NotFoundException If the folder is not found
+     * @throws DoesNotExistException If the object ID is not found
+     *
+     * @psalm-return array<int, Node>
+     * @phpstan-return array<int, Node>
+     */
+    public function getFile(ObjectEntity|string $object, string $filePath): File
+    {
+        // If string ID provided, try to find the object entity
+        if (is_string($object)) {
+            $object = $this->objectEntityMapper->find($object);
+        }
+
+        $folder = $this->getObjectFolder(
+            objectEntity: $object,
+            register: $object->getRegister(),
+            schema: $object->getSchema()
+        );
+
+
+		if ($folder instanceof Folder === true) {
+			try {
+				return $folder->get($filePath);
+			} catch (NotFoundException $e) {
+				return null;
+			}
+		}
+
+        return $null;
+    }
+
+    
+
+	/**
+	 * Publish a file by creating a public share link
+	 **
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to publish
+	 * @return \OCP\Files\File The published file
+	 * @throws Exception If file publishing fails
+	 */
+	public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		// Get the file node
+		$fullPath = $this->getObjectFilePath($object, $filePath);
+		$file = $this->getNode($fullPath);
+
+		if (!$file instanceof \OCP\Files\File) {
+			throw new Exception('File not found');
+		}
+
+		$shareLink = $this->createShareLink(path: $file->getPath());
+
+		return $file;
+	}
+
+	/**
+	 * Unpublish a file by removing its public share link
+	 *
+	 * @param ObjectEntity|string $object The object or object ID
+	 * @param string $filePath Path to the file to unpublish
+	 * @return \OCP\Files\File The unpublished file
+	 * @throws Exception If file unpublishing fails
+	 */
+	public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
+	{
+		// If string ID provided, try to find the object entity
+		if (is_string($object)) {
+			$object = $this->objectEntityMapper->find($object);
+		}
+
+		// Get the file node
+		$fullPath = $this->getObjectFilePath($object, $filePath);
+		$file = $this->getNode($fullPath);
+
+
+		if (!$file instanceof \OCP\Files\File) {
+			throw new Exception('File not found');
+		}
+
+		$this->deleteShareLinks(file: $file);
+
+		return $file;
+	}
 
 }//end class
