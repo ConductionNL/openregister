@@ -130,13 +130,14 @@ class ObjectService
      */
     public function resolveSchema(Uri $uri): string
     {
-        $schemas = $this->schemaMapper->findAll(filters: ['reference' => $uri]);
-        if (count($schemas) === 1) {
-            $schema = $schemas[0];
-            return json_encode($schema->getSchemaObject($this->urlGenerator));
-        } elseif (count($schemas) > 1) {
-            throw new Exception('Conflict: more than one schema found');
-        }
+        //@TODO for the refactor: use references.
+//        $schemas = $this->schemaMapper->findAll(filters: ['reference' => $uri]);
+//        if (count($schemas) === 1) {
+//            $schema = $schemas[0];
+//            return json_encode($schema->getSchemaObject($this->urlGenerator));
+//        } elseif (count($schemas) > 1) {
+//            throw new Exception('Conflict: more than one schema found');
+//        }
 
 
         // Local schema resolution
