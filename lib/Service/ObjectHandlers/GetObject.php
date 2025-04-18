@@ -82,13 +82,13 @@ class GetObject
      * @throws DoesNotExistException If object not found.
      */
     public function find(
-        Register $register,
-        Schema $schema,
-        string $uuid,
+        Register $register = null,
+        Schema $schema = null,
+        string $id,
         ?array $extend=[],
         bool $files=false
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find($uuid, $register, $schema);
+        $object = $this->objectEntityMapper->find($id, $register, $schema);
 
         if ($files === true) {
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));

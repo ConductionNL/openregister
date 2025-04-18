@@ -186,8 +186,8 @@ class ObjectService
         return $this->renderHandler->renderEntity(
             entity: $object,
             extend: $extend,
-            registers: [$this->currentRegister->getId() => $this->currentRegister],
-            schemas: [$this->currentSchema->getId() => $this->currentSchema]
+            registers: $this->currentRegister !== null ? [$this->currentRegister->getId() => $this->currentRegister] : null,
+            schemas: $this->currentSchema !== null ? [$this->currentSchema->getId() => $this->currentSchema] : null
         );
 
     }//end find()
@@ -352,18 +352,19 @@ class ObjectService
      */
     public function findAll(array $config=[]): array
     {
+
         // Convert extend to an array if it's a string
         if (is_string($config['extend'])) {
             $config['extend'] = explode(',', $config['extend']);
         }
 
-        // Set the current register context if a register is provided
-        if (isset($config['filters']['register'])) {
+        // Set the current register context if a register is provided and it's not an array
+        if (isset($config['filters']['register']) === true  && is_array($config['filters']['register']) === false) {
             $this->setRegister($config['filters']['register']);
         }
 
-        // Set the current schema context if a schema is provided
-        if (isset($config['filters']['schema'])) {
+        // Set the current schema context if a schema is provided and it's not an array
+        if (isset($config['filters']['schema']) === true  && is_array($config['filters']['schema']) === false) {
             $this->setSchema($config['filters']['schema']);
         }
 
@@ -379,9 +380,20 @@ class ObjectService
             ids: $config['ids'] ?? null
         );
         
-        // Determine if register and schema should be passed to renderEntity
-        $registers = isset($config['filters']['register']) ? [$this->currentRegister->getId() => $this->currentRegister] : null;
-        $schemas = isset($config['filters']['schema']) ? [$this->currentSchema->getId() => $this->currentSchema] : null;
+        // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null
+        $registers = (
+            $this->currentRegister !== null && 
+            isset($config['filters']['register'])
+        ) ? [
+            $this->currentRegister->getId() => $this->currentRegister
+        ] : null;
+
+        $schemas = (
+            $this->currentSchema !== null && 
+            isset($config['filters']['schema'])
+        ) ? [
+            $this->currentSchema->getId() => $this->currentSchema
+        ] : null;
 
         // Check if '@self.schema' or '@self.register' is in extend but not in filters
         if (isset($config['extend']) && in_array('@self.schema', (array)$config['extend'], true) && $schemas === null) {

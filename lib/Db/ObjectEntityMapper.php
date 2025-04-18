@@ -202,6 +202,17 @@ class ObjectEntityMapper extends QBMapper
             $filters['page']
         );
 
+        // Add register to filters if provided
+         if ($register !== null) {
+            $filters['register'] = $register;
+         }
+
+        // Add schema to filters if provided
+        if ($schema !== null) {
+            $filters['schema'] = $schema;        
+        }
+
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -214,19 +225,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
-        // Handle filtering by register if provided.
-        if ($register !== null) {
-            $qb->andWhere(
-                $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
-            );
-        }
-
-        // Handle filtering by schema if provided.
-        if ($schema !== null) {
-            $qb->andWhere(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
-            );
-        }
+       
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -249,11 +248,19 @@ class ObjectEntityMapper extends QBMapper
 
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+                // Add condition for IS NOT NULL
                 $qb->andWhere($qb->expr()->isNotNull($filter));
             } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+                // Add condition for IS NULL
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else if (in_array($filter, self::MAIN_FILTERS) === true) {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                if (is_array($value)) {
+                    // If the value is an array, use IN to search for any of the values in the array
+                    $qb->andWhere($qb->expr()->in($filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                } else {
+                    // Otherwise, use equality for the filter
+                    $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                }
             }
         }
 
@@ -263,6 +270,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
+
 
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
