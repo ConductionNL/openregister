@@ -6,8 +6,13 @@ import { navigationStore } from '../store/store.js'
 	<!-- Placeholder Div -->
 	<div>
 		<EditRegister />
-		<UploadRegister />
+		<ImportRegister />
+		<ExportRegister />
 		<DeleteRegister />
+		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
+		<DeleteConfiguration />
+		<ImportConfiguration />
+		<ExportConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<DeleteSchema />
 		<UploadSchema />
@@ -15,18 +20,26 @@ import { navigationStore } from '../store/store.js'
 		<DeleteSchemaProperty />
 		<EditSource />
 		<DeleteSource />
-		<EditObject />
+		<EditObject v-if="navigationStore.modal === 'editObject'" />
 		<DeleteObject />
 		<LockObject />
+		<ViewObject />
+		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
+		<UploadFiles />
 	</div>
 </template>
 
 <script>
 import EditRegister from './register/EditRegister.vue'
+import ImportRegister from './register/ImportRegister.vue'
+import ExportRegister from './register/ExportRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
-import UploadRegister from './register/UploadRegister.vue'
+import EditConfiguration from './configuration/EditConfiguration.vue'
+import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
+import ImportConfiguration from './configuration/ImportConfiguration.vue'
+import ExportConfiguration from './configuration/ExportConfiguration.vue'
 import EditSchema from './schema/EditSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import UploadSchema from './schema/UploadSchema.vue'
@@ -39,13 +52,20 @@ import DeleteObject from './object/DeleteObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 import LockObject from './object/LockObject.vue'
-
+import ViewObject from './object/ViewObject.vue'
+import DownloadObject from './object/DownloadObject.vue'
+import UploadFiles from './file/UploadFiles.vue'
 export default {
 	name: 'Modals',
 	components: {
 		EditRegister,
+		ImportRegister,
+		ExportRegister,
 		DeleteRegister,
-		UploadRegister,
+		EditConfiguration,
+		DeleteConfiguration,
+		ImportConfiguration,
+		ExportConfiguration,
 		EditSchema,
 		DeleteSchema,
 		UploadSchema,
@@ -58,6 +78,9 @@ export default {
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,
+		ViewObject,
+		DownloadObject,
+		UploadFiles,
 	},
 }
 </script>

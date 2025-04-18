@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "*.php": [
+      ".cursor/rules/php.template.mdc",
+      ".cursor/rules/php.mdc",
+      ".cursor/rules/global.mdc"
+    ],
+    "*.md": [".cursor/rules/md.mdc"],
+    "*.js": [".cursor/rules/node.mdc", ".cursor/rules/global.mdc"],
+    "*.jsx": [".cursor/rules/node.mdc", ".cursor/rules/global.mdc"],
+    "*.ts": [".cursor/rules/node.mdc", ".cursor/rules/global.mdc"],
+    "*.tsx": [".cursor/rules/node.mdc", ".cursor/rules/global.mdc"],
+    "*": [".cursor/rules/global.mdc"]
+  }
+} 

@@ -1,0 +1,111 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Rules for developing a new feature
+
+## Feature Development Workflow
+
+### 1. User Story Creation
+- When a new feature is requested, first create a user story:
+  - Format: "As a {role} I want {change} because {reason}"
+  - Include acceptance criteria:
+    - Functional requirements
+    - Technical requirements
+    - Performance requirements
+    - Security requirements
+    - Documentation requirements
+  - Required additional information:
+    - User roles involved
+    - Current workflow/process
+    - Expected outcome
+    - Integration points
+    - Security considerations
+    - Performance expectations
+    - Data requirements
+    - UI/UX requirements
+    - Testing requirements
+    - Documentation needs
+  - Present user story to stakeholder for validation
+
+### 2. Analysis Phase
+- Read and analyze existing codebase:
+  - Review all relevant PHP code in lib/
+  - Review all relevant Vue code in src/
+  - Identify affected components
+  - Identify required changes
+  - Document dependencies
+  - Note potential impacts
+
+### 3. Implementation Planning
+Create detailed implementation plan including:
+- Backend changes:
+  - New/modified PHP classes
+  - Database changes
+  - API endpoints
+  - Service modifications
+  - Security considerations
+- Frontend changes:
+  - Component updates
+  - State management
+  - API integration
+  - UI/UX implementation
+- Test coverage:
+  - Unit tests
+  - Integration tests
+  - End-to-end tests
+- Documentation updates:
+  - Technical documentation
+  - User documentation
+  - API documentation
+  - Architecture updates
+- Present plan to stakeholder for approval
+
+### 4. Implementation Phase
+Only proceed after stakeholder approval:
+1. Create/update backend components
+2. Create/update frontend components
+3. Add/update tests
+4. Update documentation
+5. Quality checks:
+   - Run PHP CodeSniffer
+   - Run PHPStan
+   - Run ESLint
+   - Run TypeScript checks
+   - Run unit tests
+   - Fix any issues
+   - Repeat until all checks pass
+
+### 5. Documentation Requirements
+- Update relevant documentation in website/docs:
+  - Technical documentation
+  - User documentation
+  - API documentation if applicable
+  - Update diagrams
+  - Add code examples
+  - Document configuration
+  - Document dependencies
+
+### 6. Quality Assurance
+- Automated checks:
+  - PHP CodeSniffer compliance
+  - PHPStan level 8 compliance
+  - Psalm compliance
+  - ESLint compliance
+  - TypeScript strict mode compliance
+  - Unit test coverage
+  - Integration test coverage
+- Manual checks:
+  - Code review guidelines
+  - Security review
+  - Performance testing
+  - Accessibility testing
+
+### 7. Version Control
+- Commit messages must:
+  - Reference user story
+  - Describe changes clearly
+  - Include documentation updates
+  - Note breaking changes
+  - Include test coverage

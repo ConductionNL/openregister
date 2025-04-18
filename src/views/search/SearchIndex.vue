@@ -1,32 +1,83 @@
 <script setup>
-import { searchStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppContent>
 		<span class="pageHeaderContainer">
-			<h2 class="pageHeader">
-				Objects table
-			</h2>
+			<h1 class="pageHeader">
+				{{ pageTitle }}
+			</h1>
+
+			<NcActions
+				:force-name="true"
+				:inline="1"
+				:primary="true"
+				:menu-name="`Bulk action for ${objectStore.selectedObjects?.length || 0} objects`">
+				<NcActionButton
+					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+					:title="!registerStore.registerItem ? 'Please select a register to add an object' : (!schemaStore.schemaItem ? 'Please select a schema to add an object' : '')"
+					@click="openAddObjectModal">
+					<template #icon>
+						<Pencil :size="20" />
+					</template>
+					Add
+				</NcActionButton>
+				<NcActionButton>
+					<template #icon>
+						<Upload :size="20" />
+					</template>
+					Upload
+				</NcActionButton>
+				<NcActionButton>
+					<template #icon>
+						<Download :size="20" />
+					</template>
+					Download
+				</NcActionButton>
+				<NcActionButton @click="() => massDeleteObjectModal = true">
+					<template #icon>
+						<Delete :size="20" />
+					</template>
+					Delete
+				</NcActionButton>
+			</NcActions>
 		</span>
 
-		<NcNoteCard v-if="!searchStore.searchObjectsResult?.results?.length && !searchStore.searchObjectsLoading" type="info">
+		<!-- Warning when no register is selected -->
+		<NcNoteCard v-if="showNoRegisterWarning" type="warning">
+			<p>Please select a register in the sidebar to view objects</p>
+		</NcNoteCard>
+
+		<!-- Warning when no schema is selected -->
+		<NcNoteCard v-if="showNoSchemaWarning" type="warning">
+			<p>Please select a schema in the sidebar to view objects</p>
+		</NcNoteCard>
+
+		<!-- Message when no objects found -->
+		<NcNoteCard v-if="showNoObjectsMessage" type="info">
 			<p>There are no objects that match this filter</p>
 		</NcNoteCard>
 
-		<NcLoadingIcon v-if="searchStore.searchObjectsLoading && !searchStore.searchObjectsResult?.results?.length"
+		<NcLoadingIcon v-if="objectStore.loading"
 			:size="64"
 			class="loadingIcon"
 			appearance="dark"
 			name="Objects loading" />
 
-		<SearchList v-if="searchStore.searchObjectsResult?.results?.length" />
+		<SearchList v-if="!objectStore.loading && objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" />
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcNoteCard, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import SearchList from './SearchList.vue'
+
+// Icons
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'SearchIndex',
@@ -35,6 +86,53 @@ export default {
 		NcNoteCard,
 		NcLoadingIcon,
 		SearchList,
+		Delete,
+		Download,
+		Pencil,
+		Upload,
+
+	},
+
+	computed: {
+		pageTitle() {
+			if (!registerStore.registerItem) {
+				return 'No register selected'
+			}
+
+			const registerName = (registerStore.registerItem.label || registerStore.registerItem.title).charAt(0).toUpperCase()
+		+ (registerStore.registerItem.label || registerStore.registerItem.title).slice(1)
+			const objectCount = objectStore.objectList?.results?.length || 0
+			const objectTotal = objectStore.objectList?.total || 0
+
+			if (!schemaStore.schemaItem) {
+				return `${registerName} / No schema selected`
+			}
+
+			const schemaName = (schemaStore.schemaItem.label || schemaStore.schemaItem.title).charAt(0).toUpperCase()
+		+ (schemaStore.schemaItem.label || schemaStore.schemaItem.title).slice(1)
+			return `${registerName} / ${schemaName} (${objectCount} of ${objectTotal})`
+		},
+
+		showNoRegisterWarning() {
+			return !registerStore.registerItem
+		},
+		showNoSchemaWarning() {
+			return registerStore.registerItem && !schemaStore.schemaItem
+		},
+		showNoObjectsMessage() {
+			return registerStore.registerItem
+				&& schemaStore.schemaItem
+				&& !objectStore.loading
+				&& !objectStore.objectList?.results?.length
+		},
+
+	},
+
+	methods: {
+		openAddObjectModal() {
+			objectStore.setObjectItem(null) // Clear any existing object
+			navigationStore.setModal('editObject')
+		},
 	},
 }
 </script>
@@ -44,8 +142,31 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0;
 }
-.pageHeaderContainer > .loadingIcon {
+
+.pageHeader {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Oxygen-Sans, Cantarell, Ubuntu, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-size: 30px;
+	font-weight: 600;
+    margin-left: 50px;
+    text-transform: capitalize;
+}
+
+/* Add styles for the delete button container */
+:deep(.button-vue) {
+    margin-top: 15px;
+    margin-right: 15px;
+    padding-right: 15px;
+}
+
+/* Add styles for note cards */
+:deep(.notecard) {
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
+.loadingIcon {
     margin-inline-end: 1rem;
 }
 </style>

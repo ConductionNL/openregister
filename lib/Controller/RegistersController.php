@@ -1,42 +1,78 @@
 <?php
+/**
+ * Class RegistersController
+ *
+ * Controller for managing register operations in the OpenRegister app.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Controller;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SearchService;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Yaml\Yaml;
 
+/**
+ * Class RegistersController
+ */
 class RegistersController extends Controller
 {
+
+    /**
+     * Configuration service for handling import/export operations
+     *
+     * @var ConfigurationService
+     */
+    private readonly ConfigurationService $configurationService;
+
     /**
      * Constructor for the RegistersController
      *
-     * @param string $appName The name of the app
-     * @param IRequest $request The request object
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper $registerMapper The register mapper
+     * @param string               $appName              The name of the app
+     * @param IRequest             $request              The request object
+     * @param RegisterMapper       $registerMapper       The register mapper
+     * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
+     * @param UploadService        $uploadService        The upload service
+     * @param ConfigurationService $configurationService The configuration service
+     *
+     * @return void
      */
     public function __construct(
-        $appName,
+        string $appName,
         IRequest $request,
         private readonly RegisterMapper $registerMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-		private readonly UploadService $uploadService
-    )
-    {
+        private readonly UploadService $uploadService,
+        ConfigurationService $configurationService
+    ) {
         parent::__construct($appName, $request);
-    }
+        $this->configurationService = $configurationService;
+
+    }//end __construct()
+
 
     /**
      * Returns the template of the main app's page
@@ -44,6 +80,7 @@ class RegistersController extends Controller
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse The rendered template response
@@ -55,205 +92,306 @@ class RegistersController extends Controller
             'index',
             []
         );
-    }
+
+    }//end page()
+
 
     /**
      * Retrieves a list of all registers
      *
      * This method returns a JSON response containing an array of all registers in the system.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * @param ObjectService $objectService The object service
+     * @param SearchService $searchService The search service
      *
      * @return JSONResponse A JSON response containing the list of registers
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters = $this->request->getParams();
+    public function index(
+        ObjectService $objectService,
+        SearchService $searchService
+    ): JSONResponse {
+        // Get request parameters for filtering and searching.
+        $filters        = $this->request->getParams();
         $fieldsToSearch = ['title', 'description'];
 
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        // Create search parameters and conditions for filtering.
+        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchConditions = $searchService->createMySQLSearchConditions(
+            filters: $filters,
+            fieldsToSearch: $fieldsToSearch
+        );
+        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-        return new JSONResponse(['results' => $this->registerMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }
+        // Return all registers that match the search conditions.
+        return new JSONResponse(
+            [
+                'results' => $this->registerMapper->findAll(
+                    limit: null,
+                    offset: null,
+                    filters: $filters,
+                    searchConditions: $searchConditions,
+                    searchParams: $searchParams
+                ),
+            ]
+        );
+
+    }//end index()
+
 
     /**
      * Retrieves a single register by its ID
      *
      * This method returns a JSON response containing the details of a specific register.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param string $id The ID of the register to retrieve
+     *
      * @return JSONResponse A JSON response containing the register details
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function show(string $id): JSONResponse
     {
         try {
+            // Try to find the register by ID.
             return new JSONResponse($this->registerMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
+            // Return a 404 error if the register doesn't exist.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
-    }
+
+    }//end show()
+
 
     /**
      * Creates a new register
      *
      * This method creates a new register based on POST data.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @return JSONResponse A JSON response containing the created register
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function create(): JSONResponse
     {
+        // Get request parameters.
         $data = $this->request->getParams();
 
+        // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        if (isset($data['id'])) {
+        // Remove ID if present to ensure a new record is created.
+        if (isset($data['id']) === true) {
             unset($data['id']);
         }
 
+        // Create a new register from the data.
         return new JSONResponse($this->registerMapper->createFromArray(object: $data));
-    }
+
+    }//end create()
+
 
     /**
      * Updates an existing register
      *
      * This method updates an existing register based on its ID.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @param int $id The ID of the register to update
+     *
      * @return JSONResponse A JSON response containing the updated register details
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      */
     public function update(int $id): JSONResponse
     {
+        // Get request parameters.
         $data = $this->request->getParams();
 
+        // Remove internal parameters (starting with '_').
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
-        if (isset($data['id'])) {
+
+        // Remove ID if present to prevent conflicts.
+        if (isset($data['id']) === true) {
             unset($data['id']);
         }
-        return new JSONResponse($this->registerMapper->updateFromArray(id: (int) $id, object: $data));
-    }
 
-	/**
-	 * Deletes a register
-	 *
-	 * This method deletes a register based on its ID.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @param int $id The ID of the register to delete
-	 * @return JSONResponse An empty JSON response
-	 * @throws Exception
-	 */
+        // Update the register with the provided data.
+        return new JSONResponse($this->registerMapper->updateFromArray(id: (int) $id, object: $data));
+
+    }//end update()
+
+
+    /**
+     * Deletes a register
+     *
+     * This method deletes a register based on its ID.
+     *
+     * @param int $id The ID of the register to delete
+     *
+     * @throws Exception If there is an error deleting the register
+     *
+     * @return JSONResponse An empty JSON response
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
     public function destroy(int $id): JSONResponse
     {
+        // Find the register by ID and delete it.
         $this->registerMapper->delete($this->registerMapper->find((int) $id));
 
+        // Return an empty response.
         return new JSONResponse([]);
-    }
 
-	/**
-	 * Get objects
-	 *
-	 * Get all the objects for a register and schema
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @param int $register The ID of the register
-	 * @param int $schema The ID of the schema
-	 *
-	 * @return JSONResponse An empty JSON response
-	 */
+    }//end destroy()
+
+
+    /**
+     * Get objects
+     *
+     * Get all the objects for a register and schema
+     *
+     * @param int $register The ID of the register
+     * @param int $schema   The ID of the schema
+     *
+     * @return JSONResponse A JSON response containing the objects
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
     public function objects(int $register, int $schema): JSONResponse
     {
-        return new JSONResponse($this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema));
-    }
+        // Find objects by register and schema IDs.
+        return new JSONResponse(
+            $this->objectEntityMapper->findByRegisterAndSchema(register: $register, schema: $schema)
+        );
 
-	/**
-	 * Updates an existing Register object using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
-	 *
-	 * @param int|null $id
-	 *
-	 * @return JSONResponse
-	 * @throws Exception
-	 * @throws GuzzleException
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 */
-	public function uploadUpdate(?int $id = null): JSONResponse
-	{
-		return $this->upload($id);
-	}
+    }//end objects()
 
-	/**
-	 * Creates a new Register object or updates an existing one using a json text/string as input. Uses 'file', 'url' or else 'json' from POST body.
-	 *
-	 * @param int|null $id
-	 *
-	 * @return JSONResponse
-	 * @throws GuzzleException
-	 * @throws Exception
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 */
-	public function upload(?int $id = null): JSONResponse
-	{
-        if ($id !== null){
+
+    /**
+     * Export a register and its related data
+     *
+     * This method exports a register, its schemas, and optionally its objects
+     * in OpenAPI format.
+     *
+     * @param int  $id             The ID of the register to export
+     * @param bool $includeObjects Whether to include objects in the export
+     *
+     * @return DataDownloadResponse|JSONResponse The exported register data as a downloadable file or error response
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function export(int $id, bool $includeObjects=false): DataDownloadResponse | JSONResponse
+    {
+        try {
+            // Find the register.
             $register = $this->registerMapper->find($id);
-		}
-        else {
-            $register = new Register();
-			$register->setUuid(Uuid::v4());
-        }
 
-		$phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
-		if ($phpArray instanceof JSONResponse) {
-			return $phpArray;
-		}
+            // Export the register and its related data.
+            $exportData = $this->configurationService->exportConfig($register, $includeObjects);
 
-		// Validate that the jsonArray is a valid OAS3 object containing schemas
-		if (isset($phpArray['openapi']) === false || isset($phpArray['components']['schemas']) === false) {
-			return new JSONResponse(data: ['error' => 'Invalid OAS3 object. Must contain openapi version and components.schemas.'], statusCode: 400);
-		}
+            // Convert to JSON.
+            $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            if ($jsonContent === false) {
+                throw new Exception('Failed to encode register data to JSON');
+            }
 
-		// Set default title if not provided or empty
-		if (empty($phpArray['info']['title']) === true) {
-			$phpArray['info']['title'] = 'New Register';
-		}
+            // Generate filename based on register slug and current date.
+            $filename = sprintf(
+                '%s_%s.json',
+                $register->getSlug(),
+                (new \DateTime())->format('Y-m-d_His')
+            );
 
-		$register->hydrate($phpArray);
-        if ($register->getId() === null) {
-            $register = $this->registerMapper->insert($register);
-        } else {
-            $register = $this->registerMapper->update($register);
-        }
+            // Return as downloadable file.
+            return new DataDownloadResponse(
+                $jsonContent,
+                $filename,
+                'application/json'
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Failed to export register: '.$e->getMessage()],
+                400
+            );
+        }//end try
 
-		// Process and save schemas
-		$register = $this->uploadService->handleRegisterSchemas(register: $register, phpArray: $phpArray);
+    }//end export()
 
-		return new JSONResponse($register);
-	}
-}
+
+    /**
+     * Import data into a register
+     *
+     * This method imports schemas and optionally objects into an existing register
+     * from an OpenAPI format file.
+     *
+     * @param bool $includeObjects Whether to include objects in the import
+     *
+     * @return JSONResponse The result of the import operation
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function import(bool $includeObjects=false): JSONResponse
+    {        
+        try {
+            // Initialize the uploaded files array
+            $uploadedFiles = [];
+            
+            // Get the uploaded file from the request if a single file has been uploaded.
+            $uploadedFile = $this->request->getUploadedFile(key: 'file');
+            if (empty($uploadedFile) === false) {
+                $uploadedFiles[] = $uploadedFile;
+            }
+
+            // Get the uploaded JSON data.
+            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
+            if ($jsonData instanceof JSONResponse) {
+                return $jsonData;
+            }
+
+            // Import the data.
+            $result = $this->configurationService->importFromJson(
+                $jsonData,
+                $includeObjects,
+                $this->request->getParam('owner')
+            );
+
+            return new JSONResponse(
+                    [
+                        'message'  => 'Import successful',
+                        'imported' => $result,
+                    ]
+                    );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Failed to import configuration: '.$e->getMessage()],
+                400
+            );
+        }//end try
+
+    }//end import()
+
+
+}//end class

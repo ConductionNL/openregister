@@ -6,17 +6,39 @@ export const useRegisterStore = defineStore('register', {
 	state: () => ({
 		registerItem: false,
 		registerList: [],
+		filters: [], // List of query
+		pagination: {
+			page: 1,
+			limit: 20,
+		},
 	}),
 	actions: {
 		setRegisterItem(registerItem) {
-			this.registerItem = registerItem && new Register(registerItem)
-			console.log('Active register item set to ' + registerItem)
+			this.registerItem = registerItem ? new Register(registerItem) : null
+			console.log('Active register item set to ' + (registerItem?.title || 'null'))
 		},
 		setRegisterList(registerList) {
 			this.registerList = registerList.map(
 				(registerItem) => new Register(registerItem),
 			)
 			console.log('Register list set to ' + registerList.length + ' items')
+		},
+		/**
+		 * Set pagination details
+		 * @param {number} page - The current page number for pagination
+		 * @param {number} limit - The number of items to display per page
+		 */
+		setPagination(page, limit = 14) {
+			this.pagination = { page, limit }
+			console.info('Pagination set to', { page, limit }) // Logging the pagination
+		},
+		/**
+		 * Set query filters for register list
+		 * @param {object} filters - The filter criteria to apply to the register list
+		 */
+		setFilters(filters) {
+			this.filters = { ...this.filters, ...filters }
+			console.info('Query filters set to', this.filters) // Logging the filters
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
@@ -176,6 +198,49 @@ export const useRegisterStore = defineStore('register', {
 
 			return { response, data }
 
+		},
+		async importRegister(file, includeObjects = false) {
+			if (!file) {
+				throw new Error('No file to import')
+			}
+
+			console.log('Importing register...')
+
+			const endpoint = '/index.php/apps/openregister/api/registers/import'
+			const formData = new FormData()
+			formData.append('file', file)
+			formData.append('includeObjects', includeObjects ? '1' : '0')
+
+			try {
+				const response = await fetch(
+					endpoint,
+					{
+						method: 'POST',
+						body: formData,
+					},
+				)
+
+				const responseData = await response.json()
+
+				if (!response.ok) {
+					// If we have an error message in the response, use that
+					if (responseData && responseData.error) {
+						throw new Error(responseData.error)
+					}
+					throw new Error(`HTTP error! status: ${response.status}`)
+				}
+
+				if (!responseData || typeof responseData !== 'object') {
+					throw new Error('Invalid response data')
+				}
+
+				await this.refreshRegisterList()
+
+				return { response, responseData }
+			} catch (error) {
+				console.error('Error importing register:', error)
+				throw error // Pass through the original error message
+			}
 		},
 	},
 })

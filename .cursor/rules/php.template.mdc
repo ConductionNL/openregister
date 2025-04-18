@@ -1,0 +1,79 @@
+---
+description: 
+globs: ["*.php"]
+alwaysApply: false
+---
+
+/**
+ * {{#if (contains filepath "lib/Db")}}Entity class representing a database object.
+ *
+ * This class handles database operations and entity mapping.{{else if (contains filepath "lib/Service")}}Service class for handling business logic.
+ *
+ * This class provides service layer functionality.{{else if (contains filepath "lib/Controller")}}Controller class for handling HTTP requests.
+ *
+ * This class handles incoming HTTP requests and returns appropriate responses.{{else}}Class description goes here.
+ *
+ * Detailed description goes here.{{/if}}
+ *
+ * @category    {{#if (contains filepath "lib/Service")}}Service
+                {{else if (contains filepath "lib/Controller")}}Controller
+                {{else if (contains filepath "lib/Db/Mapper")}}Mapper
+                {{else if (contains filepath "lib/Db")}}Entity
+                {{else if (contains filepath "lib/Command")}}Command
+                {{else if (contains filepath "lib/Cron")}}Cron
+                {{else if (contains filepath "lib/Event")}}Event
+                {{else if (contains filepath "lib/EventListener")}}EventListener
+                {{else if (contains filepath "lib/Exception")}}Exception
+                {{else if (contains filepath "lib/Factory")}}Factory
+                {{else if (contains filepath "lib/Helper")}}Helper
+                {{else if (contains filepath "lib/Http")}}Response
+                {{else if (contains filepath "lib/Listener")}}Listener
+                {{else if (contains filepath "lib/Migration")}}Migration
+                {{else if (contains filepath "lib/Model")}}Model
+                {{else if (contains filepath "lib/Provider")}}Provider
+                {{else if (contains filepath "lib/Repository")}}Repository
+                {{else if (contains filepath "lib/Settings")}}Settings
+                {{else if (contains filepath "lib/Sections")}}Section
+                {{else if (contains filepath "lib/Twig/Runtime")}}Runtime
+                {{else if (contains filepath "lib/Twig")}}Extension
+                {{else if (contains filepath "lib/Action")}}Action
+                {{else if (contains filepath "lib/AppInfo")}}AppInfo
+                {{else if (contains filepath "lib/Validator")}}Validator
+                {{else if (contains filepath "tests")}}Test
+                {{else}}Component{{/if}}
+ * @package     OpenConnector
+ * @author      Conduction Development Team <dev@conductio.nl>
+ * @copyright   2024 Conduction B.V.
+ * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version     {{version info.xml "//version"}}
+ * @link        https://OpenConnector.app
+ *
+ * @since       {{version info.xml "//version"}} - Description of when this class was added
+ * @deprecated  Optional: version number - Reason for deprecation
+ *
+ * @api         Optional: Mark as public API
+ * @internal    Optional: Mark as internal/private API
+ * @final       Optional: Mark as final/not extendable
+ * @template    Optional: For generic classes
+ *
+ * @see         \Related\Class::method() Optional: Reference to related code
+ * @uses        \Other\Class Optional: List other classes this one uses
+ * @used-by     \Another\Class Optional: List classes that use this one
+ *
+ * @psalm-immutable   Optional: Mark class as immutable
+ * @psalm-pure        Optional: Mark methods as pure (no side effects)
+ * @psalm-suppress    PropertyNotSetInConstructor
+ *
+ * @phpstan-type      Optional: Define complex types
+ * @phpstan-import    Optional: Import types from other classes
+ * @phpstan-template  Optional: For generic classes
+ *
+ * @method     string methodName(int $param) Optional: For magic methods
+ * @property   string $propertyName Optional: For magic properties
+ * @property-read  string $readOnlyProperty Optional: For read-only properties
+ * @property-write string $writeOnlyProperty Optional: For write-only properties
+ *
+ * @mixin      \Other\Class Optional: For classes that use traits or composition
+ * @implements \Interface\Name Optional: Document implemented interfaces
+ * @extends    \Parent\Class Optional: Document parent class
+ */ 

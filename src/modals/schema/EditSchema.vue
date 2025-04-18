@@ -23,6 +23,9 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			<NcTextArea :disabled="loading"
 				label="Summary"
 				:value.sync="schemaItem.summary" />
+			<NcTextField :disabled="loading"
+				label="Slug"
+				:value.sync="schemaItem.slug" />
 			<NcCheckboxRadioSwitch
 				v-if="!schemaStore.schemaItem?.id"
 				:disabled="loading"
@@ -90,6 +93,7 @@ export default {
 				version: '0.0.0',
 				description: '',
 				summary: '',
+				slug: '',
 			},
 			createAnother: false,
 			success: false,
@@ -109,6 +113,7 @@ export default {
 					title: schemaStore.schemaItem.title || '',
 					description: schemaStore.schemaItem.description || '',
 					summary: schemaStore.schemaItem.summary || '',
+					slug: schemaStore.schemaItem.slug || '',
 				}
 			}
 		},
@@ -134,6 +139,7 @@ export default {
 							version: '0.0.0',
 							description: '',
 							summary: '',
+							slug: '',
 						}
 					}, 500)
 

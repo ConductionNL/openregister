@@ -1,0 +1,64 @@
+name: Sync to Beta Branch
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  push:
+    branches:
+      - never
+
+jobs:
+  sync-to-beta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          ssh-key: ${{ secrets.BETA_DEPLOY_KEY }}
+
+      - name: Configure Git SSH
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+
+      - name: Update beta branch
+        run: |
+          # Fetch all branches
+          git fetch origin
+          
+          # Get the commit message that triggered this workflow
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          # Store the current beta version if it exists
+          BETA_VERSION=""
+          if git show-ref --quiet refs/remotes/origin/beta; then
+            git checkout origin/beta
+            BETA_VERSION=$(grep -oP '(?<=<version>)[^<]+' appinfo/info.xml || echo "")
+          fi
+          
+          # Check if beta branch exists
+          if git show-ref --quiet refs/remotes/origin/beta; then
+            # If exists, checkout beta
+            git checkout beta
+            git reset --hard origin/feature/REGISTERS-4/configuraties  # Changed from development
+          else
+            # If doesn't exist, create from feature/REGISTERS-4/configuraties
+            git checkout -b beta origin/feature/REGISTERS-4/configuraties  # Changed from development
+          fi
+          
+          # Restore the beta version if it existed
+          if [ ! -z "$BETA_VERSION" ]; then
+            sed -i "s|<version>.*</version>|<version>${BETA_VERSION}</version>|" appinfo/info.xml
+            git add appinfo/info.xml
+            git commit -m "${COMMIT_MSG}
+            
+            Restored beta version to ${BETA_VERSION}"
+          fi
+          
+          # Push to beta branch using SSH with force
+          git push -f origin beta

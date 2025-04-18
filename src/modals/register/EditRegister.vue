@@ -18,6 +18,9 @@ import { registerStore, schemaStore, sourceStore, navigationStore } from '../../
 			<NcTextField :disabled="loading"
 				label="Title *"
 				:value.sync="registerItem.title" />
+			<NcTextField :disabled="loading"
+				label="Slug *"
+				:value.sync="registerItem.slug" />
 			<NcTextArea :disabled="loading"
 				label="Description"
 				:value.sync="registerItem.description" />
@@ -92,6 +95,7 @@ export default {
 		return {
 			registerItem: {
 				title: '',
+				slug: '',
 				description: '',
 				schemas: [],
 				source: '',
@@ -132,6 +136,7 @@ export default {
 				this.registerItem = {
 					...registerStore.registerItem,
 					title: registerStore.registerItem.title || '',
+					slug: registerStore.registerItem.slug || '',
 					description: registerStore.registerItem.description || '',
 					schemas: registerStore.registerItem.schemas || [],
 					source: registerStore.registerItem.source || '',
@@ -201,6 +206,7 @@ export default {
 			this.hasUpdated = false
 			this.registerItem = {
 				title: '',
+				slug: '',
 				description: '',
 				schemas: [],
 				source: '',

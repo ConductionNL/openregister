@@ -1,0 +1,91 @@
+---
+description: 
+globs: *.js,*.ts,*vue
+alwaysApply: false
+---
+# Node.js Coding Standards and Best Practices
+
+Always use linting afther creating or altering a file
+
+## App Structure
+- Frontend (Vue.js):
+  - All frontend code resides in the `src/` directory
+  - Directory structure:
+    - `src/components/` - Vue components
+    - `src/views/` - Vue views/pages
+    - `src/store/` - Vuex store modules
+    - `src/router/` - Vue router configuration
+    - `src/assets/` - Static assets (images, fonts, etc.)
+    - `src/styles/` - Global styles and CSS
+    - `src/utils/` - Utility functions
+    - `src/api/` - API client and services
+    - `src/types/` - TypeScript type definitions
+    - `src/composables/` - Vue composables
+    - `src/middleware/` - Router middleware
+    - `src/plugins/` - Vue plugins
+    - `src/locales/` - Translation files
+    
+## File Structure
+- Use ES modules (import/export) syntax
+- Follow a consistent directory structure
+- Separate concerns into appropriate modules
+- Use index.js files for module exports
+
+## Code Style
+- Use ESLint with recommended rules
+- Use Prettier for code formatting
+- Use TypeScript for type safety
+- Follow Airbnb JavaScript Style Guide
+- Use async/await for asynchronous operations
+- Use const/let instead of var
+- Use arrow functions where appropriate
+
+## Documentation
+- Use JSDoc for function documentation
+- Include @param, @returns, and @throws annotations
+- Document complex algorithms
+- Keep README.md up to date
+- Document environment variables
+
+## Testing
+- Use Jest for testing
+- Write unit tests for all functions
+- Use test-driven development (TDD) when possible
+- Mock external dependencies
+- Test error cases and edge conditions
+
+## Error Handling
+- Use try/catch blocks appropriately
+- Create custom error classes
+- Log errors with proper context
+- Handle async errors properly
+- Use error boundaries in React components
+
+## Security
+- Use environment variables for secrets
+- Implement proper authentication
+- Use HTTPS for all external requests
+- Sanitize user input
+- Follow OWASP security guidelines
+- Keep dependencies updated
+
+## Performance
+- Use proper caching strategies
+- Implement rate limiting
+- Optimize database queries
+- Use compression where appropriate
+- Monitor memory usage
+
+## Dependencies
+- Use npm or yarn for package management
+- Keep package.json up to date
+- Use exact versions in package.json
+- Document all dependencies
+- Regular security audits
+
+## React Specific
+- Use functional components with hooks
+- Follow React best practices
+- Implement proper prop types
+- Use React.memo for performance
+- Follow component composition patterns 

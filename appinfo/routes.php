@@ -1,29 +1,54 @@
 <?php
 
 return [
-	'resources' => [
-		'Registers' => ['url' => 'api/registers'],
-		'Schemas' => ['url' => 'api/schemas'],
-		'Sources' => ['url' => 'api/sources'],
-		'Objects' => ['url' => 'api/objects'],
-	],
-	'routes' => [
-		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
-		['name' => 'registers#objects', 'url' => '/api/registers-objects/{register}/{schema}', 'verb' => 'GET'],
-		['name' => 'objects#logs', 'url' => '/api/objects-logs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'objects#mappings', 'url' => '/api/objects/mappings', 'verb' => 'GET'],
-		['name' => 'objects#auditTrails', 'url' => '/api/objects/audit-trails/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'objects#relations', 'url' => '/api/objects/relations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'objects#uses', 'url' => '/api/objects/uses/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'objects#files', 'url' => '/api/objects/files/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
-		['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'registers#upload', 'url' => '/api/registers/upload', 'verb' => 'POST'],
-		['name' => 'registers#uploadUpdate', 'url' => '/api/registers/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'registers#download', 'url' => '/api/registers/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'objects#lock', 'url' => '/api/objects/{id}/lock', 'verb' => 'POST'],
-		['name' => 'objects#unlock', 'url' => '/api/objects/{id}/unlock', 'verb' => 'POST'],
-		['name' => 'objects#revert', 'url' => '/api/objects/{id}/revert', 'verb' => 'POST'],
-	],
+    'resources' => [
+        'Registers' => ['url' => 'api/registers'],
+        'Schemas' => ['url' => 'api/schemas'],
+        'Sources' => ['url' => 'api/sources'],
+        'Configurations' => ['url' => 'api/configurations'],
+    ],
+    'routes' => [
+        ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+        // Objects
+        ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
+        ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT'],
+        ['name' => 'objects#destroy', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        // Relations        
+        ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#uses', 'url' => '/api/objects/{register}/{schema}/{id}/uses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#used', 'url' => '/api/objects/{register}/{schema}/{id}/used', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Locks
+        ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Logs
+        ['name' => 'log#index', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Revert
+        ['name' => 'revert#revert', 'url' => '/api/objects/{register}/{schema}/{id}/revert', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        
+        // Files operations under objects
+		['name' => 'files#index', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET'],
+        ['name' => 'files#show', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'GET'],
+		['name' => 'files#create', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST'],
+		['name' => 'files#createMultipart', 'url' => 'api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST'],	
+		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'POST'],
+		['name' => 'files#delete', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'DELETE'],
+		['name' => 'files#publish', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}/publish', 'verb' => 'POST'],
+		['name' => 'files#depublish', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}/depublish', 'verb' => 'POST'],	
+        // Schemas
+        ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
+        ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // Registers
+        ['name' => 'registers#import', 'url' => '/api/registers/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+       // Configurations
+        ['name' => 'configurations#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+        // Search
+        ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
+		// Tags
+		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+    ],
 ];

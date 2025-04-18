@@ -7,6 +7,7 @@ import { useRegisterStore } from './modules/register.js'
 import { useSourceStore } from './modules/source.js'
 import { useSchemaStore } from './modules/schema.js'
 import { useObjectStore } from './modules/object.js'
+import { useConfigurationStore } from './modules/configuration.js' // Importing the configuration store
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)
@@ -14,6 +15,8 @@ const registerStore = useRegisterStore(pinia)
 const sourceStore = useSourceStore(pinia)
 const schemaStore = useSchemaStore(pinia)
 const objectStore = useObjectStore(pinia)
+const configurationStore = useConfigurationStore(pinia) // Initializing the configuration store
+
 export {
 	// generic
 	navigationStore,
@@ -22,4 +25,5 @@ export {
 	sourceStore,
 	schemaStore,
 	objectStore,
+	configurationStore, // Exporting the configuration store
 }
