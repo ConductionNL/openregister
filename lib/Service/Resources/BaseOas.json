@@ -17,20 +17,8 @@
   ],
   "tags": [
     {
-      "name": "Registers",
-      "description": "Operations related to registers"
-    },
-    {
-      "name": "Schemas",
-      "description": "Operations related to schemas and their properties"
-    },
-    {
-      "name": "Sources",
-      "description": "Operations related to data sources"
-    },
-    {
-      "name": "Objects",
-      "description": "Operations related to objects, including files, relationships, audit trails, and time travel"
+      "name": "Generic",
+      "description": "Operations related to generic objects"
     }
   ],
   "components": {

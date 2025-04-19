@@ -98,10 +98,20 @@ class OasService
             ];
         }
 
-        // Add schemas to components.
+        // Initialize tags array.
+        $baseOas['tags'] = [];
+
+        // Add schemas to components and create tags.
         foreach ($schemas as $schema) {
+            // Add schema to components.
             $schemaDefinition = $this->enrichSchema($schema);
             $baseOas['components']['schemas'][$schema->getTitle()] = $schemaDefinition;
+
+            // Add tag for the schema.
+            $baseOas['tags'][] = [
+                'name' => $schema->getTitle(),
+                'description' => $schema->getDescription() ?? 'Operations for ' . $schema->getTitle()
+            ];
         }
 
         // Add paths for each register.
@@ -146,9 +156,9 @@ class OasService
     }
 
     /**
-     * Enrich a schema with @self property
+     * Enrich a schema with @self property and x-tags
      *
-     * @param object $schema The schema to enrich
+     * @param object $schema The schema object
      *
      * @return array The enriched schema definition
      */
@@ -156,9 +166,10 @@ class OasService
     {
         $schemaDefinition = $schema->getProperties();
 
-        // Add @self reference and id as first properties.
+        // Add @self reference, id, and x-tags
         return [
             'type' => 'object',
+            'x-tags' => [$schema->getTitle()], // Add x-tags for schema categorization
             'properties' => [
                 '@self' => [
                     '$ref' => '#/components/schemas/@self'
@@ -169,7 +180,6 @@ class OasService
                     'readOnly' => true,
                     'example' => '123e4567-e89b-12d3-a456-426614174000',
                     'description' => 'The unique identifier for the object'
-
                 ]
             ] + $schemaDefinition
         ];
@@ -188,14 +198,16 @@ class OasService
     {
         $basePath = '/' . $this->slugify($register->getTitle()) . '/' . $this->slugify($schema->getTitle());
         
-        // Collection endpoints.
+        // Collection endpoints with path-level tags
         $oas['paths'][$basePath] = [
+            'tags' => [$schema->getTitle()], // Add tags at path level
             'get' => $this->createGetCollectionOperation($schema),
             'post' => $this->createPostOperation($schema)
         ];
 
-        // Individual resource endpoints.
+        // Individual resource endpoints with path-level tags
         $oas['paths'][$basePath . '/{id}'] = [
+            'tags' => [$schema->getTitle()], // Add tags at path level
             'get' => $this->createGetOperation($schema),
             'put' => $this->createPutOperation($schema),
             'delete' => $this->createDeleteOperation($schema)
@@ -215,22 +227,26 @@ class OasService
     {
         $basePath = '/' . $this->slugify($register->getTitle()) . '/' . $this->slugify($schema->getTitle());
 
-        // Logs endpoint.
+        // Logs endpoint with path-level tags
         $oas['paths'][$basePath . '/{id}/audit-trails'] = [
+            'tags' => [$schema->getTitle()], // Add tags at path level
             'get' => $this->createLogsOperation($schema)
         ];
 
-        // Files endpoints.
+        // Files endpoints with path-level tags
         $oas['paths'][$basePath . '/{id}/files'] = [
+            'tags' => [$schema->getTitle()], // Add tags at path level
             'get' => $this->createGetFilesOperation($schema),
             'post' => $this->createPostFileOperation($schema)
         ];
 
-        // Lock/Unlock endpoints.
+        // Lock/Unlock endpoints with path-level tags
         $oas['paths'][$basePath . '/{id}/lock'] = [
+            'tags' => [$schema->getTitle()], // Add tags at path level
             'post' => $this->createLockOperation($schema)
         ];
         $oas['paths'][$basePath . '/{id}/unlock'] = [
+            'tags' => [$schema->getTitle()], // Add tags at path level
             'post' => $this->createUnlockOperation($schema)
         ];
     }
@@ -248,6 +264,7 @@ class OasService
             'summary' => 'Get all ' . $schema->getTitle() . ' objects',
             'operationId' => 'getAll' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Retrieve a list of all ' . $schema->getTitle() . ' objects',
             'responses' => [
                 '200' => [
                     'description' => 'List of ' . $schema->getTitle() . ' objects',
@@ -279,6 +296,7 @@ class OasService
             'summary' => 'Create a new ' . $schema->getTitle() . ' object',
             'operationId' => 'create' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Create a new ' . $schema->getTitle() . ' object with the provided data',
             'requestBody' => [
                 'required' => true,
                 'content' => [
@@ -291,7 +309,7 @@ class OasService
             ],
             'responses' => [
                 '201' => [
-                    'description' => $schema->getTitle() . ' created',
+                    'description' => $schema->getTitle() . ' created successfully',
                     'content' => [
                         'application/json' => [
                             'schema' => [
@@ -317,11 +335,13 @@ class OasService
             'summary' => 'Get a ' . $schema->getTitle() . ' object by ID',
             'operationId' => 'get' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Retrieve a specific ' . $schema->getTitle() . ' object by its unique identifier',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -338,6 +358,9 @@ class OasService
                             ]
                         ]
                     ]
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
                 ]
             ]
         ];
@@ -356,11 +379,13 @@ class OasService
             'summary' => 'Update a ' . $schema->getTitle() . ' object',
             'operationId' => 'update' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Update an existing ' . $schema->getTitle() . ' object with the provided data',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to update',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -379,7 +404,7 @@ class OasService
             ],
             'responses' => [
                 '200' => [
-                    'description' => $schema->getTitle() . ' updated',
+                    'description' => $schema->getTitle() . ' updated successfully',
                     'content' => [
                         'application/json' => [
                             'schema' => [
@@ -387,6 +412,9 @@ class OasService
                             ]
                         ]
                     ]
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
                 ]
             ]
         ];
@@ -405,11 +433,13 @@ class OasService
             'summary' => 'Delete a ' . $schema->getTitle() . ' object',
             'operationId' => 'delete' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Delete a specific ' . $schema->getTitle() . ' object by its unique identifier',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to delete',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -418,7 +448,10 @@ class OasService
             ],
             'responses' => [
                 '204' => [
-                    'description' => $schema->getTitle() . ' deleted'
+                    'description' => $schema->getTitle() . ' deleted successfully'
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
                 ]
             ]
         ];
@@ -437,11 +470,13 @@ class OasService
             'summary' => 'Get audit logs for a ' . $schema->getTitle() . ' object',
             'operationId' => 'getLogs' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Retrieve the audit trail for a specific ' . $schema->getTitle() . ' object',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -450,7 +485,7 @@ class OasService
             ],
             'responses' => [
                 '200' => [
-                    'description' => 'Audit logs retrieved',
+                    'description' => 'Audit logs retrieved successfully',
                     'content' => [
                         'application/json' => [
                             'schema' => [
@@ -461,6 +496,9 @@ class OasService
                             ]
                         ]
                     ]
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
                 ]
             ]
         ];
@@ -479,11 +517,13 @@ class OasService
             'summary' => 'Get files for a ' . $schema->getTitle() . ' object',
             'operationId' => 'getFiles' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Retrieve all files associated with a specific ' . $schema->getTitle() . ' object',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -492,7 +532,7 @@ class OasService
             ],
             'responses' => [
                 '200' => [
-                    'description' => 'Files retrieved',
+                    'description' => 'Files retrieved successfully',
                     'content' => [
                         'application/json' => [
                             'schema' => [
@@ -503,6 +543,9 @@ class OasService
                             ]
                         ]
                     ]
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
                 ]
             ]
         ];
@@ -521,11 +564,13 @@ class OasService
             'summary' => 'Upload a file for a ' . $schema->getTitle() . ' object',
             'operationId' => 'uploadFile' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Upload a new file and associate it with a specific ' . $schema->getTitle() . ' object',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -541,7 +586,8 @@ class OasService
                             'properties' => [
                                 'file' => [
                                     'type' => 'string',
-                                    'format' => 'binary'
+                                    'format' => 'binary',
+                                    'description' => 'The file to upload'
                                 ]
                             ]
                         ]
@@ -550,7 +596,7 @@ class OasService
             ],
             'responses' => [
                 '201' => [
-                    'description' => 'File uploaded',
+                    'description' => 'File uploaded successfully',
                     'content' => [
                         'application/json' => [
                             'schema' => [
@@ -558,6 +604,9 @@ class OasService
                             ]
                         ]
                     ]
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
                 ]
             ]
         ];
@@ -576,11 +625,13 @@ class OasService
             'summary' => 'Lock a ' . $schema->getTitle() . ' object',
             'operationId' => 'lock' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Lock a specific ' . $schema->getTitle() . ' object to prevent concurrent modifications',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to lock',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -589,7 +640,7 @@ class OasService
             ],
             'responses' => [
                 '200' => [
-                    'description' => 'Object locked',
+                    'description' => 'Object locked successfully',
                     'content' => [
                         'application/json' => [
                             'schema' => [
@@ -597,6 +648,12 @@ class OasService
                             ]
                         ]
                     ]
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
+                ],
+                '409' => [
+                    'description' => 'Object is already locked'
                 ]
             ]
         ];
@@ -615,11 +672,13 @@ class OasService
             'summary' => 'Unlock a ' . $schema->getTitle() . ' object',
             'operationId' => 'unlock' . $this->pascalCase($schema->getTitle()),
             'tags' => [$schema->getTitle()],
+            'description' => 'Remove the lock from a specific ' . $schema->getTitle() . ' object',
             'parameters' => [
                 [
                     'name' => 'id',
                     'in' => 'path',
                     'required' => true,
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to unlock',
                     'schema' => [
                         'type' => 'string',
                         'format' => 'uuid'
@@ -628,7 +687,13 @@ class OasService
             ],
             'responses' => [
                 '200' => [
-                    'description' => 'Object unlocked'
+                    'description' => 'Object unlocked successfully'
+                ],
+                '404' => [
+                    'description' => $schema->getTitle() . ' not found'
+                ],
+                '409' => [
+                    'description' => 'Object is not locked or locked by another user'
                 ]
             ]
         ];
