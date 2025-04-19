@@ -69,7 +69,15 @@ class SchemaPropertyValidator {
         'uri-template',
         'json-pointer',
         'relative-json-pointer',
-        'regex'
+        'regex',
+        'url', // Additional type
+        'color', // Additional type
+        'color-hex', // Additional type
+        'color-hex-alpha', // Additional type
+        'color-rgb', // Additional type
+        'color-rgba', // Additional type
+        'color-hsl', // Additional type
+        'color-hsla', // Additional type
     ];
 
     /**

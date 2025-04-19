@@ -793,7 +793,7 @@ class ConfigurationService
             return $schema;
         } catch (Exception $e) {
             $this->logger->error('Failed to import schema: '.$e->getMessage());
-            throw new Exception('Failed to import schema: '.$e->getMessage());
+            throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
 
     }//end importSchema()
