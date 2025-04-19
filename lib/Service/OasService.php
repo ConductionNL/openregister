@@ -172,7 +172,9 @@ class OasService
             'x-tags' => [$schema->getTitle()], // Add x-tags for schema categorization
             'properties' => [
                 '@self' => [
-                    '$ref' => '#/components/schemas/@self'
+                    '$ref' => '#/components/schemas/@self',
+                    'readOnly' => true,
+                    'description' => 'The metadata of the object e.g. owner, created, modified, etc.'
                 ],
                 'id' => [
                     'type' => 'string',
