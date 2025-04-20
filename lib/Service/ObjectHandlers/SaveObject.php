@@ -12,15 +12,15 @@
  * - Setting default values and properties
  *
  * @category Handler
- * @package  OCA\OpenRegister\Service\ObjectHandlers
+ * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
@@ -163,13 +163,13 @@ class SaveObject
             $schemaId = $schema;
         }
 
-        // If UUID is provided, try to find and update existing object
+        // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 return $this->updateObject($register, $schema, $data, $existingObject);
             } catch (\Exception $e) {
-                // Object not found, proceed with creating new object
+                // Object not found, proceed with creating new object.
             }
         }
 
@@ -181,9 +181,10 @@ class SaveObject
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
-        // Set UUID if provided, otherwise generate a new one
+        // Set UUID if provided, otherwise generate a new one.
         if ($uuid !== null) {
-            $objectEntity->setUuid($uuid); // @todo: check if this is a correct uuid
+            $objectEntity->setUuid($uuid);
+            // @todo: check if this is a correct uuid.
         } else {
             $objectEntity->setUuid(Uuid::v4());
         }
@@ -194,7 +195,7 @@ class SaveObject
             $objectEntity->setOwner($user->getUID());
         }
 
-        // Update object relations
+        // Update object relations.
         $objectEntity = $this->updateObjectRelations($objectEntity, $data);
 
         // Handle object relations.
@@ -210,7 +211,7 @@ class SaveObject
         // Save the object to database.
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
 
-        // Create audit trail for creation
+        // Create audit trail for creation.
         $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
 
         // Handle file properties.
@@ -379,7 +380,7 @@ class SaveObject
         array $data,
         ObjectEntity $existingObject
     ): ObjectEntity {
-        // Store the old state for audit trail
+        // Store the old state for audit trail.
         $oldObject = clone $existingObject;
 
         // Set register ID based on input type.
@@ -398,13 +399,13 @@ class SaveObject
             $schemaId = $schema;
         }
 
-        // Update the object properties
+        // Update the object properties.
         $existingObject->setRegister($registerId);
         $existingObject->setSchema($schemaId);
         $existingObject->setObject($data);
         $existingObject->setUpdated(new DateTime());
 
-        // Update object relations
+        // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $data);
 
         // Handle object relations.
@@ -420,7 +421,7 @@ class SaveObject
         // Save the object to database.
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
 
-        // Create audit trail for update
+        // Create audit trail for update.
         $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
 
         // Handle file properties.

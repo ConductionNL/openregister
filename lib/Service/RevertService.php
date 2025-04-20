@@ -1,12 +1,19 @@
 <?php
 /**
- * @file        RevertService.php
- * @description Service for handling object reversion in the OpenRegister app
- * @package     OCA\OpenRegister\Service
- * @author      Ruben Linde <ruben@conduction.nl>
- * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version     1.0.0
- * @link        https://github.com/OpenCatalogi/OpenRegister
+ * OpenRegister RevertService
+ *
+ * Service class for handling object reversion in the OpenRegister application.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -72,16 +79,16 @@ class RevertService
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
-        // Get the object
+        // Get the object.
         $object = $this->objectEntityMapper->find($id);
 
-        // Verify that the object belongs to the specified register and schema
+        // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new DoesNotExistException('Object not found in specified register/schema');
         }
 
-        // Check if the object is locked
-        if ($object->isLocked()) {
+        // Check if the object is locked.
+        if ($object->isLocked() === true) {
             $userId = $this->container->get('userId');
             if ($object->getLockedBy() !== $userId) {
                 throw new LockedException(
@@ -90,14 +97,14 @@ class RevertService
             }
         }
 
-        // Get the reverted object using AuditTrailMapper
+        // Get the reverted object using AuditTrailMapper.
         $revertedObject = $this->auditTrailMapper->revertObject(
             $id,
             $until,
             $overwriteVersion
         );
 
-        // Save the reverted object
+        // Save the reverted object.
         return $this->objectEntityMapper->update($revertedObject);
 
     }//end revert()

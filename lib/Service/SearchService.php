@@ -13,13 +13,13 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -190,13 +190,17 @@ class SearchService
         // Return early if no directory entries.
         if (count($directory) === 0) {
             $pages = (int) ceil($totalResults / $limit);
+            if ($pages === 0) {
+                $pages = 1;
+            }
+
             return [
                 'results' => $localResults['results'],
                 'facets'  => $localResults['facets'],
                 'count'   => count($localResults['results']),
                 'limit'   => $limit,
                 'page'    => $page,
-                'pages'   => ($pages === 0 ? 1 : $pages),
+                'pages'   => $pages,
                 'total'   => $totalResults,
             ];
         }
@@ -212,7 +216,9 @@ class SearchService
             if (($instance['default'] === false)
                 || (isset($parameters['.catalogi']) === true
                 && in_array($instance['catalogId'], $parameters['.catalogi']) === false)
-                || ($instance['search'] === $this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(routeName:"opencatalogi.directory.index")))
+                || ($instance['search'] === $this->urlGenerator->getAbsoluteURL(
+                    $this->urlGenerator->linkToRoute(routeName:"opencatalogi.directory.index")
+                    ))
             ) {
                 continue;
             }
@@ -253,13 +259,17 @@ class SearchService
         $pages = (int) ceil($totalResults / $limit);
 
         // Return combined results with pagination info.
+        if ($pages === 0) {
+            $pages = 1;
+        }
+
         return [
             'results' => $results,
             'facets'  => $aggregations,
             'count'   => count($results),
             'limit'   => $limit,
             'page'    => $page,
-            'pages'   => ($pages === 0 ? 1 : $pages),
+            'pages'   => $pages,
             'total'   => $totalResults,
         ];
 

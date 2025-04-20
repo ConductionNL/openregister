@@ -8,11 +8,13 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Ruben Linde <ruben@nextcloud.com>
- * @copyright 2024 Conduction B.V. (https://conduction.nl)
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git_id>
- * @link      https://github.com/cloud-py-api/openregister
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -100,9 +102,9 @@ class ConfigurationService
     /**
      * Schema property validator instance for validating schema properties.
      *
-     * @var SchemaPropertyValidator The schema property validator instance.
+     * @var SchemaPropertyValidatorService The schema property validator instance.
      */
-    private SchemaPropertyValidator $validator;
+    private SchemaPropertyValidatorService $validator;
 
     /**
      * Logger instance for logging operations.
@@ -139,26 +141,27 @@ class ConfigurationService
      */
     private ObjectService $objectService;
 
+
     /**
      * Constructor
      *
-     * @param SchemaMapper            $schemaMapper        The schema mapper instance
-     * @param RegisterMapper          $registerMapper      The register mapper instance
-     * @param ObjectEntityMapper      $objectEntityMapper  The object mapper instance
-     * @param ConfigurationMapper     $configurationMapper The configuration mapper instance
-     * @param SchemaPropertyValidator $validator           The schema property validator instance
-     * @param LoggerInterface         $logger              The logger instance
-     * @param \OCP\App\IAppManager    $appManager          The app manager instance
-     * @param \Psr\Container\ContainerInterface $container The container instance
-     * @param Client                  $client              The HTTP client instance
-     * @param ObjectService           $objectService       The object service instance
+     * @param SchemaMapper                      $schemaMapper        The schema mapper instance
+     * @param RegisterMapper                    $registerMapper      The register mapper instance
+     * @param ObjectEntityMapper                $objectEntityMapper  The object mapper instance
+     * @param ConfigurationMapper               $configurationMapper The configuration mapper instance
+     * @param SchemaPropertyValidatorService    $validator           The schema property validator instance
+     * @param LoggerInterface                   $logger              The logger instance
+     * @param \OCP\App\IAppManager              $appManager          The app manager instance
+     * @param \Psr\Container\ContainerInterface $container           The container instance
+     * @param Client                            $client              The HTTP client instance
+     * @param ObjectService                     $objectService       The object service instance
      */
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
         ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
-        SchemaPropertyValidator $validator,
+        SchemaPropertyValidatorService $validator,
         LoggerInterface $logger,
         IAppManager $appManager,
         ContainerInterface $container,
@@ -170,35 +173,37 @@ class ConfigurationService
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
         $this->validator           = $validator;
-        $this->logger              = $logger;
-        $this->appManager          = $appManager;
-        $this->container           = $container;
-        $this->client              = $client;
-        $this->objectService       = $objectService;
+        $this->logger        = $logger;
+        $this->appManager    = $appManager;
+        $this->container     = $container;
+        $this->client        = $client;
+        $this->objectService = $objectService;
+
     }//end __construct()
 
-    
-	/**
-	 * Attempts to retrieve the OpenConnector service from the container.
-	 *
-	 * @return bool True if the OpenConnector service is available, false otherwise.
-	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
-	 */
-	public function getOpenConnector(): bool
-	{
-		if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
-			try {
-				// Attempt to get the OpenConnector service from the container
-				$this->openConnectorConfigurationService = $this->container->get('OCA\OpenConnector\Service\ConfigurationService');
-                return true;
-			} catch (Exception $e) {
-				// If the service is not available, return false
-				return false;
-			}
-		}
 
-		return false;
-	}//end getOpenConnector()
+    /**
+     * Attempts to retrieve the OpenConnector service from the container.
+     *
+     * @return bool True if the OpenConnector service is available, false otherwise.
+     * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     */
+    public function getOpenConnector(): bool
+    {
+        if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
+            try {
+                // Attempt to get the OpenConnector service from the container.
+                $this->openConnectorConfigurationService = $this->container->get('OCA\OpenConnector\Service\ConfigurationService');
+                return true;
+            } catch (Exception $e) {
+                // If the service is not available, return false.
+                return false;
+            }
+        }
+
+        return false;
+
+    }//end getOpenConnector()
 
 
     /**
@@ -266,7 +271,7 @@ class ConfigurationService
 
             // Get all registers associated with this configuration.
             $registers = $configuration->getRegisters();
-            
+
             // Set the info from the configuration.
             $openApiSpec['info'] = [
                 'title'       => $input['title'] ?? 'Default Title',
@@ -274,7 +279,6 @@ class ConfigurationService
                 'version'     => $input['version'] ?? '1.0.0',
             ];
         }//end if
-
 
         // Export each register and its schemas.
         foreach ($registers as $register) {
@@ -310,9 +314,7 @@ class ConfigurationService
                     // Use maps to get slugs.
                     $object = $object->jsonSerialize();
                     $object['@self']['register'] = $this->registersMap[$object['@self']['register']]->getSlug();
-                    $object['@self']['schema']   = $this->schemasMap[$object['@self']['schema']]->getSlug();                    //unset($object['@self']);
-
-                    $openApiSpec['components']['objects'][] = $object;
+                    $object['@self']['schema']   = $this->schemasMap[$object['@self']['schema']]->getSlug();
                 }
             }
 
@@ -320,7 +322,7 @@ class ConfigurationService
             $openConnector = $this->getOpenConnector();
             if ($openConnector === true) {
                 $openConnectorConfig = $this->openConnectorConfigurationService->exportConfig($register->getId());
-                
+
                 // Merge the OpenAPI specification over the OpenConnector configuration.
                 $openApiSpec = array_replace_recursive(
                     $openConnectorConfig,
@@ -390,113 +392,120 @@ class ConfigurationService
 
 
     /**
-	 * Gets the uploaded json from the request data. And returns it as a PHP array.
-	 * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
-	 *
-	 * @param array $data All request params.
-	 *
-	 * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
-	 * @throws Exception
-	 * @throws GuzzleException
-	 */
-    public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
+     * Gets the uploaded json from the request data and returns it as a PHP array.
+     * Will first try to find an uploaded 'file', then if an 'url' is present in the body,
+     * and lastly if a 'json' dump has been posted.
+     *
+     * @param array      $data          All request params
+     * @param array|null $uploadedFiles The uploaded files array
+     *
+     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error
+     * @throws Exception
+     * @throws GuzzleException
+     */
+    public function getUploadedJson(array $data, ?array $uploadedFiles): array | JSONResponse
     {
-        // Define the allowed keys
-		$allowedKeys = ['url', 'json'];
+        // Define the allowed keys for input validation.
+        $allowedKeys = ['url', 'json'];
 
-		// Find which of the allowed keys are in the array
-		$matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
+        // Find which of the allowed keys are in the array for processing.
+        $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
 
-		// Check if there is no matching key / no input.
-		if (count($matchingKeys) === 0 && empty($uploadedFiles) === true) {
-			return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: url or json. Or the key file in form-data.'], statusCode: 400);
-		}
+        // Check if there is no matching key or no input provided.
+        if (count($matchingKeys) === 0 && empty($uploadedFiles) === true) {
+            $errorMessage = 'Missing required keys in POST body: url, json, or file in form-data.';
+            return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
+        }
 
-		// [if] Check if we need to create or update object(s) using uploaded file(s).
-		if (empty($uploadedFiles) === false) {
-			if (count($uploadedFiles) === 1) {
-				return $this->getJSONfromFile(uploadedFile: $uploadedFiles[array_key_first($uploadedFiles)]);
-			}
+        // Process uploaded files if present.
+        if (empty($uploadedFiles) === false) {
+            if (count($uploadedFiles) === 1) {
+                return $this->getJSONfromFile(uploadedFile: $uploadedFiles[array_key_first($uploadedFiles)]);
+            }
 
-			return new JSONResponse(data: ['message' => 'Expected only 1 file.'], statusCode: 400);
-		}
+            return new JSONResponse(data: ['message' => 'Expected only 1 file.'], statusCode: 400);
+        }
 
-		// [elseif] Check if we need to create or update object using given url from the post body.
-		if (empty($data['url']) === false) {
-			return $this->getJSONfromURL(url: $data['url']);
-		}
+        // Process URL if provided in the post body.
+        if (empty($data['url']) === false) {
+            return $this->getJSONfromURL(url: $data['url']);
+        }
 
-		// [else] Create or update object using given json blob from the post body.
-		return $this->getJSONfromBody($data['json']);
-	}
+        // Process JSON blob from the post body.
+        return $this->getJSONfromBody($data['json']);
+
+    }//end getUploadedJson()
+
+
+    /**
+     * A function used to decode file content or the response of an url get call.
+     * Before the data can be used to create or update an object.
+     *
+     * @param string      $data The file content or the response body content.
+     * @param string|null $type The file MIME type or the response Content-Type header.
+     *
+     * @return array|null The decoded data or null.
+     */
+    private function decode(string $data, ?string $type): ?array
+    {
+        switch ($type) {
+            case 'application/json':
+                $phpArray = json_decode(json: $data, associative: true);
+                break;
+            case 'application/yaml':
+                $phpArray = Yaml::parse(input: $data);
+                break;
+            default:
+                // If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
+                $phpArray = json_decode(json: $data, associative: true);
+                if ($phpArray === null || $phpArray === false) {
+                    try {
+                        $phpArray = Yaml::parse(input: $data);
+                    } catch (Exception $exception) {
+                        $phpArray = null;
+                    }
+                }
+                break;
+        }
+
+        if ($phpArray === null || $phpArray === false) {
+            return null;
+        }
+
+        return $phpArray;
+
+    }//end decode()
 
 
     /**
-	 * A function used to decode file content or the response of an url get call.
-	 * Before the data can be used to create or update an object.
-	 *
-	 * @param string $data The file content or the response body content.
-	 * @param string|null $type The file MIME type or the response Content-Type header.
-	 *
-	 * @return array|null The decoded data or null.
-	 */
-	private function decode(string $data, ?string $type): ?array
-	{
-		switch ($type) {
-			case 'application/json':
-				$phpArray = json_decode(json: $data, associative: true);
-				break;
-			case 'application/yaml':
-				$phpArray = Yaml::parse(input: $data);
-				break;
-			default:
-				// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
-				$phpArray = json_decode(json: $data, associative: true);
-				if ($phpArray === null || $phpArray === false) {
-					try {
-						$phpArray = Yaml::parse(input: $data);
-					} catch (Exception $exception) {
-						$phpArray = null;
-					}
-				}
-				break;
-		}
+     * Gets uploaded file content from a file in the api request as PHP array and use it for creating/updating an object.
+     *
+     * @param array       $uploadedFile The uploaded file.
+     * @param string|null $type         If the uploaded file should be a specific type of object.
+     *
+     * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
+     */
+    private function getJSONfromFile(array $uploadedFile, ?string $type=null): array | JSONResponse
+    {
+        // Check for upload errors.
+        if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
+            return new JSONResponse(data: ['error' => 'File upload error: '.$uploadedFile['error']], statusCode: 400);
+        }
 
-		if ($phpArray === null || $phpArray === false) {
-			return null;
-		}
+        $fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
+        $fileContent   = file_get_contents(filename: $uploadedFile['tmp_name']);
 
-		return $phpArray;
-	}
+        $phpArray = $this->decode(data: $fileContent, type: $fileExtension);
+        if ($phpArray === null) {
+            return new JSONResponse(
+                data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
+                statusCode: 400
+            );
+        }
 
-    /**
-	 * Gets uploaded file content from a file in the api request as PHP array and use it for creating/updating an object.
-	 *
-	 * @param array $uploadedFile The uploaded file.
-	 * @param string|null $type If the uploaded file should be a specific type of object.
-	 *
-	 * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
-	 */
-	private function getJSONfromFile(array $uploadedFile, ?string $type = null): array|JSONResponse
-	{
-		// Check for upload errors
-		if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-			return new JSONResponse(data: ['error' => 'File upload error: '.$uploadedFile['error']], statusCode: 400);
-		}
+        return $phpArray;
 
-		$fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
-		$fileContent = file_get_contents(filename: $uploadedFile['tmp_name']);
-
-		$phpArray = $this->decode(data: $fileContent, type: $fileExtension);
-		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
-				statusCode: 400
-			);
-		}
-
-		return $phpArray;
-	}//end getJSONfromFile()
+    }//end getJSONfromFile()
 
 
     /**
@@ -508,7 +517,7 @@ class ConfigurationService
      *
      * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
      */
-    private function getJSONfromURL(string $url): array|JSONResponse
+    private function getJSONfromURL(string $url): array | JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
@@ -518,57 +527,58 @@ class ConfigurationService
 
         $responseBody = $response->getBody()->getContents();
 
-		// Use Content-Type header to determine the format
-		$contentType = $response->getHeaderLine('Content-Type');
-		$phpArray = $this->decode(data: $responseBody, type: $contentType);
+        // Use Content-Type header to determine the format.
+        $contentType = $response->getHeaderLine('Content-Type');
+        $phpArray    = $this->decode(data: $responseBody, type: $contentType);
 
         if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
-				statusCode: 400
-			);
-		}
+            return new JSONResponse(
+                data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
+                statusCode: 400
+               );
+        }
 
-		return $phpArray;
+        return $phpArray;
 
     }//end getJSONfromURL()
 
 
     /**
-	 * Uses the given string or array as PHP array for creating/updating an object.
-	 *
-	 * @param array|string $phpArray An array or string containing a json blob of data.
-	 * @param string|null $type If the object should be a specific type of object.
-	 *
-	 * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
-	 */
-	private function getJSONfromBody(array|string $phpArray): array|JSONResponse
-	{
-		if (is_string($phpArray) === true) {
-			$phpArray = json_decode($phpArray, associative: true);
-		}
+     * Uses the given string or array as PHP array for creating/updating an object.
+     *
+     * @param array|string $phpArray An array or string containing a json blob of data.
+     * @param string|null  $type     If the object should be a specific type of object.
+     *
+     * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
+     */
+    private function getJSONfromBody(array | string $phpArray): array | JSONResponse
+    {
+        if (is_string($phpArray) === true) {
+            $phpArray = json_decode($phpArray, associative: true);
+        }
 
-		if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode JSON input'],
-				statusCode: 400
-			);
-		}
+        if ($phpArray === null || $phpArray === false) {
+            return new JSONResponse(
+                data: ['error' => 'Failed to decode JSON input'],
+                statusCode: 400
+            );
+        }
 
-		return $phpArray;
-	}//end getJSONfromBody()
+        return $phpArray;
+
+    }//end getJSONfromBody()
 
 
     /**
-     * Import configuration from a JSON file
+     * Import configuration from a JSON file.
      *
-     * @param string      $data           The configuration JSON content.
-     * @param bool        $includeObjects Whether to include objects in the import.
-     * @param string|null $owner          The owner of the schemas and registers.
+     * @param array       $data           The configuration JSON content
+     * @param bool        $includeObjects Whether to include objects in the import
+     * @param string|null $owner          The owner of the schemas and registers
      *
-     * @throws JsonException If JSON parsing fails.
-     * @throws Exception If schema validation fails or format is unsupported.
-     * @return array Array of created/updated entities.
+     * @throws JsonException If JSON parsing fails
+     * @throws Exception     If schema validation fails or format is unsupported
+     * @return array        Array of created/updated entities
      */
     public function importFromJson(array $data, bool $includeObjects=false, ?string $owner=null): array
     {
@@ -588,34 +598,36 @@ class ConfigurationService
             'objects'          => [],
         ];
 
-        // Import schemas first.
-        if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas'])) {
+        // Process and import schemas first.
+        if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
             foreach ($data['components']['schemas'] as $schemaData) {
-                // Ensure slug is lowercase
+                // Create new schema from the provided data.
                 $schema = $this->importSchema($schemaData, $owner);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
                     $this->schemasMap[$schema->getSlug()] = $schema;
-                    $result['schemas'][]     = $schema;
+                    $result['schemas'][] = $schema;
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
-        // Import registers after schemas so we can link them.
-        if (isset($data['components']['registers']) === true && is_array($data['components']['registers'])) {
+        // Process and import registers after schemas for proper linking.
+        if (isset($data['components']['registers']) === true && is_array($data['components']['registers']) === true) {
             foreach ($data['components']['registers'] as $slug => $registerData) {
-                // Ensure slug is lowercase
+                // Convert register slug to lowercase for consistency.
                 $slug = strtolower($slug);
 
-                // Convert schema slugs to IDs.
+                // Convert schema slugs to IDs for database references.
                 if (isset($registerData['schemas']) === true && is_array($registerData['schemas']) === true) {
                     $schemaIds = [];
                     foreach ($registerData['schemas'] as $schemaSlug) {
                         if (isset($this->schemasMap[$schemaSlug]) === true) {
-                            $schemaSlug = strtolower($schemaSlug);
+                            $schemaSlug  = strtolower($schemaSlug);
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
                         } else {
-                            $this->logger->warning('Schema with slug '.$schemaSlug.' not found during register import.');
+                            $this->logger->warning(
+                                sprintf('Schema with slug %s not found during register import.', $schemaSlug)
+                            );
                         }
                     }
 
@@ -631,23 +643,22 @@ class ConfigurationService
             }//end foreach
         }//end if
 
-        // Import objects if includeObjects is true.
-        if ($includeObjects === true && isset($data['components']['objects']) === true && is_array($data['components']['objects'])) {
-            
-            
-
+        // Process and import objects if requested.
+        if ($includeObjects === true && isset($data['components']['objects']) === true) {
             foreach ($data['components']['objects'] as $objectData) {
-                // Use maps to get IDs from slugs.
+                // Map register and schema slugs to their respective IDs.
                 if (isset($objectData['@self']['register']) === true) {
                     $registerSlug = strtolower($objectData['@self']['register']);
                     if (isset($this->registersMap[$registerSlug]) === true) {
                         $objectData['@self']['register'] = $this->registersMap[$registerSlug]->getId();
                     } else {
-                        $this->logger->warning('Register with slug '.$registerSlug.' not found during object import.');
+                        $this->logger->warning(
+                            sprintf('Register with slug %s not found during object import.', $registerSlug)
+                        );
                         continue;
                     }
                 } else {
-                    $this->logger->warning('Object data missing register reference.');
+                    $this->logger->warning('Object data missing required register reference.');
                     continue;
                 }
 
@@ -656,14 +667,15 @@ class ConfigurationService
                     if (isset($this->schemasMap[$schemaSlug]) === true) {
                         $objectData['@self']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                     } else {
-                        $this->logger->warning('Schema with slug '.$schemaSlug.' not found during object import.');
+                        $this->logger->warning(
+                            sprintf('Schema with slug %s not found during object import.', $schemaSlug)
+                        );
                         continue;
                     }
                 } else {
-                    $this->logger->warning('Object data missing schema reference.');
+                    $this->logger->warning('Object data missing required schema reference.');
                     continue;
                 }
-
 
                 $object = $this->importObject($objectData, $owner);
                 if ($object !== null) {
@@ -672,12 +684,12 @@ class ConfigurationService
             }//end foreach
         }//end if
 
-        // Get the OpenConnector service.
+        // Process OpenConnector integration if available.
         $openConnector = $this->getOpenConnector();
         if ($openConnector === true) {
             $openConnectorResult = $this->openConnectorConfigurationService->importConfig($data);
-            
-            // Merge the OpenAPI specification over the OpenConnector configuration.
+
+            // Merge OpenAPI specification with OpenConnector configuration.
             $result = array_replace_recursive(
                 $openConnectorResult,
                 $result
@@ -702,7 +714,7 @@ class ConfigurationService
         try {
             // Remove id and uuid from the data.
             unset($data['id'], $data['uuid']);
-            
+
             // Check if register already exists by slug.
             $existingRegister = null;
             try {
@@ -715,7 +727,7 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping register import as existing version is newer or equal.');
-                    // Even though we're skipping the update, we still need to add it to the map
+                    // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
                 }
 
@@ -770,7 +782,7 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping schema import as existing version is newer or equal.');
-                    // Even though we're skipping the update, we still need to add it to the map
+                    // Even though we're skipping the update, we still need to add it to the map.
                     return $existingSchema;
                 }
 
@@ -793,7 +805,7 @@ class ConfigurationService
             return $schema;
         } catch (Exception $e) {
             $this->logger->error('Failed to import schema: '.$e->getMessage());
-            throw new Exception('Failed to import schema: '.$e->getMessage());
+            throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
 
     }//end importSchema()
@@ -810,12 +822,12 @@ class ConfigurationService
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
-            // Determine the UUID or ID to use for finding the existing object
+            // Determine the UUID or ID to use for finding the existing object.
             $uuid = $data['uuid'] ?? $data['id'] ?? null;
 
-            // Check if object already exists by UUID or ID
+            // Check if object already exists by UUID or ID.
             $existingObject = null;
-            
+
             if ($uuid !== null) {
                 try {
                     $existingObject = $this->objectEntityMapper->find($uuid);
@@ -825,11 +837,11 @@ class ConfigurationService
                 }
             }
 
-            // Set the register and schema context for the object service
+            // Set the register and schema context for the object service.
             $this->objectService->setRegister($data['@self']['register']);
             $this->objectService->setSchema($data['@self']['schema']);
 
-            // Save the object using the object service
+            // Save the object using the object service.
             $object = $this->objectService->saveObject(
                 object: $data,
                 uuid: $uuid ?? null

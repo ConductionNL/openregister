@@ -33,6 +33,18 @@ import { registerStore, navigationStore, schemaStore } from '../../store/store.j
 							</template>
 							Upload
 						</NcActionButton>
+						<NcActionButton @click="viewOasDoc">
+							<template #icon>
+								<ApiIcon :size="20" />
+							</template>
+							View API Documentation
+						</NcActionButton>
+						<NcActionButton @click="downloadOas">
+							<template #icon>
+								<Download :size="20" />
+							</template>
+							Download API Specification
+						</NcActionButton>
 						<NcActionButton @click="navigationStore.setDialog('deleteRegister')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -129,6 +141,8 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import EyeArrowRight from 'vue-material-design-icons/EyeArrowRight.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import ApiIcon from 'vue-material-design-icons/Api.vue'
+import Download from 'vue-material-design-icons/Download.vue'
 
 export default {
 	name: 'RegisterDetails',
@@ -145,6 +159,8 @@ export default {
 		EyeArrowRight,
 		Upload,
 		Export,
+		ApiIcon,
+		Download,
 	},
 	data() {
 		return {
@@ -168,6 +184,35 @@ export default {
 				.then(() => {
 					this.schemasLoading = false
 				})
+		},
+		async downloadOas() {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${registerStore.registerItem.id}/oas`
+			try {
+				// Fetch the JSON data
+				const response = await fetch(apiUrl)
+				const data = await response.json()
+				// Create a Blob with the JSON data
+				const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+				// Create a temporary download link
+				const downloadLink = document.createElement('a')
+				downloadLink.href = URL.createObjectURL(blob)
+				downloadLink.download = `${registerStore.registerItem.title.toLowerCase()}-api-specification.json`
+				// Trigger the download
+				document.body.appendChild(downloadLink)
+				downloadLink.click()
+				// Cleanup
+				document.body.removeChild(downloadLink)
+				URL.revokeObjectURL(downloadLink.href)
+			} catch (error) {
+				console.error('Error downloading OAS:', error)
+				// You might want to show an error notification here
+			}
+		},
+		viewOasDoc() {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${registerStore.registerItem.id}/oas`
+			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 	},
 }
