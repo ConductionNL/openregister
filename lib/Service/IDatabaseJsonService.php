@@ -7,13 +7,13 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;

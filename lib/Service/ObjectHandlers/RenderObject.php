@@ -11,15 +11,15 @@
  * - Formatting object properties for display
  *
  * @category Handler
- * @package  OCA\OpenRegister\Service\ObjectHandlers
+ * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
  */
 class RenderObject
 {
+
     /**
      * Cache of registers indexed by ID
      *
@@ -71,6 +72,7 @@ class RenderObject
      */
     private array $objectsCache = [];
 
+
     /**
      * Constructor for RenderObject handler.
      *
@@ -78,7 +80,7 @@ class RenderObject
      * @param FileService        $fileService        File service for managing files.
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for database operations.
      * @param RegisterMapper     $registerMapper     Register mapper for database operations.
-     * @param SchemaMapper      $schemaMapper       Schema mapper for database operations.
+     * @param SchemaMapper       $schemaMapper       Schema mapper for database operations.
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
@@ -87,7 +89,9 @@ class RenderObject
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper
     ) {
-    }
+
+    }//end __construct()
+
 
     /**
      * Get a register from cache or database
@@ -96,22 +100,24 @@ class RenderObject
      *
      * @return Register|null The register or null if not found
      */
-    private function getRegister(int|string $id): ?Register
+    private function getRegister(int | string $id): ?Register
     {
-        // Return from cache if available
-        if (isset($this->registersCache[$id])) {
+        // Return from cache if available.
+        if (isset($this->registersCache[$id]) === true) {
             return $this->registersCache[$id];
         }
 
         try {
             $register = $this->registerMapper->find($id);
-            // Cache the result
+            // Cache the result.
             $this->registersCache[$id] = $register;
             return $register;
         } catch (\Exception $e) {
             return null;
         }
-    }
+
+    }//end getRegister()
+
 
     /**
      * Get a schema from cache or database
@@ -120,22 +126,24 @@ class RenderObject
      *
      * @return Schema|null The schema or null if not found
      */
-    private function getSchema(int|string $id): ?Schema
+    private function getSchema(int | string $id): ?Schema
     {
-        // Return from cache if available
-        if (isset($this->schemasCache[$id])) {
+        // Return from cache if available.
+        if (isset($this->schemasCache[$id]) === true) {
             return $this->schemasCache[$id];
         }
 
         try {
             $schema = $this->schemaMapper->find($id);
-            // Cache the result
+            // Cache the result.
             $this->schemasCache[$id] = $schema;
             return $schema;
         } catch (\Exception $e) {
             return null;
         }
-    }
+
+    }//end getSchema()
+
 
     /**
      * Get an object from cache or database
@@ -144,23 +152,25 @@ class RenderObject
      *
      * @return ObjectEntity|null The object or null if not found
      */
-    private function getObject(int|string $id): ?ObjectEntity
+    private function getObject(int | string $id): ?ObjectEntity
     {
-        // Return from cache if available
-        if (isset($this->objectsCache[$id])) {
+        // Return from cache if available.
+        if (isset($this->objectsCache[$id]) === true) {
             return $this->objectsCache[$id];
         }
 
         try {
             $object = $this->objectEntityMapper->find($id);
-            // Cache the result
+            // Cache the result.
             $this->objectsCache[$id] = $object;
             $this->objectsCache[$object->getUuid()] = $object;
             return $object;
         } catch (\Exception $e) {
             return null;
         }
-    }
+
+    }//end getObject()
+
 
     /**
      * Pre-cache multiple registers
@@ -171,14 +181,21 @@ class RenderObject
      */
     private function preloadRegisters(array $ids): void
     {
-        // Filter out IDs that are not already cached and cache them
-        array_filter($ids, function($id) {
-            if (!isset($this->registersCache[$id])) {
-                $this->getRegister($id);
-            }
-            return false; // Return false to ensure array_filter doesn't keep any elements
-        });
-    }
+        // Filter out IDs that are not already cached and cache them.
+        array_filter(
+                $ids,
+                function ($id) {
+                    if (isset($this->registersCache[$id]) === false) {
+                        $this->getRegister($id);
+                    }
+
+                    return false;
+                    // Return false to ensure array_filter doesn't keep any elements.
+                }
+                );
+
+    }//end preloadRegisters()
+
 
     /**
      * Pre-cache multiple schemas
@@ -189,14 +206,21 @@ class RenderObject
      */
     private function preloadSchemas(array $ids): void
     {
-        // Filter out IDs that are not already cached and cache them
-        array_filter($ids, function($id) {
-            if (!isset($this->schemasCache[$id])) {
-                $this->getSchema($id);
-            }
-            return false; // Return false to ensure array_filter doesn't keep any elements
-        });
-    }
+        // Filter out IDs that are not already cached and cache them.
+        array_filter(
+                $ids,
+                function ($id) {
+                    if (isset($this->schemasCache[$id]) === false) {
+                        $this->getSchema($id);
+                    }
+
+                    return false;
+                    // Return false to ensure array_filter doesn't keep any elements.
+                }
+                );
+
+    }//end preloadSchemas()
+
 
     /**
      * Pre-cache multiple objects
@@ -207,14 +231,21 @@ class RenderObject
      */
     private function preloadObjects(array $ids): void
     {
-        // Filter out IDs that are not already cached and cache them
-        array_filter($ids, function($id) {
-            if (!isset($this->objectsCache[$id])) {
-                $this->getObject($id);
-            }
-            return false; // Return false to ensure array_filter doesn't keep any elements
-        });
-    }
+        // Filter out IDs that are not already cached and cache them.
+        array_filter(
+                $ids,
+                function ($id) {
+                    if (isset($this->objectsCache[$id]) === false) {
+                        $this->getObject($id);
+                    }
+
+                    return false;
+                    // Return false to ensure array_filter doesn't keep any elements.
+                }
+                );
+
+    }//end preloadObjects()
+
 
     /**
      * Clear all caches
@@ -224,9 +255,11 @@ class RenderObject
     public function clearCache(): void
     {
         $this->registersCache = [];
-        $this->schemasCache = [];
-        $this->objectsCache = [];
-    }
+        $this->schemasCache   = [];
+        $this->objectsCache   = [];
+
+    }//end clearCache()
+
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -249,66 +282,67 @@ class RenderObject
      */
     public function renderEntity(
         ObjectEntity $entity,
-        array|string|null $extend = [],
-        int $depth = 0,
-        ?array $filter = [],
-        ?array $fields = [],
-        ?array $registers = [],
-        ?array $schemas = [],
-        ?array $objects = []
+        array | string | null $extend=[],
+        int $depth=0,
+        ?array $filter=[],
+        ?array $fields=[],
+        ?array $registers=[],
+        ?array $schemas=[],
+        ?array $objects=[]
     ): ObjectEntity {
-        // Add preloaded registers to the global cache
-        if (!empty($registers)) {
+        // Add preloaded registers to the global cache.
+        if (empty($registers) === false) {
             foreach ($registers as $id => $register) {
                 $this->registersCache[$id] = $register;
             }
         }
 
-        // Add preloaded schemas to the global cache
-        if (!empty($schemas)) {
+        // Add preloaded schemas to the global cache.
+        if (empty($schemas) === false) {
             foreach ($schemas as $id => $schema) {
                 $this->schemasCache[$id] = $schema;
             }
         }
 
-        // Add preloaded objects to the global cache
-        if (!empty($objects)) {
+        // Add preloaded objects to the global cache.
+        if (empty($objects) === false) {
             foreach ($objects as $id => $object) {
                 $this->objectsCache[$id] = $object;
             }
         }
 
-        // Convert extend to an array if it's a string
-        if (is_string($extend)) {
+        // Convert extend to an array if it's a string.
+        if (is_string($extend) === true) {
             $extend = explode(',', $extend);
         }
 
-        // Get the object data as an array for manipulation
+        // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
 
-        // Apply field filtering if specified
-        if (!empty($fields)) {
+        // Apply field filtering if specified.
+        if (empty($fields) === false) {
             $filteredData = [];
             foreach ($fields as $field) {
-                if (isset($objectData[$field])) {
+                if (isset($objectData[$field]) === true) {
                     $filteredData[$field] = $objectData[$field];
                 }
             }
+
             $objectData = $filteredData;
             $entity->setObject($objectData);
         }
 
-        // Apply filters if specified
-        if (!empty($filter)) {
+        // Apply filters if specified.
+        if (empty($filter) === false) {
             foreach ($filter as $key => $value) {
-                if (isset($objectData[$key]) && $objectData[$key] !== $value) {
+                if (isset($objectData[$key]) === true && $objectData[$key] !== $value) {
                     $entity->setObject([]);
                     return $entity;
                 }
             }
         }
 
-        // Handle inversed properties if depth limit not reached
+        // Handle inversed properties if depth limit not reached.
         if ($depth < 10) {
             $objectData = $this->handleInversedProperties(
                 $entity,
@@ -322,25 +356,27 @@ class RenderObject
             );
         }
 
-        // Handle extensions if depth limit not reached
-        if (!empty($extend) && $depth < 10) {
+        // Handle extensions if depth limit not reached.
+        if (empty($extend) === false && $depth < 10) {
             $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields);
         }
-        
+
         $entity->setObject($objectData);
 
         return $entity;
-    }
+
+    }//end renderEntity()
+
 
     /**
      * Extends an object with additional data based on the extension configuration
      *
-     * @param ObjectEntity      $entity The entity to extend
-     * @param array            $extend Extension configuration
-     * @param array            $objectData Current object data
-     * @param int              $depth Current depth level
-     * @param array|null       $filter Filters to apply
-     * @param array|null       $fields Fields to include
+     * @param ObjectEntity $entity     The entity to extend
+     * @param array        $extend     Extension configuration
+     * @param array        $objectData Current object data
+     * @param int          $depth      Current depth level
+     * @param array|null   $filter     Filters to apply
+     * @param array|null   $fields     Fields to include
      *
      * @return array The extended object data
      */
@@ -349,21 +385,21 @@ class RenderObject
         array $extend,
         array $objectData,
         int $depth,
-        ?array $filter = [],
-        ?array $fields = []
+        ?array $filter=[],
+        ?array $fields=[]
     ): array {
-        // Add register and schema context to @self if requested
-        if (in_array('@self.register', $extend) || in_array('@self.schema', $extend)) {
+        // Add register and schema context to @self if requested.
+        if (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true) {
             $self = $objectData['@self'] ?? [];
-            
-            if (in_array('@self.register', $extend)) {
+
+            if (in_array('@self.register', $extend) === true) {
                 $register = $this->getRegister($entity->getRegister());
                 if ($register !== null) {
                     $self['register'] = $register->jsonSerialize();
                 }
             }
 
-            if (in_array('@self.schema', $extend)) {
+            if (in_array('@self.schema', $extend) === true) {
                 $schema = $this->getSchema($entity->getSchema());
                 if ($schema !== null) {
                     $self['schema'] = $schema->jsonSerialize();
@@ -373,12 +409,12 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        // Handle other extensions
+        // Handle other extensions.
         foreach ($extend as $key => $value) {
-            if (isset($objectData[$key]) && is_array($value)) {
-                // Handle object references
-                if (isset($objectData[$key]['id']) || isset($objectData[$key]['uuid'])) {
-                    $refId = $objectData[$key]['id'] ?? $objectData[$key]['uuid'];
+            if (isset($objectData[$key]) === true && is_array($value) === true) {
+                // Handle object references.
+                if (isset($objectData[$key]['id']) === true || isset($objectData[$key]['uuid']) === true) {
+                    $refId            = $objectData[$key]['id'] ?? $objectData[$key]['uuid'];
                     $referencedObject = $this->getObject($refId);
                     if ($referencedObject !== null) {
                         $objectData[$key] = $this->renderEntity(
@@ -394,7 +430,9 @@ class RenderObject
         }
 
         return $objectData;
-    }
+
+    }//end extendObject()
+
 
     /**
      * Gets the inversed properties from a schema
@@ -407,28 +445,36 @@ class RenderObject
     {
         $properties = $schema->getProperties();
 
-        // Use array_filter to get properties with inversedBy configurations
-        $inversedProperties = array_filter($properties, function($property) {
-            return isset($property['inversedBy']) && !empty($property['inversedBy']);
-        });
+        // Use array_filter to get properties with inversedBy configurations.
+        $inversedProperties = array_filter(
+                $properties,
+                function ($property) {
+                    return isset($property['inversedBy']) && !empty($property['inversedBy']);
+                }
+                );
 
-        // Extract the property names and their inversedBy values
-        return array_map(function($property) {
-            return $property['inversedBy'];
-        }, $inversedProperties);
-    }
+        // Extract the property names and their inversedBy values.
+        return array_map(
+                function ($property) {
+                    return $property['inversedBy'];
+                },
+                $inversedProperties
+                );
+
+    }//end getInversedProperties()
+
 
     /**
      * Handles inversed properties for an object
      *
-     * @param ObjectEntity      $entity    The entity to process
-     * @param array            $objectData The current object data
-     * @param int              $depth     Current depth level
-     * @param array|null       $filter    Filters to apply
-     * @param array|null       $fields    Fields to include
-     * @param array|null       $registers Preloaded registers
-     * @param array|null       $schemas   Preloaded schemas
-     * @param array|null       $objects   Preloaded objects
+     * @param ObjectEntity $entity     The entity to process
+     * @param array        $objectData The current object data
+     * @param int          $depth      Current depth level
+     * @param array|null   $filter     Filters to apply
+     * @param array|null   $fields     Fields to include
+     * @param array|null   $registers  Preloaded registers
+     * @param array|null   $schemas    Preloaded schemas
+     * @param array|null   $objects    Preloaded objects
      *
      * @return array The updated object data with inversed properties
      */
@@ -436,42 +482,43 @@ class RenderObject
         ObjectEntity $entity,
         array $objectData,
         int $depth,
-        ?array $filter = [],
-        ?array $fields = [],
-        ?array $registers = [],
-        ?array $schemas = [],
-        ?array $objects = []
+        ?array $filter=[],
+        ?array $fields=[],
+        ?array $registers=[],
+        ?array $schemas=[],
+        ?array $objects=[]
     ): array {
-        // Get the schema for this object
+        // Get the schema for this object.
         $schema = $this->getSchema($entity->getSchema());
         if ($schema === null) {
             return $objectData;
         }
 
-        // Get properties that have inversedBy configurations
+        // Get properties that have inversedBy configurations.
         $inversedProperties = $this->getInversedProperties($schema);
-        if (empty($inversedProperties)) {
+        if (empty($inversedProperties) === true) {
             return $objectData;
         }
 
-        // Find objects that reference this object
+        // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
-        
-        // Process each inversed property
+
+        // Process each inversed property.
         foreach ($inversedProperties as $propertyName => $inversedBy) {
             $objectData[$propertyName] = [];
-            
+
             foreach ($referencingObjects as $referencingObject) {
-                // Check if the referencing object has the correct inversedBy property
+                // Check if the referencing object has the correct inversedBy property.
                 $referencingData = $referencingObject->getObject();
-                if (isset($referencingData[$inversedBy]) && 
-                    (isset($referencingData[$inversedBy]['uuid']) && $referencingData[$inversedBy]['uuid'] === $entity->getUuid()) ||
-                    (isset($referencingData[$inversedBy]['id']) && $referencingData[$inversedBy]['id'] === $entity->getId())
+                if (isset($referencingData[$inversedBy]) === true
+                    && (isset($referencingData[$inversedBy]['uuid']) === true && $referencingData[$inversedBy]['uuid'] === $entity->getUuid())
+                    || (isset($referencingData[$inversedBy]['id']) === true && $referencingData[$inversedBy]['id'] === $entity->getId())
                 ) {
-                    // Add to the inversed property array
+                    // Add to the inversed property array.
                     $objectData[$propertyName][] = $this->renderEntity(
                         $referencingObject,
-                        [],  // No extensions for inversed properties to prevent loops
+                        [],
+                    // No extensions for inversed properties to prevent loops.
                         $depth + 1,
                         $filter,
                         $fields,
@@ -480,11 +527,13 @@ class RenderObject
                         $objects
                     );
                 }
-            }
-        }
+            }//end foreach
+        }//end foreach
 
         return $objectData;
-    }
+
+    }//end handleInversedProperties()
+
 
     /**
      * Gets the string before a dot in a given input.

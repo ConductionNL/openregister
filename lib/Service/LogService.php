@@ -1,12 +1,19 @@
 <?php
 /**
- * @file        LogService.php
- * @description Service for handling audit trail logs in the OpenRegister app
- * @package     OCA\OpenRegister\Service
- * @author      Ruben Linde <ruben@conduction.nl>
- * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version     1.0.0
- * @link        https://github.com/OpenCatalogi/OpenRegister
+ * OpenRegister LogService
+ *
+ * Service class for handling audit trail logs in the OpenRegister application.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -62,18 +69,18 @@ class LogService
      */
     public function getLogs(string $register, string $schema, string $id, array $config=[]): array
     {
-        // Get the object to ensure it exists and belongs to the correct register/schema
+        // Get the object to ensure it exists and belongs to the correct register/schema.
         $object = $this->objectEntityMapper->find($id);
 
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
-        // Add object ID to filters
+        // Add object ID to filters.
         $filters           = $config['filters'] ?? [];
         $filters['object'] = $object->getId();
 
-        // Get logs from audit trail mapper
+        // Get logs from audit trail mapper.
         return $this->auditTrailMapper->findAll(
             limit: $config['limit'] ?? 20,
             offset: $config['offset'] ?? 0,
@@ -98,14 +105,14 @@ class LogService
      */
     public function count(string $register, string $schema, string $id): int
     {
-        // Get the object to ensure it exists and belongs to the correct register/schema
+        // Get the object to ensure it exists and belongs to the correct register/schema.
         $object = $this->objectEntityMapper->find($id);
 
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
-        // Get logs using findAll with a filter for the object
+        // Get logs using findAll with a filter for the object.
         $logs = $this->auditTrailMapper->findAll(
             filters: ['object' => $object->getId()]
         );

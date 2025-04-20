@@ -8,11 +8,13 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Ruben Linde <ruben@nextcloud.com>
- * @copyright 2024 Conduction B.V. (https://conduction.nl)
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git_id>
- * @link      https://github.com/cloud-py-api/openregister
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -100,9 +102,9 @@ class ConfigurationService
     /**
      * Schema property validator instance for validating schema properties.
      *
-     * @var SchemaPropertyValidator The schema property validator instance.
+     * @var SchemaPropertyValidatorService The schema property validator instance.
      */
-    private SchemaPropertyValidator $validator;
+    private SchemaPropertyValidatorService $validator;
 
     /**
      * Logger instance for logging operations.
@@ -147,7 +149,7 @@ class ConfigurationService
      * @param RegisterMapper                    $registerMapper      The register mapper instance
      * @param ObjectEntityMapper                $objectEntityMapper  The object mapper instance
      * @param ConfigurationMapper               $configurationMapper The configuration mapper instance
-     * @param SchemaPropertyValidator           $validator           The schema property validator instance
+     * @param SchemaPropertyValidatorService    $validator           The schema property validator instance
      * @param LoggerInterface                   $logger              The logger instance
      * @param \OCP\App\IAppManager              $appManager          The app manager instance
      * @param \Psr\Container\ContainerInterface $container           The container instance
@@ -159,7 +161,7 @@ class ConfigurationService
         RegisterMapper $registerMapper,
         ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
-        SchemaPropertyValidator $validator,
+        SchemaPropertyValidatorService $validator,
         LoggerInterface $logger,
         IAppManager $appManager,
         ContainerInterface $container,
@@ -190,11 +192,11 @@ class ConfigurationService
     {
         if (in_array(needle: 'openconnector', haystack: $this->appManager->getInstalledApps()) === true) {
             try {
-                // Attempt to get the OpenConnector service from the container
+                // Attempt to get the OpenConnector service from the container.
                 $this->openConnectorConfigurationService = $this->container->get('OCA\OpenConnector\Service\ConfigurationService');
                 return true;
             } catch (Exception $e) {
-                // If the service is not available, return false
+                // If the service is not available, return false.
                 return false;
             }
         }
@@ -313,7 +315,6 @@ class ConfigurationService
                     $object = $object->jsonSerialize();
                     $object['@self']['register'] = $this->registersMap[$object['@self']['register']]->getSlug();
                     $object['@self']['schema']   = $this->schemasMap[$object['@self']['schema']]->getSlug();
-                    // unset($object['@self']);                    $openApiSpec['components']['objects'][] = $object;
                 }
             }
 
@@ -455,7 +456,7 @@ class ConfigurationService
                 $phpArray = Yaml::parse(input: $data);
                 break;
             default:
-                // If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML
+                // If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
                 $phpArray = json_decode(json: $data, associative: true);
                 if ($phpArray === null || $phpArray === false) {
                     try {
@@ -486,7 +487,7 @@ class ConfigurationService
      */
     private function getJSONfromFile(array $uploadedFile, ?string $type=null): array | JSONResponse
     {
-        // Check for upload errors
+        // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
             return new JSONResponse(data: ['error' => 'File upload error: '.$uploadedFile['error']], statusCode: 400);
         }
@@ -526,7 +527,7 @@ class ConfigurationService
 
         $responseBody = $response->getBody()->getContents();
 
-        // Use Content-Type header to determine the format
+        // Use Content-Type header to determine the format.
         $contentType = $response->getHeaderLine('Content-Type');
         $phpArray    = $this->decode(data: $responseBody, type: $contentType);
 
@@ -591,10 +592,10 @@ class ConfigurationService
             'endpoints'        => [],
             'sources'          => [],
             'mappings'         => [],
-            'jobs'            => [],
+            'jobs'             => [],
             'synchronizations' => [],
-            'rules'           => [],
-            'objects'         => [],
+            'rules'            => [],
+            'objects'          => [],
         ];
 
         // Process and import schemas first.
@@ -621,7 +622,7 @@ class ConfigurationService
                     $schemaIds = [];
                     foreach ($registerData['schemas'] as $schemaSlug) {
                         if (isset($this->schemasMap[$schemaSlug]) === true) {
-                            $schemaSlug = strtolower($schemaSlug);
+                            $schemaSlug  = strtolower($schemaSlug);
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
                         } else {
                             $this->logger->warning(
@@ -637,7 +638,7 @@ class ConfigurationService
                 if ($register !== null) {
                     // Store register in map by slug for reference.
                     $this->registersMap[$slug] = $register;
-                    $result['registers'][] = $register;
+                    $result['registers'][]     = $register;
                 }
             }//end foreach
         }//end if
@@ -726,7 +727,7 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping register import as existing version is newer or equal.');
-                    // Even though we're skipping the update, we still need to add it to the map
+                    // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
                 }
 
@@ -781,7 +782,7 @@ class ConfigurationService
                 // Compare versions using version_compare for proper semver comparison.
                 if (version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
                     $this->logger->info('Skipping schema import as existing version is newer or equal.');
-                    // Even though we're skipping the update, we still need to add it to the map
+                    // Even though we're skipping the update, we still need to add it to the map.
                     return $existingSchema;
                 }
 
@@ -821,10 +822,10 @@ class ConfigurationService
     private function importObject(array $data, ?string $owner=null): ?ObjectEntity
     {
         try {
-            // Determine the UUID or ID to use for finding the existing object
+            // Determine the UUID or ID to use for finding the existing object.
             $uuid = $data['uuid'] ?? $data['id'] ?? null;
 
-            // Check if object already exists by UUID or ID
+            // Check if object already exists by UUID or ID.
             $existingObject = null;
 
             if ($uuid !== null) {
@@ -836,11 +837,11 @@ class ConfigurationService
                 }
             }
 
-            // Set the register and schema context for the object service
+            // Set the register and schema context for the object service.
             $this->objectService->setRegister($data['@self']['register']);
             $this->objectService->setSchema($data['@self']['schema']);
 
-            // Save the object using the object service
+            // Save the object using the object service.
             $object = $this->objectService->saveObject(
                 object: $data,
                 uuid: $uuid ?? null

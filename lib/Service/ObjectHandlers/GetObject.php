@@ -12,15 +12,15 @@
  * - Managing object extensions
  *
  * @category Handler
- * @package  OCA\OpenRegister\Service\ObjectHandlers
+ * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
@@ -82,8 +82,8 @@ class GetObject
      * @throws DoesNotExistException If object not found.
      */
     public function find(
-        Register $register = null,
-        Schema $schema = null,
+        Register $register=null,
+        Schema $schema=null,
         string $id,
         ?array $extend=[],
         bool $files=false
@@ -129,7 +129,7 @@ class GetObject
         ?Schema $schema=null,
         ?array $ids=null
     ): array {
-        // Retrieve objects using the objectEntityMapper with optional register, schema, and ids
+        // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectEntityMapper->findAll(
             limit: $limit,
             offset: $offset,
@@ -142,7 +142,7 @@ class GetObject
             schema: $schema
         );
 
-        // If files are to be included, hydrate each object with its file information
+        // If files are to be included, hydrate each object with its file information.
         if ($files === true) {
             foreach ($objects as &$object) {
                 $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
@@ -152,7 +152,6 @@ class GetObject
         return $objects;
 
     }//end findAll()
-
 
 
     /**
@@ -196,25 +195,25 @@ class GetObject
      */
     public function findRelated(ObjectEntity $object): array
     {
-        // Get the relations of the object
+        // Get the relations of the object.
         $relatedObjects = $object->getObject()->getRelations();
 
-        // Iterate over each related object
+        // Iterate over each related object.
         foreach ($relatedObjects as $propertyName => $id) {
-            // Check if the ID is an array (indicating multiple related objects)
+            // Check if the ID is an array (indicating multiple related objects).
             if (is_array($id) === true) {
-                // Find multiple related objects by their IDs
+                // Find multiple related objects by their IDs.
                 $value = $this->objectEntityMapper->findMultiple(ids: $id);
             } else {
-                // Find a single related object by its ID
+                // Find a single related object by its ID.
                 $value = $this->objectEntityMapper->find(id: $id);
             }
 
-            // Update the related objects array with the found value(s)
+            // Update the related objects array with the found value(s).
             $relatedObjects[$propertyName] = $value;
         }
 
-        // Return the array of related objects
+        // Return the array of related objects.
         return $relatedObjects;
 
     }//end findRelated()
@@ -256,18 +255,18 @@ class GetObject
         ?Register $register=null,
         ?Schema $schema=null
     ): array {
-        // First find all objects that reference this object's URI or UUID
+        // First find all objects that reference this object's URI or UUID.
         $referencingObjects = $this->objectEntityMapper->findByRelationUri(
             search: $object->getUri() ?? $object->getUuid(),
             partialMatch: $partialMatch
         );
 
-        // If additional parameters are set, filter the IDs from $referencingObjects
+        // If additional parameters are set, filter the IDs from $referencingObjects.
         if (!empty($filters) || !empty($searchConditions) || !empty($searchParams) || !empty($sort) || $search !== null || $limit !== null || $offset !== null || !empty($extend) || $files !== false || $uses !== null || $register !== null || $schema !== null) {
             $ids           = array_map(fn($obj) => $obj->getId(), $referencingObjects);
             $filters['id'] = $ids;
 
-            // Use findAll to apply additional filters and return the response
+            // Use findAll to apply additional filters and return the response.
             return $this->objectEntityMapper->findAll(
                 limit: $limit,
                 offset: $offset,
@@ -312,10 +311,10 @@ class GetObject
         ?array $sort=['created' => 'DESC'],
         ?string $search=null
     ): array {
-        // Ensure object ID is always included in filters
+        // Ensure object ID is always included in filters.
         $filters['object'] = $object->getId();
 
-        // Get audit trails using all available options
+        // Get audit trails using all available options.
         return $this->auditTrailMapper->findAll(
             limit: $limit,
             offset: $offset,

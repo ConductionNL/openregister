@@ -28,7 +28,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\SchemaPropertyValidator;
+use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 
 /**
  * The SchemaMapper class
@@ -48,7 +48,7 @@ class SchemaMapper extends QBMapper
     /**
      * The schema property validator instance
      *
-     * @var SchemaPropertyValidator
+     * @var SchemaPropertyValidatorService
      */
     private $validator;
 
@@ -57,12 +57,12 @@ class SchemaMapper extends QBMapper
      *
      * @param IDBConnection          $db              The database connection
      * @param IEventDispatcher       $eventDispatcher The event dispatcher
-     * @param SchemaPropertyValidator $validator       The schema property validator
+     * @param SchemaPropertyValidatorService $validator       The schema property validator
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidator $validator
+        SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher = $eventDispatcher;

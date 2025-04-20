@@ -16,13 +16,13 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -69,16 +69,16 @@ class UploadService
 
 
     /**
-	 * Gets the uploaded json from the request data. And returns it as a PHP array.
-	 * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
-	 *
-	 * @param array $data All request params.
-	 *
-	 * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
-	 * @throws Exception
-	 * @throws GuzzleException
-	 */
-    public function getUploadedJson(array $data): array|JSONResponse
+     * Gets the uploaded json from the request data. And returns it as a PHP array.
+     * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
+     *
+     * @param array $data All request params.
+     *
+     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
+     * @throws Exception
+     * @throws GuzzleException
+     */
+    public function getUploadedJson(array $data): array | JSONResponse
     {
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_') === true) {
@@ -114,10 +114,10 @@ class UploadService
         }
 
         if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
-		}
+            return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
+        }
 
-		return $phpArray;
+        return $phpArray;
 
     }//end getUploadedJson()
 
@@ -131,7 +131,7 @@ class UploadService
      *
      * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
      */
-    private function getJSONfromURL(string $url): array|JSONResponse
+    private function getJSONfromURL(string $url): array | JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
@@ -160,10 +160,10 @@ class UploadService
         }
 
         if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
-		}
+            return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
+        }
 
-		return $phpArray;
+        return $phpArray;
 
     }//end getJSONfromURL()
 
@@ -174,11 +174,12 @@ class UploadService
      * @return array|JSONResponse The parsed JSON content from the file or an error response.
      * @throws Exception If the file cannot be read or its content cannot be parsed as JSON.
      */
-    private function getJSONfromFile(): array|JSONResponse
+    private function getJSONfromFile(): array | JSONResponse
     {
-        // Implement file reading logic here
-        // For now, return a simple array to ensure code consistency
+        // @todo: Implement file reading logic here.
+        // For now, return a simple array to ensure code consistency.
         throw new Exception('File upload handling is not yet implemented');
+
     }//end getJSONfromFile()
 
 

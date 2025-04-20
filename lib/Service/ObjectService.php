@@ -10,13 +10,13 @@
  * @category Handler
  * @package  OCA\OpenRegister\Service\ObjectHandlers
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version GIT: <git_id>
  *
- * @link https://OpenRegister.app
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -41,33 +41,43 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * This service acts as a facade for the various object handlers,
  * coordinating operations between them and maintaining state.
- *
- * @category  Service
- * @package   OCA\OpenRegister\Service
- * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later
- * @link      https://github.com/OpenCatalogi/OpenRegister
- * @version   1.0.0
- * @copyright 2024 Conduction b.v.
  */
 class ObjectService
 {
 
+    /**
+     * The current register context.
+     *
+     * @var Register|null
+     */
     private ?Register $currentRegister = null;
 
+    /**
+     * The current schema context.
+     *
+     * @var Schema|null
+     */
     private ?Schema $currentSchema = null;
 
+    /**
+     * The current object context.
+     *
+     * @var ObjectEntity|null
+     */
     private ?ObjectEntity $currentObject = null;
 
 
     /**
      * Constructor for ObjectService.
      *
-     * @param DeleteObject   $deleteHandler   Handler for object deletion.
-     * @param GetObject      $getHandler      Handler for object retrieval.
-     * @param RenderObject   $renderHandler   Handler for object rendering.
-     * @param SaveObject     $saveHandler     Handler for object saving.
-     * @param ValidateObject $validateHandler Handler for object validation.
+     * @param DeleteObject       $deleteHandler      Handler for object deletion.
+     * @param GetObject          $getHandler         Handler for object retrieval.
+     * @param RenderObject       $renderHandler      Handler for object rendering.
+     * @param SaveObject         $saveHandler        Handler for object saving.
+     * @param ValidateObject     $validateHandler    Handler for object validation.
+     * @param RegisterMapper     $registerMapper     Mapper for register operations.
+     * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
+     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -92,8 +102,8 @@ class ObjectService
      */
     public function setRegister(Register | string | int $register): self
     {
-        if (is_string($register) || is_int($register)) {
-            // Look up the register by ID or UUID
+        if (is_string($register) === true || is_int($register) === true) {
+            // Look up the register by ID or UUID.
             $register = $this->registerMapper->find($register);
         }
 
@@ -112,8 +122,8 @@ class ObjectService
      */
     public function setSchema(Schema | string | int $schema): self
     {
-        if (is_string($schema) || is_int($schema)) {
-            // Look up the schema by ID or UUID
+        if (is_string($schema) === true || is_int($schema) === true) {
+            // Look up the schema by ID or UUID.
             $schema = $this->schemaMapper->find($schema);
         }
 
@@ -132,8 +142,8 @@ class ObjectService
      */
     public function setObject(ObjectEntity | string | int $object): self
     {
-        if (is_string($object) || is_int($object)) {
-            // Look up the object by ID or UUID
+        if (is_string($object) === true || is_int($object) === true) {
+            // Look up the object by ID or UUID.
             $object = $this->objectEntityMapper->find($object);
         }
 
@@ -156,19 +166,24 @@ class ObjectService
      *
      * @throws Exception If the object is not found.
      */
-    public function find(int | string $id, ?array $extend=[], bool $files=false, Register | string | int | null $register=null, Schema | string | int | null $schema=null): ?ObjectEntity
-    {
-        // Check if a register is provided and set the current register context
+    public function find(
+        int | string $id,
+        ?array $extend=[],
+        bool $files=false,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
+    ): ?ObjectEntity {
+        // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister($register);
         }
 
-        // Check if a schema is provided and set the current schema context
+        // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
             $this->setSchema($schema);
         }
 
-        // Retrieve the object using the current register, schema, ID, extend properties, and file information
+        // Retrieve the object using the current register, schema, ID, extend properties, and file information.
         $object = $this->getHandler->find(
             $this->currentRegister,
             $this->currentSchema,
@@ -177,17 +192,27 @@ class ObjectService
             $files
         );
 
-        // If the object is not found, return null
+        // If the object is not found, return null.
         if ($object === null) {
             return null;
         }
 
-        // Render the object before returning
+        // Render the object before returning.
+        $registers = null;
+        if ($this->currentRegister !== null) {
+            $registers = [$this->currentRegister->getId() => $this->currentRegister];
+        }
+
+        $schemas = null;
+        if ($this->currentSchema !== null) {
+            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
+        }
+
         return $this->renderHandler->renderEntity(
             entity: $object,
             extend: $extend,
-            registers: $this->currentRegister !== null ? [$this->currentRegister->getId() => $this->currentRegister] : null,
-            schemas: $this->currentSchema !== null ? [$this->currentSchema->getId() => $this->currentSchema] : null
+            registers: $registers,
+            schemas: $schemas
         );
 
     }//end find()
@@ -211,30 +236,30 @@ class ObjectService
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null
     ): array {
-        // Check if a register is provided and set the current register context
+        // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister($register);
         }
 
-        // Check if a schema is provided and set the current schema context
+        // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
             $this->setSchema($schema);
         }
 
-        // Validate the object against the current schema
+        // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false) {
             throw new ValidationException($result->error()->message());
         }
 
-        // Save the object using the current register and schema
+        // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
             $object
         );
 
-        // Render and return the saved object 
+        // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $object,
             extend: $extend,
@@ -262,48 +287,48 @@ class ObjectService
      */
     public function updateFromArray(
         string $id,
-            array $object,
+        array $object,
         bool $updateVersion,
         bool $patch=false,
         ?array $extend=[],
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null
     ): array {
-        // Check if a register is provided and set the current register context
+        // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister($register);
         }
 
-        // Check if a schema is provided and set the current schema context
+        // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
             $this->setSchema($schema);
         }
 
-        // Retrieve the existing object by its UUID
+        // Retrieve the existing object by its UUID.
         $existingObject = $this->getHandler->find($id);
         if ($existingObject === null) {
             throw new DoesNotExistException('Object not found');
         }
 
-        // If patch is true, merge the existing object with the new data
+        // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
             $object = array_merge($existingObject->getObject(), $object);
         }
 
-        // Validate the object against the current schema
+        // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false) {
             throw new ValidationException($result->error()->message());
         }
 
-        // Save the object using the current register and schema
+        // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
             $object
         );
 
-        // Render and return the saved object 
+        // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $object,
             extend: $extend,
@@ -353,22 +378,22 @@ class ObjectService
     public function findAll(array $config=[]): array
     {
 
-        // Convert extend to an array if it's a string
-        if (is_string($config['extend'])) {
+        // Convert extend to an array if it's a string.
+        if (is_string($config['extend']) === true) {
             $config['extend'] = explode(',', $config['extend']);
         }
 
-        // Set the current register context if a register is provided and it's not an array
+        // Set the current register context if a register is provided and it's not an array.
         if (isset($config['filters']['register']) === true  && is_array($config['filters']['register']) === false) {
             $this->setRegister($config['filters']['register']);
         }
 
-        // Set the current schema context if a schema is provided and it's not an array
+        // Set the current schema context if a schema is provided and it's not an array.
         if (isset($config['filters']['schema']) === true  && is_array($config['filters']['schema']) === false) {
             $this->setSchema($config['filters']['schema']);
         }
 
-        // Delegate the findAll operation to the handler
+        // Delegate the findAll operation to the handler.
         $objects = $this->getHandler->findAll(
             limit: $config['limit'] ?? null,
             offset: $config['offset'] ?? null,
@@ -379,36 +404,32 @@ class ObjectService
             uses: $config['uses'] ?? null,
             ids: $config['ids'] ?? null
         );
-        
-        // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null
-        $registers = (
-            $this->currentRegister !== null && 
-            isset($config['filters']['register'])
-        ) ? [
-            $this->currentRegister->getId() => $this->currentRegister
-        ] : null;
 
-        $schemas = (
-            $this->currentSchema !== null && 
-            isset($config['filters']['schema'])
-        ) ? [
-            $this->currentSchema->getId() => $this->currentSchema
-        ] : null;
+        // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
+        $registers = null;
+        if ($this->currentRegister !== null && isset($config['filters']['register']) === true) {
+            $registers = [$this->currentRegister->getId() => $this->currentRegister];
+        }
 
-        // Check if '@self.schema' or '@self.register' is in extend but not in filters
-        if (isset($config['extend']) && in_array('@self.schema', (array)$config['extend'], true) && $schemas === null) {
+        $schemas = null;
+        if ($this->currentSchema !== null && isset($config['filters']['schema']) === true) {
+            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
+        }
+
+        // Check if '@self.schema' or '@self.register' is in extend but not in filters.
+        if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas = $this->schemaMapper->findMultiple(ids: $schemaIds);
-            $schemas = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
+            $schemas   = $this->schemaMapper->findMultiple(ids: $schemaIds);
+            $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
-        if (isset($config['extend']) && in_array('@self.register', (array)$config['extend'], true) && $registers === null) {
+        if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers = $this->registerMapper->findMultiple(ids:  $registerIds);
-            $registers = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
+            $registers   = $this->registerMapper->findMultiple(ids:  $registerIds);
+            $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
-        // Render each object through the object service
+        // Render each object through the object service.
         foreach ($objects as $key => $object) {
             $objects[$key] = $this->renderHandler->renderEntity(
                 entity: $object,
@@ -428,8 +449,20 @@ class ObjectService
     /**
      * Counts the number of objects matching the given criteria.
      *
-     * @param array       $filters Filter criteria.
-     * @param string|null $search  Search term.
+     * @param array $config Configuration array containing:
+     *                      - limit: Maximum number of objects to return
+     *                      - offset: Number of objects to skip
+     *                      - filters: Filter criteria
+     *                      - sort: Sort criteria
+     *                      - search: Search term
+     *                      - extend: Properties to extend
+     *                      - files: Whether to include file information
+     *                      - uses: Filter by object usage
+     *                      - register: Optional register to filter by
+     *                      - schema: Optional schema to filter by
+     *                      - unset: Fields to unset from results
+     *                      - fields: Fields to include in results
+     *                      - ids: Array of IDs or UUIDs to filter by
      *
      * @return int The number of matching objects.
      * @throws \Exception If register or schema is not set
@@ -437,15 +470,16 @@ class ObjectService
     public function count(
         array $config=[]
     ): int {
-        // Add register and schema IDs to filters// Ensure we have both register and schema set
-        if ($this->currentRegister !== null && empty($config['filers']['register']) === true ) {
+        // Add register and schema IDs to filters// Ensure we have both register and schema set.
+        if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
             $filters['register'] = $this->currentRegister->getId();
         }
 
-        if ($this->currentSchema !== null && empty($config['filers']['schema']) === true ) {
-            $config['filers']['schema']   = $this->currentSchema->getId();
+        if ($this->currentSchema !== null && empty($config['filers']['schema']) === true) {
+            $config['filers']['schema'] = $this->currentSchema->getId();
         }
-        
+
+        // Remove limit from config as it's not needed for count.
         unset($config['limit']);
 
         return count($this->findAll($config));
@@ -454,12 +488,12 @@ class ObjectService
 
 
     /**
-     * Finds objects by their relations.
+     * Find objects by their relations.
      *
-     * @param string $search       The URI or UUID to search for in relations.
-     * @param bool   $partialMatch Whether to search for partial matches (default: true).
+     * @param string $search       The URI or UUID to search for in relations
+     * @param bool   $partialMatch Whether to search for partial matches (default: true)
      *
-     * @return array An array of ObjectEntities that have the specified URI/UUID in their relations.
+     * @return array An array of ObjectEntities that have the specified URI/UUID in their relations
      */
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
@@ -479,6 +513,7 @@ class ObjectService
      */
     public function getLogs(string $uuid, array $filters=[]): array
     {
+        // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
         $logs   = $this->getHandler->findLogs($object);
 
@@ -507,23 +542,23 @@ class ObjectService
         Schema | string | int | null $schema=null,
         ?string $uuid=null
     ): ObjectEntity {
-        // Check if a register is provided and set the current register context
+        // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister($register);
         }
 
-        // Check if a schema is provided and set the current schema context
+        // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
             $this->setSchema($schema);
         }
 
-        // Validate the object against the current schema
+        // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false && $this->currentSchema->getHardValidation() === true) {
             throw new ValidationException($result->error()->message());
         }
 
-        // Save the object using the current register and schema
+        // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
@@ -531,11 +566,20 @@ class ObjectService
             $uuid
         );
 
-        // Determine if register and schema should be passed to renderEntity
-        $registers = isset($config['filters']['register']) ? [$this->currentRegister->getId() => $this->currentRegister] : null;
-        $schemas = isset($config['filters']['schema']) ? [$this->currentSchema->getId() => $this->currentSchema] : null;
+        // Determine if register and schema should be passed to renderEntity.
+        if (isset($config['filters']['register']) === true) {
+            $registers = [$this->currentRegister->getId() => $this->currentRegister];
+        } else {
+            $registers = null;
+        }
 
-        // Render and return the saved object
+        if (isset($config['filters']['schema']) === true) {
+            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
+        } else {
+            $schemas = null;
+        }
+
+        // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $savedObject,
             extend: $extend,
@@ -563,41 +607,50 @@ class ObjectService
 
     }//end deleteObject()
 
+
     /**
-	 * Get all registers extended with their schemas
-	 *
-	 * @return array The registers with schema data
-	 * @throws Exception If extension fails
-	 */
-	public function getRegisters(): array
-	{
-		// Get all registers
-		$registers = $this->registerMapper->findAll();
+     * Get all registers extended with their schemas
+     *
+     * @return array The registers with schema data
+     * @throws Exception If extension fails
+     */
+    public function getRegisters(): array
+    {
+        // Get all registers.
+        $registers = $this->registerMapper->findAll();
 
-		// Convert to arrays and extend schemas
-		$registers = array_map(function($register) {
-			$registerArray = is_array($register) ? $register : $register->jsonSerialize();
+        // Convert to arrays and extend schemas.
+        $registers = array_map(
+          function ($register) {
+            if (is_array($register) === true) {
+                $registerArray = $register;
+            } else {
+                $registerArray = $register->jsonSerialize();
+            }
 
-			// Replace schema IDs with actual schema objects if schemas property exists
-			if (isset($registerArray['schemas']) && is_array($registerArray['schemas'])) {
-				$registerArray['schemas'] = array_map(
-					function($schemaId) {
-						try {
-							return $this->schemaMapper->find($schemaId)->jsonSerialize();
-						} catch (Exception $e) {
-							// If schema can't be found, return the ID
-							return $schemaId;
-						}
-					},
-					$registerArray['schemas']
-				);
-			}
+            // Replace schema IDs with actual schema objects if schemas property exists.
+            if (isset($registerArray['schemas']) === true && is_array($registerArray['schemas']) === true) {
+                $registerArray['schemas'] = array_map(
+                    function ($schemaId) {
+                        try {
+                            return $this->schemaMapper->find($schemaId)->jsonSerialize();
+                        } catch (Exception $e) {
+                            // If schema can't be found, return the ID.
+                            return $schemaId;
+                        }
+                    },
+                    $registerArray['schemas']
+                );
+            }
 
-			return $registerArray;
-		}, $registers);
+            return $registerArray;
+          },
+          $registers
+          );
 
-		return $registers;
-	}
+        return $registers;
+
+    }//end getRegisters()
 
 
 }//end class

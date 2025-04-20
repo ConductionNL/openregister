@@ -4,12 +4,16 @@
  *
  * This service generates OpenAPI Specification (OAS) documentation for registers and schemas.
  *
- * @package   OCA\OpenRegister\Service
- * @author    Ruben Linde <ruben@conduction.nl>
- * @copyright 2024 Conduction B.V. <info@conduction.nl>
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git_id>
- * @link      https://github.com/OpenCatalogi/OpenRegister
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -24,8 +28,6 @@ use Psr\Log\LoggerInterface;
  * Class OasService
  *
  * Service for generating OpenAPI Specification documentation.
- *
- * @package OCA\OpenRegister\Service
  */
 class OasService
 {
@@ -74,7 +76,11 @@ class OasService
         $baseOas = $this->getBaseOas();
 
         // Get registers.
-        $registers = $registerId ? [$this->registerMapper->find($registerId)] : $this->registerMapper->findAll();
+        if ($registerId === null) {
+            $registers = $this->registerMapper->findAll();
+        } else {
+            $registers = [$this->registerMapper->find($registerId)];
+        }
 
         // Extract unique schema IDs from registers.
         $schemaIds = [];
@@ -99,7 +105,7 @@ class OasService
         ];
 
         // If specific register, update info.
-        if ($registerId) {
+        if ($registerId !== null) {
             $register        = $registers[0];
             $baseOas['info'] = [
                 'title'       => $register->getTitle().' API',
@@ -199,19 +205,20 @@ class OasService
                 ],
             ] + $schemaDefinition,
         ];
-    }
+
+    }//end enrichSchema()
 
 
     /**
      * Add CRUD paths for a schema.
      *
-     * @param array  &$oas     The OAS array to modify
+     * @param array  $oas      The OAS array to modify
      * @param object $register The register object
      * @param object $schema   The schema object
      *
      * @return void
      */
-    private function addCrudPaths(array &$oas, object $register, object $schema): void
+    private function addCrudPaths(array $oas, object $register, object $schema): void
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
@@ -238,13 +245,13 @@ class OasService
     /**
      * Add extended paths for a schema (logs, files, lock, unlock).
      *
-     * @param array  &$oas     The OAS array to modify
+     * @param array  $oas      The OAS array to modify
      * @param object $register The register object
      * @param object $schema   The schema object
      *
      * @return void
      */
-    private function addExtendedPaths(array &$oas, object $register, object $schema): void
+    private function addExtendedPaths(array $oas, object $register, object $schema): void
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 

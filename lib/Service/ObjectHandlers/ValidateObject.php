@@ -11,10 +11,16 @@
  * - Support for external schema references
  * - Format validation (e.g., BSN numbers)
  *
- * @package   OCA\OpenRegister\Service\ObjectHandlers
- * @author    Conduction b.v. <info@conduction.nl>
- * @copyright 2024 Conduction b.v.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @category Handler
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
@@ -92,14 +98,14 @@ class ValidateObject
         if ($schemaObject === new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if (is_int($schema)) {
+            } else if (is_int($schema) === true) {
                 $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
             }
         }
 
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
-            // Return a ValidationResult with null data indicating success
+            // Return a ValidationResult with null data indicating success.
             return new ValidationResult(null, null);
         }
 
