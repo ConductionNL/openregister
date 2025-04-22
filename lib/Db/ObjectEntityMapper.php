@@ -150,6 +150,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Find all ObjectEntities
      *
@@ -203,15 +204,14 @@ class ObjectEntityMapper extends QBMapper
         );
 
         // Add register to filters if provided
-         if ($register !== null) {
+        if ($register !== null) {
             $filters['register'] = $register;
-         }
+        }
 
         // Add schema to filters if provided
         if ($schema !== null) {
-            $filters['schema'] = $schema;        
+            $filters['schema'] = $schema;
         }
-
 
         $qb = $this->db->getQueryBuilder();
 
@@ -224,8 +224,6 @@ class ObjectEntityMapper extends QBMapper
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
-
-       
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -270,7 +268,6 @@ class ObjectEntityMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
-
 
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
@@ -381,7 +378,7 @@ class ObjectEntityMapper extends QBMapper
         // Ensure we preserve the UUID if it exists, or create a new one if it doesn't
         if (empty($object['uuid']) && empty($oldObject->getUuid())) {
             $object['uuid'] = Uuid::v4();
-        } elseif (empty($object['uuid'])) {
+        } else if (empty($object['uuid'])) {
             $object['uuid'] = $oldObject->getUuid();
         }
 

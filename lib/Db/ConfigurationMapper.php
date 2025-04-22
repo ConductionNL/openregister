@@ -33,15 +33,21 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress MissingTemplateParam
  */
-class ConfigurationMapper extends QBMapper {
+class ConfigurationMapper extends QBMapper
+{
+
+
     /**
      * ConfigurationMapper constructor.
      *
      * @param IDBConnection $db Database connection instance
      */
-    public function __construct(IDBConnection $db) {
+    public function __construct(IDBConnection $db)
+    {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
-    }
+
+    }//end __construct()
+
 
     /**
      * Find a configuration by its ID
@@ -53,7 +59,8 @@ class ConfigurationMapper extends QBMapper {
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
      */
-    public function find(int $id): Configuration {
+    public function find(int $id): Configuration
+    {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -61,18 +68,21 @@ class ConfigurationMapper extends QBMapper {
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
-    }
+
+    }//end find()
+
 
     /**
      * Find configurations by type
      *
-     * @param string $type Configuration type
+     * @param string $type   Configuration type
      * @param int    $limit  Maximum number of results
      * @param int    $offset Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
      */
-    public function findByType(string $type, int $limit = 50, int $offset = 0): array {
+    public function findByType(string $type, int $limit=50, int $offset=0): array
+    {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -83,18 +93,21 @@ class ConfigurationMapper extends QBMapper {
             ->orderBy('created', 'DESC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findByType()
+
 
     /**
      * Find configurations by owner
      *
-     * @param string $owner   Owner identifier
+     * @param string $owner  Owner identifier
      * @param int    $limit  Maximum number of results
      * @param int    $offset Offset for pagination
      *
      * @return Configuration[] Array of configuration entities
      */
-    public function findByOwner(string $owner, int $limit = 50, int $offset = 0): array {
+    public function findByOwner(string $owner, int $limit=50, int $offset=0): array
+    {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -105,7 +118,9 @@ class ConfigurationMapper extends QBMapper {
             ->orderBy('created', 'DESC');
 
         return $this->findEntities($qb);
-    }
+
+    }//end findByOwner()
+
 
     /**
      * Insert a new configuration
@@ -114,14 +129,17 @@ class ConfigurationMapper extends QBMapper {
      *
      * @return Configuration The inserted configuration with updated ID
      */
-    public function insert(Entity $entity): Entity {
+    public function insert(Entity $entity): Entity
+    {
         if ($entity instanceof Configuration) {
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
         }
 
         return parent::insert($entity);
-    }
+
+    }//end insert()
+
 
     /**
      * Update an existing configuration
@@ -130,13 +148,16 @@ class ConfigurationMapper extends QBMapper {
      *
      * @return Configuration The updated configuration
      */
-    public function update(Entity $entity): Entity {
+    public function update(Entity $entity): Entity
+    {
         if ($entity instanceof Configuration) {
             $entity->setUpdated(new DateTime());
         }
 
         return parent::update($entity);
-    }
+
+    }//end update()
+
 
     /**
      * Delete a configuration
@@ -145,9 +166,12 @@ class ConfigurationMapper extends QBMapper {
      *
      * @return Configuration The deleted configuration
      */
-    public function delete(Entity $entity): Entity {
+    public function delete(Entity $entity): Entity
+    {
         return parent::delete($entity);
-    }
+
+    }//end delete()
+
 
     /**
      * Create a configuration from an array
@@ -156,13 +180,16 @@ class ConfigurationMapper extends QBMapper {
      *
      * @return Configuration The created configuration
      */
-    public function createFromArray(array $data): Configuration {
+    public function createFromArray(array $data): Configuration
+    {
         $config = new Configuration();
         $config->hydrate(object: $data);
 
         // Prepare the object before insertion.
         return $this->insert($config);
-    }
+
+    }//end createFromArray()
+
 
     /**
      * Update a configuration from an array
@@ -173,12 +200,15 @@ class ConfigurationMapper extends QBMapper {
      * @throws DoesNotExistException If the configuration is not found
      * @return Configuration The updated configuration
      */
-    public function updateFromArray(int $id, array $data): Configuration {
+    public function updateFromArray(int $id, array $data): Configuration
+    {
         $config = $this->find($id);
         $config->hydrate(object: $data);
 
         return $this->update($config);
-    }
+
+    }//end updateFromArray()
+
 
     /**
      * Count configurations by type
@@ -187,7 +217,8 @@ class ConfigurationMapper extends QBMapper {
      *
      * @return int Number of configurations
      */
-    public function countByType(string $type): int {
+    public function countByType(string $type): int
+    {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
@@ -195,11 +226,13 @@ class ConfigurationMapper extends QBMapper {
             ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
-        $count = $result->fetchOne();
+        $count  = $result->fetchOne();
         $result->closeCursor();
 
-        return (int)$count;
-    }
+        return (int) $count;
+
+    }//end countByType()
+
 
     /**
      * Count configurations by owner
@@ -208,7 +241,8 @@ class ConfigurationMapper extends QBMapper {
      *
      * @return int Number of configurations
      */
-    public function countByOwner(string $owner): int {
+    public function countByOwner(string $owner): int
+    {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
@@ -216,11 +250,13 @@ class ConfigurationMapper extends QBMapper {
             ->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner, IQueryBuilder::PARAM_STR)));
 
         $result = $qb->executeQuery();
-        $count = $result->fetchOne();
+        $count  = $result->fetchOne();
         $result->closeCursor();
 
-        return (int)$count;
-    }
+        return (int) $count;
+
+    }//end countByOwner()
+
 
     /**
      * Find all configurations
@@ -234,11 +270,11 @@ class ConfigurationMapper extends QBMapper {
      * @return Configuration[] Array of found configurations
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -262,7 +298,7 @@ class ConfigurationMapper extends QBMapper {
 
         // Apply search conditions
         if (empty($searchConditions) === false) {
-            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
@@ -270,5 +306,8 @@ class ConfigurationMapper extends QBMapper {
 
         // Execute the query and return the results
         return $this->findEntities($qb);
-    }
-} 
+
+    }//end findAll()
+
+
+}//end class

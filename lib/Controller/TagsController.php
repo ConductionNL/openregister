@@ -29,14 +29,18 @@ use Exception;
  */
 class TagsController extends Controller
 {
+
+
     public function __construct(
-		$appName,
-		IRequest $request,
+        $appName,
+        IRequest $request,
         private readonly ObjectService $objectService,
-	)
-    {
+    ) {
         parent::__construct($appName, $request);
-    }
+
+    }//end __construct()
+
+
     /**
      * Update file metadata for an object
      *
@@ -44,9 +48,9 @@ class TagsController extends Controller
      * @NoCSRFRequired
      *
      * @param string $objectType The type of object
-     * @param string $id The ID of the object
-	 * @param string $filePath Path to the file to update
-	 * @param array $tags Optional tags to update
+     * @param string $id         The ID of the object
+     * @param string $filePath   Path to the file to update
+     * @param array  $tags       Optional tags to update
      *
      * @return JSONResponse
      */
@@ -55,7 +59,10 @@ class TagsController extends Controller
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
-        
-       return new JSONResponse( $this->objectService->getAllTags());
-    }
+
+        return new JSONResponse($this->objectService->getAllTags());
+
+    }//end getAllTags()
+
+
 }//end class

@@ -52,11 +52,12 @@ class SchemaMapper extends QBMapper
      */
     private $validator;
 
+
     /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection          $db              The database connection
-     * @param IEventDispatcher       $eventDispatcher The event dispatcher
+     * @param IDBConnection                  $db              The database connection
+     * @param IEventDispatcher               $eventDispatcher The event dispatcher
      * @param SchemaPropertyValidatorService $validator       The schema property validator
      */
     public function __construct(
@@ -66,8 +67,9 @@ class SchemaMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher = $eventDispatcher;
-        $this->validator = $validator;
-    }
+        $this->validator       = $validator;
+
+    }//end __construct()
 
 
     /**
@@ -108,9 +110,9 @@ class SchemaMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
      * @throws \OCP\DB\Exception If a database error occurs
-     * 
+     *
      * @todo: refactor this into find all
-     * 
+     *
      * @return array The schemas
      */
     public function findMultiple(array $ids): array
@@ -311,7 +313,7 @@ class SchemaMapper extends QBMapper
             $version = explode('.', $schema->getVersion());
             // Increment the patch version.
             if (isset($version[2]) === true) {
-                $version[2]        = ((int) $version[2] + 1);
+                $version[2] = ((int) $version[2] + 1);
                 // Reassemble the version string.
                 $object['version'] = implode('.', $version);
             }
