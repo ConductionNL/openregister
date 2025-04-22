@@ -273,7 +273,8 @@ class ObjectsController extends Controller
         $objects = $objectService->findAll($config);
 
         // Get total count for pagination
-        // $total = $objectService->count($config['filters'], $config['search']);        $total = $objectService->count($config);        // Return paginated results
+        // $total = $objectService->count($config['filters'], $config['search']);        
+        $total = $objectService->count($config);        
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
 
     }//end index()
@@ -566,14 +567,14 @@ class ObjectsController extends Controller
 
         // Return empty paginated response
         return new JSONResponse(
-                $this->paginate(
-            results: [],
-            total: 0,
-            limit: $limit,
-            offset: $offset,
-            page: $page
-        )
-                );
+            $this->paginate(
+                results: [],
+                total: 0,
+                limit: $limit,
+                offset: $offset,
+                page: $page
+            )
+        );
 
     }//end contracts()
 
@@ -622,7 +623,15 @@ class ObjectsController extends Controller
         }
 
         // Return paginated results
-        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
+        return new JSONResponse(
+            $this->paginate(
+                objects: $objects,
+                total: $total,
+                limit: $config['limit'],
+                offset: $config['offset'],
+                page: $config['page']
+            )
+        );
 
     }//end uses()
 
@@ -671,7 +680,15 @@ class ObjectsController extends Controller
         }
 
         // Return paginated results
-        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
+        return new JSONResponse(
+            $this->paginate(
+                objects: $objects,
+                total: $total,
+                limit: $config['limit'],
+                offset: $config['offset'],
+                page: $config['page']
+            )
+        );
 
     }//end used()
 
