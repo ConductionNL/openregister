@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - feature/REGISTERS-4/configuraties
+      - never
 
 jobs:
   sync-to-beta:
