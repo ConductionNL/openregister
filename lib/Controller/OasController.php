@@ -86,7 +86,7 @@ class OasController extends Controller
     {
         try {
             // Generate OAS for the specified register.
-            $oasData = $this->oasService->createOas($register);
+            $oasData = $this->oasService->createOas($id);
             return new JSONResponse($oasData);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);

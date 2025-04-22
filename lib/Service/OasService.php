@@ -38,6 +38,12 @@ class OasService
      */
     private const OAS_RESOURCE_PATH = __DIR__.'/Resources/BaseOas.json';
 
+    /**
+     * The OpenAPI specification being built
+     *
+     * @var array<string, mixed>
+     */
+    private array $oas = [];
 
     /**
      * Constructor for OasService
@@ -57,9 +63,9 @@ class OasService
         private readonly IConfig $config,
         private readonly LoggerInterface $logger
     ) {
-
+        // Initialize the OAS array with the base OAS
+        $this->oas = $this->getBaseOas();
     }//end __construct()
-
 
     /**
      * Create OpenAPI Specification for register(s)
@@ -72,8 +78,8 @@ class OasService
      */
     public function createOas(?string $registerId=null): array
     {
-        // Get base OAS.
-        $baseOas = $this->getBaseOas();
+        // Reset OAS to base state
+        $this->oas = $this->getBaseOas();
 
         // Get registers.
         if ($registerId === null) {
@@ -97,7 +103,7 @@ class OasService
         }
 
         // Update servers configuration.
-        $baseOas['servers'] = [
+        $this->oas['servers'] = [
             [
                 'url'         => $this->urlGenerator->getAbsoluteURL('/apps/openregister/api'),
                 'description' => 'OpenRegister API Server',
@@ -106,8 +112,8 @@ class OasService
 
         // If specific register, update info.
         if ($registerId !== null) {
-            $register        = $registers[0];
-            $baseOas['info'] = [
+            $register = $registers[0];
+            $this->oas['info'] = [
                 'title'       => $register->getTitle().' API',
                 'version'     => $register->getVersion(),
                 'description' => $register->getDescription(),
@@ -115,23 +121,25 @@ class OasService
         }
 
         // Initialize tags array.
-        $baseOas['tags'] = [];
+        $this->oas['tags'] = [];
 
         // Add schemas to components and create tags.
         foreach ($schemas as $schema) {
             // Add schema to components.
             $schemaDefinition = $this->enrichSchema($schema);
-            $baseOas['components']['schemas'][$schema->getTitle()] = $schemaDefinition;
+            $this->oas['components']['schemas'][$schema->getTitle()] = $schemaDefinition;
 
             // Add tag for the schema.
-            $baseOas['tags'][] = [
+            $this->oas['tags'][] = [
                 'name'        => $schema->getTitle(),
                 'description' => $schema->getDescription() ?? 'Operations for '.$schema->getTitle(),
             ];
         }
 
+        // Initialize paths array
+        $this->oas['paths'] = [];
+
         // Add paths for each register.
-        $baseOas['paths'] = [];
         foreach ($registers as $register) {
             // Get schema slugs for the current register.
             $schemaIds = $register->getSchemas();
@@ -140,16 +148,14 @@ class OasService
             foreach ($schemaIds as $schemaId) {
                 if (isset($schemas[$schemaId]) === true) {
                     $schema = $schemas[$schemaId];
-                    $this->addCrudPaths($baseOas, $register, $schema);
-                    $this->addExtendedPaths($baseOas, $register, $schema);
+                    $this->addCrudPaths($register, $schema);
+                    $this->addExtendedPaths($register, $schema);
                 }
             }
         }
 
-        return $baseOas;
-
+        return $this->oas;
     }//end createOas()
-
 
     /**
      * Get the base OAS file as array
@@ -171,9 +177,7 @@ class OasService
         }
 
         return $oas;
-
     }//end getBaseOas()
-
 
     /**
      * Enrich a schema with @self property and x-tags.
@@ -205,25 +209,22 @@ class OasService
                 ],
             ] + $schemaDefinition,
         ];
-
     }//end enrichSchema()
-
 
     /**
      * Add CRUD paths for a schema.
      *
-     * @param array  $oas      The OAS array to modify
      * @param object $register The register object
      * @param object $schema   The schema object
      *
      * @return void
      */
-    private function addCrudPaths(array $oas, object $register, object $schema): void
+    private function addCrudPaths(object $register, object $schema): void
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
         // Collection endpoints with path-level tags.
-        $oas['paths'][$basePath] = [
+        $this->oas['paths'][$basePath] = [
             'tags' => [$schema->getTitle()],
             // Add tags at path level.
             'get'  => $this->createGetCollectionOperation($schema),
@@ -231,39 +232,36 @@ class OasService
         ];
 
         // Individual resource endpoints with path-level tags.
-        $oas['paths'][$basePath.'/{id}'] = [
+        $this->oas['paths'][$basePath.'/{id}'] = [
             'tags'   => [$schema->getTitle()],
             // Add tags at path level.
             'get'    => $this->createGetOperation($schema),
             'put'    => $this->createPutOperation($schema),
             'delete' => $this->createDeleteOperation($schema),
         ];
-
     }//end addCrudPaths()
-
 
     /**
      * Add extended paths for a schema (logs, files, lock, unlock).
      *
-     * @param array  $oas      The OAS array to modify
      * @param object $register The register object
      * @param object $schema   The schema object
      *
      * @return void
      */
-    private function addExtendedPaths(array $oas, object $register, object $schema): void
+    private function addExtendedPaths(object $register, object $schema): void
     {
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
         // Logs endpoint with path-level tags.
-        $oas['paths'][$basePath.'/{id}/audit-trails'] = [
+        $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
             'tags' => [$schema->getTitle()],
             // Add tags at path level.
             'get'  => $this->createLogsOperation($schema),
         ];
 
         // Files endpoints with path-level tags.
-        $oas['paths'][$basePath.'/{id}/files'] = [
+        $this->oas['paths'][$basePath.'/{id}/files'] = [
             'tags' => [$schema->getTitle()],
             // Add tags at path level.
             'get'  => $this->createGetFilesOperation($schema),
@@ -271,19 +269,135 @@ class OasService
         ];
 
         // Lock/Unlock endpoints with path-level tags.
-        $oas['paths'][$basePath.'/{id}/lock'] = [
+        $this->oas['paths'][$basePath.'/{id}/lock'] = [
             'tags' => [$schema->getTitle()],
             // Add tags at path level.
             'post' => $this->createLockOperation($schema),
         ];
-        $oas['paths'][$basePath.'/{id}/unlock'] = [
+        $this->oas['paths'][$basePath.'/{id}/unlock'] = [
             'tags' => [$schema->getTitle()],
             // Add tags at path level.
             'post' => $this->createUnlockOperation($schema),
         ];
-
     }//end addExtendedPaths()
 
+    /**
+     * Create common query parameters for object operations
+     *
+     * @param bool   $isCollection Whether this is for a collection endpoint
+     * @param object $schema       The schema object for generating dynamic filter parameters (only used for collection endpoints)
+     *
+     * @return array Array of common query parameters
+     */
+    private function createCommonQueryParameters(bool $isCollection = false, ?object $schema = null): array
+    {
+        $parameters = [
+            [
+                'name' => '_extend',
+                'in' => 'query',
+                'required' => false,
+                'description' => 'Comma-separated list of properties to extend. Properties referring to other objects will be expanded according to the extend pattern.',
+                'schema' => [
+                    'type' => 'string',
+                ],
+                'example' => 'property1,property2,property3',
+            ],
+            [
+                'name' => '_filter',
+                'in' => 'query',
+                'required' => false,
+                'description' => 'Comma-separated list of properties to include in the response. Only properties matching these names will be returned.',
+                'schema' => [
+                    'type' => 'string',
+                ],
+                'example' => 'id,name,description',
+            ],
+            [
+                'name' => '_unset',
+                'in' => 'query',
+                'required' => false,
+                'description' => 'Comma-separated list of properties to remove from the response.',
+                'schema' => [
+                    'type' => 'string',
+                ],
+                'example' => 'internalField1,internalField2',
+            ],
+        ];
+
+        // Add collection-specific parameters
+        if ($isCollection === true) {
+            // Add _search parameter
+            $parameters[] = [
+                'name' => '_search',
+                'in' => 'query',
+                'required' => false,
+                'description' => 'Full-text search query to filter objects in the collection.',
+                'schema' => [
+                    'type' => 'string',
+                ],
+                'example' => 'search term',
+            ];
+
+            // Add dynamic filter parameters based on schema properties
+            if ($schema !== null) {
+                $schemaProperties = $schema->getProperties();
+                foreach ($schemaProperties as $propertyName => $propertyDefinition) {
+                    // Skip internal properties and metadata
+                    if (str_starts_with($propertyName, '@') || $propertyName === 'id') {
+                        continue;
+                    }
+
+                    // Get property type from definition
+                    $propertyType = $this->getPropertyType($propertyDefinition);
+                    
+                    $parameters[] = [
+                        'name' => $propertyName,
+                        'in' => 'query',
+                        'required' => false,
+                        'description' => 'Filter results by '.$propertyName,
+                        'schema' => [
+                            'type' => $propertyType,
+                        ],
+                    ];
+                }
+            }
+        }
+
+        return $parameters;
+    }//end createCommonQueryParameters()
+
+    /**
+     * Get OpenAPI type for a property definition
+     *
+     * @param mixed $propertyDefinition The property definition from the schema
+     *
+     * @return string The OpenAPI type for the property
+     */
+    private function getPropertyType($propertyDefinition): string
+    {
+        // If the property definition is an array, look for the type key
+        if (is_array($propertyDefinition) && isset($propertyDefinition['type'])) {
+            return $propertyDefinition['type'];
+        }
+
+        // If the property definition is a string, assume it's the type
+        if (is_string($propertyDefinition)) {
+            // Map common types to OpenAPI types
+            $typeMap = [
+                'int' => 'integer',
+                'float' => 'number',
+                'bool' => 'boolean',
+                'string' => 'string',
+                'array' => 'array',
+                'object' => 'object',
+            ];
+
+            return $typeMap[$propertyDefinition] ?? 'string';
+        }
+
+        // Default to string if type cannot be determined
+        return 'string';
+    }//end getPropertyType()
 
     /**
      * Create GET collection operation.
@@ -295,17 +409,18 @@ class OasService
     private function createGetCollectionOperation(object $schema): array
     {
         return [
-            'summary'     => 'Get all '.$schema->getTitle().' objects',
+            'summary' => 'Get all '.$schema->getTitle().' objects',
             'operationId' => 'getAll'.$this->pascalCase($schema->getTitle()),
-            'tags'        => [$schema->getTitle()],
+            'tags' => [$schema->getTitle()],
             'description' => 'Retrieve a list of all '.$schema->getTitle().' objects',
-            'responses'   => [
+            'parameters' => $this->createCommonQueryParameters(true, $schema),
+            'responses' => [
                 '200' => [
                     'description' => 'List of '.$schema->getTitle().' objects',
-                    'content'     => [
+                    'content' => [
                         'application/json' => [
                             'schema' => [
-                                'type'  => 'array',
+                                'type' => 'array',
                                 'items' => [
                                     '$ref' => '#/components/schemas/'.$schema->getTitle(),
                                 ],
@@ -315,50 +430,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createGetCollectionOperation()
-
-
-    /**
-     * Create POST operation.
-     *
-     * @param object $schema The schema object
-     *
-     * @return array The operation definition
-     */
-    private function createPostOperation(object $schema): array
-    {
-        return [
-            'summary'     => 'Create a new '.$schema->getTitle().' object',
-            'operationId' => 'create'.$this->pascalCase($schema->getTitle()),
-            'tags'        => [$schema->getTitle()],
-            'description' => 'Create a new '.$schema->getTitle().' object with the provided data',
-            'requestBody' => [
-                'required' => true,
-                'content'  => [
-                    'application/json' => [
-                        'schema' => [
-                            '$ref' => '#/components/schemas/'.$schema->getTitle(),
-                        ],
-                    ],
-                ],
-            ],
-            'responses'   => [
-                '201' => [
-                    'description' => $schema->getTitle().' created successfully.',
-                    'content'     => [
-                        'application/json' => [
-                            'schema' => [
-                                '$ref' => '#/components/schemas/'.$schema->getTitle(),
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-    }//end createPostOperation()
-
 
     /**
      * Create GET operation.
@@ -370,26 +442,29 @@ class OasService
     private function createGetOperation(object $schema): array
     {
         return [
-            'summary'     => 'Get a '.$schema->getTitle().' object by ID',
+            'summary' => 'Get a '.$schema->getTitle().' object by ID',
             'operationId' => 'get'.$this->pascalCase($schema->getTitle()),
-            'tags'        => [$schema->getTitle()],
+            'tags' => [$schema->getTitle()],
             'description' => 'Retrieve a specific '.$schema->getTitle().' object by its unique identifier',
-            'parameters'  => [
+            'parameters' => array_merge(
                 [
-                    'name'        => 'id',
-                    'in'          => 'path',
-                    'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object',
-                    'schema'      => [
-                        'type'   => 'string',
-                        'format' => 'uuid',
+                    [
+                        'name' => 'id',
+                        'in' => 'path',
+                        'required' => true,
+                        'description' => 'Unique identifier of the '.$schema->getTitle().' object',
+                        'schema' => [
+                            'type' => 'string',
+                            'format' => 'uuid',
+                        ],
                     ],
                 ],
-            ],
-            'responses'   => [
+                $this->createCommonQueryParameters()
+            ),
+            'responses' => [
                 '200' => [
                     'description' => $schema->getTitle().' found.',
-                    'content'     => [
+                    'content' => [
                         'application/json' => [
                             'schema' => [
                                 '$ref' => '#/components/schemas/'.$schema->getTitle(),
@@ -402,9 +477,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createGetOperation()
-
 
     /**
      * Create PUT operation
@@ -416,25 +489,28 @@ class OasService
     private function createPutOperation(object $schema): array
     {
         return [
-            'summary'     => 'Update a '.$schema->getTitle().' object',
+            'summary' => 'Update a '.$schema->getTitle().' object',
             'operationId' => 'update'.$this->pascalCase($schema->getTitle()),
-            'tags'        => [$schema->getTitle()],
+            'tags' => [$schema->getTitle()],
             'description' => 'Update an existing '.$schema->getTitle().' object with the provided data',
-            'parameters'  => [
+            'parameters' => array_merge(
                 [
-                    'name'        => 'id',
-                    'in'          => 'path',
-                    'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object to update',
-                    'schema'      => [
-                        'type'   => 'string',
-                        'format' => 'uuid',
+                    [
+                        'name' => 'id',
+                        'in' => 'path',
+                        'required' => true,
+                        'description' => 'Unique identifier of the '.$schema->getTitle().' object to update',
+                        'schema' => [
+                            'type' => 'string',
+                            'format' => 'uuid',
+                        ],
                     ],
                 ],
-            ],
+                $this->createCommonQueryParameters()
+            ),
             'requestBody' => [
                 'required' => true,
-                'content'  => [
+                'content' => [
                     'application/json' => [
                         'schema' => [
                             '$ref' => '#/components/schemas/'.$schema->getTitle(),
@@ -442,10 +518,10 @@ class OasService
                     ],
                 ],
             ],
-            'responses'   => [
+            'responses' => [
                 '200' => [
                     'description' => $schema->getTitle().' updated successfully',
-                    'content'     => [
+                    'content' => [
                         'application/json' => [
                             'schema' => [
                                 '$ref' => '#/components/schemas/'.$schema->getTitle(),
@@ -458,9 +534,47 @@ class OasService
                 ],
             ],
         ];
-
     }//end createPutOperation()
 
+    /**
+     * Create POST operation.
+     *
+     * @param object $schema The schema object
+     *
+     * @return array The operation definition
+     */
+    private function createPostOperation(object $schema): array
+    {
+        return [
+            'summary' => 'Create a new '.$schema->getTitle().' object',
+            'operationId' => 'create'.$this->pascalCase($schema->getTitle()),
+            'tags' => [$schema->getTitle()],
+            'description' => 'Create a new '.$schema->getTitle().' object with the provided data',
+            'parameters' => $this->createCommonQueryParameters(),
+            'requestBody' => [
+                'required' => true,
+                'content' => [
+                    'application/json' => [
+                        'schema' => [
+                            '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                        ],
+                    ],
+                ],
+            ],
+            'responses' => [
+                '201' => [
+                    'description' => $schema->getTitle().' created successfully.',
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                '$ref' => '#/components/schemas/'.$schema->getTitle(),
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }//end createPostOperation()
 
     /**
      * Create DELETE operation
@@ -497,9 +611,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createDeleteOperation()
-
 
     /**
      * Create logs operation
@@ -546,9 +658,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createLogsOperation()
-
 
     /**
      * Create get files operation
@@ -595,9 +705,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createGetFilesOperation()
-
 
     /**
      * Create post file operation
@@ -658,9 +766,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createPostFileOperation()
-
 
     /**
      * Create lock operation
@@ -707,9 +813,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createLockOperation()
-
 
     /**
      * Create unlock operation
@@ -749,9 +853,7 @@ class OasService
                 ],
             ],
         ];
-
     }//end createUnlockOperation()
-
 
     /**
      * Convert string to slug
@@ -763,9 +865,7 @@ class OasService
     private function slugify(string $string): string
     {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string), '-'));
-
     }//end slugify()
-
 
     /**
      * Convert string to PascalCase
@@ -777,8 +877,5 @@ class OasService
     private function pascalCase(string $string): string
     {
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify($string))));
-
     }//end pascalCase()
-
-
 }//end class
