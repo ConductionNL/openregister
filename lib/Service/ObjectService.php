@@ -677,14 +677,13 @@ class ObjectService
      * @param int|string|Schema $schema The ID, UUID, or object of the schema to save the object to.
      * @param array $object The data of the object to save.
      * @param int|null $depth The depth of the object.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      * @return ObjectEntity The saved object entity.
      * @throws ValidationException If the object fails validation.
      * @throws Exception|GuzzleException If an error occurs during object saving or file handling.
      * @throws CustomValidationException If the object fails custom validation.
      */
-    public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null, ?bool $throwEvent = true): ObjectEntity
+    public function saveObject(int|string|Register $register, int|string|Schema $schema, array $object, ?int $depth = null): ObjectEntity
     {
         // Remove system properties (starting with _)
         $object = array_filter($object, function($key) {
@@ -800,16 +799,16 @@ class ObjectService
 
         // Create or update base object for first time so we have a uuid
 		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
-			$objectEntity = $this->objectEntityMapper->update($objectEntity, false);
+			$objectEntity = $this->objectEntityMapper->update(entity: $objectEntity, throwEvent: false);
 		} else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
-			$objectEntity = $this->objectEntityMapper->insert($objectEntity, false);
+			$objectEntity = $this->objectEntityMapper->insert(entity: $objectEntity, throwEvent: false);
 		}
 
         $object = $objectEntity->jsonSerialize();
 
 		// Handle object properties that are either nested objects or files, we do this after creating/updating object so that we can pass parent id for sub objects.
 		if ($schema->getProperties() !== null && is_array($schema->getProperties()) === true) {
-			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth, throwEvent: $throwEvent); // @todo: register and schema are not needed here we should refactor and remove them
+			$objectEntity = $this->handleObjectRelations($objectEntity, $object, $schema->getProperties(), $register->getId(), $schema->getId(), depth: $depth); // @todo: register and schema are not needed here we should refactor and remove them
 		}
 
 		// Let grap any links that we can
@@ -819,11 +818,11 @@ class ObjectService
 
         // Second time so the object is updated with object relations.
         if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
-			$objectEntity = $this->objectEntityMapper->update($objectEntity, $throwEvent);
+			$objectEntity = $this->objectEntityMapper->update(entity: $objectEntity, throwEvent: true);
 			// Create audit trail for update
             $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
         } else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
-            $objectEntity = $this->objectEntityMapper->insert($objectEntity, $throwEvent);
+            $objectEntity = $this->objectEntityMapper->insert(entity: $objectEntity, throwEvent: true);
             // Create audit trail for creation
             $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
         }
@@ -984,7 +983,6 @@ class ObjectService
      * @param int $register The register associated with the schema.
      * @param int $schema The schema identifier for the subobject.
      * @param int|null $index Optional index of the subobject if it resides in an array.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      *
      * @return string The UUID of the nested subobject.
@@ -999,8 +997,7 @@ class ObjectService
         int $register,
         int $schema,
         ?int $index = null,
-        int $depth = 0,
-        ?bool $throwEvent = true
+        int $depth = 0
     ): string|array
     {
         $itemIsID = false;
@@ -1020,8 +1017,7 @@ class ObjectService
                 register: $register,
                 schema: (int) $subSchema,
                 object: $item,
-                depth: $depth-1,
-                throwEvent: $throwEvent
+                depth: $depth-1
             );
         }
 
@@ -1057,7 +1053,6 @@ class ObjectService
      * @param int $register The register associated with the schema.
      * @param int $schema The schema identifier for the property.
      * @param int $depth The current depth of the object.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      *
      * @return string The updated property data, typically a reference UUID.
@@ -1071,8 +1066,7 @@ class ObjectService
         ObjectEntity $objectEntity,
         int $register,
         int $schema,
-        int $depth = 0,
-        ?bool $throwEvent = true
+        int $depth = 0
     ): string|array
     {
         return $this->addObject(
@@ -1082,8 +1076,7 @@ class ObjectService
             objectEntity: $objectEntity,
             register: $register,
             schema: $schema,
-            depth: $depth,
-            throwEvent: $throwEvent
+            depth: $depth
         );
     }
 
@@ -1100,7 +1093,6 @@ class ObjectService
      * @param int $register The register associated with the schema.
      * @param int $schema The schema identifier for the array elements.
      * @param int $depth The current depth of the object.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      *
      * @return array The processed array with updated references or data.
@@ -1113,8 +1105,7 @@ class ObjectService
         ObjectEntity $objectEntity,
         int $register,
         int $schema,
-        int $depth = 0,
-        ?bool $throwEvent = true
+        int $depth = 0
     ): array
     {
         if (isset($property['items']) === false) {
@@ -1131,8 +1122,7 @@ class ObjectService
                     register: $register,
                     schema: $schema,
                     index: $index,
-                    depth: $depth,
-                    throwEvent: $throwEvent
+                    depth: $depth
                 );
             }
             return $items;
@@ -1165,8 +1155,7 @@ class ObjectService
                 register: $register,
                 schema: $schema,
                 index: $index,
-                depth: $depth,
-                throwEvent: $throwEvent
+                depth: $depth
             );
         }
 
@@ -1187,7 +1176,6 @@ class ObjectService
      * @param int $schema The schema identifier for the property.
      * @param int|null $index Optional index for array-based oneOf properties.
      * @param int $depth The current depth of the object.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      *
      * @return string|array The processed data, resolved to a reference or updated structure.
@@ -1201,8 +1189,7 @@ class ObjectService
         int $register,
         int $schema,
         ?int $index = null,
-        int $depth = 0,
-        ?bool $throwEvent = true
+        int $depth = 0
     ): string|array
     {
         if (array_is_list($property) === false) {
@@ -1257,8 +1244,7 @@ class ObjectService
             register: $register,
             schema: $schema,
             index: $index,
-            depth: $depth,
-            throwEvent: $throwEvent
+            depth: $depth
         );
     }
 
@@ -1275,7 +1261,6 @@ class ObjectService
      * @param array $object The parent object data to update.
      * @param ObjectEntity $objectEntity The object entity being processed.
      * @param int $depth The current depth of the object.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      *
      * @return array The updated object with processed properties.
@@ -1288,8 +1273,7 @@ class ObjectService
         int $schema,
         array $object,
         ObjectEntity $objectEntity,
-        int $depth = 0,
-        ?bool $throwEvent = true
+        int $depth = 0
     ): array
     {
         if (isset($property['type']) === false) {
@@ -1305,8 +1289,7 @@ class ObjectService
                     objectEntity: $objectEntity,
                     register: $register,
                     schema: $schema,
-                    depth: $depth,
-                    throwEvent: $throwEvent
+                    depth: $depth
                 );
                 break;
             case 'array':
@@ -1317,8 +1300,7 @@ class ObjectService
                     objectEntity: $objectEntity,
                     register: $register,
                     schema: $schema,
-                    depth: $depth,
-                    throwEvent: $throwEvent
+                    depth: $depth
                 );
                 break;
             case 'oneOf':
@@ -1329,8 +1311,7 @@ class ObjectService
                     objectEntity: $objectEntity,
                     register: $register,
                     schema: $schema,
-                    depth: $depth,
-                    throwEvent: $throwEvent
+                    depth: $depth
                 );
                 break;
             case 'file':
@@ -1360,7 +1341,6 @@ class ObjectService
      * @param int $register The register ID associated with the schema.
      * @param int $schema The schema ID associated with the object.
      * @param int $depth The current depth of the object.
-     * @param bool|null $throwEvent If to throw event when creating or updating the object.
      *
      *
      * @return ObjectEntity The updated object entity with resolved relations and file references.
@@ -1372,8 +1352,7 @@ class ObjectService
         array $properties,
         int $register,
         int $schema,
-        int $depth = 0,
-        ?bool $throwEvent = true
+        int $depth = 0
     ): ObjectEntity
     {
         // @todo: Multidimensional support should be added
@@ -1390,8 +1369,7 @@ class ObjectService
                 schema: $schema,
                 object: $object,
                 objectEntity: $objectEntity,
-                depth: $depth,
-                throwEvent: $throwEvent
+                depth: $depth
             );
         }
 
