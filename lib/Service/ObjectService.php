@@ -797,12 +797,13 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-        // Create or update base object for first time so we have a uuid
-		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
-			$objectEntity = $this->objectEntityMapper->update(entity: $objectEntity, throwEvent: false);
-		} else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
+        $isCreate = false;
+        // Create base object for first time so we have a uuid
+		if ($objectEntity->getId() === null && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
+            // Dont throw event yet, we still need to handle object relations.
 			$objectEntity = $this->objectEntityMapper->insert(entity: $objectEntity, throwEvent: false);
-		}
+            $isCreate = true;
+        }
 
         $object = $objectEntity->jsonSerialize();
 
@@ -818,13 +819,15 @@ class ObjectService
 
         // Second time so the object is updated with object relations.
         if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
-			$objectEntity = $this->objectEntityMapper->update(entity: $objectEntity, throwEvent: true);
-			// Create audit trail for update
-            $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-        } else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
-            $objectEntity = $this->objectEntityMapper->insert(entity: $objectEntity, throwEvent: true);
-            // Create audit trail for creation
-            $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+            // If this objectEntity did not exist before this saveObject iteration, throw a ObjectCreatedEvent instead of UpdatedEvent.
+			$objectEntity = $this->objectEntityMapper->update(entity: $objectEntity, createdEvent: $isCreate);
+            if ($isCreate === false) {
+                // Create audit trail for update
+                $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
+            } else {
+                // Create audit trail for create
+                $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+            }
         }
 
         return $objectEntity;
