@@ -482,7 +482,12 @@ class ObjectService
         // Remove limit from config as it's not needed for count.
         unset($config['limit']);
 
-        return count($this->findAll($config));
+        return $this->objectEntityMapper->countAll(
+            filters: $config['filters'] ?? [],
+            search: $config['search'] ?? null,
+            ids: $config['ids'] ?? null,
+            uses: $config['uses'] ?? null
+        );
 
     }//end count()
 
@@ -651,6 +656,97 @@ class ObjectService
         return $registers;
 
     }//end getRegisters()
+
+    /**
+     * Backwards compatibility function.
+     *
+     * @param string $type The type of object (only for backwards compatibility)
+     * @return ObjectEntityMapper
+     */
+    public function getMapper(?string $type = null, ?int $register = null, ?int $schema = null): ObjectEntityMapper|ObjectService
+    {
+        if($register !== null && $schema !== null) {
+            $this->setRegister($register);
+            $this->setSchema($schema);
+            return $this;
+        }
+
+        return $this->objectEntityMapper;
+    }
+
+    public function getSchema(): int
+    {
+        return $this->currentSchema->getId();
+    }
+
+    public function getRegister(): int
+    {
+        return $this->currentRegister->getId();
+    }
+
+
+
+    /**
+     * Find all objects conforming to the request parameters, surrounded with pagination data.
+     *
+     * @param array $requestParams The request parameters to search with.
+     *
+     * @return array The result including pagination data.
+     */
+    public function findAllPaginated(array $requestParams): array
+    {
+        // Extract specific parameters
+        $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+        $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
+        $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+        $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
+        $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+        $search = $requestParams['_search'] ?? null;
+
+        if ($page !== null && isset($limit)) {
+            $page = (int) $page;
+            $offset = $limit * ($page - 1);
+        }
+
+        // Ensure order and extend are arrays
+        if (is_string($order) === true) {
+            $order = array_map('trim', explode(',', $order));
+        }
+        if (is_string($extend) === true) {
+            $extend = array_map('trim', explode(',', $extend));
+        }
+
+        // Remove unnecessary parameters from filters
+        $filters = $requestParams;
+        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+        unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
+
+        if(isset($filters['register']) === false) {
+            $filters['register'] = $this->getRegister();
+        }
+
+        if(isset($filters['schema']) === false) {
+            $filters['schema'] = $this->getSchema();
+        }
+
+        $objects = $this->findAll(["limit" => $limit, "offset" => $offset, "filters" => $filters, "sort" => $order, "search" => $search, "extend" => $extend]);
+        $total   = $this->count(["filters" => $filters]);
+        $pages   = $limit !== null ? ceil($total/$limit) : 1;
+
+        $facets  = $this->objectEntityMapper->getFacets(
+            filters: $filters,
+            search: $search
+        );
+
+        return [
+            'results' => $objects,
+            'facets' => $facets,
+            'total' => $total,
+            'page' => $page ?? 1,
+            'pages' => $pages,
+        ];
+    }
 
 
 }//end class

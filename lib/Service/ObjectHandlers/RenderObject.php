@@ -454,12 +454,7 @@ class RenderObject
                 );
 
         // Extract the property names and their inversedBy values.
-        return array_map(
-                function ($property) {
-                    return $property['inversedBy'];
-                },
-                $inversedProperties
-                );
+        return $inversedProperties;
 
     }//end getInversedProperties()
 
@@ -503,32 +498,40 @@ class RenderObject
         // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
+        // Set all found objects to the objectsCache.
+        $ids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $referencingObjects);
+        $objectsToCache = array_combine(keys: $ids, values: $referencingObjects);
+        $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
+
         // Process each inversed property.
         foreach ($inversedProperties as $propertyName => $inversedBy) {
             $objectData[$propertyName] = [];
 
-            foreach ($referencingObjects as $referencingObject) {
-                // Check if the referencing object has the correct inversedBy property.
-                $referencingData = $referencingObject->getObject();
-                if (isset($referencingData[$inversedBy]) === true
-                    && (isset($referencingData[$inversedBy]['uuid']) === true && $referencingData[$inversedBy]['uuid'] === $entity->getUuid())
-                    || (isset($referencingData[$inversedBy]['id']) === true && $referencingData[$inversedBy]['id'] === $entity->getId())
-                ) {
-                    // Add to the inversed property array.
-                    $objectData[$propertyName][] = $this->renderEntity(
-                        $referencingObject,
-                        [],
-                    // No extensions for inversed properties to prevent loops.
-                        $depth + 1,
-                        $filter,
-                        $fields,
-                        $registers,
-                        $schemas,
-                        $objects
-                    );
-                }
-            }//end foreach
+            $inversedObjects = array_filter($referencingObjects, function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
+                $data = $object->jsonSerialize();
+                $schema = $object->getSchema();
+
+                // @TODO: accomodate schema references.
+                if(isset($inversedBy['$ref']) === true) {
+                    $schemaId = substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1);
+                } else if (isset($inversedBy['items']['$ref']) === true) {
+                    $schemaId = substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1);
+                } else {
+                    return false;
+                }//end if
+
+                return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
+            });
+
+            $inversedUuids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $inversedObjects);
+
+            if($inversedBy['type'] === 'array') {
+                $objectData[$propertyName] = $inversedUuids;
+            } else {
+                $objectData[$propertyName] = end($inversedUuids);
+            }
         }//end foreach
+
 
         return $objectData;
 
