@@ -676,6 +676,7 @@ class ObjectService
      * @param int|string|Register $register The ID, UUID, or object of the register to save the object to.
      * @param int|string|Schema $schema The ID, UUID, or object of the schema to save the object to.
      * @param array $object The data of the object to save.
+     * @param int|null $depth The depth of the object.
      *
      * @return ObjectEntity The saved object entity.
      * @throws ValidationException If the object fails validation.
@@ -796,12 +797,13 @@ class ObjectService
 
 		$objectEntity->setObject($object);
 
-        // Create or update base object for first time so we have a uuid
-		if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
-			$objectEntity = $this->objectEntityMapper->update($objectEntity);
-		} else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
-			$objectEntity = $this->objectEntityMapper->insert($objectEntity);
-		}
+        $isCreate = false;
+        // Create base object for first time so we have a uuid
+		if ($objectEntity->getId() === null && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
+            // Dont throw event yet, we still need to handle object relations.
+			$objectEntity = $this->objectEntityMapper->insert(entity: $objectEntity, throwEvent: false);
+            $isCreate = true;
+        }
 
         $object = $objectEntity->jsonSerialize();
 
@@ -817,13 +819,15 @@ class ObjectService
 
         // Second time so the object is updated with object relations.
         if ($objectEntity->getId() && ($schema->getHardValidation() === false || $validationResult->isValid() === true)) {
-			$objectEntity = $this->objectEntityMapper->update($objectEntity);
-			// Create audit trail for update
-            $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
-        } else if ($schema->getHardValidation() === false || $validationResult->isValid() === true) {
-            $objectEntity = $this->objectEntityMapper->insert($objectEntity);
-            // Create audit trail for creation
-            $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+            // If this objectEntity did not exist before this saveObject iteration, throw a ObjectCreatedEvent instead of UpdatedEvent.
+			$objectEntity = $this->objectEntityMapper->update(entity: $objectEntity, createdEvent: $isCreate);
+            if ($isCreate === false) {
+                // Create audit trail for update
+                $this->auditTrailMapper->createAuditTrail(new: $objectEntity, old: $oldObject);
+            } else {
+                // Create audit trail for create
+                $this->auditTrailMapper->createAuditTrail(new: $objectEntity);
+            }
         }
 
         return $objectEntity;
@@ -983,6 +987,7 @@ class ObjectService
      * @param int $schema The schema identifier for the subobject.
      * @param int|null $index Optional index of the subobject if it resides in an array.
      *
+     *
      * @return string The UUID of the nested subobject.
      * @throws ValidationException|CustomValidationException|Exception When schema or object validation fails.
      * @throws GuzzleException
@@ -995,7 +1000,7 @@ class ObjectService
         int $register,
         int $schema,
         ?int $index = null,
-        int $depth = 0,
+        int $depth = 0
     ): string|array
     {
         $itemIsID = false;
@@ -1050,6 +1055,8 @@ class ObjectService
      * @param ObjectEntity $objectEntity The object entity to link the processed data to.
      * @param int $register The register associated with the schema.
      * @param int $schema The schema identifier for the property.
+     * @param int $depth The current depth of the object.
+     *
      *
      * @return string The updated property data, typically a reference UUID.
      * @throws ValidationException|CustomValidationException When schema or object validation fails.
@@ -1088,6 +1095,8 @@ class ObjectService
      * @param ObjectEntity $objectEntity The object entity the data belongs to.
      * @param int $register The register associated with the schema.
      * @param int $schema The schema identifier for the array elements.
+     * @param int $depth The current depth of the object.
+     *
      *
      * @return array The processed array with updated references or data.
      * @throws GuzzleException|ValidationException|CustomValidationException When schema validation or file handling fails.
@@ -1169,6 +1178,8 @@ class ObjectService
      * @param int $register The register associated with the schema.
      * @param int $schema The schema identifier for the property.
      * @param int|null $index Optional index for array-based oneOf properties.
+     * @param int $depth The current depth of the object.
+     *
      *
      * @return string|array The processed data, resolved to a reference or updated structure.
      * @throws GuzzleException|ValidationException When schema validation or file handling fails.
@@ -1252,6 +1263,8 @@ class ObjectService
      * @param int $schema The schema ID associated with the property.
      * @param array $object The parent object data to update.
      * @param ObjectEntity $objectEntity The object entity being processed.
+     * @param int $depth The current depth of the object.
+     *
      *
      * @return array The updated object with processed properties.
      * @throws GuzzleException|ValidationException When schema validation or file handling fails.
@@ -1330,6 +1343,8 @@ class ObjectService
      * @param array $properties The schema properties defining the object structure.
      * @param int $register The register ID associated with the schema.
      * @param int $schema The schema ID associated with the object.
+     * @param int $depth The current depth of the object.
+     *
      *
      * @return ObjectEntity The updated object entity with resolved relations and file references.
      * @throws Exception|ValidationException|GuzzleException When file handling or schema processing fails.
@@ -2181,8 +2196,6 @@ class ObjectService
             $schema->getProperties(),
             fn($property) => isset($property['inversedBy']) && empty($property['inversedBy']) === false
         );
-
-//		var_dump($invertedProperties);
 
         // Only process inverted relations if we have inverted properties
         if (empty($invertedProperties) === false) {

@@ -316,9 +316,10 @@ class ObjectEntityMapper extends QBMapper
      * Inserts a new entity into the database.
      *
      * @param Entity $entity The entity to insert.
+     * @param bool|null $throwEvent If to throw an event or not, used primarily for a case in saveObject.
      * @return Entity The inserted entity.
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity, ?bool $throwEvent = true): Entity
     {
         // Lets make sure that @self and id never enter the database
         $object = $entity->getObject();
@@ -327,7 +328,9 @@ class ObjectEntityMapper extends QBMapper
 
         $entity = parent::insert($entity);
         // Dispatch creation event
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+        if ($throwEvent === true) {
+            $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+        }
 
         $entity = $this->find($entity->getId());
 
@@ -352,7 +355,7 @@ class ObjectEntityMapper extends QBMapper
     /**
      * @inheritDoc
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity, ?bool $createdEvent = false): Entity
     {
         $oldObject = $this->find($entity->getId());
 
@@ -364,7 +367,11 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+        if ($createdEvent === false) {
+            $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+        } elseif ($createdEvent === true) {
+            $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
+        }
 
         $entity = $this->find($entity->getId());
 
