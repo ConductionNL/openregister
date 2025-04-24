@@ -59,4 +59,4 @@ export default {
 		CogOutline,
 	},
 }
-</script> 
+</script>

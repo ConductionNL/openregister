@@ -19,8 +19,8 @@ import axios from '@nextcloud/axios'
 
 			<NcCheckboxRadioSwitch
 				:checked="includeObjects"
-				@update:checked="includeObjects = $event"
-				type="switch">
+				type="switch"
+				@update:checked="includeObjects = $event">
 				Include objects
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -148,4 +148,4 @@ export default {
 	flex-direction: column;
 	gap: 1rem;
 }
-</style> 
+</style>

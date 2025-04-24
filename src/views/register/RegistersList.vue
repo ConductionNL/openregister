@@ -124,8 +124,8 @@ export default {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
-		}
-	}
+		},
+	},
 }
 </script>
 

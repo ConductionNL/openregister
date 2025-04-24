@@ -10,16 +10,16 @@ export const mockConfiguration = {
 		organisation: 'Test Org',
 		application: 'Test App',
 		updated: '2024-03-20T12:00:00Z',
-		created: '2024-03-20T12:00:00Z'
+		created: '2024-03-20T12:00:00Z',
 	},
 	configuration: {
 		key1: 'value1',
 		key2: 'value2',
 		nestedConfig: {
 			subKey1: 'subValue1',
-			subKey2: 'subValue2'
-		}
-	}
+			subKey2: 'subValue2',
+		},
+	},
 }
 
 export const mockConfigurations = [
@@ -36,16 +36,16 @@ export const mockConfigurations = [
 			organisation: 'Test Org',
 			application: 'Test App',
 			updated: '2024-03-20T12:00:00Z',
-			created: '2024-03-20T12:00:00Z'
+			created: '2024-03-20T12:00:00Z',
 		},
 		configuration: {
 			setting1: true,
 			setting2: false,
 			complexSetting: {
 				option1: 'value1',
-				option2: 'value2'
-			}
-		}
+				option2: 'value2',
+			},
+		},
 	},
 	{
 		'@self': {
@@ -59,15 +59,15 @@ export const mockConfigurations = [
 			organisation: 'Test Org',
 			application: 'Test App',
 			updated: '2024-03-20T12:00:00Z',
-			created: '2024-03-20T12:00:00Z'
+			created: '2024-03-20T12:00:00Z',
 		},
 		configuration: {
 			feature1: 'enabled',
 			feature2: 'disabled',
 			featureSettings: {
 				timeout: 30,
-				retries: 3
-			}
-		}
-	}
-] 
+				retries: 3,
+			},
+		},
+	},
+]

@@ -94,4 +94,4 @@ export default {
 	flex-direction: column;
 	gap: 1rem;
 }
-</style> 
+</style>

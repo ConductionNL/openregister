@@ -350,39 +350,31 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		// mass delete objects
-		async massDeleteObject(objectIds) {
-			if (!objectIds.length) {
-				throw new Error('No object ids to delete')
-			}
+		async massDeleteObject(objectIds, options = {}) {
+			if (!objectIds?.length) throw new Error('No object ids to delete')
 
-			console.info('Deleting objects...')
+			// Resolve register / schema the same way refreshObjectList does
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+			if (!register || !schema) throw new Error('Register and schema are required')
 
-			const result = {
-				successfulIds: [],
-				failedIds: [],
-			}
+			console.info('Deleting objects…')
+			const result = { successfulIds: [], failedIds: [] }
 
 			await Promise.all(objectIds.map(async (objectId) => {
-				const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
-
+				const endpoint = this._buildObjectPath({ register, schema, objectId })
 				try {
-					const response = await fetch(endpoint, {
-						method: 'DELETE',
-					})
-
-					if (response.ok) {
-						result.successfulIds.push(objectId)
-					} else {
-						result.failedIds.push(objectId)
-					}
-				} catch (error) {
-					console.error('Error deleting object:', error)
+					const response = await fetch(endpoint, { method: 'DELETE' })
+					;(response.ok ? result.successfulIds : result.failedIds).push(objectId)
+				} catch (err) {
+					console.error('Error deleting object:', err)
 					result.failedIds.push(objectId)
 				}
 			}))
 
-			this.refreshObjectList()
-
+			await this.refreshObjectList({ register, schema })
 			return result
 		},
 		// AUDIT TRAILS
@@ -431,37 +423,24 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		// RELATIONS
-		async getRelations(id, options = {}) {
-			if (!id) {
-				throw new Error('No object id to get relations for')
-			}
+		async getRelations(object, options = {}) {
+			if (!object?.id) throw new Error('No object id to get relations for')
 
-			let endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/relations`
-			const params = []
-
-			if (options.search && options.search !== '') {
-				params.push('_search=' + options.search)
-			}
-			if (options.limit && options.limit !== '') {
-				params.push('_limit=' + options.limit)
-			}
-			if (options.page && options.page !== '') {
-				params.push('_page=' + options.page)
-			}
-
-			if (params.length > 0) {
-				endpoint += '?' + params.join('&')
-			}
-
-			const response = await fetch(endpoint, {
-				method: 'GET',
+			let endpoint = this._buildObjectPath({
+				register: object.register,
+				schema: object.schema,
+				objectId: `${object.id}/relations`,
 			})
 
-			const responseData = await response.json()
-			const data = responseData.map((relation) => new ObjectEntity(relation))
+			const params = []
+			if (options.search) params.push('_search=' + options.search)
+			if (options.limit) params.push('_limit=' + options.limit)
+			if (options.page) params.push('_page=' + options.page)
+			if (params.length) endpoint += '?' + params.join('&')
 
+			const response = await fetch(endpoint)
+			const data = (await response.json()).map(r => new ObjectEntity(r))
 			this.setRelations(data)
-
 			return { response, data }
 		},
 		// FILES
@@ -542,73 +521,54 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Lock an object
-		 *
-		 * @param {number} id Object ID
+		 * @param {object} object Object containing id, register, and schema
 		 * @param {string|null} process Optional process identifier
 		 * @param {number|null} duration Lock duration in seconds
 		 * @return {Promise} Promise that resolves when the object is locked
 		 */
-		async lockObject(id, process = null, duration = null) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/lock`
+		async lockObject(object, process = null, duration = null) {
+			if (!object?.id) throw new Error('No object id to lock')
 
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						process,
-						duration,
-					}),
-				})
+			const endpoint = this._buildObjectPath({
+				register: object.register,
+				schema: object.schema,
+				objectId: `${object.id}/lock`,
+			})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
+			const response = await fetch(endpoint, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ process, duration }),
+			})
+			if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
-				const data = await response.json()
-				this.setObjectItem(data)
-				this.refreshObjectList()
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error locking object:', error)
-				throw new Error(`Failed to lock object: ${error.message}`)
-			}
+			const data = await response.json()
+			this.setObjectItem(data)
+			await this.refreshObjectList()
+			return { response, data }
 		},
-		/**
-		 * Unlock an object
-		 *
-		 * @param {number} id Object ID
-		 * @return {Promise} Promise that resolves when the object is unlocked
-		 */
-		async unlockObject(id) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/${id}/unlock`
 
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-				})
+		async unlockObject(object) {
+			if (!object?.id) throw new Error('No object id to unlock')
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
+			const endpoint = this._buildObjectPath({
+				register: object.register,
+				schema: object.schema,
+				objectId: `${object.id}/unlock`,
+			})
 
-				const data = await response.json()
-				this.setObjectItem(data)
-				this.refreshObjectList()
+			const response = await fetch(endpoint, { method: 'POST' })
+			if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
-				return { response, data }
-			} catch (error) {
-				console.error('Error unlocking object:', error)
-				throw new Error(`Failed to unlock object: ${error.message}`)
-			}
+			const data = await response.json()
+			this.setObjectItem(data)
+			await this.refreshObjectList()
+			return { response, data }
 		},
 		/**
 		 * Revert an object to a previous state
 		 *
-		 * @param {number} id Object ID
+		 * @param {object} object Object containing id, register, and schema
 		 * @param {object} options Revert options
 		 * @param {string} [options.datetime] ISO datetime string
 		 * @param {string} [options.auditTrailId] Audit trail ID
@@ -616,31 +576,26 @@ export const useObjectStore = defineStore('object', {
 		 * @param {boolean} [options.overwriteVersion] Whether to overwrite version
 		 * @return {Promise} Promise that resolves when the object is reverted
 		 */
-		async revertObject(id, options) {
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/${id}/revert`
+		async revertObject(object, options) {
+			if (!object?.id) throw new Error('No object id to revert')
 
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(options),
-				})
+			const endpoint = this._buildObjectPath({
+				register: object.register,
+				schema: object.schema,
+				objectId: `${object.id}/revert`,
+			})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
+			const response = await fetch(endpoint, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(options),
+			})
+			if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
-				const data = await response.json()
-				this.setObjectItem(data)
-				this.refreshObjectList()
-
-				return { response, data }
-			} catch (error) {
-				console.error('Error reverting object:', error)
-				throw new Error(`Failed to revert object: ${error.message}`)
-			}
+			const data = await response.json()
+			this.setObjectItem(data)
+			await this.refreshObjectList()
+			return { response, data }
 		},
 		setSelectedObjects(objects) {
 			this.selectedObjects = objects
