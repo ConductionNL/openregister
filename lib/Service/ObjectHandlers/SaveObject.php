@@ -295,17 +295,9 @@ class SaveObject
 
             $property = $properties[$propertyName];
             if ($this->isRelationProperty($property) === true) {
-                $objectEntity->setObject(
-                    $this->handleProperty(
-                        $property,
-                        $propertyName,
-                        $register,
-                        $schema,
-                        $object,
-                        $objectEntity,
-                        $depth
-                    )
-                );
+                $relations = new Dot($objectEntity->getRelations());
+                $relations->set(key: $propertyName, value: $value);
+                $objectEntity->setRelations($relations->flatten());
             }
         }
 
@@ -323,9 +315,9 @@ class SaveObject
      */
     private function isRelationProperty(array $property): bool
     {
-        return isset($property['type'])
+        return isset($property['type']) === true
             && ($property['type'] === 'object' || $property['type'] === 'array')
-            && isset($property['items']['$ref']);
+            && (isset($property['items']['$ref']) === true || isset($property['$ref']) === true);
 
     }//end isRelationProperty()
 
