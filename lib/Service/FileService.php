@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\Files_Versions\Versions\VersionManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -108,8 +109,45 @@ class FileService
         private readonly IGroupManager $groupManager,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper     $objectEntityMapper,
+        private readonly VersionManager         $versionManager,
     ) {
+    }
+
+
+
+    /**
+     * Creates a new version of a file if the object is updated.
+     *
+     * @param File $file The file to update
+
+     * @return File
+     */
+    public function createNewVersion(File $file, ?string $filename = null): File
+    {
+        $this->versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
+
+        if ($filename !== null) {
+            $file->move(targetPath: $file->getParent()->getPath().'/'.$filename);
+        }
+
+        return $file;
+    }
+
+    /**
+     * Get a specific version of a file
+     *
+     * @param Node $file The file to get a version for.
+     * @param string $version The version to retrieve.
+     * @return Node|null
+     */
+    public function getVersion (Node $file, string $version):?Node
+    {
+        if ($file instanceof File === false) {
+            return $file;
+        }
+
+        return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
     }
 
     /**
@@ -1024,6 +1062,10 @@ class FileService
                 register: $objectEntity->getRegister(),
                 schema: $objectEntity->getSchema()
             );
+
+            if (empty($fileName) === true) {
+                throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
+            }
 
             /**
              * @var File $file

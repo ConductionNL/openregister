@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+
 import { defineStore } from 'pinia'
 import { AuditTrail, ObjectEntity } from '../../entities/index.js'
 import { useRegisterStore } from '../../store/modules/register.js'
