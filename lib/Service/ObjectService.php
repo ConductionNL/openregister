@@ -657,34 +657,6 @@ class ObjectService
 
     }//end getRegisters()
 
-    /**
-     * Backwards compatibility function.
-     *
-     * @param string $type The type of object (only for backwards compatibility)
-     * @return ObjectEntityMapper
-     */
-    public function getMapper(?string $type = null, ?int $register = null, ?int $schema = null): ObjectEntityMapper|ObjectService
-    {
-        if($register !== null && $schema !== null) {
-            $this->setRegister($register);
-            $this->setSchema($schema);
-            return $this;
-        }
-
-        return $this->objectEntityMapper;
-    }
-
-    public function getSchema(): int
-    {
-        return $this->currentSchema->getId();
-    }
-
-    public function getRegister(): int
-    {
-        return $this->currentRegister->getId();
-    }
-
-
 
     /**
      * Find all objects conforming to the request parameters, surrounded with pagination data.
@@ -748,5 +720,88 @@ class ObjectService
         ];
     }
 
+    /**
+     * Fetch the ObjectService as mapper, or the specific ObjectEntityMapper
+     *
+     * @param string|null $type The type of object (only for backwards compatibility)
+     * @param int|null $register The register to get the ObjectService for
+     * @param int|null $schema The schema to get the ObjectService for
+     * @return ObjectEntityMapper|ObjectService
+     */
+    public function getMapper(?string $type = null, ?int $register = null, ?int $schema = null): ObjectEntityMapper|ObjectService
+    {
+        if($register !== null && $schema !== null) {
+            $this->setRegister($register);
+            $this->setSchema($schema);
+            return $this;
+        }
+
+        return $this->objectEntityMapper;
+    }
+
+    // From this point on only deprecated functions for backwards compatibility with OpenConnector. To remove after OpenConnector refactor.
+
+    /**
+     * Returns the current schema
+     * @deprecated
+     *
+     * @return int The current schema
+     */
+    public function getSchema(): int
+    {
+        return $this->currentSchema->getId();
+    }
+
+    /**
+     * Returns the current register
+     * @deprecated
+     *
+     * @return int
+     */
+    public function getRegister(): int
+    {
+        return $this->currentRegister->getId();
+    }
+
+    /**
+     * Find multiple objects by their ids
+     *
+     * @deprecated This can now be done using the ids field in the findAll-function
+     *
+     * @param array $ids The ids to fetch objects for
+     * @return array The found objects
+     */
+    public function findMultiple(array $ids): array
+    {
+        return $this->findAll(['ids' => $ids]);
+    }
+
+    /**
+     * Renders the rendered object.
+     *
+     * @param array $entity
+     * @param array $extend
+     * @return array
+     * @deprecated As the ObjectService always returns the rendered object, input = output.
+     *
+     */
+    public function renderEntity(array $entity, array $extend = [], int $depth = 0, array $filter = [], array $fields = []): array
+    {
+        return $entity;
+    }
+
+    /**
+     * Returns the object on a certain uuid
+     *
+     * @param string $uuid The uuid to find an object for.
+     * @return ObjectEntity|null
+     * @throws Exception
+     *
+     * @deprecated The find function now also handles only fetching by uuid.
+     */
+    public function findByUuid(string $uuid): ?ObjectEntity
+    {
+       return $this->find($uuid);
+    }
 
 }//end class
