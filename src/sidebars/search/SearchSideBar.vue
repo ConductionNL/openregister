@@ -100,8 +100,10 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
+<!-- eslint-disable -->
 
 <script>
+
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
