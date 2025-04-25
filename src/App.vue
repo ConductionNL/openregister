@@ -2,7 +2,7 @@
 	<NcContent app-name="openregister">
 		<MainMenu />
 		<Views />
-		<SideBars />
+		<!-- <SideBars /> -->
 		<Modals />
 		<Dialogs />
 	</NcContent>
@@ -15,7 +15,7 @@ import MainMenu from './navigation/MainMenu.vue'
 import Modals from './modals/Modals.vue'
 import Dialogs from './dialogs/Dialogs.vue'
 import Views from './views/Views.vue'
-import SideBars from './sidebars/SideBars.vue'
+// import SideBars from './sidebars/SideBars.vue'
 
 export default {
 	name: 'App',
@@ -25,7 +25,7 @@ export default {
 		Modals,
 		Dialogs,
 		Views,
-		SideBars,
+		// SideBars,
 	},
 }
 </script>
