@@ -270,7 +270,25 @@ class ObjectsController extends Controller
     {
         // Get config and fetch objects
         $config  = $this->getConfig($register, $schema);
+
+        $objectService->setRegister($register)->setSchema($schema);
+
+
+        //@TODO dit moet netter
+        foreach($config['filters'] as $key => $filter) {
+            switch($key) {
+                case 'register':
+                    $config['filters'][$key] = $objectService->getRegister();
+                    break;
+                case 'schema':
+                    $config['filters'][$key] = $objectService->getSchema();
+                    break;
+                default:
+                    break;
+            }
+        }
         $objects = $objectService->findAll($config);
+
 
         // Get total count for pagination
         // $total = $objectService->count($config['filters'], $config['search']);
@@ -320,15 +338,7 @@ class ObjectsController extends Controller
             $object = $this->objectEntityMapper->find($id);
 
             // Render the object with requested extensions and filters.
-            return new JSONResponse(
-                $this->objectService->renderEntity(
-                    entity: $object->jsonSerialize(),
-                    extend: $extend,
-                    depth: 0,
-                    filter: $filter,
-                    fields: $fields
-                )
-            );
+            return new JSONResponse($object);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Not Found'], 404);
         }//end try
