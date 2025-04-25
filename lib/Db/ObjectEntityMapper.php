@@ -280,6 +280,114 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Counts all objects with optional register and schema filters
+     *
+     * @param array|null    $filters        The filters to apply
+     * @param string|null   $search         The search string to apply
+     * @param bool          $includeDeleted Whether to include deleted objects
+     * @param Register|null $register       Optional register to filter by
+     * @param Schema|null   $schema         Optional schema to filter by
+     *
+     * @return int The number of objects
+     */
+    public function countAll(
+        ?array $filters=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): int {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
+            ->from(from: 'openregister_objects');
+
+        // Filter out system variables (starting with _)
+        $filters = array_filter(
+            $filters ?? [],
+            function ($key) {
+                return !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Remove pagination parameters.
+        unset(
+            $filters['extend'],
+            $filters['limit'],
+            $filters['offset'],
+            $filters['order'],
+            $filters['page']
+        );
+
+        // Add register to filters if provided
+        if ($register !== null) {
+            $filters['register'] = $register;
+        }
+
+        // Add schema to filters if provided
+        if ($schema !== null) {
+            $filters['schema'] = $schema;
+        }
+
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // Handle filtering by IDs/UUIDs if provided.
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $qb->expr()->orX();
+            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $qb->andWhere($orX);
+        }
+
+        // Handle filtering by uses in relations if provided.
+        if ($uses !== null) {
+            $qb->andWhere(
+                $qb->expr()->isNotNull(
+                    $qb->createFunction(
+                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
+                    )
+                )
+            );
+        }
+
+        foreach ($filters as $filter => $value) {
+            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+                // Add condition for IS NOT NULL
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+                // Add condition for IS NULL
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
+                if (is_array($value)) {
+                    // If the value is an array, use IN to search for any of the values in the array
+                    $qb->andWhere($qb->expr()->in($filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                } else {
+                    // Otherwise, use equality for the filter
+                    $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                }
+            }
+        }
+
+        // Filter and search the objects.
+        $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
+        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
+
+//        var_dump($qb->getSQL());
+
+        $result = $qb->executeQuery();
+
+        return $result->fetchAll()[0]['count'];
+
+    }//end countAll()
+
+
+    /**
      * Inserts a new entity into the database.
      *
      * @param Entity $entity The entity to insert.
