@@ -185,11 +185,11 @@ class ObjectService
 
         // Retrieve the object using the current register, schema, ID, extend properties, and file information.
         $object = $this->getHandler->find(
-            $this->currentRegister,
-            $this->currentSchema,
-            $id,
-            $extend,
-            $files
+            id: $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            extend: $extend,
+            files: $files
         );
 
         // If the object is not found, return null.
@@ -235,7 +235,7 @@ class ObjectService
         ?array $extend=[],
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null
-    ): array {
+    ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister($register);
@@ -261,7 +261,7 @@ class ObjectService
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
-            entity: $object,
+            entity: $savedObject,
             extend: $extend,
             registers: [$this->currentRegister->getId() => $this->currentRegister],
             schemas: [$this->currentSchema->getId() => $this->currentSchema]
@@ -293,7 +293,7 @@ class ObjectService
         ?array $extend=[],
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null
-    ): array {
+    ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
             $this->setRegister($register);
@@ -305,7 +305,7 @@ class ObjectService
         }
 
         // Retrieve the existing object by its UUID.
-        $existingObject = $this->getHandler->find($id);
+        $existingObject = $this->getHandler->find(id: $id);
         if ($existingObject === null) {
             throw new DoesNotExistException('Object not found');
         }
@@ -316,21 +316,22 @@ class ObjectService
         }
 
         // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject($object, $this->currentSchema);
+        $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
         if ($result->isValid() === false) {
             throw new ValidationException($result->error()->message());
         }
 
         // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $object
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
+            uuid: $id
         );
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
-            entity: $object,
+            entity: $savedObject,
             extend: $extend,
             registers: [$this->currentRegister->getId() => $this->currentRegister],
             schemas: [$this->currentSchema->getId() => $this->currentSchema]
@@ -802,6 +803,14 @@ class ObjectService
     public function findByUuid(string $uuid): ?ObjectEntity
     {
        return $this->find($uuid);
+    }
+
+    public function getFacets(array $filters = [], ?string $search = null): array
+    {
+        $filters['register'] = $this->getRegister();
+        $filters['schema'] = $this->getSchema();
+
+        return $this->objectEntityMapper->getFacets($filters, $search);
     }
 
 }//end class

@@ -82,9 +82,9 @@ class GetObject
      * @throws DoesNotExistException If object not found.
      */
     public function find(
-        Register $register=null,
-        Schema $schema=null,
         string $id,
+        ?Register $register=null,
+        ?Schema $schema=null,
         ?array $extend=[],
         bool $files=false
     ): ObjectEntity {

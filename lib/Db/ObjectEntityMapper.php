@@ -484,10 +484,10 @@ class ObjectEntityMapper extends QBMapper
         $newObject = clone $oldObject;
 
         // Ensure we preserve the UUID if it exists, or create a new one if it doesn't
-        if (empty($object['uuid']) && empty($oldObject->getUuid())) {
-            $object['uuid'] = Uuid::v4();
+        if (empty($object['id']) && empty($oldObject->getUuid())) {
+            $object['id'] = Uuid::v4();
         } else if (empty($object['uuid'])) {
-            $object['uuid'] = $oldObject->getUuid();
+            $object['id'] = $oldObject->getUuid();
         }
 
         $newObject->hydrate($object);
