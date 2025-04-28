@@ -107,6 +107,7 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 // Add search input ref and debounce function
 const searchQuery = ref('')
@@ -133,35 +134,6 @@ const handleSearch = (value) => {
 		}
 	}, 1000) // 3 second delay
 }
-
-// Computed properties to handle the false values
-const selectedRegisterValue = computed({
-	get: () => {
-		if (!registerStore.registerItem) return null
-		// Return in the same format as the options
-		return {
-			value: registerStore.registerItem,
-			label: registerStore.registerItem.title,
-		}
-	},
-	set: (value) => {
-		registerStore.setRegisterItem(value?.value || null)
-	},
-})
-
-const selectedSchemaValue = computed({
-	get: () => {
-		if (!schemaStore.schemaItem) return null
-		// Return in the same format as the options
-		return {
-			value: schemaStore.schemaItem,
-			label: schemaStore.schemaItem.title,
-		}
-	},
-	set: (value) => {
-		schemaStore.setSchemaItem(value?.value || null)
-	},
-})
 
 // Initialize column filters when component mounts
 onMounted(() => {
