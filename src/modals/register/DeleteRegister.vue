@@ -7,18 +7,20 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		name="Register verwijderen"
 		size="normal"
 		:can-close="false">
-		<p v-if="!success">
+			<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
 			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-		</p>
-
+			</p>
+			<p v-if="!success && registerStore.registerItem?.schemas.length > 0">
+				Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert.
+				Er zijn nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema's in het register.
+			</p>
 		<NcNoteCard v-if="success" type="success">
 			<p>Register succesvol verwijderd</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
-
-		<template #actions>
+		<template #actions v-if="registerStore.registerItem?.schemas.length === 0">
 			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
@@ -36,7 +38,15 @@ import { registerStore, navigationStore } from '../../store/store.js'
 				</template>
 				Verwijderen
 			</NcButton>
-		</template>
+	 </template>
+	 <template #actions v-else>
+		<NcButton @click="closeDialog">
+			<template #icon>
+				<Cancel :size="20" />
+			</template>
+			Sluiten
+		</NcButton>
+	 </template>
 	</NcDialog>
 </template>
 
@@ -80,7 +90,10 @@ export default {
 		},
 		async deleteRegister() {
 			this.loading = true
-
+			if (registerStore.registerItem?.schemas.length > 0) {
+				this.loading = false
+				return
+			}
 			registerStore.deleteRegister({
 				...registerStore.registerItem,
 			}).then(({ response }) => {
