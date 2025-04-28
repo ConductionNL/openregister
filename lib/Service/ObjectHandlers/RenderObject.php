@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
 use Adbar\Dot;
+use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IURLGenerator;
@@ -412,8 +413,9 @@ class RenderObject
 
         $objectDataDot = new Dot($objectData);
 
+        var_dump($extend);
 
-        foreach($extend as $key) {
+        foreach($extend as $override => $key) {
             // Skip if the key does not have to be extended
             if($objectDataDot->has(keys: $key) === false) {
                 continue;
@@ -443,14 +445,41 @@ class RenderObject
             if (is_array($value) === true) {
                 $renderedValue = array_map(function(string|int $identifier) use ($depth, $keyExtends) {
                     $object = $this->getObject(id: $identifier);
+                    if ($object === null) {
+                        $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
+
+                        if (count($multiObject) === 1) {
+                            $object = array_shift($multiObject);
+                        } else {
+                            return null;
+                        }
+                    }
                     return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1);
                 }, $value);
 
-                $objectDataDot->set(keys: $key, value: $renderedValue);
+                if(is_numeric($override) === true) {
+                    $objectDataDot->set(keys: $key, value: $renderedValue);
+                } else {
+                    $objectDataDot->set(keys: $override, value: $renderedValue);
+                }
+
             } else {
                 $object = $this->getObject(id: $value);
 
-                $objectDataDot->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                if ($object === null) {
+                    $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $value]);
+
+                    if (count($multiObject) === 1) {
+                        $object = array_shift($multiObject);
+                    } else {
+                        continue;
+                    }
+                }
+                if(is_numeric($override) === true) {
+                    $objectDataDot->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                } else {
+                    $objectDataDot->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                }
             }
 
         }
@@ -545,7 +574,7 @@ class RenderObject
                 } else {
                     return false;
                 }//end if
-                
+
                 return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
             });
 
