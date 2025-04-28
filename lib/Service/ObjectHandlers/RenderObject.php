@@ -24,6 +24,7 @@
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
+use Adbar\Dot;
 use JsonSerializable;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IURLGenerator;
@@ -409,27 +410,52 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        // Handle other extensions.
-        foreach ($extend as $key => $value) {
-            if (isset($objectData[$key]) === true && is_array($value) === true) {
-                // Handle object references.
-                if (isset($objectData[$key]['id']) === true || isset($objectData[$key]['uuid']) === true) {
-                    $refId            = $objectData[$key]['id'] ?? $objectData[$key]['uuid'];
-                    $referencedObject = $this->getObject($refId);
-                    if ($referencedObject !== null) {
-                        $objectData[$key] = $this->renderEntity(
-                            $referencedObject,
-                            $value,
-                            $depth + 1,
-                            $filter,
-                            $fields
-                        );
-                    }
-                }
+        $objectDataDot = new Dot($objectData);
+
+
+        foreach($extend as $key) {
+            // Skip if the key does not have to be extended
+            if($objectDataDot->has(keys: $key) === false) {
+                continue;
             }
+
+            // Get all the keys that should be extended withtin the extended object
+            $keyExtends = array_map(
+                function(string $extendedKey) use ($key) {
+                    return substr(string: $extendedKey, offset: strlen(string: $key. '.'));
+                },
+                array_filter(
+                    $extend,
+                    function (string $singleKey) use ($key) {
+                        return str_starts_with(haystack: $singleKey, needle: $key.'.');
+                    }
+                )
+            );
+
+            $value = $objectDataDot->get(key: $key);
+
+            // Make sure arrays are arrays
+            if($value instanceof Dot) {
+                $value = $value->jsonSerialize();
+            }
+
+            // Extend the object(s)
+            if (is_array($value) === true) {
+                $renderedValue = array_map(function(string|int $identifier) use ($depth, $keyExtends) {
+                    $object = $this->getObject(id: $identifier);
+                    return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1);
+                }, $value);
+
+                $objectDataDot->set(keys: $key, value: $renderedValue);
+            } else {
+                $object = $this->getObject(id: $value);
+
+                $objectDataDot->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+            }
+
         }
 
-        return $objectData;
+        return $objectDataDot->jsonSerialize();
 
     }//end extendObject()
 
@@ -519,7 +545,7 @@ class RenderObject
                 } else {
                     return false;
                 }//end if
-
+                
                 return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
             });
 

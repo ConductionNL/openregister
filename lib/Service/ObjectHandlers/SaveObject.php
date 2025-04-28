@@ -25,6 +25,7 @@
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
+use Adbar\Dot;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -296,7 +297,7 @@ class SaveObject
             $property = $properties[$propertyName];
             if ($this->isRelationProperty($property) === true) {
                 $relations = new Dot($objectEntity->getRelations());
-                $relations->set(key: $propertyName, value: $value);
+                $relations->set(keys: $propertyName, value: $value);
                 $objectEntity->setRelations($relations->flatten());
             }
         }
