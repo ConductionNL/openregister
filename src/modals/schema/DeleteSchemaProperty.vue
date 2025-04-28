@@ -1,46 +1,53 @@
 <script setup>
-import { navigationStore, schemaStore } from '../../store/store.js'
+import { navigationStore, schemaStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
-		name="Delete Schema Property"
+		name="Verwijder Schema-eigenschap"
 		:can-close="false">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
-				<p>Schema property successfully deleted</p>
+				<p>Schema-eigenschap succesvol verwijderd</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>An error occurred while deleting the schema property</p>
+				<p>Er is een fout opgetreden bij het verwijderen van de schema-eigenschap</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
 			</NcNoteCard>
 		</div>
 
-		<p v-if="success === null">
-			Are you sure you want to permanently delete <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b>? This action cannot be undone.
+		<p v-if="success === null && !warned">
+			Weet u zeker dat u <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
-
+		<p v-if="success === null && warned && objects.length > 0">
+			{{ objects.length > 0 ? 'De volgende objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken:' : '' }}
+		</p>
+		<ul v-if="success === null && objects.length > 0">
+				<li v-for="object in objects" :key="object.id">
+					<b>{{ object.id }}</b>
+				</li>
+		</ul>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{ success !== null ? 'Sluiten' : 'Annuleren' }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
 				icon="Delete"
 				type="error"
-				@click="DeleteProperty()">
+				@click="handleDeleteProperty()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ warned ? 'Toch verwijderen' : 'Verwijderen' }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -69,6 +76,8 @@ export default {
 			success: null,
 			error: false,
 			closeModalTimeout: null,
+			warned: false,
+			objects: [],
 		}
 	},
 	methods: {
@@ -78,6 +87,8 @@ export default {
 			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.error = false
+			this.warned = false
+			this.objects = []
 		},
 		DeleteProperty() {
 			this.loading = true
@@ -103,6 +114,38 @@ export default {
 					this.loading = false
 				})
 		},
+		async handleDeleteProperty() {
+			if (!this.warned) {
+ 			this.objects = []
+ 			await registerStore.refreshRegisterList()
+ 			if (registerStore.registerList.length === 0) {
+ 				return;
+ 			}
+ 			for (const reg of registerStore.registerList) {
+ 				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+ 					await objectStore.refreshObjectList({
+ 						register: reg.id,
+ 						schema:   schemaStore.schemaItem.id,
+ 						search:   '',
+ 					})
+ 					if (objectStore.objectList?.results?.length) {
+						for (const obj of objectStore.objectList.results) {
+							if (obj[schemaStore.schemaPropertyKey]) {
+								this.objects.push(obj)
+							}
+						}
+ 					}
+ 				}
+ 			}
+ 			if (!this.objects.length) {
+ 				await this.DeleteProperty()
+ 			} else {
+ 				this.warned = true
+ 			}
+		} else {
+			await this.DeleteProperty()
+		}
+ 		},
 	},
 }
 </script>
