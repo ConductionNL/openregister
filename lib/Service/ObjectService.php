@@ -786,7 +786,7 @@ class ObjectService
      * @deprecated As the ObjectService always returns the rendered object, input = output.
      *
      */
-    public function renderEntity(array $entity, array $extend = [], int $depth = 0, array $filter = [], array $fields = []): array
+    public function renderEntity(array $entity, ?array $extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = []): array
     {
         return $entity;
     }
