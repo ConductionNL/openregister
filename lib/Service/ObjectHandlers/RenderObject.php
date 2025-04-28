@@ -413,8 +413,6 @@ class RenderObject
 
         $objectDataDot = new Dot($objectData);
 
-        var_dump($extend);
-
         foreach($extend as $override => $key) {
             // Skip if the key does not have to be extended
             if($objectDataDot->has(keys: $key) === false) {
