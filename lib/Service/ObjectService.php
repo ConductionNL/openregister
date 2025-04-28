@@ -380,7 +380,7 @@ class ObjectService
     {
 
         // Convert extend to an array if it's a string.
-        if (is_string($config['extend']) === true) {
+        if (isset($config['extend']) === true && is_string($config['extend']) === true) {
             $config['extend'] = explode(',', $config['extend']);
         }
 
