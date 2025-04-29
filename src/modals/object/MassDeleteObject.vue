@@ -4,6 +4,7 @@ import { objectStore } from '../../store/store.js'
 
 <template>
 	<NcDialog name="Delete Object"
+		:can-close="false"
 		size="normal">
 		<p v-if="success === null">
 			Do you want to permanently delete <b>{{ selectedObjects.length }}</b> {{ selectedObjects.length > 1 ? 'objects' : 'object' }}? This action cannot be undone.

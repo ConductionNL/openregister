@@ -13,7 +13,7 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 				:force-name="true"
 				:inline="1"
 				:primary="true"
-				:menu-name="`Bulk action for ${objectStore.selectedObjects?.length || 0} objects`">
+				:menu-name="`Bulk action for ${objectStore.selectedObjects?.length} objects`">
 				<NcActionButton
 					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
 					:title="!registerStore.registerItem ? 'Please select a register to add an object' : (!schemaStore.schemaItem ? 'Please select a schema to add an object' : '')"
@@ -23,7 +23,7 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 					</template>
 					Add
 				</NcActionButton>
-				<NcActionButton>
+				<!-- <NcActionButton>
 					<template #icon>
 						<Upload :size="20" />
 					</template>
@@ -34,12 +34,12 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 						<Download :size="20" />
 					</template>
 					Download
-				</NcActionButton>
-				<NcActionButton @click="() => massDeleteObjectModal = true">
+				</NcActionButton> -->
+				<NcActionButton @click="() => navigationStore.setDialog('massDeleteObject')" v-if="objectStore.selectedObjects?.length">
 					<template #icon>
 						<Delete :size="20" />
 					</template>
-					Delete
+					Delete {{ objectStore.selectedObjects?.length }} {{ objectStore.selectedObjects?.length > 1 ? 'objects' : 'object' }}
 				</NcActionButton>
 			</NcActions>
 		</span>
