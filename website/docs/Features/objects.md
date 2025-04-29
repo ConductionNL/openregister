@@ -171,10 +171,22 @@ Extend nested properties:
 - `?_extend=department.employees` - Include department with all employees
 - `?_extend=project.tasks.assignee` - Include project with tasks and their assignees
 
+When using nexted properties on arrays of embedded objects, the `$` wildcard can be used.
+So, for example, if we have an array of embedded `authors` within a book with a reference `contact` to an external object,
+this can be extended using `?_extend=authors.$.contact`.
+
 Combine multiple extensions:
 - `?_extend=author,category,comments` - Include multiple related objects
 - `?_extend=files,metadata,relations` - Include all related data
 - `?_extend=all` - Include all possible relations on the root object
+
+The extend functionality can also be used as an array property:
+- `?_extend[]=author&_extend[]=category&_extend[]=comments`
+- `?_extend[]=files&_extend[]=metadata&_extend[]=relations`
+
+This last case also gives the possibility to extend a field to another field:
+- `?_extend[element]=elementRef`
+This will extend the field `elementRef` to a new field `element`.
 
 ### revertedBy
 The `revertedBy` property indicates which object this object was reverted from. This is part of Open Register's version control system, allowing you to track the history of object changes and reversions. For more details about how this works with schemas, see [Schema Relationships](Features/schemas.md#schema-relationships).

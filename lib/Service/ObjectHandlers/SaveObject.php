@@ -332,16 +332,6 @@ class SaveObject
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $data);
 
-        // Handle object relations.
-        $existingObject = $this->handleObjectRelations(
-            $existingObject,
-            $data,
-            $schema->getProperties(),
-            $register,
-            $schema,
-            0
-        );
-
         // Save the object to database.
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
 
