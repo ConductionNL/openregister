@@ -22,7 +22,7 @@ import { schemaStore, navigationStore, searchStore } from '../../store/store.js'
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="navigationStore.setModal('uploadSchema')">
+					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('uploadSchema')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
