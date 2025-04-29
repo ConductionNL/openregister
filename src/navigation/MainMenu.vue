@@ -60,7 +60,7 @@ import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
+// import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
@@ -78,7 +78,7 @@ export default {
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
 		TableMultiple,
-		LayersSearchOutline,
+		// LayersSearchOutline,
 		CogOutline,
 	},
 	methods: {
