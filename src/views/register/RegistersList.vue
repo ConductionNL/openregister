@@ -22,17 +22,23 @@ import { registerStore, navigationStore, searchStore } from '../../store/store.j
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('uploadRegister')">
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
-						Upload Register
+						Import Register
 					</NcActionButton>
 					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
 						Add Register
+					</NcActionButton>
+					<NcActionButton @click="openAllApisDoc">
+						<template #icon>
+							<ApiIcon :size="20" />
+						</template>
+						View All APIs
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -90,6 +96,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import ApiIcon from 'vue-material-design-icons/Api.vue'
 
 export default {
 	name: 'RegistersList',
@@ -107,9 +114,17 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		Upload,
+		ApiIcon,
 	},
 	mounted() {
 		registerStore.refreshRegisterList()
+	},
+	methods: {
+		openAllApisDoc() {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
+			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+		},
 	},
 }
 </script>

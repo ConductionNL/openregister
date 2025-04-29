@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Register } from './register'
 import { mockRegisterData } from './register.mock'
 
@@ -18,6 +17,7 @@ describe('Register Entity', () => {
 		expect(register.id).toBe('')
 		expect(register.title).toBe(mockRegisterData()[0].title)
 		expect(register.tablePrefix).toBe('')
+		expect(register.slug).toBe(mockRegisterData()[0].slug) // Added slug property check
 		expect(register.validate().success).toBe(true)
 	})
 

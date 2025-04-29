@@ -1,12 +1,11 @@
 <script setup>
 import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
-import { EventBus } from '../../eventBus.js'
 </script>
 
 <template>
 	<div class="search-list">
 		<div class="search-list-table">
-			<VueDraggable v-model="activeHeaders"
+			<VueDraggable v-model="objectStore.enabledColumns"
 				target=".sort-target"
 				animation="150"
 				draggable="> *:not(.static-column)">
@@ -124,97 +123,13 @@ export default {
 		NcCounterBubble,
 		BPagination,
 		VueDraggable,
+		Eye,
+		Pencil,
+		Delete,
+		MassDeleteObject,
 	},
 	data() {
 		return {
-			headers: [
-				{
-					id: 'objectId',
-					label: 'ObjectID',
-					key: 'id',
-					enabled: true,
-				},
-				{
-					id: 'uuid',
-					label: 'UUID',
-					key: 'uuid',
-					enabled: false,
-				},
-				{
-					id: 'uri',
-					label: 'URI',
-					key: 'uri',
-					enabled: false,
-				},
-				{
-					id: 'version',
-					label: 'Version',
-					key: 'version',
-					enabled: false,
-				},
-				{
-					id: 'register',
-					label: 'Register',
-					key: 'register',
-					enabled: false,
-				},
-				{
-					id: 'schema',
-					label: 'Schema',
-					key: 'schema',
-					enabled: false,
-				},
-				{
-					id: 'files',
-					label: 'Files',
-					key: 'files',
-					enabled: true,
-				},
-				{
-					id: 'relations',
-					label: 'Relations',
-					key: 'relations',
-					enabled: false,
-				},
-				{
-					id: 'locked',
-					label: 'Locked',
-					key: 'locked',
-					enabled: false,
-				},
-				{
-					id: 'owner',
-					label: 'Owner',
-					key: 'owner',
-					enabled: false,
-				},
-				{
-					id: 'created',
-					label: 'Created',
-					key: 'created',
-					enabled: true,
-				},
-				{
-					id: 'updated',
-					label: 'Updated',
-					key: 'updated',
-					enabled: true,
-				},
-				{
-					id: 'folder',
-					label: 'Folder',
-					key: 'folder',
-					enabled: false,
-				},
-			],
-			/**
-			 * To ensure complete compatibility between the toggle and the drag function,
-			 * We need a working headers array which gets updated when a header gets toggled.
-			 *
-			 * This array is a copy of the headers array but with the disabled headers filtered out.
-			 */
-			activeHeaders: [],
-			// modal state
 			massDeleteObjectModal: false,
 		}
 	},
@@ -232,46 +147,17 @@ export default {
 		},
 	},
 	watch: {
-		'objectStore.columnFilters': {
-			handler() {
-				this.setActiveHeaders()
-			},
-			deep: true,
-		},
 		loading: {
 			handler(newVal) {
-				// if loading finished, run setSelectAllObjects
-				newVal === false && this.setSelectAllObjects()
+				newVal === false && objectStore.setSelectAllObjects()
 			},
 			deep: true,
 		},
 	},
-	created() {
-		EventBus.$on('object-search-set-column-filter', (payload) => {
-			this.headers.find((header) => header.id === payload.id).enabled = payload.enabled
-		})
-	},
-	beforeDestroy() {
-		// Clean up the event listener
-		EventBus.$off('object-search-set-column-filter')
-	},
 	mounted() {
-		this.setActiveHeaders()
+		objectStore.initializeColumnFilters()
 	},
 	methods: {
-		setActiveHeaders() {
-			this.activeHeaders = this.headers
-				.filter(header => objectStore.columnFilters[header.id])
-		},
-		/**
-		 * This function sets the selectAllObjects state to true if all object ids from the searchObjectsResult are in the selectedObjects array.
-		 *
-		 * This is used to ensure that the selectAllObjects state is always in sync with the selectedObjects array.
-		 */
-		setSelectAllObjects() {
-			const allObjectIds = objectStore.objectList?.results?.map(result => result['@self'].id) || []
-			this.selectAllObjects = allObjectIds.every(id => this.selectedObjects.includes(id))
-		},
 		openLink(link, type = '') {
 			window.open(link, type)
 		},

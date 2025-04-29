@@ -41,7 +41,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="30"/>
+        <nextcloud min-version="28" max-version="32"/>
     </dependencies>
     <navigations>
         <navigation>

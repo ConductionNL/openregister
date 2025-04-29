@@ -20,22 +20,27 @@ import { navigationStore } from '../store/store.js'
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Tables" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'search'" name="Tables" @click="navigationStore.setSelected('search')">
 				<template #icon>
 					<TableMultiple :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
+			<!-- <NcAppNavigationItem :active="navigationStore.selected === 'objects'" name="Search" @click="navigationStore.setSelected('search')">
 				<template #icon>
 					<LayersSearchOutline :size="20" />
 				</template>
-			</NcAppNavigationItem>
+			</NcAppNavigationItem> -->
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
 			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" name="Data sources" @click="navigationStore.setSelected('sources')">
 				<template #icon>
 					<DatabaseArrowRightOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'configurations'" name="Configurations" @click="navigationStore.setSelected('configurations')">
+				<template #icon>
+					<CogOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
@@ -55,8 +60,9 @@ import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
+// import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
 export default {
 	name: 'MainMenu',
@@ -65,13 +71,15 @@ export default {
 		NcAppNavigation,
 		NcAppNavigationList,
 		NcAppNavigationItem,
+		NcAppNavigationSettings,
 		// icons
 		Finance,
 		DatabaseOutline,
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
 		TableMultiple,
-		LayersSearchOutline,
+		// LayersSearchOutline,
+		CogOutline,
 	},
 	methods: {
 		openLink(url, type = '') {

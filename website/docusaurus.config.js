@@ -5,8 +5,8 @@
 const config = {
   title: 'Open Register',
   tagline: 'Flexible object management for Nextcloud',
-  url: 'https://conductionnl.github.io',
-  baseUrl: '/openregister/',
+  url: 'https://openregisters.app',
+  baseUrl: '/',
   
   // GitHub pages deployment config
   organizationName: 'conductionnl',
@@ -39,6 +39,32 @@ const config = {
         },
       }),
     ],
+    [
+      'redocusaurus',
+      {
+        // Plugin Options for loading OpenAPI files
+        specs: [
+          // Pass it a path to a local OpenAPI YAML file
+          {
+            // Redocusaurus will automatically bundle your spec into a single file during the build
+            id: 'open-register',
+            spec: 'static/oas/open-register.json',
+            route: '/api',
+          },
+          {
+            // Redocusaurus will automatically bundle your spec into a single file during the build
+            id: 'client-registers',
+            spec: 'static/oas/clientRegisters.json',
+            route: '/api/clientRegister',
+          },
+        ],
+        // Theme Options for modifying how redoc renders them
+        theme: {
+          // Change with your site colors
+          primaryColor: '#1890ff',
+        },
+      },
+    ]
   ],
 
   themeConfig:
@@ -56,6 +82,11 @@ const config = {
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Documentation',
+          },
+          {
+            href: '/api',
+            label: 'API Documentation',
+            position: 'right',
           },
           {
             href: 'https://github.com/conductionnl/openregister',
@@ -86,7 +117,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Open Register. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} for <a href="https://openwebconcept.nl">Open Webconcept</a> by <a href="https://conduction.nl">Conduction B.V.</a>`,
       },
       prism: {
         theme: require('prism-react-renderer/themes/github'),

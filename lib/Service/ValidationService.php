@@ -1,22 +1,30 @@
 <?php
+/**
+ * OpenRegister ValidationService
+ *
+ * Service class for handling validation operations in the OpenRegister application.
+ *
+ * This service provides methods for:
+ * - Schema resolution and validation
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Service;
 
-use Respect\Validation\Exceptions\ComponentException;
-use Respect\Validation\Exceptions\NestedValidationException;
-use Respect\Validation\Factory;
-use Respect\Validation\Rules;
-use Respect\Validation\Validator;
-
 /**
- * @Author Wilco Louwerse <wilco@conduction.nl>
- *
- * @license EUPL <https://github.com/ConductionNL/contactcatalogus/blob/master/LICENSE.md>
- *
- * @category Service
+ * ValidationService class
  */
 class ValidationService
 {
 
-
-}
+}//end class
