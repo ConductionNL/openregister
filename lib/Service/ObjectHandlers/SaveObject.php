@@ -199,16 +199,6 @@ class SaveObject
         // Update object relations.
         $objectEntity = $this->updateObjectRelations($objectEntity, $data);
 
-        // Handle object relations.
-        $objectEntity = $this->handleObjectRelations(
-            $objectEntity,
-            $data,
-            $schema->getProperties(),
-            $register,
-            $schema,
-            0
-        );
-
         // Save the object to database.
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
 
@@ -262,65 +252,6 @@ class SaveObject
         return $objectEntity;
 
     }//end setDefaults()
-
-
-    /**
-     * Handles object relations during save.
-     *
-     * @param ObjectEntity        $objectEntity The object entity being saved.
-     * @param array               $object       The object data.
-     * @param array               $properties   The schema properties.
-     * @param Register|int|string $register     The register to save the object to.
-     * @param Schema|int|string   $schema       The schema to validate against.
-     * @param int                 $depth        The depth level for nested relations.
-     *
-     * @return ObjectEntity The object entity with relations handled.
-     *
-     * @phpstan-param Register|int|string $register
-     * @phpstan-param Schema|int|string   $schema
-     * @psalm-param   Register|int|string $register
-     * @psalm-param   Schema|int|string   $schema
-     */
-    private function handleObjectRelations(
-        ObjectEntity $objectEntity,
-        array $object,
-        array $properties,
-        Register | int | string $register,
-        Schema | int | string $schema,
-        int $depth=0
-    ): ObjectEntity {
-        foreach ($object as $propertyName => $value) {
-            if (isset($properties[$propertyName]) === false) {
-                continue;
-            }
-
-            $property = $properties[$propertyName];
-            if ($this->isRelationProperty($property) === true) {
-                $relations = new Dot($objectEntity->getRelations());
-                $relations->set(keys: $propertyName, value: $value);
-                $objectEntity->setRelations($relations->flatten());
-            }
-        }
-
-        return $objectEntity;
-
-    }//end handleObjectRelations()
-
-
-    /**
-     * Checks if a property is a relation property.
-     *
-     * @param array $property The property to check.
-     *
-     * @return bool Whether the property is a relation property.
-     */
-    private function isRelationProperty(array $property): bool
-    {
-        return isset($property['type']) === true
-            && ($property['type'] === 'object' || $property['type'] === 'array')
-            && (isset($property['items']['$ref']) === true || isset($property['$ref']) === true);
-
-    }//end isRelationProperty()
 
 
     /**
