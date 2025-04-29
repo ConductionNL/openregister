@@ -1,3 +1,6 @@
+<script setup>
+import { registerStore } from '../../store/store.js'
+</script>
 <template>
 	<NcAppContent>
 		<h2 class="pageHeader">
@@ -5,17 +8,19 @@
 		</h2>
 
 		<div class="dashboard-content">
-			<div class="register-cards" v-if="registers && registers.length > 0">
-				<div v-for="register in registers" 
-					:key="register.id" 
+			<div v-if="registers && registers.length > 0" class="register-cards">
+				<div v-for="register in registers"
+					:key="register.id"
 					class="register-card">
 					<div class="register-header">
 						<DatabaseOutline :size="24" />
 						<h3>{{ register.title }}</h3>
 					</div>
-					<p class="register-description">{{ register.description }}</p>
+					<p class="register-description">
+						{{ register.description }}
+					</p>
 					<div class="schema-container">
-						<div v-for="schema in register.schemas" 
+						<div v-for="schema in register.schemas"
 							:key="schema.id"
 							class="schema-node">
 							<div class="schema-icon">
@@ -39,7 +44,6 @@
 
 <script>
 import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
-import { registerStore } from '../../store/store.js'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 
