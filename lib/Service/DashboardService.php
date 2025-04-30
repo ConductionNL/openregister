@@ -107,26 +107,66 @@ class DashboardService
     }
 
     /**
-     * Get statistics for a specific register and schema combination
+     * Get statistics for a register/schema combination
      *
      * @param int      $registerId The register ID
      * @param int|null $schemaId   The schema ID (optional)
      *
-     * @return array The statistics for the register/schema combination
+     * @return array Array containing statistics about objects and logs:
+     *               - objects: Array containing object statistics
+     *                 - total: Total number of objects
+     *                 - size: Total size of all objects in bytes
+     *                 - invalid: Number of objects with validation errors
+     *                 - deleted: Number of deleted objects
+     *                 - locked: Number of locked objects
+     *                 - published: Number of published objects
+     *               - logs: Array containing log statistics
+     *                 - total: Total number of log entries
+     *                 - size: Total size of all log entries in bytes
+     *               - files: Array containing file statistics
+     *                 - total: Total number of files
+     *                 - size: Total size of all files in bytes
+     *
+     * @phpstan-return array{
+     *     objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int},
+     *     logs: array{total: int, size: int},
+     *     files: array{total: int, size: int}
+     * }
      */
     private function getStats(int $registerId, ?int $schemaId = null): array
     {
         try {
             // Get object statistics
             $objectStats = $this->objectMapper->getStatistics($registerId, $schemaId);
-            
-            // Get audit trail statistics
-            $auditStats = $this->auditTrailMapper->getStatistics($registerId, $schemaId);
 
-            // Combine results
+            // Get audit trail statistics
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                $qb->createFunction('COUNT(id) as total_logs'),
+                $qb->createFunction('SUM(size) as total_size')
+            )
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $result = $qb->executeQuery()->fetch();
+
             return [
-                'objects' => $objectStats,
-                'logs' => $auditStats,
+                'objects' => [
+                    'total' => $objectStats['total'],
+                    'size' => $objectStats['size'],
+                    'invalid' => $objectStats['invalid'],
+                    'deleted' => $objectStats['deleted'],
+                    'locked' => $objectStats['locked'],
+                    'published' => $objectStats['published']
+                ],
+                'logs' => [
+                    'total' => (int)($result['total_logs'] ?? 0),
+                    'size' => (int)($result['total_size'] ?? 0)
+                ],
                 'files' => [
                     'total' => 0,
                     'size' => 0
@@ -135,9 +175,22 @@ class DashboardService
         } catch (\Exception $e) {
             $this->logger->error('Failed to get statistics: ' . $e->getMessage());
             return [
-                'objects' => ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0],
-                'logs' => ['total' => 0, 'size' => 0],
-                'files' => ['total' => 0, 'size' => 0]
+                'objects' => [
+                    'total' => 0,
+                    'size' => 0,
+                    'invalid' => 0,
+                    'deleted' => 0,
+                    'locked' => 0,
+                    'published' => 0
+                ],
+                'logs' => [
+                    'total' => 0,
+                    'size' => 0
+                ],
+                'files' => [
+                    'total' => 0,
+                    'size' => 0
+                ]
             ];
         }
     }

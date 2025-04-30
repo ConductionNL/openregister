@@ -737,12 +737,20 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Get statistics about objects for a register/schema combination
+     * Get statistics about objects in a register and optionally filtered by schema
      *
-     * @param int      $registerId The register ID
-     * @param int|null $schemaId   The schema ID (optional)
+     * @param int      $registerId The ID of the register to get statistics for
+     * @param int|null $schemaId   Optional schema ID to filter by
      *
-     * @return array Array containing total count, size, invalid count, and deleted count
+     * @return array Array containing statistics about objects:
+     *               - total: Total number of objects
+     *               - size: Total size of all objects in bytes
+     *               - invalid: Number of objects with validation errors
+     *               - deleted: Number of deleted objects
+     *               - locked: Number of locked objects
+     *               - published: Number of published objects
+     *
+     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
     public function getStatistics(int $registerId, ?int $schemaId = null): array
     {
@@ -753,7 +761,9 @@ class ObjectEntityMapper extends QBMapper
                 $qb->createFunction('COUNT(id) as total_objects'),
                 $qb->createFunction('SUM(size) as total_size'),
                 $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid_objects'),
-                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects')
+                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects'),
+                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked_objects'),
+                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL THEN 1 END) as published_objects')
             )
             ->from('openregister_objects')
             ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
@@ -768,7 +778,9 @@ class ObjectEntityMapper extends QBMapper
                 'total' => (int)($result['total_objects'] ?? 0),
                 'size' => (int)($result['total_size'] ?? 0),
                 'invalid' => (int)($result['invalid_objects'] ?? 0),
-                'deleted' => (int)($result['deleted_objects'] ?? 0)
+                'deleted' => (int)($result['deleted_objects'] ?? 0),
+                'locked' => (int)($result['locked_objects'] ?? 0),
+                'published' => (int)($result['published_objects'] ?? 0)
             ];
         } catch (\Exception $e) {
             $this->logger->error('Failed to get object statistics: ' . $e->getMessage());
@@ -776,7 +788,9 @@ class ObjectEntityMapper extends QBMapper
                 'total' => 0,
                 'size' => 0,
                 'invalid' => 0,
-                'deleted' => 0
+                'deleted' => 0,
+                'locked' => 0,
+                'published' => 0
             ];
         }
     }
@@ -789,7 +803,15 @@ class ObjectEntityMapper extends QBMapper
      * - It references a non-existent schema
      * - It references a schema that no longer belongs to its register
      *
-     * @return array Array containing statistics about orphaned objects
+     * @return array Array containing statistics about orphaned objects:
+     *               - total: Total number of orphaned objects
+     *               - size: Total size of all orphaned objects in bytes
+     *               - invalid: Number of orphaned objects with validation errors
+     *               - deleted: Number of deleted orphaned objects
+     *               - locked: Number of locked orphaned objects
+     *               - published: Number of published orphaned objects
+     *
+     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
     public function getOrphanedStatistics(): array
     {
@@ -806,7 +828,9 @@ class ObjectEntityMapper extends QBMapper
                 $qb->createFunction('COUNT(o.id) as total_objects'),
                 $qb->createFunction('SUM(o.size) as total_size'),
                 $qb->createFunction('COUNT(CASE WHEN o.validation IS NOT NULL THEN 1 END) as invalid_objects'),
-                $qb->createFunction('COUNT(CASE WHEN o.deleted IS NOT NULL THEN 1 END) as deleted_objects')
+                $qb->createFunction('COUNT(CASE WHEN o.deleted IS NOT NULL THEN 1 END) as deleted_objects'),
+                $qb->createFunction('COUNT(CASE WHEN o.locked IS NOT NULL THEN 1 END) as locked_objects'),
+                $qb->createFunction('COUNT(CASE WHEN o.published IS NOT NULL THEN 1 END) as published_objects')
             )
             ->from('openregister_objects', 'o')
             ->leftJoin(
@@ -842,7 +866,9 @@ class ObjectEntityMapper extends QBMapper
                 'total' => (int)($result['total_objects'] ?? 0),
                 'size' => (int)($result['total_size'] ?? 0),
                 'invalid' => (int)($result['invalid_objects'] ?? 0),
-                'deleted' => (int)($result['deleted_objects'] ?? 0)
+                'deleted' => (int)($result['deleted_objects'] ?? 0),
+                'locked' => (int)($result['locked_objects'] ?? 0),
+                'published' => (int)($result['published_objects'] ?? 0)
             ];
         } catch (\Exception $e) {
             $this->logger->error('Failed to get orphaned object statistics: ' . $e->getMessage());
@@ -850,7 +876,9 @@ class ObjectEntityMapper extends QBMapper
                 'total' => 0,
                 'size' => 0,
                 'invalid' => 0,
-                'deleted' => 0
+                'deleted' => 0,
+                'locked' => 0,
+                'published' => 0
             ];
         }
     }

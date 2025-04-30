@@ -22,6 +22,53 @@
 							<DatabaseOutline :size="20" />
 							{{ register.title }}
 						</h2>
+						<NcActions :primary="true" menu-name="Actions">
+							<template #icon>
+								<DotsHorizontal :size="20" />
+							</template>
+							<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+								<template #icon>
+									<Calculator :size="20" />
+								</template>
+								Calculate Sizes
+							</NcActionButton>
+							<NcActionButton @click="navigationStore.setModal('editRegister')">
+								<template #icon>
+									<Pencil :size="20" />
+								</template>
+								Edit
+							</NcActionButton>
+							<NcActionButton @click="navigationStore.setModal('exportRegister')">
+								<template #icon>
+									<Export :size="20" />
+								</template>
+								Export
+							</NcActionButton>
+							<NcActionButton @click="navigationStore.setModal('uploadRegister')">
+								<template #icon>
+									<Upload :size="20" />
+								</template>
+								Upload
+							</NcActionButton>
+							<NcActionButton @click="viewOasDoc(register)">
+								<template #icon>
+									<ApiIcon :size="20" />
+								</template>
+								View API Documentation
+							</NcActionButton>
+							<NcActionButton @click="downloadOas(register)">
+								<template #icon>
+									<Download :size="20" />
+								</template>
+								Download API Specification
+							</NcActionButton>
+							<NcActionButton @click="navigationStore.setDialog('deleteRegister')">
+								<template #icon>
+									<TrashCanOutline :size="20" />
+								</template>
+								Delete
+							</NcActionButton>
+						</NcActions>
 					</div>
 					<p class="register-description">
 						{{ register.description }}
@@ -31,40 +78,54 @@
 					<table class="statistics-table register-stats">
 						<thead>
 							<tr>
-								<th>Type</th>
-								<th>Total</th>
-								<th>Size</th>
+								<th>{{ t('openregister', 'Type') }}</th>
+								<th>{{ t('openregister', 'Total') }}</th>
+								<th>{{ t('openregister', 'Size') }}</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr>
-								<td>Objects</td>
-								<td>{{ register.stats.objects.total }}</td>
-								<td>{{ formatBytes(register.stats.objects.size) }}</td>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ register.stats?.objects?.total || 0 }}</td>
+								<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
 							</tr>
 							<tr class="sub-row">
 								<td class="indented">
-									Invalid
+									{{ t('openregister', 'Invalid') }}
 								</td>
-								<td>{{ register.stats.objects.invalid }}</td>
+								<td>{{ register.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="sub-row">
 								<td class="indented">
-									Deleted
+									{{ t('openregister', 'Deleted') }}
 								</td>
-								<td>{{ register.stats.objects.deleted }}</td>
+								<td>{{ register.stats?.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="sub-row">
+								<td class="indented">
+									{{ t('openregister', 'Locked') }}
+								</td>
+								<td>{{ register.stats?.objects?.locked || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="sub-row">
+								<td class="indented">
+									{{ t('openregister', 'Published') }}
+								</td>
+								<td>{{ register.stats?.objects?.published || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>Logs</td>
-								<td>{{ register.stats.logs.total }}</td>
-								<td>{{ formatBytes(register.stats.logs.size) }}</td>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ register.stats?.logs?.total || 0 }}</td>
+								<td>{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
 							</tr>
 							<tr>
-								<td>Files</td>
-								<td>{{ register.stats.files.total }}</td>
-								<td>{{ formatBytes(register.stats.files.size) }}</td>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ register.stats?.files?.total || 0 }}</td>
+								<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
 							</tr>
 						</tbody>
 					</table>
@@ -74,9 +135,9 @@
 							<div class="schema-header" @click="toggleSchema(schema.id)">
 								<div class="schema-title">
 									<FileCodeOutline :size="16" />
-									<span>{{ schema.stats.objects.total }} </span>
+									<span>{{ schema.stats?.objects?.total || 0 }} </span>
 									{{ schema.title }}
-									<span class="schema-size">({{ formatBytes(schema.stats.objects.size) }})</span>
+									<span class="schema-size">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
 								</div>
 								<button class="schema-toggle">
 									<ChevronDown v-if="!expandedSchemas.has(schema.id)" :size="20" />
@@ -96,32 +157,32 @@
 								<tbody>
 									<tr>
 										<td>Objects</td>
-										<td>{{ schema.stats.objects.total }}</td>
-										<td>{{ formatBytes(schema.stats.objects.size) }}</td>
+										<td>{{ schema.stats?.objects?.total || 0 }}</td>
+										<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
 									</tr>
 									<tr class="sub-row">
 										<td class="indented">
 											Invalid
 										</td>
-										<td>{{ schema.stats.objects.invalid }}</td>
+										<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
 										<td>-</td>
 									</tr>
 									<tr class="sub-row">
 										<td class="indented">
 											Deleted
 										</td>
-										<td>{{ schema.stats.objects.deleted }}</td>
+										<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
 										<td>-</td>
 									</tr>
 									<tr>
 										<td>Logs</td>
-										<td>{{ schema.stats.logs.total }}</td>
-										<td>{{ formatBytes(schema.stats.logs.size) }}</td>
+										<td>{{ schema.stats?.logs?.total || 0 }}</td>
+										<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
 									</tr>
 									<tr>
 										<td>Files</td>
-										<td>{{ schema.stats.files.total }}</td>
-										<td>{{ formatBytes(schema.stats.files.size) }}</td>
+										<td>{{ schema.stats?.files?.total || 0 }}</td>
+										<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
 									</tr>
 								</tbody>
 							</table>
@@ -134,13 +195,24 @@
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import Export from 'vue-material-design-icons/Export.vue'
+import ApiIcon from 'vue-material-design-icons/Api.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Calculator from 'vue-material-design-icons/Calculator.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useDashboardStore } from '../../store/modules/dashboard.js'
+import { useNavigationStore } from '../../store/modules/navigation.js'
+import axios from '@nextcloud/axios'
+import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'DashboardIndex',
@@ -148,14 +220,26 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcActions,
+		NcActionButton,
 		DatabaseOutline,
 		FileCodeOutline,
 		ChevronDown,
 		ChevronUp,
+		DotsHorizontal,
+		Pencil,
+		TrashCanOutline,
+		Upload,
+		Export,
+		ApiIcon,
+		Download,
+		Calculator,
 	},
 	setup() {
 		const store = useDashboardStore()
+		const navigationStore = useNavigationStore()
 		const expandedSchemas = ref(new Set())
+		const calculating = ref(null)
 
 		// Computed properties
 		const loading = computed(() => store.loading)
@@ -179,6 +263,45 @@ export default {
 			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 		}
 
+		const calculateSizes = async (register) => {
+			calculating.value = register.id
+			try {
+				await axios.post(`/index.php/apps/openregister/api/dashboard/calculate/${register.id}`)
+				showSuccess(t('openregister', 'Sizes calculated successfully'))
+				await store.fetchRegisters() // Refresh data
+			} catch (error) {
+				showError(t('openregister', 'Failed to calculate sizes'))
+				console.error('Failed to calculate sizes:', error)
+			} finally {
+				calculating.value = null
+			}
+		}
+
+		const downloadOas = async (register) => {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
+			try {
+				const response = await axios.get(apiUrl)
+				const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' })
+				const downloadLink = document.createElement('a')
+				downloadLink.href = URL.createObjectURL(blob)
+				downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
+				document.body.appendChild(downloadLink)
+				downloadLink.click()
+				document.body.removeChild(downloadLink)
+				URL.revokeObjectURL(downloadLink.href)
+			} catch (error) {
+				showError(t('openregister', 'Failed to download API specification'))
+				console.error('Error downloading OAS:', error)
+			}
+		}
+
+		const viewOasDoc = (register) => {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
+			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+		}
+
 		// Fetch data on component mount
 		onMounted(() => {
 			store.fetchRegisters()
@@ -191,6 +314,11 @@ export default {
 			expandedSchemas,
 			toggleSchema,
 			formatBytes,
+			calculating,
+			calculateSizes,
+			downloadOas,
+			viewOasDoc,
+			navigationStore,
 		}
 	},
 }
@@ -248,6 +376,7 @@ export default {
 .register-header {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 8px;
 	margin-bottom: 12px;
 	padding-bottom: 8px;

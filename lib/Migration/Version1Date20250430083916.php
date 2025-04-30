@@ -56,6 +56,9 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                 'notnull' => false,
             ]);
         }
+        if (!$table->hasColumn('published')) {
+            $table->addColumn('published', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+        }
 
         // Update the openregister_registers table
         $table = $schema->getTable('openregister_audit_trails');
