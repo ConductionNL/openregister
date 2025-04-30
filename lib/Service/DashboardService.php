@@ -149,11 +149,26 @@ class DashboardService
     private function getOrphanedStats(): array
     {
         try {
-            // Get orphaned object statistics.
-            $objectStats = $this->objectMapper->getOrphanedStatistics();
+            // Get all registers
+            $registers = $this->registerMapper->findAll();
+            
+            // Build array of valid register/schema combinations
+            $validCombinations = [];
+            foreach ($registers as $register) {
+                $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+                foreach ($schemas as $schema) {
+                    $validCombinations[] = [
+                        'register' => $register->getId(),
+                        'schema' => $schema->getId()
+                    ];
+                }
+            }
 
-            // Get orphaned audit trail statistics.
-            $auditStats = $this->auditTrailMapper->getOrphanedStatistics();
+            // Get orphaned object statistics by excluding all valid combinations
+            $objectStats = $this->objectMapper->getStatistics(null, null, $validCombinations);
+
+            // Get orphaned audit trail statistics using the same exclusions
+            $auditStats = $this->auditTrailMapper->getStatistics(null, null, $validCombinations);
 
             return [
                 'objects' => [
@@ -199,6 +214,61 @@ class DashboardService
 
 
     /**
+     * Get total statistics across all registers
+     *
+     * @return array The total statistics
+     */
+    private function getTotalStats(): array
+    {
+        try {
+            // Get total object statistics (passing null for registerId and schemaId to get all)
+            $objectStats = $this->objectMapper->getStatistics(null, null);
+
+            // Get total audit trail statistics
+            $logStats = $this->auditTrailMapper->getStatistics(null, null);
+
+            return [
+                'objects' => [
+                    'total'     => $objectStats['total'],
+                    'size'      => $objectStats['size'],
+                    'invalid'   => $objectStats['invalid'],
+                    'deleted'   => $objectStats['deleted'],
+                    'locked'    => $objectStats['locked'],
+                    'published' => $objectStats['published'],
+                ],
+                'logs'    => [
+                    'total' => $logStats['total'],
+                    'size'  => $logStats['size'],
+                ],
+                'files'   => [
+                    'total' => 0,
+                    'size'  => 0,
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get total statistics: '.$e->getMessage());
+            return [
+                'objects' => [
+                    'total'     => 0,
+                    'size'      => 0,
+                    'invalid'   => 0,
+                    'deleted'   => 0,
+                    'locked'    => 0,
+                    'published' => 0,
+                ],
+                'logs'    => [
+                    'total' => 0,
+                    'size'  => 0,
+                ],
+                'files'   => [
+                    'total' => 0,
+                    'size'  => 0,
+                ],
+            ];
+        }
+    }
+
+    /**
      * Get all registers with their schemas and statistics
      *
      * @param int|null   $limit            The number of registers to return
@@ -228,6 +298,16 @@ class DashboardService
             );
 
             $result = [];
+
+            // Add system totals as the first "register"
+            $totalStats = $this->getTotalStats();
+            $result[] = [
+                'id'          => 'totals',
+                'title'       => 'System Totals',
+                'description' => 'Total statistics across all registers and schemas',
+                'stats'       => $totalStats,
+                'schemas'     => [],
+            ];
 
             // For each register, get its schemas and statistics.
             foreach ($registers as $register) {

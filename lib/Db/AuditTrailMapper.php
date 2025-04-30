@@ -529,21 +529,25 @@ class AuditTrailMapper extends QBMapper
 
             // Add exclusions if provided
             if (!empty($exclude)) {
-                $orX = $qb->expr()->orX();
-                foreach ($exclude as $index => $combination) {
-                    $andX = $qb->expr()->andX();
+                foreach ($exclude as $combination) {
+                    $orConditions = $qb->expr()->orX();
+                    
+                    // Handle register exclusion
                     if (isset($combination['register'])) {
-                        $andX->add($qb->expr()->eq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                        $orConditions->add($qb->expr()->isNull('register'));
+                        $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
+                    
+                    // Handle schema exclusion
                     if (isset($combination['schema'])) {
-                        $andX->add($qb->expr()->eq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
+                        $orConditions->add($qb->expr()->isNull('schema'));
+                        $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
-                    if ($andX->count() > 0) {
-                        $orX->add($andX);
+                    
+                    // Add the OR conditions to the main query
+                    if ($orConditions->count() > 0) {
+                        $qb->andWhere($orConditions);
                     }
-                }
-                if ($orX->count() > 0) {
-                    $qb->andWhere($qb->expr()->not($orX));
                 }
             }
 
