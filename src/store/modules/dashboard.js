@@ -29,5 +29,15 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.loading = false
 			}
 		},
+
+		async calculateSizes(registerId) {
+			try {
+				await axios.post(generateUrl(`/apps/openregister/api/dashboard/calculate/${registerId}`))
+				return true
+			} catch (error) {
+				console.error('Error calculating sizes:', error)
+				throw error
+			}
+		},
 	},
 })

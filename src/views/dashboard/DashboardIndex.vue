@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -36,37 +36,40 @@ import { dashboardStore, navigationStore } from '../../store/store.js'
 								</template>
 								Calculate Sizes
 							</NcActionButton>
-							<NcActionButton @click="navigationStore.setModal('editRegister')">
+							<NcActionButton @click="registerStore.setRegisterItem({
+								...register,
+								schemas: register.schemas.map(schema => schema.id)
+							}); navigationStore.setModal('editRegister')">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
 								Edit
 							</NcActionButton>
-							<NcActionButton @click="navigationStore.setModal('exportRegister')">
+							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
 								<template #icon>
 									<Export :size="20" />
 								</template>
 								Export
 							</NcActionButton>
-							<NcActionButton @click="navigationStore.setModal('uploadRegister')">
+							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
 								<template #icon>
 									<Upload :size="20" />
 								</template>
 								Upload
 							</NcActionButton>
-							<NcActionButton @click="viewOasDoc(register)">
+							<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
 								<template #icon>
 									<ApiIcon :size="20" />
 								</template>
 								View API Documentation
 							</NcActionButton>
-							<NcActionButton @click="downloadOas(register)">
+							<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
 								<template #icon>
 									<Download :size="20" />
 								</template>
 								Download API Specification
 							</NcActionButton>
-							<NcActionButton @click="navigationStore.setDialog('deleteRegister')">
+							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -237,7 +240,7 @@ import ApiIcon from 'vue-material-design-icons/Api.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
 import axios from '@nextcloud/axios'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'DashboardIndex',
@@ -303,14 +306,19 @@ export default {
 		},
 
 		async calculateSizes(register) {
+			// Set the active register in the store
+			registerStore.setRegisterItem(register)
+
+			// Set the calculating state for this register
 			this.calculating = register.id
 			try {
-				await axios.post(`/index.php/apps/openregister/api/dashboard/calculate/${register.id}`)
-				showSuccess(t('openregister', 'Sizes calculated successfully'))
+				// Call the dashboard store to calculate sizes
+				await dashboardStore.calculateSizes(register.id)
+				// Refresh the registers list to get updated sizes
 				await dashboardStore.fetchRegisters()
 			} catch (error) {
+				console.error('Error calculating sizes:', error)
 				showError(t('openregister', 'Failed to calculate sizes'))
-				console.error('Failed to calculate sizes:', error)
 			} finally {
 				this.calculating = null
 			}
