@@ -822,4 +822,169 @@ class ObjectEntityMapper extends QBMapper
     }
    
 
+    /**
+     * Get chart data for objects grouped by register
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of register names
+     *               - series: Array of object counts per register
+     */
+    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            // Join with registers table to get register names
+            $qb->select(
+                'r.title as register_name',
+                $qb->createFunction('COUNT(o.id) as count')
+            )
+                ->from($this->getTableName(), 'o')
+                ->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id')
+                ->groupBy('r.id', 'r.title')
+                ->orderBy('count', 'DESC');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            return [
+                'labels' => array_map(function($row) { return $row['register_name'] ?? 'Unknown'; }, $results),
+                'series' => array_map(function($row) { return (int)$row['count']; }, $results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
+    /**
+     * Get chart data for objects grouped by schema
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of schema names
+     *               - series: Array of object counts per schema
+     */
+    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            // Join with schemas table to get schema names
+            $qb->select(
+                's.title as schema_name',
+                $qb->createFunction('COUNT(o.id) as count')
+            )
+                ->from($this->getTableName(), 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->groupBy('s.id', 's.title')
+                ->orderBy('count', 'DESC');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            return [
+                'labels' => array_map(function($row) { return $row['schema_name'] ?? 'Unknown'; }, $results),
+                'series' => array_map(function($row) { return (int)$row['count']; }, $results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
+    /**
+     * Get chart data for objects grouped by size ranges
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of size range labels
+     *               - series: Array of object counts per size range
+     */
+    public function getSizeDistributionChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            // Define size ranges in bytes
+            $ranges = [
+                ['min' => 0, 'max' => 1024, 'label' => '0-1 KB'],
+                ['min' => 1024, 'max' => 10240, 'label' => '1-10 KB'],
+                ['min' => 10240, 'max' => 102400, 'label' => '10-100 KB'],
+                ['min' => 102400, 'max' => 1048576, 'label' => '100 KB-1 MB'],
+                ['min' => 1048576, 'max' => null, 'label' => '> 1 MB']
+            ];
+
+            $results = [];
+            foreach ($ranges as $range) {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select($qb->createFunction('COUNT(*) as count'))
+                    ->from($this->getTableName());
+
+                // Add size range conditions
+                if ($range['min'] !== null) {
+                    $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
+                }
+                if ($range['max'] !== null) {
+                    $qb->andWhere($qb->expr()->lt('size', $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT)));
+                }
+
+                // Add register filter if provided
+                if ($registerId !== null) {
+                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                }
+
+                // Add schema filter if provided
+                if ($schemaId !== null) {
+                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                }
+
+                $count = $qb->executeQuery()->fetchOne();
+                $results[] = [
+                    'label' => $range['label'],
+                    'count' => (int)$count
+                ];
+            }
+
+            return [
+                'labels' => array_map(function($row) { return $row['label']; }, $results),
+                'series' => array_map(function($row) { return $row['count']; }, $results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
 }//end class

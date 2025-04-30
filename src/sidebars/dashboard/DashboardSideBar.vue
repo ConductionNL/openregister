@@ -14,6 +14,45 @@ import { dashboardStore } from '../../store/store.js'
 				<ChartBar :size="20" />
 			</template>
 
+			<!-- Filter Section -->
+			<div class="filterSection">
+				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
+				<div class="filterGroup">
+					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+					<NcSelect
+						id="registerSelect"
+						:options="registerOptions"
+						v-model="selectedRegisterId"
+						:placeholder="t('openregister', 'All Registers')"
+						@update:modelValue="onRegisterChange" />
+				</div>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<NcSelect
+						id="schemaSelect"
+						:options="schemaOptions"
+						v-model="selectedSchemaId"
+						:placeholder="t('openregister', 'All Schemas')"
+						:disabled="!selectedRegisterId"
+						@update:modelValue="onSchemaChange" />
+				</div>
+				<div class="filterGroup">
+					<label>{{ t('openregister', 'Date Range') }}</label>
+					<div class="dateRangeInputs">
+						<NcDatetimePicker
+							v-model="dateRange.from"
+							type="date"
+							:placeholder="t('openregister', 'From')"
+							@update:modelValue="onDateRangeChange" />
+						<NcDatetimePicker
+							v-model="dateRange.till"
+							type="date"
+							:placeholder="t('openregister', 'To')"
+							@update:modelValue="onDateRangeChange" />
+					</div>
+				</div>
+			</div>
+
 			<!-- System Totals Section -->
 			<div class="section">
 				<h3 class="section-title">
@@ -26,6 +65,14 @@ import { dashboardStore } from '../../store/store.js'
 				<div v-else-if="systemTotals" class="stats-container">
 					<table class="statisticsTable">
 						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Registers') }}</td>
+								<td>{{ filteredRegisters.length }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Schemas') }}</td>
+								<td>{{ totalSchemas }}</td>
+							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Objects') }}</td>
 								<td>{{ systemTotals.stats?.objects?.total || 0 }}</td>
@@ -68,26 +115,6 @@ import { dashboardStore } from '../../store/store.js'
 								<td>{{ t('openregister', 'Files') }}</td>
 								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
 								<td>{{ formatBytes(systemTotals.stats?.files?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Registers') }}</td>
-								<td>
-									{{ dashboardStore.registers.filter(register =>
-										register.title !== 'System Totals' &&
-										register.title !== 'Orphaned Items'
-									).length }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
-								<td>
-									{{ dashboardStore.registers.filter(register =>
-										register.title !== 'System Totals' &&
-										register.title !== 'Orphaned Items'
-									).reduce((total, register) => total + (register.schemas?.length || 0), 0) }}
-								</td>
-								<td>-</td>
 							</tr>
 						</tbody>
 					</table>
@@ -177,6 +204,7 @@ import { dashboardStore } from '../../store/store.js'
 import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
+import { NcSelect, NcDatetimePicker } from '@nextcloud/vue'
 
 // Ensure data is loaded
 dashboardStore.preload()
@@ -191,10 +219,18 @@ export default {
 		// Icons
 		ChartBar,
 		Cog,
+		NcSelect,
+		NcDatetimePicker,
 	},
 	data() {
 		return {
 			activeTab: 'overview-tab',
+			selectedRegisterId: null,
+			selectedSchemaId: null,
+			dateRange: {
+				from: null,
+				till: null,
+			},
 		}
 	},
 	computed: {
@@ -204,6 +240,31 @@ export default {
 		orphanedItems() {
 			return dashboardStore.getOrphanedItems
 		},
+		filteredRegisters() {
+			return dashboardStore.registers.filter(register =>
+				register.title !== 'System Totals'
+				&& register.title !== 'Orphaned Items',
+			)
+		},
+		totalSchemas() {
+			return this.filteredRegisters.reduce((total, register) => {
+				return total + (register.schemas?.length || 0)
+			}, 0)
+		},
+		registerOptions() {
+			return this.filteredRegisters.map(register => ({
+				label: register.title,
+				value: register.id,
+			}))
+		},
+		schemaOptions() {
+			if (!this.selectedRegisterId) return []
+			const register = this.filteredRegisters.find(r => r.id === this.selectedRegisterId)
+			return register?.schemas?.map(schema => ({
+				label: schema.title,
+				value: schema.id,
+			})) || []
+		},
 	},
 	methods: {
 		formatBytes(bytes) {
@@ -212,6 +273,18 @@ export default {
 			const sizes = ['B', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+		},
+		onRegisterChange(value) {
+			this.selectedRegisterId = value
+			this.selectedSchemaId = null // Reset schema selection when register changes
+			dashboardStore.setSelectedRegisterId(value)
+		},
+		onSchemaChange(value) {
+			this.selectedSchemaId = value
+			dashboardStore.setSelectedSchemaId(value)
+		},
+		onDateRangeChange() {
+			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
 	},
 }
@@ -273,5 +346,35 @@ export default {
 	tr:last-child td {
 		border-bottom: none;
 	}
+}
+
+.filterSection {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--color-border);
+
+	h3 {
+		margin: 0;
+		font-size: 1.1em;
+		color: var(--color-main-text);
+	}
+}
+
+.filterGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	label {
+		font-size: 0.9em;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+.dateRangeInputs {
+	display: flex;
+	gap: 8px;
 }
 </style>

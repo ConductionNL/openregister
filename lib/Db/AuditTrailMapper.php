@@ -566,8 +566,6 @@ class AuditTrailMapper extends QBMapper
     }
 
 
-  
-
     /**
      * Updates an entity in the database
      *
@@ -584,6 +582,95 @@ class AuditTrailMapper extends QBMapper
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         return parent::update($entity);
+    }
+
+
+    /**
+     * Get chart data for audit trail actions over time
+     *
+     * @param \DateTime|null $from      Start date for the chart data
+     * @param \DateTime|null $till      End date for the chart data
+     * @param int|null      $registerId Optional register ID to filter by
+     * @param int|null      $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of dates
+     *               - series: Array of series data, each containing:
+     *                 - name: Action name (create, update, delete)
+     *                 - data: Array of counts for each date
+     */
+    public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            // Base query to get counts by date and action
+            $qb->select(
+                $qb->createFunction('DATE(created) as date'),
+                'action',
+                $qb->createFunction('COUNT(*) as count')
+            )
+                ->from($this->getTableName())
+                ->groupBy('date', 'action')
+                ->orderBy('date', 'ASC');
+
+            // Add date range filters if provided
+            if ($from !== null) {
+                $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+            }
+            if ($till !== null) {
+                $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($till->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+            }
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            // Process results into chart format
+            $dateData = [];
+            $actions = ['create', 'update', 'delete'];
+            
+            // Initialize data structure
+            foreach ($results as $row) {
+                $date = $row['date'];
+                if (!isset($dateData[$date])) {
+                    $dateData[$date] = array_fill_keys($actions, 0);
+                }
+                $dateData[$date][$row['action']] = (int)$row['count'];
+            }
+
+            // Sort dates and ensure all dates in range are included
+            ksort($dateData);
+
+            // Prepare series data
+            $series = [];
+            foreach ($actions as $action) {
+                $series[] = [
+                    'name' => ucfirst($action),
+                    'data' => array_values(array_map(function($data) use ($action) {
+                        return $data[$action];
+                    }, $dateData))
+                ];
+            }
+
+            return [
+                'labels' => array_keys($dateData),
+                'series' => $series
+            ];
+        } catch (\Exception $e) {
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
     }
 
 }//end class

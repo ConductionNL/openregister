@@ -553,4 +553,90 @@ class DashboardService
     }//end calculate()
 
 
+    /**
+     * Get chart data for audit trail actions over time
+     *
+     * @param \DateTime|null $from      Start date for the chart data
+     * @param \DateTime|null $till      End date for the chart data
+     * @param int|null      $registerId Optional register ID to filter by
+     * @param int|null      $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data for audit trail actions
+     */
+    public function getAuditTrailActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            return $this->auditTrailMapper->getActionChartData($from, $till, $registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail action chart data: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
+    /**
+     * Get chart data for objects by register
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data for objects by register
+     */
+    public function getObjectsByRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            return $this->objectMapper->getRegisterChartData($registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get objects by register chart data: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
+    /**
+     * Get chart data for objects by schema
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data for objects by schema
+     */
+    public function getObjectsBySchemaChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            return $this->objectMapper->getSchemaChartData($registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get objects by schema chart data: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
+    /**
+     * Get chart data for objects by size distribution
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data for objects by size
+     */
+    public function getObjectsBySizeChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            return $this->objectMapper->getSizeDistributionChartData($registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get objects by size chart data: ' . $e->getMessage());
+            return [
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
 }//end class
