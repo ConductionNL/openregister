@@ -781,4 +781,78 @@ class ObjectEntityMapper extends QBMapper
         }
     }
 
+    /**
+     * Get statistics about orphaned objects
+     *
+     * An object is considered orphaned if:
+     * - It references a non-existent register
+     * - It references a non-existent schema
+     * - It references a schema that no longer belongs to its register
+     *
+     * @return array Array containing statistics about orphaned objects
+     */
+    public function getOrphanedStatistics(): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            // Build subquery for valid register-schema combinations
+            $validCombosQb = $this->db->getQueryBuilder();
+            $validCombosQb->select('id', 'schemas')
+                ->from('openregister_registers');
+            
+            // Main query for orphaned objects
+            $qb->select(
+                $qb->createFunction('COUNT(o.id) as total_objects'),
+                $qb->createFunction('SUM(o.size) as total_size'),
+                $qb->createFunction('COUNT(CASE WHEN o.validation IS NOT NULL THEN 1 END) as invalid_objects'),
+                $qb->createFunction('COUNT(CASE WHEN o.deleted IS NOT NULL THEN 1 END) as deleted_objects')
+            )
+            ->from('openregister_objects', 'o')
+            ->leftJoin(
+                'o',
+                'openregister_registers',
+                'r',
+                $qb->expr()->eq('o.register', 'r.id')
+            )
+            ->leftJoin(
+                'o',
+                'openregister_schemas',
+                's',
+                $qb->expr()->eq('o.schema', 's.id')
+            )
+            ->where(
+                $qb->expr()->orX(
+                    // Register doesn't exist
+                    $qb->expr()->isNull('r.id'),
+                    // Schema doesn't exist
+                    $qb->expr()->isNull('s.id'),
+                    // Schema exists but is not in register's schema list
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull('r.id'),
+                        $qb->expr()->isNotNull('s.id'),
+                        $qb->expr()->notLike('r.schemas', $qb->createFunction('CONCAT(\'%"\', o.schema, \'"%\')'))
+                    )
+                )
+            );
+
+            $result = $qb->executeQuery()->fetch();
+
+            return [
+                'total' => (int)($result['total_objects'] ?? 0),
+                'size' => (int)($result['total_size'] ?? 0),
+                'invalid' => (int)($result['invalid_objects'] ?? 0),
+                'deleted' => (int)($result['deleted_objects'] ?? 0)
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get orphaned object statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'size' => 0,
+                'invalid' => 0,
+                'deleted' => 0
+            ];
+        }
+    }
+
 }//end class

@@ -143,6 +143,38 @@ class DashboardService
     }
 
     /**
+     * Get statistics for orphaned items
+     *
+     * @return array The statistics for orphaned items
+     */
+    private function getOrphanedStats(): array
+    {
+        try {
+            // Get orphaned object statistics
+            $objectStats = $this->objectMapper->getOrphanedStatistics();
+            
+            // Get orphaned audit trail statistics
+            $auditStats = $this->auditTrailMapper->getOrphanedStatistics();
+
+            return [
+                'objects' => $objectStats,
+                'logs' => $auditStats,
+                'files' => [
+                    'total' => 0,
+                    'size' => 0
+                ]
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get orphaned statistics: ' . $e->getMessage());
+            return [
+                'objects' => ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0],
+                'logs' => ['total' => 0, 'size' => 0],
+                'files' => ['total' => 0, 'size' => 0]
+            ];
+        }
+    }
+
+    /**
      * Get all registers with their schemas and statistics
      *
      * @param int|null    $limit            The number of registers to return
@@ -199,6 +231,16 @@ class DashboardService
                 $registerArray['schemas'] = $schemasArray;
                 $result[] = $registerArray;
             }
+
+            // Add orphaned items statistics as a special "register"
+            $orphanedStats = $this->getOrphanedStats();
+            $result[] = [
+                'id' => 'orphaned',
+                'title' => 'Orphaned Items',
+                'description' => 'Items that reference non-existent registers, schemas, or invalid register-schema combinations',
+                'stats' => $orphanedStats,
+                'schemas' => []
+            ];
 
             return $result;
         } catch (\Exception $e) {
