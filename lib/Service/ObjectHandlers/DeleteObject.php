@@ -77,17 +77,21 @@ class DeleteObject
     public function delete(array | JsonSerializable $object): bool
     {
         if ($object instanceof JsonSerializable) {
+            $objectEntity = $object;
             $object = $object->jsonSerialize();
+
+        } else {
+            $this->objectEntityMapper->find($object['id']);
         }
 
         // Delete associated files from storage.
-        $files = $this->fileService->getFiles($object['uuid']);
+        $files = $this->fileService->getFiles($object['id']);
         foreach ($files as $file) {
-            $this->fileService->deleteFile($object['uuid'], $file->getName());
+            $this->fileService->deleteFile($object['id'], $file->getName());
         }
 
         // Delete the object from database.
-        return $this->objectEntityMapper->delete($object) !== null;
+        return $this->objectEntityMapper->delete($objectEntity) !== null;
 
     }//end delete()
 

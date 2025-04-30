@@ -24,37 +24,56 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * Configuration entity class
- *
  */
-class Configuration extends Entity implements JsonSerializable {
-    /** @var string Title of the configuration */
+class Configuration extends Entity implements JsonSerializable
+{
+
+    /**
+     * @var string Title of the configuration
+     */
     protected $title = null;
 
-    /** @var string|null Description of the configuration */
+    /**
+     * @var string|null Description of the configuration
+     */
     protected $description = null;
 
-    /** @var string Type of the configuration */
+    /**
+     * @var string Type of the configuration
+     */
     protected $type = null;
 
-    /** @var string Owner of the configuration */
+    /**
+     * @var string Owner of the configuration
+     */
     protected $owner = null;
 
-    /** @var string Version of the configuration */
+    /**
+     * @var string Version of the configuration
+     */
     protected $version = null;
 
-    /** @var array|null Array of registers of the configuration */
+    /**
+     * @var array|null Array of registers of the configuration
+     */
     protected ?array $registers = [];
 
-    /** @var DateTime Creation timestamp */
+    /**
+     * @var DateTime Creation timestamp
+     */
     protected $created = null;
 
-    /** @var DateTime Last update timestamp */
+    /**
+     * @var DateTime Last update timestamp
+     */
     protected $updated = null;
+
 
     /**
      * Constructor to set up the entity with required types
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->addType('id', 'integer');
         $this->addType('title', 'string');
         $this->addType('description', 'string');
@@ -64,7 +83,9 @@ class Configuration extends Entity implements JsonSerializable {
         $this->addType('registers', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
+
     }//end __construct()
+
 
     /**
      * Get the registers of the configuration
@@ -74,13 +95,17 @@ class Configuration extends Entity implements JsonSerializable {
     public function getRegisters(): array
     {
         return ($this->registers ?? []);
+
     }//end getRegisters()
+
 
     /**
      * Set the registers of the configuration
      *
      * @param array<string> $registers Array of registers
      */
+
+
     /**
      * Get JSON fields from the entity
      *
@@ -133,22 +158,27 @@ class Configuration extends Entity implements JsonSerializable {
 
     }//end hydrate()
 
+
     /**
      * Serialize the entity to JSON
      *
      * @return array<string, mixed> The serialized entity
      */
-    public function jsonSerialize(): array {
+    public function jsonSerialize(): array
+    {
         return [
-            'id' => $this->id,
-            'title' => $this->title,
+            'id'          => $this->id,
+            'title'       => $this->title,
             'description' => $this->description,
-            'type' => $this->type,
-            'owner' => $this->owner,
-            'version' => $this->version,
-            'registers' => $this->registers,
-            'created' => $this->created ? $this->created->format('c') : null,
-            'updated' => $this->updated ? $this->updated->format('c') : null,
+            'type'        => $this->type,
+            'owner'       => $this->owner,
+            'version'     => $this->version,
+            'registers'   => $this->registers,
+            'created'     => $this->created ? $this->created->format('c') : null,
+            'updated'     => $this->updated ? $this->updated->format('c') : null,
         ];
-    }
-} 
+
+    }//end jsonSerialize()
+
+
+}//end class

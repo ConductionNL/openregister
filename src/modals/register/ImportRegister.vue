@@ -35,10 +35,10 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<div class="includeObjects">
-				<NcCheckboxRadioSwitch 
+				<NcCheckboxRadioSwitch
 					:checked="includeObjects"
-					@update:checked="includeObjects = $event"
-					type="switch">
+					type="switch"
+					@update:checked="includeObjects = $event">
 					Include objects in the import
 					<template #helper>
 						This will create or update objects on the register

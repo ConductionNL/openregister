@@ -62,6 +62,13 @@ class AuditTrail extends Entity implements JsonSerializable
     protected ?int $object = null;
 
     /**
+     * Size of the log in byte
+     *
+     * @var integer|null 
+     */
+    protected ?int $size = null;
+
+    /**
      * UUID of the object associated with the audit trail entry
      *
      * @var string|null UUID of the object associated with the audit trail entry
@@ -234,7 +241,7 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'processingId', type: 'string');
         $this->addType(fieldName: 'confidentiality', type: 'string');
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
-
+        $this->addType(fieldName: 'size', type: 'integer');
     }//end __construct()
 
 
@@ -342,6 +349,7 @@ class AuditTrail extends Entity implements JsonSerializable
             'processingId'          => $this->processingId,
             'confidentiality'       => $this->confidentiality,
             'retentionPeriod'       => $this->retentionPeriod,
+            'size'                  => $this->size,
         ];
 
     }//end jsonSerialize()

@@ -150,6 +150,7 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
+
     /**
      * Find all ObjectEntities
      *
@@ -203,15 +204,14 @@ class ObjectEntityMapper extends QBMapper
         );
 
         // Add register to filters if provided
-         if ($register !== null) {
+        if ($register !== null) {
             $filters['register'] = $register;
-         }
+        }
 
         // Add schema to filters if provided
         if ($schema !== null) {
-            $filters['schema'] = $schema;        
+            $filters['schema'] = $schema;
         }
-
 
         $qb = $this->db->getQueryBuilder();
 
@@ -224,8 +224,6 @@ class ObjectEntityMapper extends QBMapper
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
-
-       
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -271,7 +269,6 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
@@ -280,6 +277,114 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+
+    /**
+     * Counts all objects with optional register and schema filters
+     *
+     * @param array|null    $filters        The filters to apply
+     * @param string|null   $search         The search string to apply
+     * @param bool          $includeDeleted Whether to include deleted objects
+     * @param Register|null $register       Optional register to filter by
+     * @param Schema|null   $schema         Optional schema to filter by
+     *
+     * @return int The number of objects
+     */
+    public function countAll(
+        ?array $filters=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): int {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
+            ->from(from: 'openregister_objects');
+
+        // Filter out system variables (starting with _)
+        $filters = array_filter(
+            $filters ?? [],
+            function ($key) {
+                return !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Remove pagination parameters.
+        unset(
+            $filters['extend'],
+            $filters['limit'],
+            $filters['offset'],
+            $filters['order'],
+            $filters['page']
+        );
+
+        // Add register to filters if provided
+        if ($register !== null) {
+            $filters['register'] = $register;
+        }
+
+        // Add schema to filters if provided
+        if ($schema !== null) {
+            $filters['schema'] = $schema;
+        }
+
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // Handle filtering by IDs/UUIDs if provided.
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $qb->expr()->orX();
+            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $qb->andWhere($orX);
+        }
+
+        // Handle filtering by uses in relations if provided.
+        if ($uses !== null) {
+            $qb->andWhere(
+                $qb->expr()->isNotNull(
+                    $qb->createFunction(
+                        "JSON_SEARCH(relations, 'one', ".$qb->createNamedParameter($uses).", NULL, '$')"
+                    )
+                )
+            );
+        }
+
+        foreach ($filters as $filter => $value) {
+            if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+                // Add condition for IS NOT NULL
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+            } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
+                // Add condition for IS NULL
+                $qb->andWhere($qb->expr()->isNull($filter));
+            } else if (in_array($filter, self::MAIN_FILTERS) === true) {
+                if (is_array($value)) {
+                    // If the value is an array, use IN to search for any of the values in the array
+                    $qb->andWhere($qb->expr()->in($filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                } else {
+                    // Otherwise, use equality for the filter
+                    $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                }
+            }
+        }
+
+        // Filter and search the objects.
+        $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
+        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
+
+//        var_dump($qb->getSQL());
+
+        $result = $qb->executeQuery();
+
+        return $result->fetchAll()[0]['count'];
+
+    }//end countAll()
 
 
     /**
@@ -297,6 +402,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
         // Dispatch creation event.
@@ -351,6 +457,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::update($entity);
 
@@ -379,10 +486,10 @@ class ObjectEntityMapper extends QBMapper
         $newObject = clone $oldObject;
 
         // Ensure we preserve the UUID if it exists, or create a new one if it doesn't
-        if (empty($object['uuid']) && empty($oldObject->getUuid())) {
-            $object['uuid'] = Uuid::v4();
-        } elseif (empty($object['uuid'])) {
-            $object['uuid'] = $oldObject->getUuid();
+        if (empty($object['id']) && empty($oldObject->getUuid())) {
+            $object['id'] = Uuid::v4();
+        } else if (empty($object['uuid'])) {
+            $object['id'] = $oldObject->getUuid();
         }
 
         $newObject->hydrate($object);
@@ -628,5 +735,152 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findMultiple()
 
+
+    /**
+     * Get statistics about objects in a register and optionally filtered by schema
+     *
+     * @param int      $registerId The ID of the register to get statistics for
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing statistics about objects:
+     *               - total: Total number of objects
+     *               - size: Total size of all objects in bytes
+     *               - invalid: Number of objects with validation errors
+     *               - deleted: Number of deleted objects
+     *               - locked: Number of locked objects
+     *               - published: Number of published objects
+     *
+     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
+     */
+    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            $qb->select(
+                $qb->createFunction('COUNT(id) as total_objects'),
+                $qb->createFunction('SUM(size) as total_size'),
+                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid_objects'),
+                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects'),
+                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked_objects'),
+                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL THEN 1 END) as published_objects')
+            )
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $result = $qb->executeQuery()->fetch();
+
+            return [
+                'total' => (int)($result['total_objects'] ?? 0),
+                'size' => (int)($result['total_size'] ?? 0),
+                'invalid' => (int)($result['invalid_objects'] ?? 0),
+                'deleted' => (int)($result['deleted_objects'] ?? 0),
+                'locked' => (int)($result['locked_objects'] ?? 0),
+                'published' => (int)($result['published_objects'] ?? 0)
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get object statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'size' => 0,
+                'invalid' => 0,
+                'deleted' => 0,
+                'locked' => 0,
+                'published' => 0
+            ];
+        }
+    }
+
+    /**
+     * Get statistics about orphaned objects
+     *
+     * An object is considered orphaned if:
+     * - It references a non-existent register
+     * - It references a non-existent schema
+     * - It references a schema that no longer belongs to its register
+     *
+     * @return array Array containing statistics about orphaned objects:
+     *               - total: Total number of orphaned objects
+     *               - size: Total size of all orphaned objects in bytes
+     *               - invalid: Number of orphaned objects with validation errors
+     *               - deleted: Number of deleted orphaned objects
+     *               - locked: Number of locked orphaned objects
+     *               - published: Number of published orphaned objects
+     *
+     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
+     */
+    public function getOrphanedStatistics(): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            // Build subquery for valid register-schema combinations
+            $validCombosQb = $this->db->getQueryBuilder();
+            $validCombosQb->select('id', 'schemas')
+                ->from('openregister_registers');
+            
+            // Main query for orphaned objects
+            $qb->select(
+                $qb->createFunction('COUNT(o.id) as total_objects'),
+                $qb->createFunction('SUM(o.size) as total_size'),
+                $qb->createFunction('COUNT(CASE WHEN o.validation IS NOT NULL THEN 1 END) as invalid_objects'),
+                $qb->createFunction('COUNT(CASE WHEN o.deleted IS NOT NULL THEN 1 END) as deleted_objects'),
+                $qb->createFunction('COUNT(CASE WHEN o.locked IS NOT NULL THEN 1 END) as locked_objects'),
+                $qb->createFunction('COUNT(CASE WHEN o.published IS NOT NULL THEN 1 END) as published_objects')
+            )
+            ->from('openregister_objects', 'o')
+            ->leftJoin(
+                'o',
+                'openregister_registers',
+                'r',
+                $qb->expr()->eq('o.register', 'r.id')
+            )
+            ->leftJoin(
+                'o',
+                'openregister_schemas',
+                's',
+                $qb->expr()->eq('o.schema', 's.id')
+            )
+            ->where(
+                $qb->expr()->orX(
+                    // Register doesn't exist
+                    $qb->expr()->isNull('r.id'),
+                    // Schema doesn't exist
+                    $qb->expr()->isNull('s.id'),
+                    // Schema exists but is not in register's schema list
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull('r.id'),
+                        $qb->expr()->isNotNull('s.id'),
+                        $qb->expr()->notLike('r.schemas', $qb->createFunction('CONCAT(\'%"\', o.schema, \'"%\')'))
+                    )
+                )
+            );
+
+            $result = $qb->executeQuery()->fetch();
+
+            return [
+                'total' => (int)($result['total_objects'] ?? 0),
+                'size' => (int)($result['total_size'] ?? 0),
+                'invalid' => (int)($result['invalid_objects'] ?? 0),
+                'deleted' => (int)($result['deleted_objects'] ?? 0),
+                'locked' => (int)($result['locked_objects'] ?? 0),
+                'published' => (int)($result['published_objects'] ?? 0)
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get orphaned object statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'size' => 0,
+                'invalid' => 0,
+                'deleted' => 0,
+                'locked' => 0,
+                'published' => 0
+            ];
+        }
+    }
 
 }//end class

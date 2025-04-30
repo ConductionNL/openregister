@@ -240,6 +240,6 @@ export const useConfigurationStore = defineStore('configuration', {
 				console.error('Error importing configuration:', error)
 				throw error // Pass through the original error message
 			}
-		}
+		},
 	},
-}) 
+})

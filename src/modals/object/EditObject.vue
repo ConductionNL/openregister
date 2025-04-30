@@ -260,7 +260,19 @@ export default {
 			this.error = null
 
 			try {
-				const dataToSave = this.activeTab === 1 ? JSON.parse(this.jsonData) : this.formData
+				let dataToSave
+				if (this.activeTab === 1) {
+					if (!this.jsonData.trim()) {
+						throw new Error('JSON data cannot be empty')
+					}
+					try {
+						dataToSave = JSON.parse(this.jsonData)
+					} catch (e) {
+						throw new Error('Invalid JSON format: ' + e.message)
+					}
+				} else {
+					dataToSave = this.formData
+				}
 
 				const { response } = await objectStore.saveObject(dataToSave, {
 					register: this.currentRegister.id,
@@ -296,6 +308,9 @@ export default {
 		},
 
 		isValidJson(str) {
+			if (!str || !str.trim()) {
+				return false
+			}
 			try {
 				JSON.parse(str)
 				return true

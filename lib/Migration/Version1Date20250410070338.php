@@ -67,12 +67,11 @@ class Version1Date20250410070338 extends SimpleMigrationStep
             $table->addColumn('registers', Types::JSON, [
                 'notnull' => false,
             ]);
-            $table->addColumn('version', Types::STRING, [
+            $table->addColumn('version', 'string', [
                 'notnull' => false,
                 'length' => 255,
                 'default' => '0.0.1',
-            ]);
-           
+            ]);           
             $table->addColumn('owner', 'string', [
                 'notnull' => false,
                 'length' => 64,

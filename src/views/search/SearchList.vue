@@ -126,7 +126,7 @@ export default {
 		Eye,
 		Pencil,
 		Delete,
-		MassDeleteObject
+		MassDeleteObject,
 	},
 	data() {
 		return {

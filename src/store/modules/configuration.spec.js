@@ -75,13 +75,13 @@ describe('Configuration Store', () => {
 				organisation: null,
 				application: null,
 				updated: '',
-				created: ''
+				created: '',
 			},
-			configuration: {}
+			configuration: {},
 		}
 
 		store.setConfigurationList([invalidConfiguration])
 
 		expect(store.configurationList[0].validate().success).toBe(false)
 	})
-}) 
+})

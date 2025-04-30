@@ -24,6 +24,8 @@
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
+use Adbar\Dot;
+use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IURLGenerator;
@@ -367,6 +369,139 @@ class RenderObject
 
     }//end renderEntity()
 
+    /**
+     * Handle extends containing a wildcard ($)
+     *
+     * @param array $objectData The data to extend
+     * @param array $extend The fields that should be extended
+     * @param int $depth The current depth.
+     * @return array|Dot
+     */
+    private function handleWildcardExtends(array $objectData, array &$extend, int $depth): array
+    {
+        $objectData = new Dot($objectData);
+        if ($depth >=10) {
+            return $objectData;
+        }
+
+        $wildcardExtends = array_filter($extend, function (string $key) {
+            return str_contains($key, '.$.');
+        });
+
+        foreach($wildcardExtends as $key => $wildcardExtend) {
+            unset($extend[$key]);
+
+            [$root, $extends] = explode(separator: '.$.', string: $wildcardExtend, limit: 2);
+
+            if(is_numeric($key) === true) {
+                $extendedRoots[$root][] = $extends;
+            } else {
+                [$root, $path] = explode(separator: '.$.',string: $key, limit: 2 );
+                $extendedRoots[$root][$path] = $extends;
+            }
+
+        }
+
+        foreach($extendedRoots as $root => $extends) {
+            $data = $objectData->get($root);
+            foreach($data as $key => $datum) {
+                $data[$key] = $this->handleExtendDot($datum, $extends, $depth);
+            }
+
+            $objectData->set($root, $data);
+        }
+
+        return $objectData->jsonSerialize();
+    }
+
+    /**
+     * Handle extends on a dot array
+     *
+     * @param array $data The data to extend.
+     * @param array $extend The fields to extend.
+     * @param int $depth The current depth.
+     * @return array
+     * 
+     * @throws \OCP\DB\Exception
+     */
+    private function handleExtendDot(array $data, array &$extend, int $depth): array
+    {
+        $data = $this->handleWildcardExtends($data, $extend, $depth+1);
+
+        $data = new Dot($data);
+
+        foreach($extend as $override => $key) {
+            // Skip if the key does not have to be extended
+            if($data->has(keys: $key) === false) {
+                continue;
+            }
+
+            // Get all the keys that should be extended withtin the extended object
+            $keyExtends = array_map(
+                function(string $extendedKey) use ($key) {
+                    return substr(string: $extendedKey, offset: strlen(string: $key. '.'));
+                },
+                array_filter(
+                    $extend,
+                    function (string $singleKey) use ($key) {
+                        return str_starts_with(haystack: $singleKey, needle: $key.'.');
+                    }
+                )
+            );
+
+            $value = $data->get(key: $key);
+
+            // Make sure arrays are arrays
+            if($value instanceof Dot) {
+                $value = $value->jsonSerialize();
+            }
+
+            // Extend the object(s)
+            if (is_array($value) === true) {
+                $renderedValue = array_map(function(string|int $identifier) use ($depth, $keyExtends) {
+                    $object = $this->getObject(id: $identifier);
+                    if ($object === null) {
+                        $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
+
+                        if (count($multiObject) === 1) {
+                            $object = array_shift($multiObject);
+                        } else {
+                            return null;
+                        }
+                    }
+                    return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1);
+                }, $value);
+
+                if(is_numeric($override) === true) {
+                    $data->set(keys: $key, value: $renderedValue);
+                } else {
+                    $data->set(keys: $override, value: $renderedValue);
+                }
+
+            } else {
+                $object = $this->getObject(id: $value);
+
+                if ($object === null) {
+                    $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $value]);
+
+                    if (count($multiObject) === 1) {
+                        $object = array_shift($multiObject);
+                    } else {
+                        continue;
+                    }
+                }
+                if(is_numeric($override) === true) {
+                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                } else {
+                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                }
+            }
+
+        }
+
+        return $data->jsonSerialize();
+    }
+
 
     /**
      * Extends an object with additional data based on the extension configuration
@@ -409,27 +544,10 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        // Handle other extensions.
-        foreach ($extend as $key => $value) {
-            if (isset($objectData[$key]) === true && is_array($value) === true) {
-                // Handle object references.
-                if (isset($objectData[$key]['id']) === true || isset($objectData[$key]['uuid']) === true) {
-                    $refId            = $objectData[$key]['id'] ?? $objectData[$key]['uuid'];
-                    $referencedObject = $this->getObject($refId);
-                    if ($referencedObject !== null) {
-                        $objectData[$key] = $this->renderEntity(
-                            $referencedObject,
-                            $value,
-                            $depth + 1,
-                            $filter,
-                            $fields
-                        );
-                    }
-                }
-            }
-        }
+        $objectDataDot = $this->handleExtendDot($objectData, $extend, $depth);
 
-        return $objectData;
+
+        return $objectDataDot;
 
     }//end extendObject()
 
@@ -454,12 +572,7 @@ class RenderObject
                 );
 
         // Extract the property names and their inversedBy values.
-        return array_map(
-                function ($property) {
-                    return $property['inversedBy'];
-                },
-                $inversedProperties
-                );
+        return $inversedProperties;
 
     }//end getInversedProperties()
 
@@ -503,32 +616,40 @@ class RenderObject
         // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
+        // Set all found objects to the objectsCache.
+        $ids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $referencingObjects);
+        $objectsToCache = array_combine(keys: $ids, values: $referencingObjects);
+        $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
+
         // Process each inversed property.
         foreach ($inversedProperties as $propertyName => $inversedBy) {
             $objectData[$propertyName] = [];
 
-            foreach ($referencingObjects as $referencingObject) {
-                // Check if the referencing object has the correct inversedBy property.
-                $referencingData = $referencingObject->getObject();
-                if (isset($referencingData[$inversedBy]) === true
-                    && (isset($referencingData[$inversedBy]['uuid']) === true && $referencingData[$inversedBy]['uuid'] === $entity->getUuid())
-                    || (isset($referencingData[$inversedBy]['id']) === true && $referencingData[$inversedBy]['id'] === $entity->getId())
-                ) {
-                    // Add to the inversed property array.
-                    $objectData[$propertyName][] = $this->renderEntity(
-                        $referencingObject,
-                        [],
-                    // No extensions for inversed properties to prevent loops.
-                        $depth + 1,
-                        $filter,
-                        $fields,
-                        $registers,
-                        $schemas,
-                        $objects
-                    );
-                }
-            }//end foreach
+            $inversedObjects = array_filter($referencingObjects, function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
+                $data = $object->jsonSerialize();
+                $schema = $object->getSchema();
+
+                // @TODO: accomodate schema references.
+                if(isset($inversedBy['$ref']) === true) {
+                    $schemaId = substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1);
+                } else if (isset($inversedBy['items']['$ref']) === true) {
+                    $schemaId = substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1);
+                } else {
+                    return false;
+                }//end if
+
+                return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
+            });
+
+            $inversedUuids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $inversedObjects);
+
+            if($inversedBy['type'] === 'array') {
+                $objectData[$propertyName] = $inversedUuids;
+            } else {
+                $objectData[$propertyName] = end($inversedUuids);
+            }
         }//end foreach
+
 
         return $objectData;
 

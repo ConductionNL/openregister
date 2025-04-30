@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useDropZone, useFileDialog } from '@vueuse/core'
 import { ref, computed } from 'vue'
 import { publicationStore } from './../store/store.js'

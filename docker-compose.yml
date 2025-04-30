@@ -18,12 +18,12 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
 
-  init-ubuntu:
-    image: ubuntu
-    command: sh /home/ubuntu/docker/init-ubuntu.sh
-    volumes:
-      - ./docker:/home/ubuntu/docker
-      - .:/home/ubuntu/app
+  # init-ubuntu:
+  #   image: ubuntu
+  #   command: sh /home/ubuntu/docker/init-ubuntu.sh
+  #   volumes:
+  #     - ./docker:/home/ubuntu/docker
+  #     - .:/home/ubuntu/app
 
   nextcloud:
     user: root
@@ -47,6 +47,6 @@ services:
       - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
-    depends_on:
-      init-ubuntu:
-        condition: service_completed_successfully
+    # depends_on:
+    #   init-ubuntu:
+    #     condition: service_completed_successfully

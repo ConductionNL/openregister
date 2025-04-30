@@ -184,6 +184,7 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?string $icon = null;
 
+
     /**
      * Constructor for the Schema class
      *
@@ -213,7 +214,9 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'array');
-    }
+
+    }//end __construct()
+
 
     /**
      * Get the required data
@@ -223,7 +226,9 @@ class Schema extends Entity implements JsonSerializable
     public function getRequired(): array
     {
         return ($this->required ?? []);
-    }
+
+    }//end getRequired()
+
 
     /**
      * Get the properties data
@@ -233,7 +238,9 @@ class Schema extends Entity implements JsonSerializable
     public function getProperties(): array
     {
         return ($this->properties ?? []);
-    }
+
+    }//end getProperties()
+
 
     /**
      * Get the archive data
@@ -243,7 +250,9 @@ class Schema extends Entity implements JsonSerializable
     public function getArchive(): array
     {
         return ($this->archive ?? []);
-    }
+
+    }//end getArchive()
+
 
     /**
      * Get JSON fields from the entity
@@ -262,7 +271,9 @@ class Schema extends Entity implements JsonSerializable
                 }
             )
         );
-    }
+
+    }//end getJsonFields()
+
 
     /**
      * Validate the schema properties
@@ -280,20 +291,22 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return $validator->validateProperties($this->properties);
-    }
+
+    }//end validateProperties()
+
 
     /**
      * Hydrate the entity with data from an array
      *
      * Sets entity properties based on input array values
      *
-     * @param array                   $object    The data array to hydrate from
+     * @param array                          $object    The data array to hydrate from
      * @param SchemaPropertyValidatorService $validator Optional validator for properties
      *
      * @throws Exception If property validation fails
      * @return self Returns $this for method chaining
      */
-    public function hydrate(array $object, ?SchemaPropertyValidatorService $validator = null): self
+    public function hydrate(array $object, ?SchemaPropertyValidatorService $validator=null): self
     {
         $jsonFields = $this->getJsonFields();
 
@@ -321,7 +334,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return $this;
-    }
+
+    }//end hydrate()
+
 
     /**
      * Serializes the schema to an array
@@ -378,7 +393,8 @@ class Schema extends Entity implements JsonSerializable
             'properties'     => $properties,
             'archive'        => $this->archive,
             'source'         => $this->source,
-            'hardValidation' => $this->hardValidation, //@todo: should be refactored to strict
+            'hardValidation' => $this->hardValidation,
+        // @todo: should be refactored to strict
             'updated'        => $updated,
             'created'        => $created,
             'maxDepth'       => $this->maxDepth,
@@ -389,7 +405,9 @@ class Schema extends Entity implements JsonSerializable
             'deleted'        => $deleted,
             'configuration'  => $this->configuration,
         ];
-    }
+
+    }//end jsonSerialize()
+
 
     /**
      * Converts schema to an object representation
@@ -447,16 +465,18 @@ class Schema extends Entity implements JsonSerializable
                 }
 
                 $schema->properties->$propertyName = $prop;
-            }
-        }
+            }//end if
+        }//end foreach
 
         return $schema;
-    }
+
+    }//end getSchemaObject()
+
 
     /**
      * Set the slug, ensuring it is always lowercase
      *
-     * @param string|null $slug The slug to set
+     * @param  string|null $slug The slug to set
      * @return void
      */
     public function setSlug(?string $slug): void
@@ -464,9 +484,12 @@ class Schema extends Entity implements JsonSerializable
         if ($slug !== null) {
             $slug = strtolower($slug);
         }
+
         $this->slug = $slug;
         $this->markFieldUpdated('slug');
-    }
+
+    }//end setSlug()
+
 
     /**
      * Get the icon for the schema
@@ -476,17 +499,22 @@ class Schema extends Entity implements JsonSerializable
     public function getIcon(): ?string
     {
         return $this->icon;
-    }
+
+    }//end getIcon()
+
 
     /**
      * Set the icon for the schema
      *
-     * @param string|null $icon The icon reference from Material Design Icons
+     * @param  string|null $icon The icon reference from Material Design Icons
      * @return void
      */
     public function setIcon(?string $icon): void
     {
         $this->icon = $icon;
         $this->markFieldUpdated('icon');
-    }
-}
+
+    }//end setIcon()
+
+
+}//end class

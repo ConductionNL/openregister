@@ -572,17 +572,33 @@ class ConfigurationService
     /**
      * Import configuration from a JSON file.
      *
+     * This method imports configuration data from a JSON file. It can handle:
+     * - Full configurations with schemas, registers, and objects
+     * - Partial configurations with only objects (using existing schemas and registers)
+     * - Objects with references to existing schemas and registers
+     *
      * @param array       $data           The configuration JSON content
-     * @param bool        $includeObjects Whether to include objects in the import
-     * @param string|null $owner          The owner of the schemas and registers
+     * @param string|null $owner          The owner of the imported data
      *
      * @throws JsonException If JSON parsing fails
      * @throws Exception     If schema validation fails or format is unsupported
      * @return array        Array of created/updated entities
+     *
+     * @phpstan-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
+     * }
      */
-    public function importFromJson(array $data, bool $includeObjects=false, ?string $owner=null): array
+    public function importFromJson(array $data, ?string $owner=null): array
     {
-        // Reset the maps for this import.
+        // Reset the maps for this import
         $this->registersMap = [];
         $this->schemasMap   = [];
 
@@ -598,26 +614,23 @@ class ConfigurationService
             'objects'          => [],
         ];
 
-        // Process and import schemas first.
+        // Process and import schemas if present
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
             foreach ($data['components']['schemas'] as $schemaData) {
-                // Create new schema from the provided data.
                 $schema = $this->importSchema($schemaData, $owner);
                 if ($schema !== null) {
-                    // Store schema in map by slug for reference.
+                    // Store schema in map by slug for reference
                     $this->schemasMap[$schema->getSlug()] = $schema;
                     $result['schemas'][] = $schema;
                 }
-            }//end foreach
-        }//end if
+            }
+        }
 
-        // Process and import registers after schemas for proper linking.
+        // Process and import registers if present
         if (isset($data['components']['registers']) === true && is_array($data['components']['registers']) === true) {
             foreach ($data['components']['registers'] as $slug => $registerData) {
-                // Convert register slug to lowercase for consistency.
                 $slug = strtolower($slug);
 
-                // Convert schema slugs to IDs for database references.
                 if (isset($registerData['schemas']) === true && is_array($registerData['schemas']) === true) {
                     $schemaIds = [];
                     foreach ($registerData['schemas'] as $schemaSlug) {
@@ -625,9 +638,17 @@ class ConfigurationService
                             $schemaSlug  = strtolower($schemaSlug);
                             $schemaIds[] = $this->schemasMap[$schemaSlug]->getId();
                         } else {
-                            $this->logger->warning(
-                                sprintf('Schema with slug %s not found during register import.', $schemaSlug)
-                            );
+                            // Try to find existing schema in database
+                            try {
+                                $existingSchema = $this->schemaMapper->find(strtolower($schemaSlug));
+                                $schemaIds[] = $existingSchema->getId();
+                                // Add to map for object processing
+                                $this->schemasMap[$schemaSlug] = $existingSchema;
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                                $this->logger->warning(
+                                    sprintf('Schema with slug %s not found during register import.', $schemaSlug)
+                                );
+                            }
                         }
                     }
 
@@ -636,26 +657,34 @@ class ConfigurationService
 
                 $register = $this->importRegister($registerData, $owner);
                 if ($register !== null) {
-                    // Store register in map by slug for reference.
+                    // Store register in map by slug for reference
                     $this->registersMap[$slug] = $register;
                     $result['registers'][]     = $register;
                 }
             }//end foreach
         }//end if
 
-        // Process and import objects if requested.
-        if ($includeObjects === true && isset($data['components']['objects']) === true) {
+        // Process and import objects
+        if (isset($data['components']['objects']) === true && is_array($data['components']['objects']) === true) {
             foreach ($data['components']['objects'] as $objectData) {
-                // Map register and schema slugs to their respective IDs.
+                // Map register and schema slugs to their respective IDs
                 if (isset($objectData['@self']['register']) === true) {
                     $registerSlug = strtolower($objectData['@self']['register']);
                     if (isset($this->registersMap[$registerSlug]) === true) {
                         $objectData['@self']['register'] = $this->registersMap[$registerSlug]->getId();
                     } else {
-                        $this->logger->warning(
-                            sprintf('Register with slug %s not found during object import.', $registerSlug)
-                        );
-                        continue;
+                        // Try to find existing register in database
+                        try {
+                            $existingRegister = $this->registerMapper->find($registerSlug);
+                            $objectData['@self']['register'] = $existingRegister->getId();
+                            // Add to map for future object processing
+                            $this->registersMap[$registerSlug] = $existingRegister;
+                        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                            $this->logger->warning(
+                                sprintf('Register with slug %s not found during object import.', $registerSlug)
+                            );
+                            continue;
+                        }
                     }
                 } else {
                     $this->logger->warning('Object data missing required register reference.');
@@ -667,10 +696,18 @@ class ConfigurationService
                     if (isset($this->schemasMap[$schemaSlug]) === true) {
                         $objectData['@self']['schema'] = $this->schemasMap[$schemaSlug]->getId();
                     } else {
-                        $this->logger->warning(
-                            sprintf('Schema with slug %s not found during object import.', $schemaSlug)
-                        );
-                        continue;
+                        // Try to find existing schema in database
+                        try {
+                            $existingSchema = $this->schemaMapper->find($schemaSlug);
+                            $objectData['@self']['schema'] = $existingSchema->getId();
+                            // Add to map for future object processing
+                            $this->schemasMap[$schemaSlug] = $existingSchema;
+                        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                            $this->logger->warning(
+                                sprintf('Schema with slug %s not found during object import.', $schemaSlug)
+                            );
+                            continue;
+                        }
                     }
                 } else {
                     $this->logger->warning('Object data missing required schema reference.');
@@ -681,19 +718,14 @@ class ConfigurationService
                 if ($object !== null) {
                     $result['objects'][] = $object;
                 }
-            }//end foreach
-        }//end if
+            }
+        }
 
-        // Process OpenConnector integration if available.
+        // Process OpenConnector integration if available
         $openConnector = $this->getOpenConnector();
         if ($openConnector === true) {
             $openConnectorResult = $this->openConnectorConfigurationService->importConfig($data);
-
-            // Merge OpenAPI specification with OpenConnector configuration.
-            $result = array_replace_recursive(
-                $openConnectorResult,
-                $result
-            );
+            $result = array_replace_recursive($openConnectorResult, $result);
         }
 
         return $result;

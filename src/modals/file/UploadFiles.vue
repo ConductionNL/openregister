@@ -1,3 +1,4 @@
+<!-- eslint-disable -->
 <script setup>
 import { navigationStore, publicationStore } from '../../store/store.js'
 </script>
@@ -465,12 +466,6 @@ export default {
 			if (this.editingTags === fileName) {
 				this.editingTags = null
 			}
-		},
-
-		closeModal() {
-			navigationStore.modal = false
-			this.success = null
-			reset()
 		},
 		checkIfDisabled() {
 			if (publicationStore.attachmentItem.downloadUrl || publicationStore.attachmentItem.title) return true

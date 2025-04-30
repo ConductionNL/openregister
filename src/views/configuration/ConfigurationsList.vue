@@ -135,4 +135,4 @@ export default {
 .selectedConfigurationIcon {
 	color: var(--color-primary);
 }
-</style> 
+</style>

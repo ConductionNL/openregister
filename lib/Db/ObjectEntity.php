@@ -33,7 +33,6 @@ use OCP\IUserSession;
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
-    
 
     /**
      * Unique identifier for the object.
@@ -169,6 +168,20 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $retention = [];
 
     /**
+     * Size of the object in byte.
+     *
+     * @var string|null Size of the object
+     */
+    protected ?string $size = null;
+
+    /**
+     * Version of the schema when this object was created
+     *
+     * @var string|null Version of the schema when this object was created
+     */
+    protected ?string $schemaVersion = null;
+
+    /**
      * Last update timestamp.
      *
      * @var DateTime|null Last update timestamp
@@ -183,11 +196,11 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?DateTime $created = null;
 
     /**
-     * Version of the schema when this object was created
+     * Published timestamp.
      *
-     * @var string|null Version of the schema when this object was created
+     * @var DateTime|null Published timestamp
      */
-    protected ?string $schemaVersion = null;
+    protected ?DateTime $published = null;
 
 
     /**
@@ -214,10 +227,11 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'deleted', type: 'json');
         $this->addType(fieldName:'geo', type: 'json');
         $this->addType(fieldName:'retention', type: 'json');
+        $this->addType(fieldName:'size', type: 'string');
+        $this->addType(fieldName:'schemaVersion', type: 'string');
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
-        $this->addType(fieldName:'schemaVersion', type: 'string');
-
+        $this->addType(fieldName:'published', type: 'datetime');
     }//end __construct()
 
 
@@ -372,7 +386,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Backwards compatibility for old objects.
         $object          = $this->object;
         $object['@self'] = $this->getObjectArray($object);
-        $object['id']  = $this->getUuid();
+        $object['id']    = $this->getUuid();
 
         // Let's merge and return.
         return $object;
@@ -385,29 +399,31 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @return array Array containing all object properties
      */
-    public function getObjectArray(array $object = []): array
+    public function getObjectArray(array $object=[]): array
     {
         // Initialize the object array with default properties
         $objectArray = [
-            'id'           => $this->uuid,
-            'uri'          => $this->uri,
-            'version'      => $this->version,
-            'register'     => $this->register,
-            'schema'       => $this->schema,
+            'id'            => $this->uuid,
+            'uri'           => $this->uri,
+            'version'       => $this->version,
+            'register'      => $this->register,
+            'schema'        => $this->schema,
             'schemaVersion' => $this->schemaVersion,
-            'files'        => $this->files,
-            'relations'    => $this->relations,
-            'locked'       => $this->locked,
-            'owner'        => $this->owner,
-            'folder'       => $this->folder,
-            'application'  => $this->application,
-            'organisation' => $this->organisation,
-            'validation'   => $this->validation,
-            'geo'          => $this->geo,
-            'retention'    => $this->retention,
-            'updated'      => $this->getFormattedDate($this->updated),
-            'created'      => $this->getFormattedDate($this->created),
-            'deleted'      => $this->deleted,
+            'files'         => $this->files,
+            'relations'     => $this->relations,
+            'locked'        => $this->locked,
+            'owner'         => $this->owner,
+            'folder'        => $this->folder,
+            'application'   => $this->application,
+            'organisation'  => $this->organisation,
+            'validation'    => $this->validation,
+            'geo'           => $this->geo,
+            'retention'     => $this->retention,
+            'size'          => $this->size,
+            'updated'       => $this->getFormattedDate($this->updated),
+            'created'       => $this->getFormattedDate($this->created),
+            'published'     => $this->getFormattedDate($this->published),
+            'deleted'       => $this->deleted,
         ];
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended)
@@ -418,21 +434,26 @@ class ObjectEntity extends Entity implements JsonSerializable
             if (isset($self['register']) && is_array($self['register'])) {
                 $objectArray['register'] = $self['register'];
             }
+
             if (isset($self['schema']) && is_array($self['schema'])) {
                 $objectArray['schema'] = $self['schema'];
             }
+
             if (isset($self['owner']) && is_array($self['owner'])) {
                 $objectArray['owner'] = $self['owner'];
             }
+
             if (isset($self['organisation']) && is_array($self['organisation'])) {
                 $objectArray['organisation'] = $self['organisation'];
             }
+
             if (isset($self['application']) && is_array($self['application'])) {
                 $objectArray['application'] = $self['application'];
             }
-        }
+        }//end if
 
         return $objectArray;
+
     }//end getObjectArray()
 
 
@@ -605,16 +626,18 @@ class ObjectEntity extends Entity implements JsonSerializable
         $userId    = $currentUser->getUID();
         $now       = new \DateTime();
         $purgeDate = clone $now;
-        //$purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
+        // $purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
         $purgeDate->add(new \DateInterval('P31D'));
 
-        $this->setDeleted([
-            'deleted'         => $now->format('c'),
-            'deletedBy'       => $userId,
-            'deletedReason'   => $deletedReason,
-            'retentionPeriod' => $retentionPeriod,
-            'purgeDate'       => $purgeDate->format('c'),
-        ]);
+        $this->setDeleted(
+                [
+                    'deleted'         => $now->format('c'),
+                    'deletedBy'       => $userId,
+                    'deletedReason'   => $deletedReason,
+                    'retentionPeriod' => $retentionPeriod,
+                    'purgeDate'       => $purgeDate->format('c'),
+                ]
+                );
 
         return $this;
 

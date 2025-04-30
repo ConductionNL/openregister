@@ -48,6 +48,7 @@ class RegistersController extends Controller
      */
     private readonly ConfigurationService $configurationService;
 
+
     /**
      * Constructor for the RegistersController
      *
@@ -354,11 +355,11 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      */
     public function import(bool $includeObjects=false): JSONResponse
-    {        
+    {
         try {
             // Initialize the uploaded files array
             $uploadedFiles = [];
-            
+
             // Get the uploaded file from the request if a single file has been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
             if (empty($uploadedFile) === false) {

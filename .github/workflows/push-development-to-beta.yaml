@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - never
+      - development
 
 jobs:
   sync-to-beta:
@@ -45,10 +45,10 @@ jobs:
           if git show-ref --quiet refs/remotes/origin/beta; then
             # If exists, checkout beta
             git checkout beta
-            git reset --hard origin/feature/REGISTERS-4/configuraties  # Changed from development
+            git reset --hard origin/development  # Reset to latest development state
           else
-            # If doesn't exist, create from feature/REGISTERS-4/configuraties
-            git checkout -b beta origin/feature/REGISTERS-4/configuraties  # Changed from development
+            # If doesn't exist, create from development
+            git checkout -b beta origin/development
           fi
           
           # Restore the beta version if it existed
