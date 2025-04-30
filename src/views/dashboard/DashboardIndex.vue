@@ -4,7 +4,7 @@
 			Dashboard
 		</h2>
 
-		<div class="dashboard-content">
+		<div class="dashboardContent">
 			<div v-if="loading" class="loading">
 				<NcLoadingIcon :size="32" />
 				<span>Loading registers...</span>
@@ -16,8 +16,8 @@
 				<NcEmptyContent title="No registers found" icon="icon-folder" />
 			</div>
 			<div v-else class="registers">
-				<div v-for="register in registers" :key="register.id" class="register-card">
-					<div class="register-header">
+				<div v-for="register in registers" :key="register.id" class="registerCard">
+					<div class="registerHeader">
 						<h2>
 							<DatabaseOutline :size="20" />
 							{{ register.title }}
@@ -70,12 +70,12 @@
 							</NcActionButton>
 						</NcActions>
 					</div>
-					<p class="register-description">
+					<p class="registerDescription">
 						{{ register.description }}
 					</p>
 
 					<!-- Register Statistics Table -->
-					<table class="statistics-table register-stats">
+					<table class="statisticsTable registerStats">
 						<thead>
 							<tr>
 								<th>{{ t('openregister', 'Type') }}</th>
@@ -89,28 +89,28 @@
 								<td>{{ register.stats?.objects?.total || 0 }}</td>
 								<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Invalid') }}
 								</td>
 								<td>{{ register.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Deleted') }}
 								</td>
 								<td>{{ register.stats?.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Locked') }}
 								</td>
 								<td>{{ register.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Published') }}
 								</td>
@@ -132,21 +132,21 @@
 
 					<div class="schemas">
 						<div v-for="schema in register.schemas" :key="schema.id" class="schema">
-							<div class="schema-header" @click="toggleSchema(schema.id)">
-								<div class="schema-title">
+							<div class="schemaHeader" @click="toggleSchema(schema.id)">
+								<div class="schemaTitle">
 									<FileCodeOutline :size="16" />
 									<span>{{ schema.stats?.objects?.total || 0 }} </span>
 									{{ schema.title }}
-									<span class="schema-size">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
+									<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
 								</div>
-								<button class="schema-toggle">
+								<button class="schemaToggle">
 									<ChevronDown v-if="!expandedSchemas.has(schema.id)" :size="20" />
 									<ChevronUp v-else :size="20" />
 								</button>
 							</div>
 
 							<!-- Schema Statistics Table -->
-							<table v-if="expandedSchemas.has(schema.id)" class="statistics-table schema-stats">
+							<table v-if="expandedSchemas.has(schema.id)" class="statisticsTable schemaStats">
 								<thead>
 									<tr>
 										<th>Type</th>
@@ -160,14 +160,14 @@
 										<td>{{ schema.stats?.objects?.total || 0 }}</td>
 										<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
 									</tr>
-									<tr class="sub-row">
+									<tr class="subRow">
 										<td class="indented">
 											Invalid
 										</td>
 										<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
 										<td>-</td>
 									</tr>
-									<tr class="sub-row">
+									<tr class="subRow">
 										<td class="indented">
 											Deleted
 										</td>
@@ -325,10 +325,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.dashboard-content {
+.dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
-	padding: 20px;
+	padding-block: 20px;
+	padding-inline: 20px;
 }
 
 .loading {
@@ -337,7 +338,7 @@ export default {
 	gap: 10px;
 	color: var(--color-text-maxcontrast);
 	justify-content: center;
-	padding: 40px;
+	padding-block: 40px;
 }
 
 .registers {
@@ -358,10 +359,11 @@ export default {
 	}
 }
 
-.register-card {
+.registerCard {
 	background: var(--color-main-background);
 	border-radius: 8px;
-	padding: 20px;
+	padding-block: 20px;
+	padding-inline: 20px;
 	box-shadow: 0 2px 8px var(--color-box-shadow);
 	min-height: 200px;
 	transition: transform 0.2s ease-in-out;
@@ -373,14 +375,14 @@ export default {
 	}
 }
 
-.register-header {
+.registerHeader {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid var(--color-border);
+	margin-block-end: 12px;
+	padding-block-end: 8px;
+	border-block-end: 1px solid var(--color-border);
 
 	h2 {
 		display: flex;
@@ -392,9 +394,9 @@ export default {
 	}
 }
 
-.register-description {
+.registerDescription {
 	color: var(--color-text-maxcontrast);
-	margin-bottom: 16px;
+	margin-block-end: 16px;
 	line-height: 1.5;
 }
 
@@ -402,15 +404,16 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 20px;
-	padding-top: 16px;
-	border-top: 1px solid var(--color-border);
+	margin-block-start: 20px;
+	padding-block-start: 16px;
+	border-block-start: 1px solid var(--color-border);
 }
 
 .schema {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
-	padding: 8px 12px;
+	padding-block: 8px;
+	padding-inline: 12px;
 	background-color: var(--color-main-background);
 
 	&:hover {
@@ -418,26 +421,26 @@ export default {
 	}
 }
 
-.schema-header {
+.schemaHeader {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	cursor: pointer;
 }
 
-.schema-title {
+.schemaTitle {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	font-size: 1em;
 }
 
-.schema-size {
+.schemaSize {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 }
 
-.schema-toggle {
+.schemaToggle {
 	background: none;
 	border: none;
 	padding: 4px;
@@ -449,45 +452,46 @@ export default {
 	}
 }
 
-.statistics-table {
+.statisticsTable {
 	width: 100%;
 	border-collapse: collapse;
 	font-size: 0.9em;
 
-	&.register-stats {
-		margin: 16px 0;
+	&.registerStats {
+		margin-block: 16px;
 		background-color: var(--color-background-hover);
 		border-radius: var(--border-radius);
 		overflow: hidden;
 	}
 
-	&.schema-stats {
-		margin: 12px 0;
+	&.schemaStats {
+		margin-block: 12px;
 	}
 }
 
-.statistics-table th,
-.statistics-table td {
-	padding: 8px;
-	text-align: left;
+.statisticsTable th,
+.statisticsTable td {
+	padding-block: 8px;
+	padding-inline: 8px;
+	text-align: start;
 	border: none;
 }
 
-.statistics-table th {
+.statisticsTable th {
 	color: var(--color-text-maxcontrast);
 	font-weight: normal;
 	background-color: var(--color-background-darker);
 }
 
-.statistics-table tr:hover {
+.statisticsTable tr:hover {
 	background-color: var(--color-background-hover);
 }
 
-.sub-row td {
+.subRow td {
 	color: var(--color-text-maxcontrast);
 }
 
 .indented {
-	padding-left: 24px !important;
+	padding-inline-start: 24px !important;
 }
 </style>

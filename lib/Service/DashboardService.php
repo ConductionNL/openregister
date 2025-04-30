@@ -37,48 +37,6 @@ use Psr\Log\LoggerInterface;
 class DashboardService
 {
     /**
-     * Register mapper instance for handling register operations.
-     *
-     * @var RegisterMapper The register mapper instance.
-     */
-    private readonly RegisterMapper $registerMapper;
-
-    /**
-     * Schema mapper instance for handling schema operations.
-     *
-     * @var SchemaMapper The schema mapper instance.
-     */
-    private readonly SchemaMapper $schemaMapper;
-
-    /**
-     * Object entity mapper instance for handling object operations.
-     *
-     * @var ObjectEntityMapper The object entity mapper instance.
-     */
-    private readonly ObjectEntityMapper $objectMapper;
-
-    /**
-     * Audit trail mapper instance for handling audit trail operations.
-     *
-     * @var AuditTrailMapper The audit trail mapper instance.
-     */
-    private readonly AuditTrailMapper $auditTrailMapper;
-
-    /**
-     * Database connection instance.
-     *
-     * @var IDBConnection The database connection instance.
-     */
-    private readonly IDBConnection $db;
-
-    /**
-     * Logger instance for logging operations.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private readonly LoggerInterface $logger;
-
-    /**
      * Constructor for DashboardService
      *
      * @param RegisterMapper    $registerMapper   The register mapper instance
@@ -91,19 +49,13 @@ class DashboardService
      * @return void
      */
     public function __construct(
-        RegisterMapper $registerMapper,
-        SchemaMapper $schemaMapper,
-        ObjectEntityMapper $objectMapper,
-        AuditTrailMapper $auditTrailMapper,
-        IDBConnection $db,
-        LoggerInterface $logger
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly ObjectEntityMapper $objectMapper,
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly IDBConnection $db,
+        private readonly LoggerInterface $logger
     ) {
-        $this->registerMapper = $registerMapper;
-        $this->schemaMapper = $schemaMapper;
-        $this->objectMapper = $objectMapper;
-        $this->auditTrailMapper = $auditTrailMapper;
-        $this->db = $db;
-        $this->logger = $logger;
     }
 
     /**
