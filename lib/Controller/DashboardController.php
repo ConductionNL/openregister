@@ -134,4 +134,32 @@ class DashboardController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Calculate sizes for objects and logs
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return JSONResponse The calculation results
+     */
+    public function calculate(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    {
+        try {
+            $result = $this->dashboardService->calculate($registerId, $schemaId);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                [
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                    'timestamp' => (new \DateTime())->format('c')
+                ],
+                500
+            );
+        }
+    }
 }

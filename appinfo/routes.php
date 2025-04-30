@@ -10,6 +10,7 @@ return [
     'routes' => [
         ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
+        ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate', 'verb' => 'POST'],
         // Objects
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],

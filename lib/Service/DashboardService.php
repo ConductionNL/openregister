@@ -248,4 +248,194 @@ class DashboardService
             throw new \Exception('Failed to get registers with schemas: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Recalculate sizes for objects in specified registers and/or schemas
+     *
+     * @param int|null $registerId The register ID to filter by (optional)
+     * @param int|null $schemaId   The schema ID to filter by (optional)
+     *
+     * @return array Array containing counts of processed and failed objects
+     */
+    public function recalculateSizes(?int $registerId = null, ?int $schemaId = null): array
+    {
+        $result = [
+            'processed' => 0,
+            'failed' => 0
+        ];
+
+        try {
+            // Build filters array based on provided IDs
+            $filters = [];
+            if ($registerId !== null) {
+                $filters['register'] = $registerId;
+            }
+            if ($schemaId !== null) {
+                $filters['schema'] = $schemaId;
+            }
+
+            // Get all relevant objects
+            $objects = $this->objectMapper->findAll(filters: $filters);
+
+            // Update each object to trigger size recalculation
+            foreach ($objects as $object) {
+                try {
+                    $this->objectMapper->update($object);
+                    $result['processed']++;
+                } catch (\Exception $e) {
+                    $this->logger->error('Failed to update object ' . $object->getId() . ': ' . $e->getMessage());
+                    $result['failed']++;
+                }
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to recalculate sizes: ' . $e->getMessage());
+            throw new \Exception('Failed to recalculate sizes: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recalculate sizes for audit trail logs in specified registers and/or schemas
+     *
+     * @param int|null $registerId The register ID to filter by (optional)
+     * @param int|null $schemaId   The schema ID to filter by (optional)
+     *
+     * @return array Array containing counts of processed and failed logs
+     */
+    public function recalculateLogSizes(?int $registerId = null, ?int $schemaId = null): array
+    {
+        $result = [
+            'processed' => 0,
+            'failed' => 0
+        ];
+
+        try {
+            // Build filters array based on provided IDs
+            $filters = [];
+            if ($registerId !== null) {
+                $filters['register'] = $registerId;
+            }
+            if ($schemaId !== null) {
+                $filters['schema'] = $schemaId;
+            }
+
+            // Get all relevant logs
+            $logs = $this->auditTrailMapper->findAll(filters: $filters);
+
+            // Update each log to trigger size recalculation
+            foreach ($logs as $log) {
+                try {
+                    $this->auditTrailMapper->update($log);
+                    $result['processed']++;
+                } catch (\Exception $e) {
+                    $this->logger->error('Failed to update log ' . $log->getId() . ': ' . $e->getMessage());
+                    $result['failed']++;
+                }
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to recalculate log sizes: ' . $e->getMessage());
+            throw new \Exception('Failed to recalculate log sizes: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recalculate sizes for both objects and logs in specified registers and/or schemas
+     *
+     * @param int|null $registerId The register ID to filter by (optional)
+     * @param int|null $schemaId   The schema ID to filter by (optional)
+     *
+     * @return array Array containing counts of processed and failed items for both objects and logs
+     */
+    public function recalculateAllSizes(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $objectResults = $this->recalculateSizes($registerId, $schemaId);
+            $logResults = $this->recalculateLogSizes($registerId, $schemaId);
+
+            return [
+                'objects' => $objectResults,
+                'logs' => $logResults,
+                'total' => [
+                    'processed' => $objectResults['processed'] + $logResults['processed'],
+                    'failed' => $objectResults['failed'] + $logResults['failed']
+                ]
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to recalculate all sizes: ' . $e->getMessage());
+            throw new \Exception('Failed to recalculate all sizes: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Calculate sizes for all entities (objects and logs) in the system
+     * Optionally filtered by register and/or schema
+     *
+     * @param int|null $registerId The register ID to filter by (optional)
+     * @param int|null $schemaId   The schema ID to filter by (optional)
+     *
+     * @return array Array containing detailed statistics about the calculation process
+     */
+    public function calculate(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            // Get the register info if registerId is provided
+            $register = null;
+            if ($registerId !== null) {
+                try {
+                    $register = $this->registerMapper->find($registerId);
+                } catch (\Exception $e) {
+                    throw new \Exception('Register not found: ' . $e->getMessage());
+                }
+            }
+
+            // Get the schema info if schemaId is provided
+            $schema = null;
+            if ($schemaId !== null) {
+                try {
+                    $schema = $this->schemaMapper->find($schemaId);
+                    // Verify schema belongs to register if both are provided
+                    if ($register !== null && !in_array($schema->getId(), $register->getSchemas())) {
+                        throw new \Exception('Schema does not belong to the specified register');
+                    }
+                } catch (\Exception $e) {
+                    throw new \Exception('Schema not found or invalid: ' . $e->getMessage());
+                }
+            }
+
+            // Perform the calculations
+            $results = $this->recalculateAllSizes($registerId, $schemaId);
+
+            // Build the response
+            $response = [
+                'status' => 'success',
+                'timestamp' => (new \DateTime())->format('c'),
+                'scope' => [
+                    'register' => $register ? [
+                        'id' => $register->getId(),
+                        'title' => $register->getTitle()
+                    ] : null,
+                    'schema' => $schema ? [
+                        'id' => $schema->getId(),
+                        'title' => $schema->getTitle()
+                    ] : null
+                ],
+                'results' => $results,
+                'summary' => [
+                    'total_processed' => $results['total']['processed'],
+                    'total_failed' => $results['total']['failed'],
+                    'success_rate' => $results['total']['processed'] + $results['total']['failed'] > 0 
+                        ? round(($results['total']['processed'] / ($results['total']['processed'] + $results['total']['failed'])) * 100, 2)
+                        : 0
+                ]
+            ];
+
+            return $response;
+        } catch (\Exception $e) {
+            $this->logger->error('Size calculation failed: ' . $e->getMessage());
+            throw new \Exception('Size calculation failed: ' . $e->getMessage());
+        }
+    }
 } 
