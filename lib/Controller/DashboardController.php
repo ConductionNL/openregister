@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\DashboardService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
@@ -33,22 +34,30 @@ use OCP\IRequest;
  */
 class DashboardController extends Controller
 {
-
+    /**
+     * The dashboard service instance
+     *
+     * @var DashboardService
+     */
+    private DashboardService $dashboardService;
 
     /**
      * Constructor for the DashboardController
      *
-     * @param string   $appName The name of the app
-     * @param IRequest $request The request object
+     * @param string           $appName          The name of the app
+     * @param IRequest        $request          The request object
+     * @param DashboardService $dashboardService The dashboard service instance
      *
      * @return void
      */
-    public function __construct(string $appName, IRequest $request)
-    {
+    public function __construct(
+        string $appName,
+        IRequest $request,
+        DashboardService $dashboardService
+    ) {
         parent::__construct($appName, $request);
-
-    }//end __construct()
-
+        $this->dashboardService = $dashboardService;
+    }
 
     /**
      * Returns the template of the dashboard page
@@ -85,14 +94,18 @@ class DashboardController extends Controller
                 '500'
             );
         }
-
-    }//end page()
-
+    }
 
     /**
-     * Retrieves dashboard data
+     * Retrieves dashboard data including registers with their schemas
      *
      * This method returns a JSON response containing dashboard data.
+     *
+     * @param int|null   $limit            Optional limit for the number of results
+     * @param int|null   $offset           Optional offset for pagination
+     * @param array|null $filters          Optional filters to apply
+     * @param array|null $searchConditions Optional search conditions
+     * @param array|null $searchParams     Optional search parameters
      *
      * @return JSONResponse A JSON response containing the dashboard data
      *
@@ -100,16 +113,25 @@ class DashboardController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(): JSONResponse
-    {
+    public function index(
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = []
+    ): JSONResponse {
         try {
-            $results = ["results" => self::TEST_ARRAY];
-            return new JSONResponse($results);
+            $registers = $this->dashboardService->getRegistersWithSchemas(
+                limit: $limit,
+                offset: $offset,
+                filters: $filters,
+                searchConditions: $searchConditions,
+                searchParams: $searchParams
+            );
+
+            return new JSONResponse(['registers' => $registers]);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-
-    }//end index()
-
-
-}//end class
+    }
+}
