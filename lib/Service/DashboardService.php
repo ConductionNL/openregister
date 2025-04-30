@@ -96,19 +96,7 @@ class DashboardService
             $objectStats = $this->objectMapper->getStatistics($registerId, $schemaId);
 
             // Get audit trail statistics.
-            $qb = $this->db->getQueryBuilder();
-            $qb->select(
-                $qb->createFunction('COUNT(id) as total_logs'),
-                $qb->createFunction('SUM(size) as total_size')
-            )
-                ->from('openregister_audit_trails')
-                ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
-
-            if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-            }
-
-            $result = $qb->executeQuery()->fetch();
+            $logStats = $this->auditTrailMapper->getStatistics($registerId, $schemaId);
 
             return [
                 'objects' => [
@@ -120,8 +108,8 @@ class DashboardService
                     'published' => $objectStats['published'],
                 ],
                 'logs'    => [
-                    'total' => (int) ($result['total_logs'] ?? 0),
-                    'size'  => (int) ($result['total_size'] ?? 0),
+                    'total' => $logStats['total'],
+                    'size'  => $logStats['size'],
                 ],
                 'files'   => [
                     'total' => 0,
@@ -168,8 +156,18 @@ class DashboardService
             $auditStats = $this->auditTrailMapper->getOrphanedStatistics();
 
             return [
-                'objects' => $objectStats,
-                'logs'    => $auditStats,
+                'objects' => [
+                    'total'     => $objectStats['total'],
+                    'size'      => $objectStats['size'],
+                    'invalid'   => $objectStats['invalid'],
+                    'deleted'   => $objectStats['deleted'],
+                    'locked'    => $objectStats['locked'],
+                    'published' => $objectStats['published'],
+                ],
+                'logs'    => [
+                    'total' => $auditStats['total'],
+                    'size'  => $auditStats['size'],
+                ],
                 'files'   => [
                     'total' => 0,
                     'size'  => 0,
@@ -178,9 +176,22 @@ class DashboardService
         } catch (\Exception $e) {
             $this->logger->error('Failed to get orphaned statistics: '.$e->getMessage());
             return [
-                'objects' => ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0],
-                'logs'    => ['total' => 0, 'size' => 0],
-                'files'   => ['total' => 0, 'size' => 0],
+                'objects' => [
+                    'total'     => 0,
+                    'size'      => 0,
+                    'invalid'   => 0,
+                    'deleted'   => 0,
+                    'locked'    => 0,
+                    'published' => 0,
+                ],
+                'logs'    => [
+                    'total' => 0,
+                    'size'  => 0,
+                ],
+                'files'   => [
+                    'total' => 0,
+                    'size'  => 0,
+                ],
             ];
         }//end try
 

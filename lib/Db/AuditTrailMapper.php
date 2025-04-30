@@ -497,36 +497,63 @@ class AuditTrailMapper extends QBMapper
 
 
     /**
-     * Get statistics about audit trails for a register/schema combination
+     * Get statistics for audit trails with optional filtering
      *
-     * @param int      $registerId The register ID
-     * @param int|null $schemaId   The schema ID (optional)
+     * @param int|null $registerId The register ID (null for all registers)
+     * @param int|null $schemaId   The schema ID (null for all schemas)
+     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
      *
-     * @return array Array containing total count and size of audit trails
+     * @return array Array containing total count and size of audit trails:
+     *               - total: Total number of audit trails
+     *               - size: Total size of all audit trails in bytes
      */
-    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->select(
-                $qb->createFunction('COUNT(id) as total_logs'),
-                $qb->createFunction('SUM(size) as total_log_size')
+                $qb->createFunction('COUNT(id) as total'),
+                $qb->createFunction('COALESCE(SUM(size), 0) as size')
             )
-            ->from('openregister_audit_trails')
-            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                ->from($this->getTableName());
 
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add exclusions if provided
+            if (!empty($exclude)) {
+                $orX = $qb->expr()->orX();
+                foreach ($exclude as $index => $combination) {
+                    $andX = $qb->expr()->andX();
+                    if (isset($combination['register'])) {
+                        $andX->add($qb->expr()->eq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                    }
+                    if (isset($combination['schema'])) {
+                        $andX->add($qb->expr()->eq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
+                    }
+                    if ($andX->count() > 0) {
+                        $orX->add($andX);
+                    }
+                }
+                if ($orX->count() > 0) {
+                    $qb->andWhere($qb->expr()->not($orX));
+                }
             }
 
             $result = $qb->executeQuery()->fetch();
 
             return [
-                'total' => (int)($result['total_logs'] ?? 0),
-                'size' => (int)($result['total_log_size'] ?? 0)
+                'total' => (int) ($result['total'] ?? 0),
+                'size' => (int) ($result['size'] ?? 0)
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail statistics: ' . $e->getMessage());
             return [
                 'total' => 0,
                 'size' => 0

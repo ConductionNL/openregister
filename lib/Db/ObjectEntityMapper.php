@@ -737,10 +737,11 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Get statistics about objects in a register and optionally filtered by schema
+     * Get statistics for objects with optional filtering
      *
-     * @param int      $registerId The ID of the register to get statistics for
-     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $registerId The register ID (null for all registers)
+     * @param int|null $schemaId   The schema ID (null for all schemas)
+     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
      *
      * @return array Array containing statistics about objects:
      *               - total: Total number of objects
@@ -749,48 +750,69 @@ class ObjectEntityMapper extends QBMapper
      *               - deleted: Number of deleted objects
      *               - locked: Number of locked objects
      *               - published: Number of published objects
-     *
-     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
-    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
-            
             $qb->select(
-                $qb->createFunction('COUNT(id) as total_objects'),
-                $qb->createFunction('SUM(size) as total_size'),
-                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid_objects'),
-                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects'),
-                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked_objects'),
-                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL THEN 1 END) as published_objects')
+                $qb->createFunction('COUNT(id) as total'),
+                $qb->createFunction('COALESCE(SUM(size), 0) as size'),
+                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid'),
+                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted'),
+                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
+                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL AND published = TRUE THEN 1 END) as published')
             )
-            ->from('openregister_objects')
-            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                ->from($this->getTableName());
 
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add exclusions if provided
+            if (!empty($exclude)) {
+                $orX = $qb->expr()->orX();
+                foreach ($exclude as $combination) {
+                    $andX = $qb->expr()->andX();
+                    if (isset($combination['register'])) {
+                        $andX->add($qb->expr()->eq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                    }
+                    if (isset($combination['schema'])) {
+                        $andX->add($qb->expr()->eq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
+                    }
+                    if ($andX->count() > 0) {
+                        $orX->add($andX);
+                    }
+                }
+                if ($orX->count() > 0) {
+                    $qb->andWhere($qb->expr()->not($orX));
+                }
             }
 
             $result = $qb->executeQuery()->fetch();
 
             return [
-                'total' => (int)($result['total_objects'] ?? 0),
-                'size' => (int)($result['total_size'] ?? 0),
-                'invalid' => (int)($result['invalid_objects'] ?? 0),
-                'deleted' => (int)($result['deleted_objects'] ?? 0),
-                'locked' => (int)($result['locked_objects'] ?? 0),
-                'published' => (int)($result['published_objects'] ?? 0)
+                'total' => (int) ($result['total'] ?? 0),
+                'size' => (int) ($result['size'] ?? 0),
+                'invalid' => (int) ($result['invalid'] ?? 0),
+                'deleted' => (int) ($result['deleted'] ?? 0),
+                'locked' => (int) ($result['locked'] ?? 0),
+                'published' => (int) ($result['published'] ?? 0),
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get object statistics: ' . $e->getMessage());
             return [
                 'total' => 0,
                 'size' => 0,
                 'invalid' => 0,
                 'deleted' => 0,
                 'locked' => 0,
-                'published' => 0
+                'published' => 0,
             ];
         }
     }
@@ -860,6 +882,7 @@ class ObjectEntityMapper extends QBMapper
                 )
             );
 
+            
             $result = $qb->executeQuery()->fetch();
 
             return [
