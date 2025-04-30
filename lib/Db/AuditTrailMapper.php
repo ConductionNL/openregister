@@ -566,77 +566,7 @@ class AuditTrailMapper extends QBMapper
     }
 
 
-    /**
-     * Get statistics about orphaned audit trails
-     *
-     * An audit trail is considered orphaned if:
-     * - It references a non-existent register
-     * - It references a non-existent schema
-     * - It references a schema that no longer belongs to its register
-     * - It references a non-existent object
-     *
-     * @return array Array containing statistics about orphaned audit trails
-     */
-    public function getOrphanedStatistics(): array
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            
-            // Main query for orphaned audit trails
-            $qb->select(
-                $qb->createFunction('COUNT(a.id) as total_logs'),
-                $qb->createFunction('SUM(a.size) as total_log_size')
-            )
-            ->from('openregister_audit_trails', 'a')
-            ->leftJoin(
-                'a',
-                'openregister_registers',
-                'r',
-                $qb->expr()->eq('a.register', 'r.id')
-            )
-            ->leftJoin(
-                'a',
-                'openregister_schemas',
-                's',
-                $qb->expr()->eq('a.schema', 's.id')
-            )
-            ->leftJoin(
-                'a',
-                'openregister_objects',
-                'o',
-                $qb->expr()->eq('a.object', 'o.id')
-            )
-            ->where(
-                $qb->expr()->orX(
-                    // Register doesn't exist
-                    $qb->expr()->isNull('r.id'),
-                    // Schema doesn't exist
-                    $qb->expr()->isNull('s.id'),
-                    // Object doesn't exist
-                    $qb->expr()->isNull('o.id'),
-                    // Schema exists but is not in register's schema list
-                    $qb->expr()->andX(
-                        $qb->expr()->isNotNull('r.id'),
-                        $qb->expr()->isNotNull('s.id'),
-                        $qb->expr()->notLike('r.schemas', $qb->createFunction('CONCAT(\'%"\', a.schema, \'"%\')'))
-                    )
-                )
-            );
-
-            $result = $qb->executeQuery()->fetch();
-
-            return [
-                'total' => (int)($result['total_logs'] ?? 0),
-                'size' => (int)($result['total_log_size'] ?? 0)
-            ];
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to get orphaned audit trail statistics: ' . $e->getMessage());
-            return [
-                'total' => 0,
-                'size' => 0
-            ];
-        }
-    }
+  
 
     /**
      * Updates an entity in the database

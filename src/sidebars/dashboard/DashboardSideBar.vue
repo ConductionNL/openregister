@@ -1,0 +1,257 @@
+<script setup>
+import { dashboardStore } from '../../store/store.js'
+</script>
+
+<template>
+	<NcAppSidebar
+		ref="sidebar"
+		v-model="activeTab"
+		name="Dashboard"
+		subtitle="System Overview"
+		subname="Statistics and Metrics">
+		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
+			<template #icon>
+				<ChartBar :size="20" />
+			</template>
+
+			<!-- System Totals Section -->
+			<div class="section">
+				<h3 class="section-title">
+					System Totals
+				</h3>
+				<div v-if="dashboardStore.loading" class="loading-container">
+					<NcLoadingIcon :size="20" />
+					<span>Loading statistics...</span>
+				</div>
+				<div v-else-if="systemTotals" class="stats-container">
+					<table class="statisticsTable">
+						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ systemTotals.stats?.objects?.total || 0 }}</td>
+								<td>{{ formatBytes(systemTotals.stats?.objects?.size || 0) }}</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Invalid') }}
+								</td>
+								<td>{{ systemTotals.stats?.objects?.invalid || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Deleted') }}
+								</td>
+								<td>{{ systemTotals.stats?.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Locked') }}
+								</td>
+								<td>{{ systemTotals.stats?.objects?.locked || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Published') }}
+								</td>
+								<td>{{ systemTotals.stats?.objects?.published || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
+								<td>{{ formatBytes(systemTotals.stats?.logs?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
+								<td>{{ formatBytes(systemTotals.stats?.files?.size || 0) }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Orphaned Items Section -->
+			<div class="section">
+				<h3 class="section-title">
+					Orphaned Items
+				</h3>
+				<div v-if="dashboardStore.loading" class="loading-container">
+					<NcLoadingIcon :size="20" />
+					<span>Loading statistics...</span>
+				</div>
+				<div v-else-if="orphanedItems" class="stats-container">
+					<table class="statisticsTable">
+						<tbody>
+							<tr>
+								<td>{{ t('openregister', 'Objects') }}</td>
+								<td>{{ orphanedItems.stats?.objects?.total || 0 }}</td>
+								<td>{{ formatBytes(orphanedItems.stats?.objects?.size || 0) }}</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Invalid') }}
+								</td>
+								<td>{{ orphanedItems.stats?.objects?.invalid || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Deleted') }}
+								</td>
+								<td>{{ orphanedItems.stats?.objects?.deleted || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Locked') }}
+								</td>
+								<td>{{ orphanedItems.stats?.objects?.locked || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr class="subRow">
+								<td class="indented">
+									{{ t('openregister', 'Published') }}
+								</td>
+								<td>{{ orphanedItems.stats?.objects?.published || 0 }}</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Logs') }}</td>
+								<td>{{ orphanedItems.stats?.logs?.total || 0 }}</td>
+								<td>{{ formatBytes(orphanedItems.stats?.logs?.size || 0) }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Files') }}</td>
+								<td>{{ orphanedItems.stats?.files?.total || 0 }}</td>
+								<td>{{ formatBytes(orphanedItems.stats?.files?.size || 0) }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</NcAppSidebarTab>
+
+		<NcAppSidebarTab id="settings-tab" name="Settings" :order="2">
+			<template #icon>
+				<Cog :size="20" />
+			</template>
+
+			<!-- Settings Section -->
+			<div class="section">
+				<h3 class="section-title">
+					Dashboard Settings
+				</h3>
+				<NcNoteCard type="info">
+					Settings will be added in a future update
+				</NcNoteCard>
+			</div>
+		</NcAppSidebarTab>
+	</NcAppSidebar>
+</template>
+
+<script>
+import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import ChartBar from 'vue-material-design-icons/ChartBar.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+
+// Ensure data is loaded
+dashboardStore.preload()
+
+export default {
+	name: 'DashboardSideBar',
+	components: {
+		NcAppSidebar,
+		NcAppSidebarTab,
+		NcLoadingIcon,
+		NcNoteCard,
+		// Icons
+		ChartBar,
+		Cog,
+	},
+	data() {
+		return {
+			activeTab: 'overview-tab',
+		}
+	},
+	computed: {
+		systemTotals() {
+			return dashboardStore.getSystemTotals
+		},
+		orphanedItems() {
+			return dashboardStore.getOrphanedItems
+		},
+	},
+	methods: {
+		formatBytes(bytes) {
+			if (!bytes || bytes === 0) return '0 KB'
+			const k = 1024
+			const sizes = ['B', 'KB', 'MB', 'GB']
+			const i = Math.floor(Math.log(bytes) / Math.log(k))
+			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+		},
+	},
+}
+</script>
+
+<style lang="scss" scoped>
+.section {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section:last-child {
+	border-bottom: none;
+}
+
+.section-title {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	padding: 0 16px;
+	margin: 0 0 12px 0;
+}
+
+.loading-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 16px;
+	color: var(--color-text-maxcontrast);
+}
+
+.stats-container {
+	padding: 0 16px;
+}
+
+.statisticsTable {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9em;
+
+	td {
+		padding: 4px 8px;
+		border-bottom: 1px solid var(--color-border);
+
+		&:nth-child(2),
+		&:nth-child(3) {
+			text-align: right;
+		}
+	}
+
+	.subRow td {
+		color: var(--color-text-maxcontrast);
+	}
+
+	.indented {
+		padding-left: 24px;
+	}
+
+	tr:last-child td {
+		border-bottom: none;
+	}
+}
+</style>

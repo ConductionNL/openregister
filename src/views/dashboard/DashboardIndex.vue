@@ -4,9 +4,42 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 
 <template>
 	<NcAppContent>
-		<h2 class="pageHeader">
-			Dashboard
-		</h2>
+		<span class="pageHeaderContainer">
+			<h2 class="pageHeader">
+				Dashboard
+			</h2>
+
+			<NcActions
+				:force-name="true"
+				:inline="1"
+				:primary="true"
+				menu-name="Dashboard actions">
+				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					Add Register
+				</NcActionButton>
+				<NcActionButton @click="dashboardStore.fetchRegisters()">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Refresh
+				</NcActionButton>
+				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+					<template #icon>
+						<Upload :size="20" />
+					</template>
+					Import
+				</NcActionButton>
+				<NcActionButton @click="openAllApisDoc">
+					<template #icon>
+						<ApiIcon :size="20" />
+					</template>
+					View APIs
+				</NcActionButton>
+			</NcActions>
+		</span>
 
 		<div class="dashboardContent">
 			<div v-if="dashboardStore.loading" class="loading">
@@ -16,11 +49,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div v-else-if="dashboardStore.error" class="error">
 				<NcEmptyContent :title="dashboardStore.error" icon="icon-error" />
 			</div>
-			<div v-else-if="!dashboardStore.registers || dashboardStore.registers.length === 0" class="empty">
+			<div v-else-if="!filteredRegisters.length" class="empty">
 				<NcEmptyContent title="No registers found" icon="icon-folder" />
 			</div>
 			<div v-else class="registers">
-				<div v-for="register in dashboardStore.registers" :key="register.id" class="registerCard">
+				<div v-for="register in filteredRegisters" :key="register.id" class="registerCard">
 					<div class="registerHeader">
 						<h2 v-tooltip.bottom="register.description">
 							<DatabaseOutline :size="20" />
@@ -239,6 +272,8 @@ import Export from 'vue-material-design-icons/Export.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 
@@ -265,6 +300,8 @@ export default {
 		ApiIcon,
 		Download,
 		Calculator,
+		Refresh,
+		Plus,
 	},
 	data() {
 		return {
@@ -274,6 +311,12 @@ export default {
 		}
 	},
 	computed: {
+		filteredRegisters() {
+			return dashboardStore.registers.filter(register =>
+				register.title !== 'System Totals'
+				&& register.title !== 'Orphaned Items',
+			)
+		},
 		isSchemaExpanded() {
 			return (schemaId) => this.expandedSchemas.includes(schemaId)
 		},
@@ -282,7 +325,7 @@ export default {
 		},
 	},
 	mounted() {
-		dashboardStore.fetchRegisters()
+		dashboardStore.preload()
 	},
 	methods: {
 		toggleSchema(schemaId) {
@@ -352,11 +395,38 @@ export default {
 		toggleSchemaVisibility(registerId) {
 			this.$set(this.showSchemas, registerId, !this.showSchemas[registerId])
 		},
+
+		openAllApisDoc() {
+			const baseUrl = window.location.origin
+			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
+			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+		},
 	},
 }
 </script>
 
 <style lang="scss" scoped>
+.pageHeaderContainer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0;
+}
+
+.pageHeader {
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, Oxygen-Sans, Cantarell, Ubuntu, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-size: 30px;
+	font-weight: 600;
+	margin-left: 50px;
+}
+
+/* Add styles for the action buttons container */
+:deep(.button-vue) {
+	margin-top: 15px;
+	margin-right: 15px;
+	padding-right: 15px;
+}
+
 .dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
