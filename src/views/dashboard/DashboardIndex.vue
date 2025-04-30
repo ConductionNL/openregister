@@ -243,13 +243,7 @@ export default {
 		}
 	},
 	mounted() {
-		console.log('Component mounted, fetching registers...')
 		dashboardStore.fetchRegisters()
-		console.log('Initial store state:', {
-			loading: dashboardStore.loading,
-			error: dashboardStore.error,
-			registers: dashboardStore.registers,
-		})
 	},
 	methods: {
 		toggleSchema(schemaId) {
@@ -269,13 +263,11 @@ export default {
 		},
 
 		async calculateSizes(register) {
-			console.log('Calculating sizes for register:', register)
 			this.calculating = register.id
 			try {
 				await axios.post(`/index.php/apps/openregister/api/dashboard/calculate/${register.id}`)
 				showSuccess(t('openregister', 'Sizes calculated successfully'))
 				await dashboardStore.fetchRegisters()
-				console.log('Registers refreshed after calculation:', dashboardStore.registers)
 			} catch (error) {
 				showError(t('openregister', 'Failed to calculate sizes'))
 				console.error('Failed to calculate sizes:', error)
