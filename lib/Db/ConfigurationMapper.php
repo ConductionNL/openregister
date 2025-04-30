@@ -7,11 +7,13 @@
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *
- * @author    Ruben Linde <ruben@nextcloud.com>
- * @copyright Copyright (c) 2024, Ruben Linde (https://github.com/rubenlinde)
- * @license   AGPL-3.0
- * @version   1.0.0
- * @link      https://github.com/cloud-py-api/openregister
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -278,14 +280,14 @@ class ConfigurationMapper extends QBMapper
     ): array {
         $qb = $this->db->getQueryBuilder();
 
-        // Build the base query
+        // Build the base query.
         $qb->select('*')
             ->from($this->tableName)
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply filters
+        // Apply filters.
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -296,7 +298,7 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Apply search conditions
+        // Apply search conditions.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
@@ -304,7 +306,7 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Execute the query and return the results
+        // Execute the query and return the results.
         return $this->findEntities($qb);
 
     }//end findAll()

@@ -102,7 +102,7 @@ class AuditTrailMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_audit_trails');
 
-        // Filter out system variables (starting with _)
+        // Filter out system variables (starting with _).
         $filters = array_filter(
             $filters ?? [],
             function ($key) {
@@ -111,9 +111,9 @@ class AuditTrailMapper extends QBMapper
             ARRAY_FILTER_USE_KEY
         );
 
-        // Apply filters
+        // Apply filters.
         foreach ($filters as $field => $value) {
-            // Ensure the field is a valid column name
+            // Ensure the field is a valid column name.
             if (!in_array(
                     $field,
                     [
@@ -146,16 +146,16 @@ class AuditTrailMapper extends QBMapper
             }
         }//end foreach
 
-        // Add search on changed field if search term provided
+        // Add search on changed field if search term provided.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
             );
         }
 
-        // Add sorting
+        // Add sorting.
         foreach ($sort as $field => $direction) {
-            // Ensure the field is a valid column name
+            // Ensure the field is a valid column name.
             if (!in_array(
                     $field,
                     [
@@ -181,9 +181,9 @@ class AuditTrailMapper extends QBMapper
 
             $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
             $qb->addOrderBy($field, $direction);
-        }//end foreach
+        }//end foreach.
 
-        // Apply pagination
+        // Apply pagination.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }

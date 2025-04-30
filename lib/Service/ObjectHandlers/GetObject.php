@@ -69,11 +69,11 @@ class GetObject
 
 
     /**
-     * Gets an object by its UUID with optional extensions.
+     * Gets an object by its ID with optional extensions.
      *
+     * @param string   $id       The ID of the object to get.
      * @param Register $register The register containing the object.
      * @param Schema   $schema   The schema of the object.
-     * @param string   $uuid     The UUID of the object to get.
      * @param array    $extend   Properties to extend with.
      * @param bool     $files    Include file information.
      *
@@ -262,8 +262,23 @@ class GetObject
         );
 
         // If additional parameters are set, filter the IDs from $referencingObjects.
-        if (!empty($filters) || !empty($searchConditions) || !empty($searchParams) || !empty($sort) || $search !== null || $limit !== null || $offset !== null || !empty($extend) || $files !== false || $uses !== null || $register !== null || $schema !== null) {
-            $ids           = array_map(fn($obj) => $obj->getId(), $referencingObjects);
+        if (empty($filters) === false
+            || empty($searchConditions) === false
+            || empty($searchParams) === false
+            || empty($sort) === false
+            || $search !== null
+            || $limit !== null
+            || $offset !== null
+            || empty($extend) === false
+            || $files !== false
+            || $uses !== null
+            || $register !== null
+            || $schema !== null
+        ) {
+            $ids           = array_map(
+                fn($obj) => $obj->getId(),
+                $referencingObjects
+            );
             $filters['id'] = $ids;
 
             // Use findAll to apply additional filters and return the response.
@@ -280,7 +295,7 @@ class GetObject
                 register: $register,
                 schema: $schema
             );
-        }
+        }//end if
 
         return $referencingObjects;
 

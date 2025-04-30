@@ -64,7 +64,7 @@ class OasService
         private readonly IConfig $config,
         private readonly LoggerInterface $logger
     ) {
-        // Initialize the OAS array with the base OAS
+        // Initialize the OAS array with the base OAS.
         $this->oas = $this->getBaseOas();
 
     }//end __construct()
@@ -81,7 +81,7 @@ class OasService
      */
     public function createOas(?string $registerId=null): array
     {
-        // Reset OAS to base state
+        // Reset OAS to base state.
         $this->oas = $this->getBaseOas();
 
         // Get registers.
@@ -139,7 +139,7 @@ class OasService
             ];
         }
 
-        // Initialize paths array
+        // Initialize paths array.
         $this->oas['paths'] = [];
 
         // Add paths for each register.
@@ -337,9 +337,9 @@ class OasService
             ],
         ];
 
-        // Add collection-specific parameters
+        // Add collection-specific parameters.
         if ($isCollection === true) {
-            // Add _search parameter
+            // Add _search parameter.
             $parameters[] = [
                 'name'        => '_search',
                 'in'          => 'query',
@@ -351,7 +351,7 @@ class OasService
                 'example'     => 'search term',
             ];
 
-            // Add dynamic filter parameters based on schema properties
+            // Add dynamic filter parameters based on schema properties.
             if ($schema !== null) {
                 $schemaProperties = $schema->getProperties();
                 foreach ($schemaProperties as $propertyName => $propertyDefinition) {
@@ -360,7 +360,7 @@ class OasService
                         continue;
                     }
 
-                    // Get property type from definition
+                    // Get property type from definition.
                     $propertyType = $this->getPropertyType($propertyDefinition);
 
                     $parameters[] = [
@@ -390,14 +390,14 @@ class OasService
      */
     private function getPropertyType($propertyDefinition): string
     {
-        // If the property definition is an array, look for the type key
+        // If the property definition is an array, look for the type key.
         if (is_array($propertyDefinition) && isset($propertyDefinition['type'])) {
             return $propertyDefinition['type'];
         }
 
-        // If the property definition is a string, assume it's the type
+        // If the property definition is a string, assume it's the type.
         if (is_string($propertyDefinition)) {
-            // Map common types to OpenAPI types
+            // Map common types to OpenAPI types.
             $typeMap = [
                 'int'    => 'integer',
                 'float'  => 'number',
@@ -410,7 +410,7 @@ class OasService
             return $typeMap[$propertyDefinition] ?? 'string';
         }
 
-        // Default to string if type cannot be determined
+        // Default to string if type cannot be determined.
         return 'string';
 
     }//end getPropertyType()

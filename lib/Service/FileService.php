@@ -12,13 +12,13 @@
  * @category  Service
  * @package   OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version   GIT: <git_id>
- * 
- * @link      https://www.OpenRegister.app
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service;
@@ -97,22 +97,22 @@ class FileService
      * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper
      */
     public function __construct(
-        private readonly IUserSession $userSession,
-        private readonly IUserManager $userManager,
-        private readonly LoggerInterface $logger,
-        private readonly IRootFolder $rootFolder,
-        private readonly IManager $shareManager,
-        private readonly IURLGenerator $urlGenerator,
-        private readonly IConfig $config,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IGroupManager $groupManager,
-        private readonly ISystemTagManager $systemTagManager,
+        private readonly IUserSession           $userSession,
+        private readonly IUserManager           $userManager,
+        private readonly LoggerInterface        $logger,
+        private readonly IRootFolder            $rootFolder,
+        private readonly IManager               $shareManager,
+        private readonly IURLGenerator          $urlGenerator,
+        private readonly IConfig                $config,
+        private readonly RegisterMapper         $registerMapper,
+        private readonly SchemaMapper           $schemaMapper,
+        private readonly IGroupManager          $groupManager,
+        private readonly ISystemTagManager      $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly ObjectEntityMapper     $objectEntityMapper,
         private readonly VersionManager         $versionManager,
     ) {
-    }
+    }//end __construct()
 
 
 
@@ -132,7 +132,7 @@ class FileService
         }
 
         return $file;
-    }
+    }//end createNewVersion
 
     /**
      * Get a specific version of a file
@@ -148,7 +148,7 @@ class FileService
         }
 
         return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
-    }
+    }//end getVersion
 
     /**
      * Creates a folder for a Register (used for storing files of Schemas/Objects).
@@ -166,7 +166,7 @@ class FileService
         }
 
         $registerFolderName = $this->getRegisterFolderName($register);
-        // @todo maybe we want to use ShareLink here for register->folder as well?
+        // @todo maybe we want to use ShareLink here for register->folder as well?.
         $register->setFolder($this::ROOT_FOLDER."/$registerFolderName");
         $this->registerMapper->update($register);
 

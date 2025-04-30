@@ -1,12 +1,20 @@
 <?php
 /**
- * @file        LogController.php
- * @description Controller for handling audit trail logs in the OpenRegister app
- * @package     OCA\OpenRegister\Controller
- * @author      Ruben Linde <ruben@conduction.nl>
- * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version     1.0.0
- * @link        https://github.com/OpenCatalogi/OpenRegister
+ * Class LogController
+ *
+ * Controller for managing audit trail log operations in the OpenRegister app.
+ * Provides functionality to retrieve logs related to objects within registers and schemas.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -55,25 +63,25 @@ class LogController extends Controller
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
-        // Get request parameters for filtering and pagination
+        // Get request parameters for filtering and pagination.
         $params = $this->request->getParams();
 
-        // Extract pagination parameters
+        // Extract pagination parameters.
         $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
         $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
         $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
 
-        // If we have a page but no offset, calculate the offset
+        // If we have a page but no offset, calculate the offset.
         if ($page !== null && $offset === null) {
             $offset = ($page - 1) * $limit;
         }
 
-        // Extract search parameter
+        // Extract search parameter.
         $search = $params['search'] ?? $params['_search'] ?? null;
 
-        // Extract sort parameters
+        // Extract sort parameters.
         $sort = [];
-        if (isset($params['sort']) || isset($params['_sort'])) {
+        if (isset($params['sort']) === true || isset($params['_sort']) === true) {
             $sortField        = $params['sort'] ?? $params['_sort'] ?? 'created';
             $sortOrder        = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
@@ -81,7 +89,7 @@ class LogController extends Controller
             $sort['created'] = 'DESC';
         }
 
-        // Filter out special parameters and system fields
+        // Filter out special parameters and system fields.
         $filters = array_filter(
             $params,
             function ($key) {
@@ -110,7 +118,7 @@ class LogController extends Controller
             ARRAY_FILTER_USE_KEY
         );
 
-        // Get logs from service
+        // Get logs from service.
         $logs = $this->logService->getLogs(
                 $register,
                 $schema,
@@ -125,10 +133,10 @@ class LogController extends Controller
                 ]
                 );
 
-        // Get total count for pagination
+        // Get total count for pagination.
         $total = $this->logService->count($register, $schema, $id);
 
-        // Return paginated results
+        // Return paginated results.
         return new JSONResponse(
                 [
                     'results' => $logs,
