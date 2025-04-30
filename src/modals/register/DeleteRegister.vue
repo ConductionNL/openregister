@@ -12,7 +12,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			</p>
 			<p v-if="!success && registerStore.registerItem?.schemas.length > 0">
 				Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert.
-				Er zijn nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema's in het register.
+				Er {{ registerStore.registerItem?.schemas.length > 1 ? 'zijn' : 'is' }} nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema{{ registerStore.registerItem?.schemas.length > 1 ? "'s" : '' }} in het register.
 			</p>
 		<NcNoteCard v-if="success" type="success">
 			<p>Register succesvol verwijderd</p>
@@ -89,11 +89,10 @@ export default {
 			this.error = false
 		},
 		async deleteRegister() {
-			this.loading = true
 			if (registerStore.registerItem?.schemas.length > 0) {
-				this.loading = false
 				return
 			}
+			this.loading = true
 			registerStore.deleteRegister({
 				...registerStore.registerItem,
 			}).then(({ response }) => {

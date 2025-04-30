@@ -11,7 +11,7 @@ import { schemaStore, navigationStore, objectStore, registerStore} from '../../s
 			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 		<p v-if="!success && !canDelete">
-			Er zijn objecten in dit schema in het register <b>{{ registerName }}</b>. Je moet deze eerst verwijderen.
+			Er {{ objects.length > 1 ? 'zijn' : 'is' }} {{ objects.length }} {{ objects.length > 1 ? 'objecten' : 'object' }} in dit schema in het register <b>{{ registerName }}</b>. Je moet {{ objects.length > 1 ? 'deze' : 'dit' }} eerst verwijderen.
 		</p>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -28,7 +28,7 @@ import { schemaStore, navigationStore, objectStore, registerStore} from '../../s
 				v-if="!success"
 				:disabled="loading || !canDelete"
 				type="error"
-				@click="handleDeleteSchema()">
+				@click="deleteSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
@@ -69,10 +69,47 @@ export default {
 			closeModalTimeout: null,
 			objects: [],
 			registerName: '',
-			canDelete: true,
+			canDelete: false,
+			isUpdated: false,
+		}
+	},
+	computed: {
+		canDelete() {
+			return this.objects.length === 0
+		},
+	},
+	updated() {
+		if (!this.isUpdated && navigationStore.dialog === 'deleteSchema') {
+			this.isUpdated = true
+			this.initDialog()
 		}
 	},
 	methods: {
+		async initDialog() {			
+			await registerStore.refreshRegisterList()
+			if (!registerStore.registerList.length) {
+				return
+			}
+
+			for (const reg of registerStore.registerList) {
+				if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
+					continue
+				}
+
+				await objectStore.refreshObjectList({
+					register: reg.id,
+					schema: schemaStore.schemaItem.id,
+					search: '',
+				})
+
+				if (objectStore.objectList?.results?.length) {
+					this.objects.push(...objectStore.objectList.results)
+					this.registerName = reg.title
+				}
+			}
+
+			this.canDelete = this.objects.length === 0
+		},
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -81,7 +118,8 @@ export default {
 			this.error = false
 			this.objects = []
 			this.registerName = ''
-			this.canDelete = true
+			this.canDelete = false
+			this.isUpdated = false
 		},
 		async deleteSchema() {
 			this.loading = true
@@ -98,31 +136,6 @@ export default {
 			}).finally(() => {
 				this.loading = false
 			})
-		},
-		async handleDeleteSchema() {
-			this.objects = []
-			await registerStore.refreshRegisterList()
-			if (registerStore.registerList.length === 0) {
-				return;
-			}
-			for (const reg of registerStore.registerList) {
-				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
-					await objectStore.refreshObjectList({
-						register: reg.id,
-						schema:   schemaStore.schemaItem.id,
-						search:   '',
-					})
-					if (objectStore.objectList?.results?.length) {
-						this.objects.push(...objectStore.objectList.results)
-						this.registerName = reg.title
-					}
-				}
-			}
-			if (!this.objects.length) {
-				await this.deleteSchema()
-			} else {
-				this.canDelete = false
-			}
 		},
 	},
 }
