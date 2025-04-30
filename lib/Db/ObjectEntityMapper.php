@@ -402,6 +402,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
         // Dispatch creation event.
@@ -456,6 +457,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::update($entity);
 

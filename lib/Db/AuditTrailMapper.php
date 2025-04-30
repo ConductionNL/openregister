@@ -246,6 +246,7 @@ class AuditTrailMapper extends QBMapper
         if ($log->getUuid() === null) {
             $log->setUuid(Uuid::v4());
         }
+        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object
 
         return $this->insert(entity: $log);
 
@@ -333,6 +334,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new \DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
+        $entity->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);

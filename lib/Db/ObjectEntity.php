@@ -168,6 +168,20 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $retention = [];
 
     /**
+     * Size of the object in byte.
+     *
+     * @var string|null Size of the object
+     */
+    protected ?string $size = null;
+
+    /**
+     * Version of the schema when this object was created
+     *
+     * @var string|null Version of the schema when this object was created
+     */
+    protected ?string $schemaVersion = null;
+
+    /**
      * Last update timestamp.
      *
      * @var DateTime|null Last update timestamp
@@ -180,13 +194,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @var DateTime|null Creation timestamp
      */
     protected ?DateTime $created = null;
-
-    /**
-     * Version of the schema when this object was created
-     *
-     * @var string|null Version of the schema when this object was created
-     */
-    protected ?string $schemaVersion = null;
 
 
     /**
@@ -213,9 +220,10 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'deleted', type: 'json');
         $this->addType(fieldName:'geo', type: 'json');
         $this->addType(fieldName:'retention', type: 'json');
+        $this->addType(fieldName:'size', type: 'string');
+        $this->addType(fieldName:'schemaVersion', type: 'string');
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
-        $this->addType(fieldName:'schemaVersion', type: 'string');
 
     }//end __construct()
 
@@ -404,6 +412,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'validation'    => $this->validation,
             'geo'           => $this->geo,
             'retention'     => $this->retention,
+            'size'          => $this->size,
             'updated'       => $this->getFormattedDate($this->updated),
             'created'       => $this->getFormattedDate($this->created),
             'deleted'       => $this->deleted,
