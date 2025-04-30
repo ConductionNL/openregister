@@ -736,4 +736,49 @@ class ObjectEntityMapper extends QBMapper
     }//end findMultiple()
 
 
+    /**
+     * Get statistics about objects for a register/schema combination
+     *
+     * @param int      $registerId The register ID
+     * @param int|null $schemaId   The schema ID (optional)
+     *
+     * @return array Array containing total count, size, invalid count, and deleted count
+     */
+    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            $qb->select(
+                $qb->createFunction('COUNT(id) as total_objects'),
+                $qb->createFunction('SUM(size) as total_size'),
+                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid_objects'),
+                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects')
+            )
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $result = $qb->executeQuery()->fetch();
+
+            return [
+                'total' => (int)($result['total_objects'] ?? 0),
+                'size' => (int)($result['total_size'] ?? 0),
+                'invalid' => (int)($result['invalid_objects'] ?? 0),
+                'deleted' => (int)($result['deleted_objects'] ?? 0)
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get object statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'size' => 0,
+                'invalid' => 0,
+                'deleted' => 0
+            ];
+        }
+    }
+
 }//end class

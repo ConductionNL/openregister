@@ -109,60 +109,24 @@ class DashboardService
     /**
      * Get statistics for a specific register and schema combination
      *
-     * @param int $registerId The register ID
-     * @param int|null $schemaId The schema ID (optional)
+     * @param int      $registerId The register ID
+     * @param int|null $schemaId   The schema ID (optional)
      *
      * @return array The statistics for the register/schema combination
      */
     private function getStats(int $registerId, ?int $schemaId = null): array
     {
         try {
-            $qb = $this->db->getQueryBuilder();
+            // Get object statistics
+            $objectStats = $this->objectMapper->getStatistics($registerId, $schemaId);
             
-            // Select counts and sums
-            $qb->select(
-                $qb->createFunction('COUNT(id) as total_objects'),
-                $qb->createFunction('SUM(size) as total_size'),
-                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid_objects'),
-                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects')
-            )
-            ->from('openregister_objects')
-            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
-
-            // Add schema condition if provided
-            if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-            }
-
-            $result = $qb->executeQuery()->fetch();
-
             // Get audit trail statistics
-            $auditQb = $this->db->getQueryBuilder();
-            $auditQb->select(
-                $qb->createFunction('COUNT(id) as total_logs'),
-                $qb->createFunction('SUM(size) as total_log_size')
-            )
-            ->from('openregister_audit_trails')
-            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
-
-            if ($schemaId !== null) {
-                $auditQb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-            }
-
-            $auditResult = $auditQb->executeQuery()->fetch();
+            $auditStats = $this->auditTrailMapper->getStatistics($registerId, $schemaId);
 
             // Combine results
             return [
-                'objects' => [
-                    'total' => (int)($result['total_objects'] ?? 0),
-                    'size' => (int)($result['total_size'] ?? 0),
-                    'invalid' => (int)($result['invalid_objects'] ?? 0),
-                    'deleted' => (int)($result['deleted_objects'] ?? 0)
-                ],
-                'logs' => [
-                    'total' => (int)($auditResult['total_logs'] ?? 0),
-                    'size' => (int)($auditResult['total_log_size'] ?? 0)
-                ],
+                'objects' => $objectStats,
+                'logs' => $auditStats,
                 'files' => [
                     'total' => 0,
                     'size' => 0
