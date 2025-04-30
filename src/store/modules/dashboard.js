@@ -6,13 +6,13 @@ export const useDashboardStore = defineStore('dashboard', {
 	state: () => ({
 		registers: [],
 		loading: false,
-		error: null
+		error: null,
 	}),
 
 	getters: {
 		getRegisters: (state) => state.registers,
 		isLoading: (state) => state.loading,
-		getError: (state) => state.error
+		getError: (state) => state.error,
 	},
 
 	actions: {
@@ -28,6 +28,6 @@ export const useDashboardStore = defineStore('dashboard', {
 			} finally {
 				this.loading = false
 			}
-		}
-	}
+		},
+	},
 }) 
