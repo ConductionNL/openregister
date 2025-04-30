@@ -246,6 +246,7 @@ class AuditTrailMapper extends QBMapper
         if ($log->getUuid() === null) {
             $log->setUuid(Uuid::v4());
         }
+        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object
 
         return $this->insert(entity: $log);
 
@@ -333,6 +334,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new \DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
+        $entity->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
@@ -494,5 +496,115 @@ class AuditTrailMapper extends QBMapper
     }//end revertChanges()
 
 
-    // We dont need update as we dont change the log.
+    /**
+     * Get statistics about audit trails for a register/schema combination
+     *
+     * @param int      $registerId The register ID
+     * @param int|null $schemaId   The schema ID (optional)
+     *
+     * @return array Array containing total count and size of audit trails
+     */
+    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                $qb->createFunction('COUNT(id) as total_logs'),
+                $qb->createFunction('SUM(size) as total_log_size')
+            )
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $result = $qb->executeQuery()->fetch();
+
+            return [
+                'total' => (int)($result['total_logs'] ?? 0),
+                'size' => (int)($result['total_log_size'] ?? 0)
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'size' => 0
+            ];
+        }
+    }
+
+
+    /**
+     * Get statistics about orphaned audit trails
+     *
+     * An audit trail is considered orphaned if:
+     * - It references a non-existent register
+     * - It references a non-existent schema
+     * - It references a schema that no longer belongs to its register
+     * - It references a non-existent object
+     *
+     * @return array Array containing statistics about orphaned audit trails
+     */
+    public function getOrphanedStatistics(): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            
+            // Main query for orphaned audit trails
+            $qb->select(
+                $qb->createFunction('COUNT(a.id) as total_logs'),
+                $qb->createFunction('SUM(a.size) as total_log_size')
+            )
+            ->from('openregister_audit_trails', 'a')
+            ->leftJoin(
+                'a',
+                'openregister_registers',
+                'r',
+                $qb->expr()->eq('a.register', 'r.id')
+            )
+            ->leftJoin(
+                'a',
+                'openregister_schemas',
+                's',
+                $qb->expr()->eq('a.schema', 's.id')
+            )
+            ->leftJoin(
+                'a',
+                'openregister_objects',
+                'o',
+                $qb->expr()->eq('a.object', 'o.id')
+            )
+            ->where(
+                $qb->expr()->orX(
+                    // Register doesn't exist
+                    $qb->expr()->isNull('r.id'),
+                    // Schema doesn't exist
+                    $qb->expr()->isNull('s.id'),
+                    // Object doesn't exist
+                    $qb->expr()->isNull('o.id'),
+                    // Schema exists but is not in register's schema list
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull('r.id'),
+                        $qb->expr()->isNotNull('s.id'),
+                        $qb->expr()->notLike('r.schemas', $qb->createFunction('CONCAT(\'%"\', a.schema, \'"%\')'))
+                    )
+                )
+            );
+
+            $result = $qb->executeQuery()->fetch();
+
+            return [
+                'total' => (int)($result['total_logs'] ?? 0),
+                'size' => (int)($result['total_log_size'] ?? 0)
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get orphaned audit trail statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'size' => 0
+            ];
+        }
+    }
+
 }//end class
