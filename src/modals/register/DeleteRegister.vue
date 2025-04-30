@@ -7,20 +7,20 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		name="Register verwijderen"
 		size="normal"
 		:can-close="false">
-			<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
+		<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
 			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-			</p>
-			<p v-if="!success && registerStore.registerItem?.schemas.length > 0">
-				Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert.
-				Er {{ registerStore.registerItem?.schemas.length > 1 ? 'zijn' : 'is' }} nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema{{ registerStore.registerItem?.schemas.length > 1 ? "'s" : '' }} in het register.
-			</p>
+		</p>
+		<p v-if="!success && registerStore.registerItem?.schemas.length > 0">
+			Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert.
+			Er {{ registerStore.registerItem?.schemas.length > 1 ? 'zijn' : 'is' }} nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema{{ registerStore.registerItem?.schemas.length > 1 ? "'s" : '' }} in het register.
+		</p>
 		<NcNoteCard v-if="success" type="success">
 			<p>Register succesvol verwijderd</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
-		<template #actions v-if="registerStore.registerItem?.schemas.length === 0">
+		<template v-if="registerStore.registerItem?.schemas.length === 0" #actions>
 			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
@@ -38,15 +38,15 @@ import { registerStore, navigationStore } from '../../store/store.js'
 				</template>
 				Verwijderen
 			</NcButton>
-	 </template>
-	 <template #actions v-else>
-		<NcButton @click="closeDialog">
-			<template #icon>
-				<Cancel :size="20" />
-			</template>
-			Sluiten
-		</NcButton>
-	 </template>
+		</template>
+		<template v-else #actions>
+			<NcButton @click="closeDialog">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				Sluiten
+			</NcButton>
+		</template>
 	</NcDialog>
 </template>
 

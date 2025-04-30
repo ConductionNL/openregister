@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore, objectStore, registerStore} from '../../store/store.js'
+import { schemaStore, navigationStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -69,7 +69,6 @@ export default {
 			closeModalTimeout: null,
 			objects: [],
 			registerName: '',
-			canDelete: false,
 			isUpdated: false,
 		}
 	},
@@ -85,7 +84,7 @@ export default {
 		}
 	},
 	methods: {
-		async initDialog() {			
+		async initDialog() {
 			await registerStore.refreshRegisterList()
 			if (!registerStore.registerList.length) {
 				return
