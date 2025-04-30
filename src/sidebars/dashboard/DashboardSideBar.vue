@@ -69,6 +69,26 @@ import { dashboardStore } from '../../store/store.js'
 								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
 								<td>{{ formatBytes(systemTotals.stats?.files?.size || 0) }}</td>
 							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Registers') }}</td>
+								<td>
+									{{ dashboardStore.registers.filter(register =>
+										register.title !== 'System Totals' &&
+										register.title !== 'Orphaned Items'
+									).length }}
+								</td>
+								<td>-</td>
+							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Schemas') }}</td>
+								<td>
+									{{ dashboardStore.registers.filter(register =>
+										register.title !== 'System Totals' &&
+										register.title !== 'Orphaned Items'
+									).reduce((total, register) => total + (register.schemas?.length || 0), 0) }}
+								</td>
+								<td>-</td>
+							</tr>
 						</tbody>
 					</table>
 				</div>
