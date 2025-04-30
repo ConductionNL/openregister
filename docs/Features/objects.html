@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.7.0">
 <title data-rh="true">Objects | Open Register</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregisters.app/docs/Features/objects"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Objects | Open Register"><meta data-rh="true" name="description" content="An overview of how core concepts in Open Register interact with each other."><meta data-rh="true" property="og:description" content="An overview of how core concepts in Open Register interact with each other."><meta data-rh="true" name="keywords" content="Open Register,Core Concepts,Relationships"><link data-rh="true" rel="canonical" href="https://openregisters.app/docs/Features/objects"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/Features/objects" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregisters.app/docs/Features/objects" hreflang="x-default"><link rel="stylesheet" href="/assets/css/styles.3a202f4d.css">
-<script src="/assets/js/runtime~main.8c5f0e19.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.a401877b.js" defer="defer"></script>
 <script src="/assets/js/main.27a6eb36.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -200,11 +200,24 @@
 <li><code>?_extend=department.employees</code> - Include department with all employees</li>
 <li><code>?_extend=project.tasks.assignee</code> - Include project with tasks and their assignees</li>
 </ul>
+<p>When using nexted properties on arrays of embedded objects, the <code>$</code> wildcard can be used.
+So, for example, if we have an array of embedded <code>authors</code> within a book with a reference <code>contact</code> to an external object,
+this can be extended using <code>?_extend=authors.$.contact</code>.</p>
 <p>Combine multiple extensions:</p>
 <ul>
 <li><code>?_extend=author,category,comments</code> - Include multiple related objects</li>
 <li><code>?_extend=files,metadata,relations</code> - Include all related data</li>
 <li><code>?_extend=all</code> - Include all possible relations on the root object</li>
+</ul>
+<p>The extend functionality can also be used as an array property:</p>
+<ul>
+<li><code>?_extend[]=author&amp;_extend[]=category&amp;_extend[]=comments</code></li>
+<li><code>?_extend[]=files&amp;_extend[]=metadata&amp;_extend[]=relations</code></li>
+</ul>
+<p>This last case also gives the possibility to extend a field to another field:</p>
+<ul>
+<li><code>?_extend[element]=elementRef</code>
+This will extend the field <code>elementRef</code> to a new field <code>element</code>.</li>
 </ul>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="revertedby">revertedBy<a href="#revertedby" class="hash-link" aria-label="Direct link to revertedBy" title="Direct link to revertedBy">​</a></h3>
 <p>The <code>revertedBy</code> property indicates which object this object was reverted from. This is part of Open Register&#x27;s version control system, allowing you to track the history of object changes and reversions. For more details about how this works with schemas, see <a href="/docs/Features/schemas#schema-relationships">Schema Relationships</a>.</p>
