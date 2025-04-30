@@ -334,7 +334,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new \DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
-        $entity->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+        $auditTrail->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
@@ -605,6 +605,24 @@ class AuditTrailMapper extends QBMapper
                 'size' => 0
             ];
         }
+    }
+
+    /**
+     * Updates an entity in the database
+     *
+     * @param Entity $entity The entity to update
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
+     *
+     * @return Entity The updated entity
+     */
+    public function update(Entity $entity): Entity
+    {
+        // Recalculate size before update
+        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+
+        return parent::update($entity);
     }
 
 }//end class
