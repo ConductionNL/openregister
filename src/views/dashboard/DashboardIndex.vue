@@ -22,7 +22,7 @@ import { dashboardStore, navigationStore } from '../../store/store.js'
 			<div v-else class="registers">
 				<div v-for="register in dashboardStore.registers" :key="register.id" class="registerCard">
 					<div class="registerHeader">
-						<h2>
+						<h2 v-tooltip.bottom="register.description">
 							<DatabaseOutline :size="20" />
 							{{ register.title }}
 						</h2>
@@ -74,9 +74,6 @@ import { dashboardStore, navigationStore } from '../../store/store.js'
 							</NcActionButton>
 						</NcActions>
 					</div>
-					<p class="registerDescription">
-						{{ register.description }}
-					</p>
 
 					<!-- Register Statistics Table -->
 					<table class="statisticsTable registerStats">
@@ -131,12 +128,24 @@ import { dashboardStore, navigationStore } from '../../store/store.js'
 								<td>{{ register.stats?.files?.total || 0 }}</td>
 								<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
 							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Schemas') }}</td>
+								<td>{{ register.schemas?.length || 0 }}</td>
+								<td>
+									<button class="schemaToggle" @click.stop="toggleSchemaVisibility(register.id)">
+										{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
+									</button>
+								</td>
+							</tr>
 						</tbody>
 					</table>
 
-					<div class="schemas">
+					<!-- Schemas section with v-show -->
+					<div v-show="isSchemasVisible(register.id)" class="schemas">
 						<div v-for="schema in register.schemas" :key="schema.id" class="schema">
-							<div class="schemaHeader" @click="toggleSchema(schema.id)">
+							<div
+								class="schemaHeader"
+								@click="toggleSchema(schema.id)">
 								<div class="schemaTitle">
 									<FileCodeOutline :size="16" />
 									<span>{{ schema.stats?.objects?.total || 0 }} </span>
@@ -144,52 +153,67 @@ import { dashboardStore, navigationStore } from '../../store/store.js'
 									<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
 								</div>
 								<button class="schemaToggle">
-									<ChevronDown v-if="!expandedSchemas.has(schema.id)" :size="20" />
-									<ChevronUp v-else :size="20" />
+									<ChevronUp v-if="isSchemaExpanded(schema.id)" :size="20" />
+									<ChevronDown v-else :size="20" />
 								</button>
 							</div>
 
-							<!-- Schema Statistics Table -->
-							<table v-if="expandedSchemas.has(schema.id)" class="statisticsTable schemaStats">
-								<thead>
-									<tr>
-										<th>Type</th>
-										<th>Total</th>
-										<th>Size</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td>Objects</td>
-										<td>{{ schema.stats?.objects?.total || 0 }}</td>
-										<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											Invalid
-										</td>
-										<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="subRow">
-										<td class="indented">
-											Deleted
-										</td>
-										<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr>
-										<td>Logs</td>
-										<td>{{ schema.stats?.logs?.total || 0 }}</td>
-										<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-									</tr>
-									<tr>
-										<td>Files</td>
-										<td>{{ schema.stats?.files?.total || 0 }}</td>
-										<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-									</tr>
-								</tbody>
-							</table>
+							<div v-show="isSchemaExpanded(schema.id)" class="schemaContent">
+								<table class="statisticsTable schemaStats">
+									<thead>
+										<tr>
+											<th>{{ t('openregister', 'Type') }}</th>
+											<th>{{ t('openregister', 'Total') }}</th>
+											<th>{{ t('openregister', 'Size') }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>{{ t('openregister', 'Objects') }}</td>
+											<td>{{ schema.stats?.objects?.total || 0 }}</td>
+											<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Invalid') }}
+											</td>
+											<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Deleted') }}
+											</td>
+											<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Locked') }}
+											</td>
+											<td>{{ schema.stats?.objects?.locked || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Published') }}
+											</td>
+											<td>{{ schema.stats?.objects?.published || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr>
+											<td>{{ t('openregister', 'Logs') }}</td>
+											<td>{{ schema.stats?.logs?.total || 0 }}</td>
+											<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
+										</tr>
+										<tr>
+											<td>{{ t('openregister', 'Files') }}</td>
+											<td>{{ schema.stats?.files?.total || 0 }}</td>
+											<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -199,7 +223,7 @@ import { dashboardStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -217,6 +241,9 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'DashboardIndex',
+	directives: {
+		tooltip,
+	},
 	components: {
 		NcAppContent,
 		NcEmptyContent,
@@ -238,20 +265,33 @@ export default {
 	},
 	data() {
 		return {
-			expandedSchemas: new Set(),
+			expandedSchemas: [],
 			calculating: null,
+			showSchemas: {},
 		}
+	},
+	computed: {
+		isSchemaExpanded() {
+			return (schemaId) => this.expandedSchemas.includes(schemaId)
+		},
+		isSchemasVisible() {
+			return (registerId) => this.showSchemas[registerId] || false
+		},
 	},
 	mounted() {
 		dashboardStore.fetchRegisters()
 	},
 	methods: {
 		toggleSchema(schemaId) {
-			if (this.expandedSchemas.has(schemaId)) {
-				this.expandedSchemas.delete(schemaId)
+			const index = this.expandedSchemas.indexOf(schemaId)
+			if (index > -1) {
+				this.expandedSchemas.splice(index, 1)
 			} else {
-				this.expandedSchemas.add(schemaId)
+				this.expandedSchemas.push(schemaId)
 			}
+
+			// Force reactivity update
+			this.expandedSchemas = [...this.expandedSchemas]
 		},
 
 		formatBytes(bytes) {
@@ -299,6 +339,10 @@ export default {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+		},
+
+		toggleSchemaVisibility(registerId) {
+			this.$set(this.showSchemas, registerId, !this.showSchemas[registerId])
 		},
 	},
 }
@@ -374,12 +418,6 @@ export default {
 	}
 }
 
-.registerDescription {
-	color: var(--color-text-maxcontrast);
-	margin-block-end: 16px;
-	line-height: 1.5;
-}
-
 .schemas {
 	display: flex;
 	flex-direction: column;
@@ -392,12 +430,11 @@ export default {
 .schema {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
-	padding-block: 8px;
-	padding-inline: 12px;
+	margin-block-end: 8px;
 	background-color: var(--color-main-background);
 
-	&:hover {
-		background-color: var(--color-background-hover);
+	&:last-child {
+		margin-block-end: 0;
 	}
 }
 
@@ -405,73 +442,81 @@ export default {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	padding-block: 8px;
+	padding-inline: 12px;
 	cursor: pointer;
+	transition: background-color 0.2s ease;
+
+	&:hover {
+		background-color: var(--color-background-hover);
+	}
 }
 
 .schemaTitle {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	font-size: 1em;
+	font-size: 0.9em;
 }
 
 .schemaSize {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
+	margin-inline-start: 4px;
 }
 
 .schemaToggle {
 	background: none;
-	border: none;
-	padding: 4px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 4px 8px;
 	cursor: pointer;
 	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	transition: all 0.2s ease;
 
 	&:hover {
 		color: var(--color-main-text);
+		background-color: var(--color-background-hover);
 	}
+}
+
+.schemaContent {
+	border-block-start: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
+	padding: 12px;
 }
 
 .statisticsTable {
 	width: 100%;
 	border-collapse: collapse;
 	font-size: 0.9em;
+	background: var(--color-main-background);
+	border-radius: var(--border-radius);
+	overflow: hidden;
 
-	&.registerStats {
-		margin-block: 16px;
-		background-color: var(--color-background-hover);
-		border-radius: var(--border-radius);
-		overflow: hidden;
+	th, td {
+		padding: 8px 12px;
+		text-align: start;
+		border-block-end: 1px solid var(--color-border);
 	}
 
-	&.schemaStats {
-		margin-block: 12px;
+	th {
+		background-color: var(--color-background-darker);
+		color: var(--color-text-maxcontrast);
+		font-weight: normal;
 	}
-}
 
-.statisticsTable th,
-.statisticsTable td {
-	padding-block: 8px;
-	padding-inline: 8px;
-	text-align: start;
-	border: none;
-}
+	tr:last-child td {
+		border-block-end: none;
+	}
 
-.statisticsTable th {
-	color: var(--color-text-maxcontrast);
-	font-weight: normal;
-	background-color: var(--color-background-darker);
-}
+	.subRow td {
+		color: var(--color-text-maxcontrast);
+	}
 
-.statisticsTable tr:hover {
-	background-color: var(--color-background-hover);
-}
-
-.subRow td {
-	color: var(--color-text-maxcontrast);
-}
-
-.indented {
-	padding-inline-start: 24px !important;
+	.indented {
+		padding-inline-start: 24px;
+	}
 }
 </style>
