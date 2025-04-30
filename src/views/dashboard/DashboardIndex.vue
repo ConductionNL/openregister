@@ -1,24 +1,28 @@
+<script setup>
+import { dashboardStore, navigationStore } from '../../store/store.js'
+</script>
+
 <template>
 	<NcAppContent>
 		<h2 class="pageHeader">
 			Dashboard
 		</h2>
 
-		<div class="dashboard-content">
-			<div v-if="loading" class="loading">
+		<div class="dashboardContent">
+			<div v-if="dashboardStore.loading" class="loading">
 				<NcLoadingIcon :size="32" />
 				<span>Loading registers...</span>
 			</div>
-			<div v-else-if="error" class="error">
-				<NcEmptyContent :title="error" icon="icon-error" />
+			<div v-else-if="dashboardStore.error" class="error">
+				<NcEmptyContent :title="dashboardStore.error" icon="icon-error" />
 			</div>
-			<div v-else-if="!registers || registers.length === 0" class="empty">
+			<div v-else-if="!dashboardStore.registers || dashboardStore.registers.length === 0" class="empty">
 				<NcEmptyContent title="No registers found" icon="icon-folder" />
 			</div>
 			<div v-else class="registers">
-				<div v-for="register in registers" :key="register.id" class="register-card">
-					<div class="register-header">
-						<h2>
+				<div v-for="register in dashboardStore.registers" :key="register.id" class="registerCard">
+					<div class="registerHeader">
+						<h2 v-tooltip.bottom="register.description">
 							<DatabaseOutline :size="20" />
 							{{ register.title }}
 						</h2>
@@ -70,12 +74,9 @@
 							</NcActionButton>
 						</NcActions>
 					</div>
-					<p class="register-description">
-						{{ register.description }}
-					</p>
 
 					<!-- Register Statistics Table -->
-					<table class="statistics-table register-stats">
+					<table class="statisticsTable registerStats">
 						<thead>
 							<tr>
 								<th>{{ t('openregister', 'Type') }}</th>
@@ -89,28 +90,28 @@
 								<td>{{ register.stats?.objects?.total || 0 }}</td>
 								<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Invalid') }}
 								</td>
 								<td>{{ register.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Deleted') }}
 								</td>
 								<td>{{ register.stats?.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Locked') }}
 								</td>
 								<td>{{ register.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="sub-row">
+							<tr class="subRow">
 								<td class="indented">
 									{{ t('openregister', 'Published') }}
 								</td>
@@ -127,65 +128,92 @@
 								<td>{{ register.stats?.files?.total || 0 }}</td>
 								<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
 							</tr>
+							<tr>
+								<td>{{ t('openregister', 'Schemas') }}</td>
+								<td>{{ register.schemas?.length || 0 }}</td>
+								<td>
+									<button class="schemaToggle" @click.stop="toggleSchemaVisibility(register.id)">
+										{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
+									</button>
+								</td>
+							</tr>
 						</tbody>
 					</table>
 
-					<div class="schemas">
+					<!-- Schemas section with v-show -->
+					<div v-show="isSchemasVisible(register.id)" class="schemas">
 						<div v-for="schema in register.schemas" :key="schema.id" class="schema">
-							<div class="schema-header" @click="toggleSchema(schema.id)">
-								<div class="schema-title">
+							<div
+								class="schemaHeader"
+								@click="toggleSchema(schema.id)">
+								<div class="schemaTitle">
 									<FileCodeOutline :size="16" />
 									<span>{{ schema.stats?.objects?.total || 0 }} </span>
 									{{ schema.title }}
-									<span class="schema-size">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
+									<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
 								</div>
-								<button class="schema-toggle">
-									<ChevronDown v-if="!expandedSchemas.has(schema.id)" :size="20" />
-									<ChevronUp v-else :size="20" />
+								<button class="schemaToggle">
+									<ChevronUp v-if="isSchemaExpanded(schema.id)" :size="20" />
+									<ChevronDown v-else :size="20" />
 								</button>
 							</div>
 
-							<!-- Schema Statistics Table -->
-							<table v-if="expandedSchemas.has(schema.id)" class="statistics-table schema-stats">
-								<thead>
-									<tr>
-										<th>Type</th>
-										<th>Total</th>
-										<th>Size</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td>Objects</td>
-										<td>{{ schema.stats?.objects?.total || 0 }}</td>
-										<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-									</tr>
-									<tr class="sub-row">
-										<td class="indented">
-											Invalid
-										</td>
-										<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr class="sub-row">
-										<td class="indented">
-											Deleted
-										</td>
-										<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-										<td>-</td>
-									</tr>
-									<tr>
-										<td>Logs</td>
-										<td>{{ schema.stats?.logs?.total || 0 }}</td>
-										<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-									</tr>
-									<tr>
-										<td>Files</td>
-										<td>{{ schema.stats?.files?.total || 0 }}</td>
-										<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-									</tr>
-								</tbody>
-							</table>
+							<div v-show="isSchemaExpanded(schema.id)" class="schemaContent">
+								<table class="statisticsTable schemaStats">
+									<thead>
+										<tr>
+											<th>{{ t('openregister', 'Type') }}</th>
+											<th>{{ t('openregister', 'Total') }}</th>
+											<th>{{ t('openregister', 'Size') }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>{{ t('openregister', 'Objects') }}</td>
+											<td>{{ schema.stats?.objects?.total || 0 }}</td>
+											<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Invalid') }}
+											</td>
+											<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Deleted') }}
+											</td>
+											<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Locked') }}
+											</td>
+											<td>{{ schema.stats?.objects?.locked || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr class="subRow">
+											<td class="indented">
+												{{ t('openregister', 'Published') }}
+											</td>
+											<td>{{ schema.stats?.objects?.published || 0 }}</td>
+											<td>-</td>
+										</tr>
+										<tr>
+											<td>{{ t('openregister', 'Logs') }}</td>
+											<td>{{ schema.stats?.logs?.total || 0 }}</td>
+											<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
+										</tr>
+										<tr>
+											<td>{{ t('openregister', 'Files') }}</td>
+											<td>{{ schema.stats?.files?.total || 0 }}</td>
+											<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -195,7 +223,7 @@
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -208,14 +236,14 @@ import Export from 'vue-material-design-icons/Export.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
-import { ref, computed, onMounted } from 'vue'
-import { useDashboardStore } from '../../store/modules/dashboard.js'
-import { useNavigationStore } from '../../store/modules/navigation.js'
 import axios from '@nextcloud/axios'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'DashboardIndex',
+	directives: {
+		tooltip,
+	},
 	components: {
 		NcAppContent,
 		NcEmptyContent,
@@ -235,49 +263,60 @@ export default {
 		Download,
 		Calculator,
 	},
-	setup() {
-		const store = useDashboardStore()
-		const navigationStore = useNavigationStore()
-		const expandedSchemas = ref(new Set())
-		const calculating = ref(null)
-
-		// Computed properties
-		const loading = computed(() => store.loading)
-		const error = computed(() => store.error)
-		const registers = computed(() => store.registers)
-
-		// Methods
-		const toggleSchema = (schemaId) => {
-			if (expandedSchemas.value.has(schemaId)) {
-				expandedSchemas.value.delete(schemaId)
-			} else {
-				expandedSchemas.value.add(schemaId)
-			}
+	data() {
+		return {
+			expandedSchemas: [],
+			calculating: null,
+			showSchemas: {},
 		}
+	},
+	computed: {
+		isSchemaExpanded() {
+			return (schemaId) => this.expandedSchemas.includes(schemaId)
+		},
+		isSchemasVisible() {
+			return (registerId) => this.showSchemas[registerId] || false
+		},
+	},
+	mounted() {
+		dashboardStore.fetchRegisters()
+	},
+	methods: {
+		toggleSchema(schemaId) {
+			const index = this.expandedSchemas.indexOf(schemaId)
+			if (index > -1) {
+				this.expandedSchemas.splice(index, 1)
+			} else {
+				this.expandedSchemas.push(schemaId)
+			}
 
-		const formatBytes = (bytes) => {
+			// Force reactivity update
+			this.expandedSchemas = [...this.expandedSchemas]
+		},
+
+		formatBytes(bytes) {
 			if (!bytes || bytes === 0) return '0 KB'
 			const k = 1024
 			const sizes = ['B', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-		}
+		},
 
-		const calculateSizes = async (register) => {
-			calculating.value = register.id
+		async calculateSizes(register) {
+			this.calculating = register.id
 			try {
 				await axios.post(`/index.php/apps/openregister/api/dashboard/calculate/${register.id}`)
 				showSuccess(t('openregister', 'Sizes calculated successfully'))
-				await store.fetchRegisters() // Refresh data
+				await dashboardStore.fetchRegisters()
 			} catch (error) {
 				showError(t('openregister', 'Failed to calculate sizes'))
 				console.error('Failed to calculate sizes:', error)
 			} finally {
-				calculating.value = null
+				this.calculating = null
 			}
-		}
+		},
 
-		const downloadOas = async (register) => {
+		async downloadOas(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
@@ -294,41 +333,27 @@ export default {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
 			}
-		}
+		},
 
-		const viewOasDoc = (register) => {
+		viewOasDoc(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
-		}
+		},
 
-		// Fetch data on component mount
-		onMounted(() => {
-			store.fetchRegisters()
-		})
-
-		return {
-			loading,
-			error,
-			registers,
-			expandedSchemas,
-			toggleSchema,
-			formatBytes,
-			calculating,
-			calculateSizes,
-			downloadOas,
-			viewOasDoc,
-			navigationStore,
-		}
+		toggleSchemaVisibility(registerId) {
+			this.$set(this.showSchemas, registerId, !this.showSchemas[registerId])
+		},
 	},
 }
 </script>
 
 <style lang="scss" scoped>
-.dashboard-content {
+.dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
-	padding: 20px;
+	padding-block: 20px;
+	padding-inline: 20px;
 }
 
 .loading {
@@ -337,7 +362,7 @@ export default {
 	gap: 10px;
 	color: var(--color-text-maxcontrast);
 	justify-content: center;
-	padding: 40px;
+	padding-block: 40px;
 }
 
 .registers {
@@ -358,10 +383,11 @@ export default {
 	}
 }
 
-.register-card {
+.registerCard {
 	background: var(--color-main-background);
 	border-radius: 8px;
-	padding: 20px;
+	padding-block: 20px;
+	padding-inline: 20px;
 	box-shadow: 0 2px 8px var(--color-box-shadow);
 	min-height: 200px;
 	transition: transform 0.2s ease-in-out;
@@ -373,14 +399,14 @@ export default {
 	}
 }
 
-.register-header {
+.registerHeader {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid var(--color-border);
+	margin-block-end: 12px;
+	padding-block-end: 8px;
+	border-block-end: 1px solid var(--color-border);
 
 	h2 {
 		display: flex;
@@ -392,102 +418,105 @@ export default {
 	}
 }
 
-.register-description {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 16px;
-	line-height: 1.5;
-}
-
 .schemas {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 20px;
-	padding-top: 16px;
-	border-top: 1px solid var(--color-border);
+	margin-block-start: 20px;
+	padding-block-start: 16px;
+	border-block-start: 1px solid var(--color-border);
 }
 
 .schema {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
-	padding: 8px 12px;
+	margin-block-end: 8px;
 	background-color: var(--color-main-background);
 
-	&:hover {
-		background-color: var(--color-background-hover);
+	&:last-child {
+		margin-block-end: 0;
 	}
 }
 
-.schema-header {
+.schemaHeader {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	padding-block: 8px;
+	padding-inline: 12px;
 	cursor: pointer;
+	transition: background-color 0.2s ease;
+
+	&:hover {
+		background-color: var(--color-background-hover);
+	}
 }
 
-.schema-title {
+.schemaTitle {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	font-size: 1em;
-}
-
-.schema-size {
-	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 }
 
-.schema-toggle {
+.schemaSize {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	margin-inline-start: 4px;
+}
+
+.schemaToggle {
 	background: none;
-	border: none;
-	padding: 4px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 4px 8px;
 	cursor: pointer;
 	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	transition: all 0.2s ease;
 
 	&:hover {
 		color: var(--color-main-text);
+		background-color: var(--color-background-hover);
 	}
 }
 
-.statistics-table {
+.schemaContent {
+	border-block-start: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
+	padding: 12px;
+}
+
+.statisticsTable {
 	width: 100%;
 	border-collapse: collapse;
 	font-size: 0.9em;
+	background: var(--color-main-background);
+	border-radius: var(--border-radius);
+	overflow: hidden;
 
-	&.register-stats {
-		margin: 16px 0;
-		background-color: var(--color-background-hover);
-		border-radius: var(--border-radius);
-		overflow: hidden;
+	th, td {
+		padding: 8px 12px;
+		text-align: start;
+		border-block-end: 1px solid var(--color-border);
 	}
 
-	&.schema-stats {
-		margin: 12px 0;
+	th {
+		background-color: var(--color-background-darker);
+		color: var(--color-text-maxcontrast);
+		font-weight: normal;
 	}
-}
 
-.statistics-table th,
-.statistics-table td {
-	padding: 8px;
-	text-align: left;
-	border: none;
-}
+	tr:last-child td {
+		border-block-end: none;
+	}
 
-.statistics-table th {
-	color: var(--color-text-maxcontrast);
-	font-weight: normal;
-	background-color: var(--color-background-darker);
-}
+	.subRow td {
+		color: var(--color-text-maxcontrast);
+	}
 
-.statistics-table tr:hover {
-	background-color: var(--color-background-hover);
-}
-
-.sub-row td {
-	color: var(--color-text-maxcontrast);
-}
-
-.indented {
-	padding-left: 24px !important;
+	.indented {
+		padding-inline-start: 24px;
+	}
 }
 </style>
