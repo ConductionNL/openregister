@@ -1,3 +1,7 @@
+<script setup>
+import { dashboardStore, navigationStore } from '../../store/store.js'
+</script>
+
 <template>
 	<NcAppContent>
 		<h2 class="pageHeader">
@@ -5,18 +9,18 @@
 		</h2>
 
 		<div class="dashboardContent">
-			<div v-if="loading" class="loading">
+			<div v-if="dashboardStore.loading" class="loading">
 				<NcLoadingIcon :size="32" />
 				<span>Loading registers...</span>
 			</div>
-			<div v-else-if="error" class="error">
-				<NcEmptyContent :title="error" icon="icon-error" />
+			<div v-else-if="dashboardStore.error" class="error">
+				<NcEmptyContent :title="dashboardStore.error" icon="icon-error" />
 			</div>
-			<div v-else-if="!registers || registers.length === 0" class="empty">
+			<div v-else-if="!dashboardStore.registers || dashboardStore.registers.length === 0" class="empty">
 				<NcEmptyContent title="No registers found" icon="icon-folder" />
 			</div>
 			<div v-else class="registers">
-				<div v-for="register in registers" :key="register.id" class="registerCard">
+				<div v-for="register in dashboardStore.registers" :key="register.id" class="registerCard">
 					<div class="registerHeader">
 						<h2>
 							<DatabaseOutline :size="20" />
@@ -208,9 +212,6 @@ import Export from 'vue-material-design-icons/Export.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
-import { ref, computed, onMounted } from 'vue'
-import { useDashboardStore } from '../../store/modules/dashboard.js'
-import { useNavigationStore } from '../../store/modules/navigation.js'
 import axios from '@nextcloud/axios'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 
@@ -235,49 +236,55 @@ export default {
 		Download,
 		Calculator,
 	},
-	setup() {
-		const store = useDashboardStore()
-		const navigationStore = useNavigationStore()
-		const expandedSchemas = ref(new Set())
-		const calculating = ref(null)
-
-		// Computed properties
-		const loading = computed(() => store.loading)
-		const error = computed(() => store.error)
-		const registers = computed(() => store.registers)
-
-		// Methods
-		const toggleSchema = (schemaId) => {
-			if (expandedSchemas.value.has(schemaId)) {
-				expandedSchemas.value.delete(schemaId)
-			} else {
-				expandedSchemas.value.add(schemaId)
-			}
+	data() {
+		return {
+			expandedSchemas: new Set(),
+			calculating: null,
 		}
+	},
+	mounted() {
+		console.log('Component mounted, fetching registers...')
+		dashboardStore.fetchRegisters()
+		console.log('Initial store state:', {
+			loading: dashboardStore.loading,
+			error: dashboardStore.error,
+			registers: dashboardStore.registers,
+		})
+	},
+	methods: {
+		toggleSchema(schemaId) {
+			if (this.expandedSchemas.has(schemaId)) {
+				this.expandedSchemas.delete(schemaId)
+			} else {
+				this.expandedSchemas.add(schemaId)
+			}
+		},
 
-		const formatBytes = (bytes) => {
+		formatBytes(bytes) {
 			if (!bytes || bytes === 0) return '0 KB'
 			const k = 1024
 			const sizes = ['B', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-		}
+		},
 
-		const calculateSizes = async (register) => {
-			calculating.value = register.id
+		async calculateSizes(register) {
+			console.log('Calculating sizes for register:', register)
+			this.calculating = register.id
 			try {
 				await axios.post(`/index.php/apps/openregister/api/dashboard/calculate/${register.id}`)
 				showSuccess(t('openregister', 'Sizes calculated successfully'))
-				await store.fetchRegisters() // Refresh data
+				await dashboardStore.fetchRegisters()
+				console.log('Registers refreshed after calculation:', dashboardStore.registers)
 			} catch (error) {
 				showError(t('openregister', 'Failed to calculate sizes'))
 				console.error('Failed to calculate sizes:', error)
 			} finally {
-				calculating.value = null
+				this.calculating = null
 			}
-		}
+		},
 
-		const downloadOas = async (register) => {
+		async downloadOas(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
@@ -294,32 +301,13 @@ export default {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
 			}
-		}
+		},
 
-		const viewOasDoc = (register) => {
+		viewOasDoc(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
-		}
-
-		// Fetch data on component mount
-		onMounted(() => {
-			store.fetchRegisters()
-		})
-
-		return {
-			loading,
-			error,
-			registers,
-			expandedSchemas,
-			toggleSchema,
-			formatBytes,
-			calculating,
-			calculateSizes,
-			downloadOas,
-			viewOasDoc,
-			navigationStore,
-		}
+		},
 	},
 }
 </script>
