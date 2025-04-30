@@ -1,163 +1,3 @@
-/**
- * @file ViewObject.vue
- * @module Modals/Object
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
-
-<script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
-import { ref, onMounted, computed, watch } from 'vue'
-import {
-	NcDialog,
-	NcButton,
-	NcNoteCard,
-	NcCounterBubble,
-} from '@nextcloud/vue'
-import { json } from '@codemirror/lang-json'
-import CodeMirror from 'vue-codemirror6'
-import { BTabs, BTab } from 'bootstrap-vue'
-import { getTheme } from '../../services/getTheme.js'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-
-// Initialize refs
-const objectItem = ref(null)
-const success = ref(null)
-const loading = ref(false)
-const error = ref(false)
-const closeModalTimeout = ref(null)
-const activeAttachment = ref(null)
-const fileLoading = ref(false)
-const auditTrailLoading = ref(false)
-
-// Add a ref for the editor content
-const editorContent = ref(JSON.stringify(objectStore.objectItem, null, 2))
-
-// Watch for changes to objectStore.objectItem
-watch(() => objectStore.objectItem, (newValue) => {
-	if (newValue) {
-		editorContent.value = JSON.stringify(newValue, null, 2)
-	}
-}, { immediate: true })
-
-// Computed properties
-const hasObjectItem = computed(() => {
-	return objectStore.objectItem !== null
-		   && objectStore.objectItem !== undefined
-		   && objectStore.objectItem['@self'] !== undefined
-})
-
-// Pagination
-const pagination = ref({
-	files: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	auditTrails: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	contracts: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	uses: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	used: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-})
-
-// Methods
-const closeModal = () => {
-	navigationStore.setModal(false)
-	clearTimeout(closeModalTimeout.value)
-	success.value = null
-	loading.value = false
-	error.value = false
-	objectItem.value = null
-}
-
-const getFiles = async () => {
-	if (!objectStore.objectItem?.['@self']?.id) return
-	fileLoading.value = true
-	try {
-		await objectStore.getFiles(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.files.limit,
-			page: pagination.value.files.currentPage,
-		})
-	} finally {
-		fileLoading.value = false
-	}
-}
-
-const getAuditTrails = async () => {
-	if (!objectStore.objectItem?.['@self']?.id) return
-	auditTrailLoading.value = true
-	try {
-		await objectStore.getAuditTrails(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.auditTrails.limit,
-			page: pagination.value.auditTrails.currentPage,
-		})
-	} finally {
-		auditTrailLoading.value = false
-	}
-}
-
-// Watch for pagination changes
-watch(() => pagination.value.files.currentPage, getFiles)
-watch(() => pagination.value.auditTrails.currentPage, getAuditTrails)
-
-const openFile = (file) => {
-	// Extract the directory path without the filename
-	const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
-
-	// Remove the '/admin/files/' prefix if it exists
-	const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
-
-	// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
-	const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
-
-	// Open URL in new tab
-	window.open(filesAppUrl, '_blank')
-}
-
-const formatFileSize = (bytes) => {
-	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-	if (bytes === 0) return 'n/a'
-	const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-	if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-	if (i === 0) return bytes + ' ' + sizes[i]
-	return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-}
-
-// Lifecycle hooks
-onMounted(() => {
-	if (hasObjectItem.value && objectStore.objectItem['@self'].id) {
-		objectItem.value = objectStore.objectItem
-		getFiles()
-		getAuditTrails()
-	}
-})
-</script>
-
 <template>
 	<NcDialog v-if="navigationStore.modal === 'viewObject' && hasObjectItem"
 		:name="'View Object (' + objectStore.objectItem['@self'].uuid + ')'"
@@ -496,6 +336,189 @@ onMounted(() => {
 		</template>
 	</NcDialog>
 </template>
+
+<script>
+import { objectStore, navigationStore } from '../../store/store.js'
+import {
+	NcDialog,
+	NcButton,
+	NcNoteCard,
+	NcCounterBubble,
+} from '@nextcloud/vue'
+import { json } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
+import { BTabs, BTab } from 'bootstrap-vue'
+import { getTheme } from '../../services/getTheme.js'
+
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+
+export default {
+	components: {
+		// components
+		NcDialog,
+		NcButton,
+		NcNoteCard,
+		NcCounterBubble,
+		BTabs,
+		BTab,
+		CodeMirror,
+		// icons
+		Cancel,
+		FileOutline,
+		ExclamationThick,
+		OpenInNew,
+		Eye,
+		Pencil,
+		Upload,
+	},
+	data() {
+		return {
+			objectItem: null,
+			success: null,
+			loading: false,
+			error: false,
+			closeModalTimeout: null,
+			activeAttachment: null,
+			fileLoading: false,
+			auditTrailLoading: false,
+			editorContent: '',
+			pagination: {
+				files: {
+					limit: 200,
+					currentPage: 1,
+					totalPages: 1,
+				},
+				auditTrails: {
+					limit: 200,
+					currentPage: 1,
+					totalPages: 1,
+				},
+				contracts: {
+					limit: 200,
+					currentPage: 1,
+					totalPages: 1,
+				},
+				uses: {
+					limit: 200,
+					currentPage: 1,
+					totalPages: 1,
+				},
+				used: {
+					limit: 200,
+					currentPage: 1,
+					totalPages: 1,
+				},
+			},
+		}
+	},
+	computed: {
+		/** @return {object | undefined} */
+		reactiveObjectItem: () => objectStore.objectItem,
+		hasObjectItem: () => !!this?.reactiveObjectItem?.['@self']?.id,
+		filesCurrentPage() {
+			console.log('AAAAAAA')
+			console.log(this.pagination)
+			return this.pagination.files.currentPage
+		},
+		auditTrailsCurrentPage: () => this.pagination.auditTrails.currentPage,
+	},
+	watch: {
+		reactiveObjectItem: {
+			handler(newValue) {
+				if (newValue) {
+					console.log('HHEEEELLLOO')
+					console.log(this.reactiveObjectItem)
+					console.log(this.hasObjectItem)
+					this.editorContent = JSON.stringify(newValue, null, 2)
+				}
+			},
+			immediate: true,
+		},
+		filesCurrentPage() {
+			this.getFiles()
+		},
+		auditTrailsCurrentPage() {
+			this.getAuditTrails()
+		},
+	},
+	mounted() {
+		if (this.hasObjectItem) {
+			this.objectItem = objectStore.objectItem
+			this.getFiles()
+			this.getAuditTrails()
+		}
+	},
+	methods: {
+		// imported methods
+		json,
+		getTheme,
+		// own methods
+		closeModal() {
+			navigationStore.setModal(false)
+			clearTimeout(this.closeModalTimeout)
+			this.success = null
+			this.loading = false
+			this.error = false
+			this.objectItem = null
+		},
+		async getFiles() {
+			if (!this.objectItem?.['@self']?.id) return
+
+			this.fileLoading = true
+
+			try {
+				await objectStore.getFiles(objectStore.objectItem['@self'].id, {
+					limit: this.pagination.files.limit,
+					page: this.pagination.files.currentPage,
+				})
+			} finally {
+				this.fileLoading = false
+			}
+		},
+		async getAuditTrails() {
+			if (!objectStore.objectItem?.['@self']?.id) return
+
+			this.auditTrailLoading = true
+
+			try {
+				await objectStore.getAuditTrails(objectStore.objectItem['@self'].id, {
+					limit: this.pagination.auditTrails.limit,
+					page: this.pagination.auditTrails.currentPage,
+				})
+			} finally {
+				this.auditTrailLoading = false
+			}
+		},
+		openFile(file) {
+			// Extract the directory path without the filename
+			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
+
+			// Remove the '/admin/files/' prefix if it exists
+			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
+
+			// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
+			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
+
+			// Open URL in new tab
+			window.open(filesAppUrl, '_blank')
+		},
+		formatFileSize(bytes) {
+			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+			if (bytes === 0) return 'n/a'
+			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
+			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
+			if (i === 0) return bytes + ' ' + sizes[i]
+			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		},
+	},
+}
+</script>
 
 <style scoped>
 .json-editor {
