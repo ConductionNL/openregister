@@ -97,17 +97,17 @@ export default {
 				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
 					await objectStore.refreshObjectList({
 						register: reg.id,
- 						schema: schemaStore.schemaItem.id,
- 						search: '',
- 					})
- 					if (objectStore.objectList?.results?.length) {
+						schema: schemaStore.schemaItem.id,
+						search: '',
+					})
+					if (objectStore.objectList?.results?.length) {
 						for (const obj of objectStore.objectList.results) {
 							if (obj[schemaStore.schemaPropertyKey]) {
 								this.objects.push(obj)
 							}
 						}
- 					}
- 				}
+					}
+				}
 			}
 		},
 		closeModal() {
