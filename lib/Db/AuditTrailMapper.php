@@ -334,7 +334,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new \DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
-        $entity->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+        $auditTrail->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
@@ -550,7 +550,7 @@ class AuditTrailMapper extends QBMapper
     {
         try {
             $qb = $this->db->getQueryBuilder();
-            
+
             // Main query for orphaned audit trails
             $qb->select(
                 $qb->createFunction('COUNT(a.id) as total_logs'),
