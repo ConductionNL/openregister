@@ -99,7 +99,7 @@ export default {
 		},
 	},
 	methods: {
-		getSchemaChartOptions(schema) {
+		getSchemaChartOptions() {
 			return {
 				chart: {
 					type: 'pie',

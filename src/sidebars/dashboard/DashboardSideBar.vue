@@ -55,14 +55,14 @@ import { dashboardStore } from '../../store/store.js'
 
 			<!-- System Totals Section -->
 			<div class="section">
-				<h3 class="section-title">
+				<h3 class="sectionTitle">
 					System Totals
 				</h3>
-				<div v-if="dashboardStore.loading" class="loading-container">
+				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />
 					<span>Loading statistics...</span>
 				</div>
-				<div v-else-if="systemTotals" class="stats-container">
+				<div v-else-if="systemTotals" class="statsContainer">
 					<table class="statisticsTable">
 						<tbody>
 							<tr>
@@ -123,14 +123,14 @@ import { dashboardStore } from '../../store/store.js'
 
 			<!-- Orphaned Items Section -->
 			<div class="section">
-				<h3 class="section-title">
+				<h3 class="sectionTitle">
 					Orphaned Items
 				</h3>
-				<div v-if="dashboardStore.loading" class="loading-container">
+				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />
 					<span>Loading statistics...</span>
 				</div>
-				<div v-else-if="orphanedItems" class="stats-container">
+				<div v-else-if="orphanedItems" class="statsContainer">
 					<table class="statisticsTable">
 						<tbody>
 							<tr>
@@ -189,7 +189,7 @@ import { dashboardStore } from '../../store/store.js'
 
 			<!-- Settings Section -->
 			<div class="section">
-				<h3 class="section-title">
+				<h3 class="sectionTitle">
 					Dashboard Settings
 				</h3>
 				<NcNoteCard type="info">
@@ -292,7 +292,7 @@ export default {
 	border-bottom: none;
 }
 
-.section-title {
+.sectionTitle {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -300,7 +300,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.loading-container {
+.loadingContainer {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -308,7 +308,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.stats-container {
+.statsContainer {
 	padding: 0 16px;
 }
 

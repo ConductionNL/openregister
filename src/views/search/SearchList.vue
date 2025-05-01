@@ -3,29 +3,29 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<div class="search-list">
-		<div class="search-list-table">
+	<div class="searchList">
+		<div class="searchListTable">
 			<VueDraggable v-model="objectStore.enabledColumns"
-				target=".sort-target"
+				target=".sortTarget"
 				animation="150"
-				draggable="> *:not(.static-column)">
+				draggable="> *:not(.staticColumn)">
 				<table class="table">
 					<thead>
-						<tr class="table-row sort-target">
-							<th class="static-column">
+						<tr class="tableRow sortTarget">
+							<th class="staticColumn">
 								<input
 									:checked="objectStore.isAllSelected"
 									type="checkbox"
-									class="cursor-pointer"
+									class="cursorPointer"
 									@change="objectStore.toggleSelectAllObjects">
 							</th>
 							<th v-for="column in objectStore.enabledColumns"
 								:key="column.id">
-								<span class="sticky-header column-title" :title="column.description">
+								<span class="stickyHeader columnTitle" :title="column.description">
 									{{ column.label }}
 								</span>
 							</th>
-							<th class="static-column column-title">
+							<th class="staticColumn columnTitle">
 								Actions
 							</th>
 						</tr>
@@ -33,13 +33,13 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 					<tbody>
 						<tr v-for="result in objectStore.objectList.results"
 							:key="result['@self'].uuid"
-							class="table-row">
-							<td class="static-column">
+							class="tableRow">
+							<td class="staticColumn">
 								<input
 									v-model="objectStore.selectedObjects"
 									:value="result['@self'].id"
 									type="checkbox"
-									class="cursor-pointer">
+									class="cursorPointer">
 							</td>
 							<td v-for="column in objectStore.enabledColumns"
 								:key="column.id">
@@ -58,7 +58,7 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 									<span>{{ result[column.key] ?? 'N/A' }}</span>
 								</template>
 							</td>
-							<td class="static-column">
+							<td class="staticColumn">
 								<NcActions class="actionsButton">
 									<NcActionButton @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 										<template #icon>
@@ -86,7 +86,7 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 			</VueDraggable>
 		</div>
 
-		<div class="pagination-container">
+		<div class="paginationContainer">
 			<BPagination
 				v-model="objectStore.pagination.page"
 				:total-rows="objectStore.objectList.total"
@@ -197,7 +197,7 @@ export default {
 </style>
 
 <style scoped>
-.search-list-header {
+.searchListHeader {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -205,13 +205,13 @@ export default {
     margin-bottom: 1rem;
 }
 
-.search-list-header h2 {
+.searchListHeader h2 {
     margin: 0;
     font-size: var(--default-font-size);
     font-weight: bold;
 }
 
-.search-list-table {
+.searchListTable {
     overflow-x: auto;
 }
 
@@ -220,28 +220,28 @@ export default {
 	border-collapse: collapse;
 }
 
-.table-row {
+.tableRow {
     color: var(--color-main-text);
     border-bottom: 1px solid var(--color-border);
 }
 
-.table-row > td {
+.tableRow > td {
     height: 55px;
     padding: 0 10px;
 }
-.table-row > th {
+.tableRow > th {
     padding: 0 10px;
 }
-.table-row > th > .sticky-header {
+.tableRow > th > .stickyHeader {
     position: sticky;
     left: 0;
 }
 
-.sort-target > th {
+.sortTarget > th {
     cursor: move;
 }
 
-.cursor-pointer {
+.cursorPointer {
     cursor: pointer !important;
 }
 
@@ -283,8 +283,7 @@ input[type="checkbox"] {
     cursor: not-allowed !important;
 }
 
-/* Make column titles bold */
-.column-title {
+.columnTitle {
     font-weight: bold;
 }
 </style>
