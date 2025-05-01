@@ -167,9 +167,9 @@ export default {
 		openLink(link, type = '') {
 			window.open(link, type)
 		},
-		async onMassDeleteSuccess() {
+		onMassDeleteSuccess() {
 			objectStore.selectedObjects = []
-			await objectStore.refreshObjectList()
+			objectStore.refreshObjectList()
 		},
 		async deleteObject(id) {
 			try {
