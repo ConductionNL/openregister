@@ -95,7 +95,6 @@ export default {
 					this.loading = false
 					this.success = response.ok
 
-					// Wait for the user to read the feedback then close the modal
 					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				})
 				.catch((err) => {
