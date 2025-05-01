@@ -481,7 +481,7 @@ onMounted(() => {
 				</template>
 				Edit Object
 			</NcButton>
-			<NcButton @click="navigationStore.setModal('addFile'); objectStore.setObjectItem(objectStore.objectItem)">
+			<NcButton disabled @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 				<template #icon>
 					<Upload :size="20" />
 				</template>

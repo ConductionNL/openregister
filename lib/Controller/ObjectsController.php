@@ -334,7 +334,7 @@ class ObjectsController extends Controller
 
         // Find and validate the object.
         try {
-            $object = $this->objectEntityMapper->find($id);
+            $object = $this->objectService->find($id);
 
             // Render the object with requested extensions and filters.
             return new JSONResponse($object);
@@ -450,7 +450,7 @@ class ObjectsController extends Controller
         // Check if the object exists and can be updated.
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectEntityMapper->find($id);
+            $existingObject = $this->objectService->find($id);
 
             // Verify that the object belongs to the specified register and schema.
             if ((int) $existingObject->getRegister() !== (int) $register

@@ -122,7 +122,6 @@ export default {
 				...this.schema,
 				json: JSON.stringify(JSON.parse(this.schema.json)), // create a clean json string
 			}
-
 			schemaStore.uploadSchema(newSchema).then(({ response }) => {
 				this.success = response.ok
 				this.error = false
