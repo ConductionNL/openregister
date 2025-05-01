@@ -359,6 +359,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
+	name: 'ViewObject',
 	components: {
 		// components
 		NcDialog,
