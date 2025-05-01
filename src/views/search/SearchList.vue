@@ -1,6 +1,6 @@
 <script setup>
 import { navigationStore, objectStore, schemaStore, registerStore } from '../../store/store.js'
-import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 </script>
 
 <template>
@@ -18,7 +18,7 @@ import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
 									:checked="objectStore.isAllSelected"
 									type="checkbox"
 									class="cursor-pointer"
-									@update:checked="objectStore.toggleSelectAllObjects"/>
+									@update:checked="objectStore.toggleSelectAllObjects" />
 							</th>
 							<th v-for="column in objectStore.enabledColumns"
 								:key="column.id">
@@ -40,7 +40,7 @@ import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
 									:checked="objectStore.selectedObjects.includes(result['@self'].id)"
 									type="checkbox"
 									class="cursor-pointer"
-									@update:checked="handleSelectObject(result['@self'].id)"/>
+									@update:checked="handleSelectObject(result['@self'].id)" />
 							</td>
 							<td v-for="column in objectStore.enabledColumns"
 								:key="column.id">
@@ -111,7 +111,6 @@ import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'

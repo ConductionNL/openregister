@@ -35,7 +35,7 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 					</template>
 					Download
 				</NcActionButton> -->
-				<NcActionButton @click="() => navigationStore.setDialog('massDeleteObject')" v-if="objectStore.selectedObjects?.length">
+				<NcActionButton v-if="objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
 					<template #icon>
 						<Delete :size="20" />
 					</template>
@@ -75,9 +75,9 @@ import SearchList from './SearchList.vue'
 
 // Icons
 import Delete from 'vue-material-design-icons/Delete.vue'
-import Download from 'vue-material-design-icons/Download.vue'
+// import Download from 'vue-material-design-icons/Download.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
+// import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'SearchIndex',
@@ -87,9 +87,9 @@ export default {
 		NcLoadingIcon,
 		SearchList,
 		Delete,
-		Download,
+		// Download,
 		Pencil,
-		Upload,
+		// Upload,
 
 	},
 
