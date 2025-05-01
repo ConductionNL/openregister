@@ -27,7 +27,7 @@ Always use linting afther creating or altering a file
     
 ## File Structure
 - Use ES modules (import/export) syntax
-- Folow the composite api syntax, with script setup above the component and script below
+- Folow the composite api syntax instead of the option api, with script setup above the component and script below
 - Follow a consistent directory structure
 - Separate concerns into appropriate modules
 - Use index.js files for module exports

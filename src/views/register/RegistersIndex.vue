@@ -108,6 +108,12 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								</template>
 								Delete
 							</NcActionButton>
+							<NcActionButton @click="viewRegisterDetails(register)">
+								<template #icon>
+									<InformationOutline :size="20" />
+								</template>
+								View Details
+							</NcActionButton>
 						</NcActions>
 					</div>
 
@@ -274,6 +280,7 @@ import Download from 'vue-material-design-icons/Download.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 
@@ -302,6 +309,7 @@ export default {
 		Calculator,
 		Refresh,
 		Plus,
+		InformationOutline,
 	},
 	data() {
 		return {
@@ -400,6 +408,11 @@ export default {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+		},
+
+		viewRegisterDetails(register) {
+			registerStore.setRegisterItem(register)
+			navigationStore.setSelected('register-detail')
 		},
 	},
 }
