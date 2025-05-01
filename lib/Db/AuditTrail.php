@@ -64,7 +64,7 @@ class AuditTrail extends Entity implements JsonSerializable
     /**
      * Size of the log in byte
      *
-     * @var integer|null 
+     * @var integer|null
      */
     protected ?int $size = null;
 
@@ -242,6 +242,7 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'confidentiality', type: 'string');
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
         $this->addType(fieldName: 'size', type: 'integer');
+
     }//end __construct()
 
 

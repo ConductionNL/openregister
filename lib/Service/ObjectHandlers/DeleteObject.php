@@ -78,8 +78,7 @@ class DeleteObject
     {
         if ($object instanceof JsonSerializable) {
             $objectEntity = $object;
-            $object = $object->jsonSerialize();
-
+            $object       = $object->jsonSerialize();
         } else {
             $this->objectEntityMapper->find($object['id']);
         }

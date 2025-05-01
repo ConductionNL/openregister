@@ -8,6 +8,7 @@ import { navigationStore } from '../store/store.js'
 		<template #default>
 			<Dashboard v-if="navigationStore.selected === 'dashboard'" />
 			<RegistersIndex v-if="navigationStore.selected === 'registers'" />
+			<RegisterDetail v-if="navigationStore.selected === 'register-detail'" />
 			<SourcesIndex v-if="navigationStore.selected === 'sources'" />
 			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
@@ -26,6 +27,7 @@ import SchemasIndex from './schema/SchemasIndex.vue'
 import ObjectsIndex from './object/ObjectsIndex.vue'
 import SearchIndex from './search/SearchIndex.vue'
 import ConfigurationsIndex from './configuration/ConfigurationsIndex.vue'
+import RegisterDetail from './register/RegisterDetail.vue'
 export default {
 	name: 'Views',
 	components: {
@@ -37,6 +39,7 @@ export default {
 		ObjectsIndex,
 		SearchIndex,
 		ConfigurationsIndex,
+		RegisterDetail,
 	},
 }
 </script>

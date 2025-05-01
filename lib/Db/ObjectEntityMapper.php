@@ -737,10 +737,11 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Get statistics about objects in a register and optionally filtered by schema
+     * Get statistics for objects with optional filtering
      *
-     * @param int      $registerId The ID of the register to get statistics for
-     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $registerId The register ID (null for all registers)
+     * @param int|null $schemaId   The schema ID (null for all schemas)
+     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
      *
      * @return array Array containing statistics about objects:
      *               - total: Total number of objects
@@ -749,136 +750,239 @@ class ObjectEntityMapper extends QBMapper
      *               - deleted: Number of deleted objects
      *               - locked: Number of locked objects
      *               - published: Number of published objects
-     *
-     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
-    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
-            
             $qb->select(
-                $qb->createFunction('COUNT(id) as total_objects'),
-                $qb->createFunction('SUM(size) as total_size'),
-                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid_objects'),
-                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted_objects'),
-                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked_objects'),
-                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL THEN 1 END) as published_objects')
+                $qb->createFunction('COUNT(id) as total'),
+                $qb->createFunction('COALESCE(SUM(size), 0) as size'),
+                $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid'),
+                $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted'),
+                $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
+                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL AND published = TRUE THEN 1 END) as published')
             )
-            ->from('openregister_objects')
-            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                ->from($this->getTableName());
 
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add exclusions if provided
+            if (!empty($exclude)) {
+                foreach ($exclude as $combination) {
+                    $orConditions = $qb->expr()->orX();
+                    
+                    // Handle register exclusion
+                    if (isset($combination['register'])) {
+                        $orConditions->add($qb->expr()->isNull('register'));
+                        $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                    }
+                    
+                    // Handle schema exclusion
+                    if (isset($combination['schema'])) {
+                        $orConditions->add($qb->expr()->isNull('schema'));
+                        $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
+                    }
+                    
+                    // Add the OR conditions to the main query
+                    if ($orConditions->count() > 0) {
+                        $qb->andWhere($orConditions);
+                    }
+                }
             }
 
             $result = $qb->executeQuery()->fetch();
 
             return [
-                'total' => (int)($result['total_objects'] ?? 0),
-                'size' => (int)($result['total_size'] ?? 0),
-                'invalid' => (int)($result['invalid_objects'] ?? 0),
-                'deleted' => (int)($result['deleted_objects'] ?? 0),
-                'locked' => (int)($result['locked_objects'] ?? 0),
-                'published' => (int)($result['published_objects'] ?? 0)
+                'total' => (int) ($result['total'] ?? 0),
+                'size' => (int) ($result['size'] ?? 0),
+                'invalid' => (int) ($result['invalid'] ?? 0),
+                'deleted' => (int) ($result['deleted'] ?? 0),
+                'locked' => (int) ($result['locked'] ?? 0),
+                'published' => (int) ($result['published'] ?? 0),
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get object statistics: ' . $e->getMessage());
             return [
                 'total' => 0,
                 'size' => 0,
                 'invalid' => 0,
                 'deleted' => 0,
                 'locked' => 0,
-                'published' => 0
+                'published' => 0,
+            ];
+        }
+    }
+   
+
+    /**
+     * Get chart data for objects grouped by register
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of register names
+     *               - series: Array of object counts per register
+     */
+    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            // Join with registers table to get register names
+            $qb->select(
+                'r.title as register_name',
+                $qb->createFunction('COUNT(o.id) as count')
+            )
+                ->from($this->getTableName(), 'o')
+                ->leftJoin('o', 'openregister_registers', 'r', 'o.register = r.id')
+                ->groupBy('r.id', 'r.title')
+                ->orderBy('count', 'DESC');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            return [
+                'labels' => array_map(function($row) { return $row['register_name'] ?? 'Unknown'; }, $results),
+                'series' => array_map(function($row) { return (int)$row['count']; }, $results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'labels' => [],
+                'series' => []
             ];
         }
     }
 
     /**
-     * Get statistics about orphaned objects
+     * Get chart data for objects grouped by schema
      *
-     * An object is considered orphaned if:
-     * - It references a non-existent register
-     * - It references a non-existent schema
-     * - It references a schema that no longer belongs to its register
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
      *
-     * @return array Array containing statistics about orphaned objects:
-     *               - total: Total number of orphaned objects
-     *               - size: Total size of all orphaned objects in bytes
-     *               - invalid: Number of orphaned objects with validation errors
-     *               - deleted: Number of deleted orphaned objects
-     *               - locked: Number of locked orphaned objects
-     *               - published: Number of published orphaned objects
-     *
-     * @phpstan-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
+     * @return array Array containing chart data:
+     *               - labels: Array of schema names
+     *               - series: Array of object counts per schema
      */
-    public function getOrphanedStatistics(): array
+    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
-            
-            // Build subquery for valid register-schema combinations
-            $validCombosQb = $this->db->getQueryBuilder();
-            $validCombosQb->select('id', 'schemas')
-                ->from('openregister_registers');
-            
-            // Main query for orphaned objects
-            $qb->select(
-                $qb->createFunction('COUNT(o.id) as total_objects'),
-                $qb->createFunction('SUM(o.size) as total_size'),
-                $qb->createFunction('COUNT(CASE WHEN o.validation IS NOT NULL THEN 1 END) as invalid_objects'),
-                $qb->createFunction('COUNT(CASE WHEN o.deleted IS NOT NULL THEN 1 END) as deleted_objects'),
-                $qb->createFunction('COUNT(CASE WHEN o.locked IS NOT NULL THEN 1 END) as locked_objects'),
-                $qb->createFunction('COUNT(CASE WHEN o.published IS NOT NULL THEN 1 END) as published_objects')
-            )
-            ->from('openregister_objects', 'o')
-            ->leftJoin(
-                'o',
-                'openregister_registers',
-                'r',
-                $qb->expr()->eq('o.register', 'r.id')
-            )
-            ->leftJoin(
-                'o',
-                'openregister_schemas',
-                's',
-                $qb->expr()->eq('o.schema', 's.id')
-            )
-            ->where(
-                $qb->expr()->orX(
-                    // Register doesn't exist
-                    $qb->expr()->isNull('r.id'),
-                    // Schema doesn't exist
-                    $qb->expr()->isNull('s.id'),
-                    // Schema exists but is not in register's schema list
-                    $qb->expr()->andX(
-                        $qb->expr()->isNotNull('r.id'),
-                        $qb->expr()->isNotNull('s.id'),
-                        $qb->expr()->notLike('r.schemas', $qb->createFunction('CONCAT(\'%"\', o.schema, \'"%\')'))
-                    )
-                )
-            );
 
-            $result = $qb->executeQuery()->fetch();
+            // Join with schemas table to get schema names
+            $qb->select(
+                's.title as schema_name',
+                $qb->createFunction('COUNT(o.id) as count')
+            )
+                ->from($this->getTableName(), 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
+                ->groupBy('s.id', 's.title')
+                ->orderBy('count', 'DESC');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
 
             return [
-                'total' => (int)($result['total_objects'] ?? 0),
-                'size' => (int)($result['total_size'] ?? 0),
-                'invalid' => (int)($result['invalid_objects'] ?? 0),
-                'deleted' => (int)($result['deleted_objects'] ?? 0),
-                'locked' => (int)($result['locked_objects'] ?? 0),
-                'published' => (int)($result['published_objects'] ?? 0)
+                'labels' => array_map(function($row) { return $row['schema_name'] ?? 'Unknown'; }, $results),
+                'series' => array_map(function($row) { return (int)$row['count']; }, $results)
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get orphaned object statistics: ' . $e->getMessage());
             return [
-                'total' => 0,
-                'size' => 0,
-                'invalid' => 0,
-                'deleted' => 0,
-                'locked' => 0,
-                'published' => 0
+                'labels' => [],
+                'series' => []
+            ];
+        }
+    }
+
+    /**
+     * Get chart data for objects grouped by size ranges
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of size range labels
+     *               - series: Array of object counts per size range
+     */
+    public function getSizeDistributionChartData(?int $registerId = null, ?int $schemaId = null): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+
+            // Define size ranges in bytes
+            $ranges = [
+                ['min' => 0, 'max' => 1024, 'label' => '0-1 KB'],
+                ['min' => 1024, 'max' => 10240, 'label' => '1-10 KB'],
+                ['min' => 10240, 'max' => 102400, 'label' => '10-100 KB'],
+                ['min' => 102400, 'max' => 1048576, 'label' => '100 KB-1 MB'],
+                ['min' => 1048576, 'max' => null, 'label' => '> 1 MB']
+            ];
+
+            $results = [];
+            foreach ($ranges as $range) {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select($qb->createFunction('COUNT(*) as count'))
+                    ->from($this->getTableName());
+
+                // Add size range conditions
+                if ($range['min'] !== null) {
+                    $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
+                }
+                if ($range['max'] !== null) {
+                    $qb->andWhere($qb->expr()->lt('size', $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT)));
+                }
+
+                // Add register filter if provided
+                if ($registerId !== null) {
+                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                }
+
+                // Add schema filter if provided
+                if ($schemaId !== null) {
+                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                }
+
+                $count = $qb->executeQuery()->fetchOne();
+                $results[] = [
+                    'label' => $range['label'],
+                    'count' => (int)$count
+                ];
+            }
+
+            return [
+                'labels' => array_map(function($row) { return $row['label']; }, $results),
+                'series' => array_map(function($row) { return $row['count']; }, $results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'labels' => [],
+                'series' => []
             ];
         }
     }

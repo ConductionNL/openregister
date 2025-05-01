@@ -7,11 +7,13 @@
  * @category Entity
  * @package  OCA\OpenRegister\Db
  *
- * @author    Ruben Linde <ruben@nextcloud.com>
- * @copyright Copyright (c) 2024, Ruben Linde (https://github.com/rubenlinde)
- * @license   AGPL-3.0
- * @version   1.0.0
- * @link      https://github.com/cloud-py-api/openregister
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -29,42 +31,58 @@ class Configuration extends Entity implements JsonSerializable
 {
 
     /**
-     * @var string Title of the configuration
+     * Title of the configuration
+     *
+     * @var string
      */
     protected $title = null;
 
     /**
-     * @var string|null Description of the configuration
+     * Description of the configuration
+     *
+     * @var string|null
      */
     protected $description = null;
 
     /**
-     * @var string Type of the configuration
+     * Type of the configuration
+     *
+     * @var string
      */
     protected $type = null;
 
     /**
-     * @var string Owner of the configuration
+     * Owner of the configuration
+     *
+     * @var string
      */
     protected $owner = null;
 
     /**
-     * @var string Version of the configuration
+     * Version of the configuration
+     *
+     * @var string
      */
     protected $version = null;
 
     /**
-     * @var array|null Array of registers of the configuration
+     * Array of registers of the configuration
+     *
+     * @var array|null
      */
     protected ?array $registers = [];
 
     /**
-     * @var DateTime Creation timestamp
+     * Creation timestamp
+     *
+     * @var DateTime
      */
     protected $created = null;
 
     /**
-     * @var DateTime Last update timestamp
+     * Last update timestamp
+     *
+     * @var DateTime
      */
     protected $updated = null;
 
@@ -174,8 +192,8 @@ class Configuration extends Entity implements JsonSerializable
             'owner'       => $this->owner,
             'version'     => $this->version,
             'registers'   => $this->registers,
-            'created'     => $this->created ? $this->created->format('c') : null,
-            'updated'     => $this->updated ? $this->updated->format('c') : null,
+            'created'     => ($this->created !== null) ? $this->created->format('c') : null,
+            'updated'     => ($this->updated !== null) ? $this->updated->format('c') : null,
         ];
 
     }//end jsonSerialize()

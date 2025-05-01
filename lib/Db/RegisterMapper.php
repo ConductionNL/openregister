@@ -121,7 +121,7 @@ class RegisterMapper extends QBMapper
             try {
                 $result[] = $this->find($id);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
-                // Catch all exceptions but do nothing
+                // Catch all exceptions but do nothing.
             }
         }
 

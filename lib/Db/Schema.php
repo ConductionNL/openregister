@@ -281,11 +281,12 @@ class Schema extends Entity implements JsonSerializable
      * @param SchemaPropertyValidatorService $validator The schema property validator
      *
      * @throws Exception If the properties are invalid
+     *
      * @return bool True if the properties are valid
      */
     public function validateProperties(SchemaPropertyValidatorService $validator): bool
     {
-        // Check if properties are set and not empty
+        // Check if properties are set and not empty.
         if (empty($this->properties) === true) {
             return true;
         }
@@ -328,8 +329,8 @@ class Schema extends Entity implements JsonSerializable
             }
         }
 
-        // Validate properties if validator is provided
-        if ($validator !== null && isset($object['properties'])) {
+        // Validate properties if validator is provided.
+        if ($validator !== null && isset($object['properties']) === true) {
             $this->validateProperties($validator);
         }
 
@@ -476,7 +477,8 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the slug, ensuring it is always lowercase
      *
-     * @param  string|null $slug The slug to set
+     * @param string|null $slug The slug to set
+     *
      * @return void
      */
     public function setSlug(?string $slug): void
@@ -506,7 +508,8 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the icon for the schema
      *
-     * @param  string|null $icon The icon reference from Material Design Icons
+     * @param string|null $icon The icon reference from Material Design Icons
+     *
      * @return void
      */
     public function setIcon(?string $icon): void

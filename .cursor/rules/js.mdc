@@ -3,7 +3,7 @@ description:
 globs: *.js,*.ts,*vue
 alwaysApply: false
 ---
-# Node.js Coding Standards and Best Practices
+# js Coding Standards and Best Practices
 
 Always use linting afther creating or altering a file
 
@@ -27,6 +27,7 @@ Always use linting afther creating or altering a file
     
 ## File Structure
 - Use ES modules (import/export) syntax
+- Folow the option api syntax instead of the composition api, with script setup above the component and script below. Only stores should be part of the sscript setup
 - Follow a consistent directory structure
 - Separate concerns into appropriate modules
 - Use index.js files for module exports
@@ -39,6 +40,7 @@ Always use linting afther creating or altering a file
 - Use async/await for asynchronous operations
 - Use const/let instead of var
 - Use arrow functions where appropriate
+- Style classes should follow camelCase
 
 ## Documentation
 - Use JSDoc for function documentation

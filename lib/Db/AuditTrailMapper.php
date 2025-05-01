@@ -102,7 +102,7 @@ class AuditTrailMapper extends QBMapper
         $qb->select('*')
             ->from('openregister_audit_trails');
 
-        // Filter out system variables (starting with _)
+        // Filter out system variables (starting with _).
         $filters = array_filter(
             $filters ?? [],
             function ($key) {
@@ -111,9 +111,9 @@ class AuditTrailMapper extends QBMapper
             ARRAY_FILTER_USE_KEY
         );
 
-        // Apply filters
+        // Apply filters.
         foreach ($filters as $field => $value) {
-            // Ensure the field is a valid column name
+            // Ensure the field is a valid column name.
             if (!in_array(
                     $field,
                     [
@@ -146,16 +146,16 @@ class AuditTrailMapper extends QBMapper
             }
         }//end foreach
 
-        // Add search on changed field if search term provided
+        // Add search on changed field if search term provided.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->like('changed', $qb->createNamedParameter('%'.$search.'%'))
             );
         }
 
-        // Add sorting
+        // Add sorting.
         foreach ($sort as $field => $direction) {
-            // Ensure the field is a valid column name
+            // Ensure the field is a valid column name.
             if (!in_array(
                     $field,
                     [
@@ -181,9 +181,9 @@ class AuditTrailMapper extends QBMapper
 
             $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
             $qb->addOrderBy($field, $direction);
-        }//end foreach
+        }//end foreach.
 
-        // Apply pagination
+        // Apply pagination.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
@@ -497,36 +497,67 @@ class AuditTrailMapper extends QBMapper
 
 
     /**
-     * Get statistics about audit trails for a register/schema combination
+     * Get statistics for audit trails with optional filtering
      *
-     * @param int      $registerId The register ID
-     * @param int|null $schemaId   The schema ID (optional)
+     * @param int|null $registerId The register ID (null for all registers)
+     * @param int|null $schemaId   The schema ID (null for all schemas)
+     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
      *
-     * @return array Array containing total count and size of audit trails
+     * @return array Array containing total count and size of audit trails:
+     *               - total: Total number of audit trails
+     *               - size: Total size of all audit trails in bytes
      */
-    public function getStatistics(int $registerId, ?int $schemaId = null): array
+    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->select(
-                $qb->createFunction('COUNT(id) as total_logs'),
-                $qb->createFunction('SUM(size) as total_log_size')
+                $qb->createFunction('COUNT(id) as total'),
+                $qb->createFunction('COALESCE(SUM(size), 0) as size')
             )
-            ->from('openregister_audit_trails')
-            ->where($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                ->from($this->getTableName());
 
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add exclusions if provided
+            if (!empty($exclude)) {
+                foreach ($exclude as $combination) {
+                    $orConditions = $qb->expr()->orX();
+                    
+                    // Handle register exclusion
+                    if (isset($combination['register'])) {
+                        $orConditions->add($qb->expr()->isNull('register'));
+                        $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
+                    }
+                    
+                    // Handle schema exclusion
+                    if (isset($combination['schema'])) {
+                        $orConditions->add($qb->expr()->isNull('schema'));
+                        $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
+                    }
+                    
+                    // Add the OR conditions to the main query
+                    if ($orConditions->count() > 0) {
+                        $qb->andWhere($orConditions);
+                    }
+                }
             }
 
             $result = $qb->executeQuery()->fetch();
 
             return [
-                'total' => (int)($result['total_logs'] ?? 0),
-                'size' => (int)($result['total_log_size'] ?? 0)
+                'total' => (int) ($result['total'] ?? 0),
+                'size' => (int) ($result['size'] ?? 0)
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get audit trail statistics: ' . $e->getMessage());
             return [
                 'total' => 0,
                 'size' => 0
@@ -536,73 +567,108 @@ class AuditTrailMapper extends QBMapper
 
 
     /**
-     * Get statistics about orphaned audit trails
+     * Updates an entity in the database
      *
-     * An audit trail is considered orphaned if:
-     * - It references a non-existent register
-     * - It references a non-existent schema
-     * - It references a schema that no longer belongs to its register
-     * - It references a non-existent object
+     * @param Entity $entity The entity to update
      *
-     * @return array Array containing statistics about orphaned audit trails
+     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
+     *
+     * @return Entity The updated entity
      */
-    public function getOrphanedStatistics(): array
+    public function update(Entity $entity): Entity
+    {
+        // Recalculate size before update
+        $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+
+        return parent::update($entity);
+    }
+
+
+    /**
+     * Get chart data for audit trail actions over time
+     *
+     * @param \DateTime|null $from      Start date for the chart data
+     * @param \DateTime|null $till      End date for the chart data
+     * @param int|null      $registerId Optional register ID to filter by
+     * @param int|null      $schemaId   Optional schema ID to filter by
+     *
+     * @return array Array containing chart data:
+     *               - labels: Array of dates
+     *               - series: Array of series data, each containing:
+     *                 - name: Action name (create, update, delete)
+     *                 - data: Array of counts for each date
+     */
+    public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
 
             // Main query for orphaned audit trails
             $qb->select(
-                $qb->createFunction('COUNT(a.id) as total_logs'),
-                $qb->createFunction('SUM(a.size) as total_log_size')
+                $qb->createFunction('DATE(created) as date'),
+                'action',
+                $qb->createFunction('COUNT(*) as count')
             )
-            ->from('openregister_audit_trails', 'a')
-            ->leftJoin(
-                'a',
-                'openregister_registers',
-                'r',
-                $qb->expr()->eq('a.register', 'r.id')
-            )
-            ->leftJoin(
-                'a',
-                'openregister_schemas',
-                's',
-                $qb->expr()->eq('a.schema', 's.id')
-            )
-            ->leftJoin(
-                'a',
-                'openregister_objects',
-                'o',
-                $qb->expr()->eq('a.object', 'o.id')
-            )
-            ->where(
-                $qb->expr()->orX(
-                    // Register doesn't exist
-                    $qb->expr()->isNull('r.id'),
-                    // Schema doesn't exist
-                    $qb->expr()->isNull('s.id'),
-                    // Object doesn't exist
-                    $qb->expr()->isNull('o.id'),
-                    // Schema exists but is not in register's schema list
-                    $qb->expr()->andX(
-                        $qb->expr()->isNotNull('r.id'),
-                        $qb->expr()->isNotNull('s.id'),
-                        $qb->expr()->notLike('r.schemas', $qb->createFunction('CONCAT(\'%"\', a.schema, \'"%\')'))
-                    )
-                )
-            );
+                ->from($this->getTableName())
+                ->groupBy('date', 'action')
+                ->orderBy('date', 'ASC');
 
-            $result = $qb->executeQuery()->fetch();
+            // Add date range filters if provided
+            if ($from !== null) {
+                $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+            }
+            if ($till !== null) {
+                $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($till->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+            }
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            // Process results into chart format
+            $dateData = [];
+            $actions = ['create', 'update', 'delete'];
+            
+            // Initialize data structure
+            foreach ($results as $row) {
+                $date = $row['date'];
+                if (!isset($dateData[$date])) {
+                    $dateData[$date] = array_fill_keys($actions, 0);
+                }
+                $dateData[$date][$row['action']] = (int)$row['count'];
+            }
+
+            // Sort dates and ensure all dates in range are included
+            ksort($dateData);
+
+            // Prepare series data
+            $series = [];
+            foreach ($actions as $action) {
+                $series[] = [
+                    'name' => ucfirst($action),
+                    'data' => array_values(array_map(function($data) use ($action) {
+                        return $data[$action];
+                    }, $dateData))
+                ];
+            }
 
             return [
-                'total' => (int)($result['total_logs'] ?? 0),
-                'size' => (int)($result['total_log_size'] ?? 0)
+                'labels' => array_keys($dateData),
+                'series' => $series
             ];
         } catch (\Exception $e) {
-            $this->logger->error('Failed to get orphaned audit trail statistics: ' . $e->getMessage());
             return [
-                'total' => 0,
-                'size' => 0
+                'labels' => [],
+                'series' => []
             ];
         }
     }

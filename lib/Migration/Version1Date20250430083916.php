@@ -46,6 +46,17 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
+        // Update the openregister_configurations table
+        $table = $schema->getTable('openregister_schemas');
+
+        // Add the authorization column if it doesn't exist
+        if (!$table->hasColumn('icon')) {
+            $table->addColumn('icon', Types::STRING, [
+                'notnull' => false,
+                'length' => 255,
+            ]);
+        }
+        
         
         // Update the openregister_configurations table
         $table = $schema->getTable('openregister_objects');
@@ -56,8 +67,9 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                 'notnull' => false,
             ]);
         }
+
         if (!$table->hasColumn('published')) {
-            $table->addColumn('published', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+            $table->addColumn('published', Types::DATETIME, ['notnull' => false]);
         }
 
         // Update the openregister_registers table

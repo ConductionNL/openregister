@@ -351,6 +351,37 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Delete a single object
+		 *
+		 * @param {string|number} objectId The ID of the object to delete
+		 * @param {object} options Optional parameters
+		 * @return {Promise} Promise that resolves when the object is deleted
+		 */
+		async deleteObject(objectId, options = {}) {
+			if (!objectId) throw new Error('No object id to delete')
+
+			// Resolve register / schema the same way refreshObjectList does
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+			if (!register || !schema) throw new Error('Register and schema are required')
+
+			const endpoint = this._buildObjectPath({ register, schema, objectId })
+
+			try {
+				const response = await fetch(endpoint, { method: 'DELETE' })
+				if (!response.ok) {
+					throw new Error(`Failed to delete object: ${response.statusText}`)
+				}
+				await this.refreshObjectList({ register, schema })
+				return { response }
+			} catch (error) {
+				console.error('Error deleting object:', error)
+				throw error
+			}
+		},
 		// mass delete objects
 		async massDeleteObject(objectIds, options = {}) {
 			if (!objectIds?.length) throw new Error('No object ids to delete')

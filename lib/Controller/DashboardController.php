@@ -34,6 +34,7 @@ use OCP\IRequest;
  */
 class DashboardController extends Controller
 {
+
     /**
      * The dashboard service instance
      *
@@ -41,11 +42,12 @@ class DashboardController extends Controller
      */
     private DashboardService $dashboardService;
 
+
     /**
      * Constructor for the DashboardController
      *
      * @param string           $appName          The name of the app
-     * @param IRequest        $request          The request object
+     * @param IRequest         $request          The request object
      * @param DashboardService $dashboardService The dashboard service instance
      *
      * @return void
@@ -57,7 +59,9 @@ class DashboardController extends Controller
     ) {
         parent::__construct($appName, $request);
         $this->dashboardService = $dashboardService;
-    }
+
+    }//end __construct()
+
 
     /**
      * Returns the template of the dashboard page
@@ -94,7 +98,9 @@ class DashboardController extends Controller
                 '500'
             );
         }
-    }
+
+    }//end page()
+
 
     /**
      * Retrieves dashboard data including registers with their schemas
@@ -114,11 +120,11 @@ class DashboardController extends Controller
      * @NoCSRFRequired
      */
     public function index(
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $filters = [],
-        ?array $searchConditions = [],
-        ?array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[]
     ): JSONResponse {
         try {
             $registers = $this->dashboardService->getRegistersWithSchemas(
@@ -133,20 +139,22 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end index()
+
 
     /**
      * Calculate sizes for objects and logs
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
      *
      * @param int|null $registerId Optional register ID to filter by
      * @param int|null $schemaId   Optional schema ID to filter by
      *
      * @return JSONResponse The calculation results
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
-    public function calculate(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $result = $this->dashboardService->calculate($registerId, $schemaId);
@@ -154,12 +162,104 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(
                 [
-                    'status' => 'error',
-                    'message' => $e->getMessage(),
-                    'timestamp' => (new \DateTime())->format('c')
+                    'status'    => 'error',
+                    'message'   => $e->getMessage(),
+                    'timestamp' => (new \DateTime())->format('c'),
                 ],
                 500
             );
         }
+
+    }//end calculate()
+
+
+    /**
+     * Get chart data for audit trail actions
+     *
+     * @param string|null $from      Start date (Y-m-d format)
+     * @param string|null $till      End date (Y-m-d format)
+     * @param int|null    $registerId Optional register ID
+     * @param int|null    $schemaId   Optional schema ID
+     *
+     * @return JSONResponse The chart data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getAuditTrailActionChart(?string $from = null, ?string $till = null, ?int $registerId = null, ?int $schemaId = null): JSONResponse
+    {
+        try {
+            $fromDate = $from ? new \DateTime($from) : null;
+            $tillDate = $till ? new \DateTime($till) : null;
+            
+            $data = $this->dashboardService->getAuditTrailActionChartData($fromDate, $tillDate, $registerId, $schemaId);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
     }
-}
+
+    /**
+     * Get chart data for objects by register
+     *
+     * @param int|null $registerId Optional register ID
+     * @param int|null $schemaId   Optional schema ID
+     *
+     * @return JSONResponse The chart data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getObjectsByRegisterChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    {
+        try {
+            $data = $this->dashboardService->getObjectsByRegisterChartData($registerId, $schemaId);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get chart data for objects by schema
+     *
+     * @param int|null $registerId Optional register ID
+     * @param int|null $schemaId   Optional schema ID
+     *
+     * @return JSONResponse The chart data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getObjectsBySchemaChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    {
+        try {
+            $data = $this->dashboardService->getObjectsBySchemaChartData($registerId, $schemaId);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get chart data for objects by size distribution
+     *
+     * @param int|null $registerId Optional register ID
+     * @param int|null $schemaId   Optional schema ID
+     *
+     * @return JSONResponse The chart data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getObjectsBySizeChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    {
+        try {
+            $data = $this->dashboardService->getObjectsBySizeChartData($registerId, $schemaId);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+}//end class

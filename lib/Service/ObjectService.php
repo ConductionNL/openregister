@@ -668,82 +668,91 @@ class ObjectService
      */
     public function findAllPaginated(array $requestParams): array
     {
-        // Extract specific parameters
-        $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
+        // Extract specific parameters.
+        $limit  = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
-        $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
+        $order  = $requestParams['order'] ?? $requestParams['_order'] ?? [];
         $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
-        $page = $requestParams['page'] ?? $requestParams['_page'] ?? null;
+        $page   = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
 
         if ($page !== null && isset($limit)) {
-            $page = (int) $page;
+            $page   = (int) $page;
             $offset = $limit * ($page - 1);
         }
 
-        // Ensure order and extend are arrays
+        // Ensure order and extend are arrays.
         if (is_string($order) === true) {
             $order = array_map('trim', explode(',', $order));
         }
+
         if (is_string($extend) === true) {
             $extend = array_map('trim', explode(',', $extend));
         }
 
-        // Remove unnecessary parameters from filters
+        // Remove unnecessary parameters from filters.
         $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed
+        unset($filters['_route']);
+        // TODO: Investigate why this is here and if it's needed.
         unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
-        if(isset($filters['register']) === false) {
+        if (isset($filters['register']) === false) {
             $filters['register'] = $this->getRegister();
         }
 
-        if(isset($filters['schema']) === false) {
+        if (isset($filters['schema']) === false) {
             $filters['schema'] = $this->getSchema();
         }
 
         $objects = $this->findAll(["limit" => $limit, "offset" => $offset, "filters" => $filters, "sort" => $order, "search" => $search, "extend" => $extend]);
         $total   = $this->count(["filters" => $filters]);
-        $pages   = $limit !== null ? ceil($total/$limit) : 1;
+        $pages   = $limit !== null ? ceil($total / $limit) : 1;
 
-        $facets  = $this->objectEntityMapper->getFacets(
+        $facets = $this->objectEntityMapper->getFacets(
             filters: $filters,
             search: $search
         );
 
         return [
             'results' => $objects,
-            'facets' => $facets,
-            'total' => $total,
-            'page' => $page ?? 1,
-            'pages' => $pages,
+            'facets'  => $facets,
+            'total'   => $total,
+            'page'    => $page ?? 1,
+            'pages'   => $pages,
         ];
-    }
+
+    }//end findAllPaginated()
+
 
     /**
      * Fetch the ObjectService as mapper, or the specific ObjectEntityMapper
      *
-     * @param string|null $type The type of object (only for backwards compatibility)
-     * @param int|null $register The register to get the ObjectService for
-     * @param int|null $schema The schema to get the ObjectService for
+     * @param string|null $type     The type of object (only for backwards compatibility)
+     * @param int|null    $register The register to get the ObjectService for
+     * @param int|null    $schema   The schema to get the ObjectService for
+     *
      * @return ObjectEntityMapper|ObjectService
      */
-    public function getMapper(?string $type = null, ?int $register = null, ?int $schema = null): ObjectEntityMapper|ObjectService
+    public function getMapper(?string $type=null, ?int $register=null, ?int $schema=null): ObjectEntityMapper | ObjectService
     {
-        if($register !== null && $schema !== null) {
+        if ($register !== null && $schema !== null) {
             $this->setRegister($register);
             $this->setSchema($schema);
             return $this;
         }
 
         return $this->objectEntityMapper;
-    }
+
+    }//end getMapper()
+
 
     // From this point on only deprecated functions for backwards compatibility with OpenConnector. To remove after OpenConnector refactor.
 
+
     /**
      * Returns the current schema
+     *
      * @deprecated
      *
      * @return int The current schema
@@ -751,10 +760,13 @@ class ObjectService
     public function getSchema(): int
     {
         return $this->currentSchema->getId();
-    }
+
+    }//end getSchema()
+
 
     /**
      * Returns the current register
+     *
      * @deprecated
      *
      * @return int
@@ -762,7 +774,9 @@ class ObjectService
     public function getRegister(): int
     {
         return $this->currentRegister->getId();
-    }
+
+    }//end getRegister()
+
 
     /**
      * Find multiple objects by their ids
@@ -770,31 +784,36 @@ class ObjectService
      * @deprecated This can now be done using the ids field in the findAll-function
      *
      * @param array $ids The ids to fetch objects for
+     *
      * @return array The found objects
      */
     public function findMultiple(array $ids): array
     {
         return $this->findAll(['ids' => $ids]);
-    }
+
+    }//end findMultiple()
+
 
     /**
      * Renders the rendered object.
      *
      * @param array $entity
      * @param array $extend
-     * @return array
-     * @deprecated As the ObjectService always returns the rendered object, input = output.
      *
+     * @return     array
+     * @deprecated As the ObjectService always returns the rendered object, input = output.
      */
-    public function renderEntity(array $entity, ?array $extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = []): array
+    public function renderEntity(array $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[]): array
     {
         return $entity;
-    }
+
+    }//end renderEntity()
+
 
     /**
      * Returns the object on a certain uuid
      *
-     * @param string $uuid The uuid to find an object for.
+     * @param  string $uuid The uuid to find an object for.
      * @return ObjectEntity|null
      * @throws Exception
      *
@@ -802,15 +821,19 @@ class ObjectService
      */
     public function findByUuid(string $uuid): ?ObjectEntity
     {
-       return $this->find($uuid);
-    }
+        return $this->find($uuid);
 
-    public function getFacets(array $filters = [], ?string $search = null): array
+    }//end findByUuid()
+
+
+    public function getFacets(array $filters=[], ?string $search=null): array
     {
         $filters['register'] = $this->getRegister();
-        $filters['schema'] = $this->getSchema();
+        $filters['schema']   = $this->getSchema();
 
         return $this->objectEntityMapper->getFacets($filters, $search);
-    }
+
+    }//end getFacets()
+
 
 }//end class

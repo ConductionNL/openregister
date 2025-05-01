@@ -130,33 +130,33 @@ class ObjectsController extends Controller
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
-        // Ensure we have valid values (never null)
+        // Ensure we have valid values (never null).
         $total = max(0, $total ?? 0);
         $limit = max(1, $limit ?? 20);
-        // Minimum limit of 1
+        // Minimum limit of 1.
         $offset = max(0, $offset ?? 0);
         $page   = max(1, $page ?? 1);
-        // Minimum page of 1        // Calculate the number of pages (minimum 1 page)
+        // Minimum page of 1        // Calculate the number of pages (minimum 1 page).
         $pages = max(1, ceil($total / $limit));
 
-        // If we have a page but no offset, calculate the offset
+        // If we have a page but no offset, calculate the offset.
         if ($offset === 0) {
             $offset = ($page - 1) * $limit;
         }
 
-        // If we have an offset but page is 1, calculate the page
+        // If we have an offset but page is 1, calculate the page.
         if ($page === 1 && $offset > 0) {
             $page = floor($offset / $limit) + 1;
         }
 
-        // If total is smaller than the number of results, set total to the number of results
+        // If total is smaller than the number of results, set total to the number of results.
         // @todo: this is a hack to ensure the pagination is correct when the total is not known. That sugjest that the underlaying count service has a problem that needs to be fixed instead
         if ($total < count($results)) {
             $total = count($results);
             $pages = max(1, ceil($total / $limit));
         }
 
-        // Initialize the results array with pagination information
+        // Initialize the results array with pagination information.
         $paginatedResults = [
             'results' => $results,
             'total'   => $total,
@@ -166,10 +166,10 @@ class ObjectsController extends Controller
             'offset'  => $offset,
         ];
 
-        // Add next/prev page URLs if applicable
+        // Add next/prev page URLs if applicable.
         $currentUrl = $_SERVER['REQUEST_URI'];
 
-        // Add next page link if there are more pages
+        // Add next page link if there are more pages.
         if ($page < $pages) {
             $nextPage = $page + 1;
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
@@ -180,7 +180,7 @@ class ObjectsController extends Controller
             $paginatedResults['next'] = $nextUrl;
         }
 
-        // Add previous page link if not on first page
+        // Add previous page link if not on first page.
         if ($page > 1) {
             $prevPage = $page - 1;
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
@@ -224,12 +224,12 @@ class ObjectsController extends Controller
         unset($params['id']);
         unset($params['_route']);
 
-        // Extract and normalize parameters
+        // Extract and normalize parameters.
         $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
         $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
         $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
 
-        // If we have a page but no offset, calculate the offset
+        // If we have a page but no offset, calculate the offset.
         if ($page !== null && $offset === null) {
             $offset = ($page - 1) * $limit;
         }
@@ -268,15 +268,14 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Get config and fetch objects
-        $config  = $this->getConfig($register, $schema);
+        // Get config and fetch objects.
+        $config = $this->getConfig($register, $schema);
 
         $objectService->setRegister($register)->setSchema($schema);
 
-
-        //@TODO dit moet netter
-        foreach($config['filters'] as $key => $filter) {
-            switch($key) {
+        // @TODO dit moet netter
+        foreach ($config['filters'] as $key => $filter) {
+            switch ($key) {
                 case 'register':
                     $config['filters'][$key] = $objectService->getRegister();
                     break;
@@ -287,10 +286,10 @@ class ObjectsController extends Controller
                     break;
             }
         }
+
         $objects = $objectService->findAll($config);
 
-
-        // Get total count for pagination
+        // Get total count for pagination.
         // $total = $objectService->count($config['filters'], $config['search']);
         $total = $objectService->count($config);
         return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
@@ -607,32 +606,32 @@ class ObjectsController extends Controller
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the register and schema context first
+        // Set the register and schema context first.
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
-        // Get the relations for the object
+        // Get the relations for the object.
         $relationsArray = $objectService->find($id)->getRelations();
         $relations      = array_values($relationsArray);
 
         // Check if relations array is empty
         if (empty($relations)) {
-            // If relations is empty, set objects to an empty array
+            // If relations is empty, set objects to an empty array.
             $objects = [];
             $total   = 0;
         } else {
             // Get config and fetch objects
             $config = $this->getConfig($register, $schema, ids: $relations);
 
-            // We specifacllly want to look outside our current definitions
+            // We specifacllly want to look outside our current definitions.
             unset($config['filters']['register'], $config['filters']['schema'], $config['limit']);
 
             $objects = $objectService->findAll($config);
-            // Get total count for pagination
+            // Get total count for pagination.
             $total = $objectService->count($config);
         }
 
-        // Return paginated results
+        // Return paginated results.
         return new JSONResponse(
             $this->paginate(
                 results: $objects,
@@ -668,11 +667,11 @@ class ObjectsController extends Controller
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
 
-        // Get the relations for the object
+        // Get the relations for the object.
         $relationsArray = $objectService->findByRelations($id);
         $relations      = array_map(static fn($relation) => $relation->getUuid(), $relationsArray);
 
-        // Check if relations array is empty
+        // Check if relations array is empty.
         if (empty($relations)) {
             // If relations is empty, set objects to an empty array
             $objects = [];
@@ -681,15 +680,15 @@ class ObjectsController extends Controller
             // Get config and fetch objects
             $config = $this->getConfig($register, $schema, $relations);
 
-            // We specifacllly want to look outside our current definitions
+            // We specifacllly want to look outside our current definitions.
             unset($config['filters']['register'], $config['filters']['schema']);
 
             $objects = $objectService->findAll($config);
-            // Get total count for pagination
+            // Get total count for pagination.
             $total = $objectService->count($config);
         }
 
-        // Return paginated results
+        // Return paginated results.
         return new JSONResponse(
             $this->paginate(
                 results: $objects,
@@ -721,15 +720,15 @@ class ObjectsController extends Controller
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the register and schema context first
+        // Set the register and schema context first.
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
-        // Get config and fetch logs
+        // Get config and fetch logs.
         $config = $this->getConfig($register, $schema);
         $logs   = $objectService->getLogs($id, $config['filters']);
 
-        // Get total count of logs
+        // Get total count of logs.
         $total = count($logs);
 
         // Return paginated results
