@@ -1,6 +1,6 @@
 <template>
 	<NcDialog v-if="navigationStore.modal === 'viewObject' && hasObjectItem"
-		:name="'View Object (' + objectStore.objectItem['@self'].uuid + ')'"
+		:name="'View Object (' + objectStore.objectItem['@self'].id + ')'"
 		size="large"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
@@ -379,6 +379,10 @@ export default {
 	},
 	data() {
 		return {
+			// store
+			objectStore,
+			navigationStore,
+			// state
 			objectItem: null,
 			success: null,
 			loading: false,
@@ -419,22 +423,23 @@ export default {
 	},
 	computed: {
 		/** @return {object | undefined} */
-		reactiveObjectItem: () => objectStore.objectItem,
-		hasObjectItem: () => !!this?.reactiveObjectItem?.['@self']?.id,
+		reactiveObjectItem() {
+			return objectStore.objectItem
+		},
+		hasObjectItem() {
+			return !!this.reactiveObjectItem?.['@self']?.id
+		},
 		filesCurrentPage() {
-			console.log('AAAAAAA')
-			console.log(this.pagination)
 			return this.pagination.files.currentPage
 		},
-		auditTrailsCurrentPage: () => this.pagination.auditTrails.currentPage,
+		auditTrailsCurrentPage() {
+			return this.pagination.auditTrails.currentPage
+		},
 	},
 	watch: {
 		reactiveObjectItem: {
 			handler(newValue) {
 				if (newValue) {
-					console.log('HHEEEELLLOO')
-					console.log(this.reactiveObjectItem)
-					console.log(this.hasObjectItem)
 					this.editorContent = JSON.stringify(newValue, null, 2)
 				}
 			},
