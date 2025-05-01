@@ -77,7 +77,7 @@ import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import formatBytes from "../../services/formatBytes.js"
+import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'RegisterDetail',
