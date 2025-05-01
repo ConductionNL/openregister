@@ -57,7 +57,7 @@ class Version1Date20250430083916 extends SimpleMigrationStep
             ]);
         }
         if (!$table->hasColumn('published')) {
-            $table->addColumn('published', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+            $table->addColumn('published', Types::DATETIME, ['notnull' => false]);
         }
 
         // Update the openregister_registers table

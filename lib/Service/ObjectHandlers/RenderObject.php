@@ -443,6 +443,11 @@ class RenderObject
                 continue;
             }
 
+            // Skip if the key starts with '@' (special fields)
+            if (str_starts_with($key, '@')) {
+                continue;
+            }
+
             // Get all the keys that should be extended withtin the extended object.
             $keyExtends = array_map(
                 function (string $extendedKey) use ($key) {
@@ -463,8 +468,18 @@ class RenderObject
                 $value = $value->jsonSerialize();
             }
 
+            // Skip if the value is null
+            if ($value === null) {
+                continue;
+            }
+
             // Extend the object(s).
             if (is_array($value) === true) {
+                // Filter out null values and values starting with '@' before mapping
+                $value = array_filter($value, function ($v) { 
+                    return $v !== null && (!is_string($v) || !str_starts_with($v, '@')); 
+                });
+                
                 $renderedValue = array_map(
                         function (string | int $identifier) use ($depth, $keyExtends) {
                             $object = $this->getObject(id: $identifier);
@@ -483,12 +498,20 @@ class RenderObject
                         $value
                         );
 
+                // Filter out any null values that might have been returned from the mapping
+                $renderedValue = array_filter($renderedValue, function ($v) { return $v !== null; });
+
                 if (is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $renderedValue);
+                    $data->set(keys: $key, value: array_values($renderedValue)); // Reset array keys
                 } else {
-                    $data->set(keys: $override, value: $renderedValue);
+                    $data->set(keys: $override, value: array_values($renderedValue)); // Reset array keys
                 }
             } else {
+                // Skip if the value starts with '@' or '_'
+                if (is_string($value) && (str_starts_with($value, '@') || str_starts_with($value, '_'))) {
+                    continue;
+                }
+
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {

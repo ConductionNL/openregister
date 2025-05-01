@@ -72,7 +72,7 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 										</template>
 										Edit
 									</NcActionButton>
-									<NcActionButton @click="deleteObject(result['@self'].id)">
+									<NcActionButton @click="deleteObject(result)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
@@ -164,10 +164,18 @@ export default {
 		onMassDeleteSuccess() {
 			objectStore.refreshObjectList()
 		},
-		async deleteObject(id) {
+		async deleteObject(result) {
 			try {
-				await objectStore.deleteObject(id)
-				objectStore.refreshObjectList()
+				navigationStore.setDialog('deleteObject')
+				objectStore.setObjectItem({
+					'@self': {
+						id: result['@self'].id,
+						uuid: result['@self'].uuid,
+						register: result['@self'].register,
+						schema: result['@self'].schema,
+						title: result['@self'].title || result.name || result.title || result['@self'].id
+					}
+				})
 			} catch (error) {
 				console.error('Failed to delete object:', error)
 			}
