@@ -604,7 +604,7 @@ class AuditTrailMapper extends QBMapper
         try {
             $qb = $this->db->getQueryBuilder();
 
-            // Base query to get counts by date and action
+            // Main query for orphaned audit trails
             $qb->select(
                 $qb->createFunction('DATE(created) as date'),
                 'action',
