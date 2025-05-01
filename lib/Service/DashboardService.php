@@ -149,10 +149,10 @@ class DashboardService
     private function getOrphanedStats(): array
     {
         try {
-            // Get all registers
+            // Get all registers.
             $registers = $this->registerMapper->findAll();
             
-            // Build array of valid register/schema combinations
+            // Build array of valid register/schema combinations.
             $validCombinations = [];
             foreach ($registers as $register) {
                 $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
@@ -164,10 +164,10 @@ class DashboardService
                 }
             }
 
-            // Get orphaned object statistics by excluding all valid combinations
+            // Get orphaned object statistics by excluding all valid combinations.
             $objectStats = $this->objectMapper->getStatistics(null, null, $validCombinations);
 
-            // Get orphaned audit trail statistics using the same exclusions
+            // Get orphaned audit trail statistics using the same exclusions.
             $auditStats = $this->auditTrailMapper->getStatistics(null, null, $validCombinations);
 
             return [
@@ -221,10 +221,10 @@ class DashboardService
     private function getTotalStats(): array
     {
         try {
-            // Get total object statistics (passing null for registerId and schemaId to get all)
+            // Get total object statistics (passing null for registerId and schemaId to get all).
             $objectStats = $this->objectMapper->getStatistics(null, null);
 
-            // Get total audit trail statistics
+            // Get total audit trail statistics.
             $logStats = $this->auditTrailMapper->getStatistics(null, null);
 
             return [
@@ -265,8 +265,10 @@ class DashboardService
                     'size'  => 0,
                 ],
             ];
-        }
-    }
+        }//end try
+
+    }//end getTotalStats()
+
 
     /**
      * Get all registers with their schemas and statistics
@@ -299,7 +301,7 @@ class DashboardService
 
             $result = [];
 
-            // Add system totals as the first "register"
+            // Add system totals as the first "register".
             $totalStats = $this->getTotalStats();
             $result[] = [
                 'id'          => 'totals',
@@ -381,7 +383,7 @@ class DashboardService
                 $filters['schema'] = $schemaId;
             }
 
-            // Get all relevant objects
+            // Get all relevant objects.
             $objects = $this->objectMapper->findAll(filters: $filters);
 
             // Update each object to trigger size recalculation.

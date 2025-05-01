@@ -676,7 +676,7 @@ class ObjectService
         $page   = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
 
-        if ($page !== null && isset($limit)) {
+        if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
             $offset = $limit * ($page - 1);
         }
@@ -705,9 +705,28 @@ class ObjectService
             $filters['schema'] = $this->getSchema();
         }
 
-        $objects = $this->findAll(["limit" => $limit, "offset" => $offset, "filters" => $filters, "sort" => $order, "search" => $search, "extend" => $extend]);
-        $total   = $this->count(["filters" => $filters]);
-        $pages   = $limit !== null ? ceil($total / $limit) : 1;
+        $objects = $this->findAll(
+                [
+                    "limit"   => $limit,
+                    "offset"  => $offset,
+                    "filters" => $filters,
+                    "sort"    => $order,
+                    "search"  => $search,
+                    "extend"  => $extend,
+                ]
+                );
+
+        $total = $this->count(
+                [
+                    "filters" => $filters,
+                ]
+                );
+
+        if ($limit !== null) {
+            $pages = ceil($total / $limit);
+        } else {
+            $pages = 1;
+        }
 
         $facets = $this->objectEntityMapper->getFacets(
             filters: $filters,
@@ -781,11 +800,11 @@ class ObjectService
     /**
      * Find multiple objects by their ids
      *
-     * @deprecated This can now be done using the ids field in the findAll-function
-     *
      * @param array $ids The ids to fetch objects for
      *
      * @return array The found objects
+     *
+     * @deprecated This can now be done using the ids field in the findAll-function
      */
     public function findMultiple(array $ids): array
     {
@@ -797,10 +816,14 @@ class ObjectService
     /**
      * Renders the rendered object.
      *
-     * @param array $entity
-     * @param array $extend
+     * @param array      $entity The entity to be rendered
+     * @param array|null $extend Optional array to extend the entity
+     * @param int|null   $depth  Optional depth for rendering
+     * @param array|null $filter Optional filters to apply
+     * @param array|null $fields Optional fields to include
      *
-     * @return     array
+     * @return array The rendered entity
+     *
      * @deprecated As the ObjectService always returns the rendered object, input = output.
      */
     public function renderEntity(array $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[]): array
@@ -813,8 +836,10 @@ class ObjectService
     /**
      * Returns the object on a certain uuid
      *
-     * @param  string $uuid The uuid to find an object for.
+     * @param string $uuid The uuid to find an object for.
+     *
      * @return ObjectEntity|null
+     *
      * @throws Exception
      *
      * @deprecated The find function now also handles only fetching by uuid.
@@ -826,6 +851,16 @@ class ObjectService
     }//end findByUuid()
 
 
+    /**
+     * Get facets for the current register and schema
+     *
+     * @param array       $filters The filters to apply
+     * @param string|null $search  The search query
+     *
+     * @return array The facets
+     *
+     * @deprecated This can now be done using the facets field in the findAll-function
+     */
     public function getFacets(array $filters=[], ?string $search=null): array
     {
         $filters['register'] = $this->getRegister();

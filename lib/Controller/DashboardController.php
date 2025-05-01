@@ -176,8 +176,8 @@ class DashboardController extends Controller
     /**
      * Get chart data for audit trail actions
      *
-     * @param string|null $from      Start date (Y-m-d format)
-     * @param string|null $till      End date (Y-m-d format)
+     * @param string|null $from       Start date (Y-m-d format)
+     * @param string|null $till       End date (Y-m-d format)
      * @param int|null    $registerId Optional register ID
      * @param int|null    $schemaId   Optional schema ID
      *
@@ -186,18 +186,20 @@ class DashboardController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function getAuditTrailActionChart(?string $from = null, ?string $till = null, ?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getAuditTrailActionChart(?string $from=null, ?string $till=null, ?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $fromDate = $from ? new \DateTime($from) : null;
             $tillDate = $till ? new \DateTime($till) : null;
-            
+
             $data = $this->dashboardService->getAuditTrailActionChartData($fromDate, $tillDate, $registerId, $schemaId);
             return new JSONResponse($data);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end getAuditTrailActionChart()
+
 
     /**
      * Get chart data for objects by register
@@ -210,7 +212,7 @@ class DashboardController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function getObjectsByRegisterChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $data = $this->dashboardService->getObjectsByRegisterChartData($registerId, $schemaId);
@@ -218,7 +220,9 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end getObjectsByRegisterChart()
+
 
     /**
      * Get chart data for objects by schema
@@ -231,7 +235,7 @@ class DashboardController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function getObjectsBySchemaChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $data = $this->dashboardService->getObjectsBySchemaChartData($registerId, $schemaId);
@@ -239,7 +243,9 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end getObjectsBySchemaChart()
+
 
     /**
      * Get chart data for objects by size distribution
@@ -252,7 +258,7 @@ class DashboardController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function getObjectsBySizeChart(?int $registerId = null, ?int $schemaId = null): JSONResponse
+    public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
             $data = $this->dashboardService->getObjectsBySizeChartData($registerId, $schemaId);
@@ -260,6 +266,8 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+
+    }//end getObjectsBySizeChart()
+
 
 }//end class

@@ -99,15 +99,15 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by ID or UUID with optional register and schema
      *
-     * @param int|string    $identifier The ID or UUID of the object to find
-     * @param Register|null $register   Optional register to filter by
-     * @param Schema|null   $schema     Optional schema to filter by
+     * @param int|string    $identifier The ID or UUID of the object to find.
+     * @param Register|null $register   Optional register to filter by.
+     * @param Schema|null   $schema     Optional schema to filter by.
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found.
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found.
+     * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return ObjectEntity The ObjectEntity
+     * @return ObjectEntity The ObjectEntity.
      */
     public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null): ObjectEntity
     {
@@ -119,6 +119,7 @@ class ObjectEntityMapper extends QBMapper
             $idParam = $identifier;
         }
 
+        // Build the base query.
         $qb->select('*')
             ->from('openregister_objects')
             ->where(
@@ -132,14 +133,14 @@ class ObjectEntityMapper extends QBMapper
                 )
             );
 
-        // Add optional register filter if provided
+        // Add optional register filter if provided.
         if ($register !== null) {
             $qb->andWhere(
                 $qb->expr()->eq('register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
             );
         }
 
-        // Add optional schema filter if provided
+        // Add optional schema filter if provided.
         if ($schema !== null) {
             $qb->andWhere(
                 $qb->expr()->eq('schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
@@ -154,22 +155,22 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find all ObjectEntities
      *
-     * @param int|null      $limit            The number of objects to return
-     * @param int|null      $offset           The offset of the objects to return
-     * @param array|null    $filters          The filters to apply to the objects
-     * @param array|null    $searchConditions The search conditions to apply to the objects
-     * @param array|null    $searchParams     The search parameters to apply to the objects
-     * @param array         $sort             The sort order to apply
-     * @param string|null   $search           The search string to apply
-     * @param array|null    $ids              Array of IDs or UUIDs to filter by
-     * @param string|null   $uses             Value that must be present in relations
-     * @param bool          $includeDeleted   Whether to include deleted objects
-     * @param Register|null $register         Optional register to filter objects
-     * @param Schema|null   $schema           Optional schema to filter objects
+     * @param int|null      $limit            The number of objects to return.
+     * @param int|null      $offset           The offset of the objects to return.
+     * @param array|null    $filters          The filters to apply to the objects.
+     * @param array|null    $searchConditions The search conditions to apply to the objects.
+     * @param array|null    $searchParams     The search parameters to apply to the objects.
+     * @param array         $sort             The sort order to apply.
+     * @param string|null   $search           The search string to apply.
+     * @param array|null    $ids              Array of IDs or UUIDs to filter by.
+     * @param string|null   $uses             Value that must be present in relations.
+     * @param bool          $includeDeleted   Whether to include deleted objects.
+     * @param Register|null $register         Optional register to filter objects.
+     * @param Schema|null   $schema           Optional schema to filter objects.
      *
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array An array of ObjectEntity objects
+     * @return array An array of ObjectEntity objects.
      */
     public function findAll(
         ?int $limit=null,
@@ -181,15 +182,15 @@ class ObjectEntityMapper extends QBMapper
         ?string $search=null,
         ?array $ids=null,
         ?string $uses=null,
-        ?bool $includeDeleted=false,
+        bool $includeDeleted=false,
         ?Register $register=null,
         ?Schema $schema=null
     ): array {
-        // Filter out system variables (starting with _)
+        // Filter out system variables (starting with _).
         $filters = array_filter(
             $filters ?? [],
             function ($key) {
-                return !str_starts_with($key, '_');
+                return str_starts_with($key, '_') === false;
             },
             ARRAY_FILTER_USE_KEY
         );
@@ -203,12 +204,12 @@ class ObjectEntityMapper extends QBMapper
             $filters['page']
         );
 
-        // Add register to filters if provided
+        // Add register to filters if provided.
         if ($register !== null) {
             $filters['register'] = $register;
         }
 
-        // Add schema to filters if provided
+        // Add schema to filters if provided.
         if ($schema !== null) {
             $filters['schema'] = $schema;
         }
@@ -246,17 +247,17 @@ class ObjectEntityMapper extends QBMapper
 
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
-                // Add condition for IS NOT NULL
+                // Add condition for IS NOT NULL.
                 $qb->andWhere($qb->expr()->isNotNull($filter));
             } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
-                // Add condition for IS NULL
+                // Add condition for IS NULL.
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else if (in_array($filter, self::MAIN_FILTERS) === true) {
-                if (is_array($value)) {
-                    // If the value is an array, use IN to search for any of the values in the array
+                if (is_array($value) === true) {
+                    // If the value is an array, use IN to search for any of the values in the array.
                     $qb->andWhere($qb->expr()->in($filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
-                    // Otherwise, use equality for the filter
+                    // Otherwise, use equality for the filter.
                     $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
                 }
             }
@@ -739,19 +740,19 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Get statistics for objects with optional filtering
      *
-     * @param int|null $registerId The register ID (null for all registers)
-     * @param int|null $schemaId   The schema ID (null for all schemas)
-     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
+     * @param int|null $registerId The register ID (null for all registers).
+     * @param int|null $schemaId   The schema ID (null for all schemas).
+     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...].
      *
      * @return array Array containing statistics about objects:
-     *               - total: Total number of objects
-     *               - size: Total size of all objects in bytes
-     *               - invalid: Number of objects with validation errors
-     *               - deleted: Number of deleted objects
-     *               - locked: Number of locked objects
-     *               - published: Number of published objects
+     *               - total: Total number of objects.
+     *               - size: Total size of all objects in bytes.
+     *               - invalid: Number of objects with validation errors.
+     *               - deleted: Number of deleted objects.
+     *               - locked: Number of locked objects.
+     *               - published: Number of published objects.
      */
-    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
+    public function getStatistics(?int $registerId=null, ?int $schemaId=null, array $exclude=[]): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -765,79 +766,80 @@ class ObjectEntityMapper extends QBMapper
             )
                 ->from($this->getTableName());
 
-            // Add register filter if provided
+            // Add register filter if provided.
             if ($registerId !== null) {
                 $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
             }
 
-            // Add schema filter if provided
+            // Add schema filter if provided.
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
             }
 
-            // Add exclusions if provided
-            if (!empty($exclude)) {
+            // Add exclusions if provided.
+            if (empty($exclude) === false) {
                 foreach ($exclude as $combination) {
                     $orConditions = $qb->expr()->orX();
                     
-                    // Handle register exclusion
-                    if (isset($combination['register'])) {
+                    // Handle register exclusion.
+                    if (isset($combination['register']) === true) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
                     
-                    // Handle schema exclusion
-                    if (isset($combination['schema'])) {
+                    // Handle schema exclusion.
+                    if (isset($combination['schema']) === true) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
                     
-                    // Add the OR conditions to the main query
+                    // Add the OR conditions to the main query.
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);
                     }
-                }
-            }
+                }//end foreach
+            }//end if
 
             $result = $qb->executeQuery()->fetch();
 
             return [
-                'total' => (int) ($result['total'] ?? 0),
-                'size' => (int) ($result['size'] ?? 0),
-                'invalid' => (int) ($result['invalid'] ?? 0),
-                'deleted' => (int) ($result['deleted'] ?? 0),
-                'locked' => (int) ($result['locked'] ?? 0),
+                'total'     => (int) ($result['total'] ?? 0),
+                'size'      => (int) ($result['size'] ?? 0),
+                'invalid'   => (int) ($result['invalid'] ?? 0),
+                'deleted'   => (int) ($result['deleted'] ?? 0),
+                'locked'    => (int) ($result['locked'] ?? 0),
                 'published' => (int) ($result['published'] ?? 0),
             ];
         } catch (\Exception $e) {
             return [
-                'total' => 0,
-                'size' => 0,
-                'invalid' => 0,
-                'deleted' => 0,
-                'locked' => 0,
+                'total'     => 0,
+                'size'      => 0,
+                'invalid'   => 0,
+                'deleted'   => 0,
+                'locked'    => 0,
                 'published' => 0,
             ];
-        }
-    }
-   
+        }//end try
+
+    }//end getStatistics()
+
 
     /**
      * Get chart data for objects grouped by register
      *
-     * @param int|null $registerId Optional register ID to filter by
-     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $registerId The register ID (null for all registers).
+     * @param int|null $schemaId   The schema ID (null for all schemas).
      *
      * @return array Array containing chart data:
-     *               - labels: Array of register names
-     *               - series: Array of object counts per register
+     *               - labels: Array of register names.
+     *               - series: Array of object counts per register.
      */
-    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
 
-            // Join with registers table to get register names
+            // Join with registers table to get register names.
             $qb->select(
                 'r.title as register_name',
                 $qb->createFunction('COUNT(o.id) as count')
@@ -847,12 +849,12 @@ class ObjectEntityMapper extends QBMapper
                 ->groupBy('r.id', 'r.title')
                 ->orderBy('count', 'DESC');
 
-            // Add register filter if provided
+            // Add register filter if provided.
             if ($registerId !== null) {
                 $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
             }
 
-            // Add schema filter if provided
+            // Add schema filter if provided.
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
             }
@@ -860,33 +862,39 @@ class ObjectEntityMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             return [
-                'labels' => array_map(function($row) { return $row['register_name'] ?? 'Unknown'; }, $results),
-                'series' => array_map(function($row) { return (int)$row['count']; }, $results)
+                'labels' => array_map(function ($row) {
+                    return $row['register_name'] ?? 'Unknown';
+                }, $results),
+                'series' => array_map(function ($row) {
+                    return (int) $row['count'];
+                }, $results),
             ];
         } catch (\Exception $e) {
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getRegisterChartData()
+
 
     /**
      * Get chart data for objects grouped by schema
      *
-     * @param int|null $registerId Optional register ID to filter by
-     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $registerId The register ID (null for all registers).
+     * @param int|null $schemaId   The schema ID (null for all schemas).
      *
      * @return array Array containing chart data:
-     *               - labels: Array of schema names
-     *               - series: Array of object counts per schema
+     *               - labels: Array of schema names.
+     *               - series: Array of object counts per schema.
      */
-    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
 
-            // Join with schemas table to get schema names
+            // Join with schemas table to get schema names.
             $qb->select(
                 's.title as schema_name',
                 $qb->createFunction('COUNT(o.id) as count')
@@ -896,12 +904,12 @@ class ObjectEntityMapper extends QBMapper
                 ->groupBy('s.id', 's.title')
                 ->orderBy('count', 'DESC');
 
-            // Add register filter if provided
+            // Add register filter if provided.
             if ($registerId !== null) {
                 $qb->andWhere($qb->expr()->eq('o.register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
             }
 
-            // Add schema filter if provided
+            // Add schema filter if provided.
             if ($schemaId !== null) {
                 $qb->andWhere($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
             }
@@ -909,39 +917,45 @@ class ObjectEntityMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             return [
-                'labels' => array_map(function($row) { return $row['schema_name'] ?? 'Unknown'; }, $results),
-                'series' => array_map(function($row) { return (int)$row['count']; }, $results)
+                'labels' => array_map(function ($row) {
+                    return $row['schema_name'] ?? 'Unknown';
+                }, $results),
+                'series' => array_map(function ($row) {
+                    return (int) $row['count'];
+                }, $results),
             ];
         } catch (\Exception $e) {
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getSchemaChartData()
+
 
     /**
      * Get chart data for objects grouped by size ranges
      *
-     * @param int|null $registerId Optional register ID to filter by
-     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $registerId The register ID (null for all registers).
+     * @param int|null $schemaId   The schema ID (null for all schemas).
      *
      * @return array Array containing chart data:
-     *               - labels: Array of size range labels
-     *               - series: Array of object counts per size range
+     *               - labels: Array of size range labels.
+     *               - series: Array of object counts per size range.
      */
-    public function getSizeDistributionChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
 
-            // Define size ranges in bytes
+            // Define size ranges in bytes.
             $ranges = [
                 ['min' => 0, 'max' => 1024, 'label' => '0-1 KB'],
                 ['min' => 1024, 'max' => 10240, 'label' => '1-10 KB'],
                 ['min' => 10240, 'max' => 102400, 'label' => '10-100 KB'],
                 ['min' => 102400, 'max' => 1048576, 'label' => '100 KB-1 MB'],
-                ['min' => 1048576, 'max' => null, 'label' => '> 1 MB']
+                ['min' => 1048576, 'max' => null, 'label' => '> 1 MB'],
             ];
 
             $results = [];
@@ -950,7 +964,7 @@ class ObjectEntityMapper extends QBMapper
                 $qb->select($qb->createFunction('COUNT(*) as count'))
                     ->from($this->getTableName());
 
-                // Add size range conditions
+                // Add size range conditions.
                 if ($range['min'] !== null) {
                     $qb->andWhere($qb->expr()->gte('size', $qb->createNamedParameter($range['min'], IQueryBuilder::PARAM_INT)));
                 }
@@ -958,12 +972,12 @@ class ObjectEntityMapper extends QBMapper
                     $qb->andWhere($qb->expr()->lt('size', $qb->createNamedParameter($range['max'], IQueryBuilder::PARAM_INT)));
                 }
 
-                // Add register filter if provided
+                // Add register filter if provided.
                 if ($registerId !== null) {
                     $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
                 }
 
-                // Add schema filter if provided
+                // Add schema filter if provided.
                 if ($schemaId !== null) {
                     $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
                 }
@@ -971,20 +985,25 @@ class ObjectEntityMapper extends QBMapper
                 $count = $qb->executeQuery()->fetchOne();
                 $results[] = [
                     'label' => $range['label'],
-                    'count' => (int)$count
+                    'count' => (int) $count,
                 ];
-            }
+            }//end foreach
 
             return [
-                'labels' => array_map(function($row) { return $row['label']; }, $results),
-                'series' => array_map(function($row) { return $row['count']; }, $results)
+                'labels' => array_map(function ($row) {
+                    return $row['label'];
+                }, $results),
+                'series' => array_map(function ($row) {
+                    return $row['count'];
+                }, $results),
             ];
         } catch (\Exception $e) {
             return [
                 'labels' => [],
-                'series' => []
+                'series' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getSizeDistributionChartData()
 
 }//end class

@@ -114,7 +114,7 @@ class AuditTrailMapper extends QBMapper
         // Apply filters.
         foreach ($filters as $field => $value) {
             // Ensure the field is a valid column name.
-            if (!in_array(
+            if (in_array(
                     $field,
                     [
                         'id',
@@ -132,7 +132,7 @@ class AuditTrailMapper extends QBMapper
                         'version',
                         'created',
                     ]
-                    )
+                    ) === false
             ) {
                 continue;
             }
@@ -156,7 +156,7 @@ class AuditTrailMapper extends QBMapper
         // Add sorting.
         foreach ($sort as $field => $direction) {
             // Ensure the field is a valid column name.
-            if (!in_array(
+            if (in_array(
                     $field,
                     [
                         'id',
@@ -174,14 +174,18 @@ class AuditTrailMapper extends QBMapper
                         'version',
                         'created',
                     ]
-                    )
+                    ) === false
             ) {
                 continue;
             }
 
-            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+            if (strtoupper($direction) === 'DESC') {
+                $direction = 'DESC';
+            } else {
+                $direction = 'ASC';
+            }
             $qb->addOrderBy($field, $direction);
-        }//end foreach.
+        }//end foreach
 
         // Apply pagination.
         if ($limit !== null) {
@@ -246,7 +250,8 @@ class AuditTrailMapper extends QBMapper
         if ($log->getUuid() === null) {
             $log->setUuid(Uuid::v4());
         }
-        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object
+
+        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object.
 
         return $this->insert(entity: $log);
 
