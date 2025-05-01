@@ -283,6 +283,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
+import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'RegistersIndex',
@@ -346,14 +347,6 @@ export default {
 
 			// Force reactivity update
 			this.expandedSchemas = [...this.expandedSchemas]
-		},
-
-		formatBytes(bytes) {
-			if (!bytes || bytes === 0) return '0 KB'
-			const k = 1024
-			const sizes = ['B', 'KB', 'MB', 'GB']
-			const i = Math.floor(Math.log(bytes) / Math.log(k))
-			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 		},
 
 		async calculateSizes(register) {

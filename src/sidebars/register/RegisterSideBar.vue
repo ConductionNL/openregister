@@ -119,7 +119,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
-
+import formatBytes from '../../services/formatBytes.js'
 // Ensure data is loaded
 dashboardStore.preload()
 
@@ -147,13 +147,6 @@ export default {
 		},
 	},
 	methods: {
-		formatBytes(bytes) {
-			if (!bytes || bytes === 0) return '0 KB'
-			const k = 1024
-			const sizes = ['B', 'KB', 'MB', 'GB']
-			const i = Math.floor(Math.log(bytes) / Math.log(k))
-			return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
-		},
 
 		async calculateSizes() {
 			if (!this.register) return
