@@ -106,8 +106,6 @@ export default {
 					this.registerName = reg.title
 				}
 			}
-
-			this.canDelete = this.objects.length === 0
 		},
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -117,7 +115,6 @@ export default {
 			this.error = false
 			this.objects = []
 			this.registerName = ''
-			this.canDelete = false
 			this.isUpdated = false
 		},
 		async deleteSchema() {
