@@ -421,7 +421,7 @@ class RenderObject
      * @param array $extend The fields to extend.
      * @param int $depth The current depth.
      * @return array
-     * 
+     *
      * @throws \OCP\DB\Exception
      */
     private function handleExtendDot(array $data, array &$extend, int $depth): array

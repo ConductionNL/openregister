@@ -335,7 +335,7 @@ class ObjectsController extends Controller
 
         // Find and validate the object.
         try {
-            $object = $this->objectService->find($id);
+            $object = $this->objectService->find($id, $extend);
 
             // Render the object with requested extensions and filters.
             return new JSONResponse($object);
