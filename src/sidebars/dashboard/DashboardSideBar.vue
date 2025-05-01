@@ -21,8 +21,8 @@ import { dashboardStore } from '../../store/store.js'
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect
 						id="registerSelect"
-						:options="registerOptions"
 						v-model="selectedRegisterId"
+						:options="registerOptions"
 						:placeholder="t('openregister', 'All Registers')"
 						@update:modelValue="onRegisterChange" />
 				</div>
@@ -30,8 +30,8 @@ import { dashboardStore } from '../../store/store.js'
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 					<NcSelect
 						id="schemaSelect"
-						:options="schemaOptions"
 						v-model="selectedSchemaId"
+						:options="schemaOptions"
 						:placeholder="t('openregister', 'All Schemas')"
 						:disabled="!selectedRegisterId"
 						@update:modelValue="onSchemaChange" />
@@ -201,10 +201,9 @@ import { dashboardStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard, NcSelect, NcDatetimePicker } from '@nextcloud/vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
-import { NcSelect, NcDatetimePicker } from '@nextcloud/vue'
 
 // Ensure data is loaded
 dashboardStore.preload()

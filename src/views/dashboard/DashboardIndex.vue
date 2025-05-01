@@ -49,9 +49,9 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div v-else-if="dashboardStore.error" class="error">
 				<NcEmptyContent :title="dashboardStore.error" icon="icon-error" />
 			</div>
-			<div v-else class="charts-container">
+			<div v-else class="chartsContainer">
 				<!-- Audit Trail Actions Chart -->
-				<div class="chart-card">
+				<div class="chartCard">
 					<h3>Audit Trail Actions</h3>
 					<apexchart
 						type="line"
@@ -61,27 +61,29 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				</div>
 
 				<!-- Objects by Register Chart -->
-				<div class="chart-card">
+				<div class="chartCard">
 					<h3>Objects by Register</h3>
 					<apexchart
 						type="pie"
 						height="350"
 						:options="registerChartOptions"
-						:series="dashboardStore.chartData.objectsByRegister?.series || []" />
+						:series="dashboardStore.chartData.objectsByRegister?.series || []"
+						:labels="dashboardStore.chartData.objectsByRegister?.labels || []" />
 				</div>
 
 				<!-- Objects by Schema Chart -->
-				<div class="chart-card">
+				<div class="chartCard">
 					<h3>Objects by Schema</h3>
 					<apexchart
 						type="pie"
 						height="350"
 						:options="schemaChartOptions"
-						:series="dashboardStore.chartData.objectsBySchema?.series || []" />
+						:series="dashboardStore.chartData.objectsBySchema?.series || []"
+						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
 				</div>
 
 				<!-- Objects by Size Chart -->
-				<div class="chart-card">
+				<div class="chartCard">
 					<h3>Objects by Size Distribution</h3>
 					<apexchart
 						type="bar"
@@ -163,7 +165,7 @@ export default {
 				chart: {
 					type: 'pie',
 				},
-				labels: [],
+				labels: dashboardStore.chartData.objectsByRegister?.labels || [],
 				legend: {
 					position: 'bottom',
 				},
@@ -183,7 +185,7 @@ export default {
 				chart: {
 					type: 'pie',
 				},
-				labels: [],
+				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
 				legend: {
 					position: 'bottom',
 				},
@@ -383,14 +385,14 @@ export default {
 	padding-block: 40px;
 }
 
-.charts-container {
+.chartsContainer {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 20px;
 	padding: 20px;
 }
 
-.chart-card {
+.chartCard {
 	background: var(--color-main-background);
 	border-radius: 8px;
 	padding: 20px;
@@ -405,7 +407,7 @@ export default {
 }
 
 @media screen and (max-width: 1024px) {
-	.charts-container {
+	.chartsContainer {
 		grid-template-columns: 1fr;
 	}
 }
