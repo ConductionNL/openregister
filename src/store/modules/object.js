@@ -353,10 +353,10 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Delete a single object
-		 * 
+		 *
 		 * @param {string|number} objectId The ID of the object to delete
 		 * @param {object} options Optional parameters
-		 * @returns {Promise} Promise that resolves when the object is deleted
+		 * @return {Promise} Promise that resolves when the object is deleted
 		 */
 		async deleteObject(objectId, options = {}) {
 			if (!objectId) throw new Error('No object id to delete')

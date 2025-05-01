@@ -179,8 +179,8 @@ export default {
 						uuid: result['@self'].uuid,
 						register: result['@self'].register,
 						schema: result['@self'].schema,
-						title: result['@self'].title || result.name || result.title || result['@self'].id
-					}
+						title: result['@self'].title || result.name || result.title || result['@self'].id,
+					},
 				})
 			} catch (error) {
 				console.error('Failed to delete object:', error)
