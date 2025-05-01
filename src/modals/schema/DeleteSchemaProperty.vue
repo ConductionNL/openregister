@@ -19,17 +19,12 @@ import { navigationStore, schemaStore, objectStore, registerStore } from '../../
 			</NcNoteCard>
 		</div>
 
-		<p v-if="success === null && !warned">
+		<p v-if="success === null">
 			Weet u zeker dat u <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
-		<p v-if="success === null && warned && objects.length > 0">
-			{{ objects.length > 0 ? 'De volgende objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken:' : '' }}
-		</p>
-		<ul v-if="success === null && objects.length > 0">
-				<li v-for="object in objects" :key="object.id">
-					<b>{{ object.id }}</b>
-				</li>
-		</ul>
+		<NcNoteCard v-if="!canDelete" type="warning">
+			<p>Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken.</p>
+		</NcNoteCard>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeModal">
 				<template #icon>
@@ -39,15 +34,15 @@ import { navigationStore, schemaStore, objectStore, registerStore } from '../../
 			</NcButton>
 			<NcButton
 				v-if="success === null"
-				:disabled="loading"
+				:disabled="loading || !canDelete"
 				icon="Delete"
 				type="error"
-				@click="handleDeleteProperty()">
+				@click="deleteProperty()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				{{ warned ? 'Toch verwijderen' : 'Verwijderen' }}
+				Verwijder
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -76,21 +71,55 @@ export default {
 			success: null,
 			error: false,
 			closeModalTimeout: null,
-			warned: false,
 			objects: [],
+			isUpdated: false,
+		}
+	},
+	computed: {
+		canDelete() {
+			return this.objects.length === 0
+		},
+	},
+	updated() {
+		if (!this.isUpdated && navigationStore.modal === 'deleteSchemaProperty') {
+			this.isUpdated = true
+			this.initDialog()
 		}
 	},
 	methods: {
+		async initDialog() {
+			await registerStore.refreshRegisterList()
+			if (registerStore.registerList.length === 0) {
+				return
+			}
+
+			for (const reg of registerStore.registerList) {
+				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+					await objectStore.refreshObjectList({
+						register: reg.id,
+ 						schema: schemaStore.schemaItem.id,
+ 						search: '',
+ 					})
+ 					if (objectStore.objectList?.results?.length) {
+						for (const obj of objectStore.objectList.results) {
+							if (obj[schemaStore.schemaPropertyKey]) {
+								this.objects.push(obj)
+							}
+						}
+ 					}
+ 				}
+			}
+		},
 		closeModal() {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
 			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.error = false
-			this.warned = false
 			this.objects = []
+			this.isUpdated = false
 		},
-		DeleteProperty() {
+		deleteProperty() {
 			this.loading = true
 
 			const schemaItemClone = { ...schemaStore.schemaItem }
@@ -114,38 +143,6 @@ export default {
 					this.loading = false
 				})
 		},
-		async handleDeleteProperty() {
-			if (!this.warned) {
- 			this.objects = []
- 			await registerStore.refreshRegisterList()
- 			if (registerStore.registerList.length === 0) {
- 				return;
- 			}
- 			for (const reg of registerStore.registerList) {
- 				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
- 					await objectStore.refreshObjectList({
- 						register: reg.id,
- 						schema:   schemaStore.schemaItem.id,
- 						search:   '',
- 					})
- 					if (objectStore.objectList?.results?.length) {
-						for (const obj of objectStore.objectList.results) {
-							if (obj[schemaStore.schemaPropertyKey]) {
-								this.objects.push(obj)
-							}
-						}
- 					}
- 				}
- 			}
- 			if (!this.objects.length) {
- 				await this.DeleteProperty()
- 			} else {
- 				this.warned = true
- 			}
-		} else {
-			await this.DeleteProperty()
-		}
- 		},
 	},
 }
 </script>
