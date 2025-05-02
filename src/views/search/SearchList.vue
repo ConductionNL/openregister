@@ -1,5 +1,6 @@
 <script setup>
-import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
+import { navigationStore, objectStore, schemaStore, registerStore } from '../../store/store.js'
+import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 </script>
 
 <template>
@@ -11,13 +12,13 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 				draggable="> *:not(.staticColumn)">
 				<table class="table">
 					<thead>
-						<tr class="tableRow sortTarget">
-							<th class="staticColumn">
-								<input
+						<tr class="table-row sort-target">
+							<th class="static-column">
+								<NcCheckboxRadioSwitch
 									:checked="objectStore.isAllSelected"
 									type="checkbox"
-									class="cursorPointer"
-									@change="objectStore.toggleSelectAllObjects">
+									class="cursor-pointer"
+									@update:checked="objectStore.toggleSelectAllObjects" />
 							</th>
 							<th v-for="column in objectStore.enabledColumns"
 								:key="column.id">
@@ -33,13 +34,13 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 					<tbody>
 						<tr v-for="result in objectStore.objectList.results"
 							:key="result['@self'].uuid"
-							class="tableRow">
-							<td class="staticColumn">
-								<input
-									v-model="objectStore.selectedObjects"
-									:value="result['@self'].id"
+							class="table-row">
+							<td class="static-column">
+								<NcCheckboxRadioSwitch
+									:checked="objectStore.selectedObjects.includes(result['@self'].id)"
 									type="checkbox"
-									class="cursorPointer">
+									class="cursor-pointer"
+									@update:checked="handleSelectObject(result['@self'].id)" />
 							</td>
 							<td v-for="column in objectStore.enabledColumns"
 								:key="column.id">
@@ -49,6 +50,12 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 									</span>
 									<span v-else-if="column.id === 'meta_created' || column.id === 'meta_updated'">
 										{{ getValidISOstring(result['@self'][column.key]) ? new Date(result['@self'][column.key]).toLocaleString() : 'N/A' }}
+									</span>
+									<span v-else-if="column.id === 'meta_register'">
+										<span>{{ registerStore.registerList.find(reg => reg.id === parseInt(result['@self'].register))?.title }}</span>
+									</span>
+									<span v-else-if="column.id === 'meta_schema'">
+										<span>{{ schemaStore.schemaList.find(schema => schema.id === parseInt(result['@self'].schema))?.title }}</span>
 									</span>
 									<span v-else>
 										{{ result['@self'][column.key] }}
@@ -96,15 +103,14 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 				@change="onPageChange" />
 		</div>
 
-		<MassDeleteObject v-if="massDeleteObjectModal"
+		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'"
 			:selected-objects="objectStore.selectedObjects"
-			@close-modal="() => massDeleteObjectModal = false"
+			@close-modal="() => navigationStore.setDialog(null)"
 			@success="onMassDeleteSuccess" />
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
@@ -130,7 +136,6 @@ export default {
 	},
 	data() {
 		return {
-			massDeleteObjectModal: false,
 		}
 	},
 	computed: {
@@ -162,6 +167,7 @@ export default {
 			window.open(link, type)
 		},
 		onMassDeleteSuccess() {
+			objectStore.selectedObjects = []
 			objectStore.refreshObjectList()
 		},
 		async deleteObject(result) {
@@ -173,8 +179,8 @@ export default {
 						uuid: result['@self'].uuid,
 						register: result['@self'].register,
 						schema: result['@self'].schema,
-						title: result['@self'].title || result.name || result.title || result['@self'].id
-					}
+						title: result['@self'].title || result.name || result.title || result['@self'].id,
+					},
 				})
 			} catch (error) {
 				console.error('Failed to delete object:', error)
@@ -183,6 +189,13 @@ export default {
 		onPageChange(page) {
 			objectStore.setPagination(page)
 			objectStore.refreshObjectList()
+		},
+		handleSelectObject(id) {
+			if (objectStore.selectedObjects.includes(id)) {
+				objectStore.selectedObjects = objectStore.selectedObjects.filter(obj => obj !== id)
+			} else {
+				objectStore.selectedObjects.push(id)
+			}
 		},
 	},
 }
