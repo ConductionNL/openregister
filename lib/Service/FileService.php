@@ -1,6 +1,6 @@
 <?php
 /**
- * OpenRegister FileService
+ * OpenRegister FileService.
  *
  * Service class for handling file operations in the OpenRegister application.
  * Provides functionality for managing files, folders, sharing, and versioning within
@@ -14,15 +14,16 @@
  * - Object-specific file operations
  * - Audit trails and data aggregation
  *
- * @category   Service
- * @package    OCA\OpenRegister\Service
- * @author     Conduction Development Team <info@conduction.nl>
- * @copyright  2024 Conduction B.V.
- * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version    1.0.0
- * @link       https://www.OpenRegister.app
+ * @category       Service
+ * @package        OCA\OpenRegister\Service
+ * @author         Conduction Development Team <info@conduction.nl>
+ * @copyright      2024 Conduction B.V.
+ * @license        EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version        GIT: <git_id>
+ * @link           https://www.OpenRegister.app
+ *
  * @psalm-suppress PropertyNotSetInConstructor
- * @phpstan-type FileArray array{
+ * @phpstan-type   FileArray array{
  *     id: string,
  *     name: string,
  *     path: string,
@@ -79,7 +80,7 @@ class FileService
     /**
      * Root folder name for all OpenRegister files.
      *
-     * @var string
+     * @var        string
      * @readonly
      * @psalm-readonly
      */
@@ -88,7 +89,7 @@ class FileService
     /**
      * Application group name.
      *
-     * @var string
+     * @var        string
      * @readonly
      * @psalm-readonly
      */
@@ -97,16 +98,20 @@ class FileService
     /**
      * Application user name.
      *
-     * @var string
+     * @var        string
      * @readonly
      * @psalm-readonly
      */
     private const APP_USER = 'OpenRegister';
     
     /**
-     * File tag type identifier
+     * File tag type identifier.
+     *
+     * @var        string
+     * @readonly
+     * @psalm-readonly
      */
-    const FILE_TAG_TYPE = 'files';
+    private const FILE_TAG_TYPE = 'files';
 
     /**
      * Constructor for FileService.
@@ -1217,10 +1222,10 @@ class FileService
     }//end getAllTags()
 
     /**
-     * Get files for object
+     * Get all files for an object.
      *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
      * @param ObjectEntity|string $object The object or object ID to fetch files for
      *
@@ -1232,126 +1237,145 @@ class FileService
      * @psalm-return array<int, Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFiles(ObjectEntity|string $object): array
+    public function getFiles(ObjectEntity | string $object): array
     {
         // If string ID provided, try to find the object entity
-        if (is_string($object)) {
+        if (is_string($object) === true) {
             $object = $this->objectEntityMapper->find($object);
         }
 
+        // Get the object folder
         $folder = $this->getObjectFolder(
             objectEntity: $object,
             register: $object->getRegister(),
             schema: $object->getSchema()
         );
 
+        // Get all files in the folder
         $files = [];
-        if ($folder instanceof \OCP\Files\Folder === true) {
+        if ($folder instanceof Folder === true) {
             $files = $folder->getDirectoryListing();
         }
 
         return $files;
     }
-    
+
     /**
-     * Get files for object
+     * Get files for an object.
      *
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class
-     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
+     * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
-     * @param ObjectEntity|string $object The object or object ID to fetch files for
+     * @param ObjectEntity|string $object   The object or object ID to fetch files for
+     * @param string             $filePath The path to the file within the object folder
      *
-     * @return Node[] The files found
+     * @return File|null The file if found, null otherwise
      *
      * @throws NotFoundException If the folder is not found
      * @throws DoesNotExistException If the object ID is not found
      *
-     * @psalm-return array<int, Node>
-     * @phpstan-return array<int, Node>
+     * @psalm-return File|null
+     * @phpstan-return File|null
      */
-    public function getFile(ObjectEntity|string $object, string $filePath): File
+    public function getFile(ObjectEntity | string $object, string $filePath): ?File
     {
         // If string ID provided, try to find the object entity
-        if (is_string($object)) {
+        if (is_string($object) === true) {
             $object = $this->objectEntityMapper->find($object);
         }
 
+        // Get the object folder
         $folder = $this->getObjectFolder(
             objectEntity: $object,
             register: $object->getRegister(),
             schema: $object->getSchema()
         );
 
+        // Check if folder exists and get the file
+        if ($folder instanceof Folder === true) {
+            try {
+                return $folder->get($filePath);
+            } catch (NotFoundException) {
+                return null;
+            }
+        }
 
-		if ($folder instanceof Folder === true) {
-			try {
-				return $folder->get($filePath);
-			} catch (NotFoundException $e) {
-				return null;
-			}
-		}
-
-        return $null;
+        return null;
     }
 
-    
+    /**
+     * Publish a file by creating a public share link.
+     *
+     * @param ObjectEntity|string $object   The object or object ID
+     * @param string             $filePath The path to the file to publish
+     *
+     * @return File The published file
+     *
+     * @throws Exception If file publishing fails
+     * @throws NotFoundException If the file is not found
+     * @throws NotPermittedException If sharing is not permitted
+     *
+     * @psalm-return File
+     * @phpstan-return File
+     */
+    public function publishFile(ObjectEntity | string $object, string $filePath): File
+    {
+        // If string ID provided, try to find the object entity
+        if (is_string($object) === true) {
+            $object = $this->objectEntityMapper->find($object);
+        }
 
-	/**
-	 * Publish a file by creating a public share link
-	 **
-	 * @param ObjectEntity|string $object The object or object ID
-	 * @param string $filePath Path to the file to publish
-	 * @return \OCP\Files\File The published file
-	 * @throws Exception If file publishing fails
-	 */
-	public function publishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
-	{
-		// If string ID provided, try to find the object entity
-		if (is_string($object)) {
-			$object = $this->objectEntityMapper->find($object);
-		}
+        // Get the file node
+        $fullPath = $this->getObjectFilePath($object, $filePath);
+        $file = $this->getNode($fullPath);
 
-		// Get the file node
-		$fullPath = $this->getObjectFilePath($object, $filePath);
-		$file = $this->getNode($fullPath);
+        // Verify file exists and is a File instance
+        if (!$file instanceof File) {
+            throw new Exception('File not found.');
+        }
 
-		if (!$file instanceof \OCP\Files\File) {
-			throw new Exception('File not found');
-		}
+        // Create share link for the file
+        $this->createShareLink(path: $file->getPath());
 
-		$shareLink = $this->createShareLink(path: $file->getPath());
+        return $file;
+    }
 
-		return $file;
-	}
+    /**
+     * Unpublish a file by removing its public share link.
+     *
+     * @param ObjectEntity|string $object   The object or object ID
+     * @param string             $filePath The path to the file to unpublish
+     *
+     * @return File The unpublished file
+     *
+     * @throws Exception If file unpublishing fails
+     * @throws NotFoundException If the file is not found
+     * @throws NotPermittedException If sharing operations are not permitted
+     *
+     * @psalm-return File
+     * @phpstan-return File
+     */
+    public function unpublishFile(ObjectEntity | string $object, string $filePath): File
+    {
+        // If string ID provided, try to find the object entity
+        if (is_string($object) === true) {
+            $object = $this->objectEntityMapper->find($object);
+        }
 
-	/**
-	 * Unpublish a file by removing its public share link
-	 *
-	 * @param ObjectEntity|string $object The object or object ID
-	 * @param string $filePath Path to the file to unpublish
-	 * @return \OCP\Files\File The unpublished file
-	 * @throws Exception If file unpublishing fails
-	 */
-	public function unpublishFile(ObjectEntity|string $object, string $filePath): \OCP\Files\File
-	{
-		// If string ID provided, try to find the object entity
-		if (is_string($object)) {
-			$object = $this->objectEntityMapper->find($object);
-		}
+        // Get the file node
+        $fullPath = $this->getObjectFilePath($object, $filePath);
+        $file = $this->getNode($fullPath);
 
-		// Get the file node
-		$fullPath = $this->getObjectFilePath($object, $filePath);
-		$file = $this->getNode($fullPath);
+        // Verify file exists and is a File instance
+        if (!$file instanceof File) {
+            throw new Exception('File not found.');
+        }
 
+        // Remove all share links from the file
+        $this->deleteShareLinks(file: $file);
 
-		if (!$file instanceof \OCP\Files\File) {
-			throw new Exception('File not found');
-		}
-
-		$this->deleteShareLinks(file: $file);
-
-		return $file;
-	}
+        return $file;
+    }
 
 }//end class
 

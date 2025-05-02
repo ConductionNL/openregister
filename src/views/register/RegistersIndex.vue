@@ -404,7 +404,9 @@ export default {
 		},
 
 		viewRegisterDetails(register) {
-			registerStore.setRegisterItem(register)
+			// Set the register ID in the register store for reference
+			registerStore.setRegisterItem({ id: register.id })
+			// Navigate to detail view which will use dashboard store data
 			navigationStore.setSelected('register-detail')
 		},
 	},
