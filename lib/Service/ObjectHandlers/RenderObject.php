@@ -479,7 +479,7 @@ class RenderObject
             if (is_array($value) === true) {
                 // Filter out null values and values starting with '@' before mapping
                 $value = array_filter($value, function ($v) {
-                    return $v !== null && (!is_string($v) || !str_starts_with($v, '@'));
+                    return $v !== null && (is_string($v) === false || str_starts_with($v, '@') === false);
                 });
 
                 $renderedValue = array_map(
