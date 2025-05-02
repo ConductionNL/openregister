@@ -383,7 +383,7 @@ class RenderObject
     {
         $objectData = new Dot($objectData);
         if ($depth >= 10) {
-            return $objectData;
+            return $objectData->all();
         }
 
         $wildcardExtends = array_filter(
@@ -391,7 +391,7 @@ class RenderObject
                 function (string $key) {
                     return str_contains($key, '.$.');
                 }
-                );
+        );
 
         $extendedRoots = [];
 
@@ -410,6 +410,10 @@ class RenderObject
 
         foreach ($extendedRoots as $root => $extends) {
             $data = $objectData->get($root);
+            if (is_iterable($data) === false) {
+                continue;
+            }
+
             foreach ($data as $key => $datum) {
                 $tmpExtends = $extends;
                 $data[$key] = $this->handleExtendDot($datum, $tmpExtends, $depth);
@@ -417,9 +421,8 @@ class RenderObject
             $objectData->set($root, $data);
         }
 
-        return $objectData->jsonSerialize();
-
-    }//end handleWildcardExtends()
+        return $objectData->all();
+    }
 
 
     /**
