@@ -393,6 +393,8 @@ class RenderObject
                 }
                 );
 
+        $extendedRoots = [];
+
         foreach ($wildcardExtends as $key => $wildcardExtend) {
             unset($extend[$key]);
 
@@ -476,10 +478,10 @@ class RenderObject
             // Extend the object(s).
             if (is_array($value) === true) {
                 // Filter out null values and values starting with '@' before mapping
-                $value = array_filter($value, function ($v) { 
-                    return $v !== null && (!is_string($v) || !str_starts_with($v, '@')); 
+                $value = array_filter($value, function ($v) {
+                    return $v !== null && (!is_string($v) || !str_starts_with($v, '@'));
                 });
-                
+
                 $renderedValue = array_map(
                         function (string | int $identifier) use ($depth, $keyExtends) {
                             $object = $this->getObject(id: $identifier);
