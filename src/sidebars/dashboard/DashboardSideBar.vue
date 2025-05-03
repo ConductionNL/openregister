@@ -8,8 +8,7 @@ import formatBytes from '../../services/formatBytes.js'
 		ref="sidebar"
 		v-model="activeTab"
 		name="Dashboard"
-		subtitle="Manage your data"
-		subname="Within the federative network">
+		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage.">
 		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
@@ -166,6 +165,7 @@ import formatBytes from '../../services/formatBytes.js'
 						</tbody>
 					</table>
 				</div>
+			</div>
 			</div>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
@@ -374,20 +374,10 @@ export default {
 		}
 	},
 	methods: {
-		/**
-		 * Handle register change from select
-		 * @param {Object} option - The selected register option
-		 * @returns {void}
-		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
-		/**
-		 * Handle schema change from select
-		 * @param {Object} option - The selected schema option
-		 * @returns {Promise<void>}
-		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			// Initialize properties based on the selected schema
@@ -396,10 +386,6 @@ export default {
 			}
 			objectStore.refreshObjectList()
 		},
-		/**
-		 * Handle search input
-		 * @returns {void}
-		 */
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {
 				objectStore.refreshObjectList({
@@ -500,4 +486,4 @@ export default {
 	display: flex;
 	gap: 8px;
 }
-</style>
+</style> 
