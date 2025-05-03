@@ -14,40 +14,44 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 				<Magnify :size="20" />
 			</template>
 
-			<!-- Search Section -->
-			<div class="section">
-				<h3 class="section-title">
-					Search
-				</h3>
-				<NcSelect v-bind="registerOptions"
-					:model-value="selectedRegisterValue"
-					input-label="Register"
-					:loading="registerLoading"
-					:disabled="registerLoading"
-					placeholder="Select a register"
-					@update:model-value="handleRegisterChange" />
-
-				<NcSelect v-bind="schemaOptions"
-					:model-value="selectedSchemaValue"
-					input-label="Schema"
-					:loading="schemaLoading"
-					:disabled="!registerStore.registerItem || schemaLoading"
-					placeholder="Select a schema"
-					@update:model-value="handleSchemaChange" />
-
-				<NcTextField
-					v-model="searchQuery"
-					label="Search objects"
-					type="search"
-					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
-					placeholder="Type to search..."
-					class="search-input"
-					@update:modelValue="handleSearch" />
-
-				<NcNoteCard type="info" class="column-hint">
-					You can customize visible columns in the Columns tab
-				</NcNoteCard>
+			<!-- Filter Section -->
+			<div class="filterSection">
+				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Register') }}</label>
+					<NcSelect v-bind="registerOptions"
+						:model-value="selectedRegisterValue"
+						input-label="Register"
+						:loading="registerLoading"
+						:disabled="registerLoading"
+						placeholder="Select a register"
+						@update:model-value="handleRegisterChange" />
+				</div>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<NcSelect v-bind="schemaOptions"
+						:model-value="selectedSchemaValue"
+						input-label="Schema"
+						:loading="schemaLoading"
+						:disabled="!registerStore.registerItem || schemaLoading"
+						placeholder="Select a schema"
+						@update:model-value="handleSchemaChange" />
+				</div>
+				<div class="filterGroup">
+					<NcTextField
+						v-model="searchQuery"
+						label="Search objects"
+						type="search"
+						:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+						placeholder="Type to search..."
+						class="search-input"
+						@update:modelValue="handleSearch" />
+				</div>
 			</div>
+
+			<NcNoteCard type="info" class="column-hint">
+				You can customize visible columns in the Columns tab
+			</NcNoteCard>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
@@ -365,5 +369,30 @@ export default {
 
 .inline-button:hover {
 	text-decoration: none;
+}
+
+.filterSection {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--color-border);
+
+	h3 {
+		margin: 0;
+		font-size: 1.1em;
+		color: var(--color-main-text);
+	}
+}
+
+.filterGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	label {
+		font-size: 0.9em;
+		color: var(--color-text-maxcontrast);
+	}
 }
 </style>
