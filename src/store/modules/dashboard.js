@@ -224,19 +224,19 @@ export const useDashboardStore = defineStore('dashboard', {
 		},
 
 		/**
-		 * Fetch registers for dashboard
+		 * Fetch registers for dashboard, filtered by the current register and schema from the stores
 		 * @return {Promise<Array>}
 		 */
 		async fetchRegisters() {
-			// If already loading, return existing promise
-			if (this.loading) {
-				return this.registers
-			}
-
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
 			try {
 				this.loading = true
 				this.error = null
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard'))
+				const params = {}
+				if (registerStore.registerItem?.id) params.registerId = registerStore.registerItem.id
+				if (schemaStore.schemaItem?.id) params.schemaId = schemaStore.schemaItem.id
+				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard'), { params })
 				this.registers = response.data.registers
 				return this.registers
 			} catch (error) {
@@ -308,7 +308,7 @@ export function setupDashboardStoreWatchers() {
 	], async ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
 		// Only refresh if either value actually changed
 		if (newRegisterId !== oldRegisterId || newSchemaId !== oldSchemaId) {
-			// Fetch registers to update sidebar tables
+			// Fetch registers to update sidebar tables, using current store state
 			await dashboardStore.fetchRegisters()
 			// Fetch all chart data to update dashboard charts
 			await dashboardStore.fetchAllChartData()
