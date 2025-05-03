@@ -13,6 +13,7 @@ export class Register implements TRegister {
 	public updated: string
 	public created: string
 	public slug: string
+	public stats?: TRegister['stats']
 
 	constructor(register: TRegister) {
 		this.id = register.id || ''
@@ -25,6 +26,7 @@ export class Register implements TRegister {
 		this.updated = register.updated || ''
 		this.created = register.created || ''
 		this.slug = register.slug || ''
+		this.stats = register.stats
 	}
 
 	public validate(): SafeParseReturnType<TRegister, unknown> {

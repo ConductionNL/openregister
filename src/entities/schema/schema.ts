@@ -14,6 +14,7 @@ export class Schema implements TSchema {
 	public updated: string
 	public created: string
 	public slug: string
+	public stats?: TSchema['stats']
 
 	constructor(schema: TSchema) {
 		this.id = schema.id || ''
@@ -27,6 +28,7 @@ export class Schema implements TSchema {
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
 		this.slug = schema.slug || ''
+		this.stats = schema.stats
 	}
 
 	public validate(): SafeParseReturnType<TSchema, unknown> {

@@ -786,16 +786,16 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Get statistics for objects with optional filtering
      *
-     * @param int|null $registerId The register ID (null for all registers).
-     * @param int|null $schemaId   The schema ID (null for all schemas).
-     * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...].
+     * @param int|int[]|null $registerId The register ID(s) (null for all registers).
+     * @param int|int[]|null $schemaId   The schema ID(s) (null for all schemas).
+     * @param array          $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...].
      *
-     * @phpstan-param int|null $registerId
-     * @phpstan-param int|null $schemaId
+     * @phpstan-param int|array|null $registerId
+     * @phpstan-param int|array|null $schemaId
      * @phpstan-param array $exclude
      *
-     * @psalm-param int|null $registerId
-     * @psalm-param int|null $schemaId
+     * @psalm-param int|array|null $registerId
+     * @psalm-param int|array|null $schemaId
      * @psalm-param array $exclude
      *
      * @return array<string, int> Array containing statistics about objects:
@@ -806,7 +806,7 @@ class ObjectEntityMapper extends QBMapper
      *               - locked: Number of locked objects.
      *               - published: Number of published objects.
      */
-    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
+    public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -824,14 +824,22 @@ class ObjectEntityMapper extends QBMapper
             )
                 ->from($this->getTableName());
 
-            // Add register filter if provided.
+            // Add register filter if provided (support int or array)
             if ($registerId !== null) {
-                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                if (is_array($registerId)) {
+                    $qb->andWhere($qb->expr()->in('register', $qb->createNamedParameter($registerId, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+                }
             }
 
-            // Add schema filter if provided.
+            // Add schema filter if provided (support int or array)
             if ($schemaId !== null) {
-                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                if (is_array($schemaId)) {
+                    $qb->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaId, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+                }
             }
 
             // Add exclusions if provided.

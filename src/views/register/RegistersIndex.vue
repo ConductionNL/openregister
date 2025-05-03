@@ -102,7 +102,10 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								</template>
 								Download API Specification
 							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+							<NcActionButton
+								v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+								:disabled="register.stats?.total > 0"
+								@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
