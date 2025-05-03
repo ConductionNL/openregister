@@ -41,7 +41,7 @@ import formatBytes from '../../services/formatBytes.js'
 			<!-- System Totals Section -->
 			<div class="section">
 				<h3 class="sectionTitle">
-					{{ t('openregister', 'Register Totals') }}
+					{{ t('openregister', 'Totals') }}
 				</h3>
 				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />

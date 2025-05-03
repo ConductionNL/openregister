@@ -119,20 +119,15 @@ class DashboardController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
-    ): JSONResponse {
+    public function index(): JSONResponse {
         try {
+            $params = $this->request->getParams();
+
+            unset($params['id'], $params['_route'], $params['limit'], $params['offset'], $params['page']);
+
             $registers = $this->dashboardService->getRegistersWithSchemas(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams
+                registerId: $params['registerId'] ?? null,
+                schemaId: $params['schemaId'] ?? null
             );
 
             return new JSONResponse(['registers' => $registers]);

@@ -89,7 +89,7 @@ class DashboardService
      *     files: array{total: int, size: int}
      * }
      */
-    private function getStats(int $registerId, ?int $schemaId=null): array
+    private function getStats(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             // Get object statistics.
@@ -214,95 +214,33 @@ class DashboardService
 
 
     /**
-     * Get total statistics across all registers
-     *
-     * @return array The total statistics
-     */
-    private function getTotalStats(): array
-    {
-        try {
-            // Get total object statistics (passing null for registerId and schemaId to get all).
-            $objectStats = $this->objectMapper->getStatistics(null, null);
-
-            // Get total audit trail statistics.
-            $logStats = $this->auditTrailMapper->getStatistics(null, null);
-
-            return [
-                'objects' => [
-                    'total'     => $objectStats['total'],
-                    'size'      => $objectStats['size'],
-                    'invalid'   => $objectStats['invalid'],
-                    'deleted'   => $objectStats['deleted'],
-                    'locked'    => $objectStats['locked'],
-                    'published' => $objectStats['published'],
-                ],
-                'logs'    => [
-                    'total' => $logStats['total'],
-                    'size'  => $logStats['size'],
-                ],
-                'files'   => [
-                    'total' => 0,
-                    'size'  => 0,
-                ],
-            ];
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to get total statistics: '.$e->getMessage());
-            return [
-                'objects' => [
-                    'total'     => 0,
-                    'size'      => 0,
-                    'invalid'   => 0,
-                    'deleted'   => 0,
-                    'locked'    => 0,
-                    'published' => 0,
-                ],
-                'logs'    => [
-                    'total' => 0,
-                    'size'  => 0,
-                ],
-                'files'   => [
-                    'total' => 0,
-                    'size'  => 0,
-                ],
-            ];
-        }//end try
-
-    }//end getTotalStats()
-
-
-    /**
      * Get all registers with their schemas and statistics
      *
-     * @param int|null   $limit            The number of registers to return
-     * @param int|null   $offset           The offset of the registers to return
-     * @param array|null $filters          The filters to apply to the registers
-     * @param array|null $searchConditions The search conditions to apply to the registers
-     * @param array|null $searchParams     The search parameters to apply to the registers
+     * @param int|null $registerId The register ID to filter by
+     * @param int|null $schemaId   The schema ID to filter by
      *
      * @return array Array of registers with their schemas and statistics
      * @throws \Exception If there is an error getting the registers with schemas
      */
     public function getRegistersWithSchemas(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?int $registerId = null,
+        ?int $schemaId = null
     ): array {
         try {
+            $filters = [];
+            if ($registerId !== null) {
+                $filters['id'] = $registerId;
+            }
+
             // Get all registers.
             $registers = $this->registerMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams
+                filters: $filters
             );
 
             $result = [];
 
             // Add system totals as the first "register".
-            $totalStats = $this->getTotalStats();
+            $totalStats = $this->getStats($registerId, $schemaId);
             $result[] = [
                 'id'          => 'totals',
                 'title'       => 'System Totals',
@@ -325,6 +263,11 @@ class DashboardService
                 // Process schemas.
                 $schemasArray = [];
                 foreach ($schemas as $schema) {
+
+                    if ($schemaId !== null &&  $schema->getId() !== $schemaId) {
+                        continue;
+                    }
+
                     // Get schema-level statistics.
                     $schemaStats = $this->getStats($register->getId(), $schema->getId());
 
