@@ -167,7 +167,6 @@ import formatBytes from '../../services/formatBytes.js'
 					</table>
 				</div>
 			</div>
-			</div>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -374,10 +373,20 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Handle register change from select
+		 * @param {Object} option - The selected register option
+		 * @returns {void}
+		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+		/**
+		 * Handle schema change from select
+		 * @param {Object} option - The selected schema option
+		 * @returns {Promise<void>}
+		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			// Initialize properties based on the selected schema
@@ -386,6 +395,10 @@ export default {
 			}
 			objectStore.refreshObjectList()
 		},
+		/**
+		 * Handle search input
+		 * @returns {void}
+		 */
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {
 				objectStore.refreshObjectList({
@@ -486,4 +499,4 @@ export default {
 	display: flex;
 	gap: 8px;
 }
-</style> 
+</style>
