@@ -6,8 +6,8 @@ import { dashboardStore } from '../../store/store.js'
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		name="Dashboard"
-		subtitle="System Overview"
+		name="Registers"
+		subtitle="Register Overview"
 		subname="Statistics and Metrics">
 		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
 			<template #icon>
@@ -56,7 +56,7 @@ import { dashboardStore } from '../../store/store.js'
 			<!-- System Totals Section -->
 			<div class="section">
 				<h3 class="sectionTitle">
-					System Totals
+					Register Totals
 				</h3>
 				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />
@@ -182,49 +182,15 @@ import { dashboardStore } from '../../store/store.js'
 			</div>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="settings-tab" name="Actions" :order="2">
+		<NcAppSidebarTab id="settings-tab" name="Settings" :order="2">
 			<template #icon>
 				<Cog :size="20" />
 			</template>
 
-			<!-- Action Menu Section -->
-			<div class="section">
-				<NcActions
-					:force-name="true"
-					:inline="1"
-					:primary="true"
-					menu-name="Dashboard actions">
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						Add Register
-					</NcActionButton>
-					<NcActionButton @click="dashboardStore.fetchRegisters()">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						Refresh
-					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						Import
-					</NcActionButton>
-					<NcActionButton @click="openAllApisDoc">
-						<template #icon>
-							<ApiIcon :size="20" />
-						</template>
-						View APIs
-					</NcActionButton>
-				</NcActions>
-			</div>
-
 			<!-- Settings Section -->
 			<div class="section">
 				<h3 class="sectionTitle">
-					Dashboard Actions
+					Register Settings
 				</h3>
 				<NcNoteCard type="info">
 					Settings will be added in a future update
@@ -239,18 +205,11 @@ import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard, NcSelect, NcD
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import formatBytes from '../../services/formatBytes.js'
-import NcActions from '@nextcloud/vue/dist/Components/NcActions.js'
-import NcActionButton from '@nextcloud/vue/dist/Components/NcActionButton.js'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-import ApiIcon from 'vue-material-design-icons/Api.vue'
-import { registerStore, navigationStore } from '../../store/store.js'
 // Ensure data is loaded
 dashboardStore.preload()
 
 export default {
-	name: 'DashboardSideBar',
+	name: 'RegistersSideBar',
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
@@ -261,12 +220,6 @@ export default {
 		Cog,
 		NcSelect,
 		NcDatetimePicker,
-		NcActions,
-		NcActionButton,
-		Plus,
-		Refresh,
-		Upload,
-		ApiIcon,
 	},
 	data() {
 		return {
@@ -324,11 +277,6 @@ export default {
 		},
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
-		},
-		openAllApisDoc() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
-			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 	},
 }
@@ -421,4 +369,4 @@ export default {
 	display: flex;
 	gap: 8px;
 }
-</style>
+</style> 

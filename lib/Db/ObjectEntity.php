@@ -202,6 +202,13 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $published = null;
 
+    /**
+     * Published timestamp.
+     *
+     * @var DateTime|null Depublished timestamp
+     */
+    protected ?DateTime $depublished = null;
+
 
     /**
      * Initialize the entity and define field types
@@ -232,7 +239,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
         $this->addType(fieldName:'published', type: 'datetime');
-
+        $this->addType(fieldName:'depublished', type: 'datetime');
     }//end __construct()
 
 
@@ -424,6 +431,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'updated'       => $this->getFormattedDate($this->updated),
             'created'       => $this->getFormattedDate($this->created),
             'published'     => $this->getFormattedDate($this->published),
+            'depublished'    => $this->getFormattedDate($this->depublished),
             'deleted'       => $this->deleted,
         ];
 

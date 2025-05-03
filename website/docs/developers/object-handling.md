@@ -20,6 +20,26 @@ $objects = $objectService
     ->getObjects(['status' => 'active']);
 ```
 
+## Filtering by Published Status
+
+You can filter objects to only include those that are currently published. An object is considered published if its 'published' date is less than or equal to the current time and its 'depublished' date is either not set or is greater than the current time.
+
+To retrieve only published objects, use the 'published' filter:
+
+```php
+// Get only currently published objects
+$objects = $objectService
+    ->getObjects([
+        'published' => true
+    ]);
+```
+
+This filter ensures that only objects with a 'published' date in the past (or now) and a 'depublished' date in the future (or not set) are returned.
+
+## Statistics and Published Objects
+
+When retrieving statistics, the count of published objects now only includes objects that are currently published (i.e., 'published' date is less than or equal to now and 'depublished' date is either null or greater than now). This ensures that the statistics accurately reflect the number of objects visible to users as published at the current time.
+
 ## Method Chaining
 
 The system supports method chaining for various operations:

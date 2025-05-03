@@ -167,24 +167,54 @@ class ObjectEntityMapper extends QBMapper
      * @param bool          $includeDeleted   Whether to include deleted objects.
      * @param Register|null $register         Optional register to filter objects.
      * @param Schema|null   $schema           Optional schema to filter objects.
+     * @param bool|null     $published        If true, only return currently published objects.
+     *
+     * @phpstan-param int|null $limit
+     * @phpstan-param int|null $offset
+     * @phpstan-param array|null $filters
+     * @phpstan-param array|null $searchConditions
+     * @phpstan-param array|null $searchParams
+     * @phpstan-param array $sort
+     * @phpstan-param string|null $search
+     * @phpstan-param array|null $ids
+     * @phpstan-param string|null $uses
+     * @phpstan-param bool $includeDeleted
+     * @phpstan-param Register|null $register
+     * @phpstan-param Schema|null $schema
+     * @phpstan-param bool|null $published
+     *
+     * @psalm-param int|null $limit
+     * @psalm-param int|null $offset
+     * @psalm-param array|null $filters
+     * @psalm-param array|null $searchConditions
+     * @psalm-param array|null $searchParams
+     * @psalm-param array $sort
+     * @psalm-param string|null $search
+     * @psalm-param array|null $ids
+     * @psalm-param string|null $uses
+     * @psalm-param bool $includeDeleted
+     * @psalm-param Register|null $register
+     * @psalm-param Schema|null $schema
+     * @psalm-param bool|null $published
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array An array of ObjectEntity objects.
+     * @return array<int, ObjectEntity> An array of ObjectEntity objects.
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        ?array $sort=[],
-        ?string $search=null,
-        ?array $ids=null,
-        ?string $uses=null,
-        bool $includeDeleted=false,
-        ?Register $register=null,
-        ?Schema $schema=null
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        ?array $sort = [],
+        ?string $search = null,
+        ?array $ids = null,
+        ?string $uses = null,
+        bool $includeDeleted = false,
+        ?Register $register = null,
+        ?Schema $schema = null,
+        ?bool $published = null
     ): array {
         // Filter out system variables (starting with _).
         $filters = array_filter(
@@ -224,6 +254,22 @@ class ObjectEntityMapper extends QBMapper
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+
+        // If published filter is set, only include objects that are currently published.
+        if ($published === true) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            // published <= now AND (depublished IS NULL OR depublished > now)
+            $qb->andWhere(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull('published'),
+                    $qb->expr()->lte('published', $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull('depublished'),
+                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                    )
+                )
+            );
         }
 
         // Handle filtering by IDs/UUIDs if provided.
@@ -744,7 +790,15 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $schemaId   The schema ID (null for all schemas).
      * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...].
      *
-     * @return array Array containing statistics about objects:
+     * @phpstan-param int|null $registerId
+     * @phpstan-param int|null $schemaId
+     * @phpstan-param array $exclude
+     *
+     * @psalm-param int|null $registerId
+     * @psalm-param int|null $schemaId
+     * @psalm-param array $exclude
+     *
+     * @return array<string, int> Array containing statistics about objects:
      *               - total: Total number of objects.
      *               - size: Total size of all objects in bytes.
      *               - invalid: Number of objects with validation errors.
@@ -752,17 +806,21 @@ class ObjectEntityMapper extends QBMapper
      *               - locked: Number of locked objects.
      *               - published: Number of published objects.
      */
-    public function getStatistics(?int $registerId=null, ?int $schemaId=null, array $exclude=[]): array
+    public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
             $qb->select(
                 $qb->createFunction('COUNT(id) as total'),
                 $qb->createFunction('COALESCE(SUM(size), 0) as size'),
                 $qb->createFunction('COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid'),
                 $qb->createFunction('COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted'),
                 $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
-                $qb->createFunction('COUNT(CASE WHEN published IS NOT NULL AND published = TRUE THEN 1 END) as published')
+                // Only count as published if published <= now and (depublished is null or depublished > now)
+                $qb->createFunction(
+                    "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."' AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published"
+                )
             )
                 ->from($this->getTableName());
 
