@@ -174,7 +174,7 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 import { ref, computed, onMounted, watch } from 'vue'
@@ -236,6 +236,7 @@ export default {
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcTextField,
+		NcLoadingIcon,
 		// Icons
 		Magnify,
 		FormatColumns,

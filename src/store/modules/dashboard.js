@@ -76,10 +76,13 @@ export const useDashboardStore = defineStore('dashboard', {
 			watch([
 				() => registerStore.registerItem?.id,
 				() => schemaStore.schemaItem?.id,
-			], ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
+			], async ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
 				// Only refresh if either value actually changed
 				if (newRegisterId !== oldRegisterId || newSchemaId !== oldSchemaId) {
-					this.fetchAllChartData()
+					// Fetch registers to update sidebar tables
+					await this.fetchRegisters()
+					// Fetch all chart data to update dashboard charts
+					await this.fetchAllChartData()
 				}
 			})
 		},
@@ -302,10 +305,13 @@ export function setupDashboardStoreWatchers() {
 	watch([
 		() => registerStore.registerItem?.id,
 		() => schemaStore.schemaItem?.id,
-	], ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
+	], async ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
 		// Only refresh if either value actually changed
 		if (newRegisterId !== oldRegisterId || newSchemaId !== oldSchemaId) {
-			dashboardStore.fetchAllChartData()
+			// Fetch registers to update sidebar tables
+			await dashboardStore.fetchRegisters()
+			// Fetch all chart data to update dashboard charts
+			await dashboardStore.fetchAllChartData()
 		}
 	})
 }

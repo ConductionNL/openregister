@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore, dashboardStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -19,48 +19,32 @@ import { dashboardStore } from '../../store/store.js'
 				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
 				<div class="filterGroup">
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-					<NcSelect
-						id="registerSelect"
-						v-model="selectedRegisterId"
-						:options="registerOptions"
-						:placeholder="t('openregister', 'All Registers')"
-						@update:modelValue="onRegisterChange" />
+					<NcSelect v-bind="registerOptions"
+						:model-value="selectedRegisterValue"
+						:loading="registerLoading"
+						:disabled="registerLoading"
+						placeholder="Select a register"
+						@update:model-value="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-					<NcSelect
-						id="schemaSelect"
-						v-model="selectedSchemaId"
-						:options="schemaOptions"
-						:placeholder="t('openregister', 'All Schemas')"
-						:disabled="!selectedRegisterId"
-						@update:modelValue="onSchemaChange" />
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openregister', 'Date Range') }}</label>
-					<div class="dateRangeInputs">
-						<NcDatetimePicker
-							v-model="dateRange.from"
-							type="date"
-							:placeholder="t('openregister', 'From')"
-							@update:modelValue="onDateRangeChange" />
-						<NcDatetimePicker
-							v-model="dateRange.till"
-							type="date"
-							:placeholder="t('openregister', 'To')"
-							@update:modelValue="onDateRangeChange" />
-					</div>
+					<NcSelect v-bind="schemaOptions"
+						:model-value="selectedSchemaValue"
+						:loading="schemaLoading"
+						:disabled="!registerStore.registerItem || schemaLoading"
+						placeholder="Select a schema"
+						@update:model-value="handleSchemaChange" />
 				</div>
 			</div>
 
 			<!-- System Totals Section -->
 			<div class="section">
 				<h3 class="sectionTitle">
-					Register Totals
+					{{ t('openregister', 'Register Totals') }}
 				</h3>
 				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />
-					<span>Loading statistics...</span>
+					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
 				<div v-else-if="systemTotals" class="statsContainer">
 					<table class="statisticsTable">
@@ -68,10 +52,12 @@ import { dashboardStore } from '../../store/store.js'
 							<tr>
 								<td>{{ t('openregister', 'Registers') }}</td>
 								<td>{{ filteredRegisters.length }}</td>
+								<td>-</td>
 							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Schemas') }}</td>
 								<td>{{ totalSchemas }}</td>
+								<td>-</td>
 							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Objects') }}</td>
@@ -124,11 +110,11 @@ import { dashboardStore } from '../../store/store.js'
 			<!-- Orphaned Items Section -->
 			<div class="section">
 				<h3 class="sectionTitle">
-					Orphaned Items
+					{{ t('openregister', 'Orphaned Items') }}
 				</h3>
 				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />
-					<span>Loading statistics...</span>
+					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
 				<div v-else-if="orphanedItems" class="statsContainer">
 					<table class="statisticsTable">
@@ -201,7 +187,7 @@ import { dashboardStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard, NcSelect, NcDatetimePicker } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import formatBytes from '../../services/formatBytes.js'
@@ -219,7 +205,6 @@ export default {
 		ChartBar,
 		Cog,
 		NcSelect,
-		NcDatetimePicker,
 	},
 	data() {
 		return {
@@ -230,6 +215,10 @@ export default {
 				from: null,
 				till: null,
 			},
+			registerLoading: false,
+			schemaLoading: false,
+			ignoreNextPageWatch: false,
+			searchQuery: '',
 		}
 	},
 	computed: {
@@ -251,29 +240,71 @@ export default {
 			}, 0)
 		},
 		registerOptions() {
-			return this.filteredRegisters.map(register => ({
-				label: register.title,
-				value: register.id,
-			}))
+			return {
+				options: registerStore.registerList.map(register => ({
+					value: register.id,
+					label: register.title,
+					title: register.title,
+					register,
+				})),
+				reduce: option => option.register,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.register && option.register.title) || option.label || ''
+				},
+			}
 		},
 		schemaOptions() {
-			if (!this.selectedRegisterId) return []
-			const register = this.filteredRegisters.find(r => r.id === this.selectedRegisterId)
-			return register?.schemas?.map(schema => ({
-				label: schema.title,
+			if (!registerStore.registerItem) return { options: [] }
+
+			return {
+				options: schemaStore.schemaList
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.map(schema => ({
+						value: schema.id,
+						label: schema.title,
+						title: schema.title,
+						schema,
+					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
+			}
+		},
+		selectedRegisterValue() {
+			if (!registerStore.registerItem) return null
+			const register = registerStore.registerItem
+			return {
+				value: register.id,
+				label: register.title,
+				title: register.title,
+				register,
+			}
+		},
+		selectedSchemaValue() {
+			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
+			return {
 				value: schema.id,
-			})) || []
+				label: schema.title,
+				title: schema.title,
+				schema,
+			}
 		},
 	},
 	methods: {
-		onRegisterChange(value) {
-			this.selectedRegisterId = value
-			this.selectedSchemaId = null // Reset schema selection when register changes
-			dashboardStore.setSelectedRegisterId(value)
+		handleRegisterChange(option) {
+			registerStore.setRegisterItem(option)
+			schemaStore.setSchemaItem(null)
 		},
-		onSchemaChange(value) {
-			this.selectedSchemaId = value
-			dashboardStore.setSelectedSchemaId(value)
+		handleSchemaChange(option) {
+			schemaStore.setSchemaItem(option)
+			if (option) {
+				objectStore.initializeProperties(option)
+			}
+			objectStore.refreshObjectList()
 		},
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
@@ -369,4 +400,4 @@ export default {
 	display: flex;
 	gap: 8px;
 }
-</style> 
+</style>

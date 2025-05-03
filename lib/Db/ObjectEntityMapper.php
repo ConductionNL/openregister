@@ -214,7 +214,7 @@ class ObjectEntityMapper extends QBMapper
         bool $includeDeleted = false,
         ?Register $register = null,
         ?Schema $schema = null,
-        ?bool $published = null
+        ?bool $published = false
     ): array {
         // Filter out system variables (starting with _).
         $filters = array_filter(
