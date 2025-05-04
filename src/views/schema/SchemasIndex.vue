@@ -71,7 +71,7 @@ import formatBytes from '../../services/formatBytes.js'
 								</template>
 								Delete
 							</NcActionButton>
-							<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('schemaDetails')">
+							<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
 								<template #icon>
 									<InformationOutline :size="20" />
 								</template>
