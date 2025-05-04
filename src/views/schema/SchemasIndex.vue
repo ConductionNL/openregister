@@ -1,9 +1,6 @@
 <script setup>
 import { schemaStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
-import TableIcon from 'vue-material-design-icons/Table.vue'
-import ListIcon from 'vue-material-design-icons/FormatListBulleted.vue'
-import { NcButton } from '@nextcloud/vue'
 </script>
 
 <template>
@@ -93,6 +90,16 @@ import { NcButton } from '@nextcloud/vue'
 								</tr>
 							</thead>
 							<tbody>
+								<tr>
+									<td>{{ t('openregister', 'Schemas') }}</td>
+									<td>0</td>
+									<td>-</td>
+								</tr>
+								<tr>
+									<td>{{ t('openregister', 'Properties') }}</td>
+									<td>{{ Object.keys(schema.properties).length }}</td>
+									<td>-</td>
+								</tr>
 								<tr>
 									<td>{{ t('openregister', 'Objects') }}</td>
 									<td>{{ schema.stats?.objects?.total || 0 }}</td>
@@ -205,6 +212,8 @@ import Download from 'vue-material-design-icons/Download.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CircleOutline from 'vue-material-design-icons/CircleOutline.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import TableIcon from 'vue-material-design-icons/Table.vue'
+import ListIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 
 export default {
 	name: 'SchemasIndex',
@@ -230,7 +239,6 @@ export default {
 	},
 }
 </script>
-
 <style scoped>
 .pageHeaderContainer {
 	display: flex;
