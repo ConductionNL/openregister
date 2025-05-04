@@ -263,17 +263,17 @@ class AuditTrailMapper extends QBMapper
      *
      * @param ObjectEntity|null $old The old state of the object
      * @param ObjectEntity|null $new The new state of the object
-     *
+     * @param string|null     $action The action to create the audit trail for
+     * 
      * @return AuditTrail The created audit trail
      */
-    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null): AuditTrail
+    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
         // Determine the action based on the presence of old and new objects.
-        $action = 'update';
-        if ($new === null) {
+        if ($new === null && $action === 'update') {
             $action       = 'delete';
             $objectEntity = $old;
-        } else if ($old === null) {
+        } else if ($old === null && $action === 'update') {
             $action       = 'create';
             $objectEntity = $new;
         } else {
@@ -282,7 +282,7 @@ class AuditTrailMapper extends QBMapper
 
         // Initialize an array to store changed fields.
         $changed = [];
-        if ($action !== 'delete') {
+        if ($action !== 'delete' && $action !== 'read') {
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             } else {
@@ -641,7 +641,7 @@ class AuditTrailMapper extends QBMapper
 
             // Process results into chart format
             $dateData = [];
-            $actions = ['create', 'update', 'delete'];
+            $actions = ['create', 'update', 'delete','read'];
             
             // Initialize data structure
             foreach ($results as $row) {

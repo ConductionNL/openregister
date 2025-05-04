@@ -91,8 +91,8 @@ import formatBytes from '../../services/formatBytes.js'
 							</thead>
 							<tbody>
 								<tr>
-									<td>{{ t('openregister', 'Schemas') }}</td>
-									<td>0</td>
+									<td>{{ t('openregister', 'Registers') }}</td>
+									<td>{{ schema.stats?.registers ?? 0 }}</td>
 									<td>-</td>
 								</tr>
 								<tr>
@@ -201,16 +201,14 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcButton, NcActions, NcActionButton, NcListItem } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcButton, NcActions, NcActionButton } from '@nextcloud/vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import CircleOutline from 'vue-material-design-icons/CircleOutline.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TableIcon from 'vue-material-design-icons/Table.vue'
 import ListIcon from 'vue-material-design-icons/FormatListBulleted.vue'
@@ -223,16 +221,13 @@ export default {
 		NcButton,
 		NcActions,
 		NcActionButton,
-		NcListItem,
 		FileTreeOutline,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
 		PlusCircleOutline,
-		Upload,
 		Download,
 		Refresh,
-		CircleOutline,
 		InformationOutline,
 		TableIcon,
 		ListIcon,

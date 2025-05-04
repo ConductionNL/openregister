@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,6 +49,13 @@ class RegistersController extends Controller
      */
     private readonly ConfigurationService $configurationService;
 
+    /**
+     * Audit trail mapper for fetching log statistics
+     *
+     * @var AuditTrailMapper
+     */
+    private readonly AuditTrailMapper $auditTrailMapper;
+
 
     /**
      * Constructor for the RegistersController
@@ -58,6 +66,7 @@ class RegistersController extends Controller
      * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
      * @param UploadService        $uploadService        The upload service
      * @param ConfigurationService $configurationService The configuration service
+     * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
      *
      * @return void
      */
@@ -67,10 +76,12 @@ class RegistersController extends Controller
         private readonly RegisterMapper $registerMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
-        ConfigurationService $configurationService
+        ConfigurationService $configurationService,
+        AuditTrailMapper $auditTrailMapper
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
+        $this->auditTrailMapper = $auditTrailMapper;
 
     }//end __construct()
 
@@ -126,12 +137,10 @@ class RegistersController extends Controller
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
-            $registerIds = array_map(fn($register) => $register['id'], $registersArr);
-            $stats = $this->objectEntityMapper->getStatistics($registerIds, null);
             foreach ($registersArr as &$register) {
                 $register['stats'] = [
-                    'objects' => $stats,
-                    'logs' => [ 'total' => 0, 'size' => 0 ],
+                    'objects' => $this->objectEntityMapper->getStatistics($register['id'], null),
+                    'logs' => $this->auditTrailMapper->getStatistics($register['id'], null),
                     'files' => [ 'total' => 0, 'size' => 0 ],
                 ];
             }
@@ -162,7 +171,7 @@ class RegistersController extends Controller
         if (in_array('@self.stats', $extend, true)) {
             $registerArr['stats'] = [
                 'objects' => $this->objectEntityMapper->getStatistics($registerArr['id'], null),
-                'logs' => [ 'total' => 0, 'size' => 0 ],
+                'logs' => $this->auditTrailMapper->getStatistics($registerArr['id'], null),
                 'files' => [ 'total' => 0, 'size' => 0 ],
             ];
         }

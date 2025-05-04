@@ -33,6 +33,7 @@ use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * Class SchemasController
@@ -51,6 +52,7 @@ class SchemasController extends Controller
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param DownloadService $downloadService The download service
      * @param UploadService   $uploadService   The upload service
+     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
      *
      * @return void
      */
@@ -61,7 +63,8 @@ class SchemasController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly DownloadService $downloadService,
-        private readonly UploadService $uploadService
+        private readonly UploadService $uploadService,
+        private readonly AuditTrailMapper $auditTrailMapper
     ) {
         parent::__construct($appName, $request);
 
@@ -119,13 +122,15 @@ class SchemasController extends Controller
         $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
         // If '@self.stats' is requested, attach statistics to each schema
         if (in_array('@self.stats', $extend, true)) {
-            $schemaIds = array_map(fn($schema) => $schema['id'], $schemasArr);
-            $stats = $this->objectEntityMapper->getStatistics(null, $schemaIds);
+            // Get register counts for all schemas in one call
+            $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
             foreach ($schemasArr as &$schema) {
                 $schema['stats'] = [
-                    'objects' => $stats,
-                    'logs' => [ 'total' => 0, 'size' => 0 ],
+                    'objects' => $this->objectEntityMapper->getStatistics(null, $schema['id']),
+                    'logs' => $this->auditTrailMapper->getStatistics(null, $schema['id']),
                     'files' => [ 'total' => 0, 'size' => 0 ],
+                    // Add the number of registers referencing this schema
+                    'registers' => $registerCounts[$schema['id']] ?? 0,
                 ];
             }
         }
@@ -153,10 +158,14 @@ class SchemasController extends Controller
         $schemaArr = $schema->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the schema
         if (in_array('@self.stats', $extend, true)) {
+            // Get register counts for all schemas in one call
+            $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
             $schemaArr['stats'] = [
                 'objects' => $this->objectEntityMapper->getStatistics(null, $schemaArr['id']),
-                'logs' => [ 'total' => 0, 'size' => 0 ],
+                'logs' => $this->auditTrailMapper->getStatistics(null, $schemaArr['id']),
                 'files' => [ 'total' => 0, 'size' => 0 ],
+                // Add the number of registers referencing this schema
+                'registers' => $registerCounts[$schemaArr['id']] ?? 0,
             ];
         }
         return new JSONResponse($schemaArr);

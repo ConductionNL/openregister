@@ -97,12 +97,6 @@ export const useObjectStore = defineStore('object', {
 				description: 'Attached files count',
 				enabled: true, // Enabled by default
 			},
-			relations: {
-				label: 'Relations',
-				key: 'relations',
-				description: 'Related objects count',
-				enabled: false,
-			},
 			locked: {
 				label: 'Locked',
 				key: 'locked',
@@ -149,7 +143,13 @@ export const useObjectStore = defineStore('object', {
 		_buildObjectPath({ register, schema, objectId = '' }) {
 			return `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 		},
-		async setObjectItem(objectItem) {
+		/**
+		 * Set the active object item, optionally skipping backend refresh to avoid infinite loops.
+		 * @param {object} objectItem - The object item to set
+		 * @param {boolean} skipRefresh - If true, do not fetch from backend (prevents recursion)
+		 */
+		async setObjectItem(objectItem, skipRefresh = false) {
+
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
 			console.info('Active object item set to ' + objectItem?.['@self']?.id)
 
@@ -171,6 +171,13 @@ export const useObjectStore = defineStore('object', {
 					])
 
 					console.info('Successfully fetched all related data for object', objectItem['@self'].id)
+
+					if (!skipRefresh) {
+						await this.getObject({ register, schema, objectId })
+
+						console.info('Successfully fetched latest object data for object', objectItem['@self'].id)
+					}
+
 				} catch (error) {
 					console.error('Error fetching related data:', error)
 					// Clear data in case of error
@@ -312,9 +319,7 @@ export const useObjectStore = defineStore('object', {
 			try {
 				const response = await fetch(endpoint)
 				const data = await response.json()
-				this.setObjectItem(data)
-				this.getAuditTrails({ register, schema, objectId })
-				this.getRelations({ register, schema, objectId })
+				this.setObjectItem(data, true) // Prevent recursion by skipping refresh
 				return data
 			} catch (err) {
 				console.error(err)
@@ -454,27 +459,6 @@ export const useObjectStore = defineStore('object', {
 				})
 				throw error
 			}
-		},
-		// RELATIONS
-		async getRelations(object, options = {}) {
-			if (!object?.id) throw new Error('No object id to get relations for')
-
-			let endpoint = this._buildObjectPath({
-				register: object.register,
-				schema: object.schema,
-				objectId: `${object.id}/relations`,
-			})
-
-			const params = []
-			if (options.search) params.push('_search=' + options.search)
-			if (options.limit) params.push('_limit=' + options.limit)
-			if (options.page) params.push('_page=' + options.page)
-			if (params.length) endpoint += '?' + params.join('&')
-
-			const response = await fetch(endpoint)
-			const data = (await response.json()).map(r => new ObjectEntity(r))
-			this.setRelations(data)
-			return { response, data }
 		},
 		// FILES
 		/**

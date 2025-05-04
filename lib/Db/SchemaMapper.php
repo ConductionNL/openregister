@@ -362,5 +362,33 @@ class SchemaMapper extends QBMapper
 
     }//end delete()
 
+    /**
+     * Get the number of registers associated with each schema
+     *
+     * This method returns an associative array where the key is the schema ID and the value is the number of registers that reference that schema.
+     *
+     * @phpstan-return array<int,int>  Associative array of schema ID => register count
+     * @psalm-return array<int,int>    Associative array of schema ID => register count
+     *
+     * @return array<int,int> Associative array of schema ID => register count
+     */
+    public function getRegisterCountPerSchema(): array
+    {
+        // TODO: Optimize for large datasets (current approach loads all registers into memory)
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
+        $result = $qb->executeQuery()->fetchAll();
+
+        $counts = [];
+        foreach ($result as $row) {
+            // Decode the schemas JSON array for each register
+            $schemas = json_decode($row['schemas'], true) ?: [];
+            foreach ($schemas as $schemaId) {
+                $counts[(int)$schemaId] = ($counts[(int)$schemaId] ?? 0) + 1;
+            }
+        }
+        return $counts;
+    }
 
 }//end class

@@ -71,6 +71,8 @@ class GetObject
     /**
      * Gets an object by its ID with optional extensions.
      *
+     * This method also creates an audit trail entry for the 'read' action.
+     *
      * @param string   $id       The ID of the object to get.
      * @param Register $register The register containing the object.
      * @param Schema   $schema   The schema of the object.
@@ -93,6 +95,9 @@ class GetObject
         if ($files === true) {
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
+
+        // Create an audit trail for the 'read' action
+        $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
 
         return $object;
 
