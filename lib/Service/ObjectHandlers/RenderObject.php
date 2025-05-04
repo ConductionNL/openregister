@@ -383,7 +383,7 @@ class RenderObject
     {
         $objectData = new Dot($objectData);
         if ($depth >= 10) {
-            return $objectData;
+            return $objectData->all();
         }
 
         $wildcardExtends = array_filter(
@@ -391,7 +391,9 @@ class RenderObject
                 function (string $key) {
                     return str_contains($key, '.$.');
                 }
-                );
+        );
+
+        $extendedRoots = [];
 
         foreach ($wildcardExtends as $key => $wildcardExtend) {
             unset($extend[$key]);
@@ -408,16 +410,19 @@ class RenderObject
 
         foreach ($extendedRoots as $root => $extends) {
             $data = $objectData->get($root);
-            foreach ($data as $key => $datum) {
-                $data[$key] = $this->handleExtendDot($datum, $extends, $depth);
+            if (is_iterable($data) === false) {
+                continue;
             }
 
+            foreach ($data as $key => $datum) {
+                $tmpExtends = $extends;
+                $data[$key] = $this->handleExtendDot($datum, $tmpExtends, $depth);
+            }
             $objectData->set($root, $data);
         }
 
-        return $objectData->jsonSerialize();
-
-    }//end handleWildcardExtends()
+        return $objectData->all();
+    }
 
 
     /**
@@ -476,12 +481,9 @@ class RenderObject
             // Extend the object(s).
             if (is_array($value) === true) {
                 // Filter out null values and values starting with '@' before mapping
-                $value = array_filter(
-                        $value,
-                        function ($v) {
-                            return $v !== null && (!is_string($v) || !str_starts_with($v, '@'));
-                        }
-                        );
+                $value = array_filter($value, function ($v) {
+                    return $v !== null && (is_string($v) === false || str_starts_with($v, '@') === false);
+                });
 
                 $renderedValue = array_map(
                         function (string | int $identifier) use ($depth, $keyExtends) {
