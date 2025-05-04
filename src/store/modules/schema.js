@@ -18,11 +18,13 @@ export const useSchemaStore = defineStore('schema', {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
 			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
-		setSchemaList(schemaList) {
-			this.schemaList = schemaList.map(
-				(schemaItem) => new Schema(schemaItem),
-			)
-			console.log('Schema list set to ' + schemaList.length + ' items')
+		setSchemaList(schemas) {
+			// Ensure showProperties is reactive and default false for each schema
+			this.schemaList = schemas.map(schema => ({
+				...schema,
+				showProperties: typeof schema.showProperties === 'boolean' ? schema.showProperties : false,
+			}))
+			console.log('Schema list set to ' + schemas.length + ' items')
 		},
 		/**
 		 * Set pagination details
