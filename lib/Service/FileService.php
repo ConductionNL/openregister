@@ -1263,9 +1263,6 @@ class FileService
             $files = $folder->getDirectoryListing();
         }
 
-        var_dump( $files);
-        die;
-
         return $files;
     }
 
