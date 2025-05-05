@@ -8,13 +8,11 @@ import { watch } from 'vue'
 /**
  * Dashboard Store
  *
- * @category Store
- * @package
+ * @file dashboard.js
  * @author Ruben Linde
  * @copyright 2024 Ruben Linde
  * @license AGPL-3.0
  * @version 1.0.0
- * @link https://github.com/your-repo/openregister
  */
 export const useDashboardStore = defineStore('dashboard', {
 	state: () => ({
@@ -250,7 +248,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Calculate sizes for a register and refresh
-		 * @param {string} registerId
+		 * @param {string} registerId - The ID of the register
 		 * @return {Promise<boolean>}
 		 */
 		async calculateSizes(registerId) {

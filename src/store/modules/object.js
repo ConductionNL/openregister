@@ -866,7 +866,6 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string[]} [params.labels] - Optional labels/tags
 		 * @param {boolean} [params.share] - Optional share flag
 		 * @return {Promise} API response
-		 * @phpstan-param array{register:string|int,schema:string|int,objectId:string|int,files:File[],labels?:string[],share?:bool} params
 		 */
 		async uploadFiles({ register, schema, objectId, files, labels = [], share = false }) {
 			if (!register || !schema || !objectId || !files?.length) {

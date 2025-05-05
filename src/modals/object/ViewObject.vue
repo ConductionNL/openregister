@@ -360,7 +360,7 @@ export default {
 	methods: {
 		/**
 		 * Open a file in the Nextcloud Files app
-		 * @param file
+		 * @param {object} file - The file object to open
 		 */
 		openFile(file) {
 			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
@@ -370,7 +370,8 @@ export default {
 		},
 		/**
 		 * Format file size for display
-		 * @param bytes
+		 * @param {number} bytes - The file size in bytes
+		 * @return {string} The formatted file size
 		 */
 		formatFileSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']

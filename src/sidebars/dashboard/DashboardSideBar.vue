@@ -165,16 +165,14 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 					</table>
 				</div>
 			</div>
-			</div>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
 import formatBytes from '../../services/formatBytes.js'
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 
 export default {
 	name: 'DashboardSideBar',
@@ -182,12 +180,8 @@ export default {
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
-		NcNoteCard,
-		NcCheckboxRadioSwitch,
-		NcTextField,
 		NcLoadingIcon,
 		Magnify,
-		FormatColumns,
 	},
 	data() {
 		return {
@@ -262,62 +256,37 @@ export default {
 		},
 		/**
 		 * Get system totals from dashboardStore
-		 * @returns {Object|null}
+		 * @return {object | null}
 		 */
 		systemTotals() {
 			return dashboardStore.registers.find(register => register.title === 'System Totals')
 		},
 		/**
 		 * Get orphaned items from dashboardStore
-		 * @returns {Object|null}
+		 * @return {object | null}
 		 */
 		orphanedItems() {
 			return dashboardStore.registers.find(register => register.title === 'Orphaned Items')
 		},
 		/**
 		 * Get filtered registers (excluding system and orphaned)
-		 * @returns {Array}
+		 * @return {Array}
 		 */
 		filteredRegisters() {
 			return dashboardStore.registers.filter(register =>
-				register.title !== 'System Totals' &&
-				register.title !== 'Orphaned Items',
+				register.title !== 'System Totals'
+				&& register.title !== 'Orphaned Items',
 			)
 		},
 		/**
 		 * Get total number of schemas in filtered registers
-		 * @returns {number}
+		 * @return {number}
 		 */
 		totalSchemas() {
 			return this.filteredRegisters.reduce((total, register) => {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
-	},
-	mounted() {
-		objectStore.initializeColumnFilters()
-		this.registerLoading = true
-		this.schemaLoading = true
-
-		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
-
-		// Load objects if register and schema are already selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
-			objectStore.refreshObjectList()
-		}
 	},
 	watch: {
 		'searchQuery'(value) {
@@ -350,6 +319,31 @@ export default {
 			},
 			deep: true,
 		},
+	},
+	mounted() {
+		objectStore.initializeColumnFilters()
+		this.registerLoading = true
+		this.schemaLoading = true
+
+		// Only load lists if they're empty
+		if (!registerStore.registerList.length) {
+			registerStore.refreshRegisterList()
+				.finally(() => (this.registerLoading = false))
+		} else {
+			this.registerLoading = false
+		}
+
+		if (!schemaStore.schemaList.length) {
+			schemaStore.refreshSchemaList()
+				.finally(() => (this.schemaLoading = false))
+		} else {
+			this.schemaLoading = false
+		}
+
+		// Load objects if register and schema are already selected
+		if (registerStore.registerItem && schemaStore.schemaItem) {
+			objectStore.refreshObjectList()
+		}
 	},
 	methods: {
 		handleRegisterChange(option) {

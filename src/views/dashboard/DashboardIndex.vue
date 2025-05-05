@@ -71,7 +71,6 @@ import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud
 import VueApexCharts from 'vue-apexcharts'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
-import ProgressClock from 'vue-material-design-icons/ProgressClock.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 
 export default {
@@ -83,7 +82,6 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		apexchart: VueApexCharts,
-		ProgressClock,
 		AlertCircle,
 	},
 	data() {

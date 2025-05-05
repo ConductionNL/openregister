@@ -6,7 +6,7 @@ import { registerStore, dashboardStore, navigationStore } from '../../store/stor
 	<NcAppSidebar
 		v-if="register"
 		ref="sidebar"
-		v-model:active="activeTab"
+		v-model="activeTab"
 		:title="register.title"
 		:subtitle="register.description"
 		subname="Register Details">

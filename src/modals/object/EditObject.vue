@@ -164,15 +164,11 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 
 /**
- * EditObject Modal
- * Handles editing of objects and provides access to file upload modal
- * @category Modals
- * @package
+ * @file EditObject.vue
  * @author Your Name
- * @copyright 2024 Your Company
- * @license AGPL-3.0
+ * @copyright 2024 Your Organization
+ * @license AGPL-3.0-or-later
  * @version 1.0.0
- * @link https://your-app-link.example.com
  */
 
 export default {

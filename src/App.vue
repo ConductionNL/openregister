@@ -19,15 +19,11 @@ import SideBars from './sidebars/SideBars.vue'
 import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
 /**
- * App Root Component
- *
- * @category Component
- * @package OpenRegister
- * @author Ruben Linde
- * @copyright 2024 Ruben Linde
- * @license AGPL-3.0
+ * @file App.vue
+ * @author Your Name
+ * @copyright 2024 Your Organization
+ * @license AGPL-3.0-or-later
  * @version 1.0.0
- * @link https://github.com/your-repo/openregister
  */
 export default {
 	name: 'App',

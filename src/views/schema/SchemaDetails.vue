@@ -102,14 +102,11 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 
 <script>
 /**
- * SchemaDetails
- * @category Views
- * @package
+ * @file SchemaDetails.vue
  * @author Your Name
- * @copyright 2024 Your Company
- * @license AGPL-3.0
+ * @copyright 2024 Your Organization
+ * @license AGPL-3.0-or-later
  * @version 1.0.0
- * @link https://your-app-link.example.com
  */
 import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import VueApexCharts from 'vue-apexcharts'
@@ -211,7 +208,7 @@ export default {
 	methods: {
 		/**
 		 * Set the active property for editing
-		 * @param {string|null} key
+		 * @param {string|null} key - The key to process
 		 * @return {void}
 		 */
 		setActiveProperty(key) {
