@@ -850,6 +850,67 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Upload files to an object
+		 * @param {object} params - Upload parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {File[]} params.files - Array of File objects
+		 * @param {string[]} [params.labels] - Optional labels/tags
+		 * @param {boolean} [params.share] - Optional share flag
+		 * @return {Promise} API response
+		 */
+		async uploadFiles({ register, schema, objectId, files, labels = [], share = false }) {
+			if (!register || !schema || !objectId || !files?.length) {
+				throw new Error('Missing required parameters for file upload')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files`
+			const formData = new FormData()
+
+			// Append files
+			files.forEach((file, idx) => {
+				formData.append('files', file)
+			})
+			// Append labels/tags if present
+			if (labels && labels.length) {
+				formData.append('tags', labels.join(','))
+			}
+			// Append share flag
+			formData.append('share', share ? 'true' : 'false')
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					body: formData,
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to upload files: ${response.statusText}`)
+				}
+				return await response.json()
+			} catch (error) {
+				console.error('Error uploading files:', error)
+				throw error
+			}
+		},
+		/**
+		 * Fetch all tags from the backend
+		 * @return {Promise<{response: Response, data: Array}>} List of tags
+		 */
+		async getTags() {
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/tags')
+				if (!response.ok) {
+					throw new Error('Failed to fetch tags')
+				}
+				const data = await response.json()
+				return { response, data }
+			} catch (error) {
+				console.error('Error fetching tags:', error)
+				throw error
+			}
+		},
 	},
 	getters: {
 		isAllSelected() {

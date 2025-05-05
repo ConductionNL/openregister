@@ -1,6 +1,6 @@
 <!-- eslint-disable -->
 <script setup>
-import { navigationStore, publicationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -76,7 +76,6 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 					</div>
 				</div>
 				<div v-if="labelOptions.value?.length && !loading"
-					ref="dropZoneRef"
 					class="filesListDragDropNotice"
 					:class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
@@ -91,7 +90,7 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 								<NcButton type="secondary"
 									class="folderLinkButton"
 									aria-label="Open map"
-									@click="openFolder(publicationStore.publicationItem?.['@self']?.folder)">
+									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
 									<template #icon>
 										<FolderOutline :size="20" />
 									</template>
@@ -258,10 +257,6 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 <script>
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
-
-import { ref } from 'vue'
-import { Attachment } from '../../entities/index.js'
-
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
 import TagEdit from 'vue-material-design-icons/TagEdit.vue'
@@ -273,11 +268,8 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
 
-const dropZoneRef = ref()
-
 const { openFileUpload, files, reset, setTags } = useFileSelection({
 	allowMultiple: true,
-	dropzone: dropZoneRef,
 })
 
 export default {
@@ -288,13 +280,17 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
-	},
-	props: {
-		dropFiles: {
-			type: Array,
-			required: false,
-			default: null,
-		},
+		NcCheckboxRadioSwitch,
+		Plus,
+		TrayArrowDown,
+		TagEdit,
+		ContentSaveOutline,
+		FolderOutline,
+		CheckCircle,
+		AlphaXCircle,
+		Refresh,
+		Exclamation,
+		Minus,
 	},
 	data() {
 		return {
@@ -316,22 +312,17 @@ export default {
 		}
 	},
 	computed: {
-		// only used for watching
-		files() {
-			return files
+		objectItem() {
+			return objectStore.objectItem
 		},
-		inputValidation() {
-			const catalogiItem = new Attachment({
-				...publicationStore.attachmentItem,
-			})
-
-			const result = catalogiItem.validate()
-
-			return {
-				success: result.success,
-				errorMessages: result?.error?.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`) || [],
-				fieldErrors: result?.error?.formErrors?.fieldErrors || {},
-			}
+		registerId() {
+			return this.objectItem?.['@self']?.register
+		},
+		schemaId() {
+			return this.objectItem?.['@self']?.schema
+		},
+		objectId() {
+			return this.objectItem?.['@self']?.id
 		},
 	},
 	watch: {
@@ -351,7 +342,6 @@ export default {
 		},
 	},
 	mounted() {
-		publicationStore.setAttachmentItem([])
 		this.getAllTags()
 	},
 	methods: {
@@ -414,7 +404,7 @@ export default {
 
 		getAllTags() {
 			this.tagsLoading = true
-			publicationStore.getTags().then(({ response, data }) => {
+			this.objectStore.getTags().then(({ response, data }) => {
 
 				const newLabelOptions = []
 				const newLabelOptionsEdit = []
@@ -468,11 +458,15 @@ export default {
 			}
 		},
 		checkIfDisabled() {
-			if (publicationStore.attachmentItem.downloadUrl || publicationStore.attachmentItem.title) return true
+			if (this.objectStore.objectItem.downloadUrl || this.objectStore.objectItem.title) return true
 			return false
 		},
 
 		async addAttachments(specificFile = null) {
+			if (!this.registerId || !this.schemaId || !this.objectId) {
+				this.error = 'Missing object context'
+				return
+			}
 			this.loading = true
 			this.error = null
 
@@ -500,7 +494,14 @@ export default {
 					// Set status to 'uploading'
 					file.status = 'uploading'
 					try {
-						const response = await publicationStore.createPublicationAttachment([file], reset, this.share)
+						const response = await this.objectStore.uploadFiles({
+							register: this.registerId,
+							schema: this.schemaId,
+							objectId: this.objectId,
+							files: [file],
+							labels: this.labelOptions.value || [],
+							share: this.share,
+						})
 						// Set status to 'uploaded' on success
 						if (response.status === 200) file.status = 'uploaded'
 						else file.status = 'failed'
@@ -517,7 +518,12 @@ export default {
 
 				this.getAllTags()
 
-				publicationStore.getPublicationAttachments(publicationStore.publicationItem.id)
+				// Refresh files for the object
+				await this.objectStore.getFiles({
+					id: this.objectId,
+					register: this.registerId,
+					schema: this.schemaId,
+				})
 
 				const failed = results.filter(result => result.status === 'rejected')
 
