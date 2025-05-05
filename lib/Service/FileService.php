@@ -387,12 +387,14 @@ class FileService
                 register: $register,
                 schema: $schema
             );
+
         } catch (Exception $e) {
             // Log the error and return null
             $this->logger->error(
                 'Failed to get object folder: {message}',
                 ['message' => $e->getMessage(), 'exception' => $e]
             );
+
             return null;
         }
     }
@@ -467,7 +469,7 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity $objectEntity): string
     {
-        return $objectEntity->getIdentifier() ?? (string) $objectEntity->getId();
+        return $objectEntity->getUuid() ?? (string) $objectEntity->getId();
     }
 
     /**
@@ -1176,6 +1178,10 @@ class FileService
                 $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
             }
 
+            // Add the file to the object entity
+            $objectEntity->addFile($file);
+            $objectEntity = $this->objectEntityMapper->update($objectEntity);                       
+
             return $file;
 
         } catch (NotPermittedException $e) {
@@ -1256,6 +1262,9 @@ class FileService
         if ($folder instanceof Folder === true) {
             $files = $folder->getDirectoryListing();
         }
+
+        var_dump( $files);
+        die;
 
         return $files;
     }

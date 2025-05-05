@@ -8,7 +8,7 @@
  */
 
 <script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 import { ref, onMounted, computed, watch } from 'vue'
 import {
 	NcDialog,
@@ -84,6 +84,18 @@ const pagination = ref({
 		totalPages: 1,
 	},
 })
+
+// Helper to get register title by ID
+const getRegisterTitle = (registerId) => {
+	const reg = registerStore.registerList.find(r => r.id === registerId)
+	return reg ? reg.title : 'Not selected'
+}
+
+// Helper to get schema title by ID
+const getSchemaTitle = (schemaId) => {
+	const sch = schemaStore.schemaList.find(s => s.id === schemaId)
+	return sch ? sch.title : 'Not selected'
+}
 
 // Methods
 const closeModal = () => {
@@ -173,6 +185,14 @@ onMounted(() => {
 		<div v-if="!success" class="formContainer">
 			<!-- Metadata Display -->
 			<div class="detail-grid">
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].register }">
+					<span class="detail-label">Register:</span>
+					<span class="detail-value">{{ getRegisterTitle(objectStore.objectItem['@self'].register) }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].schema }">
+					<span class="detail-label">Schema:</span>
+					<span class="detail-value">{{ getSchemaTitle(objectStore.objectItem['@self'].schema) }}</span>
+				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].version }">
 					<span class="detail-label">Version:</span>
 					<span class="detail-value">{{ objectStore.objectItem['@self'].version || 'Not set' }}</span>
@@ -481,7 +501,7 @@ onMounted(() => {
 				</template>
 				Edit Object
 			</NcButton>
-			<NcButton disabled @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
+			<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 				<template #icon>
 					<Upload :size="20" />
 				</template>

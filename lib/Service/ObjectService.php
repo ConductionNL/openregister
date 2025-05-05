@@ -154,6 +154,19 @@ class ObjectService
 
 
     /**
+     * Get the current object context.
+     *
+     * @return ObjectEntity|null The current object entity or null if not set.
+     */
+    public function getObject(): ?ObjectEntity
+    {
+        // Return the current object context.
+        return $this->currentObject;
+
+    }//end getObject()
+
+
+    /**
      * Finds an object by ID or UUID and renders it.
      *
      * @param int|string               $id       The object ID or UUID.

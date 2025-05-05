@@ -83,7 +83,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
 						</NcNoteCard>
 					</div>
-					<div v-if="checkForTooBigFiles(files)">
+					<div v-if="checkForTooBigFiles(filesComputed)">
 						<NcNoteCard type="warning">
 							<p class="folderLink">
 								Als je bestanden groter of gelijk aan 512MB wilt toevoegen, ga dan naar de
@@ -141,11 +141,11 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						</div>
 					</div>
 				</div>
-				<div v-if="!files">
+				<div v-if="!filesComputed">
 					Geen bestanden geselecteerd
 				</div>
 
-				<table v-if="files" class="files-table">
+				<table v-if="filesComputed" class="files-table">
 					<thead>
 						<tr class="files-table-tr">
 							<th class="files-table-td-status" />
@@ -161,7 +161,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file of files" :key="file.name" class="files-table-tr">
+						<tr v-for="file of filesComputed" :key="file.name" class="files-table-tr">
 							<td>
 								<CheckCircle v-if="file.status === 'uploaded'" class="success" :size="20" />
 								<NcLoadingIcon v-if="file.status === 'uploading'" :size="20" />
@@ -255,7 +255,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch, tooltip } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
@@ -274,6 +274,10 @@ const { openFileUpload, files, reset, setTags } = useFileSelection({
 
 export default {
 	name: 'UploadFiles',
+	directives: {
+		// Register the tooltip directive to resolve the warning
+		tooltip,
+	},
 	components: {
 		NcModal,
 		NcButton,
@@ -324,11 +328,14 @@ export default {
 		objectId() {
 			return this.objectItem?.['@self']?.id
 		},
+		filesComputed() {
+			return files.value
+		},
 	},
 	watch: {
-		files: {
+		filesComputed: {
 			handler(newFiles, oldFiles) {
-				if (newFiles.value?.length) {
+				if (newFiles?.length) {
 					this.addAttachments()
 				}
 			},
@@ -478,7 +485,7 @@ export default {
 					filesToUpload = [specificFile]
 				} else {
 					// filter out successful and pending files
-					filesToUpload = this.files.value.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
+					filesToUpload = this.filesComputed.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
 
 					// filter out files too large
 					filesToUpload = filesToUpload.filter(file => !this.getTooBigFiles(file.size))

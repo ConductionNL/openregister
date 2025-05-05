@@ -851,7 +851,7 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		/**
-		 * Upload files to an object
+		 * Upload files to an object using the multipart endpoint
 		 * @param {object} params - Upload parameters
 		 * @param {string|number} params.register - Register ID
 		 * @param {string|number} params.schema - Schema ID
@@ -860,13 +860,15 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string[]} [params.labels] - Optional labels/tags
 		 * @param {boolean} [params.share] - Optional share flag
 		 * @return {Promise} API response
+		 * @phpstan-param array{register:string|int,schema:string|int,objectId:string|int,files:File[],labels?:string[],share?:bool} params
 		 */
 		async uploadFiles({ register, schema, objectId, files, labels = [], share = false }) {
 			if (!register || !schema || !objectId || !files?.length) {
 				throw new Error('Missing required parameters for file upload')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files`
+			// Use the /filesMultipart endpoint for proper backend handling
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/filesMultipart`
 			const formData = new FormData()
 
 			// Append files
