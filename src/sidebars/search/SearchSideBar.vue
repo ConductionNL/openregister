@@ -104,62 +104,11 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
-<!-- eslint-disable -->
 
 <script>
-
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
-import { ref, computed, onMounted, watch } from 'vue'
-
-// Add search input ref and debounce function
-const searchQuery = ref('')
-let searchTimeout = null
-
-// Debounced search function
-const handleSearch = (value) => {
-	if (searchTimeout) {
-		clearTimeout(searchTimeout)
-	}
-
-	searchTimeout = setTimeout(() => {
-		// Update the filters object with the search query
-		objectStore.setFilters({
-			_search: value || '', // Set as object property instead of array
-		})
-
-		// Only refresh if we have both register and schema selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
-			objectStore.refreshObjectList({
-				register: registerStore.registerItem.id,
-				schema: schemaStore.schemaItem.id,
-			})
-		}
-	}, 1000) // 3 second delay
-}
-
-// Initialize column filters when component mounts
-onMounted(() => {
-	objectStore.initializeColumnFilters()
-})
-
-const metadataColumns = computed(() => {
-	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-		id,
-		...meta,
-	}))
-})
-
-// Watch for schema changes to initialize properties
-watch(() => schemaStore.schemaItem, (newSchema) => {
-	if (newSchema) {
-		objectStore.initializeProperties(newSchema)
-	} else {
-		objectStore.properties = {}
-		objectStore.initializeColumnFilters()
-	}
-}, { immediate: true })
 
 export default {
 	name: 'SearchSideBar',
@@ -171,7 +120,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcTextField,
 		NcLoadingIcon,
-		// Icons
 		Magnify,
 		FormatColumns,
 	},
@@ -182,6 +130,7 @@ export default {
 			ignoreNextPageWatch: false,
 			searchQuery: '',
 			activeTab: 'search-tab',
+			searchTimeout: null,
 		}
 	},
 	computed: {
@@ -246,7 +195,40 @@ export default {
 			}))
 		},
 	},
+	watch: {
+		'searchQuery'(value) {
+			if (this.searchTimeout) {
+				clearTimeout(this.searchTimeout)
+			}
+			this.searchTimeout = setTimeout(() => {
+				objectStore.setFilters({
+					_search: value || '',
+				})
+				if (registerStore.registerItem && schemaStore.schemaItem) {
+					objectStore.refreshObjectList({
+						register: registerStore.registerItem.id,
+						schema: schemaStore.schemaItem.id,
+					})
+				}
+			}, 1000)
+		},
+		// Watch for schema changes to initialize properties
+		// Use immediate: true equivalent in mounted
+		// This watcher will update properties when schema changes
+		'$root.schemaStore.schemaItem': {
+			handler(newSchema) {
+				if (newSchema) {
+					objectStore.initializeProperties(newSchema)
+				} else {
+					objectStore.properties = {}
+					objectStore.initializeColumnFilters()
+				}
+			},
+			deep: true,
+		},
+	},
 	mounted() {
+		objectStore.initializeColumnFilters()
 		this.registerLoading = true
 		this.schemaLoading = true
 
@@ -277,7 +259,6 @@ export default {
 		},
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
-			// Initialize properties based on the selected schema
 			if (option) {
 				objectStore.initializeProperties(option)
 			}

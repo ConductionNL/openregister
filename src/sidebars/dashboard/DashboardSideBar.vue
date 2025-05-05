@@ -1,6 +1,5 @@
 <script setup>
 import { objectStore, registerStore, schemaStore, dashboardStore } from '../../store/store.js'
-import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -170,62 +169,12 @@ import formatBytes from '../../services/formatBytes.js'
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
-<!-- eslint-disable -->
 
 <script>
-
+import formatBytes from '../../services/formatBytes.js'
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
-import { ref, computed, onMounted, watch } from 'vue'
-
-// Add search input ref and debounce function
-const searchQuery = ref('')
-let searchTimeout = null
-
-// Debounced search function
-const handleSearch = (value) => {
-	if (searchTimeout) {
-		clearTimeout(searchTimeout)
-	}
-
-	searchTimeout = setTimeout(() => {
-		// Update the filters object with the search query
-		objectStore.setFilters({
-			_search: value || '', // Set as object property instead of array
-		})
-
-		// Only refresh if we have both register and schema selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
-			objectStore.refreshObjectList({
-				register: registerStore.registerItem.id,
-				schema: schemaStore.schemaItem.id,
-			})
-		}
-	}, 1000) // 3 second delay
-}
-
-// Initialize column filters when component mounts
-onMounted(() => {
-	objectStore.initializeColumnFilters()
-})
-
-const metadataColumns = computed(() => {
-	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-		id,
-		...meta,
-	}))
-})
-
-// Watch for schema changes to initialize properties
-watch(() => schemaStore.schemaItem, (newSchema) => {
-	if (newSchema) {
-		objectStore.initializeProperties(newSchema)
-	} else {
-		objectStore.properties = {}
-		objectStore.initializeColumnFilters()
-	}
-}, { immediate: true })
 
 export default {
 	name: 'DashboardSideBar',
@@ -237,7 +186,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcTextField,
 		NcLoadingIcon,
-		// Icons
 		Magnify,
 		FormatColumns,
 	},
@@ -248,6 +196,7 @@ export default {
 			ignoreNextPageWatch: false,
 			searchQuery: '',
 			activeTab: 'overview-tab',
+			searchTimeout: null,
 		}
 	},
 	computed: {
@@ -316,7 +265,6 @@ export default {
 		 * @returns {Object|null}
 		 */
 		systemTotals() {
-			// Returns the register with title 'System Totals'
 			return dashboardStore.registers.find(register => register.title === 'System Totals')
 		},
 		/**
@@ -324,7 +272,6 @@ export default {
 		 * @returns {Object|null}
 		 */
 		orphanedItems() {
-			// Returns the register with title 'Orphaned Items'
 			return dashboardStore.registers.find(register => register.title === 'Orphaned Items')
 		},
 		/**
@@ -332,7 +279,6 @@ export default {
 		 * @returns {Array}
 		 */
 		filteredRegisters() {
-			// Exclude 'System Totals' and 'Orphaned Items' from the list
 			return dashboardStore.registers.filter(register =>
 				register.title !== 'System Totals' &&
 				register.title !== 'Orphaned Items',
@@ -343,13 +289,13 @@ export default {
 		 * @returns {number}
 		 */
 		totalSchemas() {
-			// Sum the number of schemas in all filtered registers
 			return this.filteredRegisters.reduce((total, register) => {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
 	},
 	mounted() {
+		objectStore.initializeColumnFilters()
 		this.registerLoading = true
 		this.schemaLoading = true
 
@@ -373,6 +319,38 @@ export default {
 			objectStore.refreshObjectList()
 		}
 	},
+	watch: {
+		'searchQuery'(value) {
+			if (this.searchTimeout) {
+				clearTimeout(this.searchTimeout)
+			}
+			this.searchTimeout = setTimeout(() => {
+				objectStore.setFilters({
+					_search: value || '',
+				})
+				if (registerStore.registerItem && schemaStore.schemaItem) {
+					objectStore.refreshObjectList({
+						register: registerStore.registerItem.id,
+						schema: schemaStore.schemaItem.id,
+					})
+				}
+			}, 1000)
+		},
+		// Watch for schema changes to initialize properties
+		// Use immediate: true equivalent in mounted
+		// This watcher will update properties when schema changes
+		'$root.schemaStore.schemaItem': {
+			handler(newSchema) {
+				if (newSchema) {
+					objectStore.initializeProperties(newSchema)
+				} else {
+					objectStore.properties = {}
+					objectStore.initializeColumnFilters()
+				}
+			},
+			deep: true,
+		},
+	},
 	methods: {
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
@@ -380,7 +358,6 @@ export default {
 		},
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
-			// Initialize properties based on the selected schema
 			if (option) {
 				objectStore.initializeProperties(option)
 			}
@@ -398,7 +375,6 @@ export default {
 	},
 }
 </script>
-
 <style lang="scss" scoped>
 .section {
 	padding: 12px 0;
@@ -486,4 +462,4 @@ export default {
 	display: flex;
 	gap: 8px;
 }
-</style> 
+</style>
