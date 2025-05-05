@@ -268,7 +268,7 @@ class FilesController extends Controller
                 );
             }
 
-            return new JSONResponse($this->fileService->formatFiles($results, $this->request->getParams()));
+            return new JSONResponse($this->fileService->formatFiles($results, $this->request->getParams())['results']);
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],

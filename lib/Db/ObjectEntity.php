@@ -268,34 +268,6 @@ class ObjectEntity extends Entity implements JsonSerializable
     }//end getFiles()
 
     /**
-     * Add a file's metadata to the object if its ID is not already present
-     *
-     * @param File $file The file to add
-     * 
-     * @return array The files data
-     */
-    public function addFile(File $file): array
-    {
-        $fileId = $file->getId();
-        // Prevent duplicates by checking if a file with this ID already exists
-        foreach ($this->files ?? [] as $f) {
-            if (isset($f['id']) && $f['id'] === $fileId) {
-                return $this->files; // Already present
-            }
-        }
-        // Add file metadata (extend as needed)
-        $this->files[] = [
-            'id' => $fileId,
-            'name' => $file->getName(),
-            'size' => $file->getSize(),
-            'mimetype' => $file->getMimetype(),
-            'created' => method_exists($file, 'getUploadTime') ? $file->getUploadTime() : null,
-            'etag' => method_exists($file, 'getEtag') ? $file->getEtag() : null,
-        ];
-        return $this->files;
-    }
-
-    /**
      * Get the relations data
      *
      * @return array The relations data or empty array if null

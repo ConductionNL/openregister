@@ -1176,11 +1176,7 @@ class FileService
             // Add tags to the file if provided
             if (empty($tags) === false) {
                 $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-            }
-
-            // Add the file to the object entity
-            $objectEntity->addFile($file);
-            $objectEntity = $this->objectEntityMapper->update($objectEntity);                       
+            }                 
 
             return $file;
 
@@ -1257,13 +1253,8 @@ class FileService
             schema: $object->getSchema()
         );
 
-        // Get all files in the folder
-        $files = [];
-        if ($folder instanceof Folder === true) {
-            $files = $folder->getDirectoryListing();
-        }
-
-        return $files;
+        // Lets just get the files and let it fall to an error if it's not a folder.
+        return $folder->getDirectoryListing();
     }
 
     /**
