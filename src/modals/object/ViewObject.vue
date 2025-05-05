@@ -8,190 +8,24 @@
  */
 
 <script setup>
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
-import { ref, onMounted, computed, watch } from 'vue'
-import {
-	NcDialog,
-	NcButton,
-	NcNoteCard,
-	NcCounterBubble,
-} from '@nextcloud/vue'
-import { json } from '@codemirror/lang-json'
-import CodeMirror from 'vue-codemirror6'
-import { BTabs, BTab } from 'bootstrap-vue'
-import { getTheme } from '../../services/getTheme.js'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-
-// Initialize refs
-const objectItem = ref(null)
-const success = ref(null)
-const loading = ref(false)
-const error = ref(false)
-const closeModalTimeout = ref(null)
-const activeAttachment = ref(null)
-const fileLoading = ref(false)
-const auditTrailLoading = ref(false)
-
-// Add a ref for the editor content
-const editorContent = ref(JSON.stringify(objectStore.objectItem, null, 2))
-
-// Watch for changes to objectStore.objectItem
-watch(() => objectStore.objectItem, (newValue) => {
-	if (newValue) {
-		editorContent.value = JSON.stringify(newValue, null, 2)
-	}
-}, { immediate: true })
-
-// Computed properties
-const hasObjectItem = computed(() => {
-	return objectStore.objectItem !== null
-		   && objectStore.objectItem !== undefined
-		   && objectStore.objectItem['@self'] !== undefined
-})
-
-// Pagination
-const pagination = ref({
-	files: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	auditTrails: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	contracts: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	uses: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	used: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-})
-
-// Helper to get register title by ID
-const getRegisterTitle = (registerId) => {
-	const reg = registerStore.registerList.find(r => r.id === registerId)
-	return reg ? reg.title : 'Not selected'
-}
-
-// Helper to get schema title by ID
-const getSchemaTitle = (schemaId) => {
-	const sch = schemaStore.schemaList.find(s => s.id === schemaId)
-	return sch ? sch.title : 'Not selected'
-}
-
-// Methods
-const closeModal = () => {
-	navigationStore.setModal(false)
-	clearTimeout(closeModalTimeout.value)
-	success.value = null
-	loading.value = false
-	error.value = false
-	objectItem.value = null
-}
-
-const getFiles = async () => {
-	if (!objectStore.objectItem?.['@self']?.id) return
-	fileLoading.value = true
-	try {
-		await objectStore.getFiles(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.files.limit,
-			page: pagination.value.files.currentPage,
-		})
-	} finally {
-		fileLoading.value = false
-	}
-}
-
-const getAuditTrails = async () => {
-	if (!objectStore.objectItem?.['@self']?.id) return
-	auditTrailLoading.value = true
-	try {
-		await objectStore.getAuditTrails(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.auditTrails.limit,
-			page: pagination.value.auditTrails.currentPage,
-		})
-	} finally {
-		auditTrailLoading.value = false
-	}
-}
-
-// Watch for pagination changes
-watch(() => pagination.value.files.currentPage, getFiles)
-watch(() => pagination.value.auditTrails.currentPage, getAuditTrails)
-
-const openFile = (file) => {
-	// Extract the directory path without the filename
-	const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
-
-	// Remove the '/admin/files/' prefix if it exists
-	const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
-
-	// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
-	const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
-
-	// Open URL in new tab
-	window.open(filesAppUrl, '_blank')
-}
-
-const formatFileSize = (bytes) => {
-	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-	if (bytes === 0) return 'n/a'
-	const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-	if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-	if (i === 0) return bytes + ' ' + sizes[i]
-	return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-}
-
-// Lifecycle hooks
-onMounted(() => {
-	if (hasObjectItem.value && objectStore.objectItem['@self'].id) {
-		objectItem.value = objectStore.objectItem
-		getFiles()
-		getAuditTrails()
-	}
-})
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'viewObject' && hasObjectItem"
+	<NcDialog v-if="navigationStore.modal === 'viewObject'"
 		:name="'View Object (' + objectStore.objectItem['@self'].uuid + ')'"
 		size="large"
 		:can-close="false">
-		<NcNoteCard v-if="success" type="success">
-			<p>Object successfully loaded</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<div v-if="!success" class="formContainer">
+		<div class="formContainer">
 			<!-- Metadata Display -->
 			<div class="detail-grid">
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].register }">
 					<span class="detail-label">Register:</span>
-					<span class="detail-value">{{ getRegisterTitle(objectStore.objectItem['@self'].register) }}</span>
+					<span class="detail-value">Not set</span>
 				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].schema }">
 					<span class="detail-label">Schema:</span>
-					<span class="detail-value">{{ getSchemaTitle(objectStore.objectItem['@self'].schema) }}</span>
+					<span class="detail-value">Not set</span>
 				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].version }">
 					<span class="detail-label">Version:</span>
@@ -252,14 +86,13 @@ onMounted(() => {
 										:basic="true"
 										:readonly="true"
 										:dark="getTheme() === 'dark'"
-										:extensions="[json()]"
 										:tab-size="2"
 										style="height: 400px" />
 								</div>
 							</div>
 						</BTab>
 						<BTab title="Uses">
-							<div v-if="objectStore.uses.results?.length > 0" class="search-list-table">
+							<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
@@ -289,22 +122,13 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="objectStore.uses.total > pagination.uses.limit" class="pagination">
-									<NcButton :disabled="pagination.uses.currentPage === 1" @click="pagination.uses.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.uses.currentPage }}</span>
-									<NcButton :disabled="pagination.uses.currentPage >= Math.ceil(objectStore.uses.total / pagination.uses.limit)" @click="pagination.uses.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
 							<NcNoteCard v-else type="info">
 								<p>No uses found for this object</p>
 							</NcNoteCard>
 						</BTab>
 						<BTab title="Used by">
-							<div v-if="objectStore.used.results?.length > 0" class="search-list-table">
+							<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
@@ -334,15 +158,6 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="objectStore.used.total > pagination.used.limit" class="pagination">
-									<NcButton :disabled="pagination.used.currentPage === 1" @click="pagination.used.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.used.currentPage }}</span>
-									<NcButton :disabled="pagination.used.currentPage >= Math.ceil(objectStore.used.total / pagination.used.limit)" @click="pagination.used.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
 							<NcNoteCard v-else type="info">
 								<p>No objects are using this object</p>
@@ -430,15 +245,6 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="!fileLoading && objectStore.files.total > pagination.files.limit" class="pagination">
-									<NcButton :disabled="pagination.files.currentPage === 1" @click="pagination.files.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.files.currentPage }}</span>
-									<NcButton :disabled="pagination.files.currentPage >= Math.ceil(objectStore.files.total / pagination.files.limit)" @click="pagination.files.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
 							<NcNoteCard v-else type="info">
 								<p>No files have been attached to this object</p>
@@ -475,15 +281,6 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="!auditTrailLoading && objectStore.auditTrails.total > pagination.auditTrails.limit" class="pagination">
-									<NcButton :disabled="pagination.auditTrails.currentPage === 1" @click="pagination.auditTrails.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.auditTrails.currentPage }}</span>
-									<NcButton :disabled="pagination.auditTrails.currentPage >= Math.ceil(objectStore.auditTrails.total / pagination.auditTrails.limit)" @click="pagination.auditTrails.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
 							<NcNoteCard v-else type="info">
 								<p>No audit trails found for this object</p>
@@ -507,7 +304,7 @@ onMounted(() => {
 				</template>
 				Add File
 			</NcButton>
-			<NcButton type="primary" @click="closeModal">
+			<NcButton type="primary" @click="navigationStore.setModal(false); objectStore.setObjectItem(false)">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -516,6 +313,77 @@ onMounted(() => {
 		</template>
 	</NcDialog>
 </template>
+
+<script>
+import {
+	NcDialog,
+	NcButton,
+	NcNoteCard,
+	NcCounterBubble,
+} from '@nextcloud/vue'
+import CodeMirror from 'vue-codemirror6'
+import { BTabs, BTab } from 'bootstrap-vue'
+import { getTheme } from '../../services/getTheme.js'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+
+export default {
+	name: 'ViewObject',
+	components: {
+		NcDialog,
+		NcButton,
+		NcNoteCard,
+		NcCounterBubble,
+		CodeMirror,
+		BTabs,
+		BTab,
+		Cancel,
+		FileOutline,
+		ExclamationThick,
+		OpenInNew,
+		Eye,
+		Pencil,
+		Upload,
+	},
+	data() {
+		return {
+			closeModalTimeout: null,
+			activeAttachment: null,
+			editorContent: '',
+		}
+	},
+	methods: {
+		/**
+		 * Open a file in the Nextcloud Files app
+		 * @param file
+		 */
+		openFile(file) {
+			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
+			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
+			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
+			window.open(filesAppUrl, '_blank')
+		},
+		/**
+		 * Format file size for display
+		 * @param bytes
+		 */
+		formatFileSize(bytes) {
+			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+			if (bytes === 0) return 'n/a'
+			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
+			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
+			if (i === 0) return bytes + ' ' + sizes[i]
+			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		},
+		getTheme,
+	},
+}
+</script>
 
 <style scoped>
 .json-editor {

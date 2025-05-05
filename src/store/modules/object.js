@@ -172,6 +172,12 @@ export const useObjectStore = defineStore('object', {
 
 					console.info('Successfully fetched all related data for object', objectItem['@self'].id)
 
+					// define register, schema, and objectId before using them
+					const register = objectItem['@self'].register
+					const schema = objectItem['@self'].schema
+					const objectId = objectItem['@self'].id
+
+					// Fore a reload for view logging
 					if (!skipRefresh) {
 						await this.getObject({ register, schema, objectId })
 
@@ -183,8 +189,8 @@ export const useObjectStore = defineStore('object', {
 					// Clear data in case of error
 					this.clearRelatedData()
 				}
-			} else {
-				// Clear related data when no object is selected
+			} else if (objectItem === false) {
+				// Clear related data when object item is explicitly set to null
 				this.clearRelatedData()
 			}
 		},
