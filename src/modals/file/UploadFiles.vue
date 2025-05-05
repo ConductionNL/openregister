@@ -404,7 +404,7 @@ export default {
 
 		getAllTags() {
 			this.tagsLoading = true
-			this.objectStore.getTags().then(({ response, data }) => {
+			objectStore.getTags().then(({ response, data }) => {
 
 				const newLabelOptions = []
 				const newLabelOptionsEdit = []
@@ -494,7 +494,7 @@ export default {
 					// Set status to 'uploading'
 					file.status = 'uploading'
 					try {
-						const response = await this.objectStore.uploadFiles({
+						const response = await objectStore.uploadFiles({
 							register: this.registerId,
 							schema: this.schemaId,
 							objectId: this.objectId,
@@ -519,7 +519,7 @@ export default {
 				this.getAllTags()
 
 				// Refresh files for the object
-				await this.objectStore.getFiles({
+				await objectStore.getFiles({
 					id: this.objectId,
 					register: this.registerId,
 					schema: this.schemaId,
@@ -722,3 +722,15 @@ div[class='modal-container']:has(.TestMappingMainModal) {
     gap: 10px;
 }
 </style>
+
+/**
+ * UploadFiles Modal
+ * Handles file uploads and tag selection for objects
+ * @category Modals
+ * @package OpenRegister
+ * @author Your Name
+ * @copyright 2024 Your Company
+ * @license AGPL-3.0
+ * @version 1.0.0
+ * @link https://your-app-link.example.com
+ */
