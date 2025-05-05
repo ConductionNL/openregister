@@ -81,7 +81,7 @@ class RegistersController extends Controller
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
-        $this->auditTrailMapper = $auditTrailMapper;
+        $this->auditTrailMapper     = $auditTrailMapper;
 
     }//end __construct()
 
@@ -127,32 +127,35 @@ class RegistersController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParam('filters', []);
-        $search         = $this->request->getParam('_search', '');
-        $extend         = $this->request->getParam('_extend', []);
+        $filters = $this->request->getParam('filters', []);
+        $search  = $this->request->getParam('_search', '');
+        $extend  = $this->request->getParam('_extend', []);
         if (is_string($extend)) {
             $extend = [$extend];
         }
-        $registers = $this->registerMapper->findAll(null, null, $filters, [], [], []);
+
+        $registers    = $this->registerMapper->findAll(null, null, $filters, [], [], []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
             foreach ($registersArr as &$register) {
                 $register['stats'] = [
                     'objects' => $this->objectEntityMapper->getStatistics($register['id'], null),
-                    'logs' => $this->auditTrailMapper->getStatistics($register['id'], null),
-                    'files' => [ 'total' => 0, 'size' => 0 ],
+                    'logs'    => $this->auditTrailMapper->getStatistics($register['id'], null),
+                    'files'   => [ 'total' => 0, 'size' => 0 ],
                 ];
             }
         }
+
         return new JSONResponse(['results' => $registersArr]);
-    }
+
+    }//end index()
 
 
     /**
      * Retrieves a single register by ID
      *
-     * @param int|string $id The ID of the register
+     * @param  int|string $id The ID of the register
      * @return JSONResponse
      *
      * @NoAdminRequired
@@ -165,18 +168,21 @@ class RegistersController extends Controller
         if (is_string($extend)) {
             $extend = [$extend];
         }
-        $register = $this->registerMapper->find($id, []);
+
+        $register    = $this->registerMapper->find($id, []);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register
         if (in_array('@self.stats', $extend, true)) {
             $registerArr['stats'] = [
                 'objects' => $this->objectEntityMapper->getStatistics($registerArr['id'], null),
-                'logs' => $this->auditTrailMapper->getStatistics($registerArr['id'], null),
-                'files' => [ 'total' => 0, 'size' => 0 ],
+                'logs'    => $this->auditTrailMapper->getStatistics($registerArr['id'], null),
+                'files'   => [ 'total' => 0, 'size' => 0 ],
             ];
         }
+
         return new JSONResponse($registerArr);
-    }
+
+    }//end show()
 
 
     /**

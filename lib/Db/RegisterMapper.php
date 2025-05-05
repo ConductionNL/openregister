@@ -63,10 +63,10 @@ class RegisterMapper extends QBMapper
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection        $db              The database connection
-     * @param SchemaMapper         $schemaMapper    The schema mapper
-     * @param IEventDispatcher     $eventDispatcher The event dispatcher
-     * @param ObjectEntityMapper   $objectEntityMapper The object entity mapper
+     * @param IDBConnection      $db                 The database connection
+     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      *
      * @return void
      */
@@ -77,8 +77,8 @@ class RegisterMapper extends QBMapper
         ObjectEntityMapper $objectEntityMapper
     ) {
         parent::__construct($db, 'openregister_registers');
-        $this->schemaMapper    = $schemaMapper;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->schemaMapper       = $schemaMapper;
+        $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
@@ -87,12 +87,12 @@ class RegisterMapper extends QBMapper
     /**
      * Find a register by its ID, with optional extension for statistics
      *
-     * @param int|string $id The ID of the register to find
-     * @param array $extend Optional array of extensions (e.g., ['@self.stats'])
-     * 
+     * @param int|string $id     The ID of the register to find
+     * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
+     *
      * @return Register The found register, possibly with stats
      */
-    public function find(string|int $id, ?array $extend = []): Register
+    public function find(string | int $id, ?array $extend=[]): Register
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -106,6 +106,7 @@ class RegisterMapper extends QBMapper
             );
         // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
+
     }//end find()
 
 
@@ -147,7 +148,7 @@ class RegisterMapper extends QBMapper
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
-     * 
+     *
      * @return array Array of found registers, possibly with stats
      */
     public function findAll(
@@ -156,7 +157,7 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend = []
+        ?array $extend=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -172,15 +173,18 @@ class RegisterMapper extends QBMapper
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
         }
+
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
+
         // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
-    }
+
+    }//end findAll()
 
 
     /**
@@ -334,10 +338,11 @@ class RegisterMapper extends QBMapper
     {
         // Check for attached objects before deleting
         $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
-        $stats = $this->objectEntityMapper->getStatistics($registerId, null);
+        $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
         if (($stats['total'] ?? 0) > 0) {
             throw new \Exception('Cannot delete register: objects are still attached.');
         }
+
         // Proceed with deletion if no objects are attached
         $result = parent::delete($entity);
 

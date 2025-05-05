@@ -60,12 +60,13 @@ class SchemaMapper extends QBMapper
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
 
+
     /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection                  $db              The database connection
-     * @param IEventDispatcher               $eventDispatcher The event dispatcher
-     * @param SchemaPropertyValidatorService $validator       The schema property validator
+     * @param IDBConnection                  $db                 The database connection
+     * @param IEventDispatcher               $eventDispatcher    The event dispatcher
+     * @param SchemaPropertyValidatorService $validator          The schema property validator
      * @param ObjectEntityMapper             $objectEntityMapper The object entity mapper
      */
     public function __construct(
@@ -75,20 +76,22 @@ class SchemaMapper extends QBMapper
         ObjectEntityMapper $objectEntityMapper
     ) {
         parent::__construct($db, 'openregister_schemas');
-        $this->eventDispatcher = $eventDispatcher;
-        $this->validator       = $validator;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->validator          = $validator;
         $this->objectEntityMapper = $objectEntityMapper;
-    }
+
+    }//end __construct()
+
 
     /**
      * Finds a schema by id, with optional extension for statistics
      *
-     * @param int|string $id The id of the schema
-     * @param array $extend Optional array of extensions (e.g., ['@self.stats'])
-     * 
+     * @param int|string $id     The id of the schema
+     * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
+     *
      * @return Schema The schema, possibly with stats
      */
-    public function find(string|int $id, ?array $extend = []): Schema
+    public function find(string | int $id, ?array $extend=[]): Schema
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -102,7 +105,8 @@ class SchemaMapper extends QBMapper
             );
         // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
-    }
+
+    }//end find()
 
 
     /**
@@ -143,7 +147,7 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
-     * 
+     *
      * @return array The schemas, possibly with stats
      */
     public function findAll(
@@ -152,7 +156,7 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend = []
+        ?array $extend=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -177,9 +181,11 @@ class SchemaMapper extends QBMapper
                 $qb->setParameter($param, $value);
             }
         }
+
         // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
-    }
+
+    }//end findAll()
 
 
     /**
@@ -346,10 +352,11 @@ class SchemaMapper extends QBMapper
     {
         // Check for attached objects before deleting
         $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
-        $stats = $this->objectEntityMapper->getStatistics(null, $schemaId);
+        $stats    = $this->objectEntityMapper->getStatistics(null, $schemaId);
         if (($stats['total'] ?? 0) > 0) {
             throw new \Exception('Cannot delete schema: objects are still attached.');
         }
+
         // Proceed with deletion if no objects are attached
         $result = parent::delete($schema);
 
@@ -362,13 +369,14 @@ class SchemaMapper extends QBMapper
 
     }//end delete()
 
+
     /**
      * Get the number of registers associated with each schema
      *
      * This method returns an associative array where the key is the schema ID and the value is the number of registers that reference that schema.
      *
      * @phpstan-return array<int,int>  Associative array of schema ID => register count
-     * @psalm-return array<int,int>    Associative array of schema ID => register count
+     * @psalm-return   array<int,int>    Associative array of schema ID => register count
      *
      * @return array<int,int> Associative array of schema ID => register count
      */
@@ -385,10 +393,13 @@ class SchemaMapper extends QBMapper
             // Decode the schemas JSON array for each register
             $schemas = json_decode($row['schemas'], true) ?: [];
             foreach ($schemas as $schemaId) {
-                $counts[(int)$schemaId] = ($counts[(int)$schemaId] ?? 0) + 1;
+                $counts[(int) $schemaId] = ($counts[(int) $schemaId] ?? 0) + 1;
             }
         }
+
         return $counts;
-    }
+
+    }//end getRegisterCountPerSchema()
+
 
 }//end class

@@ -31,13 +31,14 @@ use Exception;
 class TagsController extends Controller
 {
 
+
     /**
      * TagsController constructor.
      *
-     * @param string $appName
-     * @param IRequest $request
+     * @param string        $appName
+     * @param IRequest      $request
      * @param ObjectService $objectService
-     * @param FileService $fileService
+     * @param FileService   $fileService
      */
     public function __construct(
         $appName,
@@ -62,6 +63,7 @@ class TagsController extends Controller
     {
         // Use the FileService to fetch all tags
         return new JSONResponse($this->fileService->getAllTags());
+
     }//end getAllTags()
 
 

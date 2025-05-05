@@ -119,7 +119,8 @@ class DashboardController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function index(): JSONResponse {
+    public function index(): JSONResponse
+    {
         try {
             $params = $this->request->getParams();
 

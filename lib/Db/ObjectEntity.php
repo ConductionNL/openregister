@@ -241,6 +241,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'created', type: 'datetime');
         $this->addType(fieldName:'published', type: 'datetime');
         $this->addType(fieldName:'depublished', type: 'datetime');
+
     }//end __construct()
 
 
@@ -266,6 +267,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         return ($this->files ?? []);
 
     }//end getFiles()
+
 
     /**
      * Get the relations data
@@ -431,7 +433,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'updated'       => $this->getFormattedDate($this->updated),
             'created'       => $this->getFormattedDate($this->created),
             'published'     => $this->getFormattedDate($this->published),
-            'depublished'    => $this->getFormattedDate($this->depublished),
+            'depublished'   => $this->getFormattedDate($this->depublished),
             'deleted'       => $this->deleted,
         ];
 

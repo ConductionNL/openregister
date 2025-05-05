@@ -69,7 +69,7 @@ class LogController extends Controller
         // Extract pagination parameters.
         if (isset($params['limit'])) {
             $limit = (int) $params['limit'];
-        } elseif (isset($params['_limit'])) {
+        } else if (isset($params['_limit'])) {
             $limit = (int) $params['_limit'];
         } else {
             $limit = 20;
@@ -77,7 +77,7 @@ class LogController extends Controller
 
         if (isset($params['offset'])) {
             $offset = (int) $params['offset'];
-        } elseif (isset($params['_offset'])) {
+        } else if (isset($params['_offset'])) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
@@ -85,7 +85,7 @@ class LogController extends Controller
 
         if (isset($params['page'])) {
             $page = (int) $params['page'];
-        } elseif (isset($params['_page'])) {
+        } else if (isset($params['_page'])) {
             $page = (int) $params['_page'];
         } else {
             $page = null;

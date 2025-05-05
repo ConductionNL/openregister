@@ -215,6 +215,7 @@ class FilesController extends Controller
                 if (!is_array($tags)) {
                     $tags = explode(',', $tags);
                 }
+
                 $uploadedFiles[] = [
                     'name'     => $files['name'],
                     'type'     => $files['type'],
@@ -224,15 +225,14 @@ class FilesController extends Controller
                     'share'    => $data['share'] === 'true',
                     'tags'     => $tags,
                 ];
-
-            }
-            elseif (isset($files['name']) === true && is_array($files['name']) === true) {
+            } else if (isset($files['name']) === true && is_array($files['name']) === true) {
                 // Loop through each file using the count of 'name'
                 for ($i = 0; $i < count($files['name']); $i++) {
                     $tags = $data['tags'][$i] ?? '';
                     if (!is_array($tags)) {
                         $tags = explode(',', $tags);
                     }
+
                     $uploadedFiles[] = [
                         'name'     => $files['name'][$i],
                         'type'     => $files['type'][$i],
@@ -243,7 +243,7 @@ class FilesController extends Controller
                         'tags'     => $tags,
                     ];
                 }
-            }
+            }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
