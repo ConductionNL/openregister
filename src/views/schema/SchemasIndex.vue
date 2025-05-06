@@ -257,20 +257,8 @@ export default {
 
 .registers {
 	display: grid;
-	grid-template-columns: 1fr;
 	gap: 1.5rem;
-}
-
-@media screen and (min-width: 880px) {
-	.registers {
-		grid-template-columns: repeat(2, 1fr);
-	}
-}
-
-@media screen and (min-width: 1220px) {
-	.registers {
-		grid-template-columns: repeat(3, 1fr);
-	}
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .registerCard {

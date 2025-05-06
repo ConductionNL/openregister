@@ -195,7 +195,7 @@ export default {
 		},
 	},
 	watch: {
-		'searchQuery'(value) {
+		searchQuery(value) {
 			if (this.searchTimeout) {
 				clearTimeout(this.searchTimeout)
 			}
@@ -260,8 +260,8 @@ export default {
 			schemaStore.setSchemaItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
+				objectStore.refreshObjectList()
 			}
-			objectStore.refreshObjectList()
 		},
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {

@@ -303,8 +303,8 @@ export default {
 			schemaStore.setSchemaItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
+				objectStore.refreshObjectList()
 			}
-			objectStore.refreshObjectList()
 		},
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)

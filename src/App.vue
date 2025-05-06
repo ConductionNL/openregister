@@ -18,13 +18,6 @@ import Views from './views/Views.vue'
 import SideBars from './sidebars/SideBars.vue'
 import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
-/**
- * @file App.vue
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
 export default {
 	name: 'App',
 	components: {
@@ -36,7 +29,7 @@ export default {
 		SideBars,
 	},
 	mounted() {
-		// Set up dashboard store watchers after stores are reactive
+		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
 		setupDashboardStoreWatchers()
 	},
 }

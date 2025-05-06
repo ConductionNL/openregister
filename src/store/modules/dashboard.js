@@ -5,15 +5,6 @@ import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
 import { watch } from 'vue'
 
-/**
- * Dashboard Store
- *
- * @file dashboard.js
- * @author Ruben Linde
- * @copyright 2024 Ruben Linde
- * @license AGPL-3.0
- * @version 1.0.0
- */
 export const useDashboardStore = defineStore('dashboard', {
 	state: () => ({
 		registers: [],
@@ -74,14 +65,11 @@ export const useDashboardStore = defineStore('dashboard', {
 			watch([
 				() => registerStore.registerItem?.id,
 				() => schemaStore.schemaItem?.id,
-			], async ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
-				// Only refresh if either value actually changed
-				if (newRegisterId !== oldRegisterId || newSchemaId !== oldSchemaId) {
-					// Fetch registers to update sidebar tables
-					await this.fetchRegisters()
-					// Fetch all chart data to update dashboard charts
-					await this.fetchAllChartData()
-				}
+			], async () => {
+				// Fetch registers to update sidebar tables
+				await this.fetchRegisters()
+				// Fetch all chart data to update dashboard charts
+				await this.fetchAllChartData()
 			})
 		},
 
@@ -303,13 +291,10 @@ export function setupDashboardStoreWatchers() {
 	watch([
 		() => registerStore.registerItem?.id,
 		() => schemaStore.schemaItem?.id,
-	], async ([newRegisterId, newSchemaId], [oldRegisterId, oldSchemaId]) => {
-		// Only refresh if either value actually changed
-		if (newRegisterId !== oldRegisterId || newSchemaId !== oldSchemaId) {
-			// Fetch registers to update sidebar tables, using current store state
-			await dashboardStore.fetchRegisters()
-			// Fetch all chart data to update dashboard charts
-			await dashboardStore.fetchAllChartData()
-		}
+	], () => {
+		// Fetch registers to update sidebar tables, using current store state
+		dashboardStore.fetchRegisters()
+		// Fetch all chart data to update dashboard charts
+		dashboardStore.fetchAllChartData()
 	})
 }

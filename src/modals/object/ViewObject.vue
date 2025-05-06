@@ -67,8 +67,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="(value, key) in objectStore.objectItem"
-											v-if="key !== '@self'"
+										<tr v-for="([key, value]) in objectProperties"
 											:key="key"
 											class="table-row">
 											<td>{{ key }}</td>
@@ -332,7 +331,6 @@ import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -351,7 +349,6 @@ export default {
 		BTab,
 		Cancel,
 		FileOutline,
-		ExclamationThick,
 		OpenInNew,
 		Eye,
 		Pencil,
@@ -364,6 +361,13 @@ export default {
 			activeAttachment: null,
 			editorContent: '',
 		}
+	},
+	computed: {
+		objectProperties() {
+			// Return array of [key, value] pairs, excluding '@self'
+			if (!this.objectStore?.objectItem) return []
+			return Object.entries(this.objectStore.objectItem).filter(([key]) => key !== '@self')
+		},
 	},
 	methods: {
 		/**

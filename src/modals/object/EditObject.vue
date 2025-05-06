@@ -163,14 +163,6 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 
-/**
- * @file EditObject.vue
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
-
 export default {
 	name: 'EditObject',
 	components: {
