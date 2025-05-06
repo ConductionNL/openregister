@@ -76,6 +76,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					</div>
 				</div>
 				<div v-if="labelOptions.value?.length && !loading"
+					ref="dropzone"
 					class="filesListDragDropNotice"
 					:class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
@@ -255,6 +256,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
+import { ref } from 'vue'
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -268,8 +270,11 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
 
+const dropzone = ref(null)
+
 const { openFileUpload, files, reset, setTags } = useFileSelection({
 	allowMultiple: true,
+	dropzone,
 })
 
 export default {
@@ -493,11 +498,11 @@ export default {
 				}
 
 				// file calls
-				const calls = filesToUpload.map(async (file) => {
-					// Set status to 'uploading'
+				const calls = await Promise.all(filesToUpload.map(async (file) => {
 					file.status = 'uploading'
+
 					try {
-						const response = await objectStore.uploadFiles({
+						const responseJson = await objectStore.uploadFiles({
 							register: this.registerId,
 							schema: this.schemaId,
 							objectId: this.objectId,
@@ -505,19 +510,15 @@ export default {
 							labels: this.labelOptions.value || [],
 							share: this.share,
 						})
-						// Set status to 'uploaded' on success
-						if (response.status === 200) file.status = 'uploaded'
-						else file.status = 'failed'
 
-						return response
+						file.status = 'uploaded'
+
+						return [true, responseJson]
 					} catch (error) {
-						// Set status to 'failed' on error
 						file.status = 'failed'
-						throw error
+						return [false, error]
 					}
-				})
-
-				const results = await Promise.allSettled(calls)
+				}))
 
 				this.getAllTags()
 
@@ -528,10 +529,10 @@ export default {
 					schema: this.schemaId,
 				})
 
-				const failed = results.filter(result => result.status === 'rejected')
+				const failed = calls.filter(result => result[0] === false)
 
 				if (failed.length > 0) {
-					this.error = failed[0].reason
+					this.error = failed[0][1].message
 				} else {
 					this.success = true
 				}
