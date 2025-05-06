@@ -255,7 +255,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch, tooltip } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
@@ -274,10 +274,6 @@ const { openFileUpload, files, reset, setTags } = useFileSelection({
 
 export default {
 	name: 'UploadFiles',
-	directives: {
-		// Register the tooltip directive to resolve the warning
-		tooltip,
-	},
 	components: {
 		NcModal,
 		NcButton,

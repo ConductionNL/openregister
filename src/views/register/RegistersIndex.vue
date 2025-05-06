@@ -268,7 +268,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 </template>
 
 <script>
-import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -290,9 +290,6 @@ import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'RegistersIndex',
-	directives: {
-		tooltip,
-	},
 	components: {
 		NcAppContent,
 		NcEmptyContent,

@@ -67,7 +67,7 @@ import { dashboardStore, registerStore } from '../../store/store.js'
 </template>
 
 <script>
-import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import VueApexCharts from 'vue-apexcharts'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
@@ -75,9 +75,6 @@ import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 
 export default {
 	name: 'DashboardIndex',
-	directives: {
-		tooltip,
-	},
 	components: {
 		NcAppContent,
 		NcEmptyContent,

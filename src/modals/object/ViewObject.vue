@@ -68,6 +68,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									</thead>
 									<tbody>
 										<tr v-for="(value, key) in objectStore.objectItem"
+											v-if="key !== '@self'"
 											:key="key"
 											class="table-row">
 											<td>{{ key }}</td>
@@ -221,7 +222,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 												else activeAttachment = attachment.id
 											}">
 											<td>
-												<ExclamationThick v-if="!attachment.accessUrl || !attachment.downloadUrl" class="warningIcon" :size="20" />
+												<!-- Show lock icon if file is not shared -->
+												<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
+													v-tooltip="'Not shared'"
+													class="notSharedIcon"
+													:size="20" />
+												<!-- Show published icon if file is shared -->
 												<FileOutline v-else class="publishedIcon" :size="20" />
 												{{ attachment.name ?? attachment?.title }}
 											</td>
@@ -331,6 +337,7 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 
 export default {
 	name: 'ViewObject',
@@ -349,6 +356,7 @@ export default {
 		Eye,
 		Pencil,
 		Upload,
+		LockOutline,
 	},
 	data() {
 		return {
@@ -479,10 +487,12 @@ export default {
 
 .detail-grid {
 	display: grid;
-	grid-template-columns: 1fr 1fr 1fr;  /* Exactly three columns */
-	gap: 12px;
-	margin: 20px auto;  /* Add margin to create spacing */
-	max-width: 100%;  /* Ensure it doesn't overflow */
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive columns */
+	gap: 16px;
+	margin: 20px 0; /* Remove auto, use 0 for left/right */
+	padding: 0 20px; /* Add horizontal padding to match modal */
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .detail-item {
