@@ -309,7 +309,7 @@ class OasService
                 'name'        => '_extend',
                 'in'          => 'query',
                 'required'    => false,
-                'description' => 'Comma-separated list of properties to extend. Properties referring to other objects will be expanded according to the extend pattern.',
+                'description' => 'Comma-separated list of properties to extend.',
                 'schema'      => [
                     'type' => 'string',
                 ],
@@ -319,7 +319,7 @@ class OasService
                 'name'        => '_filter',
                 'in'          => 'query',
                 'required'    => false,
-                'description' => 'Comma-separated list of properties to include in the response. Only properties matching these names will be returned.',
+                'description' => 'Comma-separated list of properties to include in the response. ',
                 'schema'      => [
                     'type' => 'string',
                 ],
@@ -355,8 +355,8 @@ class OasService
             if ($schema !== null) {
                 $schemaProperties = $schema->getProperties();
                 foreach ($schemaProperties as $propertyName => $propertyDefinition) {
-                    // Skip internal properties and metadata
-                    if (str_starts_with($propertyName, '@') || $propertyName === 'id') {
+                    // Skip internal properties and metadata.
+                    if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
                         continue;
                     }
 
@@ -391,12 +391,12 @@ class OasService
     private function getPropertyType($propertyDefinition): string
     {
         // If the property definition is an array, look for the type key.
-        if (is_array($propertyDefinition) && isset($propertyDefinition['type'])) {
+        if (is_array($propertyDefinition) === true && isset($propertyDefinition['type']) === true) {
             return $propertyDefinition['type'];
         }
 
         // If the property definition is a string, assume it's the type.
-        if (is_string($propertyDefinition)) {
+        if (is_string($propertyDefinition) === true) {
             // Map common types to OpenAPI types.
             $typeMap = [
                 'int'    => 'integer',

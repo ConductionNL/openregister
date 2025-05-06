@@ -28,6 +28,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
  * The RegisterMapper class
@@ -51,40 +52,49 @@ class RegisterMapper extends QBMapper
      */
     private $eventDispatcher;
 
+    /**
+     * The object entity mapper instance
+     *
+     * @var ObjectEntityMapper
+     */
+    private readonly ObjectEntityMapper $objectEntityMapper;
+
 
     /**
      * Constructor for RegisterMapper
      *
-     * @param IDBConnection    $db              The database connection
-     * @param SchemaMapper     $schemaMapper    The schema mapper
-     * @param IEventDispatcher $eventDispatcher The event dispatcher
+     * @param IDBConnection      $db                 The database connection
+     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
         SchemaMapper $schemaMapper,
-        IEventDispatcher $eventDispatcher
+        IEventDispatcher $eventDispatcher,
+        ObjectEntityMapper $objectEntityMapper
     ) {
         parent::__construct($db, 'openregister_registers');
-        $this->schemaMapper    = $schemaMapper;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->schemaMapper       = $schemaMapper;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
 
 
     /**
-     * Find a register by its ID
+     * Find a register by its ID, with optional extension for statistics
      *
-     * @param int|string $id The ID of the register to find
+     * @param int|string $id     The ID of the register to find
+     * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
      *
-     * @return Register The found register
+     * @return Register The found register, possibly with stats
      */
-    public function find(string | int $id): Register
+    public function find(string | int $id, ?array $extend=[]): Register
     {
         $qb = $this->db->getQueryBuilder();
-
-        // Build the query.
         $qb->select('*')
             ->from('openregister_registers')
             ->where(
@@ -94,8 +104,7 @@ class RegisterMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
-
-        // Execute the query and return the result.
+        // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
 
     }//end find()
@@ -131,32 +140,30 @@ class RegisterMapper extends QBMapper
 
 
     /**
-     * Find all registers
+     * Find all registers, with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results
      * @param int|null   $offset           The offset of the results
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
+     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
      *
-     * @return array Array of found registers
+     * @return array Array of found registers, possibly with stats
      */
     public function findAll(
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
         ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?array $searchParams=[],
+        ?array $extend=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
-
-        // Build the base query.
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
-
-        // Apply filters.
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -167,7 +174,6 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        // Apply search conditions.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
@@ -175,7 +181,7 @@ class RegisterMapper extends QBMapper
             }
         }
 
-        // Execute the query and return the results.
+        // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -320,14 +326,24 @@ class RegisterMapper extends QBMapper
 
 
     /**
-     * Delete a register
+     * Delete a register only if no objects are attached
      *
      * @param Register $entity The register to delete
+     *
+     * @throws \Exception If objects are still attached to the register
      *
      * @return Register The deleted register
      */
     public function delete(Entity $entity): Register
     {
+        // Check for attached objects before deleting
+        $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
+        $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
+        if (($stats['total'] ?? 0) > 0) {
+            throw new \Exception('Cannot delete register: objects are still attached.');
+        }
+
+        // Proceed with deletion if no objects are attached
         $result = parent::delete($entity);
 
         // Dispatch deletion event.

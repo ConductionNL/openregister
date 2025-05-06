@@ -102,7 +102,10 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								</template>
 								Download API Specification
 							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+							<NcActionButton
+								v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+								:disabled="register.stats?.total > 0"
+								@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -265,7 +268,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 </template>
 
 <script>
-import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -287,9 +290,6 @@ import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'RegistersIndex',
-	directives: {
-		tooltip,
-	},
 	components: {
 		NcAppContent,
 		NcEmptyContent,
@@ -404,7 +404,9 @@ export default {
 		},
 
 		viewRegisterDetails(register) {
-			registerStore.setRegisterItem(register)
+			// Set the register ID in the register store for reference
+			registerStore.setRegisterItem({ id: register.id })
+			// Navigate to detail view which will use dashboard store data
 			navigationStore.setSelected('register-detail')
 		},
 	},
@@ -451,20 +453,8 @@ export default {
 
 .registers {
 	display: grid;
-	grid-template-columns: 1fr;
 	gap: 1.5rem;
-}
-
-@media screen and (min-width: 880px) {
-	.registers {
-		grid-template-columns: repeat(2, 1fr);
-	}
-}
-
-@media screen and (min-width: 1220px) {
-	.registers {
-		grid-template-columns: repeat(3, 1fr);
-	}
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .registerCard {

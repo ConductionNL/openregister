@@ -418,11 +418,13 @@ class RenderObject
                 $tmpExtends = $extends;
                 $data[$key] = $this->handleExtendDot($datum, $tmpExtends, $depth);
             }
+
             $objectData->set($root, $data);
         }
 
         return $objectData->all();
-    }
+
+    }//end handleWildcardExtends()
 
 
     /**
@@ -481,9 +483,12 @@ class RenderObject
             // Extend the object(s).
             if (is_array($value) === true) {
                 // Filter out null values and values starting with '@' before mapping
-                $value = array_filter($value, function ($v) {
-                    return $v !== null && (is_string($v) === false || str_starts_with($v, '@') === false);
-                });
+                $value = array_filter(
+                        $value,
+                        function ($v) {
+                            return $v !== null && (is_string($v) === false || str_starts_with($v, '@') === false);
+                        }
+                        );
 
                 $renderedValue = array_map(
                         function (string | int $identifier) use ($depth, $keyExtends) {
@@ -504,12 +509,19 @@ class RenderObject
                         );
 
                 // Filter out any null values that might have been returned from the mapping
-                $renderedValue = array_filter($renderedValue, function ($v) { return $v !== null; });
+                $renderedValue = array_filter(
+                        $renderedValue,
+                        function ($v) {
+                            return $v !== null;
+                        }
+                        );
 
                 if (is_numeric($override) === true) {
-                    $data->set(keys: $key, value: array_values($renderedValue)); // Reset array keys
+                    $data->set(keys: $key, value: array_values($renderedValue));
+                    // Reset array keys
                 } else {
-                    $data->set(keys: $override, value: array_values($renderedValue)); // Reset array keys
+                    $data->set(keys: $override, value: array_values($renderedValue));
+                    // Reset array keys
                 }
             } else {
                 // Skip if the value starts with '@' or '_'

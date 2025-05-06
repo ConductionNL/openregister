@@ -4,18 +4,40 @@ import { Register } from '../../entities/index.js'
 
 export const useRegisterStore = defineStore('register', {
 	state: () => ({
-		registerItem: false,
+		registerItem: null,
 		registerList: [],
+		loading: false,
+		error: null,
+		activeTab: 'stats-tab',
 		filters: [], // List of query
 		pagination: {
 			page: 1,
 			limit: 20,
 		},
 	}),
+	getters: {
+		getRegisterItem: (state) => state.registerItem,
+		isLoading: (state) => state.loading,
+		getError: (state) => state.error,
+		getActiveTab: (state) => state.activeTab,
+	},
 	actions: {
+		setActiveTab(tab) {
+			this.activeTab = tab
+			console.log('Active tab set to:', tab)
+		},
 		setRegisterItem(registerItem) {
-			this.registerItem = registerItem ? new Register(registerItem) : null
-			console.log('Active register item set to ' + (registerItem?.title || 'null'))
+			try {
+				this.loading = true
+				this.error = null
+				this.registerItem = registerItem ? new Register(registerItem) : null
+				console.log('Active register item set to ' + (registerItem?.title || 'null'))
+			} catch (error) {
+				console.error('Error setting register item:', error)
+				this.error = error.message
+			} finally {
+				this.loading = false
+			}
 		},
 		setRegisterList(registerList) {
 			this.registerList = registerList.map(
@@ -42,10 +64,10 @@ export const useRegisterStore = defineStore('register', {
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
-			// @todo this might belong in a service?
-			let endpoint = '/index.php/apps/openregister/api/registers'
+			// Always include _extend[]=@self.stats to get statistics
+			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=@self.stats'
 			if (search !== null && search !== '') {
-				endpoint = endpoint + '?_search=' + search
+				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -59,7 +81,8 @@ export const useRegisterStore = defineStore('register', {
 		},
 		// New function to get a single register
 		async getRegister(id) {
-			const endpoint = `/index.php/apps/openregister/api/registers/${id}`
+			// Always include _extend[]=@self.stats to get statistics
+			const endpoint = `/index.php/apps/openregister/api/registers/${id}?_extend[]=@self.stats`
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
@@ -241,6 +264,10 @@ export const useRegisterStore = defineStore('register', {
 				console.error('Error importing register:', error)
 				throw error // Pass through the original error message
 			}
+		},
+		clearRegisterItem() {
+			this.registerItem = null
+			this.error = null
 		},
 	},
 })

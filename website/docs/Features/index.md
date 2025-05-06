@@ -405,6 +405,17 @@ graph TD
 8. **Event Design**: Design events to carry sufficient context for listeners
 9. **Listener Independence**: Ensure event listeners can operate independently
 
+## Dashboard Sidebar Data Flow
+
+The dashboard sidebar now interacts with the dashboard store in a reactive way. When a user selects a register or schema in the sidebar, the active register and schema are set in the register and schema stores. The dashboard store no longer maintains its own selected register or schema state. Instead, it observes the active register and schema from these stores and automatically refreshes all dashboard data whenever either changes.
+
+**Example:**
+
+- When 'registerStore.registerItem' or 'schemaStore.schemaItem' changes, the dashboard store fetches new chart and statistics data.
+- This ensures the dashboard always reflects the current selection in the sidebar, with no need for manual synchronization.
+
+This approach improves maintainability and ensures a single source of truth for the active register and schema throughout the application.
+
 ## Conclusion
 
 The relationships between Open Register's core concepts create a flexible yet structured system for managing data. By understanding these relationships, you can design effective data models that leverage the full power of the system while maintaining data quality and performance. 

@@ -67,9 +67,29 @@ class LogController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination parameters.
-        $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
-        $offset = isset($params['offset']) ? (int) $params['offset'] : (isset($params['_offset']) ? (int) $params['_offset'] : null);
-        $page   = isset($params['page']) ? (int) $params['page'] : (isset($params['_page']) ? (int) $params['_page'] : null);
+        if (isset($params['limit'])) {
+            $limit = (int) $params['limit'];
+        } else if (isset($params['_limit'])) {
+            $limit = (int) $params['_limit'];
+        } else {
+            $limit = 20;
+        }
+
+        if (isset($params['offset'])) {
+            $offset = (int) $params['offset'];
+        } else if (isset($params['_offset'])) {
+            $offset = (int) $params['_offset'];
+        } else {
+            $offset = null;
+        }
+
+        if (isset($params['page'])) {
+            $page = (int) $params['page'];
+        } else if (isset($params['_page'])) {
+            $page = (int) $params['_page'];
+        } else {
+            $page = null;
+        }
 
         // If we have a page but no offset, calculate the offset.
         if ($page !== null && $offset === null) {

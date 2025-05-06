@@ -1,53 +1,23 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppContent>
-		<span class="pageHeaderContainer">
-			<h2 class="pageHeader">
-				Dashboard
-			</h2>
-
-			<NcActions
-				:force-name="true"
-				:inline="1"
-				:primary="true"
-				menu-name="Dashboard actions">
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					Add Register
-				</NcActionButton>
-				<NcActionButton @click="dashboardStore.fetchRegisters()">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Refresh
-				</NcActionButton>
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
-					<template #icon>
-						<Upload :size="20" />
-					</template>
-					Import
-				</NcActionButton>
-				<NcActionButton @click="openAllApisDoc">
-					<template #icon>
-						<ApiIcon :size="20" />
-					</template>
-					View APIs
-				</NcActionButton>
-			</NcActions>
-		</span>
-
 		<div class="dashboardContent">
-			<div v-if="dashboardStore.loading" class="loading">
-				<NcLoadingIcon :size="32" />
-				<span>Loading dashboard data...</span>
+			<div v-if="dashboardStore.loading" class="error">
+				<NcEmptyContent name="Loading" description="Loading dashboard data...">
+					<template #icon>
+						<NcLoadingIcon :size="64" />
+					</template>
+				</NcEmptyContent>
 			</div>
 			<div v-else-if="dashboardStore.error" class="error">
-				<NcEmptyContent :title="dashboardStore.error" icon="icon-error" />
+				<NcEmptyContent name="Error" :description="dashboardStore.error">
+					<template #icon>
+						<AlertCircle :size="64" />
+					</template>
+				</NcEmptyContent>
 			</div>
 			<div v-else class="chartsContainer">
 				<!-- Audit Trail Actions Chart -->
@@ -97,31 +67,19 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 </template>
 
 <script>
-import { tooltip, NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import VueApexCharts from 'vue-apexcharts'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
-import Upload from 'vue-material-design-icons/Upload.vue'
-import ApiIcon from 'vue-material-design-icons/Api.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 
 export default {
 	name: 'DashboardIndex',
-	directives: {
-		tooltip,
-	},
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcLoadingIcon,
-		NcActions,
-		NcActionButton,
 		apexchart: VueApexCharts,
-		Plus,
-		Refresh,
-		ApiIcon,
-		Upload,
+		AlertCircle,
 	},
 	data() {
 		return {
@@ -366,15 +324,6 @@ export default {
 	max-width: 1200px;
 	padding-block: 20px;
 	padding-inline: 20px;
-}
-
-.loading {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	color: var(--color-text-maxcontrast);
-	justify-content: center;
-	padding-block: 40px;
 }
 
 .chartsContainer {

@@ -114,7 +114,7 @@ class AuditTrailMapper extends QBMapper
         // Apply filters.
         foreach ($filters as $field => $value) {
             // Ensure the field is a valid column name.
-            if (!in_array(
+            if (in_array(
                     $field,
                     [
                         'id',
@@ -132,7 +132,7 @@ class AuditTrailMapper extends QBMapper
                         'version',
                         'created',
                     ]
-                    )
+                    ) === false
             ) {
                 continue;
             }
@@ -156,7 +156,7 @@ class AuditTrailMapper extends QBMapper
         // Add sorting.
         foreach ($sort as $field => $direction) {
             // Ensure the field is a valid column name.
-            if (!in_array(
+            if (in_array(
                     $field,
                     [
                         'id',
@@ -174,14 +174,18 @@ class AuditTrailMapper extends QBMapper
                         'version',
                         'created',
                     ]
-                    )
+                    ) === false
             ) {
                 continue;
             }
 
-            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+            if (strtoupper($direction) === 'DESC') {
+                $direction = 'DESC';
+            } else {
+                $direction = 'ASC';
+            }
             $qb->addOrderBy($field, $direction);
-        }//end foreach.
+        }//end foreach
 
         // Apply pagination.
         if ($limit !== null) {
@@ -246,7 +250,8 @@ class AuditTrailMapper extends QBMapper
         if ($log->getUuid() === null) {
             $log->setUuid(Uuid::v4());
         }
-        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object
+
+        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object.
 
         return $this->insert(entity: $log);
 
@@ -258,17 +263,17 @@ class AuditTrailMapper extends QBMapper
      *
      * @param ObjectEntity|null $old The old state of the object
      * @param ObjectEntity|null $new The new state of the object
-     *
+     * @param string|null     $action The action to create the audit trail for
+     * 
      * @return AuditTrail The created audit trail
      */
-    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null): AuditTrail
+    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
         // Determine the action based on the presence of old and new objects.
-        $action = 'update';
-        if ($new === null) {
+        if ($new === null && $action === 'update') {
             $action       = 'delete';
             $objectEntity = $old;
-        } else if ($old === null) {
+        } else if ($old === null && $action === 'update') {
             $action       = 'create';
             $objectEntity = $new;
         } else {
@@ -277,7 +282,7 @@ class AuditTrailMapper extends QBMapper
 
         // Initialize an array to store changed fields.
         $changed = [];
-        if ($action !== 'delete') {
+        if ($action !== 'delete' && $action !== 'read') {
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             } else {
@@ -636,7 +641,7 @@ class AuditTrailMapper extends QBMapper
 
             // Process results into chart format
             $dateData = [];
-            $actions = ['create', 'update', 'delete'];
+            $actions = ['create', 'update', 'delete','read'];
             
             // Initialize data structure
             foreach ($results as $row) {

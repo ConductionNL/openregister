@@ -1,17 +1,75 @@
 <script setup>
-import { registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppContent>
 		<div class="registerDetailContent">
-			<!-- Main content area for schema charts -->
-			<div class="schemaCharts">
-				<div v-if="!register" class="loadingContainer">
-					<NcLoadingIcon :size="32" />
-					<span>Loading register data...</span>
+			<!-- Loading and error states -->
+			<div v-if="dashboardStore.loading" class="loadingContainer">
+				<NcLoadingIcon :size="32" />
+				<span>Loading register data...</span>
+			</div>
+			<div v-else-if="dashboardStore.error" class="emptyContainer">
+				<NcEmptyContent
+					:title="dashboardStore.error"
+					icon="icon-error">
+					<template #action>
+						<NcButton @click="navigationStore.setSelected('registers')">
+							{{ t('openregister', 'Back to Registers') }}
+						</NcButton>
+					</template>
+				</NcEmptyContent>
+			</div>
+			<div v-else-if="!register" class="emptyContainer">
+				<NcEmptyContent
+					:title="t('openregister', 'Register not found')"
+					icon="icon-error">
+					<template #action>
+						<NcButton @click="navigationStore.setSelected('registers')">
+							{{ t('openregister', 'Back to Registers') }}
+						</NcButton>
+					</template>
+				</NcEmptyContent>
+			</div>
+
+			<!-- Stats Tab Content -->
+			<div v-else-if="registerStore.getActiveTab === 'stats-tab'" class="chartsContainer">
+				<!-- Audit Trail Actions Chart -->
+				<div class="chartCard">
+					<h3>Audit Trail Actions</h3>
+					<apexchart
+						type="line"
+						height="350"
+						:options="auditTrailChartOptions"
+						:series="dashboardStore.chartData.auditTrailActions?.series || []" />
 				</div>
-				<div v-else-if="!register.schemas?.length" class="emptyContainer">
+
+				<!-- Objects by Schema Chart -->
+				<div class="chartCard">
+					<h3>Objects by Schema</h3>
+					<apexchart
+						type="pie"
+						height="350"
+						:options="schemaChartOptions"
+						:series="dashboardStore.chartData.objectsBySchema?.series || []"
+						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
+				</div>
+
+				<!-- Objects by Size Chart -->
+				<div class="chartCard">
+					<h3>Objects by Size Distribution</h3>
+					<apexchart
+						type="bar"
+						height="350"
+						:options="sizeChartOptions"
+						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+				</div>
+			</div>
+
+			<!-- Schemas Tab Content -->
+			<div v-else-if="registerStore.getActiveTab === 'schemas-tab'" class="schemaGrid">
+				<div v-if="!register.schemas?.length" class="emptyContainer">
 					<NcEmptyContent
 						:title="t('openregister', 'No schemas found')"
 						icon="icon-folder">
@@ -95,8 +153,110 @@ export default {
 	},
 	computed: {
 		register() {
-			return registerStore.getRegisterItem
+			// Find the register in the dashboard store using the ID from register store
+			const registerId = registerStore.getRegisterItem?.id
+			return dashboardStore.registers.find(r => r.id === registerId)
 		},
+		auditTrailChartOptions() {
+			return {
+				chart: {
+					type: 'line',
+					toolbar: {
+						show: true,
+					},
+					zoom: {
+						enabled: true,
+					},
+				},
+				xaxis: {
+					categories: dashboardStore.chartData.auditTrailActions?.labels || [],
+					title: {
+						text: 'Date',
+					},
+				},
+				yaxis: {
+					title: {
+						text: 'Number of Actions',
+					},
+				},
+				colors: ['#41B883', '#E46651', '#00D8FF'],
+				stroke: {
+					curve: 'smooth',
+					width: 2,
+				},
+				legend: {
+					position: 'top',
+				},
+				theme: {
+					mode: 'light',
+				},
+			}
+		},
+		schemaChartOptions() {
+			return {
+				chart: {
+					type: 'pie',
+				},
+				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
+				legend: {
+					position: 'bottom',
+				},
+				responsive: [{
+					breakpoint: 480,
+					options: {
+						chart: {
+							width: 200,
+						},
+						legend: {
+							position: 'bottom',
+						},
+					},
+				}],
+			}
+		},
+		sizeChartOptions() {
+			return {
+				chart: {
+					type: 'bar',
+				},
+				plotOptions: {
+					bar: {
+						horizontal: false,
+						columnWidth: '55%',
+						endingShape: 'rounded',
+					},
+				},
+				xaxis: {
+					categories: dashboardStore.chartData.objectsBySize?.labels || [],
+					title: {
+						text: 'Size Range',
+					},
+				},
+				yaxis: {
+					title: {
+						text: 'Number of Objects',
+					},
+				},
+				fill: {
+					opacity: 1,
+				},
+			}
+		},
+	},
+	async mounted() {
+		// If we have a register ID but no data, fetch dashboard data
+		if (registerStore.getRegisterItem?.id && !this.register) {
+			try {
+				await dashboardStore.fetchRegisters()
+				await dashboardStore.fetchAllChartData()
+			} catch (error) {
+				console.error('Failed to fetch register details:', error)
+				navigationStore.setSelected('registers')
+			}
+		} else if (!registerStore.getRegisterItem?.id) {
+			// If no register ID at all, go back to list
+			navigationStore.setSelected('registers')
+		}
 	},
 	methods: {
 		getSchemaChartOptions() {
@@ -142,6 +302,27 @@ export default {
 	color: var(--color-text-maxcontrast);
 	justify-content: center;
 	padding-block: 40px;
+}
+
+.chartsContainer {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20px;
+	padding: 20px;
+}
+
+.chartCard {
+	background: var(--color-main-background);
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 2px 8px var(--color-box-shadow);
+	border: 1px solid var(--color-border);
+
+	h3 {
+		margin: 0 0 20px 0;
+		font-size: 1.2em;
+		color: var(--color-main-text);
+	}
 }
 
 .schemaGrid {
@@ -194,5 +375,11 @@ export default {
 .statValue {
 	font-size: 1.1em;
 	font-weight: 600;
+}
+
+@media screen and (max-width: 1024px) {
+	.chartsContainer {
+		grid-template-columns: 1fr;
+	}
 }
 </style>

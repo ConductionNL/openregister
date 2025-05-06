@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,6 +49,13 @@ class RegistersController extends Controller
      */
     private readonly ConfigurationService $configurationService;
 
+    /**
+     * Audit trail mapper for fetching log statistics
+     *
+     * @var AuditTrailMapper
+     */
+    private readonly AuditTrailMapper $auditTrailMapper;
+
 
     /**
      * Constructor for the RegistersController
@@ -58,6 +66,7 @@ class RegistersController extends Controller
      * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
      * @param UploadService        $uploadService        The upload service
      * @param ConfigurationService $configurationService The configuration service
+     * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
      *
      * @return void
      */
@@ -67,10 +76,12 @@ class RegistersController extends Controller
         private readonly RegisterMapper $registerMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
-        ConfigurationService $configurationService
+        ConfigurationService $configurationService,
+        AuditTrailMapper $auditTrailMapper
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
+        $this->auditTrailMapper     = $auditTrailMapper;
 
     }//end __construct()
 
@@ -116,55 +127,60 @@ class RegistersController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
+        $filters = $this->request->getParam('filters', []);
+        $search  = $this->request->getParam('_search', '');
+        $extend  = $this->request->getParam('_extend', []);
+        if (is_string($extend)) {
+            $extend = [$extend];
+        }
 
-        // Create search parameters and conditions for filtering.
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            filters: $filters,
-            fieldsToSearch: $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $registers    = $this->registerMapper->findAll(null, null, $filters, [], [], []);
+        $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
+        // If '@self.stats' is requested, attach statistics to each register
+        if (in_array('@self.stats', $extend, true)) {
+            foreach ($registersArr as &$register) {
+                $register['stats'] = [
+                    'objects' => $this->objectEntityMapper->getStatistics($register['id'], null),
+                    'logs'    => $this->auditTrailMapper->getStatistics($register['id'], null),
+                    'files'   => [ 'total' => 0, 'size' => 0 ],
+                ];
+            }
+        }
 
-        // Return all registers that match the search conditions.
-        return new JSONResponse(
-            [
-                'results' => $this->registerMapper->findAll(
-                    limit: null,
-                    offset: null,
-                    filters: $filters,
-                    searchConditions: $searchConditions,
-                    searchParams: $searchParams
-                ),
-            ]
-        );
+        return new JSONResponse(['results' => $registersArr]);
 
     }//end index()
 
 
     /**
-     * Retrieves a single register by its ID
+     * Retrieves a single register by ID
      *
-     * This method returns a JSON response containing the details of a specific register.
-     *
-     * @param string $id The ID of the register to retrieve
-     *
-     * @return JSONResponse A JSON response containing the register details
+     * @param  int|string $id The ID of the register
+     * @return JSONResponse
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function show(string $id): JSONResponse
+    public function show($id): JSONResponse
     {
-        try {
-            // Try to find the register by ID.
-            return new JSONResponse($this->registerMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            // Return a 404 error if the register doesn't exist.
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        $extend = $this->request->getParam('_extend', []);
+        if (is_string($extend)) {
+            $extend = [$extend];
         }
+
+        $register    = $this->registerMapper->find($id, []);
+        $registerArr = $register->jsonSerialize();
+        // If '@self.stats' is requested, attach statistics to the register
+        if (in_array('@self.stats', $extend, true)) {
+            $registerArr['stats'] = [
+                'objects' => $this->objectEntityMapper->getStatistics($registerArr['id'], null),
+                'logs'    => $this->auditTrailMapper->getStatistics($registerArr['id'], null),
+                'files'   => [ 'total' => 0, 'size' => 0 ],
+            ];
+        }
+
+        return new JSONResponse($registerArr);
 
     }//end show()
 

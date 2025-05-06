@@ -6,18 +6,19 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		name="Dashboard"
-		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage.">
+		name="Registers"
+		subtitle="Register Overview"
+		subname="Statistics and Metrics">
 		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
 			<template #icon>
-				<Magnify :size="20" />
+				<ChartBar :size="20" />
 			</template>
 
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect v-bind="registerOptions"
 						:model-value="selectedRegisterValue"
 						:loading="registerLoading"
@@ -39,7 +40,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 			<!-- System Totals Section -->
 			<div class="section">
 				<h3 class="sectionTitle">
-					{{ t('openregister', 'Totals') }}
+					{{ t('openregister', 'Register Totals') }}
 				</h3>
 				<div v-if="dashboardStore.loading" class="loadingContainer">
 					<NcLoadingIcon :size="20" />
@@ -166,34 +167,78 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 				</div>
 			</div>
 		</NcAppSidebarTab>
+
+		<NcAppSidebarTab id="settings-tab" name="Settings" :order="2">
+			<template #icon>
+				<Cog :size="20" />
+			</template>
+
+			<!-- Settings Section -->
+			<div class="section">
+				<h3 class="sectionTitle">
+					Register Settings
+				</h3>
+				<NcNoteCard type="info">
+					Settings will be added in a future update
+				</NcNoteCard>
+			</div>
+		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
+import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import ChartBar from 'vue-material-design-icons/ChartBar.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
 import formatBytes from '../../services/formatBytes.js'
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcLoadingIcon } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+// Ensure data is loaded
+dashboardStore.preload()
 
 export default {
-	name: 'DashboardSideBar',
+	name: 'RegistersSideBar',
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
-		NcSelect,
 		NcLoadingIcon,
-		Magnify,
+		NcNoteCard,
+		// Icons
+		ChartBar,
+		Cog,
+		NcSelect,
 	},
 	data() {
 		return {
+			activeTab: 'overview-tab',
+			selectedRegisterId: null,
+			selectedSchemaId: null,
+			dateRange: {
+				from: null,
+				till: null,
+			},
 			registerLoading: false,
 			schemaLoading: false,
 			ignoreNextPageWatch: false,
 			searchQuery: '',
-			activeTab: 'overview-tab',
-			searchTimeout: null,
 		}
 	},
 	computed: {
+		systemTotals() {
+			return dashboardStore.getSystemTotals
+		},
+		orphanedItems() {
+			return dashboardStore.getOrphanedItems
+		},
+		filteredRegisters() {
+			return dashboardStore.registers.filter(register =>
+				register.title !== 'System Totals'
+				&& register.title !== 'Orphaned Items',
+			)
+		},
+		totalSchemas() {
+			return this.filteredRegisters.reduce((total, register) => {
+				return total + (register.schemas?.length || 0)
+			}, 0)
+		},
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -248,127 +293,26 @@ export default {
 				schema,
 			}
 		},
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
-		},
-		/**
-		 * Get system totals from dashboardStore
-		 * @return {object | null}
-		 */
-		systemTotals() {
-			return dashboardStore.registers.find(register => register.title === 'System Totals')
-		},
-		/**
-		 * Get orphaned items from dashboardStore
-		 * @return {object | null}
-		 */
-		orphanedItems() {
-			return dashboardStore.registers.find(register => register.title === 'Orphaned Items')
-		},
-		/**
-		 * Get filtered registers (excluding system and orphaned)
-		 * @return {Array}
-		 */
-		filteredRegisters() {
-			return dashboardStore.registers.filter(register =>
-				register.title !== 'System Totals'
-				&& register.title !== 'Orphaned Items',
-			)
-		},
-		/**
-		 * Get total number of schemas in filtered registers
-		 * @return {number}
-		 */
-		totalSchemas() {
-			return this.filteredRegisters.reduce((total, register) => {
-				return total + (register.schemas?.length || 0)
-			}, 0)
-		},
-	},
-	watch: {
-		'searchQuery'(value) {
-			if (this.searchTimeout) {
-				clearTimeout(this.searchTimeout)
-			}
-			this.searchTimeout = setTimeout(() => {
-				objectStore.setFilters({
-					_search: value || '',
-				})
-				if (registerStore.registerItem && schemaStore.schemaItem) {
-					objectStore.refreshObjectList({
-						register: registerStore.registerItem.id,
-						schema: schemaStore.schemaItem.id,
-					})
-				}
-			}, 1000)
-		},
-		// Watch for schema changes to initialize properties
-		// Use immediate: true equivalent in mounted
-		// This watcher will update properties when schema changes
-		'$root.schemaStore.schemaItem': {
-			handler(newSchema) {
-				if (newSchema) {
-					objectStore.initializeProperties(newSchema)
-				} else {
-					objectStore.properties = {}
-					objectStore.initializeColumnFilters()
-				}
-			},
-			deep: true,
-		},
-	},
-	mounted() {
-		objectStore.initializeColumnFilters()
-		this.registerLoading = true
-		this.schemaLoading = true
-
-		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
-
-		// Load objects if register and schema are already selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
-			objectStore.refreshObjectList()
-		}
 	},
 	methods: {
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
-		async handleSchemaChange(option) {
+		handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
 				objectStore.refreshObjectList()
 			}
 		},
-		handleSearch() {
-			if (registerStore.registerItem && schemaStore.schemaItem) {
-				objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-					search: this.searchQuery,
-				})
-			}
+		onDateRangeChange() {
+			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
 	},
 }
 </script>
+
 <style lang="scss" scoped>
 .section {
 	padding: 12px 0;

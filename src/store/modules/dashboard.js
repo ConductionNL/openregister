@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { useRegisterStore } from './register.js'
+import { useSchemaStore } from './schema.js'
+import { watch } from 'vue'
 
 export const useDashboardStore = defineStore('dashboard', {
 	state: () => ({
@@ -8,8 +11,6 @@ export const useDashboardStore = defineStore('dashboard', {
 		loading: false,
 		error: null,
 		isInitialized: false,
-		selectedRegisterId: null,
-		selectedSchemaId: null,
 		dateRange: {
 			from: null,
 			till: null,
@@ -34,34 +35,53 @@ export const useDashboardStore = defineStore('dashboard', {
 		getError: (state) => state.error,
 		getSystemTotals: (state) => state.registers.find(register => register.title === 'System Totals'),
 		getOrphanedItems: (state) => state.registers.find(register => register.title === 'Orphaned Items'),
-		getSelectedRegisterId: (state) => state.selectedRegisterId,
-		getSelectedSchemaId: (state) => state.selectedSchemaId,
 		getDateRange: (state) => state.dateRange,
 		getChartData: (state) => state.chartData,
 		isChartLoading: (state) => state.chartLoading,
 	},
 
 	actions: {
-		setSelectedRegisterId(registerId) {
-			this.selectedRegisterId = registerId
-			// Refresh chart data when selection changes
-			this.fetchAllChartData()
-		},
-
-		setSelectedSchemaId(schemaId) {
-			this.selectedSchemaId = schemaId
-			// Refresh chart data when selection changes
-			this.fetchAllChartData()
-		},
-
-		setDateRange(from, till) {
+		/**
+		 * Set the date range for audit trail chart and refresh it
+		 * @param {string|null} from - Start date
+		 * @param {string|null} till - End date
+		 * @return {void}
+		 */
+		setDateRange(from = null, till = null) {
 			this.dateRange = { from, till }
 			// Refresh audit trail chart when date range changes
 			this.fetchAuditTrailActionChart()
 		},
 
+		/**
+		 * Initialize the dashboard store and set up watchers for register and schema changes
+		 * @return {void}
+		 */
+		init() {
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			// Watch for changes in the active register or schema and refresh dashboard data
+			watch([
+				() => registerStore.registerItem?.id,
+				() => schemaStore.schemaItem?.id,
+			], async () => {
+				// Fetch registers to update sidebar tables
+				await this.fetchRegisters()
+				// Fetch all chart data to update dashboard charts
+				await this.fetchAllChartData()
+			})
+		},
+
+		/**
+		 * Fetch audit trail action chart data
+		 * @return {Promise<void>}
+		 */
 		async fetchAuditTrailActionChart() {
 			if (this.chartLoading.auditTrailActions) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
 
 			try {
 				this.chartLoading.auditTrailActions = true
@@ -69,8 +89,8 @@ export const useDashboardStore = defineStore('dashboard', {
 					params: {
 						from: this.dateRange.from,
 						till: this.dateRange.till,
-						registerId: this.selectedRegisterId,
-						schemaId: this.selectedSchemaId,
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
 					},
 				})
 				this.chartData.auditTrailActions = response.data
@@ -82,15 +102,22 @@ export const useDashboardStore = defineStore('dashboard', {
 			}
 		},
 
+		/**
+		 * Fetch objects by register chart data
+		 * @return {Promise<void>}
+		 */
 		async fetchObjectsByRegisterChart() {
 			if (this.chartLoading.objectsByRegister) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
 
 			try {
 				this.chartLoading.objectsByRegister = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-register'), {
 					params: {
-						registerId: this.selectedRegisterId,
-						schemaId: this.selectedSchemaId,
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
 					},
 				})
 				this.chartData.objectsByRegister = response.data
@@ -102,15 +129,22 @@ export const useDashboardStore = defineStore('dashboard', {
 			}
 		},
 
+		/**
+		 * Fetch objects by schema chart data
+		 * @return {Promise<void>}
+		 */
 		async fetchObjectsBySchemaChart() {
 			if (this.chartLoading.objectsBySchema) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
 
 			try {
 				this.chartLoading.objectsBySchema = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-schema'), {
 					params: {
-						registerId: this.selectedRegisterId,
-						schemaId: this.selectedSchemaId,
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
 					},
 				})
 				this.chartData.objectsBySchema = response.data
@@ -122,15 +156,22 @@ export const useDashboardStore = defineStore('dashboard', {
 			}
 		},
 
+		/**
+		 * Fetch objects by size chart data
+		 * @return {Promise<void>}
+		 */
 		async fetchObjectsBySizeChart() {
 			if (this.chartLoading.objectsBySize) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
 
 			try {
 				this.chartLoading.objectsBySize = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-size'), {
 					params: {
-						registerId: this.selectedRegisterId,
-						schemaId: this.selectedSchemaId,
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
 					},
 				})
 				this.chartData.objectsBySize = response.data
@@ -142,6 +183,10 @@ export const useDashboardStore = defineStore('dashboard', {
 			}
 		},
 
+		/**
+		 * Fetch all chart data in parallel
+		 * @return {Promise<void>}
+		 */
 		async fetchAllChartData() {
 			await Promise.all([
 				this.fetchAuditTrailActionChart(),
@@ -151,6 +196,10 @@ export const useDashboardStore = defineStore('dashboard', {
 			])
 		},
 
+		/**
+		 * Preload dashboard data
+		 * @return {Promise<Array>}
+		 */
 		async preload() {
 			if (!this.isInitialized && !this.loading) {
 				await this.fetchRegisters()
@@ -160,16 +209,20 @@ export const useDashboardStore = defineStore('dashboard', {
 			return this.registers
 		},
 
+		/**
+		 * Fetch registers for dashboard, filtered by the current register and schema from the stores
+		 * @return {Promise<Array>}
+		 */
 		async fetchRegisters() {
-			// If already loading, return existing promise
-			if (this.loading) {
-				return this.registers
-			}
-
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
 			try {
 				this.loading = true
 				this.error = null
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard'))
+				const params = {}
+				if (registerStore.registerItem?.id) params.registerId = registerStore.registerItem.id
+				if (schemaStore.schemaItem?.id) params.schemaId = schemaStore.schemaItem.id
+				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard'), { params })
 				this.registers = response.data.registers
 				return this.registers
 			} catch (error) {
@@ -181,6 +234,11 @@ export const useDashboardStore = defineStore('dashboard', {
 			}
 		},
 
+		/**
+		 * Calculate sizes for a register and refresh
+		 * @param {string} registerId - The ID of the register
+		 * @return {Promise<boolean>}
+		 */
 		async calculateSizes(registerId) {
 			try {
 				await axios.post(generateUrl(`/apps/openregister/api/dashboard/calculate/${registerId}`))
@@ -193,13 +251,15 @@ export const useDashboardStore = defineStore('dashboard', {
 			}
 		},
 
+		/**
+		 * Reset dashboard store state
+		 * @return {void}
+		 */
 		reset() {
 			this.registers = []
 			this.loading = false
 			this.error = null
 			this.isInitialized = false
-			this.selectedRegisterId = null
-			this.selectedSchemaId = null
 			this.dateRange = { from: null, till: null }
 			this.chartData = {
 				auditTrailActions: null,
@@ -216,3 +276,25 @@ export const useDashboardStore = defineStore('dashboard', {
 		},
 	},
 })
+
+/**
+ * Sets up watchers for register and schema changes to refresh dashboard data.
+ * Call this function once in your app entry point after creating the stores.
+ * @return {void}
+ */
+export function setupDashboardStoreWatchers() {
+	const dashboardStore = useDashboardStore()
+	const registerStore = useRegisterStore()
+	const schemaStore = useSchemaStore()
+
+	// Watch for changes in the active register or schema and refresh dashboard data
+	watch([
+		() => registerStore.registerItem?.id,
+		() => schemaStore.schemaItem?.id,
+	], () => {
+		// Fetch registers to update sidebar tables, using current store state
+		dashboardStore.fetchRegisters()
+		// Fetch all chart data to update dashboard charts
+		dashboardStore.fetchAllChartData()
+	})
+}

@@ -3,127 +3,142 @@ import { objectStore, schemaStore, registerStore, navigationStore } from '../../
 </script>
 
 <template>
-	<NcDialog
-		:name="dialogTitle"
-		size="large"
-		:can-close="false">
-		<div class="dialog-content">
-			<NcNoteCard v-if="success" type="success" class="note-card">
-				<p>Object successfully {{ isNewObject ? 'created' : 'modified' }}</p>
-			</NcNoteCard>
-			<NcNoteCard v-if="error" type="error" class="note-card">
-				<p>{{ error }}</p>
-			</NcNoteCard>
+	<div>
+		<NcDialog
+			:name="dialogTitle"
+			size="large"
+			:can-close="false">
+			<div class="dialog-content">
+				<NcNoteCard v-if="success" type="success" class="note-card">
+					<p>Object successfully {{ isNewObject ? 'created' : 'modified' }}</p>
+				</NcNoteCard>
+				<NcNoteCard v-if="error" type="error" class="note-card">
+					<p>{{ error }}</p>
+				</NcNoteCard>
 
-			<div v-if="!success">
-				<!-- Register and Schema Info with card style -->
-				<div class="detail-grid">
-					<div class="detail-item" :class="{ 'empty-value': !currentRegister?.title }">
-						<span class="detail-label">Register:</span>
-						<span class="detail-value">{{ currentRegister?.title || 'Not selected' }}</span>
+				<div v-if="!success">
+					<!-- Register and Schema Info with card style -->
+					<div class="detail-grid">
+						<div class="detail-item" :class="{ 'empty-value': !currentRegister?.title }">
+							<span class="detail-label">Register:</span>
+							<span class="detail-value">{{ currentRegister?.title || 'Not selected' }}</span>
+						</div>
+						<div class="detail-item" :class="{ 'empty-value': !currentSchema?.title }">
+							<span class="detail-label">Schema:</span>
+							<span class="detail-value">{{ currentSchema?.title || 'Not selected' }}</span>
+						</div>
 					</div>
-					<div class="detail-item" :class="{ 'empty-value': !currentSchema?.title }">
-						<span class="detail-label">Schema:</span>
-						<span class="detail-value">{{ currentSchema?.title || 'Not selected' }}</span>
+
+					<!-- Upload Files Button (only for existing objects) -->
+					<NcButton v-if="!isNewObject"
+						type="secondary"
+						class="upload-files-btn"
+						@click="openUploadFilesModal">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						Upload Files
+					</NcButton>
+
+					<!-- Edit Tabs -->
+					<div class="tabContainer">
+						<BTabs v-model="activeTab" content-class="mt-3" justified>
+							<BTab title="Form Editor" active>
+								<div v-if="currentSchema" class="form-editor">
+									<div v-for="(prop, key) in schemaProperties" :key="key" class="form-field">
+										<template v-if="prop.type === 'string'">
+											<NcTextField
+												:label="prop.title || key"
+												:model-value="getFieldValue(key)"
+												:placeholder="prop.description"
+												:helper-text="prop.description"
+												:required="prop.required"
+												@update:model-value="value => setFieldValue(key, value)" />
+										</template>
+										<template v-else-if="prop.type === 'boolean'">
+											<NcCheckboxRadioSwitch
+												:label="prop.title || key"
+												:model-value="getFieldValue(key)"
+												:helper-text="prop.description"
+												type="switch"
+												@update:model-value="value => setFieldValue(key, value)" />
+										</template>
+										<template v-else-if="prop.type === 'number' || prop.type === 'integer'">
+											<NcTextField
+												:label="prop.title || key"
+												:model-value="getFieldValue(key)"
+												:placeholder="prop.description"
+												:helper-text="prop.description"
+												:required="prop.required"
+												type="number"
+												:min="prop.minimum"
+												:max="prop.maximum"
+												:step="prop.type === 'integer' ? '1' : 'any'"
+												@update:model-value="value => setFieldValue(key, value)" />
+										</template>
+									</div>
+								</div>
+								<NcEmptyContent v-else>
+									Please select a schema to edit the object
+								</NcEmptyContent>
+							</BTab>
+
+							<BTab title="JSON Editor">
+								<div class="json-editor">
+									<div :class="`codeMirrorContainer ${getTheme()}`">
+										<CodeMirror
+											v-model="jsonData"
+											:basic="true"
+											placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+											:dark="getTheme() === 'dark'"
+											:linter="jsonParseLinter()"
+											:lang="json()"
+											:extensions="[json()]"
+											:tab-size="2"
+											style="height: 400px" />
+										<NcButton
+											class="format-json-button"
+											type="secondary"
+											size="small"
+											@click="formatJSON">
+											Format JSON
+										</NcButton>
+									</div>
+									<span v-if="!isValidJson(jsonData)" class="error-message">
+										Invalid JSON format
+									</span>
+								</div>
+							</BTab>
+						</BTabs>
 					</div>
-				</div>
-
-				<!-- Edit Tabs -->
-				<div class="tabContainer">
-					<BTabs v-model="activeTab" content-class="mt-3" justified>
-						<BTab title="Form Editor" active>
-							<div v-if="currentSchema" class="form-editor">
-								<div v-for="(prop, key) in schemaProperties" :key="key" class="form-field">
-									<template v-if="prop.type === 'string'">
-										<NcTextField
-											:label="prop.title || key"
-											:model-value="getFieldValue(key)"
-											:placeholder="prop.description"
-											:helper-text="prop.description"
-											:required="prop.required"
-											@update:model-value="value => setFieldValue(key, value)" />
-									</template>
-									<template v-else-if="prop.type === 'boolean'">
-										<NcCheckboxRadioSwitch
-											:label="prop.title || key"
-											:model-value="getFieldValue(key)"
-											:helper-text="prop.description"
-											type="switch"
-											@update:model-value="value => setFieldValue(key, value)" />
-									</template>
-									<template v-else-if="prop.type === 'number' || prop.type === 'integer'">
-										<NcTextField
-											:label="prop.title || key"
-											:model-value="getFieldValue(key)"
-											:placeholder="prop.description"
-											:helper-text="prop.description"
-											:required="prop.required"
-											type="number"
-											:min="prop.minimum"
-											:max="prop.maximum"
-											:step="prop.type === 'integer' ? '1' : 'any'"
-											@update:model-value="value => setFieldValue(key, value)" />
-									</template>
-								</div>
-							</div>
-							<NcEmptyContent v-else>
-								Please select a schema to edit the object
-							</NcEmptyContent>
-						</BTab>
-
-						<BTab title="JSON Editor">
-							<div class="json-editor">
-								<div :class="`codeMirrorContainer ${getTheme()}`">
-									<CodeMirror
-										v-model="jsonData"
-										:basic="true"
-										placeholder="{ &quot;key&quot;: &quot;value&quot; }"
-										:dark="getTheme() === 'dark'"
-										:linter="jsonParseLinter()"
-										:lang="json()"
-										:extensions="[json()]"
-										:tab-size="2"
-										style="height: 400px" />
-									<NcButton
-										class="format-json-button"
-										type="secondary"
-										size="small"
-										@click="formatJSON">
-										Format JSON
-									</NcButton>
-								</div>
-								<span v-if="!isValidJson(jsonData)" class="error-message">
-									Invalid JSON format
-								</span>
-							</div>
-						</BTab>
-					</BTabs>
 				</div>
 			</div>
-		</div>
 
-		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<template #actions>
+				<NcButton @click="closeModal">
+					<template #icon>
+						<Cancel :size="20" />
+					</template>
+					{{ success ? 'Close' : 'Cancel' }}
+				</NcButton>
 
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || (activeTab === 1 && !isValidJson(jsonData))"
-				type="primary"
-				@click="saveObject">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-else-if="!isNewObject" :size="20" />
-					<Plus v-else :size="20" />
-				</template>
-				{{ isNewObject ? 'Add' : 'Save' }}
-			</NcButton>
-		</template>
-	</NcDialog>
+				<NcButton
+					v-if="success === null"
+					:disabled="loading || (activeTab === 1 && !isValidJson(jsonData))"
+					type="primary"
+					@click="saveObject">
+					<template #icon>
+						<NcLoadingIcon v-if="loading" :size="20" />
+						<ContentSaveOutline v-else-if="!isNewObject" :size="20" />
+						<Plus v-else :size="20" />
+					</template>
+					{{ isNewObject ? 'Add' : 'Save' }}
+				</NcButton>
+			</template>
+		</NcDialog>
+		<!-- Add the UploadFiles modal for file uploads -->
+		<UploadFiles />
+	</div>
 </template>
 
 <script>
@@ -141,6 +156,7 @@ import { BTabs, BTab } from 'bootstrap-vue'
 import CodeMirror from 'vue-codemirror6'
 import { getTheme } from '../../services/getTheme.js'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
+import UploadFiles from '../file/UploadFiles.vue'
 
 // Icons
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -158,6 +174,7 @@ export default {
 		BTabs,
 		BTab,
 		CodeMirror,
+		UploadFiles,
 	},
 
 	data() {
@@ -346,6 +363,11 @@ export default {
 
 		setFieldValue(key, value) {
 			this.formData[key] = value
+		},
+
+		openUploadFilesModal() {
+			// Set the navigationStore modal to 'uploadFiles' to show the UploadFiles modal
+			navigationStore.setModal('uploadFiles')
 		},
 	},
 }

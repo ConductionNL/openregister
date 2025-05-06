@@ -28,4 +28,12 @@ describe('Schema Entity', () => {
 		expect(schema.validate().success).toBe(false)
 		expect(schema.slug).toBe(mockSchemaData()[1].slug) // Added slug property check
 	})
+
+	it('should create a Schema entity with stats', () => {
+		const schema = new Schema(mockSchemaData()[0])
+		expect(schema.stats).toBeDefined()
+		expect(schema.stats?.objects?.total).toBe(10)
+		expect(schema.stats?.logs?.total).toBe(2)
+		expect(schema.stats?.files?.size).toBe(128)
+	})
 })

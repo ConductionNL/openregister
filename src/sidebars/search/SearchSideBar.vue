@@ -14,40 +14,44 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 				<Magnify :size="20" />
 			</template>
 
-			<!-- Search Section -->
-			<div class="section">
-				<h3 class="section-title">
-					Search
-				</h3>
-				<NcSelect v-bind="registerOptions"
-					:model-value="selectedRegisterValue"
-					input-label="Register"
-					:loading="registerLoading"
-					:disabled="registerLoading"
-					placeholder="Select a register"
-					@update:model-value="handleRegisterChange" />
-
-				<NcSelect v-bind="schemaOptions"
-					:model-value="selectedSchemaValue"
-					input-label="Schema"
-					:loading="schemaLoading"
-					:disabled="!registerStore.registerItem || schemaLoading"
-					placeholder="Select a schema"
-					@update:model-value="handleSchemaChange" />
-
-				<NcTextField
-					v-model="searchQuery"
-					label="Search objects"
-					type="search"
-					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
-					placeholder="Type to search..."
-					class="search-input"
-					@update:modelValue="handleSearch" />
-
-				<NcNoteCard type="info" class="column-hint">
-					You can customize visible columns in the Columns tab
-				</NcNoteCard>
+			<!-- Filter Section -->
+			<div class="filterSection">
+				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Register') }}</label>
+					<NcSelect v-bind="registerOptions"
+						:model-value="selectedRegisterValue"
+						input-label="Register"
+						:loading="registerLoading"
+						:disabled="registerLoading"
+						placeholder="Select a register"
+						@update:model-value="handleRegisterChange" />
+				</div>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<NcSelect v-bind="schemaOptions"
+						:model-value="selectedSchemaValue"
+						input-label="Schema"
+						:loading="schemaLoading"
+						:disabled="!registerStore.registerItem || schemaLoading"
+						placeholder="Select a schema"
+						@update:model-value="handleSchemaChange" />
+				</div>
+				<div class="filterGroup">
+					<NcTextField
+						v-model="searchQuery"
+						label="Search objects"
+						type="search"
+						:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+						placeholder="Type to search..."
+						class="search-input"
+						@update:modelValue="handleSearch" />
+				</div>
 			</div>
+
+			<NcNoteCard type="info" class="column-hint">
+				You can customize visible columns in the Columns tab
+			</NcNoteCard>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
@@ -100,62 +104,11 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
-<!-- eslint-disable -->
 
 <script>
-
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
-import { ref, computed, onMounted, watch } from 'vue'
-
-// Add search input ref and debounce function
-const searchQuery = ref('')
-let searchTimeout = null
-
-// Debounced search function
-const handleSearch = (value) => {
-	if (searchTimeout) {
-		clearTimeout(searchTimeout)
-	}
-
-	searchTimeout = setTimeout(() => {
-		// Update the filters object with the search query
-		objectStore.setFilters({
-			_search: value || '', // Set as object property instead of array
-		})
-
-		// Only refresh if we have both register and schema selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
-			objectStore.refreshObjectList({
-				register: registerStore.registerItem.id,
-				schema: schemaStore.schemaItem.id,
-			})
-		}
-	}, 1000) // 3 second delay
-}
-
-// Initialize column filters when component mounts
-onMounted(() => {
-	objectStore.initializeColumnFilters()
-})
-
-const metadataColumns = computed(() => {
-	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-		id,
-		...meta,
-	}))
-})
-
-// Watch for schema changes to initialize properties
-watch(() => schemaStore.schemaItem, (newSchema) => {
-	if (newSchema) {
-		objectStore.initializeProperties(newSchema)
-	} else {
-		objectStore.properties = {}
-		objectStore.initializeColumnFilters()
-	}
-}, { immediate: true })
 
 export default {
 	name: 'SearchSideBar',
@@ -166,7 +119,6 @@ export default {
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcTextField,
-		// Icons
 		Magnify,
 		FormatColumns,
 	},
@@ -177,6 +129,7 @@ export default {
 			ignoreNextPageWatch: false,
 			searchQuery: '',
 			activeTab: 'search-tab',
+			searchTimeout: null,
 		}
 	},
 	computed: {
@@ -241,7 +194,40 @@ export default {
 			}))
 		},
 	},
+	watch: {
+		searchQuery(value) {
+			if (this.searchTimeout) {
+				clearTimeout(this.searchTimeout)
+			}
+			this.searchTimeout = setTimeout(() => {
+				objectStore.setFilters({
+					_search: value || '',
+				})
+				if (registerStore.registerItem && schemaStore.schemaItem) {
+					objectStore.refreshObjectList({
+						register: registerStore.registerItem.id,
+						schema: schemaStore.schemaItem.id,
+					})
+				}
+			}, 1000)
+		},
+		// Watch for schema changes to initialize properties
+		// Use immediate: true equivalent in mounted
+		// This watcher will update properties when schema changes
+		'$root.schemaStore.schemaItem': {
+			handler(newSchema) {
+				if (newSchema) {
+					objectStore.initializeProperties(newSchema)
+				} else {
+					objectStore.properties = {}
+					objectStore.initializeColumnFilters()
+				}
+			},
+			deep: true,
+		},
+	},
 	mounted() {
+		objectStore.initializeColumnFilters()
 		this.registerLoading = true
 		this.schemaLoading = true
 
@@ -272,11 +258,10 @@ export default {
 		},
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
-			// Initialize properties based on the selected schema
 			if (option) {
 				objectStore.initializeProperties(option)
+				objectStore.refreshObjectList()
 			}
-			objectStore.refreshObjectList()
 		},
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {
@@ -364,5 +349,30 @@ export default {
 
 .inline-button:hover {
 	text-decoration: none;
+}
+
+.filterSection {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--color-border);
+
+	h3 {
+		margin: 0;
+		font-size: 1.1em;
+		color: var(--color-main-text);
+	}
+}
+
+.filterGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	label {
+		font-size: 0.9em;
+		color: var(--color-text-maxcontrast);
+	}
 }
 </style>

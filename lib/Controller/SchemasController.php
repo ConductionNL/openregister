@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchService;
@@ -32,6 +33,7 @@ use OCP\DB\Exception;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * Class SchemasController
@@ -43,12 +45,14 @@ class SchemasController extends Controller
     /**
      * Constructor for the SchemasController
      *
-     * @param string          $appName         The name of the app
-     * @param IRequest        $request         The request object
-     * @param IAppConfig      $config          The app configuration object
-     * @param SchemaMapper    $schemaMapper    The schema mapper
-     * @param DownloadService $downloadService The download service
-     * @param UploadService   $uploadService   The upload service
+     * @param string             $appName            The name of the app
+     * @param IRequest           $request            The request object
+     * @param IAppConfig         $config             The app configuration object
+     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param DownloadService    $downloadService    The download service
+     * @param UploadService      $uploadService      The upload service
+     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
      *
      * @return void
      */
@@ -57,8 +61,10 @@ class SchemasController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
+        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly DownloadService $downloadService,
-        private readonly UploadService $uploadService
+        private readonly UploadService $uploadService,
+        private readonly AuditTrailMapper $auditTrailMapper
     ) {
         parent::__construct($appName, $request);
 
@@ -106,53 +112,68 @@ class SchemasController extends Controller
         SearchService $searchService
     ): JSONResponse {
         // Get request parameters for filtering and searching.
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['title', 'description'];
+        $filters = $this->request->getParam('filters', []);
+        $search  = $this->request->getParam('_search', '');
+        $extend  = $this->request->getParam('_extend', []);
+        if (is_string($extend)) {
+            $extend = [$extend];
+        }
 
-        // Create search parameters and conditions for filtering.
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(
-            filters: $filters,
-            fieldsToSearch: $fieldsToSearch
-        );
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $schemas    = $this->schemaMapper->findAll(null, null, $filters, [], [], []);
+        $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
+        // If '@self.stats' is requested, attach statistics to each schema
+        if (in_array('@self.stats', $extend, true)) {
+            // Get register counts for all schemas in one call
+            $registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+            foreach ($schemasArr as &$schema) {
+                $schema['stats'] = [
+                    'objects'   => $this->objectEntityMapper->getStatistics(null, $schema['id']),
+                    'logs'      => $this->auditTrailMapper->getStatistics(null, $schema['id']),
+                    'files'     => [ 'total' => 0, 'size' => 0 ],
+                    // Add the number of registers referencing this schema
+                    'registers' => $registerCounts[$schema['id']] ?? 0,
+                ];
+            }
+        }
 
-        // Return all schemas that match the search conditions.
-        return new JSONResponse(
-            [
-                'results' => $this->schemaMapper->findAll(
-                    filters: $filters,
-                    searchConditions: $searchConditions,
-                    searchParams: $searchParams
-                ),
-            ]
-        );
+        return new JSONResponse(['results' => $schemasArr]);
 
     }//end index()
 
 
     /**
-     * Retrieves a single schema by its ID
+     * Retrieves a single schema by ID
      *
-     * This method returns a JSON response containing the details of a specific schema.
-     *
-     * @param string $id The ID of the schema to retrieve
-     *
-     * @return JSONResponse A JSON response containing the schema details
+     * @param  int|string $id The ID of the schema
+     * @return JSONResponse
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      */
-    public function show(string $id): JSONResponse
+    public function show($id): JSONResponse
     {
-        try {
-            // Try to find the schema by ID.
-            return new JSONResponse($this->schemaMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            // Return a 404 error if the schema doesn't exist.
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        $extend = $this->request->getParam('_extend', []);
+        if (is_string($extend)) {
+            $extend = [$extend];
         }
+
+        $schema    = $this->schemaMapper->find($id, []);
+        $schemaArr = $schema->jsonSerialize();
+        // If '@self.stats' is requested, attach statistics to the schema
+        if (in_array('@self.stats', $extend, true)) {
+            // Get register counts for all schemas in one call
+            $registerCounts     = $this->schemaMapper->getRegisterCountPerSchema();
+            $schemaArr['stats'] = [
+                'objects'   => $this->objectEntityMapper->getStatistics(null, $schemaArr['id']),
+                'logs'      => $this->auditTrailMapper->getStatistics(null, $schemaArr['id']),
+                'files'     => [ 'total' => 0, 'size' => 0 ],
+                // Add the number of registers referencing this schema
+                'registers' => $registerCounts[$schemaArr['id']] ?? 0,
+            ];
+        }
+
+        return new JSONResponse($schemaArr);
 
     }//end show()
 

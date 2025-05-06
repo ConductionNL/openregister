@@ -81,11 +81,6 @@ class FilesController extends Controller
         string $schema,
         string $id
     ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
-
         try {
             // Get the raw files from the file service
             $files = $this->fileService->getFiles($id);
@@ -209,9 +204,35 @@ class FilesController extends Controller
             // Check if multiple files have been uploaded.
             $files = $_FILES['files'] ?? null;
 
-            if (empty($files) === false) {
+            // Lets see if we have files in the request.
+            if (empty($files) === true) {
+                throw new Exception('No files uploaded');
+            }
+
+            // Normalize single file upload to array structure
+            if (isset($files['name']) === true && is_array($files['name']) === false) {
+                $tags = $data['tags'] ?? '';
+                if (!is_array($tags)) {
+                    $tags = explode(',', $tags);
+                }
+
+                $uploadedFiles[] = [
+                    'name'     => $files['name'],
+                    'type'     => $files['type'],
+                    'tmp_name' => $files['tmp_name'],
+                    'error'    => $files['error'],
+                    'size'     => $files['size'],
+                    'share'    => $data['share'] === 'true',
+                    'tags'     => $tags,
+                ];
+            } else if (isset($files['name']) === true && is_array($files['name']) === true) {
                 // Loop through each file using the count of 'name'
                 for ($i = 0; $i < count($files['name']); $i++) {
+                    $tags = $data['tags'][$i] ?? '';
+                    if (!is_array($tags)) {
+                        $tags = explode(',', $tags);
+                    }
+
                     $uploadedFiles[] = [
                         'name'     => $files['name'][$i],
                         'type'     => $files['type'][$i],
@@ -219,10 +240,10 @@ class FilesController extends Controller
                         'error'    => $files['error'][$i],
                         'size'     => $files['size'][$i],
                         'share'    => $data['share'] === 'true',
-                        'tags'     => explode(',', $data['tags'][$i]),
+                        'tags'     => $tags,
                     ];
                 }
-            }
+            }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
@@ -239,7 +260,7 @@ class FilesController extends Controller
             foreach ($uploadedFiles as $file) {
                 // Create file
                 $results[] = $this->fileService->addFile(
-                    $object,
+                    $this->objectService->getObject(),
                     $file['name'],
                     file_get_contents($file['tmp_name']),
                     $file['share'],
@@ -247,7 +268,7 @@ class FilesController extends Controller
                 );
             }
 
-            return new JSONResponse($results);
+            return new JSONResponse($this->fileService->formatFiles($results, $this->request->getParams())['results']);
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],

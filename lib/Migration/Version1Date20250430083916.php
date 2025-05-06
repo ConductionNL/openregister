@@ -72,6 +72,10 @@ class Version1Date20250430083916 extends SimpleMigrationStep
             $table->addColumn('published', Types::DATETIME, ['notnull' => false]);
         }
 
+        if (!$table->hasColumn('depublished')) {
+            $table->addColumn('depublished', Types::DATETIME, ['notnull' => false]);
+        }
+
         // Update the openregister_registers table
         $table = $schema->getTable('openregister_audit_trails');
 

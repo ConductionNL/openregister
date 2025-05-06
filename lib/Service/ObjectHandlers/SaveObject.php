@@ -150,8 +150,6 @@ class SaveObject
     ): ObjectEntity {
         // Remove the @self property from the data.
         unset($data['@self']);
-
-
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {

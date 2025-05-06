@@ -39,4 +39,12 @@ describe('Register Entity', () => {
 		expect(register.getFullTablePrefix('myorg_')).toBe('myorg_character_')
 		expect(register.getFullTablePrefix('')).toBe('character_')
 	})
+
+	it('should create a Register entity with stats', () => {
+		const register = new Register(mockRegisterData()[0])
+		expect(register.stats).toBeDefined()
+		expect(register.stats?.objects?.total).toBe(20)
+		expect(register.stats?.logs?.total).toBe(3)
+		expect(register.stats?.files?.size).toBe(256)
+	})
 })
