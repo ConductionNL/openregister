@@ -187,15 +187,73 @@ class OasService
 
 
     /**
+     * Clean OAS properties by prefixing certain keys and removing null/false/empty values recursively.
+     *
+     * @param array<string, mixed> $properties The properties array to clean
+     *
+     * @return array<string, mixed> The cleaned properties array
+     *
+     * @phpstan-param array<string, mixed> $properties
+     * @phpstan-return array<string, mixed>
+     * @psalm-param array<string, mixed> $properties
+     * @psalm-return array<string, mixed>
+     */
+    private function cleanOasProperties(array $properties = []): array
+    {
+        // Keys to prefix
+        $keysToPrefix = [
+            'immutable',
+            'deprecated',
+            'cascadeDelete',
+            '$ref',
+            'objectConfiguration',
+            'fileConfiguration',
+        ];
+
+        $cleaned = [];
+        foreach ($properties as $key => $value) {
+            // Recursively clean nested arrays/objects
+            if (is_array($value)) {
+                $value = $this->cleanOasProperties($value);
+            }
+
+            // Remove null, false, empty string, or empty array values
+            if (
+                $value === null ||
+                $value === false ||
+                $value === '' ||
+                (is_array($value) && count($value) === 0)
+            ) {
+                continue;
+            }
+
+            // Prefix keys if needed (remove $ if present)
+            if (in_array($key, $keysToPrefix, true)) {
+                $key = 'x-openregisters-' . ltrim($key, '$');
+            }
+
+            $cleaned[$key] = $value;
+        }
+        return $cleaned;
+    }
+
+
+    /**
      * Enrich a schema with @self property and x-tags.
      *
      * @param object $schema The schema object
      *
      * @return array The enriched schema definition
+     *
+     * @phpstan-param object $schema
+     * @phpstan-return array<string, mixed>
+     * @psalm-param object $schema
+     * @psalm-return array<string, mixed>
      */
     private function enrichSchema(object $schema): array
     {
-        $schemaDefinition = $schema->getProperties();
+        // Get and clean the schema properties
+        $schemaDefinition = $this->cleanOasProperties($schema->getProperties());
 
         // Add @self reference, id, and x-tags for schema categorization.
         return [
@@ -295,12 +353,19 @@ class OasService
 
 
     /**
-     * Create common query parameters for object operations
+     * Create common query parameters for object operations, including search/filter parameters for collection endpoints.
      *
      * @param bool   $isCollection Whether this is for a collection endpoint
      * @param object $schema       The schema object for generating dynamic filter parameters (only used for collection endpoints)
      *
      * @return array Array of common query parameters
+     *
+     * @phpstan-param bool $isCollection
+     * @phpstan-param object|null $schema
+     * @phpstan-return array<int, array<string, mixed>>
+     * @psalm-param bool $isCollection
+     * @psalm-param object|null $schema
+     * @psalm-return array<int, array<string, mixed>>
      */
     private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
     {
@@ -363,22 +428,24 @@ class OasService
                     // Get property type from definition.
                     $propertyType = $this->getPropertyType($propertyDefinition);
 
-                    $parameters[] = [
-                        'name'        => $propertyName,
-                        'in'          => 'query',
-                        'required'    => false,
-                        'description' => 'Filter results by '.$propertyName,
-                        'schema'      => [
-                            'type' => $propertyType,
-                        ],
-                    ];
+                    // Add exact match filter for string and integer properties only.
+                    if ($propertyType === 'string' || $propertyType === 'integer') {
+                        $parameters[] = [
+                            'name'        => $propertyName,
+                            'in'          => 'query',
+                            'required'    => false,
+                            'description' => 'Exact match filter for ' . $propertyName . ' (' . $propertyType . ')',
+                            'schema'      => [
+                                'type' => $propertyType,
+                            ],
+                        ];
+                    }
                 }
             }//end if
         }//end if
 
         return $parameters;
-
-    }//end createCommonQueryParameters()
+    }
 
 
     /**
@@ -425,12 +492,16 @@ class OasService
      */
     private function createGetCollectionOperation(object $schema): array
     {
+        // Merge common parameters and search query parameters
+        $parameters = array_merge(
+            $this->createCommonQueryParameters(true, $schema)
+        );
         return [
             'summary'     => 'Get all '.$schema->getTitle().' objects',
             'operationId' => 'getAll'.$this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
             'description' => 'Retrieve a list of all '.$schema->getTitle().' objects',
-            'parameters'  => $this->createCommonQueryParameters(true, $schema),
+            'parameters'  => $parameters,
             'responses'   => [
                 '200' => [
                     'description' => 'List of '.$schema->getTitle().' objects',
@@ -447,8 +518,7 @@ class OasService
                 ],
             ],
         ];
-
-    }//end createGetCollectionOperation()
+    }
 
 
     /**
