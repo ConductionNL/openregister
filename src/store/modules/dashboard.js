@@ -294,10 +294,10 @@ export function setupDashboardStoreWatchers() {
 	watch([
 		() => registerStore.registerItem?.id,
 		() => schemaStore.schemaItem?.id,
-	], async () => {
+	], () => {
 		// Fetch registers to update sidebar tables, using current store state
-		await dashboardStore.fetchRegisters()
+		dashboardStore.fetchRegisters()
 		// Fetch all chart data to update dashboard charts
-		await dashboardStore.fetchAllChartData()
+		dashboardStore.fetchAllChartData()
 	})
 }
