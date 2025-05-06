@@ -725,15 +725,3 @@ div[class='modal-container']:has(.TestMappingMainModal) {
     gap: 10px;
 }
 </style>
-
-/**
- * UploadFiles Modal
- * Handles file uploads and tag selection for objects
- * @category Modals
- * @package OpenRegister
- * @author Your Name
- * @copyright 2024 Your Company
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://your-app-link.example.com
- */

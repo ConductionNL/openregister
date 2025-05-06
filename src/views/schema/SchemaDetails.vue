@@ -101,13 +101,6 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 </template>
 
 <script>
-/**
- * @file SchemaDetails.vue
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
 import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import VueApexCharts from 'vue-apexcharts'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'

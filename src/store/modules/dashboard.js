@@ -5,15 +5,6 @@ import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
 import { watch } from 'vue'
 
-/**
- * Dashboard Store
- *
- * @file dashboard.js
- * @author Ruben Linde
- * @copyright 2024 Ruben Linde
- * @license AGPL-3.0
- * @version 1.0.0
- */
 export const useDashboardStore = defineStore('dashboard', {
 	state: () => ({
 		registers: [],
