@@ -414,18 +414,20 @@ export default {
 			this.tagsLoading = true
 			objectStore.getTags().then(({ response, data }) => {
 
-				const newLabelOptions = []
-				const newLabelOptionsEdit = []
-
-				newLabelOptions.push('Geen label')
-
 				const tags = data.map((tag) => tag)
 
-				newLabelOptions.push(...tags)
-				newLabelOptionsEdit.push(...tags)
+				const newLabelOptions = new Set()
+				const newLabelOptionsEdit = new Set()
 
-				this.labelOptions.options = newLabelOptions
-				this.labelOptionsEdit.options = newLabelOptionsEdit
+				// add labels to set
+				newLabelOptions.add('Geen label')
+
+				tags.map(tag => newLabelOptions.add(tag))
+				tags.map(tag => newLabelOptionsEdit.add(tag))
+
+				// convert set to array
+				this.labelOptions.options = Array.from(newLabelOptions)
+				this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
 			}).finally(() => {
 				this.tagsLoading = false
 			})
