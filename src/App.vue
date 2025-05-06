@@ -29,7 +29,7 @@ export default {
 		SideBars,
 	},
 	mounted() {
-		// Set up dashboard store watchers after stores are reactive
+		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
 		setupDashboardStoreWatchers()
 	},
 }
