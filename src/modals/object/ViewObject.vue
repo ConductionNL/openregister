@@ -84,6 +84,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									<CodeMirror
 										v-model="editorContent"
 										:basic="true"
+										:linter="jsonParseLinter()"
+    									:lang="json()"
 										:readonly="true"
 										:dark="getTheme() === 'dark'"
 										:tab-size="2"
@@ -326,6 +328,7 @@ import {
 	NcNoteCard,
 	NcCounterBubble,
 } from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
