@@ -386,7 +386,6 @@ export default {
 		return {
 			closeModalTimeout: null,
 			activeAttachment: null,
-			editorContent: '',
 			registerTitle: '',
 			schemaTitle: '',
 			isUpdated: false,
