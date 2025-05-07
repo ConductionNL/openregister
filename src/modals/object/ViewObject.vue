@@ -72,7 +72,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div class="search-list-table">
 								<table class="table">
 									<thead>
-										<tr class="table-row">
+										<tr class="table-row" :class="getTheme()">
 											<th>Property</th>
 											<th>Value</th>
 										</tr>
@@ -592,7 +592,11 @@ export default {
 .table-row > th {
 	padding: 10px;
 	background: var(--color-primary-light);
-	color: black;
+	color: black
+}
+
+.table-row.dark > th {
+	color: white;
 }
 
 .table tbody tr:nth-child(odd) {
