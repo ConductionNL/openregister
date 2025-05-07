@@ -81,14 +81,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										<tr
 											v-for="([key, value]) in objectProperties"
 											:key="key"
-											class="table-row"
-										>
-											<td class="prop-cell">{{ key }}</td>
+											class="table-row">
+											<td class="prop-cell">
+												{{ key }}
+											</td>
 											<td class="value-cell">
 												<pre
-												v-if="typeof value === 'object' && value !== null"
-													class="json-value"
-												>{{ formatValue(value) }}</pre>
+													v-if="typeof value === 'object' && value !== null"
+													class="json-value">{{ formatValue(value) }}</pre>
 												<span v-else-if="isValidDate(value)">{{ new Date(value).toLocaleString() }}</span>
 												<span v-else>{{ value }}</span>
 											</td>
@@ -603,14 +603,14 @@ export default {
 	background: var(--color-background-hover);
 }
 
-.prop-cell   { 
-	width: 30%; 
-	font-weight: 600; 
-	border-left: 3px solid var(--color-primary); 
+.prop-cell   {
+	width: 30%;
+	font-weight: 600;
+	border-left: 3px solid var(--color-primary);
 }
-.value-cell  { 
-	width: 70%; 
-	word-break: break-word; 
+.value-cell  {
+	width: 70%;
+	word-break: break-word;
 	border-radius: 4px;
 }
 
