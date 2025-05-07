@@ -359,7 +359,6 @@ export default {
 		return {
 			closeModalTimeout: null,
 			activeAttachment: null,
-			editorContent: '',
 		}
 	},
 	computed: {
@@ -367,6 +366,9 @@ export default {
 			// Return array of [key, value] pairs, excluding '@self'
 			if (!this.objectStore?.objectItem) return []
 			return Object.entries(this.objectStore.objectItem).filter(([key]) => key !== '@self')
+		},
+		editorContent() {
+			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
 	},
 	methods: {
