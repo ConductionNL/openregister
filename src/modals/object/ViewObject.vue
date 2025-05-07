@@ -242,7 +242,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												if (activeAttachment === attachment.id) activeAttachment = null
 												else activeAttachment = attachment.id
 											}">
-											<td>
+											<td class="table-row-title">
 												<!-- Show lock icon if file is not shared -->
 												<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
 													v-tooltip="'Not shared'"
@@ -542,6 +542,12 @@ export default {
 
 .table-row.active {
 	background-color: var(--color-primary-light);
+}
+
+.table-row-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 
 .pagination {
