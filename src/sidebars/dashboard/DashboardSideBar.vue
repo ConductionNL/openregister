@@ -7,7 +7,9 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 		ref="sidebar"
 		v-model="activeTab"
 		name="Dashboard"
-		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage.">
+		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage."
+		:open="isSidebarOpen"
+		@update:open="(e) => isSidebarOpen = e">
 		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
@@ -191,6 +193,7 @@ export default {
 			searchQuery: '',
 			activeTab: 'overview-tab',
 			searchTimeout: null,
+			isSidebarOpen: true,
 		}
 	},
 	computed: {
@@ -369,6 +372,7 @@ export default {
 	},
 }
 </script>
+
 <style lang="scss" scoped>
 .section {
 	padding: 12px 0;
