@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -36,11 +36,10 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 </template>
 
 <script>
-import { NcAppContent, NcNoteCard, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
 import SearchList from './SearchList.vue'
 
 // Icons
-import Delete from 'vue-material-design-icons/Delete.vue'
 // import Download from 'vue-material-design-icons/Download.vue'
 // import Upload from 'vue-material-design-icons/Upload.vue'
 
@@ -51,7 +50,6 @@ export default {
 		NcNoteCard,
 		NcLoadingIcon,
 		SearchList,
-		Delete,
 		// Download,
 		// Upload,
 	},
