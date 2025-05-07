@@ -104,6 +104,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<CodeMirror
 										v-model="editorContent"
 										:basic="true"
+										:linter="jsonParseLinter()"
+										:lang="json()"
 										:readonly="true"
 										:dark="getTheme() === 'dark'"
 										:tab-size="2"
@@ -346,6 +348,7 @@ import {
 	NcNoteCard,
 	NcCounterBubble,
 } from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
@@ -383,7 +386,6 @@ export default {
 		return {
 			closeModalTimeout: null,
 			activeAttachment: null,
-			editorContent: '',
 			registerTitle: '',
 			schemaTitle: '',
 			isUpdated: false,
@@ -395,6 +397,9 @@ export default {
 			// Return array of [key, value] pairs, excluding '@self'
 			if (!objectStore?.objectItem) return []
 			return Object.entries(objectStore.objectItem).filter(([key]) => key !== '@self')
+		},
+		editorContent() {
+			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
 	},
 	updated() {
