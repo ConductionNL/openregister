@@ -85,7 +85,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										v-model="editorContent"
 										:basic="true"
 										:linter="jsonParseLinter()"
-    									:lang="json()"
+										:lang="json()"
 										:readonly="true"
 										:dark="getTheme() === 'dark'"
 										:tab-size="2"
