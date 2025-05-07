@@ -8,7 +8,9 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 		v-model="activeTab"
 		name="Object selection"
 		subtitle="Select register and schema"
-		subname="Within the federative network">
+		subname="Within the federative network"
+		:open="isSidebarOpen"
+		@update:open="(e) => isSidebarOpen = e">
 		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
@@ -130,6 +132,7 @@ export default {
 			searchQuery: '',
 			activeTab: 'search-tab',
 			searchTimeout: null,
+			isSidebarOpen: true,
 		}
 	},
 	computed: {
