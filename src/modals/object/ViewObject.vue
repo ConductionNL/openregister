@@ -67,9 +67,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="([key, value]) in objectProperties"
-											:key="key"
-											class="table-row">
+										<tr v-for="(value, key) in objectStore.objectItem" v-if="key !== '@self'" :key="key">
 											<td>{{ key }}</td>
 											<td>{{ typeof value === 'object' ? JSON.stringify(value) : value }}</td>
 										</tr>
@@ -361,13 +359,6 @@ export default {
 			activeAttachment: null,
 			editorContent: '',
 		}
-	},
-	computed: {
-		objectProperties() {
-			// Return array of [key, value] pairs, excluding '@self'
-			if (!this.objectStore?.objectItem) return []
-			return Object.entries(this.objectStore.objectItem).filter(([key]) => key !== '@self')
-		},
 	},
 	methods: {
 		/**

@@ -467,3 +467,7 @@ When viewing registers or schemas in the application, the Delete action in the a
 This provides a clear and immediate explanation to users and prevents accidental attempts to delete items that cannot be removed due to attached objects.
 
 This UI behavior complements the backend protection described above, ensuring both user experience and data integrity.
+
+## Viewing Object Properties
+
+When viewing an object in the application, the Properties tab in the ViewObject modal now displays only the custom properties of the object (those not inside the '@self' metadata envelope). System metadata (such as id, register, schema, owner, created, updated, etc.) is shown in the metadata cards at the top of the modal, while the Properties tab is reserved for user-defined fields. This change improves clarity and ensures that only the actual data fields relevant to the object are shown in the Properties table.
