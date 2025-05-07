@@ -58,7 +58,7 @@ import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } fro
 										<span>{{ schemaStore.schemaList.find(schema => schema.id === parseInt(result['@self'].schema))?.title }}</span>
 									</span>
 									<span v-else>
-										{{ result['@self'][column.key] }}
+										{{ result['@self'][column.key] || 'N/A' }}
 									</span>
 								</template>
 								<template v-else>
