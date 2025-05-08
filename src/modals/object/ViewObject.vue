@@ -8,24 +8,35 @@
  */
 
 <script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'viewObject'"
-		:name="'View Object (' + objectStore.objectItem['@self'].uuid + ')'"
+		:name="'View Object (' + objectStore.objectItem.title + ')'"
 		size="large"
 		:can-close="false">
 		<div class="formContainer">
 			<!-- Metadata Display -->
+			<div class="detail-item id-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].id }">
+				<span class="detail-label">ID:</span>
+				<span class="detail-value">{{ objectStore.objectItem.id }}</span>
+				<NcButton @click="copyToClipboard(objectStore.objectItem.id)">
+					<template #icon>
+						<Check v-if="isCopied" :size="20" />
+						<ContentCopy v-else :size="20" />
+					</template>
+					{{ isCopied ? 'Copied' : 'Copy' }}
+				</NcButton>
+			</div>
 			<div class="detail-grid">
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].register }">
 					<span class="detail-label">Register:</span>
-					<span class="detail-value">Not set</span>
+					<span class="detail-value">{{ registerTitle }}</span>
 				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].schema }">
 					<span class="detail-label">Schema:</span>
-					<span class="detail-value">Not set</span>
+					<span class="detail-value">{{ schemaTitle }}</span>
 				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].version }">
 					<span class="detail-label">Version:</span>
@@ -67,9 +78,20 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="(value, key) in objectStore.objectItem" v-if="key !== '@self'" :key="key">
-											<td>{{ key }}</td>
-											<td>{{ typeof value === 'object' ? JSON.stringify(value) : value }}</td>
+										<tr
+											v-for="([key, value]) in objectProperties"
+											:key="key"
+											class="table-row">
+											<td class="prop-cell">
+												{{ key }}
+											</td>
+											<td class="value-cell">
+												<pre
+													v-if="typeof value === 'object' && value !== null"
+													class="json-value">{{ formatValue(value) }}</pre>
+												<span v-else-if="isValidDate(value)">{{ new Date(value).toLocaleString() }}</span>
+												<span v-else>{{ value }}</span>
+											</td>
 										</tr>
 									</tbody>
 								</table>
@@ -82,6 +104,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									<CodeMirror
 										v-model="editorContent"
 										:basic="true"
+										:linter="jsonParseLinter()"
+										:lang="json()"
 										:readonly="true"
 										:dark="getTheme() === 'dark'"
 										:tab-size="2"
@@ -218,7 +242,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 												if (activeAttachment === attachment.id) activeAttachment = null
 												else activeAttachment = attachment.id
 											}">
-											<td>
+											<td class="table-row-title">
 												<!-- Show lock icon if file is not shared -->
 												<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
 													v-tooltip="'Not shared'"
@@ -307,7 +331,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				</template>
 				Add File
 			</NcButton>
-			<NcButton type="primary" @click="navigationStore.setModal(false); objectStore.setObjectItem(false)">
+			<NcButton type="primary" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -324,6 +348,7 @@ import {
 	NcNoteCard,
 	NcCounterBubble,
 } from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
@@ -334,6 +359,8 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import Check from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'ViewObject',
@@ -352,15 +379,50 @@ export default {
 		Pencil,
 		Upload,
 		LockOutline,
+		ContentCopy,
+		Check,
 	},
 	data() {
 		return {
 			closeModalTimeout: null,
 			activeAttachment: null,
-			editorContent: '',
+			registerTitle: '',
+			schemaTitle: '',
+			isUpdated: false,
+			isCopied: false,
+		}
+	},
+	computed: {
+		objectProperties() {
+			// Return array of [key, value] pairs, excluding '@self'
+			if (!objectStore?.objectItem) return []
+			return Object.entries(objectStore.objectItem).filter(([key]) => key !== '@self')
+		},
+		editorContent() {
+			return JSON.stringify(objectStore.objectItem, null, 2)
+		},
+	},
+	updated() {
+		if (!this.isUpdated && navigationStore.modal === 'viewObject') {
+			this.isUpdated = true
+			this.loadTitles()
+			this.loadProperties()
 		}
 	},
 	methods: {
+		async loadTitles() {
+			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
+			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
+
+			this.registerTitle = register?.title || 'Not set'
+			this.schemaTitle = schema?.title || 'Not set'
+		},
+		closeModal() {
+			navigationStore.setModal(null)
+			this.isUpdated = false
+			this.registerTitle = ''
+			this.schemaTitle = ''
+		},
 		/**
 		 * Open a file in the Nextcloud Files app
 		 * @param {object} file - The file object to open
@@ -384,7 +446,24 @@ export default {
 			if (i === 0) return bytes + ' ' + sizes[i]
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
 		},
+		isValidDate(value) {
+			if (!value) return false
+			const date = new Date(value)
+			return date instanceof Date && !isNaN(date)
+		},
+		formatValue(val) {
+			return JSON.stringify(val, null, 2)
+		},
 		getTheme,
+		async copyToClipboard(text) {
+			try {
+				await navigator.clipboard.writeText(text)
+				this.isCopied = true
+				setTimeout(() => { this.isCopied = false }, 2000)
+			} catch (err) {
+				console.error('Failed to copy text:', err)
+			}
+		},
 	},
 }
 </script>
@@ -442,6 +521,7 @@ export default {
 .table-row {
 	color: var(--color-main-text);
 	border-bottom: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
 }
 
 .table-row > td {
@@ -464,6 +544,12 @@ export default {
 	background-color: var(--color-primary-light);
 }
 
+.table-row-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
 .pagination {
 	display: flex;
 	justify-content: center;
@@ -484,7 +570,7 @@ export default {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive columns */
 	gap: 16px;
-	margin: 20px 0; /* Remove auto, use 0 for left/right */
+	margin-bottom: 20px; /* Remove auto, use 0 for left/right */
 	padding: 0 20px; /* Add horizontal padding to match modal */
 	width: 100%;
 	box-sizing: border-box;
@@ -497,6 +583,57 @@ export default {
 	background-color: var(--color-background-hover);
 	border-radius: 4px;
 	border-left: 3px solid var(--color-primary);
+}
+
+.id-item {
+	flex-direction: row;
+	gap: 10px;
+	align-items: center;
+	justify-content: space-between;
+	margin: 20px 20px 10px;
+}
+
+.search-list-table {
+	overflow-x: auto;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+	box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.table-row > th {
+	padding: 10px;
+	background: var(--color-primary-light);
+}
+
+.table tbody tr:nth-child(odd) {
+	background: var(--color-background-light);
+}
+
+.table tbody tr:hover {
+	background: var(--color-background-hover);
+}
+
+.prop-cell   {
+	width: 30%;
+	font-weight: 600;
+	border-left: 3px solid var(--color-primary);
+}
+.value-cell  {
+	width: 70%;
+	word-break: break-word;
+	border-radius: 4px;
+}
+
+.json-value {
+	background: var(--color-background-dark);
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	padding: 6px 8px;
+	margin: 6px;
+	white-space: pre-wrap;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: .875rem;
+	line-height: 1.35;
 }
 
 .detail-item.empty-value {
