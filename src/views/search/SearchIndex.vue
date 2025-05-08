@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,40 +8,6 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 			<h1 class="pageHeader">
 				{{ pageTitle }}
 			</h1>
-
-			<NcActions
-				:force-name="true"
-				:inline="1"
-				:primary="true"
-				:menu-name="`Bulk action for ${objectStore.selectedObjects?.length} objects`">
-				<NcActionButton
-					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
-					:title="!registerStore.registerItem ? 'Please select a register to add an object' : (!schemaStore.schemaItem ? 'Please select a schema to add an object' : '')"
-					@click="openAddObjectModal">
-					<template #icon>
-						<Pencil :size="20" />
-					</template>
-					Add
-				</NcActionButton>
-				<!-- <NcActionButton>
-					<template #icon>
-						<Upload :size="20" />
-					</template>
-					Upload
-				</NcActionButton>
-				<NcActionButton>
-					<template #icon>
-						<Download :size="20" />
-					</template>
-					Download
-				</NcActionButton> -->
-				<NcActionButton v-if="objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
-					<template #icon>
-						<Delete :size="20" />
-					</template>
-					Delete {{ objectStore.selectedObjects?.length }} {{ objectStore.selectedObjects?.length > 1 ? 'objects' : 'object' }}
-				</NcActionButton>
-			</NcActions>
 		</span>
 
 		<!-- Warning when no register is selected -->
@@ -70,13 +36,11 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 </template>
 
 <script>
-import { NcAppContent, NcNoteCard, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
 import SearchList from './SearchList.vue'
 
 // Icons
-import Delete from 'vue-material-design-icons/Delete.vue'
 // import Download from 'vue-material-design-icons/Download.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 // import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
@@ -86,11 +50,8 @@ export default {
 		NcNoteCard,
 		NcLoadingIcon,
 		SearchList,
-		Delete,
 		// Download,
-		Pencil,
 		// Upload,
-
 	},
 
 	computed: {
@@ -124,14 +85,6 @@ export default {
 				&& schemaStore.schemaItem
 				&& !objectStore.loading
 				&& !objectStore.objectList?.results?.length
-		},
-
-	},
-
-	methods: {
-		openAddObjectModal() {
-			objectStore.setObjectItem(null) // Clear any existing object
-			navigationStore.setModal('editObject')
 		},
 	},
 }
