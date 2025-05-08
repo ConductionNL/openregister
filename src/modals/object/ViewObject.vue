@@ -67,8 +67,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<!-- Display Object -->
 			<div v-if="objectStore.objectItem">
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
-						<BTab title="Properties" active @click="activeTab = 'Properties'">
+					<BTabs v-model="activeTab" content-class="mt-3" justified>
+						<BTab title="Properties" active>
 							<div class="search-list-table">
 								<table class="table">
 									<thead>
@@ -97,7 +97,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</table>
 							</div>
 						</BTab>
-						<BTab title="Data" @click="activeTab = 'Data'">
+						<BTab title="Data">
 							<div class="json-editor">
 								<label>Object (JSON)</label>
 								<div :class="`codeMirrorContainer ${getTheme()}`">
@@ -113,7 +113,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</div>
 							</div>
 						</BTab>
-						<BTab title="Uses" @click="activeTab = 'Uses'">
+						<BTab title="Uses">
 							<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
@@ -149,7 +149,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<p>No uses found for this object</p>
 							</NcNoteCard>
 						</BTab>
-						<BTab title="Used by" @click="activeTab = 'Used by'">
+						<BTab title="Used by">
 							<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
@@ -185,7 +185,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<p>No objects are using this object</p>
 							</NcNoteCard>
 						</BTab>
-						<BTab title="Contracts" @click="activeTab = 'Contracts'">
+						<BTab title="Contracts">
 							<div v-if="objectStore.contracts.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
@@ -221,8 +221,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<p>No contracts found for this object</p>
 							</NcNoteCard>
 						</BTab>
-						<BTab title="Files" @click="activeTab = 'Files'">
-							<div v-if="objectStore.files.results?.length > 0" class="search-list-table">
+						<BTab title="Files">
+							<div v-if="objectStore.files?.results?.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
@@ -283,7 +283,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<p>No files have been attached to this object</p>
 							</NcNoteCard>
 						</BTab>
-						<BTab title="Audit Trails" @click="activeTab = 'Audit Trails'">
+						<BTab title="Audit Trails">
 							<div v-if="objectStore.auditTrails.results?.length" class="search-list-table">
 								<table class="table">
 									<thead>
@@ -326,7 +326,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 		<template #actions>
 			<NcActions
-				v-if="objectStore.files?.results?.length > 0 && activeTab === 'Files'"
+				v-if="objectStore.files?.results?.length > 0 && tabOptions[activeTab] === 'Files'"
 				:primary="true"
 				:disabled="true"
 				:menu-name="loading ? 'Laden...' : 'Acties'"
@@ -438,7 +438,8 @@ export default {
 			schemaTitle: '',
 			isUpdated: false,
 			isCopied: false,
-			activeTab: 'Properties',
+			activeTab: 0,
+			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files', 'Audit Trails'],
 			selectedAttachments: [],
 			publishLoading: [],
 			depublishLoading: [],
