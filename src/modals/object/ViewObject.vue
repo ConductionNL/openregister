@@ -67,7 +67,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<!-- Display Object -->
 			<div v-if="objectStore.objectItem">
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
+					<BTabs v-model="activeTab" content-class="mt-3" justified>
 						<BTab title="Properties" active>
 							<div class="search-list-table">
 								<table class="table">
@@ -102,7 +102,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<label>Object (JSON)</label>
 								<div :class="`codeMirrorContainer ${getTheme()}`">
 									<CodeMirror
-										v-model="editorContent"
+										:model-value="editorContent"
 										:basic="true"
 										:linter="jsonParseLinter()"
 										:lang="json()"
@@ -113,6 +113,120 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</div>
 							</div>
 						</BTab>
+						<BTab title="Edit">
+							<div class="tabContainer">
+								<BTabs v-model="editorTab" content-class="mt-3" justified>
+									<BTab title="Form Editor" active>
+										<div v-if="currentSchema" class="form-editor">
+											<NcNoteCard v-if="success" type="success" class="note-card">
+												<p>Object successfully modified</p>
+											</NcNoteCard>
+											<div v-for="(value, key) in formData" :key="key" class="form-field">
+												<div v-if="typeof value === 'string'" class="field-label-row">
+													<NcTextField
+														v-model="formData[key]"
+														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+														:placeholder="key"
+														:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
+													<NcButton
+														v-if="(key === 'id' || key === 'uri') && formData[key]"
+														class="copy-button"
+														size="small"
+														@click="copyToClipboard(formData[key])">
+														<template #icon>
+															<ContentCopy :size="16" />
+														</template>
+													</NcButton>
+												</div>
+												<NcTextField v-else-if="value === null"
+													v-model="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													:placeholder="key"
+													:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
+												<NcCheckboxRadioSwitch v-else-if="typeof value === 'boolean'"
+													v-model="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													type="switch" />
+												<NcTextField v-else-if="typeof value === 'number'"
+													v-model.number="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													type="number" />
+
+												<template v-else-if="Array.isArray(value)">
+													<label class="field-label">
+														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
+													</label>
+													<ul class="array-editor">
+														<li v-for="(item, i) in value" :key="i">
+															<NcTextField v-model="formData[key][i]"
+																class="array-item-input" />
+															<NcButton size="small"
+																@click="removeArrayItem(key, i)">
+																<template #icon>
+																	<Delete :size="16" />
+																</template>
+															</NcButton>
+														</li>
+													</ul>
+													<NcButton size="small"
+														@click="addArrayItem(key)">
+														<template #icon>
+															<Plus :size="16" />
+														</template>
+														Add element
+													</NcButton>
+												</template>
+
+												<template v-else-if="typeof value === 'object' && value !== null">
+													<label class="field-label">
+														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
+													</label>
+													<CodeMirror
+														:model-value="objectEditors[key]"
+														:basic="true"
+														:dark="getTheme() === 'dark'"
+														:lang="json()"
+														:tab-size="2"
+														@update:model-value="val => updateObjectField(key, val)" />
+												</template>
+											</div>
+										</div>
+										<NcEmptyContent v-else>
+											Please select a schema to edit the object
+										</NcEmptyContent>
+									</BTab>
+									<BTab title="JSON Editor">
+										<NcNoteCard v-if="success" type="success" class="note-card">
+											<p>Object successfully modified</p>
+										</NcNoteCard>
+										<div class="json-editor">
+											<div :class="`codeMirrorContainer ${getTheme()}`">
+												<CodeMirror
+													v-model="jsonData"
+													:basic="true"
+													placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+													:dark="getTheme() === 'dark'"
+													:linter="jsonParseLinter()"
+													:lang="json()"
+													:extensions="[json()]"
+													:tab-size="2"
+													style="height: 400px" />
+												<NcButton
+													class="format-json-button"
+													type="secondary"
+													size="small"
+													@click="formatJSON">
+													Format JSON
+												</NcButton>
+											</div>
+											<span v-if="!isValidJson(jsonData)" class="error-message">
+												Invalid JSON format
+											</span>
+										</div>
+									</BTab>
+								</BTabs>
+							</div>
+						</Btab>
 						<BTab title="Uses">
 							<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 								<table class="table">
@@ -319,11 +433,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		</div>
 
 		<template #actions>
-			<NcButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(objectStore.objectItem)">
+			<NcButton v-if="activeTab !== 2" @click="activeTab = 2">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Object
+			</NcButton>
+			<NcButton v-if="activeTab === 2" @click="saveObject">
+				<template #icon>
+					<ContentSave :size="20" />
+				</template>
+				Save
 			</NcButton>
 			<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 				<template #icon>
@@ -347,6 +467,9 @@ import {
 	NcButton,
 	NcNoteCard,
 	NcCounterBubble,
+	NcTextField,
+	NcCheckboxRadioSwitch,
+	NcEmptyContent,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
@@ -361,6 +484,9 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 
 export default {
 	name: 'ViewObject',
@@ -369,6 +495,9 @@ export default {
 		NcButton,
 		NcNoteCard,
 		NcCounterBubble,
+		NcTextField,
+		NcCheckboxRadioSwitch,
+		NcEmptyContent,
 		CodeMirror,
 		BTabs,
 		BTab,
@@ -381,6 +510,9 @@ export default {
 		LockOutline,
 		ContentCopy,
 		Check,
+		Plus,
+		Delete,
+		ContentSave,
 	},
 	data() {
 		return {
@@ -390,6 +522,13 @@ export default {
 			schemaTitle: '',
 			isUpdated: false,
 			isCopied: false,
+			error: null,
+			success: null,
+			formData: {},
+			jsonData: '',
+			editorTab: 0,
+			activeTab: 0,
+			objectEditors: {},
 		}
 	},
 	computed: {
@@ -401,12 +540,46 @@ export default {
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
+		currentRegister() {
+			return registerStore.registerItem
+		},
+		currentSchema() {
+			return schemaStore.schemaItem
+		},
+	},
+	watch: {
+		objectStore: {
+			handler(newValue) {
+				if (newValue) {
+					this.initializeData()
+				}
+			},
+			deep: true,
+		},
+		jsonData: {
+			handler(newValue) {
+				if (this.editorTab === 1 && this.isValidJson(newValue)) {
+					this.updateFormFromJson()
+				}
+			},
+		},
+		formData: {
+			deep: true,
+			immediate: true,
+			handler(obj) {
+				for (const k in obj) {
+					if (typeof obj[k] === 'object' && obj[k] !== null) {
+						this.objectEditors[k] = JSON.stringify(obj[k], null, 2)
+					}
+				}
+			},
+		},
 	},
 	updated() {
 		if (!this.isUpdated && navigationStore.modal === 'viewObject') {
 			this.isUpdated = true
 			this.loadTitles()
-			this.loadProperties()
+			this.initializeData()
 		}
 	},
 	methods: {
@@ -462,6 +635,117 @@ export default {
 				setTimeout(() => { this.isCopied = false }, 2000)
 			} catch (err) {
 				console.error('Failed to copy text:', err)
+			}
+		},
+		initializeData() {
+			if (!objectStore.objectItem) {
+				this.formData = {}
+				this.jsonData = JSON.stringify({ data: {} }, null, 2)
+				return
+			}
+			const initial = objectStore.objectItem
+
+			this.formData = JSON.parse(JSON.stringify(initial.data || {}))
+
+			this.jsonData = JSON.stringify(initial, null, 2)
+		},
+
+		async saveObject() {
+			if (!this.currentRegister || !this.currentSchema) {
+				this.error = 'Register and schema are required'
+				return
+			}
+
+			this.loading = true
+			this.error = null
+
+			try {
+				let payload
+				if (this.editorTab === 1) {
+					payload = JSON.parse(this.jsonData)
+				} else {
+					payload = {
+						...objectStore.objectItem,
+						data: this.formData,
+					}
+					payload['@self'] = {
+						...payload['@self'],
+						updated: new Date().toISOString(),
+					}
+				}
+
+				const { response } = await objectStore.saveObject(payload, {
+					register: this.currentRegister.id,
+					schema: this.currentSchema.id,
+				})
+
+				this.success = response.ok
+				if (this.success) {
+					setTimeout(() => {
+						this.success = null
+					}, 2000)
+				}
+			} catch (e) {
+				this.error = e.message || 'Failed to save object'
+				this.success = false
+			} finally {
+				this.loading = false
+			}
+		},
+		updateFormFromJson() {
+			try {
+				const parsed = JSON.parse(this.jsonData)
+				this.formData = parsed
+			} catch (e) {
+				this.error = 'Invalid JSON format'
+			}
+		},
+
+		updateJsonFromForm() {
+			const draft = {
+				...objectStore.objectItem,
+				data: this.formData,
+			}
+			this.jsonData = JSON.stringify(draft, null, 2)
+		},
+
+		isValidJson(str) {
+			if (!str || !str.trim()) {
+				return false
+			}
+			try {
+				JSON.parse(str)
+				return true
+			} catch (e) {
+				return false
+			}
+		},
+
+		formatJSON() {
+			try {
+				if (this.jsonData) {
+					const parsed = JSON.parse(this.jsonData)
+					this.jsonData = JSON.stringify(parsed, null, 2)
+				}
+			} catch (e) {
+				// Keep invalid JSON as-is
+			}
+		},
+
+		setFieldValue(key, value) {
+			this.formData[key] = value
+		},
+		toDisplay(v) { return v === null ? '' : v },
+		toPayload(v) { return v === '' ? null : v },
+
+		addArrayItem(key) { this.formData[key].push('') },
+		removeArrayItem(key, i) { this.formData[key].splice(i, 1) },
+		updateObjectField(key, val) {
+			this.objectEditors[key] = val
+			try {
+				this.formData[key] = JSON.parse(val)
+			} catch (e) {
+				console.error('Invalid JSON format:', e)
 			}
 		},
 	},
@@ -657,6 +941,99 @@ export default {
 .label,
 .value {
 	display: none;
+}
+
+.format-json-button {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	transform: translateY(100%);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.copy-button {
+	margin-top: 5px;
+}
+
+.error-message {
+	position: absolute;
+	bottom: 0;
+	right: 50%;
+	transform: translateY(100%) translateX(50%);
+	color: var(--color-error);
+	font-size: 0.8rem;
+	padding-top: 0.25rem;
+}
+
+/* Dark mode specific styles */
+.codeMirrorContainer.dark :deep(.cm-editor) {
+	background-color: var(--color-background-darker);
+}
+
+.codeMirrorContainer.light :deep(.cm-editor) {
+	background-color: var(--color-background-hover);
+}
+
+/* Add tab container styles */
+.tabContainer {
+	margin-top: 20px;
+}
+
+/* Style the tabs to match ViewObject */
+:deep(.nav-tabs) {
+	border-bottom: 1px solid var(--color-border);
+	margin-bottom: 15px;
+}
+
+:deep(.nav-tabs .nav-link) {
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--color-text-maxcontrast);
+	padding: 8px 16px;
+}
+
+:deep(.nav-tabs .nav-link.active) {
+	color: var(--color-main-text);
+	border-bottom: 2px solid var(--color-primary);
+	background-color: transparent;
+}
+
+:deep(.nav-tabs .nav-link:hover) {
+	border-bottom: 2px solid var(--color-border);
+}
+
+:deep(.tab-content) {
+	padding: 16px;
+	background-color: var(--color-main-background);
+}
+
+/* Form editor specific styles */
+.form-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.array-editor {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 6px;
+}
+.array-editor li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 /* CodeMirror */
