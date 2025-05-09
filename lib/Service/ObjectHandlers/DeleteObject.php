@@ -80,7 +80,7 @@ class DeleteObject
             $objectEntity = $object;
             $object       = $object->jsonSerialize();
         } else {
-            $this->objectEntityMapper->find($object['id']);
+            $objectEntity = $this->objectEntityMapper->find($object['id']);
         }
 
         // Delete associated files from storage.
