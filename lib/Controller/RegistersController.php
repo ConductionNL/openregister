@@ -311,20 +311,23 @@ class RegistersController extends Controller
      * This method exports a register, its schemas, and optionally its objects
      * in OpenAPI format.
      *
-     * @param int  $id             The ID of the register to export
-     * @param bool $includeObjects Whether to include objects in the export
+     * @param int $id The ID of the register to export
      *
      * @return DataDownloadResponse|JSONResponse The exported register data as a downloadable file or error response
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function export(int $id, bool $includeObjects=false): DataDownloadResponse | JSONResponse
+    public function export(int $id): DataDownloadResponse | JSONResponse
     {
         try {
+            // Retrieve the 'includeObjects' query parameter from the request.
+            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
+
             // Find the register.
             $register = $this->registerMapper->find($id);
 
+           
             // Export the register and its related data.
             $exportData = $this->configurationService->exportConfig($register, $includeObjects);
 
