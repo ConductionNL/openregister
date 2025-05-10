@@ -59,5 +59,15 @@ return [
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+        // Register-level export/import
+        ['name' => 'registers#exportExcel', 'url' => '/api/registers/{id}/export/excel', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#exportCsv', 'url' => '/api/registers/{id}/export/csv', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#importExcel', 'url' => '/api/registers/{id}/import/excel', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#importCsv', 'url' => '/api/registers/{id}/import/csv', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Schema-level export/import
+        ['name' => 'objects#exportExcel', 'url' => '/api/objects/{register}/{schema}/export/excel', 'verb' => 'GET'],
+        ['name' => 'objects#exportCsv', 'url' => '/api/objects/{register}/{schema}/export/csv', 'verb' => 'GET'],
+        ['name' => 'objects#importExcel', 'url' => '/api/objects/{register}/{schema}/import/excel', 'verb' => 'POST'],
+        ['name' => 'objects#importCsv', 'url' => '/api/objects/{register}/{schema}/import/csv', 'verb' => 'POST'],
     ],
 ];

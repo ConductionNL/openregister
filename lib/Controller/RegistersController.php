@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,6 +58,19 @@ class RegistersController extends Controller
      */
     private readonly AuditTrailMapper $auditTrailMapper;
 
+    /**
+     * Export service for handling data exports
+     *
+     * @var ExportService
+     */
+    private readonly ExportService $exportService;
+
+    /**
+     * Import service for handling data imports
+     *
+     * @var ImportService
+     */
+    private readonly ImportService $importService;
 
     /**
      * Constructor for the RegistersController
@@ -67,6 +82,8 @@ class RegistersController extends Controller
      * @param UploadService        $uploadService        The upload service
      * @param ConfigurationService $configurationService The configuration service
      * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
+     * @param ExportService        $exportService        The export service
+     * @param ImportService        $importService        The import service
      *
      * @return void
      */
@@ -77,12 +94,15 @@ class RegistersController extends Controller
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
         ConfigurationService $configurationService,
-        AuditTrailMapper $auditTrailMapper
+        AuditTrailMapper $auditTrailMapper,
+        ExportService $exportService,
+        ImportService $importService
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
         $this->auditTrailMapper     = $auditTrailMapper;
-
+        $this->exportService        = $exportService;
+        $this->importService        = $importService;
     }//end __construct()
 
 
@@ -413,5 +433,141 @@ class RegistersController extends Controller
 
     }//end import()
 
+
+    /**
+     * Export a register to Excel format
+     *
+     * @param int $id The ID of the register to export
+     *
+     * @return DataDownloadResponse The Excel file as a download response
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function exportExcel(int $id): DataDownloadResponse
+    {
+        $register = $this->registerMapper->find($id);
+        $spreadsheet = $this->exportService->exportToExcel($register);
+        
+        // Create Excel writer
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        // Generate filename
+        $filename = sprintf(
+            '%s_%s.xlsx',
+            $register->getSlug(),
+            (new \DateTime())->format('Y-m-d_His')
+        );
+        
+        // Get Excel content
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+        
+        return new DataDownloadResponse(
+            $content,
+            $filename,
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+    }
+
+    /**
+     * Export a register to CSV format
+     *
+     * @param int $id The ID of the register to export
+     *
+     * @return DataDownloadResponse The CSV file as a download response
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function exportCsv(int $id): DataDownloadResponse
+    {
+        $register = $this->registerMapper->find($id);
+        $csv = $this->exportService->exportToCsv($register);
+        
+        // Generate filename
+        $filename = sprintf(
+            '%s_%s.csv',
+            $register->getSlug(),
+            (new \DateTime())->format('Y-m-d_His')
+        );
+        
+        return new DataDownloadResponse(
+            $csv,
+            $filename,
+            'text/csv'
+        );
+    }
+
+    /**
+     * Import data into a register from Excel file
+     *
+     * @param int $id The ID of the register to import into
+     *
+     * @return JSONResponse The result of the import operation
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function importExcel(int $id): JSONResponse
+    {
+        try {
+            $register = $this->registerMapper->find($id);
+            $uploadedFile = $this->request->getUploadedFile('file');
+            
+            if ($uploadedFile === null) {
+                return new JSONResponse(['error' => 'No file uploaded'], 400);
+            }
+            
+            $importedIds = $this->importService->importFromExcel(
+                $uploadedFile->getTempName(),
+                $register
+            );
+            
+            return new JSONResponse([
+                'message' => 'Import successful',
+                'imported' => count($importedIds),
+                'ids' => $importedIds
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Import data into a register from CSV file
+     *
+     * @param int $id The ID of the register to import into
+     *
+     * @return JSONResponse The result of the import operation
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function importCsv(int $id): JSONResponse
+    {
+        try {
+            $register = $this->registerMapper->find($id);
+            $uploadedFile = $this->request->getUploadedFile('file');
+            
+            if ($uploadedFile === null) {
+                return new JSONResponse(['error' => 'No file uploaded'], 400);
+            }
+            
+            $importedIds = $this->importService->importFromCsv(
+                $uploadedFile->getTempName(),
+                $register
+            );
+            
+            return new JSONResponse([
+                'message' => 'Import successful',
+                'imported' => count($importedIds),
+                'ids' => $importedIds
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }
 
 }//end class

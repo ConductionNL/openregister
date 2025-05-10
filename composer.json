@@ -35,6 +35,10 @@
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
+		"phpoffice/phpspreadsheet": "^1.29",
+		"react/async": "^4.0",
+		"react/event-loop": "^1.5",
+		"react/promise": "^2.10",
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4",
 		"twig/twig": "^3.18"
