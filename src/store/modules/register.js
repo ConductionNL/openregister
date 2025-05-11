@@ -229,7 +229,12 @@ export const useRegisterStore = defineStore('register', {
 
 			console.log('Importing register...')
 
-			const endpoint = '/index.php/apps/openregister/api/registers/import'
+			const registerId = this.registerItem?.id
+			if (!registerId) {
+				throw new Error('No register selected for import')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import?includeObjects=${includeObjects ? '1' : '0'}`
 			const formData = new FormData()
 			formData.append('file', file)
 			formData.append('includeObjects', includeObjects ? '1' : '0')
@@ -240,7 +245,7 @@ export const useRegisterStore = defineStore('register', {
 					{
 						method: 'POST',
 						body: formData,
-					},
+					}
 				)
 
 				const responseData = await response.json()

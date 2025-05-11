@@ -391,62 +391,58 @@ class RegistersController extends Controller
         try {
             // Get import type from query parameter
             $type = $this->request->getParam('type', 'configuration');
-            
+            // Get includeObjects parameter for all types
+            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
             // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
-            
             // Find the register
             $register = $this->registerMapper->find($id);
-            
             // Handle different import types
             switch ($type) {
                 case 'excel':
                     $importedIds = $this->importService->importFromExcel(
                         $uploadedFile->getTempName(),
-                        $register
+                        $register,
+                        null,
+                        $includeObjects
                     );
                     break;
-                    
                 case 'csv':
                     $importedIds = $this->importService->importFromCsv(
                         $uploadedFile->getTempName(),
-                        $register
+                        $register,
+                        null,
+                        $includeObjects
                     );
                     break;
-                    
                 case 'configuration':
                 default:
                     // Initialize the uploaded files array
                     $uploadedFiles = [$uploadedFile];
-                    
                     // Get the uploaded JSON data
                     $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
                     if ($jsonData instanceof JSONResponse) {
                         return $jsonData;
                     }
-                    
                     // Import the data
                     $result = $this->configurationService->importFromJson(
                         $jsonData,
-                        $this->request->getParam('includeObjects', false),
+                        $includeObjects,
                         $this->request->getParam('owner')
                     );
-                    
                     return new JSONResponse([
                         'message' => 'Import successful',
                         'imported' => $result
                     ]);
             }
-            
             return new JSONResponse([
                 'message' => 'Import successful',
                 'imported' => count($importedIds),
                 'ids' => $importedIds
             ]);
-            
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
