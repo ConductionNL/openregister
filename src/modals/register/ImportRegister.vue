@@ -5,7 +5,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importRegister'"
 		name="importRegister"
-		title="Import Register"
+		title="Import Data into Register"
 		size="large"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
@@ -20,7 +20,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			<input
 				ref="fileInput"
 				type="file"
-				accept=".json"
+				accept=".json,.xlsx,.xls,.csv"
 				style="display: none"
 				@change="handleFileUpload">
 
@@ -29,9 +29,30 @@ import { registerStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<Upload :size="20" />
 					</template>
-					Select JSON File
+					Select File
 				</NcButton>
-				<span v-if="selectedFile">{{ selectedFile.name }}</span>
+				<div v-if="selectedFile" class="selectedFile">
+					<div class="fileInfo">
+						<span class="fileName">{{ selectedFile.name }}</span>
+						<span class="fileType">({{ getFileType(selectedFile.name) }})</span>
+					</div>
+					<div class="fileSize">{{ formatFileSize(selectedFile.size) }}</div>
+				</div>
+			</div>
+
+			<div class="fileTypes">
+				<p class="fileTypesTitle">Supported file types:</p>
+				<ul class="fileTypesList">
+					<li><strong>JSON</strong> - Register configuration and objects.<br />
+						<em>You can create or update objects for multiple schemas at once.</em>
+					</li>
+					<li><strong>Excel</strong> (.xlsx, .xls) - Objects data.<br />
+						<em>You can create or update objects for multiple schemas at once.</em>
+					</li>
+					<li><strong>CSV</strong> - Objects data.<br />
+						<em>You can only update one schema within a register.</em>
+					</li>
+				</ul>
 			</div>
 
 			<div class="includeObjects">
@@ -55,7 +76,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 				Cancel
 			</NcButton>
 			<NcButton
-				:disabled="loading || !selectedFile"
+				:disabled="loading || !selectedFile || !isValidFileType"
 				type="primary"
 				@click="importRegister">
 				<template #icon>
@@ -101,11 +122,50 @@ export default {
 			success: false,
 			error: null,
 			includeObjects: false,
+			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'],
 		}
 	},
+	computed: {
+		isValidFileType() {
+			if (!this.selectedFile) return false
+			const extension = this.getFileExtension(this.selectedFile.name)
+			return this.allowedFileTypes.includes(extension)
+		},
+	},
 	methods: {
+		getFileExtension(filename) {
+			return filename.split('.').pop().toLowerCase()
+		},
+		getFileType(filename) {
+			const extension = this.getFileExtension(filename)
+			switch (extension) {
+				case 'json':
+					return 'JSON Configuration'
+				case 'xlsx':
+				case 'xls':
+					return 'Excel Spreadsheet'
+				case 'csv':
+					return 'CSV Data'
+				default:
+					return 'Unknown'
+			}
+		},
 		handleFileUpload(event) {
-			this.selectedFile = event.target.files[0]
+			const file = event.target.files[0]
+			if (!file) {
+				this.selectedFile = null
+				this.error = null
+				return
+			}
+
+			const extension = this.getFileExtension(file.name)
+			if (!this.allowedFileTypes.includes(extension)) {
+				this.error = `Invalid file type: ${file.name}. Please select a ${this.allowedFileTypes.map(e => '.'+e).join(', ')} file.`
+				this.selectedFile = null
+				return
+			}
+
+			this.selectedFile = file
 			this.error = null
 		},
 		closeModal() {
@@ -117,6 +177,11 @@ export default {
 			this.includeObjects = false
 		},
 		async importRegister() {
+			if (!this.selectedFile || !this.isValidFileType) {
+				this.error = 'Please select a valid file to import'
+				return
+			}
+
 			this.loading = true
 			this.error = null
 
@@ -128,6 +193,13 @@ export default {
 				this.error = error.message || 'Failed to import register'
 				this.loading = false
 			}
+		},
+		formatFileSize(bytes) {
+			if (bytes === 0) return '0 Bytes'
+			const k = 1024
+			const sizes = ['Bytes', 'KB', 'MB', 'GB']
+			const i = Math.floor(Math.log(bytes) / Math.log(k))
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 	},
 }
@@ -144,6 +216,53 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 1rem;
+}
+
+.selectedFile {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.fileInfo {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.fileName {
+	font-weight: 500;
+}
+
+.fileType {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+}
+
+.fileSize {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.85em;
+}
+
+.fileTypes {
+	margin-top: 1rem;
+	padding: 1rem;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+}
+
+.fileTypesTitle {
+	margin: 0 0 0.5rem 0;
+	font-weight: bold;
+}
+
+.fileTypesList {
+	margin: 0;
+	padding-left: 1.5rem;
+}
+
+.fileTypesList li {
+	margin-bottom: 0.25rem;
 }
 
 .includeObjects {

@@ -237,36 +237,34 @@ class ExportService
      */
     private function getHeaders(?Register $register=null, ?Schema $schema=null): array
     {
+        // Start with basic metadata columns
         $headers = [
-            'A' => 'id',
-            'B' => 'uuid',
-            'C' => 'uri',
+            'A' => 'id',  // Will contain the uuid
+            'B' => 'created',
+            'C' => 'updated',
         ];
 
-        if ($register !== null) {
-            $headers['D'] = 'register';
-        }
-
+        // Add schema fields from the schema properties
         if ($schema !== null) {
-            $headers['E'] = 'schema';
-        }
-
-        $headers['F'] = 'created';
-        $headers['G'] = 'updated';
-
-        // Add schema fields using getObject()
-        if ($schema !== null) {
-            $schemaObject = $schema->jsonSerialize();
-            $col = 'H';
-            foreach (array_keys($schemaObject) as $field) {
-                $headers[$col] = $field;
+            $col = 'D';  // Start after metadata columns
+            $properties = $schema->getProperties();
+            
+            // Sort properties by their order in the schema
+            foreach ($properties as $fieldName => $fieldDefinition) {
+                // Skip fields that are already in the default headers
+                if (in_array($fieldName, ['id', 'uuid', 'uri', 'register', 'schema', 'created', 'updated'])) {
+                    continue;
+                }
+                
+                // Use the field's title if available, otherwise use the field name
+                $headerTitle = $fieldDefinition['title'] ?? $fieldName;
+                $headers[$col] = $headerTitle;
                 $col++;
             }
         }
 
         return $headers;
-
-    }//end getHeaders()
+    }
 
 
     /**
@@ -279,30 +277,22 @@ class ExportService
      */
     private function getObjectValue(ObjectEntity $object, string $header)
     {
+        // Get the object data
+        $objectData = $object->getObject();
+
+        // Handle metadata fields
         switch ($header) {
             case 'id':
-                return $object->getId();
-            case 'uuid':
-                return $object->getUuid();
-            case 'uri':
-                return $object->getUri();
-            case 'register':
-                return $object->getRegister();
-            case 'schema':
-                return $object->getSchema();
+                return $object->getUuid();  // Return uuid for id column
             case 'created':
                 return $object->getCreated()->format('Y-m-d H:i:s');
             case 'updated':
                 return $object->getUpdated()->format('Y-m-d H:i:s');
             default:
-                $data = $object->getObject();
-                if (array_key_exists($header, $data)) {
-                    return $data[$header];
-                }
-                return null;
+                // Get value from object data
+                return $objectData[$header] ?? null;
         }
-
-    }//end getObjectValue()
+    }
 
 
     /**

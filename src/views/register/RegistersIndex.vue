@@ -84,11 +84,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								</template>
 								Export
 							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
+							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 								<template #icon>
-									<Upload :size="20" />
+									<Import :size="20" />
 								</template>
-								Upload
+								Import
 							</NcActionButton>
 							<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
 								<template #icon>
@@ -284,6 +284,7 @@ import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Import from 'vue-material-design-icons/Import.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import formatBytes from '../../services/formatBytes.js'
@@ -311,6 +312,7 @@ export default {
 		Refresh,
 		Plus,
 		InformationOutline,
+		Import,
 	},
 	data() {
 		return {

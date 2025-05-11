@@ -892,62 +892,42 @@ class ObjectsController extends Controller
     }
 
     /**
-     * Import data from specified format
+     * Import objects into a register
      *
-     * @param string        $register      The register slug or identifier
-     * @param string        $schema        The schema slug or identifier
-     * @param ObjectService $objectService The object service
+     * @param int $registerId The ID of the register to import into
      *
      * @return JSONResponse The result of the import operation
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function import(int $registerId): JSONResponse
     {
         try {
-            // Set the register and schema context
-            $objectService->setRegister($register);
-            $objectService->setSchema($schema);
-
+            // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
-            
             if ($uploadedFile === null) {
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
-            
-            // Get register and schema entities
-            $registerEntity = $this->registerMapper->find($register);
-            $schemaEntity = $this->schemaMapper->find($schema);
-            
-            // Get import type from query parameter
-            $type = $this->request->getParam('type', 'excel');
-            
-            // Handle different import types
-            switch ($type) {
-                case 'csv':
-                    $importedIds = $this->importService->importFromCsv(
-                        $uploadedFile->getTempName(),
-                        $registerEntity,
-                        $schemaEntity
-                    );
-                    break;
-                    
-                case 'excel':
-                default:
-                    $importedIds = $this->importService->importFromExcel(
-                        $uploadedFile->getTempName(),
-                        $registerEntity,
-                        $schemaEntity
-                    );
-                    break;
-            }
-            
+
+            // Get include objects parameter
+            $includeObjects = $this->request->getParam('includeObjects', false);
+
+            // Find the register
+            $register = $this->registerMapper->find($registerId);
+
+            // Import the data
+            $result = $this->importService->importFromJson(
+                $uploadedFile->getTempName(),
+                $register,
+                $includeObjects
+            );
+
             return new JSONResponse([
                 'message' => 'Import successful',
-                'imported' => count($importedIds),
-                'ids' => $importedIds
+                'imported' => $result
             ]);
+
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
