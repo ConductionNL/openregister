@@ -246,13 +246,19 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 
     /**
-     * Get the object data
+     * Get the object data and set the 'id' to the 'uuid'
      *
-     * @return array The object data or empty array if null
+     * @return array The object data with 'id' set to 'uuid', or empty array if null
      */
     public function getObject(): array
     {
-        return ($this->object ?? []);
+        // Initialize the object data with an empty array if null
+        $objectData = $this->object ?? [];
+
+        // Ensure 'id' is the first field by setting it before merging with object data
+        $objectData = array_merge(['id' => $this->uuid], $objectData);
+
+        return $objectData;
 
     }//end getObject()
 
@@ -396,7 +402,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Backwards compatibility for old objects.
         $object          = $this->object;
         $object['@self'] = $this->getObjectArray($object);
-        $object['id']    = $this->getUuid();
 
         // Let's merge and return.
         return $object;

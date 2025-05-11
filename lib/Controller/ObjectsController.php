@@ -818,148 +818,81 @@ class ObjectsController extends Controller
 
 
     /**
-     * Export objects to Excel format
+     * Export objects to specified format
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return DataDownloadResponse The Excel file as a download response
+     * @return DataDownloadResponse The exported file as a download response
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function exportExcel(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
+    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
         // Set the register and schema context
         $objectService->setRegister($register);
         $objectService->setSchema($schema);
 
-        // Get filters from request
+        // Get filters and type from request
         $filters = $this->request->getParams();
         unset($filters['_route']);
+        $type = $this->request->getParam('type', 'excel');
 
         // Get register and schema entities
         $registerEntity = $this->registerMapper->find($register);
         $schemaEntity = $this->schemaMapper->find($schema);
 
-        // Export to Excel with filters
-        $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters);
-        
-        // Create Excel writer
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        
-        // Generate filename
-        $filename = sprintf(
-            '%s_%s_%s.xlsx',
-            $registerEntity->getSlug(),
-            $schemaEntity->getSlug(),
-            (new \DateTime())->format('Y-m-d_His')
-        );
-        
-        // Get Excel content
-        ob_start();
-        $writer->save('php://output');
-        $content = ob_get_clean();
-        
-        return new DataDownloadResponse(
-            $content,
-            $filename,
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        );
-    }
-
-    /**
-     * Export objects to CSV format
-     *
-     * @param string        $register      The register slug or identifier
-     * @param string        $schema        The schema slug or identifier
-     * @param ObjectService $objectService The object service
-     *
-     * @return DataDownloadResponse The CSV file as a download response
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function exportCsv(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
-    {
-        // Set the register and schema context
-        $objectService->setRegister($register);
-        $objectService->setSchema($schema);
-
-        // Get filters from request
-        $filters = $this->request->getParams();
-        unset($filters['_route']);
-
-        // Get register and schema entities
-        $registerEntity = $this->registerMapper->find($register);
-        $schemaEntity = $this->schemaMapper->find($schema);
-
-        // Export to CSV with filters
-        $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters);
-        
-        // Generate filename
-        $filename = sprintf(
-            '%s_%s_%s.csv',
-            $registerEntity->getSlug(),
-            $schemaEntity->getSlug(),
-            (new \DateTime())->format('Y-m-d_His')
-        );
-        
-        return new DataDownloadResponse(
-            $csv,
-            $filename,
-            'text/csv'
-        );
-    }
-
-    /**
-     * Import data from Excel file
-     *
-     * @param string        $register      The register slug or identifier
-     * @param string        $schema        The schema slug or identifier
-     * @param ObjectService $objectService The object service
-     *
-     * @return JSONResponse The result of the import operation
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function importExcel(string $register, string $schema, ObjectService $objectService): JSONResponse
-    {
-        try {
-            // Set the register and schema context
-            $objectService->setRegister($register);
-            $objectService->setSchema($schema);
-
-            $uploadedFile = $this->request->getUploadedFile('file');
-            
-            if ($uploadedFile === null) {
-                return new JSONResponse(['error' => 'No file uploaded'], 400);
-            }
-            
-            // Get register and schema entities
-            $registerEntity = $this->registerMapper->find($register);
-            $schemaEntity = $this->schemaMapper->find($schema);
-            
-            $importedIds = $this->importService->importFromExcel(
-                $uploadedFile->getTempName(),
-                $registerEntity,
-                $schemaEntity
-            );
-            
-            return new JSONResponse([
-                'message' => 'Import successful',
-                'imported' => count($importedIds),
-                'ids' => $importedIds
-            ]);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
+        // Handle different export types
+        switch ($type) {
+            case 'csv':
+                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters);
+                
+                // Generate filename
+                $filename = sprintf(
+                    '%s_%s_%s.csv',
+                    $registerEntity->getSlug(),
+                    $schemaEntity->getSlug(),
+                    (new \DateTime())->format('Y-m-d_His')
+                );
+                
+                return new DataDownloadResponse(
+                    $csv,
+                    $filename,
+                    'text/csv'
+                );
+                
+            case 'excel':
+            default:
+                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters);
+                
+                // Create Excel writer
+                $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                
+                // Generate filename
+                $filename = sprintf(
+                    '%s_%s_%s.xlsx',
+                    $registerEntity->getSlug(),
+                    $schemaEntity->getSlug(),
+                    (new \DateTime())->format('Y-m-d_His')
+                );
+                
+                // Get Excel content
+                ob_start();
+                $writer->save('php://output');
+                $content = ob_get_clean();
+                
+                return new DataDownloadResponse(
+                    $content,
+                    $filename,
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                );
         }
     }
 
     /**
-     * Import data from CSV file
+     * Import data from specified format
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
@@ -970,7 +903,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function importCsv(string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function import(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
         try {
             // Set the register and schema context
@@ -987,11 +920,28 @@ class ObjectsController extends Controller
             $registerEntity = $this->registerMapper->find($register);
             $schemaEntity = $this->schemaMapper->find($schema);
             
-            $importedIds = $this->importService->importFromCsv(
-                $uploadedFile->getTempName(),
-                $registerEntity,
-                $schemaEntity
-            );
+            // Get import type from query parameter
+            $type = $this->request->getParam('type', 'excel');
+            
+            // Handle different import types
+            switch ($type) {
+                case 'csv':
+                    $importedIds = $this->importService->importFromCsv(
+                        $uploadedFile->getTempName(),
+                        $registerEntity,
+                        $schemaEntity
+                    );
+                    break;
+                    
+                case 'excel':
+                default:
+                    $importedIds = $this->importService->importFromExcel(
+                        $uploadedFile->getTempName(),
+                        $registerEntity,
+                        $schemaEntity
+                    );
+                    break;
+            }
             
             return new JSONResponse([
                 'message' => 'Import successful',

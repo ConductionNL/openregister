@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -40,6 +41,7 @@ use React\EventLoop\Loop;
  */
 class ExportService
 {
+
     /**
      * Object entity mapper instance
      *
@@ -54,17 +56,20 @@ class ExportService
      */
     private readonly RegisterMapper $registerMapper;
 
+
     /**
      * Constructor for the ExportService
      *
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper    $registerMapper    The register mapper
+     * @param RegisterMapper     $registerMapper     The register mapper
      */
     public function __construct(ObjectEntityMapper $objectEntityMapper, RegisterMapper $registerMapper)
     {
         $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper = $registerMapper;
-    }
+        $this->registerMapper     = $registerMapper;
+
+    }//end __construct()
+
 
     /**
      * Export data to Excel format asynchronously
@@ -75,58 +80,54 @@ class ExportService
      *
      * @return PromiseInterface<Spreadsheet> Promise that resolves with the generated spreadsheet
      */
-    public function exportToExcelAsync(?Register $register = null, ?Schema $schema = null, array $filters = []): PromiseInterface
+    public function exportToExcelAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): PromiseInterface
     {
-        return new Promise(function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
-            try {
-                $spreadsheet = $this->exportToExcel($register, $schema, $filters);
-                $resolve($spreadsheet);
-            } catch (\Throwable $e) {
-                $reject($e);
-            }
-        });
-    }
+        return new Promise(
+                function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
+                    try {
+                        $spreadsheet = $this->exportToExcel($register, $schema, $filters);
+                        $resolve($spreadsheet);
+                    } catch (\Throwable $e) {
+                        $reject($e);
+                    }
+                }
+                );
+
+    }//end exportToExcelAsync()
+
 
     /**
      * Export data to Excel format
      *
-     * @param Register|null $register Optional register to filter by
-     * @param Schema|null   $schema   Optional schema to filter by
-     * @param array         $filters  Additional filters to apply
+     * @param Register|null $register Optional register to export
+     * @param Schema|null   $schema   Optional schema to export
+     * @param array         $filters  Optional filters to apply
      *
-     * @return Spreadsheet The generated spreadsheet
+     * @return Spreadsheet
      */
-    public function exportToExcel(?Register $register = null, ?Schema $schema = null, array $filters = []): Spreadsheet
+    public function exportToExcel(?Register $register=null, ?Schema $schema=null, array $filters=[]): Spreadsheet
     {
-        // Create new spreadsheet
+        // Create new spreadsheet.
         $spreadsheet = new Spreadsheet();
-        
-        // If we have a register but no schema, export each schema to its own tab
+
+        // Remove default sheet.
+        $spreadsheet->removeSheetByIndex(0);
+
         if ($register !== null && $schema === null) {
-            // Remove the default sheet
-            $spreadsheet->removeSheetByIndex(0);
-            
-            // Get all schemas for this register
+            // Export all schemas in register.
             $schemas = $this->getSchemasForRegister($register);
-            
             foreach ($schemas as $schema) {
-                $sheet = $spreadsheet->createSheet();
-                $sheet->setTitle($schema->getSlug());
-                
-                $this->populateSheet($sheet, $register, $schema, $filters);
+                $this->populateSheet($spreadsheet, $register, $schema, $filters);
             }
         } else {
-            // Single schema export
-            $sheet = $spreadsheet->getActiveSheet();
-            if ($schema !== null) {
-                $sheet->setTitle($schema->getSlug());
-            }
-            
-            $this->populateSheet($sheet, $register, $schema, $filters);
+            // Export single schema.
+            $this->populateSheet($spreadsheet, $register, $schema, $filters);
         }
 
         return $spreadsheet;
-    }
+
+    }//end exportToExcel()
+
 
     /**
      * Export data to CSV format asynchronously
@@ -137,157 +138,147 @@ class ExportService
      *
      * @return PromiseInterface<string> Promise that resolves with the CSV content
      */
-    public function exportToCsvAsync(?Register $register = null, ?Schema $schema = null, array $filters = []): PromiseInterface
+    public function exportToCsvAsync(?Register $register=null, ?Schema $schema=null, array $filters=[]): PromiseInterface
     {
-        return new Promise(function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
-            try {
-                $csv = $this->exportToCsv($register, $schema, $filters);
-                $resolve($csv);
-            } catch (\Throwable $e) {
-                $reject($e);
-            }
-        });
-    }
+        return new Promise(
+                function (callable $resolve, callable $reject) use ($register, $schema, $filters) {
+                    try {
+                        $csv = $this->exportToCsv($register, $schema, $filters);
+                        $resolve($csv);
+                    } catch (\Throwable $e) {
+                        $reject($e);
+                    }
+                }
+                );
+
+    }//end exportToCsvAsync()
+
 
     /**
      * Export data to CSV format
      *
-     * @param Register|null $register Optional register to filter by
-     * @param Schema|null   $schema   Optional schema to filter by
-     * @param array         $filters  Additional filters to apply
+     * @param Register|null $register Optional register to export
+     * @param Schema|null   $schema   Optional schema to export
+     * @param array         $filters  Optional filters to apply
      *
-     * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
+     * @return string CSV content
      *
-     * @return string The CSV content
+     * @throws InvalidArgumentException If trying to export multiple schemas to CSV
      */
-    public function exportToCsv(?Register $register = null, ?Schema $schema = null, array $filters = []): string
+    public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[]): string
     {
-        // CSV can only handle a single schema
         if ($register !== null && $schema === null) {
-            throw new \InvalidArgumentException('CSV export requires a specific schema');
+            throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
         $spreadsheet = $this->exportToExcel($register, $schema, $filters);
-        
-        // Create CSV writer
-        $writer = new Csv($spreadsheet);
-        $writer->setDelimiter(',');
-        $writer->setEnclosure('"');
-        $writer->setLineEnding("\r\n");
-        $writer->setSheetIndex(0);
+        $writer      = new Csv($spreadsheet);
 
-        // Get CSV content
         ob_start();
         $writer->save('php://output');
         return ob_get_clean();
-    }
+
+    }//end exportToCsv()
+
 
     /**
      * Populate a worksheet with data
      *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet    The worksheet to populate
-     * @param Register|null                                 $register Optional register to filter by
-     * @param Schema|null                                   $schema   Optional schema to filter by
-     * @param array                                         $filters  Additional filters to apply
+     * @param Spreadsheet   $spreadsheet The spreadsheet to populate
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param array         $filters     Optional filters to apply
      *
      * @return void
      */
-    private function populateSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, ?Register $register = null, ?Schema $schema = null, array $filters = []): void
+    private function populateSheet(Spreadsheet $spreadsheet, ?Register $register=null, ?Schema $schema=null, array $filters=[]): void
     {
-        // Get all objects based on filters
-        $objects = $this->objectEntityMapper->findAll(
-            limit: null,
-            offset: null,
-            filters: $filters,
-            register: $register,
-            schema: $schema
-        );
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle($schema !== null ? $schema->getSlug() : 'data');
 
-        // Set headers
-        $headers = $this->getHeaders($objects);
-        $column = 1;
-        foreach ($headers as $header) {
-            $sheet->setCellValueByColumnAndRow($column, 1, $header);
-            $column++;
+        $headers = $this->getHeaders($register, $schema);
+        $row     = 1;
+
+        // Write headers.
+        foreach ($headers as $col => $header) {
+            $sheet->setCellValue($col.$row, $header);
         }
 
-        // Style headers
-        $headerStyle = [
-            'font' => [
-                'bold' => true,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => [
-                    'rgb' => 'CCCCCC',
-                ],
-            ],
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                ],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-            ],
-        ];
-        $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->applyFromArray($headerStyle);
+        // Add register and schema to filters if they are set.
+        if ($register !== null) {
+            $filters['register'] = $register->getId();
+        }
+        if ($schema !== null) {
+            $filters['schema'] = $schema->getId();
+        }
 
-        // Add data
-        $row = 2;
+        // Get objects.
+        $objects = $this->objectEntityMapper->findAll(filters: $filters);
+
+        // Write data.
         foreach ($objects as $object) {
-            $column = 1;
-            foreach ($headers as $header) {
-                $value = $this->getObjectValue($object, $header);
-                $sheet->setCellValueByColumnAndRow($column, $row, $value);
-                $column++;
-            }
             $row++;
+            foreach ($headers as $col => $header) {
+                $value = $this->getObjectValue($object, $header);
+                $sheet->setCellValue($col.$row, $value);
+            }
         }
 
-        // Auto-size columns
-        foreach (range('A', $sheet->getHighestColumn()) as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-    }
+    }//end populateSheet()
+
 
     /**
-     * Get headers from objects
+     * Get headers for export
      *
-     * @param array $objects Array of objects to extract headers from
+     * @param Register|null $register Optional register to export
+     * @param Schema|null   $schema   Optional schema to export
      *
-     * @return array Array of header names
+     * @return array Headers indexed by column letter
      */
-    private function getHeaders(array $objects): array
+    private function getHeaders(?Register $register=null, ?Schema $schema=null): array
     {
-        $headers = ['id', 'uuid', 'uri', 'register', 'schema', 'created', 'updated'];
-        
-        // Add object-specific headers
-        foreach ($objects as $object) {
-            $objectData = $object->getObject();
-            if (is_array($objectData)) {
-                foreach (array_keys($objectData) as $key) {
-                    if (!in_array($key, $headers)) {
-                        $headers[] = $key;
-                    }
-                }
+        $headers = [
+            'A' => 'id',
+            'B' => 'uuid',
+            'C' => 'uri',
+        ];
+
+        if ($register !== null) {
+            $headers['D'] = 'register';
+        }
+
+        if ($schema !== null) {
+            $headers['E'] = 'schema';
+        }
+
+        $headers['F'] = 'created';
+        $headers['G'] = 'updated';
+
+        // Add schema fields using getObject()
+        if ($schema !== null) {
+            $schemaObject = $schema->jsonSerialize();
+            $col = 'H';
+            foreach (array_keys($schemaObject) as $field) {
+                $headers[$col] = $field;
+                $col++;
             }
         }
 
         return $headers;
-    }
+
+    }//end getHeaders()
+
 
     /**
-     * Get value from object for a specific header
+     * Get value from object for given header
      *
-     * @param mixed  $object The object to get value from
-     * @param string $header The header name
+     * @param ObjectEntity $object The object to get value from
+     * @param string       $header The header to get value for
      *
-     * @return mixed The value
+     * @return mixed
      */
-    private function getObjectValue(mixed $object, string $header): mixed
+    private function getObjectValue(ObjectEntity $object, string $header)
     {
-        // Handle special fields
         switch ($header) {
             case 'id':
                 return $object->getId();
@@ -300,14 +291,19 @@ class ExportService
             case 'schema':
                 return $object->getSchema();
             case 'created':
-                return $object->getCreated();
+                return $object->getCreated()->format('Y-m-d H:i:s');
             case 'updated':
-                return $object->getUpdated();
+                return $object->getUpdated()->format('Y-m-d H:i:s');
             default:
-                $objectData = $object->getObject();
-                return $objectData[$header] ?? null;
+                $data = $object->getObject();
+                if (array_key_exists($header, $data)) {
+                    return $data[$header];
+                }
+                return null;
         }
-    }
+
+    }//end getObjectValue()
+
 
     /**
      * Get all schemas for a register
@@ -319,5 +315,8 @@ class ExportService
     private function getSchemasForRegister(Register $register): array
     {
         return $this->registerMapper->getSchemasByRegisterId($register->getId());
-    }
-} 
+
+    }//end getSchemasForRegister()
+
+
+}//end class
