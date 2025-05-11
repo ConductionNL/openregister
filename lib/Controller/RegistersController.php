@@ -377,11 +377,13 @@ class RegistersController extends Controller
     /**
      * Import data into a register
      *
-     * This method imports data into a register in the specified format.
+     * This method imports data into a register in the specified format and returns a detailed summary.
      *
      * @param int $id The ID of the register to import into
      *
-     * @return JSONResponse The result of the import operation
+     * @return JSONResponse The result of the import operation with summary
+     * @phpstan-return JSONResponse
+     * @psalm-return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -417,19 +419,27 @@ class RegistersController extends Controller
             // Handle different import types
             switch ($type) {
                 case 'excel':
-                    $importedIds = $this->importService->importFromExcel(
+                    // Import from Excel and get summary
+                    $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $register,
-                        null,
-                        $includeObjects
+                        null
                     );
                     break;
                 case 'csv':
-                    $importedIds = $this->importService->importFromCsv(
+                    // Import from CSV and get summary
+                    // For CSV, schema must be specified or inferred (not handled here)
+                    // For now, assume only one schema per register and get the first
+                    $schemas = $register->getSchemas();
+                    if (empty($schemas)) {
+                        return new JSONResponse(['error' => 'No schema found for register'], 400);
+                    }
+                    $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                    $schema = $this->importService->schemaMapper->find($schemaId);
+                    $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
                         $register,
-                        null,
-                        $includeObjects
+                        $schema
                     );
                     break;
                 case 'configuration':
@@ -441,21 +451,28 @@ class RegistersController extends Controller
                     if ($jsonData instanceof JSONResponse) {
                         return $jsonData;
                     }
-                    // Import the data
+                    // Import the data and get the result
                     $result = $this->configurationService->importFromJson(
                         $jsonData,
-                        $includeObjects,
                         $this->request->getParam('owner')
                     );
-                    return new JSONResponse([
-                        'message' => 'Import successful',
-                        'imported' => $result
-                    ]);
+                    // Build a summary for objects if present
+                    $summary = [
+                        'created' => [],
+                        'updated' => [],
+                        'unchanged' => [],
+                    ];
+                    if (isset($result['objects']) && is_array($result['objects'])) {
+                        foreach ($result['objects'] as $object) {
+                            // For now, treat all as 'created' (improve if possible)
+                            $summary['created'][] = $object->getId();
+                        }
+                    }
+                    break;
             }
             return new JSONResponse([
                 'message' => 'Import successful',
-                'imported' => count($importedIds),
-                'ids' => $importedIds
+                'summary' => $summary
             ]);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);

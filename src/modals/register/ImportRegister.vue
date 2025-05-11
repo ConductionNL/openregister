@@ -8,15 +8,26 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		title="Import Data into Register"
 		size="large"
 		:can-close="false">
-		<NcNoteCard v-if="success" type="success">
+		<NcNoteCard v-if="success && importSummary" type="success">
 			<p>Register imported successfully!</p>
+			<div class="importSummary">
+				<p><strong>Import Summary:</strong></p>
+				<ul>
+					<li><strong>Created:</strong> {{ importSummary.created.length }} <span v-if="importSummary.created.length">({{ importSummary.created.join(', ') }})</span></li>
+					<li><strong>Updated:</strong> {{ importSummary.updated.length }} <span v-if="importSummary.updated.length">({{ importSummary.updated.join(', ') }})</span></li>
+					<li><strong>Unchanged:</strong> {{ importSummary.unchanged.length }} <span v-if="importSummary.unchanged.length">({{ importSummary.unchanged.join(', ') }})</span></li>
+				</ul>
+				<NcButton @click="closeModal" type="secondary" style="margin-top: 1rem;">
+					Close
+				</NcButton>
+			</div>
 		</NcNoteCard>
 
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div class="formContainer">
+		<div class="formContainer" v-if="!success">
 			<input
 				ref="fileInput"
 				type="file"
@@ -68,7 +79,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			</div>
 		</div>
 
-		<template #actions>
+		<template #actions v-if="!success">
 			<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
@@ -115,17 +126,26 @@ export default {
 		Import,
 		Upload,
 	},
+	/**
+	 * Component data properties
+	 * @returns {object}
+	 */
 	data() {
 		return {
-			selectedFile: null,
-			loading: false,
-			success: false,
-			error: null,
-			includeObjects: false,
-			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'],
+			selectedFile: null, // The file selected for import
+			loading: false, // Loading state
+			success: false, // Success state
+			error: null, // Error message
+			includeObjects: false, // Whether to include objects
+			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
+			importSummary: null, // The import summary from the backend
 		}
 	},
 	computed: {
+		/**
+		 * Check if the selected file type is valid
+		 * @returns {boolean}
+		 */
 		isValidFileType() {
 			if (!this.selectedFile) return false
 			const extension = this.getFileExtension(this.selectedFile.name)
@@ -133,9 +153,19 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Get the file extension from a filename
+		 * @param {string} filename
+		 * @returns {string}
+		 */
 		getFileExtension(filename) {
 			return filename.split('.').pop().toLowerCase()
 		},
+		/**
+		 * Get the file type label for display
+		 * @param {string} filename
+		 * @returns {string}
+		 */
 		getFileType(filename) {
 			const extension = this.getFileExtension(filename)
 			switch (extension) {
@@ -150,6 +180,10 @@ export default {
 					return 'Unknown'
 			}
 		},
+		/**
+		 * Handle file input change event
+		 * @param {Event} event
+		 */
 		handleFileUpload(event) {
 			const file = event.target.files[0]
 			if (!file) {
@@ -168,6 +202,9 @@ export default {
 			this.selectedFile = file
 			this.error = null
 		},
+		/**
+		 * Close the import modal and reset state
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.selectedFile = null
@@ -175,7 +212,12 @@ export default {
 			this.success = false
 			this.error = null
 			this.includeObjects = false
+			this.importSummary = null
 		},
+		/**
+		 * Import the selected register file and handle the summary
+		 * @returns {Promise<void>}
+		 */
 		async importRegister() {
 			if (!this.selectedFile || !this.isValidFileType) {
 				this.error = 'Please select a valid file to import'
@@ -186,14 +228,22 @@ export default {
 			this.error = null
 
 			try {
-				await registerStore.importRegister(this.selectedFile, this.includeObjects)
+				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects)
+				// Store the import summary from the backend response
+				this.importSummary = result?.responseData?.summary || null
 				this.success = true
-				setTimeout(() => this.closeModal(), 1500)
+				this.loading = false
+				// Do not auto-close; let user review the summary and close manually
 			} catch (error) {
 				this.error = error.message || 'Failed to import register'
 				this.loading = false
 			}
 		},
+		/**
+		 * Format file size for display
+		 * @param {number} bytes
+		 * @returns {string}
+		 */
 		formatFileSize(bytes) {
 			if (bytes === 0) return '0 Bytes'
 			const k = 1024
@@ -267,5 +317,12 @@ export default {
 
 .includeObjects {
 	margin-top: 1rem;
+}
+
+.importSummary {
+	margin-top: 1rem;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
 }
 </style>

@@ -150,6 +150,7 @@ class SaveObject
     ): ObjectEntity {
         // Remove the @self property from the data.
         unset($data['@self']);
+        unset($data['id']);
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {
@@ -205,7 +206,8 @@ class SaveObject
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
 
         // Create audit trail for creation.
-        $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+        $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+        $savedEntity->setLastLog($log->jsonSerialize());
 
         // Handle file properties.
         foreach ($data as $propertyName => $value) {
@@ -309,6 +311,11 @@ class SaveObject
         // Store the old state for audit trail.
         $oldObject = clone $existingObject;
 
+        // Lets filter out the id and @self properties from the old object.
+        $oldObjectData = $oldObject->getObject();
+        unset($oldObjectData['id'], $oldObjectData['@self']);
+        $oldObject->setObject($oldObjectData);
+
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {
@@ -338,7 +345,8 @@ class SaveObject
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
 
         // Create audit trail for update.
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+        $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+        $updatedEntity->setLastLog($log->jsonSerialize());
 
         // Handle file properties.
         foreach ($data as $propertyName => $value) {

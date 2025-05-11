@@ -53,18 +53,25 @@ class ImportService
      */
     private readonly SchemaMapper $schemaMapper;
 
+    /**
+     * Object service instance
+     *
+     * @var ObjectService
+     */
+    private readonly ObjectService $objectService;
 
     /**
      * Constructor for the ImportService
      *
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @param ObjectService      $objectService      The object service
      */
-    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper)
+    public function __construct(ObjectEntityMapper $objectEntityMapper, SchemaMapper $schemaMapper, ObjectService $objectService)
     {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
-
+        $this->objectService      = $objectService;
     }//end __construct()
 
 
@@ -100,7 +107,9 @@ class ImportService
      * @param Register|null $register Optional register to associate with imported objects
      * @param Schema|null   $schema   Optional schema to associate with imported objects
      *
-     * @return array Array of imported object IDs
+     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[]]
+     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
+     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null): array
     {
@@ -150,9 +159,9 @@ class ImportService
      * @param Register|null $register Optional register to associate with imported objects
      * @param Schema|null   $schema   Optional schema to associate with imported objects
      *
-     * @throws \InvalidArgumentException If trying to import without a specific schema
-     *
-     * @return array Array of imported object IDs
+     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[]]
+     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
+     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
      */
     public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null): array
     {
@@ -179,11 +188,17 @@ class ImportService
      * @param Spreadsheet $spreadsheet The spreadsheet to process
      * @param Register    $register    The register to associate with imported objects
      *
-     * @return array Array of imported object IDs
+     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[]]
+     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
+     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
      */
     private function processMultiSchemaSpreadsheet(Spreadsheet $spreadsheet, Register $register): array
     {
-        $importedIds = [];
+        $summary = [
+            'created' => [],
+            'updated' => [],
+            'unchanged' => [],
+        ];
 
         foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
             $schemaSlug = $worksheet->getTitle();
@@ -194,23 +209,29 @@ class ImportService
                 continue;
             }
 
-            $sheetIds    = $this->processSpreadsheet($spreadsheet, $register, $schema);
-            $importedIds = array_merge($importedIds, $sheetIds);
+            // Set the worksheet as active and process
+            $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
+            $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
+            $summary['created'] = array_merge($summary['created'], $sheetSummary['created']);
+            $summary['updated'] = array_merge($summary['updated'], $sheetSummary['updated']);
+            $summary['unchanged'] = array_merge($summary['unchanged'], $sheetSummary['unchanged']);
         }
 
-        return $importedIds;
+        return $summary;
 
     }//end processMultiSchemaSpreadsheet()
 
 
     /**
-     * Process spreadsheet data and create objects
+     * Process spreadsheet data and create/update objects using ObjectService
      *
      * @param Spreadsheet   $spreadsheet The spreadsheet to process
      * @param Register|null $register    Optional register to associate with imported objects
      * @param Schema|null   $schema      Optional schema to associate with imported objects
      *
-     * @return array Array of imported object IDs
+     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[]]
+     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
+     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>}
      */
     private function processSpreadsheet(Spreadsheet $spreadsheet, ?Register $register=null, ?Schema $schema=null): array
     {
@@ -224,11 +245,20 @@ class ImportService
             $headers[$col] = $sheet->getCell($col.'1')->getValue();
         }
 
-        $importedIds = [];
+        // Get schema properties for mapping
+        $schemaProperties = $schema ? $schema->getProperties() : [];
+        $propertyKeys = array_keys($schemaProperties);
+
+        $summary = [
+            'created' => [],
+            'updated' => [],
+            'unchanged' => [],
+        ];
 
         // Process each row.
         for ($row = 2; $row <= $highestRow; $row++) {
             $objectData = [];
+            $objectFields = [];
 
             // Collect data for each column.
             for ($col = 'A'; $col <= $highestColumn; $col++) {
@@ -240,52 +270,52 @@ class ImportService
                     continue;
                 }
 
-                // Handle special fields.
-                switch ($header) {
-                    case 'id':
-                        // Skip ID as it will be generated.
-                        continue 2;
-                    case 'uuid':
-                        $objectData['uuid'] = $value;
-                        break;
-                    case 'uri':
-                        $objectData['uri'] = $value;
-                        break;
-                    case 'register':
-                        // Skip register as it's provided as parameter.
-                        continue 2;
-                    case 'schema':
-                        // Skip schema as it's provided as parameter.
-                        continue 2;
-                    case 'created':
-                    case 'updated':
-                        // Skip timestamp fields as they will be set automatically.
-                        continue 2;
-                    default:
-                        $objectData[$header] = $value;
-                }//end switch
-            }//end for
-
-            // Add register and schema if provided.
-            if ($register !== null) {
-                $objectData['register'] = $register->getId();
+                if (in_array($header, $propertyKeys, true)) {
+                    $objectData[$header] = $value;
+                } else {
+                    // Otherwise, treat as a top-level field
+                   // $objectData[$header] = $value;
+                }
             }
 
-            if ($schema !== null) {
-                $objectData['schema'] = $schema->getId();
+            // Get current timestamp before saving
+            $beforeSave = new \DateTime();
+
+            // Use ObjectService to save the object (handles create/update/validation)
+            try {
+                $savedObject = $this->objectService->saveObject(
+                    $objectData,
+                    [],
+                    $register,
+                    $schema,
+                    $objectData['id']
+                );
+
+                // Get the created and updated timestamps from the saved object
+                $created = $savedObject->getCreated();
+                $updated = $savedObject->getUpdated();
+
+                // Get the last log from the saved object
+                $log = method_exists($savedObject, 'getLastLog') ? $savedObject->getLastLog() : null;
+
+                // If created timestamp is after our beforeSave timestamp, it's a new object
+                if ($created && $created > $beforeSave) {
+                    $summary['created'][] = $log;
+                }
+                // If updated timestamp is after our beforeSave timestamp, it's an updated object
+                else if ($updated && $updated > $beforeSave) {
+                    $summary['updated'][] = $log;
+                }
+                // If neither timestamp is after beforeSave, the object was unchanged
+                else {
+                    $summary['unchanged'][] = $log;
+                }
+            } catch (\Exception $e) {
+                // Optionally, handle or log errors for this row
+                continue;
             }
-
-            // Generate UUID if not provided.
-            if (isset($objectData['uuid']) === false) {
-                $objectData['uuid'] = Uuid::v4();
-            }
-
-            // Create object.
-            $object        = $this->objectEntityMapper->createFromArray($objectData);
-            $importedIds[] = $object->getId();
-        }//end for
-
-        return $importedIds;
+        }
+        return $summary;
 
     }//end processSpreadsheet()
 
