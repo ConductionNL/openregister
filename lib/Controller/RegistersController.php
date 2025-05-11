@@ -389,22 +389,36 @@ class RegistersController extends Controller
     public function import(int $id): JSONResponse
     {
         try {
-            // Get import type from query parameter
-            $type = $this->request->getParam('type', 'configuration');
-            // Get includeObjects parameter for all types
-            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
             // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
+
+            // Dynamically determine import type if not provided
+            $type = $this->request->getParam('type');
+            if (!$type) {
+                $mimeType = $uploadedFile['type'] ?? '';
+                $filename = $uploadedFile['name'] ?? '';
+                $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if (in_array($extension, ['xlsx', 'xls'])) {
+                    $type = 'excel';
+                } elseif ($extension === 'csv') {
+                    $type = 'csv';
+                } else {
+                    $type = 'configuration';
+                }
+            }
+
+            // Get includeObjects parameter for all types
+            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
             // Find the register
             $register = $this->registerMapper->find($id);
             // Handle different import types
             switch ($type) {
                 case 'excel':
                     $importedIds = $this->importService->importFromExcel(
-                        $uploadedFile->getTempName(),
+                        $uploadedFile['tmp_name'],
                         $register,
                         null,
                         $includeObjects
@@ -412,7 +426,7 @@ class RegistersController extends Controller
                     break;
                 case 'csv':
                     $importedIds = $this->importService->importFromCsv(
-                        $uploadedFile->getTempName(),
+                        $uploadedFile['tmp_name'],
                         $register,
                         null,
                         $includeObjects
