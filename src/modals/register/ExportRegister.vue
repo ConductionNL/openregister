@@ -17,7 +17,7 @@ import axios from '@nextcloud/axios'
 		<div class="formContainer">
 			<p>Export register "{{ registerTitle }}"?</p>
 
-			<div class="form-group">
+			<div class="formGroup">
 				<label>Export Format:</label>
 				<NcSelect v-model="exportFormat"
 					:options="exportFormats"
@@ -170,13 +170,13 @@ export default {
 	gap: 1rem;
 }
 
-.form-group {
+.formGroup {
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
 }
 
-.form-group label {
+.formGroup label {
 	font-weight: bold;
 }
 </style>
