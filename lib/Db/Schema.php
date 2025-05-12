@@ -427,8 +427,8 @@ class Schema extends Entity implements JsonSerializable
         $schema->version     = $this->version;
         $schema->type        = 'object';
         $schema->required    = $this->required;
-        $schema->$schema     = 'https://json-schema.org/draft/2020-12/schema';
-        $schema->$id         = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->{'$schema'}     = 'https://json-schema.org/draft/2020-12/schema';
+        $schema->{'$id'}         = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
         $schema->properties  = new stdClass();
 
         foreach ($this->properties as $propertyName => $property) {
@@ -447,28 +447,30 @@ class Schema extends Entity implements JsonSerializable
 
                         $nestedProp = new stdClass();
                         foreach ($subProperty as $key => $value) {
-                            $nestedProp->$key = $value;
+                            $nestedProp->{$key} = $value;
                         }
 
-                        $nestedProperties->$subName = $nestedProp;
+                        $nestedProperties->{$subName} = $nestedProp;
                     }
                 }
 
                 $nestedProperty->properties        = $nestedProperties;
-                $schema->properties->$propertyName = $nestedProperty;
+                $schema->properties->{$propertyName} = $nestedProperty;
             } else {
                 $prop = new stdClass();
                 foreach ($property as $key => $value) {
                     // Skip 'required' property on this level.
-                    if ($key !== 'required') {
-                        $prop->$key = $value;
+                    if ($key !== 'required' && empty($value) === false) {
+                        $prop->{$key} = $value;
+                        $schema->required[] = $propertyName;
                     }
                 }
 
-                $schema->properties->$propertyName = $prop;
+                $schema->properties->{$propertyName} = $prop;
             }//end if
         }//end foreach
 
+        $this->setRequired($schema->required);
         return $schema;
 
     }//end getSchemaObject()

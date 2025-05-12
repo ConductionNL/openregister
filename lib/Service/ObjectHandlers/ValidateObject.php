@@ -30,6 +30,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\File;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
@@ -73,7 +74,8 @@ class ValidateObject
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
-        private readonly IAppConfig $config
+        private readonly IAppConfig $config,
+        private readonly SchemaMapper $schemaMapper,
     ) {
 
     }//end __construct()
@@ -95,7 +97,9 @@ class ValidateObject
         object $schemaObject=new stdClass(),
         int $depth=0
     ): ValidationResult {
-        if ($schemaObject === new stdClass()) {
+
+        // Use == because === will never be true when comparing stdClass-instances
+        if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             } else if (is_int($schema) === true) {
@@ -108,6 +112,7 @@ class ValidateObject
             // Return a ValidationResult with null data indicating success.
             return new ValidationResult(null, null);
         }
+
 
         $validator = new Validator();
         $validator->setMaxErrors(100);
