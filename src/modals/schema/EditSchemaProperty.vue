@@ -232,6 +232,18 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				Deprecated
 			</NcCheckboxRadioSwitch>
 
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.visible">
+				Visible to end users
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.hideOnCollection">
+				Hide in collection view
+			</NcCheckboxRadioSwitch>
+
 			<NcTextField :disabled="loading"
 				label="Example"
 				:value.sync="properties.example" />
@@ -427,6 +439,8 @@ export default {
 				behavior: '',
 				required: false,
 				deprecated: false,
+				visible: true,
+				hideOnCollection: false,
 				minLength: 0,
 				maxLength: 0,
 				example: '',

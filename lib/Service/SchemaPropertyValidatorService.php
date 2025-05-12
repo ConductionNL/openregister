@@ -173,6 +173,16 @@ class SchemaPropertyValidatorService
             }
         }
 
+        // Validate visible property if present
+        if (isset($property['visible']) === true && is_bool($property['visible']) === false) {
+            throw new Exception("'visible' at '$path' must be a boolean");
+        }
+
+        // Validate hideOnCollection property if present
+        if (isset($property['hideOnCollection']) === true && is_bool($property['hideOnCollection']) === false) {
+            throw new Exception("'hideOnCollection' at '$path' must be a boolean");
+        }
+
         return true;
 
     }//end validateProperty()
