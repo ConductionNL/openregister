@@ -135,8 +135,6 @@ import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Export from 'vue-material-design-icons/Export.vue'
-import Import from 'vue-material-design-icons/Import.vue'
 import formatBytes from '../../services/formatBytes.js'
 
 export default {
@@ -152,8 +150,6 @@ export default {
 		FileCodeOutline,
 		DotsHorizontal,
 		Pencil,
-		Export,
-		Import,
 	},
 	computed: {
 		register() {

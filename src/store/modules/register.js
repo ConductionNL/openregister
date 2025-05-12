@@ -245,7 +245,7 @@ export const useRegisterStore = defineStore('register', {
 					{
 						method: 'POST',
 						body: formData,
-					}
+					},
 				)
 
 				const responseData = await response.json()

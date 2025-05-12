@@ -17,7 +17,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 					<li><strong>Updated:</strong> {{ importSummary.updated.length }} <span v-if="importSummary.updated.length">({{ importSummary.updated.join(', ') }})</span></li>
 					<li><strong>Unchanged:</strong> {{ importSummary.unchanged.length }} <span v-if="importSummary.unchanged.length">({{ importSummary.unchanged.join(', ') }})</span></li>
 				</ul>
-				<NcButton @click="closeModal" type="secondary" style="margin-top: 1rem;">
+				<NcButton type="secondary" style="margin-top: 1rem;" @click="closeModal">
 					Close
 				</NcButton>
 			</div>
@@ -27,7 +27,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div class="formContainer" v-if="!success">
+		<div v-if="!success" class="formContainer">
 			<input
 				ref="fileInput"
 				type="file"
@@ -47,20 +47,27 @@ import { registerStore, navigationStore } from '../../store/store.js'
 						<span class="fileName">{{ selectedFile.name }}</span>
 						<span class="fileType">({{ getFileType(selectedFile.name) }})</span>
 					</div>
-					<div class="fileSize">{{ formatFileSize(selectedFile.size) }}</div>
+					<div class="fileSize">
+						{{ formatFileSize(selectedFile.size) }}
+					</div>
 				</div>
 			</div>
 
 			<div class="fileTypes">
-				<p class="fileTypesTitle">Supported file types:</p>
+				<p class="fileTypesTitle">
+					Supported file types:
+				</p>
 				<ul class="fileTypesList">
-					<li><strong>JSON</strong> - Register configuration and objects.<br />
+					<li>
+						<strong>JSON</strong> - Register configuration and objects.<br>
 						<em>You can create or update objects for multiple schemas at once.</em>
 					</li>
-					<li><strong>Excel</strong> (.xlsx, .xls) - Objects data.<br />
+					<li>
+						<strong>Excel</strong> (.xlsx, .xls) - Objects data.<br>
 						<em>You can create or update objects for multiple schemas at once.</em>
 					</li>
-					<li><strong>CSV</strong> - Objects data.<br />
+					<li>
+						<strong>CSV</strong> - Objects data.<br>
 						<em>You can only update one schema within a register.</em>
 					</li>
 				</ul>
@@ -79,7 +86,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			</div>
 		</div>
 
-		<template #actions v-if="!success">
+		<template v-if="!success" #actions>
 			<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
@@ -128,7 +135,7 @@ export default {
 	},
 	/**
 	 * Component data properties
-	 * @returns {object}
+	 * @return {object}
 	 */
 	data() {
 		return {
@@ -144,7 +151,7 @@ export default {
 	computed: {
 		/**
 		 * Check if the selected file type is valid
-		 * @returns {boolean}
+		 * @return {boolean}
 		 */
 		isValidFileType() {
 			if (!this.selectedFile) return false
@@ -154,35 +161,36 @@ export default {
 	},
 	methods: {
 		/**
+		/**
 		 * Get the file extension from a filename
-		 * @param {string} filename
-		 * @returns {string}
+		 * @param {string} filename - The name of the file to get extension from
+		 * @return {string}
 		 */
 		getFileExtension(filename) {
 			return filename.split('.').pop().toLowerCase()
 		},
 		/**
 		 * Get the file type label for display
-		 * @param {string} filename
-		 * @returns {string}
+		 * @param {string} filename - The name of the file to get type label from
+		 * @return {string}
 		 */
 		getFileType(filename) {
 			const extension = this.getFileExtension(filename)
 			switch (extension) {
-				case 'json':
-					return 'JSON Configuration'
-				case 'xlsx':
-				case 'xls':
-					return 'Excel Spreadsheet'
-				case 'csv':
-					return 'CSV Data'
-				default:
-					return 'Unknown'
+			case 'json':
+				return 'JSON Configuration'
+			case 'xlsx':
+			case 'xls':
+				return 'Excel Spreadsheet'
+			case 'csv':
+				return 'CSV Data'
+			default:
+				return 'Unknown'
 			}
 		},
 		/**
 		 * Handle file input change event
-		 * @param {Event} event
+		 * @param {Event} event - The file input change event
 		 */
 		handleFileUpload(event) {
 			const file = event.target.files[0]
@@ -194,7 +202,7 @@ export default {
 
 			const extension = this.getFileExtension(file.name)
 			if (!this.allowedFileTypes.includes(extension)) {
-				this.error = `Invalid file type: ${file.name}. Please select a ${this.allowedFileTypes.map(e => '.'+e).join(', ')} file.`
+				this.error = `Invalid file type: ${file.name}. Please select a ${this.allowedFileTypes.map(e => '.' + e).join(', ')} file.`
 				this.selectedFile = null
 				return
 			}
@@ -216,7 +224,7 @@ export default {
 		},
 		/**
 		 * Import the selected register file and handle the summary
-		 * @returns {Promise<void>}
+		 * @return {Promise<void>}
 		 */
 		async importRegister() {
 			if (!this.selectedFile || !this.isValidFileType) {
@@ -241,8 +249,8 @@ export default {
 		},
 		/**
 		 * Format file size for display
-		 * @param {number} bytes
-		 * @returns {string}
+		 * @param {number} bytes - The size in bytes
+		 * @return {string}
 		 */
 		formatFileSize(bytes) {
 			if (bytes === 0) return '0 Bytes'
