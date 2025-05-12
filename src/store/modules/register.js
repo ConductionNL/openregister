@@ -8,7 +8,6 @@ export const useRegisterStore = defineStore('register', {
 		registerList: [],
 		loading: false,
 		error: null,
-		viewMode: 'cards',
 		activeTab: 'stats-tab',
 		filters: [], // List of query
 		pagination: {
@@ -21,16 +20,11 @@ export const useRegisterStore = defineStore('register', {
 		isLoading: (state) => state.loading,
 		getError: (state) => state.error,
 		getActiveTab: (state) => state.activeTab,
-		getViewMode: (state) => state.viewMode,
 	},
 	actions: {
 		setActiveTab(tab) {
 			this.activeTab = tab
 			console.log('Active tab set to:', tab)
-		},
-		setViewMode(mode) {
-			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
 		setRegisterItem(registerItem) {
 			try {
