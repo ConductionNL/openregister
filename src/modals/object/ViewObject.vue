@@ -16,7 +16,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		:name="'View Object (' + objectStore.objectItem.title + ')'"
 		size="large"
 		:can-close="false">
-		<div class="formContainer">
+		<div class="formContainer viewObjectDialog">
 			<!-- Metadata Display -->
 			<div class="detail-item id-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].id }">
 				<span class="detail-label">ID:</span>
@@ -598,8 +598,8 @@ export default {
 </script>
 
 <style>
-.modal-wrapper--large > .modal-container[data-v-d5334a44] {
-	width: 1000px;
+.modal-container:has(.viewObjectDialog) {
+	width: 1000px !important;
 }
 </style>
 
