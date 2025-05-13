@@ -44,12 +44,28 @@ use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\ImportService;
+use OCP\AppFramework\Http\DataDownloadResponse;
 /**
  * Class ObjectsController
  */
 class ObjectsController extends Controller
 {
 
+    /**
+     * Export service for handling data exports
+     *
+     * @var ExportService
+     */
+    private readonly ExportService $exportService;
+
+    /**
+     * Import service for handling data imports
+     *
+     * @var ImportService
+     */
+    private readonly ImportService $importService;
 
     /**
      * Constructor for the ObjectsController
@@ -65,6 +81,8 @@ class ObjectsController extends Controller
      * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
      * @param ObjectService      $objectService      The object service
      * @param IUserSession       $userSession        The user session
+     * @param ExportService      $exportService      The export service
+     * @param ImportService      $importService      The import service
      *
      * @return void
      */
@@ -79,11 +97,14 @@ class ObjectsController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectService $objectService,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        ExportService $exportService,
+        ImportService $importService
     ) {
         parent::__construct($appName, $request);
-
-    }//end __construct()
+        $this->exportService = $exportService;
+        $this->importService = $importService;
+    }
 
 
     /**
@@ -795,5 +816,121 @@ class ObjectsController extends Controller
 
     }//end unlock()
 
+
+    /**
+     * Export objects to specified format
+     *
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return DataDownloadResponse The exported file as a download response
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
+    {
+        // Set the register and schema context
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
+        // Get filters and type from request
+        $filters = $this->request->getParams();
+        unset($filters['_route']);
+        $type = $this->request->getParam('type', 'excel');
+
+        // Get register and schema entities
+        $registerEntity = $this->registerMapper->find($register);
+        $schemaEntity = $this->schemaMapper->find($schema);
+
+        // Handle different export types
+        switch ($type) {
+            case 'csv':
+                $csv = $this->exportService->exportToCsv($registerEntity, $schemaEntity, $filters);
+                
+                // Generate filename
+                $filename = sprintf(
+                    '%s_%s_%s.csv',
+                    $registerEntity->getSlug(),
+                    $schemaEntity->getSlug(),
+                    (new \DateTime())->format('Y-m-d_His')
+                );
+                
+                return new DataDownloadResponse(
+                    $csv,
+                    $filename,
+                    'text/csv'
+                );
+                
+            case 'excel':
+            default:
+                $spreadsheet = $this->exportService->exportToExcel($registerEntity, $schemaEntity, $filters);
+                
+                // Create Excel writer
+                $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                
+                // Generate filename
+                $filename = sprintf(
+                    '%s_%s_%s.xlsx',
+                    $registerEntity->getSlug(),
+                    $schemaEntity->getSlug(),
+                    (new \DateTime())->format('Y-m-d_His')
+                );
+                
+                // Get Excel content
+                ob_start();
+                $writer->save('php://output');
+                $content = ob_get_clean();
+                
+                return new DataDownloadResponse(
+                    $content,
+                    $filename,
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                );
+        }
+    }
+
+    /**
+     * Import objects into a register
+     *
+     * @param int $registerId The ID of the register to import into
+     *
+     * @return JSONResponse The result of the import operation
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function import(int $registerId): JSONResponse
+    {
+        try {
+            // Get the uploaded file
+            $uploadedFile = $this->request->getUploadedFile('file');
+            if ($uploadedFile === null) {
+                return new JSONResponse(['error' => 'No file uploaded'], 400);
+            }
+
+            // Get include objects parameter
+            $includeObjects = $this->request->getParam('includeObjects', false);
+
+            // Find the register
+            $register = $this->registerMapper->find($registerId);
+
+            // Import the data
+            $result = $this->importService->importFromJson(
+                $uploadedFile->getTempName(),
+                $register,
+                $includeObjects
+            );
+
+            return new JSONResponse([
+                'message' => 'Import successful',
+                'imported' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }
 
 }//end class

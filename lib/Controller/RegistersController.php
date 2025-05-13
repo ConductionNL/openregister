@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,6 +58,19 @@ class RegistersController extends Controller
      */
     private readonly AuditTrailMapper $auditTrailMapper;
 
+    /**
+     * Export service for handling data exports
+     *
+     * @var ExportService
+     */
+    private readonly ExportService $exportService;
+
+    /**
+     * Import service for handling data imports
+     *
+     * @var ImportService
+     */
+    private readonly ImportService $importService;
 
     /**
      * Constructor for the RegistersController
@@ -67,6 +82,8 @@ class RegistersController extends Controller
      * @param UploadService        $uploadService        The upload service
      * @param ConfigurationService $configurationService The configuration service
      * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
+     * @param ExportService        $exportService        The export service
+     * @param ImportService        $importService        The import service
      *
      * @return void
      */
@@ -77,12 +94,15 @@ class RegistersController extends Controller
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
         ConfigurationService $configurationService,
-        AuditTrailMapper $auditTrailMapper
+        AuditTrailMapper $auditTrailMapper,
+        ExportService $exportService,
+        ImportService $importService
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
         $this->auditTrailMapper     = $auditTrailMapper;
-
+        $this->exportService        = $exportService;
+        $this->importService        = $importService;
     }//end __construct()
 
 
@@ -309,7 +329,7 @@ class RegistersController extends Controller
      * Export a register and its related data
      *
      * This method exports a register, its schemas, and optionally its objects
-     * in OpenAPI format.
+     * in the specified format.
      *
      * @param int $id The ID of the register to export
      *
@@ -321,97 +341,142 @@ class RegistersController extends Controller
     public function export(int $id): DataDownloadResponse | JSONResponse
     {
         try {
-            // Retrieve the 'includeObjects' query parameter from the request.
+            // Get export format from query parameter
+            $format = $this->request->getParam('format', 'configuration');
             $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
-
-            // Find the register.
             $register = $this->registerMapper->find($id);
 
-           
-            // Export the register and its related data.
-            $exportData = $this->configurationService->exportConfig($register, $includeObjects);
-
-            // Convert to JSON.
-            $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            if ($jsonContent === false) {
-                throw new Exception('Failed to encode register data to JSON');
+            switch ($format) {
+                case 'excel':
+                    $spreadsheet = $this->exportService->exportToExcel($register);
+                    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                    $filename = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    ob_start();
+                    $writer->save('php://output');
+                    $content = ob_get_clean();
+                    return new DataDownloadResponse($content, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                case 'csv':
+                    $csv = $this->exportService->exportToCsv($register);
+                    $filename = sprintf('%s_%s.csv', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    return new DataDownloadResponse($csv, $filename, 'text/csv');
+                case 'configuration':
+                default:
+                    $exportData = $this->configurationService->exportConfig($register, $includeObjects);
+                    $jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                    if ($jsonContent === false) {
+                        throw new Exception('Failed to encode register data to JSON');
+                    }
+                    $filename = sprintf('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }
-
-            // Generate filename based on register slug and current date.
-            $filename = sprintf(
-                '%s_%s.json',
-                $register->getSlug(),
-                (new \DateTime())->format('Y-m-d_His')
-            );
-
-            // Return as downloadable file.
-            return new DataDownloadResponse(
-                $jsonContent,
-                $filename,
-                'application/json'
-            );
         } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to export register: '.$e->getMessage()],
-                400
-            );
-        }//end try
-
-    }//end export()
-
+            return new JSONResponse(['error' => 'Failed to export register: '.$e->getMessage()], 400);
+        }
+    }
 
     /**
      * Import data into a register
      *
-     * This method imports schemas and optionally objects into an existing register
-     * from an OpenAPI format file.
+     * This method imports data into a register in the specified format and returns a detailed summary.
      *
-     * @param bool $includeObjects Whether to include objects in the import
+     * @param int $id The ID of the register to import into
      *
-     * @return JSONResponse The result of the import operation
+     * @return JSONResponse The result of the import operation with summary
+     * @phpstan-return JSONResponse
+     * @psalm-return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(bool $includeObjects=false): JSONResponse
+    public function import(int $id): JSONResponse
     {
         try {
-            // Initialize the uploaded files array
-            $uploadedFiles = [];
-
-            // Get the uploaded file from the request if a single file has been uploaded.
-            $uploadedFile = $this->request->getUploadedFile(key: 'file');
-            if (empty($uploadedFile) === false) {
-                $uploadedFiles[] = $uploadedFile;
+            // Get the uploaded file
+            $uploadedFile = $this->request->getUploadedFile('file');
+            if ($uploadedFile === null) {
+                return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
 
-            // Get the uploaded JSON data.
-            $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
-            if ($jsonData instanceof JSONResponse) {
-                return $jsonData;
+            // Dynamically determine import type if not provided
+            $type = $this->request->getParam('type');
+            if (!$type) {
+                $mimeType = $uploadedFile['type'] ?? '';
+                $filename = $uploadedFile['name'] ?? '';
+                $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                if (in_array($extension, ['xlsx', 'xls'])) {
+                    $type = 'excel';
+                } elseif ($extension === 'csv') {
+                    $type = 'csv';
+                } else {
+                    $type = 'configuration';
+                }
             }
 
-            // Import the data.
-            $result = $this->configurationService->importFromJson(
-                $jsonData,
-                $includeObjects,
-                $this->request->getParam('owner')
-            );
-
-            return new JSONResponse(
-                    [
-                        'message'  => 'Import successful',
-                        'imported' => $result,
-                    ]
+            // Get includeObjects parameter for all types
+            $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
+            // Find the register
+            $register = $this->registerMapper->find($id);
+            // Handle different import types
+            switch ($type) {
+                case 'excel':
+                    // Import from Excel and get summary
+                    $summary = $this->importService->importFromExcel(
+                        $uploadedFile['tmp_name'],
+                        $register,
+                        null
                     );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to import configuration: '.$e->getMessage()],
-                400
-            );
-        }//end try
-
-    }//end import()
-
+                    break;
+                case 'csv':
+                    // Import from CSV and get summary
+                    // For CSV, schema must be specified or inferred (not handled here)
+                    // For now, assume only one schema per register and get the first
+                    $schemas = $register->getSchemas();
+                    if (empty($schemas)) {
+                        return new JSONResponse(['error' => 'No schema found for register'], 400);
+                    }
+                    $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                    $schema = $this->importService->schemaMapper->find($schemaId);
+                    $summary = $this->importService->importFromCsv(
+                        $uploadedFile['tmp_name'],
+                        $register,
+                        $schema
+                    );
+                    break;
+                case 'configuration':
+                default:
+                    // Initialize the uploaded files array
+                    $uploadedFiles = [$uploadedFile];
+                    // Get the uploaded JSON data
+                    $jsonData = $this->configurationService->getUploadedJson($this->request->getParams(), $uploadedFiles);
+                    if ($jsonData instanceof JSONResponse) {
+                        return $jsonData;
+                    }
+                    // Import the data and get the result
+                    $result = $this->configurationService->importFromJson(
+                        $jsonData,
+                        $this->request->getParam('owner')
+                    );
+                    // Build a summary for objects if present
+                    $summary = [
+                        'created' => [],
+                        'updated' => [],
+                        'unchanged' => [],
+                    ];
+                    if (isset($result['objects']) && is_array($result['objects'])) {
+                        foreach ($result['objects'] as $object) {
+                            // For now, treat all as 'created' (improve if possible)
+                            $summary['created'][] = $object->getId();
+                        }
+                    }
+                    break;
+            }
+            return new JSONResponse([
+                'message' => 'Import successful',
+                'summary' => $summary
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }
 
 }//end class
