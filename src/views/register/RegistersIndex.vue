@@ -13,6 +13,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				:force-name="true"
 				:inline="1"
 				:primary="true"
+				:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
 				menu-name="Dashboard actions">
 				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 					<template #icon>
@@ -594,5 +595,10 @@ export default {
 	.indented {
 		padding-inline-start: 24px;
 	}
+}
+
+/* So that the actions menu is not overlapped by the sidebar button when it is closed */
+.sidebar-closed {
+	margin-right: 35px;
 }
 </style>
