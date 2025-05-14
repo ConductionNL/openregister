@@ -619,7 +619,11 @@ class ConfigurationService
 
         // Process and import schemas if present.
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
-            foreach ($data['components']['schemas'] as $schemaData) {
+            foreach ($data['components']['schemas'] as $key => $schemaData) {
+                if (isset($schemaData['title']) === false && is_string($key) === true) {
+                    $schemaData['title'] = $key;
+                }
+
                 $schema = $this->importSchema($schemaData, $owner);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
@@ -804,6 +808,27 @@ class ConfigurationService
         try {
             // Remove id and uuid from the data.
             unset($data['id'], $data['uuid']);
+
+            // @todo this shouldnt be necessary if we fully supported oas
+            // if properties is oneOf or allOf (which we dont support yet) it wont have a type, this is a hacky fix so it doesnt break the whole process.
+            // sets type to string if no type
+            // defaults title to its key in the oas so we dont have whitespaces (which is seen sometimes in defined titles in properties) in the property key
+            // removes format if format is string
+            if (isset($data['properties']) === true) {
+                foreach ($data['properties'] as $key => &$property) {
+                    $property['title'] = $key;
+                    if (isset($property['type']) === false) {
+                        $property['type'] = 'string';
+                    }
+                    if (isset($property['format']) === true && $property['format'] === 'string') {
+                        unset($property['format']);
+                    }
+                    if (isset($property['items']['format']) === true && $property['items']['format'] === 'string') {
+                        unset($property['items']['format']);
+                    }
+                }
+            }
+
 
             // Check if schema already exists by slug.
             $existingSchema = null;
