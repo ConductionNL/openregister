@@ -14,23 +14,23 @@ import formatBytes from '../../services/formatBytes.js'
 				<div class="viewModeSwitchContainer">
 					<NcCheckboxRadioSwitch
 						v-model="schemaStore.viewMode"
-						v-tooltip="'Zie de schemas in kaarten'"
+						v-tooltip="'See schemas as cards'"
 						:button-variant="true"
 						value="cards"
 						name="view_mode_radio"
 						type="radio"
 						button-variant-grouped="horizontal">
-						Kaart
+						Cards
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
 						v-model="schemaStore.viewMode"
-						v-tooltip="'Zie de schemas in een tabel'"
+						v-tooltip="'See schemas as a table'"
 						:button-variant="true"
 						value="table"
 						name="view_mode_radio"
 						type="radio"
 						button-variant-grouped="horizontal">
-						Tabel
+						Table
 					</NcCheckboxRadioSwitch>
 				</div>
 

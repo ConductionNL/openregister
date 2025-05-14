@@ -13,23 +13,23 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				<div class="viewModeSwitchContainer">
 					<NcCheckboxRadioSwitch
 						v-model="registerStore.viewMode"
-						v-tooltip="'Zie de registers in kaarten'"
+						v-tooltip="'See registers as cards'"
 						:button-variant="true"
 						value="cards"
 						name="view_mode_radio"
 						type="radio"
 						button-variant-grouped="horizontal">
-						Kaart
+						Cards
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
 						v-model="registerStore.viewMode"
-						v-tooltip="'Zie de registers in een tabel'"
+						v-tooltip="'See registers as a table'"
 						:button-variant="true"
 						value="table"
 						name="view_mode_radio"
 						type="radio"
 						button-variant-grouped="horizontal">
-						Tabel
+						Table
 					</NcCheckboxRadioSwitch>
 				</div>
 
