@@ -546,12 +546,6 @@ export default {
 }
 
 /* Add styles for the action buttons container */
-:deep(.button-vue) {
-	margin-top: 15px;
-	margin-right: 15px;
-	padding-right: 15px;
-}
-
 .dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
