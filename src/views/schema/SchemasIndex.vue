@@ -428,6 +428,9 @@ export default {
     display: flex;
     align-items: end;
     gap: 1em;
+    padding-block-start: 0.5em;
+    padding-inline-end: 0.9em;
+
     .viewModeSwitchContainer {
         display: flex;
         align-items: center;
