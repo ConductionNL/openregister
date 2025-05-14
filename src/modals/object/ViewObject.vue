@@ -645,9 +645,14 @@ export default {
 			}
 			const initial = objectStore.objectItem
 
-			this.formData = JSON.parse(JSON.stringify(initial.data || {}))
-
-			this.jsonData = JSON.stringify(initial, null, 2)
+			const filtered = {}
+			for (const key in initial) {
+				if (key !== '@self') {
+					filtered[key] = initial[key]
+				}
+			}
+			this.formData = JSON.parse(JSON.stringify(filtered))
+			this.jsonData = JSON.stringify(filtered, null, 2)
 		},
 
 		async saveObject() {
@@ -662,15 +667,18 @@ export default {
 			try {
 				let payload
 				if (this.editorTab === 1) {
-					payload = JSON.parse(this.jsonData)
+					payload = {
+						...JSON.parse(this.jsonData),
+						'@self': {
+							...objectStore.objectItem['@self'],
+						},
+					}
 				} else {
 					payload = {
-						...objectStore.objectItem,
-						data: this.formData,
-					}
-					payload['@self'] = {
-						...payload['@self'],
-						updated: new Date().toISOString(),
+						...this.formData,
+						'@self': {
+							...objectStore.objectItem['@self'],
+						},
 					}
 				}
 
