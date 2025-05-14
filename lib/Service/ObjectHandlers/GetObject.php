@@ -97,7 +97,8 @@ class GetObject
         }
 
         // Create an audit trail for the 'read' action
-        $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
+        $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
+        $object->setLastLog($log->jsonSerialize());
 
         return $object;
 

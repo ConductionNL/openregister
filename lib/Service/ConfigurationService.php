@@ -280,6 +280,7 @@ class ConfigurationService
             ];
         }//end if
 
+
         // Export each register and its schemas.
         foreach ($registers as $register) {
             if ($register instanceof Register === false && is_int($register) === true) {
@@ -307,15 +308,17 @@ class ConfigurationService
             // Optionally include objects in the register.
             if ($includeObjects === true) {
                 $objects = $this->objectEntityMapper->findAll(
-                    filters: ['register' => $register->getId()],
-                    includeDeleted: false
+                    filters: ['register' => $register->getId()]
                 );
+                
                 foreach ($objects as $object) {
                     // Use maps to get slugs.
                     $object = $object->jsonSerialize();
                     $object['@self']['register'] = $this->registersMap[$object['@self']['register']]->getSlug();
                     $object['@self']['schema']   = $this->schemasMap[$object['@self']['schema']]->getSlug();
+                    $openApiSpec['components']['objects'][] = $object;
                 }
+
             }
 
             // Get the OpenConnector service.

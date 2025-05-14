@@ -48,8 +48,8 @@ return [
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Registers
-        ['name' => 'registers#import', 'url' => '/api/registers/import', 'verb' => 'POST'],
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
         // Configurations
@@ -59,5 +59,8 @@ return [
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
+        // Schema-level export/import
+        ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        ['name' => 'objects#import', 'url' => '/api/objects/{register}/{schema}/import', 'verb' => 'POST'],
     ],
 ];
