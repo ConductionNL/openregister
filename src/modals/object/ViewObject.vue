@@ -647,7 +647,7 @@ export default {
 
 			const filtered = {}
 			for (const key in initial) {
-				if (key !== '@self') {
+				if (key !== '@self' && key !== 'id') {
 					filtered[key] = initial[key]
 				}
 			}
