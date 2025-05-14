@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, registerStore, schemaStore } from '../../store/store.js'
+import { navigationStore, objectStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -104,13 +104,67 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 				</div>
 			</div>
 		</NcAppSidebarTab>
+
+		<template #secondary-actions>
+			<NcActionButton :disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+				@click="openAddObjectModal">
+				<template #icon>
+					<Plus :size="20" />
+				</template>
+				Add
+			</NcActionButton>
+			<NcActionButton :disabled="!objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
+				<template #icon>
+					<Delete :size="20" />
+				</template>
+				Delete {{ objectStore.selectedObjects?.length }} {{ objectStore.selectedObjects?.length > 1 ? 'objects' : 'object' }}
+			</NcActionButton>
+			<NcActionButton :disabled="!registerStore.registerItem"
+				@click="openEditRegisterModal">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				Edit Register
+			</NcActionButton>
+			<NcActionButton :disabled="!schemaStore.schemaItem"
+				@click="openEditSchemaModal">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				Edit Schema
+			</NcActionButton>
+			<NcActionButton disabled>
+				<template #icon>
+					<Upload :size="20" />
+				</template>
+				Upload
+			</NcActionButton>
+			<NcActionButton disabled>
+				<template #icon>
+					<Download :size="20" />
+				</template>
+				Download
+			</NcActionButton>
+			<NcActionButton disabled>
+				<template #icon>
+					<FileMoveOutline :size="20" />
+				</template>
+				Move
+			</NcActionButton>
+		</template>
 	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcActionButton } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import FileMoveOutline from 'vue-material-design-icons/FileMoveOutline.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -121,6 +175,7 @@ export default {
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcTextField,
+		NcActionButton,
 		Magnify,
 		FormatColumns,
 	},
@@ -274,6 +329,16 @@ export default {
 					search: this.searchQuery,
 				})
 			}
+		},
+		openAddObjectModal() {
+			objectStore.setObjectItem(null) // Clear any existing object
+			navigationStore.setModal('editObject')
+		},
+		openEditRegisterModal() {
+			navigationStore.setModal('editRegister')
+		},
+		openEditSchemaModal() {
+			navigationStore.setModal('editSchema')
 		},
 	},
 }
