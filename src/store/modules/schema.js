@@ -51,10 +51,6 @@ export const useSchemaStore = defineStore('schema', {
 			this.filters = { ...this.filters, ...filters }
 			console.info('Query filters set to', this.filters) // Logging the filters
 		},
-		setViewMode(mode) {
-			this.viewMode = mode
-			console.log('View mode set to:', mode)
-		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshSchemaList(search = null) {
 			// Always include _extend[]=@self.stats to get statistics
