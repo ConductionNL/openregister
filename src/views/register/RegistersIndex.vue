@@ -9,56 +9,61 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				Registers
 			</h2>
 
-			<div class="viewModeSwitchContainer">
-					<button 
-						class="switch-option" 
-						:class="{ active: registerStore.viewMode === 'table' }"
-						@click="registerStore.setViewMode('table')"
-					>
-						<span>{{ t('openregister', 'Tabel') }}</span>
-						<TableOfContentsIcon :size="20" />
-					</button>
-					<div class="switch-slider" :style="{ left: registerStore.viewMode === 'table' ? '0' : '50%' }"></div>
-					<button 
-						class="switch-option" 
-						:class="{ active: registerStore.viewMode === 'cards' }"
-						@click="registerStore.setViewMode('cards')"
-					>
-						<span>{{ t('openregister', 'Kaart') }}</span>
-						<CardOutlineIcon :size="20" />
-					</button>
+			<div class="headerActionsContainer">
+				<div class="viewModeSwitchContainer">
+					<NcCheckboxRadioSwitch
+						v-model="registerStore.viewMode"
+						v-tooltip="'Zie de registers in kaarten'"
+						:button-variant="true"
+						value="cards"
+						name="view_mode_radio"
+						type="radio"
+						button-variant-grouped="horizontal">
+						Kaart
+					</NcCheckboxRadioSwitch>
+					<NcCheckboxRadioSwitch
+						v-model="registerStore.viewMode"
+						v-tooltip="'Zie de registers in een tabel'"
+						:button-variant="true"
+						value="table"
+						name="view_mode_radio"
+						type="radio"
+						button-variant-grouped="horizontal">
+						Tabel
+					</NcCheckboxRadioSwitch>
 				</div>
 
-			<NcActions
-				:force-name="true"
-				:inline="1"
-				:primary="true"
-				menu-name="Dashboard actions">
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					Add Register
-				</NcActionButton>
-				<NcActionButton @click="dashboardStore.fetchRegisters()">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Refresh
-				</NcActionButton>
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
-					<template #icon>
-						<Upload :size="20" />
-					</template>
-					Import
-				</NcActionButton>
-				<NcActionButton @click="openAllApisDoc">
-					<template #icon>
-						<ApiIcon :size="20" />
-					</template>
-					View APIs
-				</NcActionButton>
-			</NcActions>
+				<NcActions
+					:force-name="true"
+					:inline="1"
+					:primary="true"
+					menu-name="Dashboard actions">
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						Add Register
+					</NcActionButton>
+					<NcActionButton @click="dashboardStore.fetchRegisters()">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Refresh
+					</NcActionButton>
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+						<template #icon>
+							<Upload :size="20" />
+						</template>
+						Import
+					</NcActionButton>
+					<NcActionButton @click="openAllApisDoc">
+						<template #icon>
+							<ApiIcon :size="20" />
+						</template>
+						View APIs
+					</NcActionButton>
+				</NcActions>
+			</div>
 		</span>
 
 		<div class="dashboardContent">
@@ -74,72 +79,72 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 			<div v-else class="registers">
 				<template v-if="registerStore.viewMode === 'cards'">
-						<div v-for="register in filteredRegisters" :key="register.id" class="registerCard">
-							<div class="registerHeader">
-								<h2 v-tooltip.bottom="register.description">
-									<DatabaseOutline :size="20" />
-									{{ register.title }}
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
+					<div v-for="register in filteredRegisters" :key="register.id" class="registerCard">
+						<div class="registerHeader">
+							<h2 v-tooltip.bottom="register.description">
+								<DatabaseOutline :size="20" />
+								{{ register.title }}
+							</h2>
+							<NcActions :primary="true" menu-name="Actions">
+								<template #icon>
+									<DotsHorizontal :size="20" />
+								</template>
+								<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
 									<template #icon>
-										<DotsHorizontal :size="20" />
+										<Calculator :size="20" />
 									</template>
-									<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
-										<template #icon>
-											<Calculator :size="20" />
-										</template>
-										Calculate Sizes
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem({
-										...register,
-										schemas: register.schemas.map(schema => schema.id)
-									}); navigationStore.setModal('editRegister')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
-										<template #icon>
-											<Export :size="20" />
-										</template>
-										Export
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
-										<template #icon>
-											<Upload :size="20" />
-										</template>
-										Upload
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
-										<template #icon>
-											<ApiIcon :size="20" />
-										</template>
-										View API Documentation
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
-										<template #icon>
-											<Download :size="20" />
-										</template>
-										Download API Specification
-									</NcActionButton>
-									<NcActionButton
-										v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-										:disabled="register.stats?.total > 0"
-										@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-									<NcActionButton @click="viewRegisterDetails(register)">
-										<template #icon>
-											<InformationOutline :size="20" />
-										</template>
-										View Details
-									</NcActionButton>
-								</NcActions>
-							</div>
+									Calculate Sizes
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem({
+									...register,
+									schemas: register.schemas.map(schema => schema.id)
+								}); navigationStore.setModal('editRegister')">
+									<template #icon>
+										<Pencil :size="20" />
+									</template>
+									Edit
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
+									<template #icon>
+										<Export :size="20" />
+									</template>
+									Export
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
+									<template #icon>
+										<Upload :size="20" />
+									</template>
+									Upload
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
+									<template #icon>
+										<ApiIcon :size="20" />
+									</template>
+									View API Documentation
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
+									<template #icon>
+										<Download :size="20" />
+									</template>
+									Download API Specification
+								</NcActionButton>
+								<NcActionButton
+									v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+									:disabled="register.stats?.total > 0"
+									@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+									<template #icon>
+										<TrashCanOutline :size="20" />
+									</template>
+									Delete
+								</NcActionButton>
+								<NcActionButton @click="viewRegisterDetails(register)">
+									<template #icon>
+										<InformationOutline :size="20" />
+									</template>
+									View Details
+								</NcActionButton>
+							</NcActions>
+						</div>
 						<!-- Register Statistics Table -->
 						<table class="statisticsTable registerStats">
 							<thead>
@@ -294,7 +299,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								<th>Schemas</th>
 								<th>Created</th>
 								<th>Updated</th>
-								<th></th>
+								<th />
 							</tr>
 						</thead>
 						<tbody>
@@ -312,62 +317,62 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									<NcActions :primary="false">
 										<template #icon>
 											<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
-										<template #icon>
-											<Calculator :size="20" />
 										</template>
-										Calculate Sizes
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem({
-										...register,
-										schemas: register.schemas.map(schema => schema.id)
-									}); navigationStore.setModal('editRegister')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
-										<template #icon>
-											<Export :size="20" />
-										</template>
-										Export
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
-										<template #icon>
-											<Upload :size="20" />
-										</template>
-										Upload
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
-										<template #icon>
-											<ApiIcon :size="20" />
-										</template>
-										View API Documentation
-									</NcActionButton>
-									<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
-										<template #icon>
-											<Download :size="20" />
-										</template>
-										Download API Specification
-									</NcActionButton>
-									<NcActionButton
-										v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-										:disabled="register.stats?.total > 0"
-										@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-									<NcActionButton @click="viewRegisterDetails(register)">
-										<template #icon>
-											<InformationOutline :size="20" />
-										</template>
-										View Details
-									</NcActionButton>
-								</NcActions>
+										<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+											<template #icon>
+												<Calculator :size="20" />
+											</template>
+											Calculate Sizes
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem({
+											...register,
+											schemas: register.schemas.map(schema => schema.id)
+										}); navigationStore.setModal('editRegister')">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
+											<template #icon>
+												<Export :size="20" />
+											</template>
+											Export
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
+											<template #icon>
+												<Upload :size="20" />
+											</template>
+											Upload
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
+											<template #icon>
+												<ApiIcon :size="20" />
+											</template>
+											View API Documentation
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
+											<template #icon>
+												<Download :size="20" />
+											</template>
+											Download API Specification
+										</NcActionButton>
+										<NcActionButton
+											v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+											:disabled="register.stats?.total > 0"
+											@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+											<template #icon>
+												<TrashCanOutline :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
+										<NcActionButton @click="viewRegisterDetails(register)">
+											<template #icon>
+												<InformationOutline :size="20" />
+											</template>
+											View Details
+										</NcActionButton>
+									</NcActions>
 								</td>
 							</tr>
 						</tbody>
@@ -379,7 +384,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -395,9 +400,6 @@ import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import TableOfContentsIcon from 'vue-material-design-icons/TableOfContents.vue'	
-import CardOutlineIcon from 'vue-material-design-icons/CardOutline.vue'
-import Import from 'vue-material-design-icons/Import.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import formatBytes from '../../services/formatBytes.js'
@@ -410,6 +412,7 @@ export default {
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
+		NcCheckboxRadioSwitch,
 		DatabaseOutline,
 		FileCodeOutline,
 		ChevronDown,
@@ -425,9 +428,6 @@ export default {
 		Refresh,
 		Plus,
 		InformationOutline,
-		TableOfContentsIcon,
-		CardOutlineIcon,
-		Import,
 	},
 	data() {
 		return {
@@ -710,41 +710,18 @@ export default {
 		padding-inline-start: 24px;
 	}
 }
-.viewModeSwitchContainer {
-	display: flex;
-	align-items: center;
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	overflow: hidden;
-	position: relative;
-	height: 34px;
-	margin: 15px 15px 0 auto;
-	.switch-option {
-		display: flex;
-		width: 80px;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		background: transparent;
-		position: relative;
-		z-index: 1;
-		color: var(--color-primary-element-light-text);
+.headerActionsContainer {
+    display: flex;
+    align-items: end;
+    gap: 1em;
+    .viewModeSwitchContainer {
+        display: flex;
+        align-items: center;
 
-		&.active {
-			font-weight: 700;
-		}
-	}
-	.switch-slider {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 50%;
-		height: 100%;
-		background-color: var(--color-primary-element-light);
-		transition: left .2s ease-in-out;
-		pointer-events: none;
-		z-index: 0;
-	}
+        span {
+            max-height: 34px;
+        }
+    }
 }
 .schemasTd {
 	max-width: 200px;

@@ -10,44 +10,49 @@ import formatBytes from '../../services/formatBytes.js'
 				Schemas
 			</h2>
 
-			<div class="viewModeSwitchContainer">
-					<button 
-						class="switch-option" 
-						:class="{ active: schemaStore.viewMode === 'table' }"
-						@click="schemaStore.setViewMode('table')"
-					>
-						<span>{{ t('openregister', 'Tabel') }}</span>
-						<TableOfContentsIcon :size="20" />
-					</button>
-					<div class="switch-slider" :style="{ left: schemaStore.viewMode === 'table' ? '0' : '50%' }"></div>
-					<button 
-						class="switch-option" 
-						:class="{ active: schemaStore.viewMode === 'cards' }"
-						@click="schemaStore.setViewMode('cards')"
-					>
-						<span>{{ t('openregister', 'Kaart') }}</span>
-						<CardOutlineIcon :size="20" />
-					</button>
+			<div class="headerActionsContainer">
+				<div class="viewModeSwitchContainer">
+					<NcCheckboxRadioSwitch
+						v-model="schemaStore.viewMode"
+						v-tooltip="'Zie de schemas in kaarten'"
+						:button-variant="true"
+						value="cards"
+						name="view_mode_radio"
+						type="radio"
+						button-variant-grouped="horizontal">
+						Kaart
+					</NcCheckboxRadioSwitch>
+					<NcCheckboxRadioSwitch
+						v-model="schemaStore.viewMode"
+						v-tooltip="'Zie de schemas in een tabel'"
+						:button-variant="true"
+						value="table"
+						name="view_mode_radio"
+						type="radio"
+						button-variant-grouped="horizontal">
+						Tabel
+					</NcCheckboxRadioSwitch>
 				</div>
 
-			<NcActions
-				:force-name="true"
-				:inline="1"
-				:primary="true"
-				menu-name="Schema actions">
-				<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
-					<template #icon>
-						<PlusCircleOutline :size="20" />
-					</template>
-					Add Schema
-				</NcActionButton>
-				<NcActionButton @click="schemaStore.refreshSchemaList()">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Refresh
-				</NcActionButton>
-			</NcActions>
+				<NcActions
+					:force-name="true"
+					:inline="1"
+					:primary="true"
+					menu-name="Schema actions">
+					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
+						<template #icon>
+							<PlusCircleOutline :size="20" />
+						</template>
+						Add Schema
+					</NcActionButton>
+					<NcActionButton @click="schemaStore.refreshSchemaList()">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Refresh
+					</NcActionButton>
+				</NcActions>
+			</div>
 		</span>
 
 		<div class="dashboardContent">
@@ -55,131 +60,130 @@ import formatBytes from '../../services/formatBytes.js'
 				<NcEmptyContent title="No schemas found" icon="icon-folder" />
 			</div>
 			<div v-else class="registers">
-				<template v-if="schemaStore.viewMode === 'cards'"> 
+				<template v-if="schemaStore.viewMode === 'cards'">
 					<div v-for="schema in schemaStore.schemaList" :key="schema.id" class="registerCard">
-					<div class="registerHeader">
-						<h2>
-							<FileTreeOutline :size="20" />
-							{{ schema.title }}
-						</h2>
-						<NcActions :primary="true" menu-name="Actions">
+						<div class="registerHeader">
+							<h2>
+								<FileTreeOutline :size="20" />
+								{{ schema.title }}
+							</h2>
+							<NcActions :primary="true" menu-name="Actions">
+								<template #icon>
+									<DotsHorizontal :size="20" />
+								</template>
+								<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+									<template #icon>
+										<Pencil :size="20" />
+									</template>
+									Edit
+								</NcActionButton>
+								<NcActionButton @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
+									<template #icon>
+										<PlusCircleOutline :size="20" />
+									</template>
+									Add Property
+								</NcActionButton>
+								<NcActionButton @click="schemaStore.downloadSchema(schema)">
+									<template #icon>
+										<Download :size="20" />
+									</template>
+									Download
+								</NcActionButton>
+								<NcActionButton
+									v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+									:disabled="schema.stats?.objects?.total > 0"
+									@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
+									<template #icon>
+										<TrashCanOutline :size="20" />
+									</template>
+									Delete
+								</NcActionButton>
+								<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+									<template #icon>
+										<InformationOutline :size="20" />
+									</template>
+									View Details
+								</NcActionButton>
+							</NcActions>
+						</div>
+						<!-- Toggle between stats and properties -->
+						<div v-if="!schema.showProperties">
+							<table class="statisticsTable schemaStats">
+								<thead>
+									<tr>
+										<th>{{ t('openregister', 'Type') }}</th>
+										<th>{{ t('openregister', 'Total') }}</th>
+										<th>{{ t('openregister', 'Size') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>{{ t('openregister', 'Registers') }}</td>
+										<td>{{ schema.stats?.registers ?? 0 }}</td>
+										<td>-</td>
+									</tr>
+									<tr>
+										<td>{{ t('openregister', 'Properties') }}</td>
+										<td>{{ Object.keys(schema.properties).length }}</td>
+										<td>-</td>
+									</tr>
+									<tr>
+										<td>{{ t('openregister', 'Objects') }}</td>
+										<td>{{ schema.stats?.objects?.total || 0 }}</td>
+										<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
+									</tr>
+									<tr class="subRow">
+										<td class="indented">
+											{{ t('openregister', 'Invalid') }}
+										</td>
+										<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
+										<td>-</td>
+									</tr>
+									<tr class="subRow">
+										<td class="indented">
+											{{ t('openregister', 'Deleted') }}
+										</td>
+										<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
+										<td>-</td>
+									</tr>
+									<tr class="subRow">
+										<td class="indented">
+											{{ t('openregister', 'Locked') }}
+										</td>
+										<td>{{ schema.stats?.objects?.locked || 0 }}</td>
+										<td>-</td>
+									</tr>
+									<tr class="subRow">
+										<td class="indented">
+											{{ t('openregister', 'Published') }}
+										</td>
+										<td>{{ schema.stats?.objects?.published || 0 }}</td>
+										<td>-</td>
+									</tr>
+									<tr>
+										<td>{{ t('openregister', 'Logs') }}</td>
+										<td>{{ schema.stats?.logs?.total || 0 }}</td>
+										<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
+									</tr>
+									<tr>
+										<td>{{ t('openregister', 'Files') }}</td>
+										<td>{{ schema.stats?.files?.total || 0 }}</td>
+										<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div v-else />
+						<!-- Toggle button -->
+						<NcButton @click="schema.showProperties = !schema.showProperties">
 							<template #icon>
-								<DotsHorizontal :size="20" />
+								<TableIcon v-if="schema.showProperties" :size="20" />
+								<ListIcon v-else :size="20" />
 							</template>
-							<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
-								<template #icon>
-									<Pencil :size="20" />
-								</template>
-								Edit
-							</NcActionButton>
-							<NcActionButton @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
-								<template #icon>
-									<PlusCircleOutline :size="20" />
-								</template>
-								Add Property
-							</NcActionButton>
-							<NcActionButton @click="schemaStore.downloadSchema(schema)">
-								<template #icon>
-									<Download :size="20" />
-								</template>
-								Download
-							</NcActionButton>
-							<NcActionButton
-								v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-								:disabled="schema.stats?.objects?.total > 0"
-								@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-								Delete
-							</NcActionButton>
-							<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
-								<template #icon>
-									<InformationOutline :size="20" />
-								</template>
-								View Details
-							</NcActionButton>
-						</NcActions>
+							{{ schema.showProperties ? 'Show Stats' : 'Show Properties' }}
+						</NcButton>
 					</div>
-					<!-- Toggle between stats and properties -->
-					<div v-if="!schema.showProperties">
-						<table class="statisticsTable schemaStats">
-							<thead>
-								<tr>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Total') }}</th>
-									<th>{{ t('openregister', 'Size') }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>{{ t('openregister', 'Registers') }}</td>
-									<td>{{ schema.stats?.registers ?? 0 }}</td>
-									<td>-</td>
-								</tr>
-								<tr>
-									<td>{{ t('openregister', 'Properties') }}</td>
-									<td>{{ Object.keys(schema.properties).length }}</td>
-									<td>-</td>
-								</tr>
-								<tr>
-									<td>{{ t('openregister', 'Objects') }}</td>
-									<td>{{ schema.stats?.objects?.total || 0 }}</td>
-									<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-								</tr>
-								<tr class="subRow">
-									<td class="indented">
-										{{ t('openregister', 'Invalid') }}
-									</td>
-									<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-									<td>-</td>
-								</tr>
-								<tr class="subRow">
-									<td class="indented">
-										{{ t('openregister', 'Deleted') }}
-									</td>
-									<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-									<td>-</td>
-								</tr>
-								<tr class="subRow">
-									<td class="indented">
-										{{ t('openregister', 'Locked') }}
-									</td>
-									<td>{{ schema.stats?.objects?.locked || 0 }}</td>
-									<td>-</td>
-								</tr>
-								<tr class="subRow">
-									<td class="indented">
-										{{ t('openregister', 'Published') }}
-									</td>
-									<td>{{ schema.stats?.objects?.published || 0 }}</td>
-									<td>-</td>
-								</tr>
-								<tr>
-									<td>{{ t('openregister', 'Logs') }}</td>
-									<td>{{ schema.stats?.logs?.total || 0 }}</td>
-									<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-								</tr>
-								<tr>
-									<td>{{ t('openregister', 'Files') }}</td>
-									<td>{{ schema.stats?.files?.total || 0 }}</td>
-									<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<div v-else>
-					</div>
-					<!-- Toggle button -->
-					<NcButton @click="schema.showProperties = !schema.showProperties">
-						<template #icon>
-							<TableIcon v-if="schema.showProperties" :size="20" />
-							<ListIcon v-else :size="20" />
-						</template>
-						{{ schema.showProperties ? 'Show Stats' : 'Show Properties' }}
-					</NcButton>
-				</div>
-			</template>
+				</template>
 				<template v-else>
 					<table class="statisticsTable registerStats tableOfContents">
 						<thead>
@@ -191,7 +195,7 @@ import formatBytes from '../../services/formatBytes.js'
 								<th>Registers</th>
 								<th>Created</th>
 								<th>Updated</th>
-								<th></th>
+								<th />
 							</tr>
 						</thead>
 						<tbody>
@@ -253,7 +257,7 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcButton, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcButton, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -264,12 +268,11 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TableIcon from 'vue-material-design-icons/Table.vue'
 import ListIcon from 'vue-material-design-icons/FormatListBulleted.vue'
-import TableOfContentsIcon from 'vue-material-design-icons/TableOfContents.vue'	
-import CardOutlineIcon from 'vue-material-design-icons/CardOutline.vue'
 
 export default {
 	name: 'SchemasIndex',
 	components: {
+		NcCheckboxRadioSwitch,
 		NcAppContent,
 		NcEmptyContent,
 		NcButton,
@@ -288,7 +291,7 @@ export default {
 	},
 }
 </script>
-<style scoped>
+<style scoped lang="scss">
 .pageHeaderContainer {
 	display: flex;
 	align-items: center;
@@ -421,42 +424,18 @@ export default {
 .statisticsTable.schemaStats tr:last-child td {
 	border-block-end: none;
 }
-.viewModeSwitchContainer {
-	display: flex;
-	align-items: center;
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	overflow: hidden;
-	position: relative;
-	height: 34px;
-	margin-left: auto;
-	margin-right: 15px;
-	.switch-option {
-		display: flex;
-		width: 80px;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		background: transparent;
-		position: relative;
-		z-index: 1;
-		color: var(--color-primary-element-light-text);
+.headerActionsContainer {
+    display: flex;
+    align-items: end;
+    gap: 1em;
+    .viewModeSwitchContainer {
+        display: flex;
+        align-items: center;
 
-		&.active {
-			font-weight: 700;
-		}
-	}
-	.switch-slider {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 50%;
-		height: 100%;
-		background-color: var(--color-primary-element-light);
-		transition: left .2s ease-in-out;
-		pointer-events: none;
-		z-index: 0;
-	}
+        span {
+            max-height: 34px;
+        }
+    }
 }
 .tableOfContents {
 	thead {
