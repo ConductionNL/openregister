@@ -419,7 +419,7 @@ class ObjectsController extends Controller
             }
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-            return $objectService->handleValidationException(exception: $exception);
+           return new JSONResponse($exception->getMessage(), 400);
         }
 
         // Return the created object.
