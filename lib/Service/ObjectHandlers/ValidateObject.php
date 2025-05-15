@@ -119,6 +119,7 @@ class ValidateObject
         // Remove empty properties and empty arrays from the object.
         $object = array_filter($object, function ($value) {
             // Check if the value is not an empty array or an empty property.
+            // @todo we are filtering out arrays here, but we should not. This should be fixed in the validator.
             return !(is_array($value) && empty($value)) && $value !== null && $value !== '' && is_array($value) === false;
         });
 
