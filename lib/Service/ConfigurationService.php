@@ -820,10 +820,10 @@ class ConfigurationService
                     if (isset($property['type']) === false) {
                         $property['type'] = 'string';
                     }
-                    if (isset($property['format']) === true && $property['format'] === 'string') {
+                    if (isset($property['format']) === true && ($property['format'] === 'string' || $property['format'] === 'binary' || $property['format'] === 'byte')) {
                         unset($property['format']);
                     }
-                    if (isset($property['items']['format']) === true && $property['items']['format'] === 'string') {
+                    if (isset($property['items']['format']) === true && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
                         unset($property['items']['format']);
                     }
                 }
