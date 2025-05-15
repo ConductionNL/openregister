@@ -273,9 +273,9 @@ class ExportService
      * @param ObjectEntity $object The object to get value from
      * @param string       $header The header to get value for
      *
-     * @return mixed
+     * @return string|null
      */
-    private function getObjectValue(ObjectEntity $object, string $header)
+    private function getObjectValue(ObjectEntity $object, string $header): ?string
     {
         // Get the object data
         $objectData = $object->getObject();
@@ -289,9 +289,44 @@ class ExportService
             case 'updated':
                 return $object->getUpdated()->format('Y-m-d H:i:s');
             default:
-                // Get value from object data
-                return $objectData[$header] ?? null;
+                // Get value from object data and convert to string
+                $value = $objectData[$header] ?? null;
+                return $this->convertValueToString($value);
         }
+    }
+
+    /**
+     * Convert a value to a string representation
+     *
+     * @param mixed $value The value to convert
+     *
+     * @return string|null
+     */
+    private function convertValueToString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_scalar($value)) {
+            return (string) $value;
+        }
+
+        if (is_array($value)) {
+            // Convert array to JSON string
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        if (is_object($value)) {
+            if (method_exists($value, '__toString')) {
+                return (string) $value;
+            }
+            // Convert object to JSON string
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        // Fallback for any other type
+        return (string) $value;
     }
 
 
