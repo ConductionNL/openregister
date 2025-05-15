@@ -122,9 +122,6 @@ class ValidateObject
             return !(is_array($value) && empty($value)) && $value !== null && $value !== '' && is_array($value) === false;
         });
 
-        //var_dump($object);
-        //die;
-
         $validator = new Validator();
         $validator->setMaxErrors(100);
         $validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
