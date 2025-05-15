@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
 use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
 use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
