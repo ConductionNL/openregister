@@ -173,7 +173,47 @@ import formatBytes from '../../services/formatBytes.js'
 								</tbody>
 							</table>
 						</div>
-						<div v-else />
+						<div v-else>
+							<table class="statisticsTable schemaStats">
+								<thead>
+									<tr>
+										<th>{{ t('openregister', 'Name') }}</th>
+										<th>{{ t('openregister', 'Type') }}</th>
+										<th>{{ t('openregister', 'Actions') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(property, key) in schema.properties" :key="key">
+										<td>{{ key }}</td>
+										<td>{{ property.type }}</td>
+										<td>
+											<NcActions :primary="false">
+												<NcActionButton :aria-label="'Edit ' + key"
+													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
+													<template #icon>
+														<Pencil :size="16" />
+													</template>
+													Edit
+												</NcActionButton>
+												<NcActionButton :aria-label="'Delete ' + key"
+													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaProperty')">
+													<template #icon>
+														<TrashCanOutline :size="16" />
+													</template>
+													Delete
+												</NcActionButton>
+											</NcActions>
+										</td>
+									</tr>
+									<tr v-if="!Object.keys(schema.properties).length">
+										<td colspan="3">
+											No properties found
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
 						<!-- Toggle button -->
 						<NcButton @click="schema.showProperties = !schema.showProperties">
 							<template #icon>
