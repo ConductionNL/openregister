@@ -1,0 +1,2271 @@
+{
+    "openapi": "3.0.0",
+    "components": {
+        "registers": {
+            "zaken": {
+                "slug": "zaken",
+                "title": "Zaken",
+                "version": "0.0.2",
+                "description": "",
+                "schemas": [
+                    "klantcontact",
+                    "resultaat",
+                    "rol",
+                    "status",
+                    "zaak",
+                    "zaakbesluit",
+                    "zaakcontactmoment",
+                    "zaakeigenschap",
+                    "zaakinformatieobject",
+                    "zaakobject",
+                    "zaakverzoek"
+                ],
+                "source": "",
+                "tablePrefix": "",
+                "folder": "",
+                "updated": "2025-05-16T11:34:06+00:00",
+                "created": "2025-05-15T11:46:18+00:00",
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null
+            }
+        },
+        "schemas": {
+            "klantcontact": {
+                "slug": "klantcontact",
+                "title": "KlantContact",
+                "description": null,
+                "version": "0.0.1",
+                "summary": null,
+                "icon": null,
+                "required": [
+                    "datumtijd",
+                    "url",
+                    "uuid",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "zaak": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar de ZAAK.",
+                        "title": "zaak",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "identificatie": {
+                        "type": "string",
+                        "description": "De unieke aanduiding van een KLANTCONTACT",
+                        "title": "identificatie",
+                        "maxLength": 14
+                    },
+                    "datumtijd": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "De datum en het tijdstip waarop het KLANTCONTACT begint",
+                        "title": "datumtijd"
+                    },
+                    "kanaal": {
+                        "type": "string",
+                        "description": "Het communicatiekanaal waarlangs het KLANTCONTACT gevoerd wordt",
+                        "title": "kanaal",
+                        "maxLength": 20
+                    },
+                    "onderwerp": {
+                        "type": "string",
+                        "description": "Het onderwerp waarover contact is geweest met de klant.",
+                        "title": "onderwerp",
+                        "maxLength": 200
+                    },
+                    "toelichting": {
+                        "type": "string",
+                        "description": "Een toelichting die inhoudelijk het contact met de klant beschrijft.",
+                        "title": "toelichting",
+                        "maxLength": 1000
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-15T11:46:31+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "resultaat": {
+                "slug": "resultaat",
+                "title": "Resultaat",
+                "description": "",
+                "version": "0.0.3",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "resultaattype",
+                    "url",
+                    "uuid",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "toelichting": {
+                        "type": "string",
+                        "description": "Een toelichting op wat het resultaat van de zaak inhoudt.",
+                        "title": "toelichting",
+                        "maxLength": 1000
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "resultaat",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    },
+                    "resultaattype": {
+                        "description": "URL-referentie naar het RESULTAATTYPE (in de Catalogi API).",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/40",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "resultaattype"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T09:56:41+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "rol": {
+                "slug": "rol",
+                "title": "Rol",
+                "description": "",
+                "version": "0.0.5",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "betrokkeneType",
+                    "omschrijving",
+                    "omschrijvingGeneriek",
+                    "registratiedatum",
+                    "roltoelichting",
+                    "roltype",
+                    "statussen",
+                    "url",
+                    "uuid",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "betrokkene": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar een betrokkene gerelateerd aan de ZAAK.",
+                        "title": "betrokkene",
+                        "maxLength": 1000
+                    },
+                    "betrokkeneType": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BetrokkeneTypeEnum"
+                            }
+                        ],
+                        "description": "Type van de `betrokkene`.\n\nUitleg bij mogelijke waarden:\n\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `vestiging` - Vestiging\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `medewerker` - Medewerker",
+                        "title": "betrokkeneType",
+                        "type": "string"
+                    },
+                    "afwijkendeNaamBetrokkene": {
+                        "type": "string",
+                        "description": "De naam van de betrokkene waaronder deze in relatie tot de zaak aangesproken wil worden.",
+                        "title": "afwijkendeNaamBetrokkene",
+                        "maxLength": 625
+                    },
+                    "roltype": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar een roltype binnen het ZAAKTYPE van de ZAAK.",
+                        "title": "roltype",
+                        "maxLength": 1000
+                    },
+                    "omschrijving": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Omschrijving van de aard van de ROL, afgeleid uit het ROLTYPE.",
+                        "title": "omschrijving"
+                    },
+                    "omschrijvingGeneriek": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Algemeen gehanteerde benaming van de aard van de ROL, afgeleid uit het ROLTYPE.\n\nUitleg bij mogelijke waarden:\n\n* `adviseur` - (Adviseur) Kennis in dienst stellen van de behandeling van (een deel van) een zaak.\n* `behandelaar` - (Behandelaar) De vakinhoudelijke behandeling doen van (een deel van) een zaak.\n* `belanghebbende` - (Belanghebbende) Vanuit eigen en objectief belang rechtstreeks betrokken zijn bij de behandeling en/of de uitkomst van een zaak.\n* `beslisser` - (Beslisser) Nemen van besluiten die voor de uitkomst van een zaak noodzakelijk zijn.\n* `initiator` - (Initiator) Aanleiding geven tot de start van een zaak ..\n* `klantcontacter` - (Klantcontacter) Het eerste aanspreekpunt zijn voor vragen van burgers en bedrijven ..\n* `zaakcoordinator` - (Zaakco\u00f6rdinator) Er voor zorg dragen dat de behandeling van de zaak in samenhang uitgevoerd wordt conform de daarover gemaakte afspraken.\n* `mede_initiator` - Mede-initiator",
+                        "title": "omschrijvingGeneriek"
+                    },
+                    "roltoelichting": {
+                        "type": "string",
+                        "title": "roltoelichting",
+                        "maxLength": 1000
+                    },
+                    "registratiedatum": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "description": "De datum waarop dit object is geregistreerd.",
+                        "title": "registratiedatum"
+                    },
+                    "indicatieMachtiging": {
+                        "description": "Indicatie machtiging\n\nUitleg bij mogelijke waarden:\n\n* `gemachtigde` - De betrokkene in de rol bij de zaak is door een andere betrokkene bij dezelfde zaak gemachtigd om namens hem of haar te handelen\n* `machtiginggever` - De betrokkene in de rol bij de zaak heeft een andere betrokkene bij dezelfde zaak gemachtigd om namens hem of haar te handelen",
+                        "title": "indicatieMachtiging",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/IndicatieMachtigingEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ],
+                        "type": "string"
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "rollen",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    },
+                    "contactpersoonRol": {
+                        "description": "De gegevens van de persoon die anderen desgevraagd in contact brengt met medewerkers van de BETROKKENE, een NIET-NATUURLIJK PERSOON of VESTIGING zijnde, of met BETROKKENE zelf, een NATUURLIJK PERSOON zijnde , vanuit het belang van BETROKKENE in haar ROL bij een ZAAK.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ContactPersoonRol"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "contactpersoonRol"
+                    },
+                    "statussen": {
+                        "description": "De BETROKKENE die in zijn/haar ROL in een ZAAK heeft geregistreerd dat STATUSsen in die ZAAK bereikt zijn.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "$ref": "http://localhost/137",
+                            "inversedBy": "statussen"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "statussen",
+                        "uniqueItems": true
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:00:58+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "status": {
+                "slug": "status",
+                "title": "Status",
+                "description": "",
+                "version": "0.0.4",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "datumStatusGezet",
+                    "indicatieLaatstGezetteStatus",
+                    "statustype",
+                    "url",
+                    "uuid",
+                    "zaak",
+                    "zaakinformatieobjecten"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "datumStatusGezet": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "De datum waarop de ZAAK de status heeft verkregen.",
+                        "title": "datumStatusGezet"
+                    },
+                    "statustoelichting": {
+                        "type": "string",
+                        "description": "Een, voor de initiator van de zaak relevante, toelichting op de status van een zaak.",
+                        "title": "statustoelichting",
+                        "maxLength": 1000
+                    },
+                    "indicatieLaatstGezetteStatus": {
+                        "type": "boolean",
+                        "readOnly": true,
+                        "description": "Het gegeven is afleidbaar uit de historie van de attribuutsoort Datum status gezet van van alle statussen bij de desbetreffende zaak.",
+                        "title": "indicatieLaatstGezetteStatus"
+                    },
+                    "gezetdoor": {
+                        "type": "string",
+                        "format": "uri",
+                        "title": "gezetdoor",
+                        "description": "De BETROKKENE die in zijn/haar ROL in een ZAAK heeft geregistreerd dat STATUSsen in die ZAAK bereikt zijn.",
+                        "maxLength": 200
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "status",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    },
+                    "statustype": {
+                        "description": "URL-referentie naar het STATUSTYPE (in de Catalogi API).",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/45",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "statustype"
+                    },
+                    "zaakinformatieobjecten": {
+                        "description": "",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "$ref": "http://localhost/157",
+                            "inversedBy": "status"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "zaakinformatieobjecten",
+                        "uniqueItems": true
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:04:16+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaak": {
+                "slug": "zaak",
+                "title": "Zaak",
+                "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+                "version": "0.0.13",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "betalingsindicatieWeergave",
+                    "bronorganisatie",
+                    "deelzaken",
+                    "eigenschappen",
+                    "einddatum",
+                    "resultaat",
+                    "rollen",
+                    "startdatum",
+                    "status",
+                    "url",
+                    "uuid",
+                    "verantwoordelijkeOrganisatie",
+                    "zaakinformatieobjecten",
+                    "zaakobjecten",
+                    "zaaktype"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "identificatie": {
+                        "type": "string",
+                        "description": "De unieke identificatie van de ZAAK binnen de organisatie die verantwoordelijk is voor de behandeling van de ZAAK.",
+                        "title": "identificatie",
+                        "maxLength": 40
+                    },
+                    "bronorganisatie": {
+                        "type": "string",
+                        "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die de zaak heeft gecreeerd. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+                        "title": "bronorganisatie",
+                        "maxLength": 9
+                    },
+                    "omschrijving": {
+                        "type": "string",
+                        "description": "Een korte omschrijving van de zaak.",
+                        "title": "omschrijving",
+                        "maxLength": 80
+                    },
+                    "toelichting": {
+                        "type": "string",
+                        "description": "Een toelichting op de zaak.",
+                        "title": "toelichting",
+                        "maxLength": 1000
+                    },
+                    "registratiedatum": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "De datum waarop de zaakbehandelende organisatie de ZAAK heeft geregistreerd. Indien deze niet opgegeven wordt, wordt de datum van vandaag gebruikt.",
+                        "title": "registratiedatum"
+                    },
+                    "verantwoordelijkeOrganisatie": {
+                        "type": "string",
+                        "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die eindverantwoordelijk is voor de behandeling van de zaak. Dit moet een geldig RSIN zijn van 9 nummers en voldoen aan https://nl.wikipedia.org/wiki/Burgerservicenummer#11-proef",
+                        "title": "verantwoordelijkeOrganisatie",
+                        "maxLength": 9
+                    },
+                    "startdatum": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "De datum waarop met de uitvoering van de zaak is gestart",
+                        "title": "startdatum"
+                    },
+                    "einddatum": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "De datum waarop de uitvoering van de zaak afgerond is.",
+                        "title": "einddatum"
+                    },
+                    "einddatumGepland": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "De datum waarop volgens de planning verwacht wordt dat de zaak afgerond wordt.",
+                        "title": "einddatumGepland"
+                    },
+                    "uiterlijkeEinddatumAfdoening": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "De laatste datum waarop volgens wet- en regelgeving de zaak afgerond dient te zijn.",
+                        "title": "uiterlijkeEinddatumAfdoening"
+                    },
+                    "publicatiedatum": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "Datum waarop (het starten van) de zaak gepubliceerd is of wordt.",
+                        "title": "publicatiedatum"
+                    },
+                    "communicatiekanaal": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Het medium waarlangs de aanleiding om een zaak te starten is ontvangen. URL naar een communicatiekanaal in de VNG-Referentielijst van communicatiekanalen.",
+                        "title": "communicatiekanaal",
+                        "maxLength": 1000
+                    },
+                    "productenOfDiensten": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri",
+                            "title": "URL naar product/dienst",
+                            "maxLength": 1000
+                        },
+                        "description": "De producten en/of diensten die door de zaak worden voortgebracht. Dit zijn URLs naar de resources zoals die door de producten- en dienstencatalogus-API wordt ontsloten. De producten/diensten moeten bij het zaaktype vermeld zijn.",
+                        "title": "productenOfDiensten"
+                    },
+                    "vertrouwelijkheidaanduiding": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
+                            }
+                        ],
+                        "title": "vertrouwelijkheidaanduiding",
+                        "description": "Aanduiding van de mate waarin het zaakdossier van de ZAAK voor de openbaarheid bestemd is. Optioneel - indien geen waarde gekozen wordt, dan wordt de waarde van het ZAAKTYPE overgenomen. Dit betekent dat de API _altijd_ een waarde teruggeeft.",
+                        "type": "string"
+                    },
+                    "betalingsindicatie": {
+                        "description": "Indicatie of de, met behandeling van de zaak gemoeide, kosten betaald zijn door de desbetreffende betrokkene.\n\nUitleg bij mogelijke waarden:\n\n* `nvt` - Er is geen sprake van te betalen, met de zaak gemoeide, kosten.\n* `nog_niet` - De met de zaak gemoeide kosten zijn (nog) niet betaald.\n* `gedeeltelijk` - De met de zaak gemoeide kosten zijn gedeeltelijk betaald.\n* `geheel` - De met de zaak gemoeide kosten zijn geheel betaald.",
+                        "title": "betalingsindicatie",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/BetalingsindicatieEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            }
+                        ],
+                        "type": "string"
+                    },
+                    "betalingsindicatieWeergave": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Uitleg bij `betalingsindicatie`.",
+                        "title": "betalingsindicatieWeergave"
+                    },
+                    "laatsteBetaaldatum": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "De datum waarop de meest recente betaling is verwerkt van kosten die gemoeid zijn met behandeling van de zaak.",
+                        "title": "laatsteBetaaldatum"
+                    },
+                    "selectielijstklasse": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar de categorie in de gehanteerde 'Selectielijst Archiefbescheiden' die, gezien het zaaktype en het resultaattype van de zaak, bepalend is voor het archiefregime van de zaak.",
+                        "title": "selectielijstklasse",
+                        "maxLength": 1000
+                    },
+                    "relevanteAndereZaken": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RelevanteZaak"
+                        },
+                        "description": "Een lijst van relevante andere zaken.",
+                        "title": "relevanteAndereZaken"
+                    },
+                    "kenmerken": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ZaakKenmerk"
+                        },
+                        "description": "Lijst van kenmerken. Merk op dat refereren naar gerelateerde objecten beter kan via `ZaakObject`.",
+                        "title": "kenmerken"
+                    },
+                    "archiefnominatie": {
+                        "nullable": true,
+                        "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `blijvend_bewaren` - Het zaakdossier moet bewaard blijven en op de Archiefactiedatum overgedragen worden naar een archiefbewaarplaats.\n* `vernietigen` - Het zaakdossier moet op of na de Archiefactiedatum vernietigd worden.",
+                        "title": "archiefnominatie",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ArchiefnominatieEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BlankEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ],
+                        "type": "string"
+                    },
+                    "archiefstatus": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ArchiefstatusEnum"
+                            }
+                        ],
+                        "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `nog_te_archiveren` - De zaak cq. het zaakdossier is nog niet als geheel gearchiveerd.\n* `gearchiveerd` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt.\n* `gearchiveerd_procestermijn_onbekend` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt maar de vernietigingsdatum kan nog niet bepaald worden.\n* `overgedragen` - De zaak cq. het zaakdossier is overgebracht naar een archiefbewaarplaats.",
+                        "title": "archiefstatus",
+                        "type": "string"
+                    },
+                    "archiefactiedatum": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "De datum waarop het gearchiveerde zaakdossier vernietigd moet worden dan wel overgebracht moet worden naar een archiefbewaarplaats. Wordt automatisch berekend bij het aanmaken of wijzigen van een RESULTAAT aan deze ZAAK indien nog leeg.",
+                        "title": "archiefactiedatum"
+                    },
+                    "opdrachtgevendeOrganisatie": {
+                        "type": "string",
+                        "description": "De krachtens publiekrecht ingestelde rechtspersoon dan wel ander niet-natuurlijk persoon waarbinnen het (bestuurs)orgaan zetelt dat opdracht heeft gegeven om taken uit te voeren waaraan de zaak invulling geeft.",
+                        "title": "opdrachtgevendeOrganisatie",
+                        "maxLength": 9
+                    },
+                    "processobjectaard": {
+                        "type": "string",
+                        "nullable": true,
+                        "title": "processobjectaard",
+                        "description": "Omschrijving van het object, subject of gebeurtenis waarop, vanuit archiveringsoptiek, de zaak betrekking heeft.",
+                        "maxLength": 200
+                    },
+                    "startdatumBewaartermijn": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "De datum die de start markeert van de termijn waarop het zaakdossier vernietigd moet worden.",
+                        "title": "startdatumBewaartermijn"
+                    },
+                    "processobject": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Processobject"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "Specificatie van de attribuutsoort van het object, subject of gebeurtenis  waarop, vanuit archiveringsoptiek, de zaak betrekking heeft en dat bepalend is voor de start van de archiefactietermijn.",
+                        "title": "processobject",
+                        "type": "string"
+                    },
+                    "zaakgeometrie": {
+                        "description": "Punt, lijn of (multi-)vlak geometrie-informatie, in GeoJSON.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/GeoJSONGeometry"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "zaakgeometrie"
+                    },
+                    "verlenging": {
+                        "description": "Gegevens omtrent het verlengen van de doorlooptijd van de behandeling van de ZAAK",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Verlenging"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "verlenging"
+                    },
+                    "opschorting": {
+                        "description": "Gegevens omtrent het tijdelijk opschorten van de behandeling van de ZAAK",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Opschorting"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "opschorting"
+                    },
+                    "deelzaken": {
+                        "description": "URL-referenties naar deel ZAAKen.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "$ref": "http://localhost/150",
+                            "inversedBy": "deelzaken"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "deelzaken",
+                        "uniqueItems": true
+                    },
+                    "zaaktype": {
+                        "description": "URL-referentie naar het ZAAKTYPE (in de Catalogi API) in de CATALOGUS waar deze voorkomt",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/49",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaaktype"
+                    },
+                    "hoofdzaak": {
+                        "description": "URL-referentie naar de ZAAK, waarom verzocht is door de initiator daarvan, die behandeld wordt in twee of meer separate ZAAKen waarvan de onderhavige ZAAK er \u00e9\u00e9n is.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "hoofdzaak",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "nullable": true,
+                        "title": "hoofdzaak"
+                    },
+                    "eigenschappen": {
+                        "description": "",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "$ref": "http://localhost/156",
+                            "inversedBy": "zaak"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "eigenschappen",
+                        "uniqueItems": true
+                    },
+                    "rollen": {
+                        "description": "",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/129",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "$ref": "http://localhost/129",
+                            "inversedBy": "zaak"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "rollen",
+                        "uniqueItems": true
+                    },
+                    "status": {
+                        "description": "Indien geen status bekend is, dan is de waarde 'null'",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "zaak",
+                        "$ref": "http://localhost/137",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "nullable": true,
+                        "title": "status"
+                    },
+                    "zaakinformatieobjecten": {
+                        "description": "",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "$ref": "http://localhost/157",
+                            "inversedBy": "zaak"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "zaakinformatieobjecten",
+                        "uniqueItems": true
+                    },
+                    "zaakobjecten": {
+                        "description": "",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "items": {
+                            "type": "object",
+                            "format": "uri",
+                            "title": "",
+                            "$ref": "http://localhost/161",
+                            "inversedBy": "zaak"
+                        },
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "zaakobjecten",
+                        "uniqueItems": true
+                    },
+                    "resultaat": {
+                        "description": "URL-referentie naar het RESULTAAT. Indien geen resultaat bekend is, dan is de waarde 'null'",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "zaak",
+                        "$ref": "http://localhost/126",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "nullable": true,
+                        "title": "resultaat"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:45:47+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaakbesluit": {
+                "slug": "zaakbesluit",
+                "title": "ZaakBesluit",
+                "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
+                "version": "0.0.3",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "besluit",
+                    "url",
+                    "uuid"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url"
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "besluit": {
+                        "description": "URL-referentie naar het BESLUIT (in de Besluiten API), waar ook de relatieinformatie opgevraagd kan worden.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/319",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "besluit"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:49:03+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaakcontactmoment": {
+                "slug": "zaakcontactmoment",
+                "title": "ZaakContactMoment",
+                "description": "",
+                "version": "0.0.2",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "contactmoment",
+                    "url",
+                    "uuid",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "contactmoment": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar het CONTACTMOMENT (in de Klantinteractie API)",
+                        "title": "contactmoment",
+                        "maxLength": 1000
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:05:54+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaakeigenschap": {
+                "slug": "zaakeigenschap",
+                "title": "ZaakEigenschap",
+                "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
+                "version": "0.0.3",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "eigenschap",
+                    "naam",
+                    "url",
+                    "uuid",
+                    "waarde",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url"
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "naam": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "De naam van de EIGENSCHAP (overgenomen uit de Catalogi API).",
+                        "title": "naam"
+                    },
+                    "waarde": {
+                        "type": "string",
+                        "title": "waarde"
+                    },
+                    "zaak": {
+                        "description": "",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "eigenschappen",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    },
+                    "eigenschap": {
+                        "description": "URL-referentie naar de EIGENSCHAP (in de Catalogi API).",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/13",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "eigenschap"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:50:36+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaakinformatieobject": {
+                "slug": "zaakinformatieobject",
+                "title": "ZaakInformatieObject",
+                "description": "",
+                "version": "0.0.4",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "aardRelatieWeergave",
+                    "informatieobject",
+                    "registratiedatum",
+                    "url",
+                    "uuid",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "aardRelatieWeergave": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AardRelatieWeergaveEnum"
+                            }
+                        ],
+                        "readOnly": true,
+                        "title": "aardRelatieWeergave",
+                        "type": "string"
+                    },
+                    "titel": {
+                        "type": "string",
+                        "description": "De naam waaronder het INFORMATIEOBJECT binnen het OBJECT bekend is.",
+                        "title": "titel",
+                        "maxLength": 200
+                    },
+                    "beschrijving": {
+                        "type": "string",
+                        "description": "Een op het object gerichte beschrijving van de inhoud vanhet INFORMATIEOBJECT.",
+                        "title": "beschrijving"
+                    },
+                    "registratiedatum": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "description": "De datum waarop de behandelende organisatie het INFORMATIEOBJECT heeft geregistreerd bij het OBJECT. Geldige waardes zijn datumtijden gelegen op of voor de huidige datum en tijd.",
+                        "title": "registratiedatum"
+                    },
+                    "vernietigingsdatum": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "De datum waarop het informatieobject uit het zaakdossier verwijderd moet worden.",
+                        "title": "vernietigingsdatum"
+                    },
+                    "informatieobject": {
+                        "description": "URL-referentie naar het INFORMATIEOBJECT (in de Documenten API), waar ook de relatieinformatie opgevraagd kan worden.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/282",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobject"
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "zaakinformatieobjecten",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    },
+                    "status": {
+                        "description": "De bij de desbetreffende ZAAK behorende STATUS waarvoor het ZAAK-INFORMATIEOBJECT relevant is (geweest) met het oog op het bereiken van die STATUS en/of de communicatie daarover.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "zaakinformatieobjecten",
+                        "$ref": "http://localhost/137",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "nullable": true,
+                        "title": "status"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:08:23+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaakobject": {
+                "slug": "zaakobject",
+                "title": "ZaakObject",
+                "description": "",
+                "version": "0.0.5",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "objectType",
+                    "url",
+                    "uuid",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "object": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar de resource die het OBJECT beschrijft.",
+                        "title": "object",
+                        "maxLength": 1000
+                    },
+                    "objectType": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ObjectTypeEnum"
+                            }
+                        ],
+                        "description": "Beschrijft het type OBJECT gerelateerd aan de ZAAK. Als er geen passend type is, dan moet het type worden opgegeven onder `objectTypeOverige`.\n\nUitleg bij mogelijke waarden:\n\n* `adres` - Adres\n* `besluit` - Besluit\n* `buurt` - Buurt\n* `enkelvoudig_document` - Enkelvoudig document\n* `gemeente` - Gemeente\n* `gemeentelijke_openbare_ruimte` - Gemeentelijke openbare ruimte\n* `huishouden` - Huishouden\n* `inrichtingselement` - Inrichtingselement\n* `kadastrale_onroerende_zaak` - Kadastrale onroerende zaak\n* `kunstwerkdeel` - Kunstwerkdeel\n* `maatschappelijke_activiteit` - Maatschappelijke activiteit\n* `medewerker` - Medewerker\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `openbare_ruimte` - Openbare ruimte\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `pand` - Pand\n* `spoorbaandeel` - Spoorbaandeel\n* `status` - Status\n* `terreindeel` - Terreindeel\n* `terrein_gebouwd_object` - Terrein gebouwd object\n* `vestiging` - Vestiging\n* `waterdeel` - Waterdeel\n* `wegdeel` - Wegdeel\n* `wijk` - Wijk\n* `woonplaats` - Woonplaats\n* `woz_deelobject` - Woz deel object\n* `woz_object` - Woz object\n* `woz_waarde` - Woz waarde\n* `zakelijk_recht` - Zakelijk recht\n* `overige` - Overige",
+                        "title": "objectType",
+                        "type": "string"
+                    },
+                    "objectTypeOverige": {
+                        "type": "string",
+                        "description": "Beschrijft het type OBJECT als `objectType` de waarde \"overige\" heeft.",
+                        "title": "objectTypeOverige",
+                        "pattern": "[a-z\\_]+",
+                        "maxLength": 100
+                    },
+                    "relatieomschrijving": {
+                        "type": "string",
+                        "description": "Omschrijving van de betrekking tussen de ZAAK en het OBJECT.",
+                        "title": "relatieomschrijving",
+                        "maxLength": 80
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "zaakobjecten",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    },
+                    "zaakobjecttype": {
+                        "description": "URL-referentie naar het ZAAKOBJECTTYPE (in de Catalogi API).",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/48",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaakobjecttype"
+                    },
+                    "objectTypeOverigeDefinitie": {
+                        "description": "Verwijzing naar het schema van het type OBJECT als `objectType` de waarde \"overige\" heeft.\n\n* De URL referentie moet naar een JSON endpoint   wijzen waarin het objecttype gedefinieerd is, inclusief het   [JSON-schema](https://json-schema.org/).\n* Gebruik het `schema` attribuut om te verwijzen naar het schema binnen   de objecttype resource (deze gebruikt het   [jq](http://stedolan.github.io/jq/) formaat.\n* Gebruik het `objectData` attribuut om te verwijzen naar de gegevens   binnen het OBJECT. Deze gebruikt ook het   [jq](http://stedolan.github.io/jq/) formaat.\n\nIndien je hier gebruikt van maakt, dan moet je een OBJECT url opgeven en is het gebruik van objectIdentificatie niet mogelijk. De opgegeven OBJECT url wordt gevalideerd tegen het schema van het opgegeven objecttype.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ObjectTypeOverigeDefinitie"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "objectTypeOverigeDefinitie"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:36:45+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "zaakverzoek": {
+                "slug": "zaakverzoek",
+                "title": "ZaakVerzoek",
+                "description": "",
+                "version": "0.0.2",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "url",
+                    "uuid",
+                    "verzoek",
+                    "zaak"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "readOnly": true,
+                        "description": "Unieke resource identifier (UUID4)",
+                        "title": "uuid"
+                    },
+                    "verzoek": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar het VERZOEK (in de Klantinteractie API)",
+                        "title": "verzoek",
+                        "maxLength": 1000
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "http://localhost/150",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T10:37:43+00:00",
+                "created": "2025-05-15T11:46:31+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            }
+        },
+        "endpoints": [],
+        "sources": [],
+        "mappings": [],
+        "jobs": [],
+        "synchronizations": [],
+        "rules": [],
+        "objects": []
+    },
+    "info": {
+        "id": 3,
+        "title": "Zaken",
+        "description": "",
+        "version": "0.0.2"
+    }
+}
