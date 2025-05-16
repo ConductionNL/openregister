@@ -94,6 +94,15 @@ class ObjectService
 
     }//end __construct()
 
+    /**
+     * Get ValidateHandler
+     * 
+     * @return ValidateObject
+     */
+    public function getValidateHandler(): ValidateObject
+    {
+        return $this->validateHandler;
+    }
 
     /**
      * Set the current register context.
