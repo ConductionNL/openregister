@@ -15,6 +15,7 @@ export const useNavigationStore = defineStore('ui', {
 		sidebarState: {
 			registers: true,
 			register: true,
+			search: true,
 		},
 	}),
 	actions: {

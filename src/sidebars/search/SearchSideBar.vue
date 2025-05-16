@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -9,8 +9,8 @@ import { objectStore, registerStore, schemaStore } from '../../store/store.js'
 		name="Object selection"
 		subtitle="Select register and schema"
 		subname="Within the federative network"
-		:open="isSidebarOpen"
-		@update:open="(e) => isSidebarOpen = e">
+		:open="navigationStore.sidebarState.search"
+		@update:open="(e) => navigationStore.setSidebarState('search', e)">
 		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
@@ -132,7 +132,6 @@ export default {
 			searchQuery: '',
 			activeTab: 'search-tab',
 			searchTimeout: null,
-			isSidebarOpen: true,
 		}
 	},
 	computed: {
