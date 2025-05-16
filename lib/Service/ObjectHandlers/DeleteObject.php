@@ -100,7 +100,7 @@ class DeleteObject
 
         // Create audit trail for delete and set lastLog
         $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
-        $result->setLastLog($log->jsonSerialize());
+//        $result->setLastLog($log->jsonSerialize());
 
         return $result;
 
