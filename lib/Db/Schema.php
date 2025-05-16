@@ -462,7 +462,6 @@ class Schema extends Entity implements JsonSerializable
                     // Skip 'required' property on this level.
                     if ($key !== 'required' && empty($value) === false) {
                         $prop->{$key} = $value;
-                        $schema->required[] = $propertyName;
                     }
                 }
 
@@ -470,7 +469,6 @@ class Schema extends Entity implements JsonSerializable
             }//end if
         }//end foreach
 
-        $this->setRequired($schema->required);
         return $schema;
 
     }//end getSchemaObject()

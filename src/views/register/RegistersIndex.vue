@@ -8,7 +8,6 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<h2 class="pageHeader">
 				Registers
 			</h2>
-
 			<div class="headerActionsContainer">
 				<div class="viewModeSwitchContainer">
 					<NcCheckboxRadioSwitch
@@ -32,40 +31,39 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 						Table
 					</NcCheckboxRadioSwitch>
 				</div>
-
-				<NcActions
-					:force-name="true"
-					:inline="1"
-					:primary="true"
-					menu-name="Dashboard actions">
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						Add Register
-					</NcActionButton>
-					<NcActionButton @click="dashboardStore.fetchRegisters()">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						Refresh
-					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						Import
-					</NcActionButton>
-					<NcActionButton @click="openAllApisDoc">
-						<template #icon>
-							<ApiIcon :size="20" />
-						</template>
-						View APIs
-					</NcActionButton>
-				</NcActions>
+			<NcActions
+				:force-name="true"
+				:inline="1"
+				:primary="true"
+				:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
+				menu-name="Dashboard actions">
+				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					Add Register
+				</NcActionButton>
+				<NcActionButton @click="dashboardStore.fetchRegisters()">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					Refresh
+				</NcActionButton>
+				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+					<template #icon>
+						<Upload :size="20" />
+					</template>
+					Import
+				</NcActionButton>
+				<NcActionButton @click="openAllApisDoc">
+					<template #icon>
+						<ApiIcon :size="20" />
+					</template>
+					View APIs
+				</NcActionButton>
+			</NcActions>
 			</div>
 		</span>
-
 		<div class="dashboardContent">
 			<div v-if="dashboardStore.loading" class="loading">
 				<NcLoadingIcon :size="32" />
@@ -742,5 +740,9 @@ export default {
 			background-color: var(--color-border);
 		}
 	}
+
+/* So that the actions menu is not overlapped by the sidebar button when it is closed */
+.sidebar-closed {
+	margin-right: 35px;
 }
 </style>

@@ -142,7 +142,7 @@ class SchemaPropertyValidatorService
         }
 
         // Validate array items if type is array.
-        if ($property['type'] === 'array' && isset($property['items']) === true) {
+        if ($property['type'] === 'array' && isset($property['items']) === true && isset($property['items']['$ref']) === false) {
             $this->validateProperty($property['items'], $path.'/items');
         }
 
