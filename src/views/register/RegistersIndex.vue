@@ -31,37 +31,37 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 						Table
 					</NcCheckboxRadioSwitch>
 				</div>
-			<NcActions
-				:force-name="true"
-				:inline="1"
-				:primary="true"
-				:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
-				menu-name="Dashboard actions">
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					Add Register
-				</NcActionButton>
-				<NcActionButton @click="dashboardStore.fetchRegisters()">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Refresh
-				</NcActionButton>
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
-					<template #icon>
-						<Upload :size="20" />
-					</template>
-					Import
-				</NcActionButton>
-				<NcActionButton @click="openAllApisDoc">
-					<template #icon>
-						<ApiIcon :size="20" />
-					</template>
-					View APIs
-				</NcActionButton>
-			</NcActions>
+				<NcActions
+					:force-name="true"
+					:inline="1"
+					:primary="true"
+					:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
+					menu-name="Dashboard actions">
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						Add Register
+					</NcActionButton>
+					<NcActionButton @click="dashboardStore.fetchRegisters()">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Refresh
+					</NcActionButton>
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+						<template #icon>
+							<Upload :size="20" />
+						</template>
+						Import
+					</NcActionButton>
+					<NcActionButton @click="openAllApisDoc">
+						<template #icon>
+							<ApiIcon :size="20" />
+						</template>
+						View APIs
+					</NcActionButton>
+				</NcActions>
 			</div>
 		</span>
 		<div class="dashboardContent">
