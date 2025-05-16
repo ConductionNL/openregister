@@ -690,6 +690,7 @@ class ObjectService
         $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
         $page   = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
+        $fields = $requestParams['_fields'] ?? null;
 
         if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
@@ -728,6 +729,7 @@ class ObjectService
                     "sort"    => $order,
                     "search"  => $search,
                     "extend"  => $extend,
+                    'fields'  => $fields,
                 ]
                 );
 
