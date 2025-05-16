@@ -740,6 +740,7 @@ export default {
 			background-color: var(--color-border);
 		}
 	}
+}
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */
 .sidebar-closed {
