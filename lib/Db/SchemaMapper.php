@@ -313,18 +313,13 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $schema = $this->find($id);
+        $schema = $this->find($id);        
 
-        // Update version if not set in the object array.
-        if (empty($object['version']) === true) {
-            // Split the version into major, minor, and patch.
-            $version = explode('.', $schema->getVersion());
-            // Increment the patch version.
-            if (isset($version[2]) === true) {
-                $version[2] = ((int) $version[2] + 1);
-                // Reassemble the version string.
-                $object['version'] = implode('.', $version);
-            }
+        // Set or update the version.
+        if (isset($object['version']) === false) {
+            $version    = explode('.', $obj->getVersion());
+            $version[2] = ((int) $version[2] + 1);
+            $obj->setVersion(implode('.', $version));
         }
 
         $schema->hydrate($object, $this->validator);
@@ -400,6 +395,44 @@ class SchemaMapper extends QBMapper
         return $counts;
 
     }//end getRegisterCountPerSchema()
+
+    /**
+     * Get all schema ID to slug mappings
+     *
+     * @return array<string,string> Array mapping schema IDs to their slugs
+     */
+    public function getIdToSlugMap(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName());
+
+        $result = $qb->execute();
+        $mappings = [];
+        while ($row = $result->fetch()) {
+            $mappings[$row['id']] = $row['slug'];
+        }
+        return $mappings;
+    }
+
+    /**
+     * Get all schema slug to ID mappings
+     *
+     * @return array<string,string> Array mapping schema slugs to their IDs
+     */
+    public function getSlugToIdMap(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName());
+
+        $result = $qb->execute();
+        $mappings = [];
+        while ($row = $result->fetch()) {
+            $mappings[$row['slug']] = $row['id'];
+        }
+        return $mappings;
+    }
 
 
 }//end class

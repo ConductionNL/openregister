@@ -9,10 +9,13 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<ConfigurationsList />
 			</template>
 			<template #default>
-				<NcEmptyContent v-if="!configurationStore.configurationItem || navigationStore.selected !== 'configurations'"
+				<!-- Show if there are no configurations at all -->
+				<NcEmptyContent
+					v-if="configurationStore.configurationList && configurationStore.configurationList.length === 0"
 					class="detailContainer"
-					name="No configuration"
-					description="No configuration selected yet">
+					name="No configurations"
+					description="No configurations have been defined yet."
+				>
 					<template #icon>
 						<CogOutline />
 					</template>
@@ -22,7 +25,26 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						</NcButton>
 					</template>
 				</NcEmptyContent>
-				<ConfigurationDetails v-if="configurationStore.configurationItem && navigationStore.selected === 'configurations'" />
+
+				<!-- Show if a configuration is not selected, but there are configurations -->
+				<NcEmptyContent
+					v-else-if="!configurationStore.configurationItem || navigationStore.selected !== 'configurations'"
+					class="detailContainer"
+					name="No configuration selected"
+					description="Select a configuration from the list or add a new one."
+				>
+					<template #icon>
+						<CogOutline />
+					</template>
+					<template #action>
+						<NcButton type="primary" @click="configurationStore.setConfigurationItem(null); navigationStore.setModal('editConfiguration')">
+							Add configuration
+						</NcButton>
+					</template>
+				</NcEmptyContent>
+
+				<!-- Show details if a configuration is selected -->
+				<ConfigurationDetails v-else />
 			</template>
 		</NcAppContent>
 

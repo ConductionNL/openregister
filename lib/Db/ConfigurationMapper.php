@@ -185,6 +185,7 @@ class ConfigurationMapper extends QBMapper
     public function createFromArray(array $data): Configuration
     {
         $config = new Configuration();
+        $config->setVersion('0.0.1');
         $config->hydrate(object: $data);
 
         // Prepare the object before insertion.
@@ -204,8 +205,16 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $config = $this->find($id);
-        $config->hydrate(object: $data);
+        $object = $this->find($id);        
+
+        // Set or update the version.
+        if (isset($object['version']) === false) {
+            $version    = explode('.', $obj->getVersion());
+            $version[2] = ((int) $version[2] + 1);
+            $obj->setVersion(implode('.', $version));
+        }
+
+        $object->hydrate(object: $data);
 
         return $this->update($config);
 
