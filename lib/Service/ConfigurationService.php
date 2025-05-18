@@ -732,7 +732,7 @@ class ConfigurationService
         // Process OpenConnector integration if available.
         $openConnector = $this->getOpenConnector();
         if ($openConnector === true) {
-            $openConnectorResult = $this->openConnectorConfigurationService->importConfig($data);
+            $openConnectorResult = $this->openConnectorConfigurationService->importConfiguration($data);
             $result = array_replace_recursive($openConnectorResult, $result);
         }
 
