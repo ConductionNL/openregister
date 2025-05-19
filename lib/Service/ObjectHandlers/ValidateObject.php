@@ -107,6 +107,11 @@ class ValidateObject
             }
         }
 
+        // If schemaObject reuired is empty unset it.
+        if (isset($schemaObject->required) === true && empty($schemaObject->required) === true) {
+            unset($schemaObject->required);
+        }
+
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Return a ValidationResult with null data indicating success.

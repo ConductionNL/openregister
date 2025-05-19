@@ -573,10 +573,12 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject($object, $this->currentSchema);
-        if ($result->isValid() === false && $this->currentSchema->getHardValidation() === true) {
-            throw new ValidationException($result->error()->message());
+        // Validate the object against the current schema only if hard validation is enabled.
+        if ($this->currentSchema->getHardValidation() === true) {
+            $result = $this->validateHandler->validateObject($object, $this->currentSchema);
+            if ($result->isValid() === false) {
+                throw new ValidationException($result->error()->message());
+            }
         }
 
         // Save the object using the current register and schema.
