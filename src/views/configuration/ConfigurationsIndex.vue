@@ -14,8 +14,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					v-if="configurationStore.configurationList && configurationStore.configurationList.length === 0"
 					class="detailContainer"
 					name="No configurations"
-					description="No configurations have been defined yet."
-				>
+					description="No configurations have been defined yet.">
 					<template #icon>
 						<CogOutline />
 					</template>
@@ -31,8 +30,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					v-else-if="!configurationStore.configurationItem || navigationStore.selected !== 'configurations'"
 					class="detailContainer"
 					name="No configuration selected"
-					description="Select a configuration from the list or add a new one."
-				>
+					description="Select a configuration from the list or add a new one.">
 					<template #icon>
 						<CogOutline />
 					</template>
