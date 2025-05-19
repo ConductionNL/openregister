@@ -7,7 +7,7 @@ import { registerStore, dashboardStore, navigationStore } from '../../store/stor
 		v-if="register"
 		ref="sidebar"
 		v-model="activeTab"
-		:title="register.title"
+		:name="register.title"
 		:subtitle="register.description"
 		subname="Register Details"
 		:open="navigationStore.sidebarState.register"
