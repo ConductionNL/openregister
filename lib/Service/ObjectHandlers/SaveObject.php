@@ -141,6 +141,17 @@ class SaveObject
 
     }//end updateObjectRelations()
 
+    /**
+     * Set default values for values that are not in the data array.
+     *
+     * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
+     * @param Schema $schema The schema the objectEntity belongs to.
+     * @param array $data The data that is written to the object.
+     *
+     * @return array The data object updated with default values from the $schema.
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\SyntaxError
+     */
     private function setDefaultValues (ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
         $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
@@ -170,7 +181,7 @@ class SaveObject
 
         // Add data to the $data array, with the order that values already in $data never get overwritten.
         return array_merge($renderedDefaultValues, $data);
-    }
+    }//end setDefaultValues
 
 
     /**
