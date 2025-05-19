@@ -224,13 +224,6 @@ export default {
 	padding: 0;
 }
 
-.pageHeader {
-	font-family: system-ui, -apple-system, "Segoe UI", Roboto, Oxygen-Sans, Cantarell, Ubuntu, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-	font-size: 30px;
-	font-weight: 600;
-	margin-left: 50px;
-}
-
 .dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
