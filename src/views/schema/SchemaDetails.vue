@@ -4,7 +4,6 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 
 <template>
 	<NcAppContent>
-		<div class="dashboardContent">
 			<!-- Loading and error states -->
 			<div v-if="dashboardStore.loading" class="error">
 				<NcEmptyContent name="Loading" description="Loading schema statistics...">
@@ -21,11 +20,12 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 				</NcEmptyContent>
 			</div>
 			<div v-else>
-				<div class="head">
-					<h1 class="h1">
+				<span class="pageHeaderContainer">
+					<h2 class="pageHeader">
 						{{ schemaStore.schemaItem.title }}
-					</h1>
-					<NcActions :primary="true" menu-name="Actions">
+					</h2>
+					<div class="headerActionsContainer">
+						<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
@@ -60,12 +60,13 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 							Delete
 						</NcActionButton>
 					</NcActions>
-				</div>
-				<span>{{ schemaStore.schemaItem.description }}</span>
-
-				<div class="chartsContainer">
-					<!-- Audit Trail Actions Chart -->
-					<div class="chartCard">
+					</div>
+				</span>
+				<div class="dashboardContent">
+					<span>{{ schemaStore.schemaItem.description }}</span>
+					<div class="chartsContainer">
+						<!-- Audit Trail Actions Chart -->
+						<div class="chartCard">
 						<h3>Audit Trail Actions</h3>
 						<apexchart
 							type="line"
@@ -216,6 +217,20 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.pageHeaderContainer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0;
+}
+
+.pageHeader {
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, Oxygen-Sans, Cantarell, Ubuntu, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-size: 30px;
+	font-weight: 600;
+	margin-left: 50px;
+}
+
 .dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
