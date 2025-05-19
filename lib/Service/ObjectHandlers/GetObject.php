@@ -212,7 +212,7 @@ class GetObject
                 $value = $this->objectEntityMapper->findMultiple(ids: $id);
             } else {
                 // Find a single related object by its ID.
-                $value = $this->objectEntityMapper->find(id: $id);
+                $value = $this->objectEntityMapper->find(identifier: $id);
             }
 
             // Update the related objects array with the found value(s).
