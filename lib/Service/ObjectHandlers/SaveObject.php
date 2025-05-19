@@ -32,11 +32,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\DoesNotExistException;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 /**
  * Handler class for saving objects in the OpenRegister application.
@@ -55,6 +59,10 @@ use OCA\OpenRegister\Db\DoesNotExistException;
 class SaveObject
 {
 
+    private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
+
+    private Environment $twig;
+
 
     /**
      * Constructor for SaveObject handler.
@@ -68,8 +76,12 @@ class SaveObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly IURLGenerator $urlGenerator,
+        ArrayLoader $arrayLoader,
     ) {
+        $this->twig = new Environment($arrayLoader);
 
     }//end __construct()
 
@@ -129,6 +141,37 @@ class SaveObject
 
     }//end updateObjectRelations()
 
+    private function setDefaultValues (ObjectEntity $objectEntity, Schema $schema, array $data): array
+    {
+        $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+
+        // Convert the properties array to a processable array.
+        $properties = array_map(function(string $key, array $property) {
+            if (isset($property['default']) === false) {
+                $property['default'] = null;
+            }
+            $property['title'] = $key;
+            return $property;
+        }, array_keys($schemaObject['properties']), $schemaObject['properties']);
+
+        $defaultValues = array_filter(array_column($properties, 'default', 'title'));
+
+        // Remove all keys from array for which a value has already been set in $data.
+        $defaultValues = array_diff_key($defaultValues, $data);
+
+        // Render twig templated default values.
+        $renderedDefaultValues = array_map(function(string $defaultValue) use ($objectEntity, $data) {
+            if (str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
+                return $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
+            }
+
+            return $defaultValue;
+        }, $defaultValues);
+
+        // Add data to the $data array, with the order that values already in $data never get overwritten.
+        return array_merge($renderedDefaultValues, $data);
+    }
+
 
     /**
      * Saves an object.
@@ -181,7 +224,6 @@ class SaveObject
         $objectEntity = new ObjectEntity();
         $objectEntity->setRegister($registerId);
         $objectEntity->setSchema($schemaId);
-        $objectEntity->setObject($data);
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
@@ -192,6 +234,22 @@ class SaveObject
         } else {
             $objectEntity->setUuid(Uuid::v4());
         }
+        $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(
+            self::URL_PATH_IDENTIFIER, [
+                'register' => $register instanceof Register === true ? $register->getSlug() : $registerId,
+                'schema' => $schema instanceof Schema === true ? $schema->getSlug() : $schemaId,
+                'id' => $objectEntity->getUuid()
+            ]
+        )));
+
+        // Set default values.
+        if ($schema instanceof Schema === false) {
+            $schema = $this->schemaMapper->find($schemaId);
+        }
+
+        $data = $this->setDefaultValues($objectEntity, $schema, $data);
+        $objectEntity->setObject($data);
+
 
         // Set user information if available.
         $user = $this->userSession->getUser();
