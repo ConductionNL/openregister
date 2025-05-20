@@ -297,11 +297,13 @@ class ConfigurationService
 
             // Get and export schemas associated with this register.
             $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+            $idsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
+
             foreach ($schemas as $schema) {
                 // Store schema in map by ID for reference.
                 $this->schemasMap[$schema->getId()] = $schema;
 
-                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema);
+                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema, $idsAndSlugsMap);
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
             }
 
@@ -310,7 +312,7 @@ class ConfigurationService
                 $objects = $this->objectEntityMapper->findAll(
                     filters: ['register' => $register->getId()]
                 );
-                
+
                 foreach ($objects as $object) {
                     // Use maps to get slugs.
                     $object = $object->jsonSerialize();
@@ -333,7 +335,7 @@ class ConfigurationService
                 );
             }
         }//end foreach
-        
+
 
         return $openApiSpec;
 
@@ -367,7 +369,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI schema specification
      */
-    private function exportSchema(Schema $schema): array
+    private function exportSchema(Schema $schema, array $idsAndSlugsMap): array
     {
         // Use jsonSerialize to get the JSON representation of the schema.
         $schemaArray = $schema->jsonSerialize();
@@ -375,9 +377,41 @@ class ConfigurationService
         // Unset id and uuid if they are present.
         unset($schemaArray['id'], $schemaArray['uuid']);
 
+        foreach ($schemaArray['properties'] as &$property) {
+            if (isset($property['$ref']) === true) {
+                $schemaId = $this->getLastNumericSegment(url: $property['$ref']);
+                if (isset($idsAndSlugsMap[$schemaId]) === true) {
+                    $property['$ref'] = $idsAndSlugsMap[$schemaId];
+                }
+            }
+
+            if (isset($property['items']['$ref']) === true) {
+                $schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
+                if (isset($idsAndSlugsMap[$schemaId]) === true) {
+                    $property['items']['$ref'] = $idsAndSlugsMap[$schemaId];
+                }
+            }
+        }
+
         return $schemaArray;
 
     }//end exportSchema()
+
+    /**
+     * Get the last segment of a URL if it is numeric.
+     *
+     * @param string $url The input URL to evaluate.
+     * @return string The numeric value if found, or the original URL.
+     */
+    private function getLastNumericSegment(string $url) {
+        $url = rtrim($url, '/');
+
+        $parts = explode('/', $url);
+        $lastSegment = end($parts);
+
+        return is_numeric($lastSegment) ? $lastSegment : $url;
+    }
+
 
 
     /**
@@ -941,7 +975,7 @@ class ConfigurationService
         try {
             // Call the exportRegister function on the Open Connector service
             $exportedData = $this->openConnectorConfigurationService->exportRegister($registerId);
-            
+
             if (empty($exportedData)) {
                 $this->logger->error('No data received from Open Connector export');
                 return null;
