@@ -108,11 +108,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									</template>
 									Export
 								</NcActionButton>
-								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
+								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 									<template #icon>
 										<Upload :size="20" />
 									</template>
-									Upload
+									Import
 								</NcActionButton>
 								<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
 									<template #icon>
@@ -337,11 +337,11 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 											</template>
 											Export
 										</NcActionButton>
-										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('uploadRegister')">
+										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 											<template #icon>
 												<Upload :size="20" />
 											</template>
-											Upload
+											Import
 										</NcActionButton>
 										<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
 											<template #icon>
