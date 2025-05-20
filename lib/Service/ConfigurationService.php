@@ -397,7 +397,12 @@ class ConfigurationService
 
     }//end exportSchema()
 
-
+    /**
+     * Get the last segment of a URL if it is numeric.
+     *
+     * @param string $url The input URL to evaluate.
+     * @return string The numeric value if found, or the original URL.
+     */
     private function getLastNumericSegment(string $url) {
         $url = rtrim($url, '/');
 
