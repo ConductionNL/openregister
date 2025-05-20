@@ -324,6 +324,10 @@ class RenderObject
 
         // Apply field filtering if specified.
         if (empty($fields) === false) {
+            $fields[] = '@self';
+            $fields[] = 'id';
+
+
             $filteredData = [];
             foreach ($fields as $field) {
                 if (isset($objectData[$field]) === true) {

@@ -561,8 +561,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::delete($object);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatch(
-            ObjectDeletedEvent::class,
+        $this->eventDispatcher->dispatchTyped(
             new ObjectDeletedEvent($object)
         );
 
@@ -846,19 +845,19 @@ class ObjectEntityMapper extends QBMapper
             if (empty($exclude) === false) {
                 foreach ($exclude as $combination) {
                     $orConditions = $qb->expr()->orX();
-                    
+
                     // Handle register exclusion.
                     if (isset($combination['register']) === true) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Handle schema exclusion.
                     if (isset($combination['schema']) === true) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Add the OR conditions to the main query.
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);

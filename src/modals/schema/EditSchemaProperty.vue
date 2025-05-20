@@ -631,6 +631,15 @@ export default {
 				delete newSchemaItem.properties[this.propertyTitle].items
 			}
 
+			if (this.properties.required === false) {
+				if (newSchemaItem.required && Array.isArray(newSchemaItem.required)) {
+					newSchemaItem.required = newSchemaItem.required.filter(
+						requiredProp => requiredProp !== this.propertyTitle
+						&& (schemaStore.schemaPropertyKey ? requiredProp !== schemaStore.schemaPropertyKey : true),
+					)
+				}
+			}
+
 			if (!newSchemaItem?.id) {
 				this.success = false
 				this.error = 'Schema item could not be created, missing schema id'

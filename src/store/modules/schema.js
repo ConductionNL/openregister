@@ -7,13 +7,21 @@ export const useSchemaStore = defineStore('schema', {
 		schemaItem: false,
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
+		viewMode: 'cards',
 		filters: [], // List of query
 		pagination: {
 			page: 1,
 			limit: 20,
 		},
 	}),
+	getters: {
+		getViewMode: (state) => state.viewMode,
+	},
 	actions: {
+		setViewMode(mode) {
+			this.viewMode = mode
+			console.log('View mode set to:', mode)
+		},
 		setSchemaItem(schemaItem) {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
 			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
