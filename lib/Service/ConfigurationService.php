@@ -324,7 +324,7 @@ class ConfigurationService
             // Get the OpenConnector service.
             $openConnector = $this->getOpenConnector();
             if ($openConnector === true) {
-                $openConnectorConfig = $this->openConnectorConfigurationService->exportConfig($register->getId());
+                $openConnectorConfig = $this->openConnectorConfigurationService->exportRegister($register->getId());
 
                 // Merge the OpenAPI specification over the OpenConnector configuration.
                 $openApiSpec = array_replace_recursive(
@@ -333,6 +333,7 @@ class ConfigurationService
                 );
             }
         }//end foreach
+        
 
         return $openApiSpec;
 
@@ -731,7 +732,7 @@ class ConfigurationService
         // Process OpenConnector integration if available.
         $openConnector = $this->getOpenConnector();
         if ($openConnector === true) {
-            $openConnectorResult = $this->openConnectorConfigurationService->importConfig($data);
+            $openConnectorResult = $this->openConnectorConfigurationService->importConfiguration($data);
             $result = array_replace_recursive($openConnectorResult, $result);
         }
 
@@ -915,5 +916,53 @@ class ConfigurationService
 
     }//end importObject()
 
+
+    /**
+     * Import a configuration from Open Connector
+     *
+     * This method attempts to import a configuration from Open Connector if it is available.
+     * It will check if the Open Connector service is available and then call its exportRegister function.
+     *
+     * @param string $registerId The ID of the register to import from Open Connector
+     * @param string $owner      The owner of the configuration
+     *
+     * @return Configuration|null The imported configuration or null if import failed
+     *
+     * @throws Exception If there is an error during import
+     */
+    public function importFromOpenConnector(string $registerId, string $owner): ?Configuration
+    {
+        // Check if Open Connector is available
+        if ($this->getOpenConnector() === false) {
+            $this->logger->warning('Open Connector is not available for importing configuration');
+            return null;
+        }
+
+        try {
+            // Call the exportRegister function on the Open Connector service
+            $exportedData = $this->openConnectorConfigurationService->exportRegister($registerId);
+            
+            if (empty($exportedData)) {
+                $this->logger->error('No data received from Open Connector export');
+                return null;
+            }
+
+            // Create a new configuration from the exported data
+            $configuration = new Configuration();
+            $configuration->setTitle($exportedData['title'] ?? 'Imported from Open Connector');
+            $configuration->setDescription($exportedData['description'] ?? 'Configuration imported from Open Connector');
+            $configuration->setType('openconnector');
+            $configuration->setOwner($owner);
+            $configuration->setVersion($exportedData['version'] ?? '1.0.0');
+            $configuration->setRegisters($exportedData['registers'] ?? []);
+
+            // Save the configuration
+            return $this->configurationMapper->insert($configuration);
+
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import configuration from Open Connector: ' . $e->getMessage());
+            throw new Exception('Failed to import configuration from Open Connector: ' . $e->getMessage());
+        }
+    }
 
 }//end class

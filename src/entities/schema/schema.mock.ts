@@ -16,7 +16,9 @@ export const mockSchemaData = (): TSchema[] => [
 		archive: [],
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
-		slug: 'character-schema', // Added slug property
+		slug: 'character-schema',
+		hardValidation: false,
+		maxDepth: 2,
 		stats: {
 			objects: {
 				total: 10,
@@ -44,7 +46,9 @@ export const mockSchemaData = (): TSchema[] => [
 		archive: [],
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
-		slug: 'item-schema', // Added slug property
+		slug: 'item-schema',
+		hardValidation: true,
+		maxDepth: 1,
 		stats: {
 			objects: {
 				total: 5,
