@@ -83,7 +83,7 @@ class FilesController extends Controller
     ): JSONResponse {
         try {
             // Get the raw files from the file service
-            $files = $this->fileService->getFiles($id);
+            $files = $this->fileService->getFiles(object: $id);
 
             // Format the files with pagination using request parameters
             $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
