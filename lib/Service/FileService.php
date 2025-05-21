@@ -1239,7 +1239,7 @@ class FileService
      * @psalm-return array<int, Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFiles(ObjectEntity | string $object): array
+    public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
     {
         // If string ID provided, try to find the object entity
         if (is_string($object) === true) {
@@ -1252,9 +1252,19 @@ class FileService
             register: $object->getRegister(),
             schema: $object->getSchema()
         );
+        $files = $folder->getDirectoryListing();
+
+        if ($sharedFilesOnly === true) {
+            foreach ($files as $key => $file) {
+                $foundShares = $this->findShares(file: $file);
+                if (empty($foundShares) === true || $foundShares = null) {
+                    unset($files[$key]);
+                }
+            }
+        }
 
         // Lets just get the files and let it fall to an error if it's not a folder.
-        return $folder->getDirectoryListing();
+        return $files;
     }
 
     /**
