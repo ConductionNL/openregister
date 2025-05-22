@@ -65,6 +65,7 @@ class DepublishObject
 
         // Set the depublication date directly on the object
         $object->setDepublished($date);
+        $object->setPublished(null);
 
         // Update the object in the database
         return $this->objectEntityMapper->update($object);
