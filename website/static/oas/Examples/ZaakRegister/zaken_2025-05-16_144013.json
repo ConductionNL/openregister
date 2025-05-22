@@ -2262,7 +2262,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/resultaten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "resultaten"
@@ -2285,7 +2285,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/resultaten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "resultaten"
@@ -2308,7 +2308,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/resultaten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "resultaten",
@@ -2332,7 +2332,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/resultaten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "resultaten",
@@ -2356,7 +2356,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/resultaten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "resultaten",
@@ -2380,7 +2380,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/resultaten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "resultaten",
@@ -2404,7 +2404,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/rollen",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "rollen"
@@ -2427,7 +2427,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/rollen",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "rollen"
@@ -2450,7 +2450,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/rollen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "rollen",
@@ -2474,7 +2474,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/rollen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "rollen",
@@ -2498,7 +2498,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/rollen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "rollen",
@@ -2522,7 +2522,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/rollen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "rollen",
@@ -2546,7 +2546,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/statussen",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "Statussen"
@@ -2569,7 +2569,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/statussen",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "statussen"
@@ -2592,7 +2592,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/statussen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "statussen",
@@ -2616,7 +2616,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/statussen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "statussen",
@@ -2640,7 +2640,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/statussen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "statussen",
@@ -2664,7 +2664,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/statussen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "statussen",
@@ -2688,7 +2688,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakcontactmomenten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakcontactmomenten"
@@ -2711,7 +2711,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakcontactmomenten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakcontactmomenten"
@@ -2734,7 +2734,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakcontactmomenten",
@@ -2758,7 +2758,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakcontactmomenten",
@@ -2782,7 +2782,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakcontactmomenten",
@@ -2806,7 +2806,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakcontactmomenten",
@@ -2830,7 +2830,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakinformatieobjecten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakinformatieobjecten"
@@ -2853,7 +2853,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakinformatieobjecten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakinformatieobjecten"
@@ -2876,7 +2876,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakinformatieobjecten",
@@ -2900,7 +2900,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakinformatieobjecten",
@@ -2924,7 +2924,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakinformatieobjecten",
@@ -2948,7 +2948,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakinformatieobjecten",
@@ -2972,7 +2972,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakobjecten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakobjecten"
@@ -2995,7 +2995,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakobjecten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakobjecten"
@@ -3018,7 +3018,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakobjecten",
@@ -3042,7 +3042,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakobjecten",
@@ -3066,7 +3066,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakobjecten",
@@ -3090,7 +3090,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakobjecten",
@@ -3114,7 +3114,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakverzoeken",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakverzoeken"
@@ -3137,7 +3137,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakverzoeken",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakverzoeken"
@@ -3160,7 +3160,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakverzoeken",
@@ -3184,7 +3184,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakverzoeken",
@@ -3208,7 +3208,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakverzoeken",
@@ -3232,7 +3232,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaakverzoeken",
@@ -3256,7 +3256,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken"
@@ -3279,7 +3279,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken"
@@ -3302,7 +3302,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3326,7 +3326,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3350,7 +3350,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3374,7 +3374,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3391,6 +3391,57 @@
                 "configurations": [],
                 "slug": "zaak-delete"
             },
+            "zaak-audittrails-get": {
+                "name": "Zaak Audittrails GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}/audittrail",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}",
+                    "audittrail"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/audittrail$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "zaak-audittrail-get-collection"
+            },
+            "zaak-audittrail-get": {
+                "name": "Zaak Audittrail GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}/audittrail/{{audittrail-id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{id}}",
+                    "audittrail",
+                    "{{audittrail-id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/audittrail(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "zaak-audittrail-get-item"
+            },
             "zaakbesluiten-get": {
                 "name": "ZaakBesluiten GET",
                 "description": "",
@@ -3398,7 +3449,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3423,7 +3474,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3448,7 +3499,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3474,7 +3525,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3500,7 +3551,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3525,7 +3576,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3550,7 +3601,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3576,7 +3627,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3602,7 +3653,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3628,7 +3679,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
@@ -3654,7 +3705,7 @@
                 "version": "0.0.1",
                 "endpoint": "zrc/api/v1/zaken/_zoek",
                 "endpointArray": [
-                    "ztc",
+                    "zrc",
                     "api",
                     "v1",
                     "zaken",
