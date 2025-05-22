@@ -1,0 +1,1590 @@
+{
+	"components": {
+		"mappings": [],
+		"sources": [],
+		"rules": [],
+		"endpoints": {
+			"enkelvoudiginformatieobject-get": {
+				"name": "EnkelvoudigInformatieObject GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-get-item",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-get-collection": {
+				"name": "EnkelvoudigInformatieObject LIST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-get-collection",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-get-audit-trail": {
+				"name": "EnkelvoudigInformatieObject LIST Audit Trail",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/audittrail",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}",
+					"audittrail"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/audittrail$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-audittrail-get-collection",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-get-audit-trail-item": {
+				"name": "EnkelvoudigInformatieObject GET Audit Trail",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/audittrail/{{audittrail-id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}",
+					"audittrail",
+					"{{audittrail-id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/audittrail/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-audittrail-get-item",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-post": {
+				"name": "EnkelvoudigInformatieObject POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-post",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-lock": {
+				"name": "EnkelvoudigInformatieObject LOCK",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/lock",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}",
+					"lock"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/lock$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-lock",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-unlock": {
+				"name": "EnkelvoudigInformatieObject UNLOCK",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/unlock",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}",
+					"unlock"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/unlock$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-unlock",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-put": {
+				"name": "EnkelvoudigInformatieObject PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-put",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-patch": {
+				"name": "EnkelvoudigInformatieObject PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-patch",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"enkelvoudiginformatieobject-delete": {
+				"name": "EnkelvoudigInformatieObject DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"enkelvoudiginformatieobjecten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "documenten/enkelvoudiginformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "enkelvoudiginformatieobject-delete",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"gebruiksrecht-get": {
+				"name": "Gebruiksrecht GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"gebruiksrechten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/gebruiksrechten/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/gebruiksrecht",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "gebruiksrecht-get-item",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"gebruiksrecht-get-collection": {
+				"name": "Gebruiksrecht LIST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/gebruiksrechten",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"gebruiksrechten"
+				],
+				"endpointRegex": "#^drc/api/v1/gebruiksrechten#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/gebruiksrecht",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "gebruiksrecht-get-collection",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"gebruiksrecht-post": {
+				"name": "Gebruiksrecht POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/gebruiksrechten",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"gebruiksrechten"
+				],
+				"endpointRegex": "#^drc/api/v1/gebruiksrechten#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "documenten/gebruiksrecht",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "gebruiksrecht-post",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"gebruiksrecht-put": {
+				"name": "Gebruiksrecht PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"gebruiksrechten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/gebruiksrechten(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "documenten/gebruiksrecht",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "gebruiksrecht-put",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"gebruiksrecht-patch": {
+				"name": "Gebruiksrecht PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"gebruiksrechten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/gebruiksrechten(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "documenten/gebruiksrecht",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "gebruiksrecht-patch",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"gebruiksrecht-delete": {
+				"name": "Gebruiksrecht DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"gebruiksrechten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/gebruiksrechten(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "documenten/gebruiksrecht",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "gebruiksrecht-delete",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"verzending-get": {
+				"name": "Verzending GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/verzendingen/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"verzendingen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/verzendingen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/verzending",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "verzending-get-item",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"verzending-get-collection": {
+				"name": "Verzending LIST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/verzendingen",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"verzendingen"
+				],
+				"endpointRegex": "#^drc/api/v1/verzendingen#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/verzending",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "verzending-get-collection",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"verzending-post": {
+				"name": "Verzending POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/verzendingen",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"verzendingen"
+				],
+				"endpointRegex": "#^drc/api/v1/verzendingen#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "documenten/verzending",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "verzending-post",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"verzending-put": {
+				"name": "Verzending PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/verzendingen/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"verzendingen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/verzendingen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "documenten/verzending",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "verzending-put",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"verzending-patch": {
+				"name": "Verzending PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/verzendingen/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"verzendingen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/verzendingen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "documenten/verzending",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "verzending-patch",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"verzending-delete": {
+				"name": "Verzending DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/verzendingen/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"verzendingen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/verzendingen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "documenten/verzending",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "verzending-delete",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"objectinformatieobject-get": {
+				"name": "Object-informatieobject GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/objectinformatieobjecten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"objectinformatieobjecten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/objectinformatieobjecten/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/objectinformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "objectinformatieobject-get-item",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"objectinformatieobject-get-collection": {
+				"name": "Object-informatieobject LIST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/objectinformatieobjecten",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"objectinformatieobjecten"
+				],
+				"endpointRegex": "#^drc/api/v1/objectinformatieobjecten#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "documenten/objectinformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "objectinformatieobject-get-collection",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"objectinformatieobject-post": {
+				"name": "Object-informatieobject POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/objectinformatieobjecten",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"objectinformatieobjecten"
+				],
+				"endpointRegex": "#^drc/api/v1/objectinformatieobjecten#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "documenten/objectinformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "objectinformatieobject-post",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"objectinformatieobject-delete": {
+				"name": "Object-informatieobject DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/objectinformatieobjecten/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"objectinformatieobjecten",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/objectinformatieobjecten(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "documenten/objectinformatieobject",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "objectinformatieobject-delete",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			},
+			"bestandsdeel-put": {
+				"name": "Bestandsdeel PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "drc/api/v1/bestandsdelen/{{id}}",
+				"endpointArray": [
+					"drc",
+					"api",
+					"v1",
+					"bestandsdelen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^drc/api/v1/bestandsdelen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "documenten/bestandsdeel",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "bestandsdeel-put",
+				"created": "2025-05-22T09:41:40+00:00",
+				"updated": "2025-05-22T09:46:03+00:00"
+			}
+		},
+		"synchronizations": [],
+		"jobs": [],
+		"registers": {
+			"documenten": {
+				"slug": "documenten",
+				"title": "Documenten",
+				"version": "0.0.2",
+				"description": "",
+				"schemas": [
+					"enkelvoudiginformatieobject",
+					"gebruiksrechten",
+					"objectinformatieobject",
+					"verzending"
+				],
+				"source": "",
+				"tablePrefix": "",
+				"folder": "",
+				"updated": "2025-05-16T11:35:14+00:00",
+				"created": "2025-05-15T11:46:45+00:00",
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null
+			}
+		},
+		"schemas": {
+			"enkelvoudiginformatieobject": {
+				"slug": "enkelvoudiginformatieobject",
+				"title": "EnkelvoudigInformatieObject",
+				"description": "Serializer for the EnkelvoudigInformatieObject model",
+				"version": "0.0.5",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"auteur",
+					"beginRegistratie",
+					"bestandsdelen",
+					"bronorganisatie",
+					"creatiedatum",
+					"informatieobjecttype",
+					"locked",
+					"taal",
+					"titel",
+					"url",
+					"versie"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"identificatie": {
+						"type": "string",
+						"description": "Een binnen een gegeven context ondubbelzinnige referentie naar het INFORMATIEOBJECT.",
+						"title": "identificatie",
+						"maxLength": 40
+					},
+					"bronorganisatie": {
+						"type": "string",
+						"description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die het informatieobject heeft gecre\u00eberd of heeft ontvangen en als eerste in een samenwerkingsketen heeft vastgelegd.",
+						"title": "bronorganisatie",
+						"maxLength": 9
+					},
+					"creatiedatum": {
+						"type": "string",
+						"format": "date",
+						"description": "Een datum of een gebeurtenis in de levenscyclus van het INFORMATIEOBJECT.",
+						"title": "creatiedatum"
+					},
+					"titel": {
+						"type": "string",
+						"description": "De naam waaronder het INFORMATIEOBJECT formeel bekend is.",
+						"title": "titel",
+						"maxLength": 200
+					},
+					"vertrouwelijkheidaanduiding": {
+						"description": "Aanduiding van de mate waarin het INFORMATIEOBJECT voor de openbaarheid bestemd is.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
+						"title": "vertrouwelijkheidaanduiding",
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
+							},
+							{
+								"$ref": "#/components/schemas/BlankEnum"
+							}
+						],
+						"type": "string"
+					},
+					"auteur": {
+						"type": "string",
+						"description": "De persoon of organisatie die in de eerste plaats verantwoordelijk is voor het cre\u00ebren van de inhoud van het INFORMATIEOBJECT.",
+						"title": "auteur",
+						"maxLength": 200
+					},
+					"inhoudIsVervallen": {
+						"description": "Geeft aan of de inhoud van het INFORMATIEOBJECT al dan niet  vervallen, dus niet langer geldig is.\n* `true` De inhoud van het INFORMATIEOBJECT is vervallen.\n* `false` De inhoud van het INFORMATIEOBJECT is niet vervallen.",
+						"title": "inhoudIsVervallen",
+						"type": "boolean",
+						"nullable": true
+					},
+					"formaat": {
+						"type": "string",
+						"description": "Het \"Media Type\" (voorheen \"MIME type\") voor de wijze waaropde inhoud van het INFORMATIEOBJECT is vastgelegd in een computerbestand. Voorbeeld: `application/msword`. Zie: https://www.iana.org/assignments/media-types/media-types.xhtml",
+						"title": "formaat",
+						"maxLength": 255
+					},
+					"taal": {
+						"type": "string",
+						"description": "Een ISO 639-2/B taalcode waarin de inhoud van het INFORMATIEOBJECT is vastgelegd. Voorbeeld: `dut`. Zie: https://www.iso.org/standard/4767.html",
+						"title": "taal",
+						"maxLength": 3,
+						"minLength": 3
+					},
+					"versie": {
+						"type": "integer",
+						"readOnly": true,
+						"description": "Het (automatische) versienummer van het INFORMATIEOBJECT. Deze begint bij 1 als het INFORMATIEOBJECT aangemaakt wordt.",
+						"title": "versie"
+					},
+					"beginRegistratie": {
+						"type": "string",
+						"format": "date-time",
+						"readOnly": true,
+						"description": "Een datumtijd in ISO8601 formaat waarop deze versie van het INFORMATIEOBJECT is aangemaakt of gewijzigd.",
+						"title": "beginRegistratie"
+					},
+					"bestandsnaam": {
+						"type": "string",
+						"description": "De naam van het fysieke bestand waarin de inhoud van het informatieobject is vastgelegd, inclusief extensie.",
+						"title": "bestandsnaam",
+						"maxLength": 255
+					},
+					"inhoud": {
+						"type": "string",
+						"format": "uri",
+						"description": "Download URL van de binaire inhoud.",
+						"nullable": true,
+						"title": "inhoud"
+					},
+					"bestandsomvang": {
+						"type": "integer",
+						"maximum": 9.223372036854776e+18,
+						"minimum": 0,
+						"format": "int64",
+						"nullable": true,
+						"description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
+						"title": "bestandsomvang"
+					},
+					"link": {
+						"type": "string",
+						"format": "uri",
+						"description": "De URL waarmee de inhoud van het INFORMATIEOBJECT op te vragen is.",
+						"title": "link",
+						"maxLength": 200
+					},
+					"beschrijving": {
+						"type": "string",
+						"description": "Een generieke beschrijving van de inhoud van het INFORMATIEOBJECT.",
+						"title": "beschrijving",
+						"maxLength": 1000
+					},
+					"ontvangstdatum": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "<b>DEPRECATED</b> Dit attribuut is verplaatst naar resource Verzending. De datum waarop het INFORMATIEOBJECT ontvangen is. Verplicht te registreren voor INFORMATIEOBJECTen die van buiten de zaakbehandelende organisatie(s) ontvangen zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt.",
+						"title": "ontvangstdatum"
+					},
+					"verzenddatum": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "<b>DEPRECATED</b> Dit attribuut is verplaatst naar resource Verzending. De datum waarop het INFORMATIEOBJECT verzonden is, zoals deze op het INFORMATIEOBJECT vermeld is. Dit geldt voor zowel inkomende als uitgaande INFORMATIEOBJECTen. Eenzelfde informatieobject kan niet tegelijk inkomend en uitgaand zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt.",
+						"title": "verzenddatum"
+					},
+					"indicatieGebruiksrecht": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Indicatie of er beperkingen gelden aangaande het gebruik van het informatieobject anders dan raadpleging. Dit veld mag `null` zijn om aan te geven dat de indicatie nog niet bekend is. Als de indicatie gezet is, dan kan je de gebruiksrechten die van toepassing zijn raadplegen via de GEBRUIKSRECHTen resource.",
+						"title": "indicatieGebruiksrecht"
+					},
+					"verschijningsvorm": {
+						"type": "string",
+						"description": "De essenti\u00eble opmaakaspecten van een INFORMATIEOBJECT.",
+						"title": "verschijningsvorm"
+					},
+					"locked": {
+						"type": "boolean",
+						"readOnly": true,
+						"description": "Geeft aan of het document gelocked is. Alleen als een document gelocked is, mogen er aanpassingen gemaakt worden.",
+						"title": "locked"
+					},
+					"bestandsdelen": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/BestandsDeel"
+						},
+						"readOnly": true,
+						"title": "bestandsdelen"
+					},
+					"trefwoorden": {
+						"description": "Een lijst van \u00e9\u00e9n of meer trefwoorden.",
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"example": [
+							"bouwtekening",
+							"vergunning",
+							"aanvraag"
+						],
+						"title": "trefwoorden"
+					},
+					"ondertekening": {
+						"description": "Aanduiding van de rechtskracht van een informatieobject. Mag niet van een waarde zijn voorzien als de `status` de waarde 'in bewerking' of 'ter vaststelling' heeft.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/Ondertekening"
+							}
+						],
+						"nullable": true,
+						"title": "ondertekening"
+					},
+					"integriteit": {
+						"description": "Uitdrukking van mate van volledigheid en onbeschadigd zijn van digitaal bestand.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/Integriteit"
+							}
+						],
+						"nullable": true,
+						"title": "integriteit"
+					},
+					"status": {
+						"description": "Aanduiding van de stand van zaken van een INFORMATIEOBJECT. De waarden 'in bewerking' en 'ter vaststelling' komen niet voor als het attribuut `ontvangstdatum` van een waarde is voorzien. Wijziging van de Status in 'gearchiveerd' impliceert dat het informatieobject een duurzaam, niet-wijzigbaar Formaat dient te hebben.\n\nUitleg bij mogelijke waarden:\n\n* `in_bewerking` - (In bewerking) Aan het informatieobject wordt nog gewerkt.\n* `ter_vaststelling` - (Ter vaststelling) Informatieobject gereed maar moet nog vastgesteld worden.\n* `definitief` - (Definitief) Informatieobject door bevoegd iets of iemand vastgesteld dan wel ontvangen.\n* `gearchiveerd` - (Gearchiveerd) Informatieobject duurzaam bewaarbaar gemaakt; een gearchiveerd informatie-element.",
+						"type": "object",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "status",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/StatusEnum"
+							},
+							{
+								"$ref": "#/components/schemas/BlankEnum"
+							}
+						],
+						"title": "status"
+					},
+					"informatieobjecttype": {
+						"description": "URL-referentie naar het INFORMATIEOBJECTTYPE (in de Catalogi API).",
+						"type": "object",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": 200,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "informatieobjecttype",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "informatieobjecttype"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T10:53:46+00:00",
+				"created": "2025-05-15T11:46:55+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"gebruiksrechten": {
+				"slug": "gebruiksrechten",
+				"title": "Gebruiksrechten",
+				"description": "",
+				"version": "0.0.2",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"informatieobject",
+					"omschrijvingVoorwaarden",
+					"startdatum",
+					"url"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"startdatum": {
+						"type": "string",
+						"format": "date-time",
+						"description": "Begindatum van de periode waarin de gebruiksrechtvoorwaarden van toepassing zijn. Doorgaans is de datum van creatie van het informatieobject de startdatum.",
+						"title": "startdatum"
+					},
+					"einddatum": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true,
+						"title": "einddatum",
+						"description": "Einddatum van de periode waarin de gebruiksrechtvoorwaarden van toepassing zijn."
+					},
+					"omschrijvingVoorwaarden": {
+						"type": "string",
+						"description": "Omschrijving van de van toepassing zijnde voorwaarden aan het gebruik anders dan raadpleging",
+						"title": "omschrijvingVoorwaarden"
+					},
+					"informatieobject": {
+						"description": "URL-referentie naar het INFORMATIEOBJECT.",
+						"type": "object",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "enkelvoudiginformatieobject",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "informatieobject"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T10:54:43+00:00",
+				"created": "2025-05-15T11:46:55+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"objectinformatieobject": {
+				"slug": "objectinformatieobject",
+				"title": "ObjectInformatieObject",
+				"description": "",
+				"version": "0.0.2",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"informatieobject",
+					"object",
+					"objectType",
+					"url"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"object": {
+						"type": "string",
+						"format": "uri",
+						"description": "URL-referentie naar het gerelateerde OBJECT (in deze of een andere API).",
+						"title": "object",
+						"maxLength": 1000
+					},
+					"objectType": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/ObjectTypeEnum"
+							}
+						],
+						"title": "objectType",
+						"description": "Het type van het gerelateerde OBJECT.\n\nUitleg bij mogelijke waarden:\n\n* `besluit` - Besluit\n* `zaak` - Zaak",
+						"type": "string"
+					},
+					"informatieobject": {
+						"description": "URL-referentie naar het INFORMATIEOBJECT.",
+						"type": "object",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "enkelvoudiginformatieobject",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "informatieobject"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T10:55:30+00:00",
+				"created": "2025-05-15T11:46:55+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"verzending": {
+				"slug": "verzending",
+				"title": "Verzending",
+				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+				"version": "0.0.6",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"aardRelatie",
+					"betrokkene",
+					"contactPersoon",
+					"informatieobject",
+					"url"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"betrokkene": {
+						"type": "string",
+						"format": "uri",
+						"description": "URL-referentie naar de betrokkene waarvan het informatieobject is ontvangen of waaraan dit is verzonden.",
+						"title": "betrokkene",
+						"maxLength": 200
+					},
+					"aardRelatie": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AardRelatieEnum"
+							}
+						],
+						"description": "Omschrijving van de aard van de relatie van de BETROKKENE tot het INFORMATIEOBJECT.",
+						"title": "aardRelatie",
+						"type": "string"
+					},
+					"toelichting": {
+						"type": "string",
+						"description": "Verduidelijking van de afzender- of geadresseerde-relatie.",
+						"title": "toelichting",
+						"maxLength": 200
+					},
+					"ontvangstdatum": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het INFORMATIEOBJECT ontvangen is. Verplicht te registreren voor INFORMATIEOBJECTen die van buiten de zaakbehandelende organisatie(s) ontvangen zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt. Vervangt het gelijknamige attribuut uit Informatieobject. Verplicht gevuld wanneer aardRelatie de waarde 'afzender' heeft.",
+						"title": "ontvangstdatum"
+					},
+					"verzenddatum": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het INFORMATIEOBJECT verzonden is, zoals deze op het INFORMATIEOBJECT vermeld is. Dit geldt voor zowel inkomende als uitgaande INFORMATIEOBJECTen. Eenzelfde informatieobject kan niet tegelijk inkomend en uitgaand zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt. Vervangt het gelijknamige attribuut uit Informatieobject. Verplicht gevuld wanneer aardRelatie de waarde 'geadresseerde' heeft.",
+						"title": "verzenddatum"
+					},
+					"contactPersoon": {
+						"type": "string",
+						"format": "uri",
+						"title": "contactPersoon",
+						"description": "URL-referentie naar de persoon die als aanspreekpunt fungeert voor de BETROKKENE inzake het ontvangen of verzonden INFORMATIEOBJECT.",
+						"maxLength": 1000
+					},
+					"contactpersoonnaam": {
+						"type": "string",
+						"description": "De opgemaakte naam van de persoon die als aanspreekpunt fungeert voorde BETROKKENE inzake het ontvangen of verzonden INFORMATIEOBJECT.",
+						"title": "contactpersoonnaam",
+						"maxLength": 40
+					},
+					"faxnummer": {
+						"type": "string",
+						"nullable": true,
+						"description": "faxnummer van de ontvanger of afzender.",
+						"title": "faxnummer",
+						"maxLength": 15
+					},
+					"emailadres": {
+						"type": "string",
+						"nullable": true,
+						"description": "emailadres van de ontvanger of afzender.",
+						"title": "emailadres",
+						"maxLength": 100
+					},
+					"mijnOverheid": {
+						"type": "boolean",
+						"description": "is het informatieobject verzonden via mijnOverheid naar de ontvanger.",
+						"title": "mijnOverheid"
+					},
+					"telefoonnummer": {
+						"type": "string",
+						"nullable": true,
+						"description": "telefoonnummer van de ontvanger of afzender.",
+						"title": "telefoonnummer",
+						"maxLength": 15
+					},
+					"informatieobject": {
+						"description": "URL-referentie naar het informatieobject dat is ontvangen of verzonden.",
+						"type": "object",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "enkelvoudiginformatieobject",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "informatieobject"
+					},
+					"binnenlandsCorrespondentieadres": {
+						"description": "Het correspondentieadres, betreffende een adresseerbaar object, van de BETROKKENE, zijnde afzender of geadresseerde, zoals vermeld in het ontvangen of verzonden INFORMATIEOBJECT indien dat afwijkt van het reguliere binnenlandse correspondentieadres van BETROKKENE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/BinnenlandsCorrespondentieadresVerzending"
+							}
+						],
+						"nullable": true,
+						"title": "binnenlandsCorrespondentieadres"
+					},
+					"correspondentiePostadres": {
+						"description": "De gegevens die tezamen een postbusadres of antwoordnummeradres vormen van BETROKKENE, zijnde afzender of geadresseerde, zoals vermeld in het ontvangen of verzonden INFORMATIEOBJECT en dat afwijkt van de reguliere correspondentiegegevens van BETROKKENE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/BuitenlandsCorrespondentiepostadresVerzending"
+							}
+						],
+						"nullable": true,
+						"title": "correspondentiePostadres"
+					},
+					"buitenlandsCorrespondentieadres": {
+						"description": "De gegevens van het adres in het buitenland van BETROKKENE, zijnde afzender of geadresseerde, zoals vermeld in het ontvangen of verzonden INFORMATIEOBJECT en dat afwijkt van de reguliere correspondentiegegevens van BETROKKENE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/BuitenlandsCorrespondentieadresVerzending"
+							}
+						],
+						"nullable": true,
+						"title": "buitenlandsCorrespondentieadres"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T11:03:41+00:00",
+				"created": "2025-05-15T11:46:55+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			}
+		},
+		"objects": []
+	},
+	"openapi": "3.0.0",
+	"info": {
+		"id": 4,
+		"title": "Documenten",
+		"description": "",
+		"version": "0.0.2"
+	}
+}
