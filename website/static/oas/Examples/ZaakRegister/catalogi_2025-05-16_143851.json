@@ -178,7 +178,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "besluittypen",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -221,7 +221,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/49",
+                            "$ref": "zaaktype",
                             "inversedBy": "besluittypen"
                         },
                         "objectConfiguration": {
@@ -268,7 +268,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/19",
+                            "$ref": "informatieobjecttype",
                             "inversedBy": "besluittypen"
                         },
                         "objectConfiguration": {
@@ -314,7 +314,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "Is resultaat van",
-                            "$ref": "http://localhost/40",
+                            "$ref": "resultaattype",
                             "inversedBy": "besluittypen"
                         },
                         "objectConfiguration": {
@@ -489,7 +489,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/49",
+                            "$ref": "zaaktype",
                             "inversedBy": "catalogus"
                         },
                         "objectConfiguration": {
@@ -536,7 +536,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/4",
+                            "$ref": "besluittype",
                             "inversedBy": "catalogus"
                         },
                         "objectConfiguration": {
@@ -583,7 +583,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/19",
+                            "$ref": "informatieobjecttype",
                             "inversedBy": "catalogus"
                         },
                         "objectConfiguration": {
@@ -760,7 +760,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -799,7 +799,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "eigenschappen",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -837,7 +837,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "eigenschappen",
-                        "$ref": "http://localhost/45",
+                        "$ref": "statustype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -994,7 +994,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "informatieobjecttypen",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1078,7 +1078,7 @@
                         "$ref": "",
                         "items": {
                             "cascadeDelete": false,
-                            "$ref": "http://localhost/49",
+                            "$ref": "zaaktype",
                             "type": "object",
                             "inversedBy": "informatieobjecttypen"
                         },
@@ -1282,7 +1282,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "resultaattypen",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1320,7 +1320,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1409,7 +1409,7 @@
                             "format": "uri",
                             "nullable": true,
                             "title": "",
-                            "$ref": "http://localhost/4",
+                            "$ref": "besluittype",
                             "inversedBy": "resultaattypen"
                         },
                         "objectConfiguration": {
@@ -1494,7 +1494,7 @@
                             "format": "uri",
                             "nullable": true,
                             "title": "",
-                            "$ref": "http://localhost/19"
+                            "$ref": "informatieobjecttype"
                         },
                         "objectConfiguration": {
                             "handling": "uri",
@@ -1622,7 +1622,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "roltypen",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1660,7 +1660,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1842,7 +1842,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "statustypen",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1880,7 +1880,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2013,7 +2013,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakobjecttypen",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2051,7 +2051,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2094,7 +2094,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/40"
+                            "$ref": "resultaattype"
                         },
                         "objectConfiguration": {
                             "handling": "uri",
@@ -2140,7 +2140,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/45"
+                            "$ref": "statustype"
                         },
                         "objectConfiguration": {
                             "handling": "uri",
@@ -2436,7 +2436,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaaktypen",
-                        "$ref": "http://localhost/11",
+                        "$ref": "catalogus",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2479,7 +2479,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/48",
+                            "$ref": "zaakobjecttype",
                             "inversedBy": "zaaktype"
                         },
                         "objectConfiguration": {
@@ -2526,7 +2526,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/45",
+                            "$ref": "statustype",
                             "inversedBy": "zaaktype"
                         },
                         "objectConfiguration": {
@@ -2573,7 +2573,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/40",
+                            "$ref": "resultaattype",
                             "inversedBy": "zaaktype"
                         },
                         "objectConfiguration": {
@@ -2620,7 +2620,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/13",
+                            "$ref": "eigenschap",
                             "inversedBy": "zaaktype"
                         },
                         "objectConfiguration": {
@@ -2665,7 +2665,7 @@
                         "$ref": "",
                         "items": {
                             "cascadeDelete": false,
-                            "$ref": "http://localhost/19",
+                            "$ref": "informatieobjecttype",
                             "type": "object",
                             "inversedBy": "zaaktypen"
                         },
@@ -2712,7 +2712,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/44",
+                            "$ref": "roltype",
                             "inversedBy": "zaaktype"
                         },
                         "objectConfiguration": {
@@ -2759,7 +2759,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "heeft relevante besluittypen",
-                            "$ref": "http://localhost/4",
+                            "$ref": "besluittype",
                             "inversedBy": "zaaktypen"
                         },
                         "objectConfiguration": {
@@ -2849,7 +2849,7 @@
                             "format": "uri",
                             "nullable": true,
                             "title": "",
-                            "$ref": "http://localhost/49",
+                            "$ref": "zaaktype",
                             "inversedBy": "deelzaaktypen"
                         },
                         "objectConfiguration": {
@@ -2892,7 +2892,7 @@
                         "inversedBy": "",
                         "$ref": "",
                         "items": {
-                            "$ref": "http://localhost/49",
+                            "$ref": "zaaktype",
                             "type": "object",
                             "inversedBy": "gerelateerdeZaaktypen"
                         },
@@ -2933,7 +2933,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/8",
+                        "$ref": "",
                         "objectConfiguration": {
                             "handling": "nested-object",
                             "schema": ""
@@ -2976,7 +2976,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/9",
+                        "$ref": "",
                         "objectConfiguration": {
                             "handling": "nested-object",
                             "schema": ""
@@ -4526,7 +4526,7 @@
         "mappings": [],
         "jobs": [],
         "synchronizations": [],
-        
+
         "rules": {
             "zgw-authenticatie-post": {
                 "name": "ZGW Authenticatie POST",

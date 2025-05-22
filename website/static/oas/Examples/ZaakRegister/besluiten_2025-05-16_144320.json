@@ -151,7 +151,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/4",
+                        "$ref": "besluittype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -189,7 +189,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -262,7 +262,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/282",
+                        "$ref": "enkelvoudiginformatieobject",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -300,7 +300,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/319",
+                        "$ref": "besluit",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
