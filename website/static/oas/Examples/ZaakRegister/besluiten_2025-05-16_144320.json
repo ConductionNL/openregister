@@ -28,7 +28,7 @@
                 "slug": "besluit",
                 "title": "Besluit",
                 "description": "",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -221,7 +221,7 @@
                 "slug": "besluitinformatieobject",
                 "title": "BesluitInformatieObject",
                 "description": "",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [

@@ -119,7 +119,7 @@
                 "slug": "resultaat",
                 "title": "Resultaat",
                 "description": "",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -245,7 +245,7 @@
                 "slug": "rol",
                 "title": "Rol",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -493,7 +493,7 @@
                 "slug": "status",
                 "title": "Status",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -690,7 +690,7 @@
                 "slug": "zaak",
                 "title": "Zaak",
                 "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-                "version": "0.0.13",
+                "version": "0.0.14",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1482,7 +1482,7 @@
                 "slug": "zaakbesluit",
                 "title": "ZaakBesluit",
                 "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1560,7 +1560,7 @@
                 "slug": "zaakcontactmoment",
                 "title": "ZaakContactMoment",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1649,7 +1649,7 @@
                 "slug": "zaakeigenschap",
                 "title": "ZaakEigenschap",
                 "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1778,7 +1778,7 @@
                 "slug": "zaakinformatieobject",
                 "title": "ZaakInformatieObject",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1974,7 +1974,7 @@
                 "slug": "zaakobject",
                 "title": "ZaakObject",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -2168,7 +2168,7 @@
                 "slug": "zaakverzoek",
                 "title": "ZaakVerzoek",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [

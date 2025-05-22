@@ -36,7 +36,7 @@
                 "slug": "besluittype",
                 "title": "BesluitType",
                 "description": "",
-                "version": "0.0.6",
+                "version": "0.0.7",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -389,7 +389,7 @@
                 "slug": "catalogus",
                 "title": "Catalogus",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -619,7 +619,7 @@
                 "slug": "eigenschap",
                 "title": "Eigenschap",
                 "description": "",
-                "version": "0.0.6",
+                "version": "0.0.7",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -870,7 +870,7 @@
                 "slug": "informatieobjecttype",
                 "title": "InformatieObjectType",
                 "description": "Serializer based on ``IOT-basis`` specified in XSD ``ztc0310_ent_basis.xsd``.",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1114,7 +1114,7 @@
                 "slug": "resultaattype",
                 "title": "ResultaatType",
                 "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-                "version": "0.0.7",
+                "version": "0.0.8",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1528,7 +1528,7 @@
                 "slug": "roltype",
                 "title": "RolType",
                 "description": "Adds nested create feature",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1693,7 +1693,7 @@
                 "slug": "statustype",
                 "title": "StatusType",
                 "description": "",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1913,7 +1913,7 @@
                 "slug": "zaakobjecttype",
                 "title": "ZaakObjectType",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -2175,7 +2175,7 @@
                 "slug": "zaaktype",
                 "title": "ZaakType",
                 "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-                "version": "0.0.16",
+                "version": "0.0.17",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -3013,7 +3013,7 @@
                 "slug": "zaaktypeinformatieobjecttype",
                 "title": "ZaakTypeInformatieObjectType",
                 "description": "Represent a ZaakTypeInformatieObjectType.\n\nRelatie met informatieobjecttype dat relevant is voor zaaktype.",
-                "version": "0.0.1",
+                "version": "0.0.2",
                 "summary": null,
                 "icon": null,
                 "required": [
