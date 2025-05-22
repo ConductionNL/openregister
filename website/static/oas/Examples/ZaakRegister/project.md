@@ -1,27 +1,30 @@
-#Plan Zaakregister
+# Plan Zaakregister
 
-## Epics per register
+We documenteren het plan hier, in de open register repository, we documenteren HIER onder, we houden eventueel extra documenten bij in een map source in DEZE MAP
+
+We doen de registers in princiepe niet één voor een maar parallel.
+
+## Epics per register *as of now)
 - [ZTC](https://conduction.atlassian.net/browse/ZAAKREG-54) (Barry) 
 - [ZRC](https://conduction.atlassian.net/browse/ZAAKREG-56) 
 - [DRC](https://conduction.atlassian.net/browse/ZAAKREG-55) (Robert)
 - [BRC](https://conduction.atlassian.net/browse/ZAAKREG-57) (Wilco)
 
-## Overizcht zgw OAS
-- [ZTC]()wse/ZAAKREG-56
-- [ZRC]()
-- [DRC]()
-- [BRC]()
 
-##Per register willen we
-- Registers, dat hebben
-- Endpoints -> één issue checkbox per endpoint
-- Endpoints zitten rulen
-- Mappings? 
-- Testen
+## Per register moeten we
+- Registers (in open register)
+- Endpoints -> we maken één issue met checkbox per endpoint
+- Rules per endpoint -> we maken één issue met checkbox per endpoint (kan worden gekopierd van endpoints)
+- Mappings -> Maken een issue met een checkbox per maping
+- Testen -> op te delen in test stappen a.h.v. scripts en cassusen
 
 (voor al deze dingen moeten dus losse issues komen)
 
-
+## Overzicht van ZGW oas (bouw informatie)
+- [ZTC]()
+- [ZRC]()
+- [DRC]()
+- [BRC]()
 
 ##Wat we weten
 - De php code hebben we 
