@@ -3240,6 +3240,31 @@
                 "configurations": [],
                 "slug": "besluittype-delete"
             },
+            "besluittype-publish": {
+                "name": "BesluitType PUBLISH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "ztc/api/v1/besluittypen/{{id}}/publish",
+                "endpointArray": [
+                    "ztc",
+                    "api",
+                    "v1",
+                    "besluittype",
+                    "{{id}}",
+                    "publish"
+                ],
+                "endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?/publish$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "catalogi/besluittype",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluittype-publish"
+            },
             "catalogussen-get": {
                 "name": "Catalogussen GET",
                 "description": "",
@@ -3291,7 +3316,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/catalogussen",
+                "endpoint": "ztc/api/v1/catalogussen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3361,7 +3386,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen",
+                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3385,7 +3410,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen",
+                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3409,7 +3434,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen",
+                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3433,7 +3458,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen",
+                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3503,7 +3528,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen",
+                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3527,7 +3552,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen",
+                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3551,7 +3576,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen",
+                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3575,7 +3600,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen",
+                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3593,6 +3618,31 @@
                 "rules": [],
                 "configurations": [],
                 "slug": "informatieobjecttype-delete"
+            },
+            "informatieobjecttype-publish": {
+                "name": "InformatieObjectType PUBLISH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}/publish",
+                "endpointArray": [
+                    "ztc",
+                    "api",
+                    "v1",
+                    "informatieobjecttypen",
+                    "{{id}}",
+                    "publish"
+                ],
+                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?/publish$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "catalogi/informatieobjecttype",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "informatieobjecttype-publish"
             },
             "resultaattypen-get": {
                 "name": "ResultaatTypen GET",
@@ -3645,7 +3695,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen",
+                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3669,7 +3719,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen",
+                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3693,7 +3743,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen",
+                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3717,7 +3767,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen",
+                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3787,7 +3837,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen",
+                "endpoint": "ztc/api/v1/roltypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3811,7 +3861,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen",
+                "endpoint": "ztc/api/v1/roltypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3835,7 +3885,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen",
+                "endpoint": "ztc/api/v1/roltypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3859,7 +3909,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen",
+                "endpoint": "ztc/api/v1/roltypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3929,7 +3979,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen",
+                "endpoint": "ztc/api/v1/statustypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3953,7 +4003,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen",
+                "endpoint": "ztc/api/v1/statustypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -3977,7 +4027,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen",
+                "endpoint": "ztc/api/v1/statustypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4001,7 +4051,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen",
+                "endpoint": "ztc/api/v1/statustypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4071,7 +4121,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen",
+                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4095,7 +4145,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen",
+                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4119,7 +4169,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen",
+                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4143,7 +4193,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen",
+                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4213,7 +4263,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4237,7 +4287,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4261,7 +4311,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4285,7 +4335,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4355,7 +4405,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen",
+                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4379,7 +4429,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen",
+                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4403,7 +4453,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen",
+                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4427,7 +4477,7 @@
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen",
+                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
                 "endpointArray": [
                     "ztc",
                     "api",
@@ -4446,6 +4496,31 @@
                 "configurations": [],
                 "slug": "zaaktype-delete"
             },
+            "zaaktype-publish": {
+                "name": "ZaakType PUBLISH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "ztc/api/v1/zaaktypen/{{id}}/publish",
+                "endpointArray": [
+                    "ztc",
+                    "api",
+                    "v1",
+                    "zaaktypen",
+                    "{{id}}",
+                    "publish"
+                ],
+                "endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?/publish$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "catalogi/zaaktype",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "zaaktype-publish"
+            }
         },
         "sources": [],
         "mappings": [],
