@@ -331,7 +331,7 @@
         },
         "endpoints": {
             "besluiten-get": {
-                "name": "Besluit GET",
+                "name": "Besluiten GET",
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
@@ -354,7 +354,7 @@
                 "slug": "besluit-get-collection"
             },
             "besluit-post": {
-                "name": "Besluit POST",
+                "name": "Besluiten POST",
                 "description": "",
                 "reference": "",
                 "version": "0.0.1",
@@ -375,6 +375,57 @@
                 "rules": [],
                 "configurations": [],
                 "slug": "besluit-post"
+            },
+            "besluit-audittrails-get": {
+                "name": "Besluit Audittrails GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}/audittrail",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}",
+                    "audittrail"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?/audittrail$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-audittrail-get-collection"
+            },
+            "besluit-audittrail-get": {
+                "name": "Besluit Audittrail GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}/audittrail/{{audittrail-id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}",
+                    "audittrail",
+                    "{{audittrail-id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?/audittrail(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-audittrail-get-item"
             },
             "besluit-get": {
                 "name": "Besluit GET",
