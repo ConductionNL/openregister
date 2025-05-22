@@ -43,7 +43,7 @@
 					"enkelvoudiginformatieobjecten"
 				],
 				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten$#",
-				"method": "POST",
+				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "documenten/enkelvoudiginformatieobject",
 				"conditions": [],
@@ -70,7 +70,7 @@
 					"audittrail"
 				],
 				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/audittrail$#",
-				"method": "POST",
+				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "documenten/enkelvoudiginformatieobject",
 				"conditions": [],
@@ -78,7 +78,7 @@
 				"outputMapping": null,
 				"rules": [],
 				"configurations": [],
-				"slug": "enkelvoudiginformatieobject-get-collection",
+				"slug": "enkelvoudiginformatieobject-audittrail-get-collection",
 				"created": "2025-05-22T09:41:40+00:00",
 				"updated": "2025-05-22T09:46:03+00:00"
 			},
@@ -94,10 +94,11 @@
 					"v1",
 					"enkelvoudiginformatieobjecten",
 					"{{id}}",
-					"audittrail"
+					"audittrail",
+					"{{audittrail-id}}"
 				],
 				"endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/audittrail/([^/]+)$#",
-				"method": "POST",
+				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "documenten/enkelvoudiginformatieobject",
 				"conditions": [],
@@ -105,7 +106,7 @@
 				"outputMapping": null,
 				"rules": [],
 				"configurations": [],
-				"slug": "enkelvoudiginformatieobject-get-collection",
+				"slug": "enkelvoudiginformatieobject-audittrail-get-item",
 				"created": "2025-05-22T09:41:40+00:00",
 				"updated": "2025-05-22T09:46:03+00:00"
 			},
@@ -305,7 +306,7 @@
 					"gebruiksrechten"
 				],
 				"endpointRegex": "#^drc/api/v1/gebruiksrechten#",
-				"method": "POST",
+				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "documenten/gebruiksrecht",
 				"conditions": [],
@@ -459,7 +460,7 @@
 					"verzendingen"
 				],
 				"endpointRegex": "#^drc/api/v1/verzendingen#",
-				"method": "POST",
+				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "documenten/verzending",
 				"conditions": [],
@@ -613,7 +614,7 @@
 					"objectinformatieobjecten"
 				],
 				"endpointRegex": "#^drc/api/v1/objectinformatieobjecten#",
-				"method": "POST",
+				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "documenten/objectinformatieobject",
 				"conditions": [],
@@ -1579,7 +1580,7 @@
 		},
 		"objects": []
 	},
-//	"openapi": "3.0.0",
+	"openapi": "3.0.0",
 	"info": {
 		"id": 4,
 		"title": "Documenten",
