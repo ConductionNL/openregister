@@ -21,10 +21,17 @@ We doen de registers in princiepe niet één voor een maar parallel.
 (voor al deze dingen moeten dus losse issues komen)
 
 ## Overzicht van ZGW oas (bouw informatie)
-- [ZTC]()
-- [ZRC]()
-- [DRC]()
-- [BRC]()
+- [ZTC](https://vng-realisatie.github.io/gemma-zaken/standaard/catalogi/) Catalogi
+- [ZRC](https://vng-realisatie.github.io/gemma-zaken/standaard/zaken/) Zaken
+- [DRC](https://vng-realisatie.github.io/gemma-zaken/standaard/documenten/) Documenten
+- [BRC](https://vng-realisatie.github.io/gemma-zaken/standaard/besluiten/) Besluiten
+
+Nu niet in scope
+- [Referentie en selectie lijsten](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/VNG-Realisatie/VNG-referentielijsten/master/src/openapi.yaml&nocors)
+- [Autorisatie](https://vng-realisatie.github.io/gemma-zaken/standaard/autorisaties/)
+- [Notificatie](https://vng-realisatie.github.io/gemma-zaken/standaard/notificaties/)
+- [Notificatie consumers](https://vng-realisatie.github.io/gemma-zaken/standaard/notificaties-consumer/)
+
 
 ##Wat we weten
 - De php code hebben we 
