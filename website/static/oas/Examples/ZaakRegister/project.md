@@ -46,10 +46,36 @@ Hebben we nog?
 - Alles nu even in de open Registers github repository
 
 ## PLanning
+Kleine dag tot dag planning zodat we een beetje weten waar we naar toe werken
 
-22-5
+### 22-5
 - Endpoints (per register zie boven)
 - Authenticie rule (per method) (Rule)
+
+### 23-5
+- Eerste endpoint test (@matthias) op ZTC en DRC
+- Rules ZTC /DRC
+
+### 26-5
+- Eerste rules test (@matthias) op ZTC en DRC
+- Verdere Rules ZTC /DRC
+
+### 27-5
+- Finale  rules test (@matthias) op ZTC en DRC
+- Rules ZTR  /BRC
+- Uitleveren ZTC en DRC voor extern testen(mits geen bevindingen meer op interne tests)
+
+### 28-5
+- Eerste rules test (@matthias) op ZTR /BRC
+- Verdere Rules ZTR /BRC
+
+### 30-5 
+- Finale  rules test (@matthias) op ZTR / BRC
+- Uitleveren ZTR /BRC voor extern testen (mits geen bevindingen meer op interne tests)
+
+### 02-6
+- Start xxlnc inteegratie (nog geen indicatie of inschatting)
+- Notificatie (nog geen indicatie of inschatting)
 
 
 ## Parkeren / Obeservateis
