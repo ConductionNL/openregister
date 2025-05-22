@@ -3728,29 +3728,6 @@
         "jobs": [],
         "synchronizations": [],
         "rules": {
-            "zgw-authenticatie-get": {
-                "name": "ZGW Authenticatie GET",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "get",
-                "timing": "before",
-                "conditions": null,
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-get"
-            },
             "zgw-authenticatie-post": {
                 "name": "ZGW Authenticatie POST",
                 "description": "",
@@ -3773,6 +3750,29 @@
                 "created": "2025-05-22T12:22:36+00:00",
                 "updated": "2025-05-22T12:22:36+00:00",
                 "slug": "zgw-authenticatie-post"
+            },
+            "zgw-authenticatie-get": {
+                "name": "ZGW Authenticatie GET",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "get",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-get"
             },
             "zgw-authenticatie-put": {
                 "name": "ZGW Authenticatie PUT",
@@ -3819,6 +3819,29 @@
                 "created": "2025-05-22T12:22:36+00:00",
                 "updated": "2025-05-22T12:22:36+00:00",
                 "slug": "zgw-authenticatie-delete"
+            },
+            "zgw-authenticatie-patch": {
+                "name": "ZGW Authenticatie PATCH",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-patch"
             }
         },
         "objects": []
