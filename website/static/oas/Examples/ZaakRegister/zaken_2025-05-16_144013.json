@@ -2274,7 +2274,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "resultaat-get-collection"
             },
@@ -2297,7 +2297,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "resultaat-post"
             },
@@ -2321,7 +2321,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "resultaat-get-item"
             },
@@ -2345,7 +2345,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "resultaat-put"
             },
@@ -2369,7 +2369,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "resultaat-patch"
             },
@@ -2393,7 +2393,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "resultaat-delete"
             },
@@ -2416,7 +2416,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "rol-get-collection"
             },
@@ -2439,7 +2439,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "rol-post"
             },
@@ -2463,7 +2463,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "rol-get-item"
             },
@@ -2487,7 +2487,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "rol-put"
             },
@@ -2511,7 +2511,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "rol-patch"
             },
@@ -2535,7 +2535,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "rol-delete"
             },
@@ -2558,7 +2558,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "status-get-collection"
             },
@@ -2581,7 +2581,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "status-post"
             },
@@ -2605,7 +2605,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "status-get-item"
             },
@@ -2629,7 +2629,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "status-put"
             },
@@ -2653,7 +2653,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "status-patch"
             },
@@ -2677,7 +2677,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "status-delete"
             },
@@ -2700,7 +2700,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakcontactmoment-get-collection"
             },
@@ -2723,7 +2723,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaakcontactmoment-post"
             },
@@ -2747,7 +2747,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakcontactmoment-get-item"
             },
@@ -2771,7 +2771,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "zaakcontactmoment-put"
             },
@@ -2795,7 +2795,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "zaakcontactmoment-patch"
             },
@@ -2819,7 +2819,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaakcontactmoment-delete"
             },
@@ -2842,7 +2842,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakinformatieobject-get-collection"
             },
@@ -2865,7 +2865,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaakinformatieobject-post"
             },
@@ -2889,7 +2889,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakinformatieobject-get-item"
             },
@@ -2913,7 +2913,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "zaakinformatieobject-put"
             },
@@ -2937,7 +2937,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "zaakinformatieobject-patch"
             },
@@ -2961,7 +2961,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaakinformatieobject-delete"
             },
@@ -2984,7 +2984,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakobject-get-collection"
             },
@@ -3007,7 +3007,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaakobject-post"
             },
@@ -3031,7 +3031,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakobject-get-item"
             },
@@ -3055,7 +3055,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "zaakobject-put"
             },
@@ -3079,7 +3079,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "zaakobject-patch"
             },
@@ -3103,7 +3103,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaakobject-delete"
             },
@@ -3126,7 +3126,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakverzoek-get-collection"
             },
@@ -3149,7 +3149,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaakverzoek-post"
             },
@@ -3173,7 +3173,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakverzoek-get-item"
             },
@@ -3197,7 +3197,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "zaakverzoek-put"
             },
@@ -3221,7 +3221,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "zaakverzoek-patch"
             },
@@ -3245,7 +3245,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaakverzoek-delete"
             },
@@ -3268,7 +3268,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaak-get-collection"
             },
@@ -3291,7 +3291,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaak-post"
             },
@@ -3315,7 +3315,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaak-get-item"
             },
@@ -3339,7 +3339,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "zaak-put"
             },
@@ -3363,7 +3363,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "zaak-patch"
             },
@@ -3387,7 +3387,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaak-delete"
             },
@@ -3412,7 +3412,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaak-audittrail-get-collection"
             },
@@ -3438,7 +3438,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaak-audittrail-get-item"
             },
@@ -3463,7 +3463,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakbesluit-get-collection"
             },
@@ -3488,7 +3488,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaakbesluit-post"
             },
@@ -3514,7 +3514,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakbesluit-get-item"
             },
@@ -3540,7 +3540,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaakbesluit-delete"
             },
@@ -3565,7 +3565,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakeigenschap-get-collection"
             },
@@ -3590,7 +3590,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [1],
                 "configurations": [],
                 "slug": "zaakeigenschap-post"
             },
@@ -3616,7 +3616,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [2],
                 "configurations": [],
                 "slug": "zaakeigenschap-get-item"
             },
@@ -3642,7 +3642,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [3],
                 "configurations": [],
                 "slug": "zaakeigenschap-put"
             },
@@ -3668,7 +3668,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [5],
                 "configurations": [],
                 "slug": "zaakeigenschap-patch"
             },
@@ -3694,7 +3694,7 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules": [],
+                "rules": [4],
                 "configurations": [],
                 "slug": "zaakeigenschap-delete"
             },
@@ -3727,7 +3727,100 @@
         "mappings": [],
         "jobs": [],
         "synchronizations": [],
-        "rules": [],
+        "rules": {
+            "zgw-authenticatie-get": {
+                "name": "ZGW Authenticatie GET",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "get",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-get"
+            },
+            "zgw-authenticatie-post": {
+                "name": "ZGW Authenticatie POST",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "post",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-post"
+            },
+            "zgw-authenticatie-put": {
+                "name": "ZGW Authenticatie PUT",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-put"
+            },
+            "zgw-authenticatie-delete": {
+                "name": "ZGW Authenticatie DELETE",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "delete",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-delete"
+            }
+        },
         "objects": []
     },
     "info": {
