@@ -4,7 +4,7 @@ We documenteren het plan hier, in de open register repository, we documenteren H
 
 We doen de registers in princiepe niet één voor een maar parallel.
 
-## Epics per register *as of now)
+## Epics per register (as of now)
 - [ZTC](https://conduction.atlassian.net/browse/ZAAKREG-54) (Barry) 
 - [ZRC](https://conduction.atlassian.net/browse/ZAAKREG-56) 
 - [DRC](https://conduction.atlassian.net/browse/ZAAKREG-55) (Robert)
@@ -58,6 +58,19 @@ Kleine dag tot dag planning zodat we een beetje weten waar we naar toe werken
 ### 22-5
 - Endpoints (per register zie boven)
 - Authenticie rule (per method) (Rule)
+
+Middag update
+
+Robert
+- DRC heeft 3 van de 5 object type van alle endpoints
+- 2 Objecttypen wijken
+- Autoriastie rule nog niet gedaan
+Barry
+- ZTC heeft alle endpoints
+- ZRC door chat GPT laten doen
+Wilco
+- BRC van endpoints voorzien
+
 
 ### 23-5
 - Eerste endpoint test (@matthias) op ZTC en DRC
