@@ -386,7 +386,7 @@
                     "brc",
                     "api",
                     "v1",
-                    "besluit",
+                    "besluiten",
                     "{{id}}"
                 ],
                 "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
@@ -410,7 +410,7 @@
                     "brc",
                     "api",
                     "v1",
-                    "besluit",
+                    "besluiten",
                     "{{id}}"
                 ],
                 "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
@@ -434,7 +434,7 @@
                     "brc",
                     "api",
                     "v1",
-                    "besluit",
+                    "besluiten",
                     "{{id}}"
                 ],
                 "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
@@ -458,7 +458,7 @@
                     "brc",
                     "api",
                     "v1",
-                    "besluit",
+                    "besluiten",
                     "{{id}}"
                 ],
                 "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
@@ -528,7 +528,7 @@
                     "brc",
                     "api",
                     "v1",
-                    "besluitinformatieobject",
+                    "besluitinformatieobjecten",
                     "{{id}}"
                 ],
                 "endpointRegex": "#^brc/api/v1/besluitinformatieobjecten(?:/([^/]+))?$#",
@@ -552,7 +552,7 @@
                     "brc",
                     "api",
                     "v1",
-                    "besluitinformatieobject",
+                    "besluitinformatieobjecten",
                     "{{id}}"
                 ],
                 "endpointRegex": "#^brc/api/v1/besluitinformatieobjecten(?:/([^/]+))?$#",
