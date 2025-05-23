@@ -74,6 +74,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Maximum File Size (MB)"
+					:min="0"
 					:value.sync="properties.fileConfiguration.maxSize" />
 			</div>
 
@@ -89,12 +90,19 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Minimum length"
-					:value.sync="properties.minLength" />
+					:value.sync="properties.minLength"
+					:min="0"
+					:max="properties.maxLength || undefined"
+					:error="properties.minLength > properties.maxLength"
+					:helper-text="properties.minLength > properties.maxLength ? 'Minimum length cannot be greater than maximum length' : ''" />
 
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Maximum length"
-					:value.sync="properties.maxLength" />
+					:value.sync="properties.maxLength"
+					:min="properties.minLength || 0"
+					:error="properties.maxLength < properties.minLength"
+					:helper-text="properties.maxLength < properties.minLength ? 'Maximum length cannot be less than minimum length' : ''" />
 			</template>
 
 			<!-- TYPE : STRING -->
@@ -262,12 +270,18 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Minimum value"
-					:value.sync="properties.minimum" />
+					:value.sync="properties.minimum"
+					:max="properties.maximum || undefined"
+					:error="properties.minimum > properties.maximum"
+					:helper-text="properties.minimum > properties.maximum ? 'Minimum value cannot be greater than maximum value' : ''" />
 
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Maximum value"
-					:value.sync="properties.maximum" />
+					:value.sync="properties.maximum"
+					:min="properties.minimum || undefined"
+					:error="properties.maximum < properties.minimum"
+					:helper-text="properties.maximum < properties.minimum ? 'Maximum value cannot be less than minimum value' : ''" />
 
 				<NcInputField :disabled="loading"
 					type="number"
@@ -328,12 +342,19 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Minimum number of items"
-					:value.sync="properties.minItems" />
+					:value.sync="properties.minItems"
+					:min="0"
+					:max="properties.maxItems || undefined"
+					:error="properties.minItems > properties.maxItems"
+					:helper-text="properties.minItems > properties.maxItems ? 'Minimum number of items cannot be greater than maximum number of items' : ''" />
 
 				<NcInputField :disabled="loading"
 					type="number"
 					label="Maximum number of items"
-					:value.sync="properties.maxItems" />
+					:value.sync="properties.maxItems"
+					:min="properties.minItems || 0"
+					:error="properties.maxItems < properties.minItems"
+					:helper-text="properties.maxItems < properties.minItems ? 'Maximum number of items cannot be less than minimum number of items' : ''" />
 			</div>
 
 			<!-- type oneOf only -->
@@ -343,32 +364,44 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				</h5>
 
 				<div v-for="(oneOfItem, index) in properties.oneOf" :key="index" class="ASP-oneOfItem">
-					<h6>oneOf entry {{ index + 1 }}</h6>
-
-					<div class="ASP-selectContainer">
-						<NcSelect
-							v-bind="itemsTypeOptions"
-							v-model="oneOfItem.type"
-							:input-label="'Type'" />
+					<div class="ASP-oneOfItem__header">
+						<h6>oneOf entry {{ index + 1 }}</h6>
 					</div>
 
-					<div class="ASP-selectContainer">
-						<NcSelect
-							v-bind="formatOptions"
-							v-model="oneOfItem.format"
-							:input-label="'Format'" />
-					</div>
+					<div class="ASP-oneOfItem__content">
+						<div class="ASP-oneOfItem__inputs">
+							<NcSelect
+								v-bind="itemsTypeOptions"
+								v-model="oneOfItem.type"
+								:input-label="'Type'" />
 
-					<NcButton
-						variant="danger"
-						@click="removeOneOfEntry(index)">
-						Remove oneOf entry
-					</NcButton>
+							<NcSelect
+								v-bind="formatOptions"
+								v-model="oneOfItem.format"
+								:input-label="'Format'" />
+						</div>
+
+						<NcButton
+							variant="danger"
+							icon="Delete"
+							type="error"
+							class="ASP-oneOfItem__remove"
+							@click="removeOneOfEntry(index)">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							Remove
+						</NcButton>
+					</div>
 				</div>
 
 				<NcButton
-					variant="primary"
+					type="primary"
+					class="ASP-addOneOfEntry"
 					@click="addOneOfEntry">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
 					Add oneOf entry
 				</NcButton>
 			</div>
@@ -415,6 +448,7 @@ import {
 
 // icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 
@@ -431,6 +465,7 @@ export default {
 		NcLoadingIcon,
 		NcDateTimePicker,
 		NcTextArea,
+		Delete,
 	},
 	data() {
 		return {
@@ -547,6 +582,48 @@ export default {
 					// when array is not selected anymore, set array specific properties to 0
 					if (newVal.type !== 'array') this.properties.minItems = 0
 					if (newVal.type !== 'array') this.properties.maxItems = 0
+				}
+			},
+		},
+		'properties.minLength': {
+			handler(newVal) {
+				if (newVal > this.properties.maxLength) {
+					this.properties.maxLength = newVal
+				}
+			},
+		},
+		'properties.maxLength': {
+			handler(newVal) {
+				if (newVal < this.properties.minLength) {
+					this.properties.minLength = newVal
+				}
+			},
+		},
+		'properties.minItems': {
+			handler(newVal) {
+				if (newVal > this.properties.maxItems) {
+					this.properties.maxItems = newVal
+				}
+			},
+		},
+		'properties.maxItems': {
+			handler(newVal) {
+				if (newVal < this.properties.minItems) {
+					this.properties.minItems = newVal
+				}
+			},
+		},
+		'properties.minimum': {
+			handler(newVal) {
+				if (newVal > this.properties.maximum) {
+					this.properties.maximum = newVal
+				}
+			},
+		},
+		'properties.maximum': {
+			handler(newVal) {
+				if (newVal < this.properties.minimum) {
+					this.properties.minimum = newVal
 				}
 			},
 		},
@@ -717,5 +794,44 @@ export default {
 .objectConfigurationTitle {
 	margin-block-end: 5px;
 	font-weight: bold;
+}
+</style>
+
+<style scoped>
+.ASP-addOneOfEntry {
+	margin-block-start: 1rem;
+}
+
+.ASP-oneOfItem {
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin-block-end: 1rem;
+}
+
+.ASP-oneOfItem__header {
+	margin-block-end: 1rem;
+}
+
+.ASP-oneOfItem__header h6 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: bold;
+}
+
+.ASP-oneOfItem__content {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.ASP-oneOfItem__inputs {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.ASP-oneOfItem__remove {
+	align-self: flex-end;
 }
 </style>
