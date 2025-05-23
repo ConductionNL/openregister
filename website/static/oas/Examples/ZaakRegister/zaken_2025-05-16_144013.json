@@ -119,7 +119,7 @@
                 "slug": "resultaat",
                 "title": "Resultaat",
                 "description": "",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -175,7 +175,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "resultaat",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -213,7 +213,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/40",
+                        "$ref": "resultaattype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -245,7 +245,7 @@
                 "slug": "rol",
                 "title": "Rol",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -368,7 +368,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "rollen",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -457,7 +457,7 @@
                             "title": "",
                             "minLength": 1,
                             "maxLength": 1000,
-                            "$ref": "http://localhost/137",
+                            "$ref": "status",
                             "inversedBy": "statussen"
                         },
                         "objectConfiguration": {
@@ -493,7 +493,7 @@
                 "slug": "status",
                 "title": "Status",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -571,7 +571,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "status",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -609,7 +609,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/45",
+                        "$ref": "statustype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -654,7 +654,7 @@
                             "title": "",
                             "minLength": 1,
                             "maxLength": 1000,
-                            "$ref": "http://localhost/157",
+                            "$ref": "zaakinformatieobject",
                             "inversedBy": "status"
                         },
                         "objectConfiguration": {
@@ -690,7 +690,7 @@
                 "slug": "zaak",
                 "title": "Zaak",
                 "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-                "version": "0.0.13",
+                "version": "0.0.14",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1101,7 +1101,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/150",
+                            "$ref": "zaak",
                             "inversedBy": "deelzaken"
                         },
                         "objectConfiguration": {
@@ -1143,7 +1143,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1181,7 +1181,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "hoofdzaak",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1225,7 +1225,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/156",
+                            "$ref": "zaakeigenschap",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1267,12 +1267,12 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/129",
+                        "$ref": "rol",
                         "items": {
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/129",
+                            "$ref": "rol",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1314,7 +1314,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaak",
-                        "$ref": "http://localhost/137",
+                        "$ref": "status",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1359,7 +1359,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/157",
+                            "$ref": "zaakinformatieobject",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1406,7 +1406,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/161",
+                            "$ref": "zaakobject",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1448,7 +1448,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaak",
-                        "$ref": "http://localhost/126",
+                        "$ref": "resultaat",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1482,7 +1482,7 @@
                 "slug": "zaakbesluit",
                 "title": "ZaakBesluit",
                 "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1528,7 +1528,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/319",
+                        "$ref": "besluit",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1560,7 +1560,7 @@
                 "slug": "zaakcontactmoment",
                 "title": "ZaakContactMoment",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1617,7 +1617,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1649,7 +1649,7 @@
                 "slug": "zaakeigenschap",
                 "title": "ZaakEigenschap",
                 "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1708,7 +1708,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "eigenschappen",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1746,7 +1746,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/13",
+                        "$ref": "eigenschap",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1778,7 +1778,7 @@
                 "slug": "zaakinformatieobject",
                 "title": "ZaakInformatieObject",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1865,7 +1865,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/282",
+                        "$ref": "enkelvoudiginformatieobject",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1903,7 +1903,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakinformatieobjecten",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1941,7 +1941,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakinformatieobjecten",
-                        "$ref": "http://localhost/137",
+                        "$ref": "status",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1974,7 +1974,7 @@
                 "slug": "zaakobject",
                 "title": "ZaakObject",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -2054,7 +2054,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakobjecten",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2092,7 +2092,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/48",
+                        "$ref": "zaakobjecttype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2168,7 +2168,7 @@
                 "slug": "zaakverzoek",
                 "title": "ZaakVerzoek",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -2225,7 +2225,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2254,7 +2254,7 @@
                 "configuration": null
             }
         },
-        "endpoints": { 
+        "endpoints": {
             "resultaten-get": {
                 "name": "Resultaat GET",
                 "description": "",

@@ -863,11 +863,21 @@ class ConfigurationService
                     if (isset($property['items']['format']) === true && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
                         unset($property['items']['format']);
                     }
-                    if (isset($property['$ref']) === true && isset($slugsAndIdsMap[$property['$ref']]) === true) {
-                        $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
+
+                    // Check if we have the schema for the slug and set that id.
+                    if (isset($property['$ref']) === true) {
+                        if (isset($slugsAndIdsMap[$property['$ref']]) === true) {
+                            $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
+                        } elseif (isset($this->schemasMap[$property['$ref']]) === true) {
+                            $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
+                        }
                     }
-                    if (isset($property['items']['$ref']) === true && isset($slugsAndIdsMap[$property['items']['$ref']]) === true) {
-                        $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
+                    if (isset($property['items']['$ref']) === true) {
+                        if (isset($slugsAndIdsMap[$property['items']['$ref']]) === true) {
+                            $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
+                        } elseif (isset($this->schemasMap[$property['items']['$ref']]) === true) {
+                            $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
+                        }
                     }
                 }
             }
