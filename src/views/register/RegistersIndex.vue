@@ -8,40 +8,62 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<h2 class="pageHeader">
 				Registers
 			</h2>
-
-			<NcActions
-				:force-name="true"
-				:inline="1"
-				:primary="true"
-				:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
-				menu-name="Dashboard actions">
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					Add Register
-				</NcActionButton>
-				<NcActionButton @click="dashboardStore.fetchRegisters()">
-					<template #icon>
-						<Refresh :size="20" />
-					</template>
-					Refresh
-				</NcActionButton>
-				<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
-					<template #icon>
-						<Upload :size="20" />
-					</template>
-					Import
-				</NcActionButton>
-				<NcActionButton @click="openAllApisDoc">
-					<template #icon>
-						<ApiIcon :size="20" />
-					</template>
-					View APIs
-				</NcActionButton>
-			</NcActions>
+			<div class="headerActionsContainer">
+				<div class="viewModeSwitchContainer">
+					<NcCheckboxRadioSwitch
+						v-model="registerStore.viewMode"
+						v-tooltip="'See registers as cards'"
+						:button-variant="true"
+						value="cards"
+						name="view_mode_radio"
+						type="radio"
+						button-variant-grouped="horizontal">
+						Cards
+					</NcCheckboxRadioSwitch>
+					<NcCheckboxRadioSwitch
+						v-model="registerStore.viewMode"
+						v-tooltip="'See registers as a table'"
+						:button-variant="true"
+						value="table"
+						name="view_mode_radio"
+						type="radio"
+						button-variant-grouped="horizontal">
+						Table
+					</NcCheckboxRadioSwitch>
+				</div>
+				<NcActions
+					:force-name="true"
+					:inline="1"
+					:primary="true"
+					:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
+					menu-name="Dashboard actions">
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+						<template #icon>
+							<Plus :size="20" />
+						</template>
+						Add Register
+					</NcActionButton>
+					<NcActionButton @click="dashboardStore.fetchRegisters()">
+						<template #icon>
+							<Refresh :size="20" />
+						</template>
+						Refresh
+					</NcActionButton>
+					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+						<template #icon>
+							<Upload :size="20" />
+						</template>
+						Import
+					</NcActionButton>
+					<NcActionButton @click="openAllApisDoc">
+						<template #icon>
+							<ApiIcon :size="20" />
+						</template>
+						View APIs
+					</NcActionButton>
+				</NcActions>
+			</div>
 		</span>
-
 		<div class="dashboardContent">
 			<div v-if="dashboardStore.loading" class="loading">
 				<NcLoadingIcon :size="32" />
@@ -54,222 +76,313 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				<NcEmptyContent title="No registers found" icon="icon-folder" />
 			</div>
 			<div v-else class="registers">
-				<div v-for="register in filteredRegisters" :key="register.id" class="registerCard">
-					<div class="registerHeader">
-						<h2 v-tooltip.bottom="register.description">
-							<DatabaseOutline :size="20" />
-							{{ register.title }}
-						</h2>
-						<NcActions :primary="true" menu-name="Actions">
-							<template #icon>
-								<DotsHorizontal :size="20" />
-							</template>
-							<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+				<template v-if="registerStore.viewMode === 'cards'">
+					<div v-for="register in filteredRegisters" :key="register.id" class="registerCard">
+						<div class="registerHeader">
+							<h2 v-tooltip.bottom="register.description">
+								<DatabaseOutline :size="20" />
+								{{ register.title }}
+							</h2>
+							<NcActions :primary="true" menu-name="Actions">
 								<template #icon>
-									<Calculator :size="20" />
+									<DotsHorizontal :size="20" />
 								</template>
-								Calculate Sizes
-							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem({
-								...register,
-								schemas: register.schemas.map(schema => schema.id)
-							}); navigationStore.setModal('editRegister')">
-								<template #icon>
-									<Pencil :size="20" />
-								</template>
-								Edit
-							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
-								<template #icon>
-									<Export :size="20" />
-								</template>
-								Export
-							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
-								<template #icon>
-									<Import :size="20" />
-								</template>
-								Import
-							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
-								<template #icon>
-									<ApiIcon :size="20" />
-								</template>
-								View API Documentation
-							</NcActionButton>
-							<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
-								<template #icon>
-									<Download :size="20" />
-								</template>
-								Download API Specification
-							</NcActionButton>
-							<NcActionButton
-								v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-								:disabled="register.stats?.total > 0"
-								@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-								Delete
-							</NcActionButton>
-							<NcActionButton @click="viewRegisterDetails(register)">
-								<template #icon>
-									<InformationOutline :size="20" />
-								</template>
-								View Details
-							</NcActionButton>
-						</NcActions>
-					</div>
+								<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+									<template #icon>
+										<Calculator :size="20" />
+									</template>
+									Calculate Sizes
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem({
+									...register,
+									schemas: register.schemas.map(schema => schema.id)
+								}); navigationStore.setModal('editRegister')">
+									<template #icon>
+										<Pencil :size="20" />
+									</template>
+									Edit
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
+									<template #icon>
+										<Export :size="20" />
+									</template>
+									Export
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
+									<template #icon>
+										<Upload :size="20" />
+									</template>
+									Import
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
+									<template #icon>
+										<ApiIcon :size="20" />
+									</template>
+									View API Documentation
+								</NcActionButton>
+								<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
+									<template #icon>
+										<Download :size="20" />
+									</template>
+									Download API Specification
+								</NcActionButton>
+								<NcActionButton
+									v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+									:disabled="register.stats?.total > 0"
+									@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+									<template #icon>
+										<TrashCanOutline :size="20" />
+									</template>
+									Delete
+								</NcActionButton>
+								<NcActionButton @click="viewRegisterDetails(register)">
+									<template #icon>
+										<InformationOutline :size="20" />
+									</template>
+									View Details
+								</NcActionButton>
+							</NcActions>
+						</div>
+						<!-- Register Statistics Table -->
+						<table class="statisticsTable registerStats">
+							<thead>
+								<tr>
+									<th>{{ t('openregister', 'Type') }}</th>
+									<th>{{ t('openregister', 'Total') }}</th>
+									<th>{{ t('openregister', 'Size') }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>{{ t('openregister', 'Objects') }}</td>
+									<td>{{ register.stats?.objects?.total || 0 }}</td>
+									<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
+								</tr>
+								<tr class="subRow">
+									<td class="indented">
+										{{ t('openregister', 'Invalid') }}
+									</td>
+									<td>{{ register.stats?.objects?.invalid || 0 }}</td>
+									<td>-</td>
+								</tr>
+								<tr class="subRow">
+									<td class="indented">
+										{{ t('openregister', 'Deleted') }}
+									</td>
+									<td>{{ register.stats?.objects?.deleted || 0 }}</td>
+									<td>-</td>
+								</tr>
+								<tr class="subRow">
+									<td class="indented">
+										{{ t('openregister', 'Locked') }}
+									</td>
+									<td>{{ register.stats?.objects?.locked || 0 }}</td>
+									<td>-</td>
+								</tr>
+								<tr class="subRow">
+									<td class="indented">
+										{{ t('openregister', 'Published') }}
+									</td>
+									<td>{{ register.stats?.objects?.published || 0 }}</td>
+									<td>-</td>
+								</tr>
+								<tr>
+									<td>{{ t('openregister', 'Logs') }}</td>
+									<td>{{ register.stats?.logs?.total || 0 }}</td>
+									<td>{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
+								</tr>
+								<tr>
+									<td>{{ t('openregister', 'Files') }}</td>
+									<td>{{ register.stats?.files?.total || 0 }}</td>
+									<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
+								</tr>
+								<tr>
+									<td>{{ t('openregister', 'Schemas') }}</td>
+									<td>{{ register.schemas?.length || 0 }}</td>
+									<td>
+										<button class="schemaToggle" @click.stop="toggleSchemaVisibility(register.id)">
+											{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
+										</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
 
-					<!-- Register Statistics Table -->
-					<table class="statisticsTable registerStats">
+						<!-- Schemas section with v-show -->
+						<div v-show="isSchemasVisible(register.id)" class="schemas">
+							<div v-for="schema in register.schemas" :key="schema.id" class="schema">
+								<div
+									class="schemaHeader"
+									@click="toggleSchema(schema.id)">
+									<div class="schemaTitle">
+										<FileCodeOutline :size="16" />
+										<span>{{ schema.stats?.objects?.total || 0 }} </span>
+										{{ schema.title }}
+										<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
+									</div>
+									<button class="schemaToggle">
+										<ChevronUp v-if="isSchemaExpanded(schema.id)" :size="20" />
+										<ChevronDown v-else :size="20" />
+									</button>
+								</div>
+
+								<div v-show="isSchemaExpanded(schema.id)" class="schemaContent">
+									<table class="statisticsTable schemaStats">
+										<thead>
+											<tr>
+												<th>{{ t('openregister', 'Type') }}</th>
+												<th>{{ t('openregister', 'Total') }}</th>
+												<th>{{ t('openregister', 'Size') }}</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td>{{ t('openregister', 'Objects') }}</td>
+												<td>{{ schema.stats?.objects?.total || 0 }}</td>
+												<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
+											</tr>
+											<tr class="subRow">
+												<td class="indented">
+													{{ t('openregister', 'Invalid') }}
+												</td>
+												<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
+												<td>-</td>
+											</tr>
+											<tr class="subRow">
+												<td class="indented">
+													{{ t('openregister', 'Deleted') }}
+												</td>
+												<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
+												<td>-</td>
+											</tr>
+											<tr class="subRow">
+												<td class="indented">
+													{{ t('openregister', 'Locked') }}
+												</td>
+												<td>{{ schema.stats?.objects?.locked || 0 }}</td>
+												<td>-</td>
+											</tr>
+											<tr class="subRow">
+												<td class="indented">
+													{{ t('openregister', 'Published') }}
+												</td>
+												<td>{{ schema.stats?.objects?.published || 0 }}</td>
+												<td>-</td>
+											</tr>
+											<tr>
+												<td>{{ t('openregister', 'Logs') }}</td>
+												<td>{{ schema.stats?.logs?.total || 0 }}</td>
+												<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
+											</tr>
+											<tr>
+												<td>{{ t('openregister', 'Files') }}</td>
+												<td>{{ schema.stats?.files?.total || 0 }}</td>
+												<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</template>
+				<template v-else>
+					<table class="statisticsTable registerStats tableOfContents">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Type') }}</th>
-								<th>{{ t('openregister', 'Total') }}</th>
-								<th>{{ t('openregister', 'Size') }}</th>
+								<th>Title</th>
+								<th>Objects (Total/Size)</th>
+								<th>Logs (Total/Size)</th>
+								<th>Files (Total/Size)</th>
+								<th>Schemas</th>
+								<th>Created</th>
+								<th>Updated</th>
+								<th />
 							</tr>
 						</thead>
 						<tbody>
-							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ register.stats?.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Invalid') }}
+							<tr v-for="register in filteredRegisters" :key="register.id">
+								<td>{{ register.title }}</td>
+								<td>{{ register.stats?.objects?.total || 0 }}/{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
+								<td>{{ register.stats?.logs?.total || 0 }}/{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
+								<td>{{ register.stats?.files?.total || 0 }}/{{ formatBytes(register.stats?.files?.size || 0) }}</td>
+								<td class="schemasTd">
+									{{ register.schemas.map(schema => schema.title).join(', ') }}
 								</td>
-								<td>{{ register.stats?.objects?.invalid || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</td>
-								<td>{{ register.stats?.objects?.deleted || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Locked') }}
-								</td>
-								<td>{{ register.stats?.objects?.locked || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ register.stats?.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
-								<td>{{ register.stats?.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
-								<td>{{ register.stats?.files?.total || 0 }}</td>
-								<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
-								<td>{{ register.schemas?.length || 0 }}</td>
+								<td>{{ register.created ? new Date(register.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
+								<td>{{ register.updated ? new Date(register.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(register.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}</td>
 								<td>
-									<button class="schemaToggle" @click.stop="toggleSchemaVisibility(register.id)">
-										{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
-									</button>
+									<NcActions :primary="false">
+										<template #icon>
+											<DotsHorizontal :size="20" />
+										</template>
+										<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+											<template #icon>
+												<Calculator :size="20" />
+											</template>
+											Calculate Sizes
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem({
+											...register,
+											schemas: register.schemas.map(schema => schema.id)
+										}); navigationStore.setModal('editRegister')">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
+											<template #icon>
+												<Export :size="20" />
+											</template>
+											Export
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
+											<template #icon>
+												<Upload :size="20" />
+											</template>
+											Import
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
+											<template #icon>
+												<ApiIcon :size="20" />
+											</template>
+											View API Documentation
+										</NcActionButton>
+										<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
+											<template #icon>
+												<Download :size="20" />
+											</template>
+											Download API Specification
+										</NcActionButton>
+										<NcActionButton
+											v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+											:disabled="register.stats?.total > 0"
+											@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
+											<template #icon>
+												<TrashCanOutline :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
+										<NcActionButton @click="viewRegisterDetails(register)">
+											<template #icon>
+												<InformationOutline :size="20" />
+											</template>
+											View Details
+										</NcActionButton>
+									</NcActions>
 								</td>
 							</tr>
 						</tbody>
 					</table>
-
-					<!-- Schemas section with v-show -->
-					<div v-show="isSchemasVisible(register.id)" class="schemas">
-						<div v-for="schema in register.schemas" :key="schema.id" class="schema">
-							<div
-								class="schemaHeader"
-								@click="toggleSchema(schema.id)">
-								<div class="schemaTitle">
-									<FileCodeOutline :size="16" />
-									<span>{{ schema.stats?.objects?.total || 0 }} </span>
-									{{ schema.title }}
-									<span class="schemaSize">({{ formatBytes(schema.stats?.objects?.size || 0) }})</span>
-								</div>
-								<button class="schemaToggle">
-									<ChevronUp v-if="isSchemaExpanded(schema.id)" :size="20" />
-									<ChevronDown v-else :size="20" />
-								</button>
-							</div>
-
-							<div v-show="isSchemaExpanded(schema.id)" class="schemaContent">
-								<table class="statisticsTable schemaStats">
-									<thead>
-										<tr>
-											<th>{{ t('openregister', 'Type') }}</th>
-											<th>{{ t('openregister', 'Total') }}</th>
-											<th>{{ t('openregister', 'Size') }}</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr>
-											<td>{{ t('openregister', 'Objects') }}</td>
-											<td>{{ schema.stats?.objects?.total || 0 }}</td>
-											<td>{{ formatBytes(schema.stats?.objects?.size || 0) }}</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Invalid') }}
-											</td>
-											<td>{{ schema.stats?.objects?.invalid || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Deleted') }}
-											</td>
-											<td>{{ schema.stats?.objects?.deleted || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Locked') }}
-											</td>
-											<td>{{ schema.stats?.objects?.locked || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr class="subRow">
-											<td class="indented">
-												{{ t('openregister', 'Published') }}
-											</td>
-											<td>{{ schema.stats?.objects?.published || 0 }}</td>
-											<td>-</td>
-										</tr>
-										<tr>
-											<td>{{ t('openregister', 'Logs') }}</td>
-											<td>{{ schema.stats?.logs?.total || 0 }}</td>
-											<td>{{ formatBytes(schema.stats?.logs?.size || 0) }}</td>
-										</tr>
-										<tr>
-											<td>{{ t('openregister', 'Files') }}</td>
-											<td>{{ schema.stats?.files?.total || 0 }}</td>
-											<td>{{ formatBytes(schema.stats?.files?.size || 0) }}</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						</div>
-					</div>
-				</div>
+				</template>
 			</div>
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -285,7 +398,6 @@ import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import Import from 'vue-material-design-icons/Import.vue'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import formatBytes from '../../services/formatBytes.js'
@@ -298,6 +410,7 @@ export default {
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
+		NcCheckboxRadioSwitch,
 		DatabaseOutline,
 		FileCodeOutline,
 		ChevronDown,
@@ -313,7 +426,6 @@ export default {
 		Refresh,
 		Plus,
 		InformationOutline,
-		Import,
 	},
 	data() {
 		return {
@@ -432,12 +544,6 @@ export default {
 }
 
 /* Add styles for the action buttons container */
-:deep(.button-vue) {
-	margin-top: 15px;
-	margin-right: 15px;
-	padding-right: 15px;
-}
-
 .dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;
@@ -456,8 +562,8 @@ export default {
 
 .registers {
 	display: grid;
-	gap: 1.5rem;
 	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 1.5rem;
 }
 
 .registerCard {
@@ -594,6 +700,45 @@ export default {
 
 	.indented {
 		padding-inline-start: 24px;
+	}
+}
+.headerActionsContainer {
+    display: flex;
+    align-items: end;
+    gap: 1em;
+    padding-block-start: 0.5em;
+    padding-inline-end: 0.9em;
+
+    .viewModeSwitchContainer {
+        display: flex;
+        align-items: center;
+
+        span {
+            max-height: 34px;
+        }
+    }
+}
+.schemasTd {
+	max-width: 200px;
+	overflow: visible;
+	text-overflow: initial;
+	white-space: normal;
+}
+
+.tableOfContents {
+	thead {
+		th {
+			background-color: var(--color-primary-light);
+			font-weight: 600;
+		}
+	}
+	tbody {
+		tr:nth-child(odd) {
+			background-color: transparent;
+		}
+		tr:nth-child(even) {
+			background-color: var(--color-border);
+		}
 	}
 }
 

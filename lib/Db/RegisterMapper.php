@@ -305,9 +305,9 @@ class RegisterMapper extends QBMapper
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', $obj->getVersion());
+            $version    = explode('.', $register->getVersion());
             $version[2] = ((int) $version[2] + 1);
-            $obj->setVersion(implode('.', $version));
+            $register->setVersion(implode('.', $version));
         }
 
         $register->hydrate($object);

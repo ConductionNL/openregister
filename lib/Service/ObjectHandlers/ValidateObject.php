@@ -225,13 +225,13 @@ class ValidateObject
         $errors = [];
         if ($exception instanceof ValidationException) {
             $errors[] = [
-                'property' => $exception->getProperty(),
+                'property' => method_exists($exception, 'getProperty') ? $exception->getProperty() : null,
                 'message'  => $exception->getMessage(),
             ];
         } else {
             foreach ($exception->getErrors() as $error) {
                 $errors[] = [
-                    'property' => $error['property'],
+                    'property' => isset($error['property']) ? $error['property'] : null,
                     'message'  => $error['message'],
                 ];
             }

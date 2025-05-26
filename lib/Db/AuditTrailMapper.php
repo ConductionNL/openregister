@@ -264,7 +264,7 @@ class AuditTrailMapper extends QBMapper
      * @param ObjectEntity|null $old The old state of the object
      * @param ObjectEntity|null $new The new state of the object
      * @param string|null     $action The action to create the audit trail for
-     * 
+     *
      * @return AuditTrail The created audit trail
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
@@ -274,8 +274,10 @@ class AuditTrailMapper extends QBMapper
             $action       = 'delete';
             $objectEntity = $old;
         } else if ($old === null && $action === 'update') {
-            $action       = 'create';
+            $action = 'create';
             $objectEntity = $new;
+        } else if ($action === 'delete') {
+            $objectEntity = $old;
         } else {
             $objectEntity = $new;
         }
@@ -536,19 +538,19 @@ class AuditTrailMapper extends QBMapper
             if (!empty($exclude)) {
                 foreach ($exclude as $combination) {
                     $orConditions = $qb->expr()->orX();
-                    
+
                     // Handle register exclusion
                     if (isset($combination['register'])) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Handle schema exclusion
                     if (isset($combination['schema'])) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Add the OR conditions to the main query
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);
@@ -642,7 +644,7 @@ class AuditTrailMapper extends QBMapper
             // Process results into chart format
             $dateData = [];
             $actions = ['create', 'update', 'delete','read'];
-            
+
             // Initialize data structure
             foreach ($results as $row) {
                 $date = $row['date'];

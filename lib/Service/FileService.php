@@ -85,7 +85,7 @@ class FileService
      * @psalm-readonly
      */
     private const ROOT_FOLDER = 'Open Registers';
-    
+
     /**
      * Application group name.
      *
@@ -94,7 +94,7 @@ class FileService
      * @psalm-readonly
      */
     private const APP_GROUP = 'openregister';
-    
+
     /**
      * Application user name.
      *
@@ -103,7 +103,7 @@ class FileService
      * @psalm-readonly
      */
     private const APP_USER = 'OpenRegister';
-    
+
     /**
      * File tag type identifier.
      *
@@ -450,7 +450,7 @@ class FileService
         $objectFolderName = $this->getObjectFolderName($objectEntity);
 
         // Construct and return the complete path
-        return self::ROOT_FOLDER . '/' . $registerFolderName . '/' . 
+        return self::ROOT_FOLDER . '/' . $registerFolderName . '/' .
                $schemaFolderName . '/' . $objectFolderName;
     }
 
@@ -525,7 +525,7 @@ class FileService
     {
         $openCatalogiUser = $this->userManager->get(self::APP_USER);
 
-        if ($openCatalogiUser === false) {
+        if ($openCatalogiUser === null) {
             // Create OpenCatalogi user if it doesn't exist.
             $password = bin2hex(random_bytes(16)); // Generate random password.
             $openCatalogiUser = $this->userManager->createUser(self::APP_USER, $password);
@@ -536,7 +536,7 @@ class FileService
 
             // Add user to OpenCatalogi group.
             $group = $this->groupManager->get(self::APP_GROUP);
-            if ($group === false) {
+            if ($group === null) {
                 $group = $this->groupManager->createGroup(self::APP_GROUP);
             }
             $group->addUser($openCatalogiUser);
@@ -1176,7 +1176,7 @@ class FileService
             // Add tags to the file if provided
             if (empty($tags) === false) {
                 $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-            }                 
+            }
 
             return $file;
 
@@ -1239,7 +1239,7 @@ class FileService
      * @psalm-return array<int, Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFiles(ObjectEntity | string $object): array
+    public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
     {
         // If string ID provided, try to find the object entity
         if (is_string($object) === true) {
@@ -1252,9 +1252,19 @@ class FileService
             register: $object->getRegister(),
             schema: $object->getSchema()
         );
+        $files = $folder->getDirectoryListing();
+
+        if ($sharedFilesOnly === true) {
+            foreach ($files as $key => $file) {
+                $foundShares = $this->findShares(file: $file);
+                if (empty($foundShares) === true || $foundShares = null) {
+                    unset($files[$key]);
+                }
+            }
+        }
 
         // Lets just get the files and let it fall to an error if it's not a folder.
-        return $folder->getDirectoryListing();
+        return $files;
     }
 
     /**
