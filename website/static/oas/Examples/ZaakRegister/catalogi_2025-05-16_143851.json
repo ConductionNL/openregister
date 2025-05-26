@@ -901,11 +901,7 @@
                         "maxLength": 80
                     },
                     "vertrouwelijkheidaanduiding": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
-                            }
-                        ],
+                        "enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
                         "description": "Aanduiding van de mate waarin informatieobjecten van dit INFORMATIEOBJECTTYPE voor de openbaarheid bestemd zijn.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
                         "title": "vertrouwelijkheidaanduiding",
                         "type": "string"
@@ -1561,11 +1557,7 @@
                         "maxLength": 100
                     },
                     "omschrijvingGeneriek": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/OmschrijvingGeneriekEnum"
-                            }
-                        ],
+                        "enum": ["adviseur", "behandelaar", "belanghebbende", "beslisser", "initiator", "klantcontacter", "zaakcoordinator", "mede_initiator"],
                         "description": "Algemeen gehanteerde omschrijving van de aard van de ROL.\n\nUitleg bij mogelijke waarden:\n\n* `adviseur` - (Adviseur) Kennis in dienst stellen van de behandeling van (een deel van) een zaak.\n* `behandelaar` - (Behandelaar) De vakinhoudelijke behandeling doen van (een deel van) een zaak.\n* `belanghebbende` - (Belanghebbende) Vanuit eigen en objectief belang rechtstreeks betrokken zijn bij de behandeling en/of de uitkomst van een zaak.\n* `beslisser` - (Beslisser) Nemen van besluiten die voor de uitkomst van een zaak noodzakelijk zijn.\n* `initiator` - (Initiator) Aanleiding geven tot de start van een zaak ..\n* `klantcontacter` - (Klantcontacter) Het eerste aanspreekpunt zijn voor vragen van burgers en bedrijven ..\n* `zaakcoordinator` - (Zaakco\u00f6rdinator) Er voor zorg dragen dat de behandeling van de zaak in samenhang uitgevoerd wordt conform de daarover gemaakte afspraken.\n* `mede_initiator` - Mede-initiator",
                         "title": "omschrijvingGeneriek",
                         "type": "string"
@@ -2238,11 +2230,7 @@
                         "maxLength": 80
                     },
                     "vertrouwelijkheidaanduiding": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
-                            }
-                        ],
+                        "enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
                         "description": "Aanduiding van de mate waarin zaakdossiers van ZAAKen van dit ZAAKTYPE voor de openbaarheid bestemd zijn. Indien de zaak bij het aanmaken geen vertrouwelijkheidaanduiding krijgt, dan wordt deze waarde gezet.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
                         "title": "vertrouwelijkheidaanduiding",
                         "type": "string"
@@ -2263,11 +2251,7 @@
                         "title": "toelichting"
                     },
                     "indicatieInternOfExtern": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/IndicatieInternOfExternEnum"
-                            }
-                        ],
+                        "enum": ["intern", "extern"],
                         "description": "Een aanduiding waarmee onderscheid wordt gemaakt tussen ZAAKTYPEn die Intern respectievelijk Extern ge\u00efnitieerd worden. Indien van beide sprake kan zijn, dan prevaleert de externe initiatie.",
                         "title": "indicatieInternOfExtern",
                         "type": "string"
@@ -3066,11 +3050,7 @@
                         "title": "volgnummer"
                     },
                     "richting": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/RichtingEnum"
-                            }
-                        ],
+                        "enum": ["inkomend", "intern", "uitgaand"],
                         "description": "Aanduiding van de richting van informatieobjecten van het gerelateerde INFORMATIEOBJECTTYPE bij zaken van het gerelateerde ZAAKTYPE.\n\nUitleg bij mogelijke waarden:\n\n* `inkomend` - Inkomend\n* `intern` - Intern\n* `uitgaand` - Uitgaand",
                         "title": "richting",
                         "type": "string"
