@@ -433,7 +433,8 @@ class ObjectService
             search: $config['search'] ?? null,
             files: $config['files'] ?? false,
             uses: $config['uses'] ?? null,
-            ids: $config['ids'] ?? null
+            ids: $config['ids'] ?? null,
+            published: $config['published'] ?? false
         );
 
         // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
@@ -517,7 +518,8 @@ class ObjectService
             filters: $config['filters'] ?? [],
             search: $config['search'] ?? null,
             ids: $config['ids'] ?? null,
-            uses: $config['uses'] ?? null
+            uses: $config['uses'] ?? null,
+            published: $config['published'] ?? false
         );
 
     }//end count()
@@ -708,6 +710,7 @@ class ObjectService
         $page   = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
         $fields = $requestParams['_fields'] ?? null;
+        $published = $requestParams['_published'] ?? false;
 
         if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
@@ -747,6 +750,7 @@ class ObjectService
                     "search"  => $search,
                     "extend"  => $extend,
                     'fields'  => $fields,
+                    'published' => $published,
                 ]
                 );
 
