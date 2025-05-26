@@ -97,7 +97,6 @@ Wilco
 - Start xxlnc inteegratie (nog geen indicatie of inschatting)
 - Notificatie (nog geen indicatie of inschatting)
 
-
 ## Parkeren / Obeservateis
 - Rules zijn per methods dat leid tot duplicaite, we willen graag meerede methods per rule of geen method
 - Willen we geen standaard CRUD endpoints?
