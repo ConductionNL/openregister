@@ -654,12 +654,13 @@ class ConfigurationService
 
         // Process and import schemas if present.
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
+            $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
             foreach ($data['components']['schemas'] as $key => $schemaData) {
                 if (isset($schemaData['title']) === false && is_string($key) === true) {
                     $schemaData['title'] = $key;
                 }
 
-                $schema = $this->importSchema($schemaData, $owner);
+                $schema = $this->importSchema(data: $schemaData, owner: $owner, slugsAndIdsMap: $slugsAndIdsMap);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
                     $this->schemasMap[$schema->getSlug()] = $schema;
@@ -835,10 +836,11 @@ class ConfigurationService
      *
      * @param array       $data  The schema data.
      * @param string|null $owner The owner of the schema.
+     * @param array       $slugsAndIdsMap Slugs with their ids.
      *
      * @return Schema|null The imported schema or null if skipped.
      */
-    private function importSchema(array $data, ?string $owner=null): ?Schema
+    private function importSchema(array $data, ?string $owner=null, array $slugsAndIdsMap): ?Schema
     {
         try {
             // Remove id and uuid from the data.
@@ -860,6 +862,22 @@ class ConfigurationService
                     }
                     if (isset($property['items']['format']) === true && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
                         unset($property['items']['format']);
+                    }
+
+                    // Check if we have the schema for the slug and set that id.
+                    if (isset($property['$ref']) === true) {
+                        if (isset($slugsAndIdsMap[$property['$ref']]) === true) {
+                            $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
+                        } elseif (isset($this->schemasMap[$property['$ref']]) === true) {
+                            $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
+                        }
+                    }
+                    if (isset($property['items']['$ref']) === true) {
+                        if (isset($slugsAndIdsMap[$property['items']['$ref']]) === true) {
+                            $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
+                        } elseif (isset($this->schemasMap[$property['items']['$ref']]) === true) {
+                            $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
+                        }
                     }
                 }
             }

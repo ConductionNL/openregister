@@ -119,7 +119,7 @@
                 "slug": "resultaat",
                 "title": "Resultaat",
                 "description": "",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -175,7 +175,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "resultaat",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -213,7 +213,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/40",
+                        "$ref": "resultaattype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -245,7 +245,7 @@
                 "slug": "rol",
                 "title": "Rol",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -285,11 +285,7 @@
                         "maxLength": 1000
                     },
                     "betrokkeneType": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/BetrokkeneTypeEnum"
-                            }
-                        ],
+                        "enum": ["natuurlijk_persoon", "niet_natuurlijk_persoon", "vestiging", "organisatorische_eenheid", "medewerker"],
                         "description": "Type van de `betrokkene`.\n\nUitleg bij mogelijke waarden:\n\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `vestiging` - Vestiging\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `medewerker` - Medewerker",
                         "title": "betrokkeneType",
                         "type": "string"
@@ -368,7 +364,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "rollen",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -457,7 +453,7 @@
                             "title": "",
                             "minLength": 1,
                             "maxLength": 1000,
-                            "$ref": "http://localhost/137",
+                            "$ref": "status",
                             "inversedBy": "statussen"
                         },
                         "objectConfiguration": {
@@ -493,7 +489,7 @@
                 "slug": "status",
                 "title": "Status",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -571,7 +567,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "status",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -609,7 +605,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/45",
+                        "$ref": "statustype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -654,7 +650,7 @@
                             "title": "",
                             "minLength": 1,
                             "maxLength": 1000,
-                            "$ref": "http://localhost/157",
+                            "$ref": "zaakinformatieobject",
                             "inversedBy": "status"
                         },
                         "objectConfiguration": {
@@ -690,7 +686,7 @@
                 "slug": "zaak",
                 "title": "Zaak",
                 "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-                "version": "0.0.13",
+                "version": "0.0.14",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -817,11 +813,7 @@
                         "title": "productenOfDiensten"
                     },
                     "vertrouwelijkheidaanduiding": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
-                            }
-                        ],
+                        "enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
                         "title": "vertrouwelijkheidaanduiding",
                         "description": "Aanduiding van de mate waarin het zaakdossier van de ZAAK voor de openbaarheid bestemd is. Optioneel - indien geen waarde gekozen wordt, dan wordt de waarde van het ZAAKTYPE overgenomen. Dit betekent dat de API _altijd_ een waarde teruggeeft.",
                         "type": "string"
@@ -893,11 +885,7 @@
                         "type": "string"
                     },
                     "archiefstatus": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ArchiefstatusEnum"
-                            }
-                        ],
+                        "enum": ["nog_te_archiveren", "gearchiveerd", "gearchiveerd_procestermijn_onbekend", "overgedragen"],
                         "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `nog_te_archiveren` - De zaak cq. het zaakdossier is nog niet als geheel gearchiveerd.\n* `gearchiveerd` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt.\n* `gearchiveerd_procestermijn_onbekend` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt maar de vernietigingsdatum kan nog niet bepaald worden.\n* `overgedragen` - De zaak cq. het zaakdossier is overgebracht naar een archiefbewaarplaats.",
                         "title": "archiefstatus",
                         "type": "string"
@@ -1101,7 +1089,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/150",
+                            "$ref": "zaak",
                             "inversedBy": "deelzaken"
                         },
                         "objectConfiguration": {
@@ -1143,7 +1131,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/49",
+                        "$ref": "zaaktype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1181,7 +1169,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "hoofdzaak",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1225,7 +1213,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/156",
+                            "$ref": "zaakeigenschap",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1267,12 +1255,12 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/129",
+                        "$ref": "rol",
                         "items": {
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/129",
+                            "$ref": "rol",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1314,7 +1302,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaak",
-                        "$ref": "http://localhost/137",
+                        "$ref": "status",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1359,7 +1347,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/157",
+                            "$ref": "zaakinformatieobject",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1406,7 +1394,7 @@
                             "type": "object",
                             "format": "uri",
                             "title": "",
-                            "$ref": "http://localhost/161",
+                            "$ref": "zaakobject",
                             "inversedBy": "zaak"
                         },
                         "objectConfiguration": {
@@ -1448,7 +1436,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaak",
-                        "$ref": "http://localhost/126",
+                        "$ref": "resultaat",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1482,7 +1470,7 @@
                 "slug": "zaakbesluit",
                 "title": "ZaakBesluit",
                 "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1528,7 +1516,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/319",
+                        "$ref": "besluit",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1560,7 +1548,7 @@
                 "slug": "zaakcontactmoment",
                 "title": "ZaakContactMoment",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1617,7 +1605,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1649,7 +1637,7 @@
                 "slug": "zaakeigenschap",
                 "title": "ZaakEigenschap",
                 "description": "A type of `ModelSerializer` that uses hyperlinked relationships with compound keys instead\nof primary key relationships.  Specifically:\n\n* A 'url' field is included instead of the 'id' field.\n* Relationships to other instances are hyperlinks, instead of primary keys.\n\nNOTE: this only works with DRF 3.1.0 and above.",
-                "version": "0.0.3",
+                "version": "0.0.4",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1708,7 +1696,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "eigenschappen",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1746,7 +1734,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/13",
+                        "$ref": "eigenschap",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1778,7 +1766,7 @@
                 "slug": "zaakinformatieobject",
                 "title": "ZaakInformatieObject",
                 "description": "",
-                "version": "0.0.4",
+                "version": "0.0.5",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1807,11 +1795,7 @@
                         "title": "uuid"
                     },
                     "aardRelatieWeergave": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/AardRelatieWeergaveEnum"
-                            }
-                        ],
+                        "enum": ["Hoort bij, omgekeerd: kent","Legt vast, omgekeerd: kan vastgelegd zijn als"],
                         "readOnly": true,
                         "title": "aardRelatieWeergave",
                         "type": "string"
@@ -1865,7 +1849,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/282",
+                        "$ref": "enkelvoudiginformatieobject",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1903,7 +1887,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakinformatieobjecten",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1941,7 +1925,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakinformatieobjecten",
-                        "$ref": "http://localhost/137",
+                        "$ref": "status",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -1974,7 +1958,7 @@
                 "slug": "zaakobject",
                 "title": "ZaakObject",
                 "description": "",
-                "version": "0.0.5",
+                "version": "0.0.6",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -2008,11 +1992,7 @@
                         "maxLength": 1000
                     },
                     "objectType": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ObjectTypeEnum"
-                            }
-                        ],
+                        "enum": ["adres", "besluit", "buurt", "enkelvoudig_document", "gemeente", "gemeentelijke_openbare_ruimte", "huishouden", "inrichtingselement", "kadastrale_onroerende_zaak", "kunstwerkdeel", "maatschappelijke_activiteit", "medewerker", "natuurlijk_persoon", "niet_natuurlijk_persoon", "openbare_ruimte", "organisatorische_eenheid", "pand", "spoorbaandeel", "status", "terreindeel", "terrein_gebouwd_object", "vestiging", "waterdeel", "wegdeel", "wijk", "woonplaats", "woz_deelobject", "woz_object", "woz_waarde", "zakelijk_recht", "overige"],
                         "description": "Beschrijft het type OBJECT gerelateerd aan de ZAAK. Als er geen passend type is, dan moet het type worden opgegeven onder `objectTypeOverige`.\n\nUitleg bij mogelijke waarden:\n\n* `adres` - Adres\n* `besluit` - Besluit\n* `buurt` - Buurt\n* `enkelvoudig_document` - Enkelvoudig document\n* `gemeente` - Gemeente\n* `gemeentelijke_openbare_ruimte` - Gemeentelijke openbare ruimte\n* `huishouden` - Huishouden\n* `inrichtingselement` - Inrichtingselement\n* `kadastrale_onroerende_zaak` - Kadastrale onroerende zaak\n* `kunstwerkdeel` - Kunstwerkdeel\n* `maatschappelijke_activiteit` - Maatschappelijke activiteit\n* `medewerker` - Medewerker\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `openbare_ruimte` - Openbare ruimte\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `pand` - Pand\n* `spoorbaandeel` - Spoorbaandeel\n* `status` - Status\n* `terreindeel` - Terreindeel\n* `terrein_gebouwd_object` - Terrein gebouwd object\n* `vestiging` - Vestiging\n* `waterdeel` - Waterdeel\n* `wegdeel` - Wegdeel\n* `wijk` - Wijk\n* `woonplaats` - Woonplaats\n* `woz_deelobject` - Woz deel object\n* `woz_object` - Woz object\n* `woz_waarde` - Woz waarde\n* `zakelijk_recht` - Zakelijk recht\n* `overige` - Overige",
                         "title": "objectType",
                         "type": "string"
@@ -2054,7 +2034,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "zaakobjecten",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2092,7 +2072,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/48",
+                        "$ref": "zaakobjecttype",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2168,7 +2148,7 @@
                 "slug": "zaakverzoek",
                 "title": "ZaakVerzoek",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -2225,7 +2205,7 @@
                         "maxItems": null,
                         "cascadeDelete": false,
                         "inversedBy": "",
-                        "$ref": "http://localhost/150",
+                        "$ref": "zaak",
                         "objectConfiguration": {
                             "handling": "uri",
                             "schema": ""
@@ -2254,12 +2234,1596 @@
                 "configuration": null
             }
         },
-        "endpoints": [],
+        "endpoints": {
+            "resultaten-get": {
+                "name": "Resultaat GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/resultaten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "resultaten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/resultaten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/resultaat",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "resultaat-get-collection"
+            },
+            "resultaat-post": {
+                "name": "Resultaat POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/resultaten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "resultaten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/resultaten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/resultaat",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "resultaat-post"
+            },
+            "resultaat-get": {
+                "name": "Resultaat GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/resultaten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "resultaten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/resultaten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/resultaat",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "resultaat-get-item"
+            },
+            "resultaat-put": {
+                "name": "Resultaat PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/resultaten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "resultaten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/resultaten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/resultaat",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "resultaat-put"
+            },
+            "resultaat-patch": {
+                "name": "Resultaat PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/resultaten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "resultaten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/resultaten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/resultaat",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "resultaat-patch"
+            },
+            "resultaat-delete": {
+                "name": "Resultaat DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/resultaten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "resultaten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/resultaten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/resultaat",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "resultaat-delete"
+            },
+            "rollen-get": {
+                "name": "Rol GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/rollen",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "rollen"
+                ],
+                "endpointRegex": "#^zrc/api/v1/rollen$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/rol",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "rol-get-collection"
+            },
+            "rol-post": {
+                "name": "Rol POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/rollen",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "rollen"
+                ],
+                "endpointRegex": "#^zrc/api/v1/rollen$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/rol",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "rol-post"
+            },
+            "rol-get": {
+                "name": "Rol GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/rollen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "rollen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/rollen(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/rol",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "rol-get-item"
+            },
+            "rol-put": {
+                "name": "Rol PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/rollen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "rollen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/rollen(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/rol",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "rol-put"
+            },
+            "rol-patch": {
+                "name": "Rol PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/rollen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "rollen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/rollen(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/rol",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "rol-patch"
+            },
+            "rol-delete": {
+                "name": "Rol DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/rollen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "rollen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/rollen(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/rol",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "rol-delete"
+            },
+            "statussen-get": {
+                "name": "Statussen GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/statussen",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "Statussen"
+                ],
+                "endpointRegex": "#^zrc/api/v1/statussen$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/status",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "status-get-collection"
+            },
+            "status-post": {
+                "name": "Status POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/statussen",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "statussen"
+                ],
+                "endpointRegex": "#^zrc/api/v1/statussen$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/status",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "status-post"
+            },
+            "status-get": {
+                "name": "Status GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/statussen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "statussen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/statussen(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/status",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "status-get-item"
+            },
+            "status-put": {
+                "name": "Status PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/statussen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "statussen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/statussen(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/status",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "status-put"
+            },
+            "status-patch": {
+                "name": "Status PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/statussen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "statussen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/statussen(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/status",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "status-patch"
+            },
+            "status-delete": {
+                "name": "Status DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/statussen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "statussen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/statussen(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/status",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "status-delete"
+            },
+            "zaakcontactmomenten-get": {
+                "name": "ZaakContactMoment GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakcontactmomenten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakcontactmomenten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakcontactmomenten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakcontactmoment",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakcontactmoment-get-collection"
+            },
+            "zaakcontactmoment-post": {
+                "name": "ZaakContactMoment POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakcontactmomenten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakcontactmomenten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakcontactmomenten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakcontactmoment",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaakcontactmoment-post"
+            },
+            "zaakcontactmoment-get": {
+                "name": "ZaakContactMoment GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakcontactmomenten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakcontactmomenten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakcontactmoment",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakcontactmoment-get-item"
+            },
+            "zaakcontactmoment-put": {
+                "name": "ZaakContactMoment PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakcontactmomenten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakcontactmomenten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakcontactmoment",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "zaakcontactmoment-put"
+            },
+            "zaakcontactmoment-patch": {
+                "name": "ZaakContactMoment PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakcontactmomenten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakcontactmomenten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakcontactmoment",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "zaakcontactmoment-patch"
+            },
+            "zaakcontactmoment-delete": {
+                "name": "ZaakContactMoment DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakcontactmomenten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakcontactmomenten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakcontactmomenten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakcontactmoment",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaakcontactmoment-delete"
+            },
+            "zaakinformatieobjecten-get": {
+                "name": "ZaakInformatieObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakinformatieobjecten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakinformatieobjecten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakinformatieobjecten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakinformatieobject-get-collection"
+            },
+            "zaakinformatieobject-post": {
+                "name": "ZaakInformatieObject POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakinformatieobjecten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakinformatieobjecten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakinformatieobjecten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaakinformatieobject-post"
+            },
+            "zaakinformatieobject-get": {
+                "name": "ZaakInformatieObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakinformatieobjecten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakinformatieobject-get-item"
+            },
+            "zaakinformatieobject-put": {
+                "name": "ZaakInformatieObject PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakinformatieobjecten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "zaakinformatieobject-put"
+            },
+            "zaakinformatieobject-patch": {
+                "name": "ZaakInformatieObject PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakinformatieobjecten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "zaakinformatieobject-patch"
+            },
+            "zaakinformatieobject-delete": {
+                "name": "ZaakInformatieObject DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakinformatieobjecten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaakinformatieobject-delete"
+            },
+            "zaakobjecten-get": {
+                "name": "ZaakObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakobjecten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakobjecten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakobjecten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakobject-get-collection"
+            },
+            "zaakobject-post": {
+                "name": "ZaakObject POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakobjecten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakobjecten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakobjecten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaakobject-post"
+            },
+            "zaakobject-get": {
+                "name": "ZaakObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakobjecten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakobject-get-item"
+            },
+            "zaakobject-put": {
+                "name": "ZaakObject PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakobjecten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "zaakobject-put"
+            },
+            "zaakobject-patch": {
+                "name": "ZaakObject PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakobjecten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "zaakobject-patch"
+            },
+            "zaakobject-delete": {
+                "name": "ZaakObject DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakobjecten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakobjecten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaakobject-delete"
+            },
+            "zaakverzoeken-get": {
+                "name": "ZaakVerzoek GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakverzoeken",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakverzoeken"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakverzoeken$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakverzoek",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakverzoek-get-collection"
+            },
+            "zaakverzoek-post": {
+                "name": "ZaakVerzoek POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakverzoeken",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakverzoeken"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakverzoeken$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakverzoek",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaakverzoek-post"
+            },
+            "zaakverzoek-get": {
+                "name": "ZaakVerzoek GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakverzoeken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakverzoeken(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakverzoek",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakverzoek-get-item"
+            },
+            "zaakverzoek-put": {
+                "name": "ZaakVerzoek PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakverzoeken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakverzoeken(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakverzoek",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "zaakverzoek-put"
+            },
+            "zaakverzoek-patch": {
+                "name": "ZaakVerzoek PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakverzoeken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakverzoeken(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakverzoek",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "zaakverzoek-patch"
+            },
+            "zaakverzoek-delete": {
+                "name": "ZaakVerzoek DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaakverzoeken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaakverzoeken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaakverzoeken(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakverzoek",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaakverzoek-delete"
+            },
+            "zaken-get": {
+                "name": "Zaak GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaak-get-collection"
+            },
+            "zaak-post": {
+                "name": "Zaak POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaak-post"
+            },
+            "zaak-get": {
+                "name": "Zaak GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaak-get-item"
+            },
+            "zaak-put": {
+                "name": "Zaak PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "zaak-put"
+            },
+            "zaak-patch": {
+                "name": "Zaak PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "zaak-patch"
+            },
+            "zaak-delete": {
+                "name": "Zaak DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaak-delete"
+            },
+            "zaak-audittrails-get": {
+                "name": "Zaak Audittrails GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}/audittrail",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}",
+                    "audittrail"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/audittrail$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaak-audittrail-get-collection"
+            },
+            "zaak-audittrail-get": {
+                "name": "Zaak Audittrail GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{id}}/audittrail/{{audittrail-id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{id}}",
+                    "audittrail",
+                    "{{audittrail-id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/audittrail(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaak-audittrail-get-item"
+            },
+            "zaakbesluiten-get": {
+                "name": "ZaakBesluiten GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "besluiten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/besluiten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakbesluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakbesluit-get-collection"
+            },
+            "zaakbesluit-post": {
+                "name": "ZaakBesluit POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "besluiten"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/besluiten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakbesluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaakbesluit-post"
+            },
+            "zaakbesluit-get": {
+                "name": "ZaakBesluit GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "besluiten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/besluiten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakbesluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakbesluit-get-item"
+            },
+            "zaakbesluit-delete": {
+                "name": "ZaakBesluit DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/besluiten/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "besluiten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/besluiten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakbesluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaakbesluit-delete"
+            },
+            "zaakeigenschappen-get": {
+                "name": "ZaakEigenschappen GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "zaakeigenschappen"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/zaakeigenschappen$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakeigenschap",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakeigenschap-get-collection"
+            },
+            "zaakeigenschap-post": {
+                "name": "ZaakEigenschap POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "zaakeigenschappen"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/zaakeigenschappen$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakeigenschap",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [1],
+                "configurations": [],
+                "slug": "zaakeigenschap-post"
+            },
+            "zaakeigenschap-get": {
+                "name": "ZaakEigenschap GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "zaakeigenschappen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/zaakeigenschappen(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakeigenschap",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [2],
+                "configurations": [],
+                "slug": "zaakeigenschap-get-item"
+            },
+            "zaakeigenschap-put": {
+                "name": "ZaakEigenschap PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "zaakeigenschappen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/zaakeigenschappen(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakeigenschap",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [3],
+                "configurations": [],
+                "slug": "zaakeigenschap-put"
+            },
+            "zaakeigenschap-patch": {
+                "name": "ZaakEigenschap PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "zaakeigenschappen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/zaakeigenschappen(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakeigenschap",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [5],
+                "configurations": [],
+                "slug": "zaakeigenschap-patch"
+            },
+            "zaakeigenschap-delete": {
+                "name": "ZaakEigenschap DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/{{zaakId}}/zaakeigenschappen/{{id}}",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "{{zaakId}}",
+                    "zaakeigenschappen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken(?:/([^/]+))?/zaakeigenschappen(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaakeigenschap",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [4],
+                "configurations": [],
+                "slug": "zaakeigenschap-delete"
+            },
+            "zaak-zoek": {
+                "name": "Zaak ZOEK",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "zrc/api/v1/zaken/_zoek",
+                "endpointArray": [
+                    "zrc",
+                    "api",
+                    "v1",
+                    "zaken",
+                    "_zoek"
+                ],
+                "endpointRegex": "#^zrc/api/v1/zaken/_zoek$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "zaken/zaak",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "zaak-zoek"
+            }
+        },
         "sources": [],
         "mappings": [],
         "jobs": [],
         "synchronizations": [],
-        "rules": [],
+        "rules": {
+            "zgw-authenticatie-post": {
+                "name": "ZGW Authenticatie POST",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "post",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-post"
+            },
+            "zgw-authenticatie-get": {
+                "name": "ZGW Authenticatie GET",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "get",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-get"
+            },
+            "zgw-authenticatie-put": {
+                "name": "ZGW Authenticatie PUT",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-put"
+            },
+            "zgw-authenticatie-delete": {
+                "name": "ZGW Authenticatie DELETE",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "delete",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-delete"
+            },
+            "zgw-authenticatie-patch": {
+                "name": "ZGW Authenticatie PATCH",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": null,
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-patch"
+            }
+        },
         "objects": []
     },
     "info": {

@@ -65,6 +65,7 @@ class PublishObject
 
         // Set the publication date directly on the object
         $object->setPublished($date);
+        $object->setDepublished(null);
 
         // Update the object in the database
         return $this->objectEntityMapper->update($object);
