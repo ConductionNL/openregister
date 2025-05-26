@@ -788,14 +788,7 @@
 					"vertrouwelijkheidaanduiding": {
 						"description": "Aanduiding van de mate waarin het INFORMATIEOBJECT voor de openbaarheid bestemd is.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
 						"title": "vertrouwelijkheidaanduiding",
-						"oneOf": [
-							{
-								"$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
-							},
-							{
-								"$ref": "#/components/schemas/BlankEnum"
-							}
-						],
+						"enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
 						"type": "string"
 					},
 					"auteur": {
