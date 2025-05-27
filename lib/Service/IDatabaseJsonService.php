@@ -55,6 +55,15 @@ interface IDatabaseJsonService
      * @return IQueryBuilder The updated query builder.
      */
     public function orderJson(IQueryBuilder $builder, array $order): IQueryBuilder;
+    /**
+     * Sorts search results  object root fields.
+     *
+     * @param IQueryBuilder $builder The query builder, make sure this matches the database platform used.
+     * @param array         $order   The fields to order on, and the direction to order with.
+     *
+     * @return IQueryBuilder The updated query builder.
+     */
+    public function orderInRoot(IQueryBuilder $builder, array $order): IQueryBuilder;
 
 
     /**

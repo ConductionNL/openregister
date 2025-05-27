@@ -285,11 +285,7 @@
                         "maxLength": 1000
                     },
                     "betrokkeneType": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/BetrokkeneTypeEnum"
-                            }
-                        ],
+                        "enum": ["natuurlijk_persoon", "niet_natuurlijk_persoon", "vestiging", "organisatorische_eenheid", "medewerker"],
                         "description": "Type van de `betrokkene`.\n\nUitleg bij mogelijke waarden:\n\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `vestiging` - Vestiging\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `medewerker` - Medewerker",
                         "title": "betrokkeneType",
                         "type": "string"
@@ -817,11 +813,7 @@
                         "title": "productenOfDiensten"
                     },
                     "vertrouwelijkheidaanduiding": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
-                            }
-                        ],
+                        "enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
                         "title": "vertrouwelijkheidaanduiding",
                         "description": "Aanduiding van de mate waarin het zaakdossier van de ZAAK voor de openbaarheid bestemd is. Optioneel - indien geen waarde gekozen wordt, dan wordt de waarde van het ZAAKTYPE overgenomen. Dit betekent dat de API _altijd_ een waarde teruggeeft.",
                         "type": "string"
@@ -893,11 +885,7 @@
                         "type": "string"
                     },
                     "archiefstatus": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ArchiefstatusEnum"
-                            }
-                        ],
+                        "enum": ["nog_te_archiveren", "gearchiveerd", "gearchiveerd_procestermijn_onbekend", "overgedragen"],
                         "description": "Aanduiding of het zaakdossier blijvend bewaard of na een bepaalde termijn vernietigd moet worden.\n\nUitleg bij mogelijke waarden:\n\n* `nog_te_archiveren` - De zaak cq. het zaakdossier is nog niet als geheel gearchiveerd.\n* `gearchiveerd` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt.\n* `gearchiveerd_procestermijn_onbekend` - De zaak cq. het zaakdossier is als geheel niet-wijzigbaar bewaarbaar gemaakt maar de vernietigingsdatum kan nog niet bepaald worden.\n* `overgedragen` - De zaak cq. het zaakdossier is overgebracht naar een archiefbewaarplaats.",
                         "title": "archiefstatus",
                         "type": "string"
@@ -1807,11 +1795,7 @@
                         "title": "uuid"
                     },
                     "aardRelatieWeergave": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/AardRelatieWeergaveEnum"
-                            }
-                        ],
+                        "enum": ["Hoort bij, omgekeerd: kent","Legt vast, omgekeerd: kan vastgelegd zijn als"],
                         "readOnly": true,
                         "title": "aardRelatieWeergave",
                         "type": "string"
@@ -2008,11 +1992,7 @@
                         "maxLength": 1000
                     },
                     "objectType": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ObjectTypeEnum"
-                            }
-                        ],
+                        "enum": ["adres", "besluit", "buurt", "enkelvoudig_document", "gemeente", "gemeentelijke_openbare_ruimte", "huishouden", "inrichtingselement", "kadastrale_onroerende_zaak", "kunstwerkdeel", "maatschappelijke_activiteit", "medewerker", "natuurlijk_persoon", "niet_natuurlijk_persoon", "openbare_ruimte", "organisatorische_eenheid", "pand", "spoorbaandeel", "status", "terreindeel", "terrein_gebouwd_object", "vestiging", "waterdeel", "wegdeel", "wijk", "woonplaats", "woz_deelobject", "woz_object", "woz_waarde", "zakelijk_recht", "overige"],
                         "description": "Beschrijft het type OBJECT gerelateerd aan de ZAAK. Als er geen passend type is, dan moet het type worden opgegeven onder `objectTypeOverige`.\n\nUitleg bij mogelijke waarden:\n\n* `adres` - Adres\n* `besluit` - Besluit\n* `buurt` - Buurt\n* `enkelvoudig_document` - Enkelvoudig document\n* `gemeente` - Gemeente\n* `gemeentelijke_openbare_ruimte` - Gemeentelijke openbare ruimte\n* `huishouden` - Huishouden\n* `inrichtingselement` - Inrichtingselement\n* `kadastrale_onroerende_zaak` - Kadastrale onroerende zaak\n* `kunstwerkdeel` - Kunstwerkdeel\n* `maatschappelijke_activiteit` - Maatschappelijke activiteit\n* `medewerker` - Medewerker\n* `natuurlijk_persoon` - Natuurlijk persoon\n* `niet_natuurlijk_persoon` - Niet-natuurlijk persoon\n* `openbare_ruimte` - Openbare ruimte\n* `organisatorische_eenheid` - Organisatorische eenheid\n* `pand` - Pand\n* `spoorbaandeel` - Spoorbaandeel\n* `status` - Status\n* `terreindeel` - Terreindeel\n* `terrein_gebouwd_object` - Terrein gebouwd object\n* `vestiging` - Vestiging\n* `waterdeel` - Waterdeel\n* `wegdeel` - Wegdeel\n* `wijk` - Wijk\n* `woonplaats` - Woonplaats\n* `woz_deelobject` - Woz deel object\n* `woz_object` - Woz object\n* `woz_waarde` - Woz waarde\n* `zakelijk_recht` - Zakelijk recht\n* `overige` - Overige",
                         "title": "objectType",
                         "type": "string"

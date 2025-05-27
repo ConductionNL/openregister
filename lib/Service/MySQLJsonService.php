@@ -62,6 +62,26 @@ class MySQLJsonService implements IDatabaseJsonService
 
 
     /**
+     * Add ordering to a query based on JSON fields.
+     *
+     * @param IQueryBuilder $builder The query builder instance
+     * @param array         $order   Array of field => direction pairs for ordering
+     *
+     * @return IQueryBuilder The modified query builder
+     */
+    public function orderInRoot(IQueryBuilder $builder, array $order=[]): IQueryBuilder
+    {
+        // Loop through each ordering field and direction.
+        foreach ($order as $item => $direction) {
+            $builder->orderBy($item, $direction);
+        }
+
+        return $builder;
+
+    }//end orderJson()
+
+
+    /**
      * Add full-text search functionality for JSON fields.
      *
      * @param IQueryBuilder $builder The query builder instance

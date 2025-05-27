@@ -319,7 +319,23 @@ class ObjectEntityMapper extends QBMapper
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
-        $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+
+        $sortInRoot = [];
+        foreach ($sort as $key => $descOrAsc) {
+            if (str_starts_with($key, '@self.')) {
+                $sortInRoot = [str_replace('@self.', '', $key) => $descOrAsc];
+                break;
+            }
+        }
+
+        if (empty($sortInRoot) === false) {
+            $qb = $this->databaseJsonService->orderInRoot(builder: $qb, order: $sortInRoot);
+        } else {
+            $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+        }
+
+
+        // var_dump($qb->getSQL());
 
         return $this->findEntities(query: $qb);
 
