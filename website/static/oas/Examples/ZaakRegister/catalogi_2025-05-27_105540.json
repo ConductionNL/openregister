@@ -77,7 +77,7 @@
 				},
 				"type": "mapping",
 				"configuration": {
-					"mapping": 4
+					"mapping": "put-to-get"
 				},
 				"order": 0,
 				"configurations": [],
@@ -269,7 +269,7 @@
 				},
 				"type": "mapping",
 				"configuration": {
-					"mapping": 6
+					"mapping": "statusfilter-ztc"
 				},
 				"order": 1,
 				"configurations": [],
@@ -292,7 +292,7 @@
 				},
 				"type": "mapping",
 				"configuration": {
-					"mapping": 9
+					"mapping": "ztc-publish-object"
 				},
 				"order": 1,
 				"configurations": [],
