@@ -695,14 +695,14 @@ class RenderObject
 
                         // @TODO: accomodate schema references.
                         if (isset($inversedBy['$ref']) === true) {
-                            $schemaId = substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1);
+                            $schemaId = str_contains(haystack: $inversedBy['$ref'], needle: '/') ? substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1) : $inversedBy['$ref'];
                         } else if (isset($inversedBy['items']['$ref']) === true) {
-                            $schemaId = substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1);
+                            $schemaId = str_contains(haystack: $inversedBy['items']['$ref'], needle: '/') ? substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1) : $inversedBy['items']['$ref'];
                         } else {
                             return false;
                         }//end if
-
-                        return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
+						
+                        return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === (int) $object->getSchema();
                     }
                     ));
 

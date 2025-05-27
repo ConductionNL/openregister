@@ -171,7 +171,7 @@ class SaveObject
         $defaultValues = array_diff_key($defaultValues, $data);
 
         // Render twig templated default values.
-        $renderedDefaultValues = array_map(function(string $defaultValue) use ($objectEntity, $data) {
+        $renderedDefaultValues = array_map(function(mixed $defaultValue) use ($objectEntity, $data) {
             if (is_string($defaultValue) && str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
                 return $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
             }

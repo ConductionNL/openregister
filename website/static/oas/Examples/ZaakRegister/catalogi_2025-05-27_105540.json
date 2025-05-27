@@ -440,7 +440,7 @@
 					"besluittypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/besluittypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/besluittype",
@@ -477,7 +477,8 @@
 				"outputMapping": null,
 				"rules": [
 					"zgw-authenticatie-put",
-					"extend-self-object-put"
+					"extend-self-object-put",
+					"zgw-error-on-put-published-object"
 				],
 				"configurations": [],
 				"slug": "besluittype-put",
@@ -506,7 +507,8 @@
 				"outputMapping": null,
 				"rules": [
 					"zgw-authenticatie-patch",
-					"extend-self-object-patch"
+					"extend-self-object-patch",
+					"zgw-error-on-patch-published-object"
 				],
 				"configurations": [],
 				"slug": "besluittype-patch",
@@ -720,7 +722,7 @@
 					"eigenschappen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/eigenschappen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/eigenschap",
@@ -886,7 +888,7 @@
 					"informatieobjecttypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/informatieobjecttype",
@@ -923,7 +925,8 @@
 				"outputMapping": null,
 				"rules": [
 					"zgw-authenticatie-put",
-					"extend-self-object-put"
+					"extend-self-object-put",
+					"zgw-error-on-put-published-object"
 				],
 				"configurations": [],
 				"slug": "informatieobjecttype-put",
@@ -952,7 +955,8 @@
 				"outputMapping": null,
 				"rules": [
 					"zgw-authenticatie-patch",
-					"extend-self-object-patch"
+					"extend-self-object-patch",
+					"zgw-error-on-patch-published-object"
 				],
 				"configurations": [],
 				"slug": "informatieobjecttype-patch",
@@ -1084,7 +1088,7 @@
 					"resultaattypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/resultaattypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/resultaattype",
@@ -1227,11 +1231,12 @@
 				"targetType": "register/schema",
 				"targetId": "catalogi/roltype",
 				"conditions": [
-					"zgw-authenticatie-post"
 				],
 				"inputMapping": null,
 				"outputMapping": null,
-				"rules": [],
+				"rules": [
+					"zgw-authenticatie-post"
+				],
 				"configurations": [],
 				"slug": "roltype-post",
 				"created": "2025-05-26T11:04:38+00:00",
@@ -1250,7 +1255,7 @@
 					"roltypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/roltypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/roltype",
@@ -1416,7 +1421,7 @@
 					"statustypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/statustypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/statustype",
@@ -1582,7 +1587,7 @@
 					"zaakobjecttypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/zaakobjecttype",
@@ -1748,7 +1753,7 @@
 					"zaaktype-informatieobjecttypen",
 					"{{id}}"
 				],
-				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen/([^/]+)$#",
 				"method": "GET",
 				"targetType": "register/schema",
 				"targetId": "catalogi/zaaktypeinformatieobjecttype",
@@ -1781,11 +1786,12 @@
 				"targetType": "register/schema",
 				"targetId": "catalogi/zaaktypeinformatieobjecttype",
 				"conditions": [
-					"zgw-authenticatie-put"
 				],
 				"inputMapping": null,
 				"outputMapping": null,
-				"rules": [],
+				"rules": [
+					"zgw-authenticatie-put"
+				],
 				"configurations": [],
 				"slug": "zaaktypeinformatieobjecttype-put",
 				"created": "2025-05-26T11:04:38+00:00",
@@ -1952,7 +1958,8 @@
 				"outputMapping": null,
 				"rules": [
 					"zgw-authenticatie-put",
-					"extend-self-object-put"
+					"extend-self-object-put",
+					"zgw-error-on-put-published-object"
 				],
 				"configurations": [],
 				"slug": "zaaktype-put",
@@ -1981,7 +1988,8 @@
 				"outputMapping": null,
 				"rules": [
 					"zgw-authenticatie-patch",
-					"extend-self-object-patch"
+					"extend-self-object-patch",
+					"zgw-error-on-patch-published-object"
 				],
 				"configurations": [],
 				"slug": "zaaktype-patch",
@@ -2084,20 +2092,15 @@
 				"slug": "besluittype",
 				"title": "BesluitType",
 				"description": "",
-				"version": "0.0.8",
+				"version": "0.0.9",
 				"summary": "",
 				"icon": null,
 				"required": [
 					"beginGeldigheid",
 					"catalogus",
 					"concept",
-					"informatieobjecttypen",
 					"publicatieIndicatie",
-					"resultaattypen",
-					"resultaattypenOmschrijving",
-					"url",
-					"vastgelegdIn",
-					"zaaktypen"
+					"url"
 				],
 				"properties": {
 					"omschrijving": {
@@ -2177,6 +2180,7 @@
 					"concept": {
 						"type": "boolean",
 						"readOnly": true,
+						"default": true,
 						"description": "Geeft aan of het object een concept betreft. Concepten zijn niet-definitieve versies en zouden niet gebruikt moeten worden buiten deze API.",
 						"title": "concept"
 					},
@@ -2189,7 +2193,8 @@
 						"readOnly": true,
 						"description": "Omschrijving van de aard van resultaten van het RESULTAATTYPE.",
 						"title": "resultaattypenOmschrijving",
-						"uniqueItems": true
+						"uniqueItems": true,
+						"default": []
 					},
 					"vastgelegdIn": {
 						"type": "array",
@@ -2200,7 +2205,8 @@
 						"readOnly": true,
 						"description": "Omschrijving van de aard van informatieobjecten van dit INFORMATIEOBJECTTYPE.",
 						"title": "vastgelegdIn",
-						"uniqueItems": true
+						"uniqueItems": true,
+						"default": []
 					},
 					"catalogus": {
 						"description": "URL-referentie naar de CATALOGUS waartoe dit BESLUITTYPE behoort.",
@@ -2243,7 +2249,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -2288,7 +2294,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -2332,7 +2338,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -2427,245 +2433,18 @@
 				"deleted": null,
 				"configuration": null
 			},
-			"catalogus": {
-				"slug": "catalogus",
-				"title": "Catalogus",
-				"description": "",
-				"version": "0.0.6",
-				"summary": "",
-				"icon": null,
-				"required": [
-					"contactpersoonBeheerNaam",
-					"domein",
-					"rsin"
-				],
-				"properties": {
-					"url": {
-						"type": "string",
-						"format": "uri",
-						"readOnly": true,
-						"defaultValue": "{{ url }}",
-						"title": "url",
-						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
-						"minLength": 1,
-						"maxLength": 1000
-					},
-					"domein": {
-						"type": "string",
-						"description": "Een afkorting waarmee wordt aangegeven voor welk domein in een CATALOGUS ZAAKTYPEn zijn uitgewerkt.",
-						"title": "domein",
-						"maxLength": 5
-					},
-					"rsin": {
-						"type": "string",
-						"description": "Het door een kamer toegekend uniek nummer voor de INGESCHREVEN NIET-NATUURLIJK PERSOON die de eigenaar is van een CATALOGUS.",
-						"title": "rsin",
-						"maxLength": 9
-					},
-					"contactpersoonBeheerNaam": {
-						"type": "string",
-						"title": "contactpersoonBeheerNaam",
-						"description": "De naam van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
-						"maxLength": 40
-					},
-					"contactpersoonBeheerTelefoonnummer": {
-						"type": "string",
-						"title": "contactpersoonBeheerTelefoonnummer",
-						"description": "Het telefoonnummer van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
-						"maxLength": 20
-					},
-					"contactpersoonBeheerEmailadres": {
-						"type": "string",
-						"format": "email",
-						"title": "contactpersoonBeheerEmailadres",
-						"description": "Het emailadres van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
-						"maxLength": 254
-					},
-					"naam": {
-						"type": "string",
-						"nullable": true,
-						"description": "De benaming die is gegeven aan de zaaktypecatalogus.",
-						"title": "naam",
-						"maxLength": 200
-					},
-					"versie": {
-						"type": "string",
-						"nullable": true,
-						"description": "Versie-aanduiding van de van toepassing zijnde zaaktypecatalogus.",
-						"title": "versie",
-						"maxLength": 20
-					},
-					"begindatumVersie": {
-						"type": "string",
-						"format": "date",
-						"nullable": true,
-						"description": "Datum waarop de versie van de zaaktypecatalogus van toepassing is geworden.",
-						"title": "begindatumVersie"
-					},
-					"zaaktypen": {
-						"description": "URL-referenties naar ZAAKTYPEn die in deze CATALOGUS worden ontsloten.",
-						"type": "array",
-						"format": "",
-						"pattern": "",
-						"default": "",
-						"behavior": "",
-						"required": false,
-						"deprecated": false,
-						"visible": true,
-						"hideOnCollection": false,
-						"minLength": null,
-						"maxLength": null,
-						"example": "",
-						"immutable": false,
-						"minimum": null,
-						"maximum": null,
-						"multipleOf": null,
-						"exclusiveMin": false,
-						"exclusiveMax": false,
-						"minItems": null,
-						"maxItems": null,
-						"cascadeDelete": false,
-						"inversedBy": "catalogus",
-						"$ref": "zaaktype",
-						"items": {
-							"type": "object",
-							"format": "uri",
-							"title": ""
-						},
-						"objectConfiguration": {
-							"handling": "uri",
-							"schema": ""
-						},
-						"fileConfiguration": {
-							"handling": "ignore",
-							"allowedMimeTypes": [],
-							"location": "",
-							"maxSize": 0
-						},
-						"oneOf": [],
-						"readOnly": true,
-						"title": "zaaktypen",
-						"uniqueItems": true
-					},
-					"besluittypen": {
-						"description": "URL-referenties naar BESLUITTYPEn die in deze CATALOGUS worden ontsloten.",
-						"type": "array",
-						"format": "",
-						"pattern": "",
-						"default": "",
-						"behavior": "",
-						"required": false,
-						"deprecated": false,
-						"visible": true,
-						"hideOnCollection": false,
-						"minLength": null,
-						"maxLength": null,
-						"example": "",
-						"immutable": false,
-						"minimum": null,
-						"maximum": null,
-						"multipleOf": null,
-						"exclusiveMin": false,
-						"exclusiveMax": false,
-						"minItems": null,
-						"maxItems": null,
-						"cascadeDelete": false,
-						"$ref": "besluittype",
-						"inversedBy": "catalogus",
-						"items": {
-							"type": "object",
-							"format": "uri",
-							"title": ""
-						},
-						"objectConfiguration": {
-							"handling": "uri",
-							"schema": ""
-						},
-						"fileConfiguration": {
-							"handling": "ignore",
-							"allowedMimeTypes": [],
-							"location": "",
-							"maxSize": 0
-						},
-						"oneOf": [],
-						"readOnly": true,
-						"title": "besluittypen",
-						"uniqueItems": true
-					},
-					"informatieobjecttypen": {
-						"description": "URL-referenties naar INFORMATIEOBJECTTYPEn die in deze CATALOGUS worden ontsloten.",
-						"type": "array",
-						"format": "",
-						"pattern": "",
-						"default": "",
-						"behavior": "",
-						"required": false,
-						"deprecated": false,
-						"visible": true,
-						"hideOnCollection": false,
-						"minLength": null,
-						"maxLength": null,
-						"example": "",
-						"immutable": false,
-						"minimum": null,
-						"maximum": null,
-						"multipleOf": null,
-						"exclusiveMin": false,
-						"exclusiveMax": false,
-						"minItems": null,
-						"maxItems": null,
-						"cascadeDelete": false,
-						"$ref": "informatieobjecttype",
-						"inversedBy": "catalogus",
-						"items": {
-							"type": "object",
-							"format": "uri",
-							"title": ""
-						},
-						"objectConfiguration": {
-							"handling": "uri",
-							"schema": ""
-						},
-						"fileConfiguration": {
-							"handling": "ignore",
-							"allowedMimeTypes": [],
-							"location": "",
-							"maxSize": 0
-						},
-						"oneOf": [],
-						"readOnly": true,
-						"title": "informatieobjecttypen",
-						"uniqueItems": true
-					}
-				},
-				"archive": [],
-				"source": "",
-				"hardValidation": false,
-				"updated": "2025-05-16T08:48:22+00:00",
-				"created": "2025-05-15T11:45:54+00:00",
-				"maxDepth": 0,
-				"owner": null,
-				"application": null,
-				"organisation": null,
-				"authorization": null,
-				"deleted": null,
-				"configuration": null
-			},
 			"eigenschap": {
 				"slug": "eigenschap",
 				"title": "Eigenschap",
 				"description": "",
-				"version": "0.0.8",
+				"version": "0.0.9",
 				"summary": "",
 				"icon": null,
 				"required": [
-					"catalogus",
 					"definitie",
 					"naam",
-					"specificatie",
 					"url",
-					"zaaktype",
-					"zaaktypeIdentificatie"
+					"zaaktype"
 				],
 				"properties": {
 					"url": {
@@ -2675,7 +2454,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"naam": {
 						"type": "string",
@@ -2699,7 +2479,8 @@
 						"type": "string",
 						"readOnly": true,
 						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
-						"title": "zaaktypeIdentificatie"
+						"title": "zaaktypeIdentificatie",
+						"default": ""
 					},
 					"beginGeldigheid": {
 						"type": "string",
@@ -2902,19 +2683,17 @@
 				"slug": "informatieobjecttype",
 				"title": "InformatieObjectType",
 				"description": "Serializer based on ``IOT-basis`` specified in XSD ``ztc0310_ent_basis.xsd``.",
-				"version": "0.0.6",
+				"version": "0.0.8",
 				"summary": "",
 				"icon": null,
 				"required": [
 					"beginGeldigheid",
-					"besluittypen",
 					"catalogus",
 					"concept",
 					"informatieobjectcategorie",
 					"omschrijving",
 					"url",
-					"vertrouwelijkheidaanduiding",
-					"zaaktypen"
+					"vertrouwelijkheidaanduiding"
 				],
 				"properties": {
 					"url": {
@@ -2924,7 +2703,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"omschrijving": {
 						"type": "string",
@@ -2978,7 +2758,8 @@
 						"type": "boolean",
 						"readOnly": true,
 						"description": "Geeft aan of het object een concept betreft. Concepten zijn niet-definitieve versies en zouden niet gebruikt moeten worden buiten deze API.",
-						"title": "concept"
+						"title": "concept",
+						"default": true
 					},
 					"besluittypen": {
 						"type": "array",
@@ -3149,19 +2930,14 @@
 				"slug": "resultaattype",
 				"title": "ResultaatType",
 				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-				"version": "0.0.9",
+				"version": "0.0.12",
 				"summary": "",
 				"icon": null,
 				"required": [
-					"besluittypeOmschrijving",
-					"informatieobjecttypeOmschrijving",
 					"omschrijving",
-					"omschrijvingGeneriek",
-					"resultaattypeomschrijving",
 					"selectielijstklasse",
 					"url",
-					"zaaktype",
-					"zaaktypeIdentificatie"
+					"zaaktype"
 				],
 				"properties": {
 					"url": {
@@ -3171,7 +2947,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"zaaktypeIdentificatie": {
 						"type": "string",
@@ -3557,15 +3334,14 @@
 				"slug": "roltype",
 				"title": "RolType",
 				"description": "Adds nested create feature",
-				"version": "0.0.5",
+				"version": "0.0.6",
 				"summary": "",
 				"icon": null,
 				"required": [
 					"omschrijving",
 					"omschrijvingGeneriek",
 					"url",
-					"zaaktype",
-					"zaaktypeIdentificatie"
+					"zaaktype"
 				],
 				"properties": {
 					"url": {
@@ -3575,7 +3351,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"zaaktypeIdentificatie": {
 						"type": "string",
@@ -3723,17 +3500,14 @@
 				"slug": "statustype",
 				"title": "StatusType",
 				"description": "",
-				"version": "0.0.5",
+				"version": "0.0.6",
 				"summary": "",
 				"icon": null,
 				"required": [
-					"catalogus",
-					"isEindstatus",
 					"omschrijving",
 					"url",
 					"volgnummer",
-					"zaaktype",
-					"zaaktypeIdentificatie"
+					"zaaktype"
 				],
 				"properties": {
 					"url": {
@@ -3743,7 +3517,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"omschrijving": {
 						"type": "string",
@@ -3780,7 +3555,8 @@
 						"type": "boolean",
 						"readOnly": true,
 						"description": "Geeft aan dat dit STATUSTYPE een eindstatus betreft. Dit gegeven is afgeleid uit alle STATUSTYPEn van dit ZAAKTYPE met het hoogste volgnummer.",
-						"title": "isEindstatus"
+						"title": "isEindstatus",
+						"default": false
 					},
 					"informeren": {
 						"type": "boolean",
@@ -4195,39 +3971,29 @@
 				"slug": "zaaktype",
 				"title": "ZaakType",
 				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-				"version": "0.0.18",
+				"version": "0.0.20",
 				"summary": "",
 				"icon": null,
 				"required": [
+					"url",
 					"aanleiding",
 					"beginGeldigheid",
-					"besluittypen",
 					"catalogus",
 					"concept",
 					"doel",
 					"doorlooptijd",
-					"eigenschappen",
-					"gerelateerdeZaaktypen",
 					"handelingBehandelaar",
 					"handelingInitiator",
 					"identificatie",
 					"indicatieInternOfExtern",
-					"informatieobjecttypen",
 					"omschrijving",
 					"onderwerp",
 					"opschortingEnAanhoudingMogelijk",
-					"productenOfDiensten",
 					"publicatieIndicatie",
-					"referentieproces",
-					"resultaattypen",
-					"roltypen",
-					"statustypen",
-					"url",
 					"verantwoordelijke",
 					"verlengingMogelijk",
 					"versiedatum",
-					"vertrouwelijkheidaanduiding",
-					"zaakobjecttypen"
+					"vertrouwelijkheidaanduiding"
 				],
 				"properties": {
 					"url": {
@@ -4237,7 +4003,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"identificatie": {
 						"type": "string",
@@ -4434,7 +4201,8 @@
 						"type": "boolean",
 						"readOnly": true,
 						"description": "Geeft aan of het object een concept betreft. Concepten zijn niet-definitieve versies en zouden niet gebruikt moeten worden buiten deze API.",
-						"title": "concept"
+						"title": "concept",
+						"default": true
 					},
 					"catalogus": {
 						"description": "URL-referentie naar de CATALOGUS waartoe dit ZAAKTYPE behoort.",
@@ -4477,7 +4245,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4522,7 +4290,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4567,7 +4335,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4612,7 +4380,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4657,7 +4425,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4700,7 +4468,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4745,7 +4513,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4789,7 +4557,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": {},
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4832,7 +4600,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -4877,7 +4645,7 @@
 						"type": "array",
 						"format": "",
 						"pattern": "",
-						"default": "",
+						"default": [],
 						"behavior": "",
 						"required": false,
 						"deprecated": false,
@@ -5017,17 +4785,15 @@
 				"slug": "zaaktypeinformatieobjecttype",
 				"title": "ZaakTypeInformatieObjectType",
 				"description": "Represent a ZaakTypeInformatieObjectType.\n\nRelatie met informatieobjecttype dat relevant is voor zaaktype.",
-				"version": "0.0.3",
+				"version": "0.0.5",
 				"summary": null,
 				"icon": null,
 				"required": [
-					"catalogus",
 					"informatieobjecttype",
 					"richting",
 					"url",
 					"volgnummer",
-					"zaaktype",
-					"zaaktypeIdentificatie"
+					"zaaktype"
 				],
 				"properties": {
 					"url": {
@@ -5037,7 +4803,8 @@
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"minLength": 1,
-						"maxLength": 1000
+						"maxLength": 1000,
+						"default": "{{ uri }}"
 					},
 					"zaaktype": {
 						"type": "string",
@@ -5060,7 +4827,7 @@
 					"informatieobjecttype": {
 						"type": "string",
 						"title": "informatieobjecttype",
-						"maxLength": 100
+						"maxLength": 255
 					},
 					"volgnummer": {
 						"type": "integer",
@@ -5091,6 +4858,230 @@
 				"source": "",
 				"hardValidation": false,
 				"updated": "2025-05-15T11:45:54+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"catalogus": {
+				"slug": "catalogus",
+				"title": "Catalogus",
+				"description": "",
+				"version": "0.0.8",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"contactpersoonBeheerNaam",
+					"domein",
+					"rsin"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"defaultValue": "{{ url }}",
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"domein": {
+						"type": "string",
+						"description": "Een afkorting waarmee wordt aangegeven voor welk domein in een CATALOGUS ZAAKTYPEn zijn uitgewerkt.",
+						"title": "domein",
+						"maxLength": 5
+					},
+					"rsin": {
+						"type": "string",
+						"description": "Het door een kamer toegekend uniek nummer voor de INGESCHREVEN NIET-NATUURLIJK PERSOON die de eigenaar is van een CATALOGUS.",
+						"title": "rsin",
+						"maxLength": 9
+					},
+					"contactpersoonBeheerNaam": {
+						"type": "string",
+						"title": "contactpersoonBeheerNaam",
+						"description": "De naam van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
+						"maxLength": 40
+					},
+					"contactpersoonBeheerTelefoonnummer": {
+						"type": "string",
+						"title": "contactpersoonBeheerTelefoonnummer",
+						"description": "Het telefoonnummer van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
+						"maxLength": 20
+					},
+					"contactpersoonBeheerEmailadres": {
+						"type": "string",
+						"format": "email",
+						"title": "contactpersoonBeheerEmailadres",
+						"description": "Het emailadres van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
+						"maxLength": 254
+					},
+					"naam": {
+						"type": "string",
+						"nullable": true,
+						"description": "De benaming die is gegeven aan de zaaktypecatalogus.",
+						"title": "naam",
+						"maxLength": 200
+					},
+					"versie": {
+						"type": "string",
+						"nullable": true,
+						"description": "Versie-aanduiding van de van toepassing zijnde zaaktypecatalogus.",
+						"title": "versie",
+						"maxLength": 20
+					},
+					"begindatumVersie": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "Datum waarop de versie van de zaaktypecatalogus van toepassing is geworden.",
+						"title": "begindatumVersie"
+					},
+					"zaaktypen": {
+						"description": "URL-referenties naar ZAAKTYPEn die in deze CATALOGUS worden ontsloten.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "zaaktype",
+						"inversedBy": "catalogus",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "zaaktypen",
+						"uniqueItems": true
+					},
+					"besluittypen": {
+						"description": "URL-referenties naar BESLUITTYPEn die in deze CATALOGUS worden ontsloten.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "besluittype",
+						"inversedBy": "catalogus",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "besluittypen",
+						"uniqueItems": true
+					},
+					"informatieobjecttypen": {
+						"description": "URL-referenties naar INFORMATIEOBJECTTYPEn die in deze CATALOGUS worden ontsloten.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "informatieobjecttype",
+						"inversedBy": "catalogus",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "informatieobjecttypen",
+						"uniqueItems": true
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T08:48:22+00:00",
 				"created": "2025-05-15T11:45:54+00:00",
 				"maxDepth": 0,
 				"owner": null,
