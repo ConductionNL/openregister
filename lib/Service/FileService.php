@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -1187,6 +1188,14 @@ class FileService
                 $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
             }
 
+			//@TODO: This sets the file array of an object, but we should check why this array is not added elsewhere
+			$objectFiles = $objectEntity->getFiles();
+
+			$objectFiles[] = $this->formatFile($file);
+			$objectEntity->setFiles($objectFiles);
+
+			$this->objectEntityMapper->update($objectEntity);
+
             return $file;
 
         } catch (NotPermittedException $e) {
@@ -1308,6 +1317,7 @@ class FileService
             register: $object->getRegister(),
             schema: $object->getSchema()
         );
+
 
         // Check if folder exists and get the file
         if ($folder instanceof Folder === true) {

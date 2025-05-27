@@ -329,8 +329,6 @@ class GetObject
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
         ?array $sort=['created' => 'DESC'],
         ?string $search=null
     ): array {
@@ -342,8 +340,6 @@ class GetObject
             limit: $limit,
             offset: $offset,
             filters: $filters,
-            searchConditions: $searchConditions,
-            searchParams: $searchParams,
             sort: $sort,
             search: $search
         );

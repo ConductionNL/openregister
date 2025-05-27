@@ -281,11 +281,21 @@ class MySQLJsonService implements IDatabaseJsonService
                 continue;
             }
 
-            // Handle simple equality filter.
-            $builder->createNamedParameter(
-                value: $value,
-                placeHolder: ":value$filter"
-            );
+			// Handle simple equality filter.
+			if (is_bool($value) === true) {
+				$builder->createNamedParameter(
+					value: $value,
+					type: IQueryBuilder::PARAM_BOOL,
+					placeHolder: ":value$filter"
+				);
+			} else {
+				$builder->createNamedParameter(
+					value: $value,
+					placeHolder: ":value$filter"
+				);
+			}
+
+
             $builder->andWhere(
                 "json_extract(object, :path$filter) = :value$filter OR json_contains(json_extract(object, :path$filter), json_quote(:value$filter))"
             );
