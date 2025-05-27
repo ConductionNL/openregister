@@ -128,6 +128,9 @@ export default {
 
 			const newSchemaItem = {
 				...schemaItemClone,
+				required: schemaItemClone.required.filter(
+					requiredProp => requiredProp !== schemaStore.schemaPropertyKey,
+				),
 			}
 
 			schemaStore.saveSchema(newSchemaItem)

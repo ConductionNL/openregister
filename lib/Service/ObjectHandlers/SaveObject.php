@@ -32,11 +32,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\DoesNotExistException;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 /**
  * Handler class for saving objects in the OpenRegister application.
@@ -55,6 +59,10 @@ use OCA\OpenRegister\Db\DoesNotExistException;
 class SaveObject
 {
 
+    private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
+
+    private Environment $twig;
+
 
     /**
      * Constructor for SaveObject handler.
@@ -68,8 +76,12 @@ class SaveObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly IURLGenerator $urlGenerator,
+        ArrayLoader $arrayLoader,
     ) {
+        $this->twig = new Environment($arrayLoader);
 
     }//end __construct()
 
@@ -129,6 +141,48 @@ class SaveObject
 
     }//end updateObjectRelations()
 
+    /**
+     * Set default values for values that are not in the data array.
+     *
+     * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
+     * @param Schema $schema The schema the objectEntity belongs to.
+     * @param array $data The data that is written to the object.
+     *
+     * @return array The data object updated with default values from the $schema.
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\SyntaxError
+     */
+    private function setDefaultValues (ObjectEntity $objectEntity, Schema $schema, array $data): array
+    {
+        $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+
+        // Convert the properties array to a processable array.
+        $properties = array_map(function(string $key, array $property) {
+            if (isset($property['default']) === false) {
+                $property['default'] = null;
+            }
+            $property['title'] = $key;
+            return $property;
+        }, array_keys($schemaObject['properties']), $schemaObject['properties']);
+
+        $defaultValues = array_filter(array_column($properties, 'default', 'title'));
+
+        // Remove all keys from array for which a value has already been set in $data.
+        $defaultValues = array_diff_key($defaultValues, $data);
+
+        // Render twig templated default values.
+        $renderedDefaultValues = array_map(function(string $defaultValue) use ($objectEntity, $data) {
+            if (str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
+                return $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
+            }
+
+            return $defaultValue;
+        }, $defaultValues);
+
+        // Add data to the $data array, with the order that values already in $data never get overwritten.
+        return array_merge($renderedDefaultValues, $data);
+    }//end setDefaultValues
+
 
     /**
      * Saves an object.
@@ -148,8 +202,7 @@ class SaveObject
         array $data,
         ?string $uuid=null
     ): ObjectEntity {
-        // Remove the @self property from the data.
-        unset($data['@self']);
+
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {
@@ -180,9 +233,44 @@ class SaveObject
         $objectEntity = new ObjectEntity();
         $objectEntity->setRegister($registerId);
         $objectEntity->setSchema($schemaId);
-        $objectEntity->setObject($data);
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
+
+        
+        // Check if '@self' metadata exists and contains published/depublished properties
+        if (isset($data['@self']) && is_array($data['@self'])) {
+            $selfData = $data['@self'];
+
+            // Extract and set published property if present
+            if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['published']) === true) {
+                        $objectEntity->setPublished(new DateTime($selfData['published']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $objectEntity->setPublished(null);
+            }
+
+            // Extract and set depublished property if present
+            if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['depublished']) === true) {
+                        $objectEntity->setDepublished(new DateTime($selfData['depublished']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $objectEntity->setDepublished(null);
+            }
+        }
+
+        unset($data['@self'], $data['id']);
 
         // Set UUID if provided, otherwise generate a new one.
         if ($uuid !== null) {
@@ -191,6 +279,22 @@ class SaveObject
         } else {
             $objectEntity->setUuid(Uuid::v4());
         }
+        $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(
+            self::URL_PATH_IDENTIFIER, [
+                'register' => $register instanceof Register === true ? $register->getSlug() : $registerId,
+                'schema' => $schema instanceof Schema === true ? $schema->getSlug() : $schemaId,
+                'id' => $objectEntity->getUuid()
+            ]
+        )));
+
+        // Set default values.
+        if ($schema instanceof Schema === false) {
+            $schema = $this->schemaMapper->find($schemaId);
+        }
+
+        $data = $this->setDefaultValues($objectEntity, $schema, $data);
+        $objectEntity->setObject($data);
+
 
         // Set user information if available.
         $user = $this->userSession->getUser();
@@ -205,7 +309,8 @@ class SaveObject
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
 
         // Create audit trail for creation.
-        $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+        $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+        $savedEntity->setLastLog($log->jsonSerialize());
 
         // Handle file properties.
         foreach ($data as $propertyName => $value) {
@@ -309,6 +414,11 @@ class SaveObject
         // Store the old state for audit trail.
         $oldObject = clone $existingObject;
 
+        // Lets filter out the id and @self properties from the old object.
+        $oldObjectData = $oldObject->getObject();
+
+        $oldObject->setObject($oldObjectData);
+
         // Set register ID based on input type.
         $registerId = null;
         if ($register instanceof Register) {
@@ -324,6 +434,7 @@ class SaveObject
         } else {
             $schemaId = $schema;
         }
+        
 
         // Update the object properties.
         $existingObject->setRegister($registerId);
@@ -338,7 +449,8 @@ class SaveObject
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
 
         // Create audit trail for update.
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+        $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+        $updatedEntity->setLastLog($log->jsonSerialize());
 
         // Handle file properties.
         foreach ($data as $propertyName => $value) {

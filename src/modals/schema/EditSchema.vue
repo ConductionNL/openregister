@@ -27,6 +27,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				label="Slug"
 				:value.sync="schemaItem.slug" />
 			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="schemaItem.hardValidation">
+				Hard Validation
+			</NcCheckboxRadioSwitch>
+			<NcTextField :disabled="loading"
+				label="Max Depth"
+				type="number"
+				:value.sync="schemaItem.maxDepth" />
+			<NcCheckboxRadioSwitch
 				v-if="!schemaStore.schemaItem?.id"
 				:disabled="loading"
 				:checked.sync="createAnother">
@@ -94,6 +103,8 @@ export default {
 				description: '',
 				summary: '',
 				slug: '',
+				hardValidation: false,
+				maxDepth: 0,
 			},
 			createAnother: false,
 			success: false,
@@ -114,6 +125,8 @@ export default {
 					description: schemaStore.schemaItem.description || '',
 					summary: schemaStore.schemaItem.summary || '',
 					slug: schemaStore.schemaItem.slug || '',
+					hardValidation: schemaStore.schemaItem.hardValidation || false,
+					maxDepth: schemaStore.schemaItem.maxDepth || 0,
 				}
 			}
 		},
@@ -140,6 +153,8 @@ export default {
 							description: '',
 							summary: '',
 							slug: '',
+							hardValidation: false,
+							maxDepth: 0,
 						}
 					}, 500)
 

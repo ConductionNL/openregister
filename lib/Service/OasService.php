@@ -197,7 +197,7 @@ class OasService
     {
         $schemaDefinition = $schema->getProperties();
 
-        // Add @self reference, id, and x-tags for schema categorization.
+        // Add @self reference, id, lastLog, and x-tags for schema categorization.
         return [
             'type'       => 'object',
             'x-tags'     => [$schema->getTitle()],
@@ -213,6 +213,11 @@ class OasService
                     'readOnly'    => true,
                     'example'     => '123e4567-e89b-12d3-a456-426614174000',
                     'description' => 'The unique identifier for the object.',
+                ],
+                'lastLog' => [
+                    'type'        => 'object',
+                    'nullable'    => true,
+                    'description' => 'The most recent log entry for this object (runtime only, not persisted in the database).',
                 ],
             ] + $schemaDefinition,
         ];

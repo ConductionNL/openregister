@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * Handler class for deleting objects in the OpenRegister application.
@@ -49,19 +50,24 @@ use OCA\OpenRegister\Service\FileService;
  */
 class DeleteObject
 {
-
+    /**
+     * @var AuditTrailMapper
+     */
+    private AuditTrailMapper $auditTrailMapper;
 
     /**
      * Constructor for DeleteObject handler.
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param FileService        $fileService        File service for managing files.
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileService $fileService
+        private readonly FileService $fileService,
+        AuditTrailMapper $auditTrailMapper
     ) {
-
+        $this->auditTrailMapper = $auditTrailMapper;
     }//end __construct()
 
 
@@ -90,7 +96,13 @@ class DeleteObject
         }
 
         // Delete the object from database.
-        return $this->objectEntityMapper->delete($objectEntity) !== null;
+        $result = $this->objectEntityMapper->delete($objectEntity) !== null;
+
+        // Create audit trail for delete and set lastLog
+        $log = $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
+//        $result->setLastLog($log->jsonSerialize());
+
+        return $result;
 
     }//end delete()
 

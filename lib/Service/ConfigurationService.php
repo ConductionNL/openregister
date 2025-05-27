@@ -297,11 +297,13 @@ class ConfigurationService
 
             // Get and export schemas associated with this register.
             $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+            $idsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
+
             foreach ($schemas as $schema) {
                 // Store schema in map by ID for reference.
                 $this->schemasMap[$schema->getId()] = $schema;
 
-                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema);
+                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema, $idsAndSlugsMap);
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
             }
 
@@ -310,7 +312,7 @@ class ConfigurationService
                 $objects = $this->objectEntityMapper->findAll(
                     filters: ['register' => $register->getId()]
                 );
-                
+
                 foreach ($objects as $object) {
                     // Use maps to get slugs.
                     $object = $object->jsonSerialize();
@@ -324,7 +326,7 @@ class ConfigurationService
             // Get the OpenConnector service.
             $openConnector = $this->getOpenConnector();
             if ($openConnector === true) {
-                $openConnectorConfig = $this->openConnectorConfigurationService->exportConfig($register->getId());
+                $openConnectorConfig = $this->openConnectorConfigurationService->exportRegister($register->getId());
 
                 // Merge the OpenAPI specification over the OpenConnector configuration.
                 $openApiSpec = array_replace_recursive(
@@ -333,6 +335,7 @@ class ConfigurationService
                 );
             }
         }//end foreach
+
 
         return $openApiSpec;
 
@@ -366,7 +369,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI schema specification
      */
-    private function exportSchema(Schema $schema): array
+    private function exportSchema(Schema $schema, array $idsAndSlugsMap): array
     {
         // Use jsonSerialize to get the JSON representation of the schema.
         $schemaArray = $schema->jsonSerialize();
@@ -374,9 +377,41 @@ class ConfigurationService
         // Unset id and uuid if they are present.
         unset($schemaArray['id'], $schemaArray['uuid']);
 
+        foreach ($schemaArray['properties'] as &$property) {
+            if (isset($property['$ref']) === true) {
+                $schemaId = $this->getLastNumericSegment(url: $property['$ref']);
+                if (isset($idsAndSlugsMap[$schemaId]) === true) {
+                    $property['$ref'] = $idsAndSlugsMap[$schemaId];
+                }
+            }
+
+            if (isset($property['items']['$ref']) === true) {
+                $schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
+                if (isset($idsAndSlugsMap[$schemaId]) === true) {
+                    $property['items']['$ref'] = $idsAndSlugsMap[$schemaId];
+                }
+            }
+        }
+
         return $schemaArray;
 
     }//end exportSchema()
+
+    /**
+     * Get the last segment of a URL if it is numeric.
+     *
+     * @param string $url The input URL to evaluate.
+     * @return string The numeric value if found, or the original URL.
+     */
+    private function getLastNumericSegment(string $url) {
+        $url = rtrim($url, '/');
+
+        $parts = explode('/', $url);
+        $lastSegment = end($parts);
+
+        return is_numeric($lastSegment) ? $lastSegment : $url;
+    }
+
 
 
     /**
@@ -619,8 +654,13 @@ class ConfigurationService
 
         // Process and import schemas if present.
         if (isset($data['components']['schemas']) === true && is_array($data['components']['schemas']) === true) {
-            foreach ($data['components']['schemas'] as $schemaData) {
-                $schema = $this->importSchema($schemaData, $owner);
+            $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
+            foreach ($data['components']['schemas'] as $key => $schemaData) {
+                if (isset($schemaData['title']) === false && is_string($key) === true) {
+                    $schemaData['title'] = $key;
+                }
+
+                $schema = $this->importSchema(data: $schemaData, owner: $owner, slugsAndIdsMap: $slugsAndIdsMap);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
                     $this->schemasMap[$schema->getSlug()] = $schema;
@@ -727,7 +767,7 @@ class ConfigurationService
         // Process OpenConnector integration if available.
         $openConnector = $this->getOpenConnector();
         if ($openConnector === true) {
-            $openConnectorResult = $this->openConnectorConfigurationService->importConfig($data);
+            $openConnectorResult = $this->openConnectorConfigurationService->importConfiguration($data);
             $result = array_replace_recursive($openConnectorResult, $result);
         }
 
@@ -796,14 +836,52 @@ class ConfigurationService
      *
      * @param array       $data  The schema data.
      * @param string|null $owner The owner of the schema.
+     * @param array       $slugsAndIdsMap Slugs with their ids.
      *
      * @return Schema|null The imported schema or null if skipped.
      */
-    private function importSchema(array $data, ?string $owner=null): ?Schema
+    private function importSchema(array $data, ?string $owner=null, array $slugsAndIdsMap): ?Schema
     {
         try {
             // Remove id and uuid from the data.
             unset($data['id'], $data['uuid']);
+
+            // @todo this shouldnt be necessary if we fully supported oas
+            // if properties is oneOf or allOf (which we dont support yet) it wont have a type, this is a hacky fix so it doesnt break the whole process.
+            // sets type to string if no type
+            // defaults title to its key in the oas so we dont have whitespaces (which is seen sometimes in defined titles in properties) in the property key
+            // removes format if format is string
+            if (isset($data['properties']) === true) {
+                foreach ($data['properties'] as $key => &$property) {
+                    $property['title'] = $key;
+                    if (isset($property['type']) === false) {
+                        $property['type'] = 'string';
+                    }
+                    if (isset($property['format']) === true && ($property['format'] === 'string' || $property['format'] === 'binary' || $property['format'] === 'byte')) {
+                        unset($property['format']);
+                    }
+                    if (isset($property['items']['format']) === true && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
+                        unset($property['items']['format']);
+                    }
+
+                    // Check if we have the schema for the slug and set that id.
+                    if (isset($property['$ref']) === true) {
+                        if (isset($slugsAndIdsMap[$property['$ref']]) === true) {
+                            $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
+                        } elseif (isset($this->schemasMap[$property['$ref']]) === true) {
+                            $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
+                        }
+                    }
+                    if (isset($property['items']['$ref']) === true) {
+                        if (isset($slugsAndIdsMap[$property['items']['$ref']]) === true) {
+                            $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
+                        } elseif (isset($this->schemasMap[$property['items']['$ref']]) === true) {
+                            $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
+                        }
+                    }
+                }
+            }
+
 
             // Check if schema already exists by slug.
             $existingSchema = null;
@@ -890,5 +968,53 @@ class ConfigurationService
 
     }//end importObject()
 
+
+    /**
+     * Import a configuration from Open Connector
+     *
+     * This method attempts to import a configuration from Open Connector if it is available.
+     * It will check if the Open Connector service is available and then call its exportRegister function.
+     *
+     * @param string $registerId The ID of the register to import from Open Connector
+     * @param string $owner      The owner of the configuration
+     *
+     * @return Configuration|null The imported configuration or null if import failed
+     *
+     * @throws Exception If there is an error during import
+     */
+    public function importFromOpenConnector(string $registerId, string $owner): ?Configuration
+    {
+        // Check if Open Connector is available
+        if ($this->getOpenConnector() === false) {
+            $this->logger->warning('Open Connector is not available for importing configuration');
+            return null;
+        }
+
+        try {
+            // Call the exportRegister function on the Open Connector service
+            $exportedData = $this->openConnectorConfigurationService->exportRegister($registerId);
+
+            if (empty($exportedData)) {
+                $this->logger->error('No data received from Open Connector export');
+                return null;
+            }
+
+            // Create a new configuration from the exported data
+            $configuration = new Configuration();
+            $configuration->setTitle($exportedData['title'] ?? 'Imported from Open Connector');
+            $configuration->setDescription($exportedData['description'] ?? 'Configuration imported from Open Connector');
+            $configuration->setType('openconnector');
+            $configuration->setOwner($owner);
+            $configuration->setVersion($exportedData['version'] ?? '1.0.0');
+            $configuration->setRegisters($exportedData['registers'] ?? []);
+
+            // Save the configuration
+            return $this->configurationMapper->insert($configuration);
+
+        } catch (Exception $e) {
+            $this->logger->error('Failed to import configuration from Open Connector: ' . $e->getMessage());
+            throw new Exception('Failed to import configuration from Open Connector: ' . $e->getMessage());
+        }
+    }
 
 }//end class

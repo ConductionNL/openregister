@@ -13,6 +13,7 @@ import { objectStore, registerStore, schemaStore, navigationStore } from '../../
 				:force-name="true"
 				:inline="1"
 				:primary="true"
+				:class="!navigationStore.sidebarState.search ? 'sidebar-closed' : ''"
 				:menu-name="`Bulk action for ${objectStore.selectedObjects?.length} objects`">
 				<NcActionButton
 					:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
@@ -168,5 +169,9 @@ export default {
 
 .loadingIcon {
     margin-inline-end: 1rem;
+}
+/* So that the actions menu is not overlapped by the sidebar button when it is closed */
+.sidebar-closed {
+	margin-right: 45px;
 }
 </style>

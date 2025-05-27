@@ -11,8 +11,17 @@ export const useNavigationStore = defineStore('ui', {
 		dialog: false,
 		// Any data needed in various models, dialogs, views which cannot be transferred through normal means or without writing crappy/excessive code
 		transferData: null,
+
+		sidebarState: {
+			registers: true,
+			register: true,
+			search: true,
+		},
 	}),
 	actions: {
+		setSidebarState(sidebar, state) {
+			this.sidebarState[sidebar] = state
+		},
 		setSelected(selected) {
 			this.selected = selected
 			console.log('Active menu item set to ' + selected)

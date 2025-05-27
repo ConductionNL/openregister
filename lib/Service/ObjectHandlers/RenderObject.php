@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -323,6 +324,10 @@ class RenderObject
 
         // Apply field filtering if specified.
         if (empty($fields) === false) {
+            $fields[] = '@self';
+            $fields[] = 'id';
+
+
             $filteredData = [];
             foreach ($fields as $field) {
                 if (isset($objectData[$field]) === true) {
