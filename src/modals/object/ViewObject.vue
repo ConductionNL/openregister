@@ -328,7 +328,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<NcActions
 				v-if="objectStore.files?.results?.length > 0 && tabOptions[activeTab] === 'Files'"
 				:primary="true"
-				:disabled="true"
 				:menu-name="loading ? 'Laden...' : 'Acties'"
 				class="checkboxListActionButton"
 				:inline="0"
@@ -339,14 +338,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="loading" :size="20" appearance="dark" />
 					</span>
 				</template>
-				<NcActionButton @click="selectAllAttachments('published')">
+				<NcActionButton :disabled="!filesHasPublished" @click="selectAllAttachments('published')">
 					<template #icon>
 						<SelectAllIcon v-if="!allPublishedSelected" :size="20" />
 						<SelectRemove v-else :size="20" />
 					</template>
 					{{ !allPublishedSelected ? "Selecteer" : "Deselecteer" }} alle gepubliceerde bijlagen
 				</NcActionButton>
-				<NcActionButton @click="selectAllAttachments('unpublished')">
+				<NcActionButton :disabled="!filesHasUnpublished" @click="selectAllAttachments('unpublished')">
 					<template #icon>
 						<SelectAllIcon v-if="!allUnpublishedSelected" :size="20" />
 						<SelectRemove v-else :size="20" />
@@ -494,6 +493,12 @@ export default {
 		},
 		loading() {
 			return this.publishLoading.length > 0 || this.depublishLoading.length > 0 || this.fileIdsLoading.length > 0
+		},
+		filesHasPublished() {
+			return objectStore.files.results?.some(item => !!item.published)
+		},
+		filesHasUnpublished() {
+			return objectStore.files.results?.some(item => !item.published)
 		},
 	},
 	updated() {
