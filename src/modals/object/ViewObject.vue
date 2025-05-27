@@ -439,7 +439,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		</div>
 
 		<template #actions>
-			<NcButton v-if="activeTab !== 2" @click="activeTab = 2">
 			<NcActions
 				v-if="objectStore.files?.results?.length > 0 && tabOptions[activeTab] === 'Files'"
 				:primary="true"
@@ -507,7 +506,6 @@ import {
 	NcTextField,
 	NcCheckboxRadioSwitch,
 	NcEmptyContent,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
