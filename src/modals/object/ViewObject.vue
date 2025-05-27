@@ -121,8 +121,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 											<NcNoteCard v-if="success" type="success" class="note-card">
 												<p>Object successfully modified</p>
 											</NcNoteCard>
-											<div v-for="(value, key) in formData" :key="key" class="form-field">
-												<div v-if="typeof value === 'string'" class="field-label-row">
+											<div v-for="(value, key) in currentSchema.properties"
+												:key="key"
+												class="form-field">
+												<div v-if="value.type === 'string'" class="field-label-row">
 													<NcTextField
 														v-model="formData[key]"
 														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
@@ -138,21 +140,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</template>
 													</NcButton>
 												</div>
-												<NcTextField v-else-if="value === null"
-													v-model="formData[key]"
-													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
-													:placeholder="key"
-													:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
-												<NcCheckboxRadioSwitch v-else-if="typeof value === 'boolean'"
+
+												<NcCheckboxRadioSwitch v-else-if="value.type === 'boolean'"
 													v-model="formData[key]"
 													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
 													type="switch" />
-												<NcTextField v-else-if="typeof value === 'number'"
+												<NcTextField v-else-if="value.type === 'number'"
 													v-model.number="formData[key]"
 													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
 													type="number" />
 
-												<template v-else-if="Array.isArray(value)">
+												<template v-else-if="value.type === 'array'">
 													<label class="field-label">
 														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
 													</label>
@@ -177,7 +175,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													</NcButton>
 												</template>
 
-												<template v-else-if="typeof value === 'object' && value !== null">
+												<template v-else-if="value.type === 'object' && value !== null">
 													<label class="field-label">
 														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
 													</label>
@@ -189,6 +187,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														:tab-size="2"
 														@update:model-value="val => updateObjectField(key, val)" />
 												</template>
+
+												<NcTextField v-else-if="value === null"
+													v-model="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													:placeholder="key"
+													:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
 											</div>
 										</div>
 										<NcEmptyContent v-else>
@@ -540,7 +544,6 @@ export default {
 		NcEmptyContent,
 		NcActions,
 		NcActionButton,
-		NcCheckboxRadioSwitch,
 		CodeMirror,
 		BTabs,
 		BTab,
@@ -576,7 +579,6 @@ export default {
 			editorTab: 0,
 			activeTab: 0,
 			objectEditors: {},
-			activeTab: 0,
 			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files', 'Audit Trails'],
 			selectedAttachments: [],
 			publishLoading: [],
