@@ -156,8 +156,8 @@
                     },
                     "catalogus": {
                         "description": "URL-referentie naar de CATALOGUS waartoe dit BESLUITTYPE behoort.",
-                        "type": "object",
                         "format": "uri",
+                        "type": "string",
                         "pattern": "",
                         "default": "",
                         "behavior": "",
@@ -216,7 +216,7 @@
                         "inversedBy": "catalogus",
                         "$ref": "zaaktype",
                         "items": {
-                            "type": "object",
+                            "type": "string",
                             "format": "uri",
                             "title": ""
                         },
@@ -305,7 +305,7 @@
                         "inversedBy": "",
                         "$ref": "",
                         "items": {
-                            "type": "object",
+                            "type": "string",
                             "format": "uri",
                             "title": "Is resultaat van",
                             "$ref": "resultaattype",
