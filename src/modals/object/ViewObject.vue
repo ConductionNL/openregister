@@ -16,7 +16,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		:name="'View Object (' + objectStore.objectItem.title + ')'"
 		size="large"
 		:can-close="false">
-		<div class="formContainer">
+		<div class="formContainer viewObjectDialog">
 			<!-- Metadata Display -->
 			<div class="detail-item id-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].id }">
 				<span class="detail-label">ID:</span>
@@ -67,7 +67,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<!-- Display Object -->
 			<div v-if="objectStore.objectItem">
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
+					<BTabs v-model="activeTab" content-class="mt-3" justified>
 						<BTab title="Properties" active>
 							<div class="search-list-table">
 								<table class="table">
@@ -222,10 +222,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							</NcNoteCard>
 						</BTab>
 						<BTab title="Files">
-							<div v-if="objectStore.files.results?.length > 0" class="search-list-table">
+							<div v-if="objectStore.files?.results?.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
+											<th />
 											<th>Name</th>
 											<th>Size</th>
 											<th>Type</th>
@@ -242,6 +243,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												if (activeAttachment === attachment.id) activeAttachment = null
 												else activeAttachment = attachment.id
 											}">
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="selectedAttachments.includes(attachment.id)"
+													@update:checked="toggleSelection(attachment)" />
+											</td>
 											<td class="table-row-title">
 												<!-- Show lock icon if file is not shared -->
 												<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
@@ -319,6 +325,34 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		</div>
 
 		<template #actions>
+			<NcActions
+				v-if="objectStore.files?.results?.length > 0 && tabOptions[activeTab] === 'Files'"
+				:primary="true"
+				:menu-name="loading ? 'Laden...' : 'Acties'"
+				class="checkboxListActionButton"
+				:inline="0"
+				title="Acties die je kan uitvoeren op deze publicatie">
+				<template #icon>
+					<span>
+						<DotsHorizontal v-if="!loading" :size="20" />
+						<NcLoadingIcon v-if="loading" :size="20" appearance="dark" />
+					</span>
+				</template>
+				<NcActionButton :disabled="!filesHasPublished" @click="selectAllAttachments('published')">
+					<template #icon>
+						<SelectAllIcon v-if="!allPublishedSelected" :size="20" />
+						<SelectRemove v-else :size="20" />
+					</template>
+					{{ !allPublishedSelected ? "Selecteer" : "Deselecteer" }} alle gepubliceerde bijlagen
+				</NcActionButton>
+				<NcActionButton :disabled="!filesHasUnpublished" @click="selectAllAttachments('unpublished')">
+					<template #icon>
+						<SelectAllIcon v-if="!allUnpublishedSelected" :size="20" />
+						<SelectRemove v-else :size="20" />
+					</template>
+					{{ !allUnpublishedSelected ? "Selecteer" : "Deselecteer" }} alle ongepubliceerde bijlagen
+				</NcActionButton>
+			</NcActions>
 			<NcButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(objectStore.objectItem)">
 				<template #icon>
 					<Pencil :size="20" />
@@ -345,8 +379,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 import {
 	NcDialog,
 	NcButton,
+	NcActions,
+	NcActionButton,
 	NcNoteCard,
 	NcCounterBubble,
+	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
@@ -361,7 +398,10 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
-
+import SelectAllIcon from 'vue-material-design-icons/SelectAll.vue'
+import SelectRemove from 'vue-material-design-icons/SelectRemove.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -369,6 +409,9 @@ export default {
 		NcButton,
 		NcNoteCard,
 		NcCounterBubble,
+		NcActions,
+		NcActionButton,
+		NcCheckboxRadioSwitch,
 		CodeMirror,
 		BTabs,
 		BTab,
@@ -381,6 +424,10 @@ export default {
 		LockOutline,
 		ContentCopy,
 		Check,
+		SelectAllIcon,
+		SelectRemove,
+		DotsHorizontal,
+		NcLoadingIcon,
 	},
 	data() {
 		return {
@@ -390,6 +437,12 @@ export default {
 			schemaTitle: '',
 			isUpdated: false,
 			isCopied: false,
+			activeTab: 0,
+			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files', 'Audit Trails'],
+			selectedAttachments: [],
+			publishLoading: [],
+			depublishLoading: [],
+			fileIdsLoading: [],
 		}
 	},
 	computed: {
@@ -400,6 +453,52 @@ export default {
 		},
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
+		},
+		selectedPublishedCount() {
+			return this.selectedAttachments.filter((a) => {
+				const found = objectStore.files.results
+					?.find(item => item.id === a)
+				if (!found) return false
+
+				return !!found.published
+			}).length
+		},
+		selectedUnpublishedCount() {
+			return this.selectedAttachments.filter((a) => {
+				const found = objectStore.files.results
+					?.find(item => item.id === a)
+				if (!found) return false
+				return found.published === null
+			}).length
+		},
+		allPublishedSelected() {
+			const published = objectStore.files.results
+				?.filter(item => !!item.published)
+				.map(item => item.id) || []
+
+			if (!published.length) {
+				return false
+			}
+			return published.every(pubId => this.selectedAttachments.includes(pubId))
+		},
+		allUnpublishedSelected() {
+			const unpublished = objectStore.files.results
+				?.filter(item => !item.published)
+				.map(item => item.id) || []
+
+			if (!unpublished.length) {
+				return false
+			}
+			return unpublished.every(unpubId => this.selectedAttachments.includes(unpubId))
+		},
+		loading() {
+			return this.publishLoading.length > 0 || this.depublishLoading.length > 0 || this.fileIdsLoading.length > 0
+		},
+		filesHasPublished() {
+			return objectStore.files.results?.some(item => !!item.published)
+		},
+		filesHasUnpublished() {
+			return objectStore.files.results?.some(item => !item.published)
 		},
 	},
 	updated() {
@@ -454,6 +553,41 @@ export default {
 		formatValue(val) {
 			return JSON.stringify(val, null, 2)
 		},
+		toggleSelection(attachment) {
+			const numericId = Number(attachment.id)
+			if (this.selectedAttachments.includes(numericId)) {
+				this.selectedAttachments = this.selectedAttachments.filter(itemId => itemId !== numericId)
+			} else {
+				this.selectedAttachments.push(numericId)
+			}
+		},
+		selectAllAttachments(mode) {
+			if (mode === 'published') {
+				const publishedIds = objectStore.files.results
+					?.filter(item => item.published)
+					.map(item => Number(item.id)) || []
+
+				const allSelected = publishedIds.length > 0 && publishedIds.every(id => this.selectedAttachments.includes(id))
+
+				if (!allSelected) {
+					this.selectedAttachments = Array.from(new Set([...this.selectedAttachments, ...publishedIds]))
+				} else {
+					this.selectedAttachments = this.selectedAttachments.filter(id => !publishedIds.includes(id))
+				}
+			} else if (mode === 'unpublished') {
+				const unpublishedIds = objectStore.files.results
+					?.filter(item => !item.published)
+					.map(item => Number(item.id)) || []
+
+				const allSelected = unpublishedIds.length > 0 && unpublishedIds.every(id => this.selectedAttachments.includes(id))
+
+				if (!allSelected) {
+					this.selectedAttachments = Array.from(new Set([...this.selectedAttachments, ...unpublishedIds]))
+				} else {
+					this.selectedAttachments = this.selectedAttachments.filter(id => !unpublishedIds.includes(id))
+				}
+			}
+		},
 		getTheme,
 		async copyToClipboard(text) {
 			try {
@@ -467,6 +601,12 @@ export default {
 	},
 }
 </script>
+
+<style>
+.modal-container:has(.viewObjectDialog) {
+	width: 1000px !important;
+}
+</style>
 
 <style scoped>
 .json-editor {
