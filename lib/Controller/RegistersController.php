@@ -468,8 +468,29 @@ class RegistersController extends Controller
                             $summary['created'][] = $object->getId();
                         }
                     }
+
+                    // If no registers defined in oas, update the register that was given through query with created schema's
+                    if (empty($result['registers']) === true) {
+                        // Get created schema ids
+                        $createdSchemas = [];
+                        foreach ($result['schemas'] as $schema) {
+                            $createdSchemas[] = $schema->getId();
+                        }
+
+                        // Get existing schemas
+                        $register = $this->registerMapper->find($id);
+                        $registerSchemas = $register->getSchemas();
+
+                        // Merge new with existing
+                        $mergedSchemaArray = array_merge($registerSchemas, $createdSchemas);
+                        $mergedSchemaArray = array_keys(array_flip($mergedSchemaArray));
+
+                        $register->setSchemas($mergedSchemaArray);
+                        $this->registerMapper->update($register);
+                    }
                     break;
             }
+            
             return new JSONResponse([
                 'message' => 'Import successful',
                 'summary' => $summary

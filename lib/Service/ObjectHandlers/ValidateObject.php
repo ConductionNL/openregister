@@ -107,12 +107,26 @@ class ValidateObject
             }
         }
 
+        // If schemaObject reuired is empty unset it.
+        if (isset($schemaObject->required) === true && empty($schemaObject->required) === true) {
+            unset($schemaObject->required);
+        }
+
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Return a ValidationResult with null data indicating success.
             return new ValidationResult(null, null);
         }
 
+        // @todo This should be done earlier
+        unset($object['extend'], $object['filters']);
+        
+        // Remove empty properties and empty arrays from the object.
+        $object = array_filter($object, function ($value) {
+            // Check if the value is not an empty array or an empty property.
+            // @todo we are filtering out arrays here, but we should not. This should be fixed in the validator.
+            return !(is_array($value) && empty($value)) && $value !== null && $value !== '' && is_array($value) === false;
+        });
 
         $validator = new Validator();
         $validator->setMaxErrors(100);
@@ -211,13 +225,13 @@ class ValidateObject
         $errors = [];
         if ($exception instanceof ValidationException) {
             $errors[] = [
-                'property' => $exception->getProperty(),
+                'property' => method_exists($exception, 'getProperty') ? $exception->getProperty() : null,
                 'message'  => $exception->getMessage(),
             ];
         } else {
             foreach ($exception->getErrors() as $error) {
                 $errors[] = [
-                    'property' => $error['property'],
+                    'property' => isset($error['property']) ? $error['property'] : null,
                     'message'  => $error['message'],
                 ];
             }

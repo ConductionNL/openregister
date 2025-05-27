@@ -133,7 +133,8 @@ class GetObject
         ?string $uses=null,
         ?Register $register=null,
         ?Schema $schema=null,
-        ?array $ids=null
+        ?array $ids=null,
+        ?bool $published=false
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectEntityMapper->findAll(
@@ -145,7 +146,8 @@ class GetObject
             ids: $ids,
             uses: $uses,
             register: $register,
-            schema: $schema
+            schema: $schema,
+            published: $published
         );
 
         // If files are to be included, hydrate each object with its file information.
@@ -212,7 +214,7 @@ class GetObject
                 $value = $this->objectEntityMapper->findMultiple(ids: $id);
             } else {
                 // Find a single related object by its ID.
-                $value = $this->objectEntityMapper->find(id: $id);
+                $value = $this->objectEntityMapper->find(identifier: $id);
             }
 
             // Update the related objects array with the found value(s).

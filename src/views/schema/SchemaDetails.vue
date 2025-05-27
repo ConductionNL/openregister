@@ -4,27 +4,27 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 
 <template>
 	<NcAppContent>
-		<div class="dashboardContent">
-			<!-- Loading and error states -->
-			<div v-if="dashboardStore.loading" class="error">
-				<NcEmptyContent name="Loading" description="Loading schema statistics...">
-					<template #icon>
-						<NcLoadingIcon :size="64" />
-					</template>
-				</NcEmptyContent>
-			</div>
-			<div v-else-if="dashboardStore.error" class="error">
-				<NcEmptyContent name="Error" :description="dashboardStore.error">
-					<template #icon>
-						<AlertCircle :size="64" />
-					</template>
-				</NcEmptyContent>
-			</div>
-			<div v-else>
-				<div class="head">
-					<h1 class="h1">
-						{{ schemaStore.schemaItem.title }}
-					</h1>
+		<!-- Loading and error states -->
+		<div v-if="dashboardStore.loading" class="error">
+			<NcEmptyContent name="Loading" description="Loading schema statistics...">
+				<template #icon>
+					<NcLoadingIcon :size="64" />
+				</template>
+			</NcEmptyContent>
+		</div>
+		<div v-else-if="dashboardStore.error" class="error">
+			<NcEmptyContent name="Error" :description="dashboardStore.error">
+				<template #icon>
+					<AlertCircle :size="64" />
+				</template>
+			</NcEmptyContent>
+		</div>
+		<div v-else>
+			<span class="pageHeaderContainer">
+				<h2 class="pageHeader">
+					{{ schemaStore.schemaItem.title }}
+				</h2>
+				<div class="headerActionsContainer">
 					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
@@ -61,8 +61,9 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 						</NcActionButton>
 					</NcActions>
 				</div>
+			</span>
+			<div class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
-
 				<div class="chartsContainer">
 					<!-- Audit Trail Actions Chart -->
 					<div class="chartCard">
@@ -216,6 +217,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.pageHeaderContainer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0;
+}
+
 .dashboardContent {
 	margin-inline: auto;
 	max-width: 1200px;

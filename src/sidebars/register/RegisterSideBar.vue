@@ -7,9 +7,13 @@ import { registerStore, dashboardStore, navigationStore } from '../../store/stor
 		v-if="register"
 		ref="sidebar"
 		v-model="activeTab"
-		:title="register.title"
+		:name="register.title"
 		:subtitle="register.description"
-		subname="Register Details">
+		subname="Register Details"
+		:open="navigationStore.sidebarState.register"
+		@update:open="(e) => {
+			navigationStore.setSidebarState('register', e)
+		}">
 		<template #secondary-actions>
 			<NcButton @click="navigationStore.setModal('editRegister')">
 				<template #icon>

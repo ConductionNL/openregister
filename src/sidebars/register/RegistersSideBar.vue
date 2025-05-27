@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, registerStore, schemaStore, dashboardStore } from '../../store/store.js'
+import { objectStore, registerStore, schemaStore, dashboardStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,11 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 		v-model="activeTab"
 		name="Registers"
 		subtitle="Register Overview"
-		subname="Statistics and Metrics">
+		subname="Statistics and Metrics"
+		:open="navigationStore.sidebarState.registers"
+		@update:open="(e) => {
+			navigationStore.setSidebarState('registers', e)
+		}">
 		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
 			<template #icon>
 				<ChartBar :size="20" />

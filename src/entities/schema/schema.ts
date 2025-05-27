@@ -14,6 +14,8 @@ export class Schema implements TSchema {
 	public updated: string
 	public created: string
 	public slug: string
+	public hardValidation: boolean
+	public maxDepth: number
 	public stats?: TSchema['stats']
 
 	constructor(schema: TSchema) {
@@ -28,6 +30,8 @@ export class Schema implements TSchema {
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
 		this.slug = schema.slug || ''
+		this.hardValidation = schema.hardValidation || false
+		this.maxDepth = schema.maxDepth || 0
 		this.stats = schema.stats
 	}
 
@@ -44,6 +48,8 @@ export class Schema implements TSchema {
 			updated: z.string(),
 			created: z.string(),
 			slug: z.string().min(1),
+			hardValidation: z.boolean(),
+			maxDepth: z.number().int().min(0),
 		})
 
 		return schema.safeParse(this)

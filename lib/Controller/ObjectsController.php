@@ -419,7 +419,7 @@ class ObjectsController extends Controller
             }
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-            return $objectService->handleValidationException(exception: $exception);
+           return new JSONResponse($exception->getMessage(), 400);
         }
 
         // Return the created object.
@@ -928,6 +928,88 @@ class ObjectsController extends Controller
                 'imported' => $result
             ]);
 
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Publish an object
+     *
+     * This method publishes an object by setting its publication date to now or a specified date.
+     *
+     * @param string        $id            The ID of the object to publish
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the published object
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function publish(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        try {
+            // Get the publication date from request if provided
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            }
+
+            // Publish the object
+            $object = $objectService->publish($id, $date);
+
+            return new JSONResponse($object->jsonSerialize());
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Depublish an object
+     *
+     * This method depublishes an object by setting its depublication date to now or a specified date.
+     *
+     * @param string        $id            The ID of the object to depublish
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the depublished object
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function depublish(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        try {
+            // Get the depublication date from request if provided
+            $date = null;
+            if ($this->request->getParam('date') !== null) {
+                $date = new \DateTime($this->request->getParam('date'));
+            }
+
+            // Depublish the object
+            $object = $objectService->depublish($id, $date);
+
+            return new JSONResponse($object->jsonSerialize());
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
