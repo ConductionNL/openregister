@@ -1,2025 +1,2084 @@
 {
-    "components": {
-        "mappings": [],
-        "sources": [],
-        "rules": {
-            "zgw-change-post-to-get": {
-                "name": "ZGW Change Post to GET",
-                "description": "",
-                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/posttoget",
-                "version": "0.0.2",
-                "action": "post",
-                "timing": "before",
-                "conditions": {
-                    "==": [
-                        1,
-                        1
-                    ]
-                },
-                "type": "mapping",
-                "configuration": {
-                    "mapping": 4
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-23T09:33:40+00:00",
-                "updated": "2025-05-26T07:41:58+00:00",
-                "slug": "zgw-change-post-to-get"
-            },
-            "zgw-authenticatie-post": {
-                "name": "ZGW Authenticatie POST",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "post",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-post"
-            },
-            "zgw-authenticatie-get": {
-                "name": "ZGW Authenticatie GET",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "get",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-get"
-            },
-            "zgw-authenticatie-put": {
-                "name": "ZGW Authenticatie PUT",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "put",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-put"
-            },
-            "zgw-authenticatie-delete": {
-                "name": "ZGW Authenticatie DELETE",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "delete",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-delete"
-            },
-            "zgw-authenticatie-patch": {
-                "name": "ZGW Authenticatie PATCH",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "put",
-                "timing": "before",
-                "conditions": null,
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-patch"
-            },
-            "extend-self-object-patch": {
-                "name": "Extend Self Object patch",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "patch",
-                "timing": "before",
-                "conditions": {
-                    "==": [
-                        1,
-                        1
-                    ]
-                },
-                "type": "extend_input",
-                "configuration": {
-                    "extend_input": {
-                        "properties": [
-                            "id"
-                        ]
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-04-10T13:44:24+00:00",
-                "updated": "2025-04-10T13:44:24+00:00",
-                "slug": "extend-self-object-patch"
-            },
-            "extend-self-object-put": {
-                "name": "Extend Self Object put",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "put",
-                "timing": "before",
-                "conditions": {
-                    "==": [
-                        1,
-                        1
-                    ]
-                },
-                "type": "extend_input",
-                "configuration": {
-                    "extend_input": {
-                        "properties": [
-                            "id"
-                        ]
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-04-10T13:44:24+00:00",
-                "updated": "2025-04-10T13:44:24+00:00",
-                "slug": "extend-self-object-put"
-            },
-            "zgw-filter-object-status": {
-                "name": "ZGW filter object status",
-                "description": "",
-                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/16",
-                "version": "0.0.3",
-                "action": "get",
-                "timing": "before",
-                "conditions": {
-                    "==": [
-                        1,
-                        1
-                    ]
-                },
-                "type": "mapping",
-                "configuration": {
-                    "mapping": 6
-                },
-                "order": 1,
-                "configurations": [],
-                "created": "2025-05-23T09:33:40+00:00",
-                "updated": "2025-05-23T09:33:40+00:00",
-                "slug": "zgw-filter-object-status"
-            },
-            "zgw-publish-object": {
-                "name": "ZGW Publish Object",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "post",
-                "timing": "before",
-                "conditions": {
-                    "==": [
-                        1,
-                        1
-                    ]
-                },
-                "type": "mapping",
-                "configuration": {
-                    "mapping": 9
-                },
-                "order": 1,
-                "configurations": [],
-                "created": "2025-05-26T12:14:44+00:00",
-                "updated": "2025-05-26T12:14:44+00:00",
-                "slug": "zgw-publish-object"
-            },
-            "zgw-error-on-patch-published-object": {
-                "name": "ZGW Error on PATCH published object",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "patch",
-                "timing": "before",
-                "conditions": {
-                    "and": [
-                        {
-                            "==": [
-                                {
-                                    "var": "extendedParameters.id.concept"
-                                },
-                                false
-                            ]
-                        },
-                        {
-                            "!!": {
-                                "missing": [
-                                    "_parameters.eindeGeldigheid"
-                                ]
-                            }
-                        }
-                    ]
-                },
-                "type": "error",
-                "configuration": {
-                    "error": {
-                        "code": 400,
-                        "name": "Cannot update published ZaakType"
-                    }
-                },
-                "order": 2,
-                "configurations": [],
-                "created": "2025-04-10T13:44:24+00:00",
-                "updated": "2025-04-10T13:44:24+00:00",
-                "slug": "zgw-error-on-patch-published-object"
-            },
-            "zgw-error-on-put-published-object": {
-                "name": "ZGW Error on PUT published object",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "put",
-                "timing": "before",
-                "conditions": {
-                    "and": [
-                        {
-                            "==": [
-                                {
-                                    "var": "extendedParameters.id.concept"
-                                },
-                                false
-                            ]
-                        }
-                    ]
-                },
-                "type": "error",
-                "configuration": {
-                    "error": {
-                        "code": 400,
-                        "name": "Cannot update published ZaakType"
-                    }
-                },
-                "order": 2,
-                "configurations": [],
-                "created": "2025-04-10T13:44:24+00:00",
-                "updated": "2025-04-10T13:44:24+00:00",
-                "slug": "zgw-error-on-put-published-object"
-            }
-        },
-        "endpoints": {
-            "besluittype-get-collection": {
-                "name": "BesluitTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "besluittype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:58:34+00:00"
-            },
-            "besluittype-post": {
-                "name": "BesluitType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post"
-                ],
-                "configurations": [],
-                "slug": "besluittype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:59:02+00:00"
-            },
-            "besluittype-get-item": {
-                "name": "BesluitType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "besluittype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:59:39+00:00"
-            },
-            "besluittype-put": {
-                "name": "BesluitType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-put",
-                    "extend-self-object-put"
-                ],
-                "configurations": [],
-                "slug": "besluittype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:53:10+00:00"
-            },
-            "besluittype-patch": {
-                "name": "BesluitType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-patch",
-                    "extend-self-object-patch"
-                ],
-                "configurations": [],
-                "slug": "besluittype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:51:16+00:00"
-            },
-            "besluittype-delete": {
-                "name": "BesluitType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-delete"
-                ],
-                "configurations": [],
-                "slug": "besluittype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:59:57+00:00"
-            },
-            "besluittype-publish": {
-                "name": "BesluitType PUBLISH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/besluittypen/{{id}}/publish",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "besluittypen",
-                    "{{id}}",
-                    "publish"
-                ],
-                "endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?/publish$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/besluittype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post",
+	"components": {
+		"mappings": {
+			"put-to-get": {
+				"name": "PUT to GET",
+				"description": "",
+				"version": "0.0.3",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/3",
+				"mapping": {
+					"_method": "GET"
+				},
+				"unset": [],
+				"cast": [],
+				"passThrough": false,
+				"configurations": [],
+				"dateCreated": "2025-05-23T09:33:40+00:00",
+				"dateModified": "2025-05-23T09:33:40+00:00",
+				"slug": "put-to-get"
+			},
+			"statusfilter-ztc": {
+				"name": "Statusfilter ZTC",
+				"description": "",
+				"version": "0.0.3",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/6",
+				"mapping": {
+					"_parameters.concept": "{% if _parameters.status == 'definitief' %}false{% elseif _parameters.status == 'concept' %}true{% else %}alles{% endif %}"
+				},
+				"unset": [
+					"_parameters.status"
+				],
+				"cast": {
+					"_parameters.concept": [
+						"unsetIfValue==alles",
+						"boolean"
+					]
+				},
+				"passThrough": true,
+				"configurations": [],
+				"dateCreated": "2025-05-23T09:33:40+00:00",
+				"dateModified": "2025-05-23T09:33:40+00:00",
+				"slug": "statusfilter-ztc"
+			},
+			"ztc-publish-object": {
+				"name": "ZTC Publish Object",
+				"description": "",
+				"version": "0.0.6",
+				"reference": "",
+				"mapping": {
+					"_parameters.concept": false,
+					"_method": "PATCH"
+				},
+				"unset": [],
+				"cast": {
+					"_parameters.concept": "boolean"
+				},
+				"passThrough": false,
+				"configurations": [],
+				"dateCreated": "2025-05-26T12:09:33+00:00",
+				"dateModified": "2025-05-26T12:09:33+00:00",
+				"slug": "ztc-publish-object"
+			}
+		},
+		"sources": [],
+		"rules": {
+			"zgw-change-post-to-get": {
+				"name": "ZGW Change Post to GET",
+				"description": "",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/posttoget",
+				"version": "0.0.2",
+				"action": "post",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "mapping",
+				"configuration": {
+					"mapping": 4
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-23T09:33:40+00:00",
+				"updated": "2025-05-26T07:41:58+00:00",
+				"slug": "zgw-change-post-to-get"
+			},
+			"zgw-authenticatie-post": {
+				"name": "ZGW Authenticatie POST",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "post",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-post"
+			},
+			"zgw-authenticatie-get": {
+				"name": "ZGW Authenticatie GET",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "get",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-get"
+			},
+			"zgw-authenticatie-put": {
+				"name": "ZGW Authenticatie PUT",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-put"
+			},
+			"zgw-authenticatie-delete": {
+				"name": "ZGW Authenticatie DELETE",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "delete",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-delete"
+			},
+			"zgw-authenticatie-patch": {
+				"name": "ZGW Authenticatie PATCH",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": null,
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-patch"
+			},
+			"extend-self-object-patch": {
+				"name": "Extend Self Object patch",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "patch",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "extend_input",
+				"configuration": {
+					"extend_input": {
+						"properties": [
+							"id"
+						]
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "extend-self-object-patch"
+			},
+			"extend-self-object-put": {
+				"name": "Extend Self Object put",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "extend_input",
+				"configuration": {
+					"extend_input": {
+						"properties": [
+							"id"
+						]
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "extend-self-object-put"
+			},
+			"zgw-filter-object-status": {
+				"name": "ZGW filter object status",
+				"description": "",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/16",
+				"version": "0.0.3",
+				"action": "get",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "mapping",
+				"configuration": {
+					"mapping": 6
+				},
+				"order": 1,
+				"configurations": [],
+				"created": "2025-05-23T09:33:40+00:00",
+				"updated": "2025-05-23T09:33:40+00:00",
+				"slug": "zgw-filter-object-status"
+			},
+			"zgw-publish-object": {
+				"name": "ZGW Publish Object",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "post",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "mapping",
+				"configuration": {
+					"mapping": 9
+				},
+				"order": 1,
+				"configurations": [],
+				"created": "2025-05-26T12:14:44+00:00",
+				"updated": "2025-05-26T12:14:44+00:00",
+				"slug": "zgw-publish-object"
+			},
+			"zgw-error-on-patch-published-object": {
+				"name": "ZGW Error on PATCH published object",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "patch",
+				"timing": "before",
+				"conditions": {
+					"and": [
+						{
+							"==": [
+								{
+									"var": "extendedParameters.id.concept"
+								},
+								false
+							]
+						},
+						{
+							"!!": {
+								"missing": [
+									"_parameters.eindeGeldigheid"
+								]
+							}
+						}
+					]
+				},
+				"type": "error",
+				"configuration": {
+					"error": {
+						"code": 400,
+						"name": "Cannot update published ZaakType"
+					}
+				},
+				"order": 2,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "zgw-error-on-patch-published-object"
+			},
+			"zgw-error-on-put-published-object": {
+				"name": "ZGW Error on PUT published object",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": {
+					"and": [
+						{
+							"==": [
+								{
+									"var": "extendedParameters.id.concept"
+								},
+								false
+							]
+						}
+					]
+				},
+				"type": "error",
+				"configuration": {
+					"error": {
+						"code": 400,
+						"name": "Cannot update published ZaakType"
+					}
+				},
+				"order": 2,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "zgw-error-on-put-published-object"
+			}
+		},
+		"endpoints": {
+			"besluittype-get-collection": {
+				"name": "BesluitTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "besluittype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:58:34+00:00"
+			},
+			"besluittype-post": {
+				"name": "BesluitType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "besluittype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:59:02+00:00"
+			},
+			"besluittype-get-item": {
+				"name": "BesluitType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "besluittype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:59:39+00:00"
+			},
+			"besluittype-put": {
+				"name": "BesluitType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put",
+					"extend-self-object-put"
+				],
+				"configurations": [],
+				"slug": "besluittype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:53:10+00:00"
+			},
+			"besluittype-patch": {
+				"name": "BesluitType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch",
+					"extend-self-object-patch"
+				],
+				"configurations": [],
+				"slug": "besluittype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:51:16+00:00"
+			},
+			"besluittype-delete": {
+				"name": "BesluitType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "besluittype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:59:57+00:00"
+			},
+			"besluittype-publish": {
+				"name": "BesluitType PUBLISH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}/publish",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}",
+					"publish"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?/publish$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post",
 					"zgw-publish-object"
-                ],
-                "configurations": [],
-                "slug": "besluittype-publish",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:16:09+00:00"
-            },
-            "catalogus-get-collection": {
-                "name": "Catalogussen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/catalogussen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "catalogussen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/catalogussen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/catalogus",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "catalogus-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T11:10:28+00:00"
-            },
-            "catalogus-post": {
-                "name": "Catalogus POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/catalogussen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "catalogussen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/catalogussen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/catalogus",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post"
-                ],
-                "configurations": [],
-                "slug": "catalogus-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:57:54+00:00"
-            },
-            "catalogus-get-item": {
-                "name": "Catalogus GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/catalogussen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "catalogussen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/catalogussen/([^/]+)$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/catalogus",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "catalogus-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T11:14:29+00:00"
-            },
-            "eigenschap-get-collection": {
-                "name": "Eigenschappen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "eigenschappen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/eigenschappen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/eigenschap",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "eigenschap-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:05:36+00:00"
-            },
-            "eigenschap-post": {
-                "name": "Eigenschap POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "eigenschappen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/eigenschappen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/eigenschap",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post"
-                ],
-                "configurations": [],
-                "slug": "eigenschap-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:05:51+00:00"
-            },
-            "eigenschap-get-item": {
-                "name": "Eigenschap GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "eigenschappen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/eigenschap",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "eigenschap-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:06:28+00:00"
-            },
-            "eigenschap-put": {
-                "name": "Eigenschap PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "eigenschappen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/eigenschap",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-put"
-                ],
-                "configurations": [],
-                "slug": "eigenschap-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:06:53+00:00"
-            },
-            "eigenschap-patch": {
-                "name": "Eigenschap PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "eigenschappen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/eigenschap",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-patch"
-                ],
-                "configurations": [],
-                "slug": "eigenschap-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:07:23+00:00"
-            },
-            "eigenschap-delete": {
-                "name": "Eigenschap DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/eigenschappen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "eigenschappen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/eigenschap",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-delete"
-                ],
-                "configurations": [],
-                "slug": "eigenschap-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:09:17+00:00"
-            },
-            "informatieobjecttype-get-collection": {
-                "name": "InformatieObjectTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:09:47+00:00"
-            },
-            "informatieobjecttype-post": {
-                "name": "InformatieObjectType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:10:13+00:00"
-            },
-            "informatieobjecttype-get-item": {
-                "name": "InformatieObjectType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:10:51+00:00"
-            },
-            "informatieobjecttype-put": {
-                "name": "InformatieObjectType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-put",
-                    "extend-self-object-put"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:12:28+00:00"
-            },
-            "informatieobjecttype-patch": {
-                "name": "InformatieObjectType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-patch",
-                    "extend-self-object-patch"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:13:51+00:00"
-            },
-            "informatieobjecttype-delete": {
-                "name": "InformatieObjectType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-delete"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:14:12+00:00"
-            },
-            "informatieobjecttype-publish": {
-                "name": "InformatieObjectType PUBLISH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}/publish",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "informatieobjecttypen",
-                    "{{id}}",
-                    "publish"
-                ],
-                "endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?/publish$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/informatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post",
+				],
+				"configurations": [],
+				"slug": "besluittype-publish",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:16:09+00:00"
+			},
+			"catalogus-get-collection": {
+				"name": "Catalogussen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/catalogussen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"catalogussen"
+				],
+				"endpointRegex": "#^ztc/api/v1/catalogussen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/catalogus",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "catalogus-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:10:28+00:00"
+			},
+			"catalogus-post": {
+				"name": "Catalogus POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/catalogussen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"catalogussen"
+				],
+				"endpointRegex": "#^ztc/api/v1/catalogussen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/catalogus",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "catalogus-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:57:54+00:00"
+			},
+			"catalogus-get-item": {
+				"name": "Catalogus GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/catalogussen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"catalogussen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/catalogussen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/catalogus",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "catalogus-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:14:29+00:00"
+			},
+			"eigenschap-get-collection": {
+				"name": "Eigenschappen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "eigenschap-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:05:36+00:00"
+			},
+			"eigenschap-post": {
+				"name": "Eigenschap POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "eigenschap-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:05:51+00:00"
+			},
+			"eigenschap-get-item": {
+				"name": "Eigenschap GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "eigenschap-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:06:28+00:00"
+			},
+			"eigenschap-put": {
+				"name": "Eigenschap PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "eigenschap-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:06:53+00:00"
+			},
+			"eigenschap-patch": {
+				"name": "Eigenschap PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "eigenschap-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:07:23+00:00"
+			},
+			"eigenschap-delete": {
+				"name": "Eigenschap DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "eigenschap-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:09:17+00:00"
+			},
+			"informatieobjecttype-get-collection": {
+				"name": "InformatieObjectTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:09:47+00:00"
+			},
+			"informatieobjecttype-post": {
+				"name": "InformatieObjectType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:10:13+00:00"
+			},
+			"informatieobjecttype-get-item": {
+				"name": "InformatieObjectType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:10:51+00:00"
+			},
+			"informatieobjecttype-put": {
+				"name": "InformatieObjectType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put",
+					"extend-self-object-put"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:12:28+00:00"
+			},
+			"informatieobjecttype-patch": {
+				"name": "InformatieObjectType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch",
+					"extend-self-object-patch"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:13:51+00:00"
+			},
+			"informatieobjecttype-delete": {
+				"name": "InformatieObjectType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:14:12+00:00"
+			},
+			"informatieobjecttype-publish": {
+				"name": "InformatieObjectType PUBLISH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}/publish",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}",
+					"publish"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?/publish$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post",
 					"zgw-publish-object"
-                ],
-                "configurations": [],
-                "slug": "informatieobjecttype-publish",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:15:37+00:00"
-            },
-            "resultaattype-get-collection": {
-                "name": "ResultaatTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "resultaattypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/resultaattypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/resultaattype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-publish",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:15:37+00:00"
+			},
+			"resultaattype-get-collection": {
+				"name": "ResultaatTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "resultaattype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:01:49+00:00"
-            },
-            "resultaattype-post": {
-                "name": "ResultaatType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "resultaattypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/resultaattypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/resultaattype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "resultaattype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:49+00:00"
+			},
+			"resultaattype-post": {
+				"name": "ResultaatType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-post"
 				],
-                "configurations": [],
-                "slug": "resultaattype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:01:49+00:00"
-            },
-            "resultaattype-get-item": {
-                "name": "ResultaatType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "resultaattypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/resultaattype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "resultaattype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:49+00:00"
+			},
+			"resultaattype-get-item": {
+				"name": "ResultaatType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "resultaattype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:01:50+00:00"
-            },
-            "resultaattype-put": {
-                "name": "ResultaatType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "resultaattypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/resultaattype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "resultaattype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:50+00:00"
+			},
+			"resultaattype-put": {
+				"name": "ResultaatType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-put"
 				],
-                "configurations": [],
-                "slug": "resultaattype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:01:49+00:00"
-            },
-            "resultaattype-patch": {
-                "name": "ResultaatType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "resultaattypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/resultaattype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "resultaattype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:49+00:00"
+			},
+			"resultaattype-patch": {
+				"name": "ResultaatType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-patch"
 				],
-                "configurations": [],
-                "slug": "resultaattype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:01:54+00:00"
-            },
-            "resultaattype-delete": {
-                "name": "ResultaatType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/resultaattypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "resultaattypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/resultaattype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "resultaattype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:54+00:00"
+			},
+			"resultaattype-delete": {
+				"name": "ResultaatType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-delete"
 				],
-                "configurations": [],
-                "slug": "resultaattype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:01:54+00:00"
-            },
-            "roltype-get-collection": {
-                "name": "RolTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "roltypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/roltypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/roltype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "resultaattype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:54+00:00"
+			},
+			"roltype-get-collection": {
+				"name": "RolTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "roltype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:03+00:00"
-            },
-            "roltype-post": {
-                "name": "RolType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "roltypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/roltypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/roltype",
-                "conditions": [
+				"configurations": [],
+				"slug": "roltype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:03+00:00"
+			},
+			"roltype-post": {
+				"name": "RolType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [
 					"zgw-authenticatie-post"
 				],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [],
-                "configurations": [],
-                "slug": "roltype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:07+00:00"
-            },
-            "roltype-get-item": {
-                "name": "RolType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "roltypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/roltype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "roltype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:07+00:00"
+			},
+			"roltype-get-item": {
+				"name": "RolType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "roltype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:11+00:00"
-            },
-            "roltype-put": {
-                "name": "RolType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "roltypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/roltype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "roltype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:11+00:00"
+			},
+			"roltype-put": {
+				"name": "RolType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-put"
 				],
-                "configurations": [],
-                "slug": "roltype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:14+00:00"
-            },
-            "roltype-patch": {
-                "name": "RolType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "roltypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/roltype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "roltype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:14+00:00"
+			},
+			"roltype-patch": {
+				"name": "RolType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-patch"
 				],
-                "configurations": [],
-                "slug": "roltype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:20+00:00"
-            },
-            "roltype-delete": {
-                "name": "RolType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/roltypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "roltypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/roltype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "roltype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:20+00:00"
+			},
+			"roltype-delete": {
+				"name": "RolType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-delete"
 				],
-                "configurations": [],
-                "slug": "roltype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:23+00:00"
-            },
-            "statustype-get-collection": {
-                "name": "StatusTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "statustypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/statustypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/statustype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "roltype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:23+00:00"
+			},
+			"statustype-get-collection": {
+				"name": "StatusTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "statustype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:28+00:00"
-            },
-            "statustype-post": {
-                "name": "StatusType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "statustypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/statustypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/statustype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "statustype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:28+00:00"
+			},
+			"statustype-post": {
+				"name": "StatusType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-post"
 				],
-                "configurations": [],
-                "slug": "statustype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:35+00:00"
-            },
-            "statustype-get-item": {
-                "name": "StatusType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "statustypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/statustype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "statustype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:35+00:00"
+			},
+			"statustype-get-item": {
+				"name": "StatusType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "statustype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:37+00:00"
-            },
-            "statustype-put": {
-                "name": "StatusType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "statustypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/statustype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "statustype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:37+00:00"
+			},
+			"statustype-put": {
+				"name": "StatusType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-put"
 				],
-                "configurations": [],
-                "slug": "statustype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:44+00:00"
-            },
-            "statustype-patch": {
-                "name": "StatusType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "statustypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/statustype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "statustype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:44+00:00"
+			},
+			"statustype-patch": {
+				"name": "StatusType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-patch"
 				],
-                "configurations": [],
-                "slug": "statustype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:45+00:00"
-            },
-            "statustype-delete": {
-                "name": "StatusType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/statustypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "statustypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/statustype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "statustype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:45+00:00"
+			},
+			"statustype-delete": {
+				"name": "StatusType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-delete"
 				],
-                "configurations": [],
-                "slug": "statustype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:47+00:00"
-            },
-            "zaakobjecttype-get-collection": {
-                "name": "ZaakObjectTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaakobjecttypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaakobjecttypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaakobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "statustype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:47+00:00"
+			},
+			"zaakobjecttype-get-collection": {
+				"name": "ZaakObjectTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "zaakobjecttype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:50+00:00"
-            },
-            "zaakobjecttype-post": {
-                "name": "ZaakObjectType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaakobjecttypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaakobjecttypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaakobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaakobjecttype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:50+00:00"
+			},
+			"zaakobjecttype-post": {
+				"name": "ZaakObjectType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-post"
 				],
-                "configurations": [],
-                "slug": "zaakobjecttype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:02:59+00:00"
-            },
-            "zaakobjecttype-get-item": {
-                "name": "ZaakObjectType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaakobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaakobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaakobjecttype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:59+00:00"
+			},
+			"zaakobjecttype-get-item": {
+				"name": "ZaakObjectType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "zaakobjecttype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:02+00:00"
-            },
-            "zaakobjecttype-put": {
-                "name": "ZaakObjectType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaakobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaakobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaakobjecttype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:02+00:00"
+			},
+			"zaakobjecttype-put": {
+				"name": "ZaakObjectType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-put"
 				],
-                "configurations": [],
-                "slug": "zaakobjecttype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:05+00:00"
-            },
-            "zaakobjecttype-patch": {
-                "name": "ZaakObjectType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaakobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaakobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaakobjecttype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:05+00:00"
+			},
+			"zaakobjecttype-patch": {
+				"name": "ZaakObjectType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-patch"
 				],
-                "configurations": [],
-                "slug": "zaakobjecttype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:11+00:00"
-            },
-            "zaakobjecttype-delete": {
-                "name": "ZaakObjectType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaakobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaakobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaakobjecttype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:11+00:00"
+			},
+			"zaakobjecttype-delete": {
+				"name": "ZaakObjectType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-delete"
 				],
-                "configurations": [],
-                "slug": "zaakobjecttype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:24+00:00"
-            },
-            "zaaktypeinformatieobjecttype-get-collection": {
-                "name": "ZaaktypeInformatieObjectTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktype-informatieobjecttypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktypeinformatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaakobjecttype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:24+00:00"
+			},
+			"zaaktypeinformatieobjecttype-get-collection": {
+				"name": "ZaaktypeInformatieObjectTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "zaaktypeinformatieobjecttype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:28+00:00"
-            },
-            "zaaktypeinformatieobjecttype-post": {
-                "name": "ZaaktypeInformatieObjectType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktype-informatieobjecttypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktypeinformatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:28+00:00"
+			},
+			"zaaktypeinformatieobjecttype-post": {
+				"name": "ZaaktypeInformatieObjectType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-post"
 				],
-                "configurations": [],
-                "slug": "zaaktypeinformatieobjecttype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:31+00:00"
-            },
-            "zaaktypeinformatieobjecttype-get-item": {
-                "name": "ZaaktypeInformatieObjectType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktype-informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktypeinformatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:31+00:00"
+			},
+			"zaaktypeinformatieobjecttype-get-item": {
+				"name": "ZaaktypeInformatieObjectType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-get"
 				],
-                "configurations": [],
-                "slug": "zaaktypeinformatieobjecttype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:31+00:00"
-            },
-            "zaaktypeinformatieobjecttype-put": {
-                "name": "ZaaktypeInformatieObjectType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktype-informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktypeinformatieobjecttype",
-                "conditions": [
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:31+00:00"
+			},
+			"zaaktypeinformatieobjecttype-put": {
+				"name": "ZaaktypeInformatieObjectType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [
 					"zgw-authenticatie-put"
 				],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [],
-                "configurations": [],
-                "slug": "zaaktypeinformatieobjecttype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:35+00:00"
-            },
-            "zaaktypeinformatieobjecttype-patch-item": {
-                "name": "ZaaktypeInformatieObjectType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktype-informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktypeinformatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:35+00:00"
+			},
+			"zaaktypeinformatieobjecttype-patch-item": {
+				"name": "ZaaktypeInformatieObjectType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-patch"
 				],
-                "configurations": [],
-                "slug": "zaaktypeinformatieobjecttype-patch-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:38+00:00"
-            },
-            "zaaktypeinformatieobjecttype-delete-item": {
-                "name": "ZaaktypeInformatieObjectType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktype-informatieobjecttypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktypeinformatieobjecttype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-patch-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:38+00:00"
+			},
+			"zaaktypeinformatieobjecttype-delete-item": {
+				"name": "ZaaktypeInformatieObjectType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
 					"zgw-authenticatie-delete"
 				],
-                "configurations": [],
-                "slug": "zaaktypeinformatieobjecttype-delete-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:03:41+00:00"
-            },
-            "zaaktype-get-collection": {
-                "name": "ZaakTypen GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get",
-                    "zgw-filter-object-status"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-get-collection",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T14:35:19+00:00"
-            },
-            "zaaktype-post": {
-                "name": "ZaakType POST",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-post",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T11:07:24+00:00"
-            },
-            "zaaktype-get-item": {
-                "name": "ZaakType GET",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen/([^/]+)$#",
-                "method": "GET",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-get"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-get-item",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T11:23:15+00:00"
-            },
-            "zaaktype-put": {
-                "name": "ZaakType PUT",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
-                "method": "PUT",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-put",
-                    "extend-self-object-put"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-put",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T10:04:25+00:00"
-            },
-            "zaaktype-patch": {
-                "name": "ZaakType PATCH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
-                "method": "PATCH",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-patch",
-                    "extend-self-object-patch"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-patch",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-27T09:39:50+00:00"
-            },
-            "zaaktype-delete": {
-                "name": "ZaakType DELETE",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen/{{id}}",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen",
-                    "{{id}}"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
-                "method": "DELETE",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-delete"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-delete",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T11:09:16+00:00"
-            },
-            "zaaktype-publish": {
-                "name": "ZaakType PUBLISH",
-                "description": "",
-                "reference": "",
-                "version": "0.0.1",
-                "endpoint": "ztc/api/v1/zaaktypen/{{id}}/publish",
-                "endpointArray": [
-                    "ztc",
-                    "api",
-                    "v1",
-                    "zaaktypen",
-                    "{{id}}",
-                    "publish"
-                ],
-                "endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?/publish$#",
-                "method": "POST",
-                "targetType": "register/schema",
-                "targetId": "catalogi/zaaktype",
-                "conditions": [],
-                "inputMapping": null,
-                "outputMapping": null,
-                "rules": [
-                    "zgw-authenticatie-post",
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-delete-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:41+00:00"
+			},
+			"zaaktype-get-collection": {
+				"name": "ZaakTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get",
+					"zgw-filter-object-status"
+				],
+				"configurations": [],
+				"slug": "zaaktype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T14:35:19+00:00"
+			},
+			"zaaktype-post": {
+				"name": "ZaakType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "zaaktype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:07:24+00:00"
+			},
+			"zaaktype-get-item": {
+				"name": "ZaakType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "zaaktype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:23:15+00:00"
+			},
+			"zaaktype-put": {
+				"name": "ZaakType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put",
+					"extend-self-object-put"
+				],
+				"configurations": [],
+				"slug": "zaaktype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:04:25+00:00"
+			},
+			"zaaktype-patch": {
+				"name": "ZaakType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch",
+					"extend-self-object-patch"
+				],
+				"configurations": [],
+				"slug": "zaaktype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:39:50+00:00"
+			},
+			"zaaktype-delete": {
+				"name": "ZaakType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "zaaktype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:09:16+00:00"
+			},
+			"zaaktype-publish": {
+				"name": "ZaakType PUBLISH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}/publish",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}",
+					"publish"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?/publish$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post",
 					"zgw-publish-object"
-                ],
-                "configurations": [],
-                "slug": "zaaktype-publish",
-                "created": "2025-05-26T11:04:38+00:00",
-                "updated": "2025-05-26T12:18:31+00:00"
-            }
-        },
-        "synchronizations": [],
-        "jobs": [],
-        "registers": {
-            "catalogi": {
-                "slug": "catalogi",
-                "title": "Catalogi",
-                "version": "0.0.2",
-                "description": "",
-                "schemas": [
-                    "besluittype",
-                    "catalogus",
-                    "eigenschap",
-                    "informatieobjecttype",
-                    "resultaattype",
-                    "roltype",
-                    "statustype",
-                    "zaakobjecttype",
-                    "zaaktype",
-                    "zaaktypeinformatieobjecttype"
-                ],
-                "source": "",
-                "tablePrefix": "",
-                "folder": "",
-                "updated": "2025-05-16T11:33:05+00:00",
-                "created": "2025-05-14T11:49:55+00:00",
-                "owner": "",
-                "application": null,
-                "organisation": null,
-                "authorization": null,
-                "deleted": null
-            }
-        },
+				],
+				"configurations": [],
+				"slug": "zaaktype-publish",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T12:18:31+00:00"
+			}
+		},
+		"synchronizations": [],
+		"jobs": [],
+		"registers": {
+			"catalogi": {
+				"slug": "catalogi",
+				"title": "Catalogi",
+				"version": "0.0.2",
+				"description": "",
+				"schemas": [
+					"besluittype",
+					"catalogus",
+					"eigenschap",
+					"informatieobjecttype",
+					"resultaattype",
+					"roltype",
+					"statustype",
+					"zaakobjecttype",
+					"zaaktype",
+					"zaaktypeinformatieobjecttype"
+				],
+				"source": "",
+				"tablePrefix": "",
+				"folder": "",
+				"updated": "2025-05-16T11:33:05+00:00",
+				"created": "2025-05-14T11:49:55+00:00",
+				"owner": "",
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null
+			}
+		},
 		"schemas": {
 			"besluittype": {
 				"slug": "besluittype",
@@ -2874,7 +2933,16 @@
 						"maxLength": 80
 					},
 					"vertrouwelijkheidaanduiding": {
-						"enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
+						"enum": [
+							"openbaar",
+							"beperkt_openbaar",
+							"intern",
+							"zaakvertrouwelijk",
+							"vertrouwelijk",
+							"confidentieel",
+							"geheim",
+							"zeer_geheim"
+						],
 						"description": "Aanduiding van de mate waarin informatieobjecten van dit INFORMATIEOBJECTTYPE voor de openbaarheid bestemd zijn.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
 						"title": "vertrouwelijkheidaanduiding",
 						"type": "string"
@@ -3522,7 +3590,16 @@
 						"maxLength": 100
 					},
 					"omschrijvingGeneriek": {
-						"enum": ["adviseur", "behandelaar", "belanghebbende", "beslisser", "initiator", "klantcontacter", "zaakcoordinator", "mede_initiator"],
+						"enum": [
+							"adviseur",
+							"behandelaar",
+							"belanghebbende",
+							"beslisser",
+							"initiator",
+							"klantcontacter",
+							"zaakcoordinator",
+							"mede_initiator"
+						],
 						"description": "Algemeen gehanteerde omschrijving van de aard van de ROL.\n\nUitleg bij mogelijke waarden:\n\n* `adviseur` - (Adviseur) Kennis in dienst stellen van de behandeling van (een deel van) een zaak.\n* `behandelaar` - (Behandelaar) De vakinhoudelijke behandeling doen van (een deel van) een zaak.\n* `belanghebbende` - (Belanghebbende) Vanuit eigen en objectief belang rechtstreeks betrokken zijn bij de behandeling en/of de uitkomst van een zaak.\n* `beslisser` - (Beslisser) Nemen van besluiten die voor de uitkomst van een zaak noodzakelijk zijn.\n* `initiator` - (Initiator) Aanleiding geven tot de start van een zaak ..\n* `klantcontacter` - (Klantcontacter) Het eerste aanspreekpunt zijn voor vragen van burgers en bedrijven ..\n* `zaakcoordinator` - (Zaakco\u00f6rdinator) Er voor zorg dragen dat de behandeling van de zaak in samenhang uitgevoerd wordt conform de daarover gemaakte afspraken.\n* `mede_initiator` - Mede-initiator",
 						"title": "omschrijvingGeneriek",
 						"type": "string"
@@ -4181,7 +4258,16 @@
 						"maxLength": 80
 					},
 					"vertrouwelijkheidaanduiding": {
-						"enum": ["openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk", "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"],
+						"enum": [
+							"openbaar",
+							"beperkt_openbaar",
+							"intern",
+							"zaakvertrouwelijk",
+							"vertrouwelijk",
+							"confidentieel",
+							"geheim",
+							"zeer_geheim"
+						],
 						"description": "Aanduiding van de mate waarin zaakdossiers van ZAAKen van dit ZAAKTYPE voor de openbaarheid bestemd zijn. Indien de zaak bij het aanmaken geen vertrouwelijkheidaanduiding krijgt, dan wordt deze waarde gezet.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
 						"title": "vertrouwelijkheidaanduiding",
 						"type": "string"
@@ -4202,7 +4288,10 @@
 						"title": "toelichting"
 					},
 					"indicatieInternOfExtern": {
-						"enum": ["intern", "extern"],
+						"enum": [
+							"intern",
+							"extern"
+						],
 						"description": "Een aanduiding waarmee onderscheid wordt gemaakt tussen ZAAKTYPEn die Intern respectievelijk Extern ge\u00efnitieerd worden. Indien van beide sprake kan zijn, dan prevaleert de externe initiatie.",
 						"title": "indicatieInternOfExtern",
 						"type": "string"
@@ -4981,7 +5070,11 @@
 						"title": "volgnummer"
 					},
 					"richting": {
-						"enum": ["inkomend", "intern", "uitgaand"],
+						"enum": [
+							"inkomend",
+							"intern",
+							"uitgaand"
+						],
 						"description": "Aanduiding van de richting van informatieobjecten van het gerelateerde INFORMATIEOBJECTTYPE bij zaken van het gerelateerde ZAAKTYPE.\n\nUitleg bij mogelijke waarden:\n\n* `inkomend` - Inkomend\n* `intern` - Intern\n* `uitgaand` - Uitgaand",
 						"title": "richting",
 						"type": "string"
@@ -5008,12 +5101,12 @@
 				"configuration": null
 			}
 		}
-    },
-    "openapi": "3.0.0",
-    "info": {
-        "id": 3,
-        "title": "Catalogi",
-        "description": "",
-        "version": "0.0.2"
-    }
+	},
+	"openapi": "3.0.0",
+	"info": {
+		"id": 3,
+		"title": "Catalogi",
+		"description": "",
+		"version": "0.0.2"
+	}
 }
