@@ -1145,6 +1145,9 @@ class FileService
      * @throws Exception If file creation fails for other reasons
      *
      * @return File The created file
+     *
+     * @phpstan-param array<int, string> $tags
+     * @psalm-param array<int, string> $tags
      */
     public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
     {
@@ -1156,6 +1159,12 @@ class FileService
                 schema: $objectEntity->getSchema()
             );
 
+            // Check if the content is base64 encoded and decode it if necessary
+            if (base64_encode(base64_decode($content, true)) === $content) {
+                $content = base64_decode($content);
+            }
+
+            // Check if the file name is empty
             if (empty($fileName) === true) {
                 throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
             }
@@ -1163,8 +1172,8 @@ class FileService
             /**
              * @var File $file
              */
-            $file = $folder->newFile($fileName);
-
+            $file = $folder->newFile($fileName);            
+            
             // Write content to the file
             $file->putContent($content);
 
@@ -1181,9 +1190,11 @@ class FileService
             return $file;
 
         } catch (NotPermittedException $e) {
+            // Log permission error and rethrow exception
             $this->logger->error("Permission denied creating file $fileName: ".$e->getMessage());
             throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
         } catch (\Exception $e) {
+            // Log general error and rethrow exception
             $this->logger->error("Failed to create file $fileName: ".$e->getMessage());
             throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
         }

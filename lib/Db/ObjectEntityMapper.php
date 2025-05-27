@@ -360,7 +360,8 @@ class ObjectEntityMapper extends QBMapper
         ?string $uses=null,
         bool $includeDeleted=false,
         ?Register $register=null,
-        ?Schema $schema=null
+        ?Schema $schema=null,
+        ?bool $published=false
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -399,6 +400,23 @@ class ObjectEntityMapper extends QBMapper
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
+
+        // If published filter is set, only include objects that are currently published.
+        if ($published === true) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            // published <= now AND (depublished IS NULL OR depublished > now)
+            $qb->andWhere(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull('published'),
+                    $qb->expr()->lte('published', $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull('depublished'),
+                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                    )
+                )
+            );
+        }
+        
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
