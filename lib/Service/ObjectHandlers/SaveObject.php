@@ -225,6 +225,7 @@ class SaveObject
         if ($uuid !== null) {
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
+				$data = $this->setDefaultValues($existingObject, $schema, $data);
                 return $this->updateObject($register, $schema, $data, $existingObject);
             } catch (\Exception $e) {
                 // Object not found, proceed with creating new object.
