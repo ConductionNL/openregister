@@ -539,6 +539,16 @@ class FileService
             if ($group === null) {
                 $group = $this->groupManager->createGroup(self::APP_GROUP);
             }
+
+            // Get the current user from the session.
+            $currentUser = $this->userSession->getUser();
+
+            // Add the current user to the group.
+            if ($currentUser !== null) {
+                $group->addUser($currentUser);
+            }
+
+            // Add the OpenCatalogi user to the group.
             $group->addUser($openCatalogiUser);
         }
 
