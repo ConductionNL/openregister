@@ -171,8 +171,8 @@ class SaveObject
         $defaultValues = array_diff_key($defaultValues, $data);
 
         // Render twig templated default values.
-        $renderedDefaultValues = array_map(function(string $defaultValue) use ($objectEntity, $data) {
-            if (str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
+        $renderedDefaultValues = array_map(function(mixed $defaultValue) use ($objectEntity, $data) {
+            if (is_string($defaultValue) && str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
                 return $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
             }
 
@@ -223,6 +223,7 @@ class SaveObject
         if ($uuid !== null) {
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
+				$data = $this->setDefaultValues($existingObject, $schema, $data);
                 return $this->updateObject($register, $schema, $data, $existingObject);
             } catch (\Exception $e) {
                 // Object not found, proceed with creating new object.

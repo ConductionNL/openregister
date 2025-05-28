@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\Entity;
 use OC\Files\Node\File;
 use OCP\IUserSession;
@@ -223,7 +224,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Initialize the entity and define field types
      */
-    public function __construct()
+    public function __construct(
+	)
     {
         $this->addType(fieldName:'uuid', type: 'string');
         $this->addType(fieldName:'uri', type: 'string');
@@ -279,7 +281,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getFiles(): array
     {
-        return ($this->files ?? []);
+		return ($this->files ?? []);
 
     }//end getFiles()
 
@@ -523,7 +525,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
-            $lock = $this->locked;
+            $lock = $this->setLocked();
 
             // If locked by different user.
             if ($lock['user'] !== $userId) {
@@ -535,25 +537,25 @@ class ObjectEntity extends Entity implements JsonSerializable
             $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->locked = [
+            $this->setLocked([
                 'user'       => $userId,
                 'process'    => ($process ?? $lock['process']),
                 'created'    => $lock['created'],
                 'duration'   => $duration,
                 'expiration' => $newExpiration->format('c'),
-            ];
+            ]);
         } else {
             // Create new lock.
             $expiration = clone $now;
             $expiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->locked = [
+            $this->setLocked([
                 'user'       => $userId,
                 'process'    => $process,
                 'created'    => $now->format('c'),
                 'duration'   => $duration,
                 'expiration' => $expiration->format('c'),
-            ];
+            ]);
         }//end if
 
         return true;
@@ -588,7 +590,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             throw new Exception('Object is locked by another user');
         }
 
-        $this->locked = null;
+        $this->setLocked(null);
         return true;
 
     }//end unlock()

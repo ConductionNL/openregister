@@ -368,9 +368,9 @@ class RenderObject
             $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields);
         }
 
-        $entity->setObject($objectData);
+		$entity->setObject($objectData);
 
-        return $entity;
+		return $entity;
 
     }//end renderEntity()
 
@@ -622,7 +622,7 @@ class RenderObject
         $inversedProperties = array_filter(
                 $properties,
                 function ($property) {
-                    return isset($property['inversedBy']) && !empty($property['inversedBy']);
+                    return (isset($property['inversedBy']) && !empty($property['inversedBy'])) || (isset($property['items']['inversedBy']) && !empty($property['items']['inversedBy']));
                 }
                 );
 
@@ -671,6 +671,7 @@ class RenderObject
         // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
+
         // Set all found objects to the objectsCache.
         $ids            = array_map(
                 function (ObjectEntity $object) {
@@ -678,6 +679,7 @@ class RenderObject
                 },
                 $referencingObjects
                 );
+
         $objectsToCache = array_combine(keys: $ids, values: $referencingObjects);
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
@@ -685,7 +687,7 @@ class RenderObject
         foreach ($inversedProperties as $propertyName => $inversedBy) {
             $objectData[$propertyName] = [];
 
-            $inversedObjects = array_filter(
+            $inversedObjects = array_values(array_filter(
                     $referencingObjects,
                     function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
                         $data   = $object->jsonSerialize();
@@ -693,16 +695,16 @@ class RenderObject
 
                         // @TODO: accomodate schema references.
                         if (isset($inversedBy['$ref']) === true) {
-                            $schemaId = substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1);
+                            $schemaId = str_contains(haystack: $inversedBy['$ref'], needle: '/') ? substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1) : $inversedBy['$ref'];
                         } else if (isset($inversedBy['items']['$ref']) === true) {
-                            $schemaId = substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1);
+                            $schemaId = str_contains(haystack: $inversedBy['items']['$ref'], needle: '/') ? substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1) : $inversedBy['items']['$ref'];
                         } else {
                             return false;
                         }//end if
 
-                        return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
+                        return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === (int) $object->getSchema();
                     }
-                    );
+                    ));
 
             $inversedUuids = array_map(
                     function (ObjectEntity $object) {
@@ -716,6 +718,7 @@ class RenderObject
             } else {
                 $objectData[$propertyName] = end($inversedUuids);
             }
+
         }//end foreach
 
         return $objectData;

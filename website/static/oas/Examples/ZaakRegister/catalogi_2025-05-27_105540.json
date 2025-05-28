@@ -1,0 +1,5103 @@
+{
+	"components": {
+		"mappings": {
+			"put-to-get": {
+				"name": "PUT to GET",
+				"description": "",
+				"version": "0.0.3",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/3",
+				"mapping": {
+					"_method": "GET"
+				},
+				"unset": [],
+				"cast": [],
+				"passThrough": false,
+				"configurations": [],
+				"dateCreated": "2025-05-23T09:33:40+00:00",
+				"dateModified": "2025-05-23T09:33:40+00:00",
+				"slug": "put-to-get"
+			},
+			"statusfilter-ztc": {
+				"name": "Statusfilter ZTC",
+				"description": "",
+				"version": "0.0.3",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/6",
+				"mapping": {
+					"_parameters.concept": "{% if _parameters.status == 'definitief' %}false{% elseif _parameters.status == 'concept' %}true{% else %}alles{% endif %}"
+				},
+				"unset": [
+					"_parameters.status"
+				],
+				"cast": {
+					"_parameters.concept": [
+						"unsetIfValue==alles",
+						"boolean"
+					]
+				},
+				"passThrough": true,
+				"configurations": [],
+				"dateCreated": "2025-05-23T09:33:40+00:00",
+				"dateModified": "2025-05-23T09:33:40+00:00",
+				"slug": "statusfilter-ztc"
+			},
+			"ztc-publish-object": {
+				"name": "ZTC Publish Object",
+				"description": "",
+				"version": "0.0.6",
+				"reference": "",
+				"mapping": {
+					"_parameters.concept": false,
+					"_method": "PATCH"
+				},
+				"unset": [],
+				"cast": {
+					"_parameters.concept": "boolean"
+				},
+				"passThrough": false,
+				"configurations": [],
+				"dateCreated": "2025-05-26T12:09:33+00:00",
+				"dateModified": "2025-05-26T12:09:33+00:00",
+				"slug": "ztc-publish-object"
+			}
+		},
+		"sources": [],
+		"rules": {
+			"zgw-change-post-to-get": {
+				"name": "ZGW Change Post to GET",
+				"description": "",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/posttoget",
+				"version": "0.0.2",
+				"action": "post",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "mapping",
+				"configuration": {
+					"mapping": "put-to-get"
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-23T09:33:40+00:00",
+				"updated": "2025-05-26T07:41:58+00:00",
+				"slug": "zgw-change-post-to-get"
+			},
+			"zgw-authenticatie-post": {
+				"name": "ZGW Authenticatie POST",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "post",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-post"
+			},
+			"zgw-authenticatie-get": {
+				"name": "ZGW Authenticatie GET",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "get",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-get"
+			},
+			"zgw-authenticatie-put": {
+				"name": "ZGW Authenticatie PUT",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-put"
+			},
+			"zgw-authenticatie-delete": {
+				"name": "ZGW Authenticatie DELETE",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "delete",
+				"timing": "before",
+				"conditions": [],
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-delete"
+			},
+			"zgw-authenticatie-patch": {
+				"name": "ZGW Authenticatie PATCH",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": null,
+				"type": "authentication",
+				"configuration": {
+					"authentication": {
+						"type": "jwt",
+						"users": [],
+						"groups": [],
+						"keys": []
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-05-22T12:22:36+00:00",
+				"updated": "2025-05-22T12:22:36+00:00",
+				"slug": "zgw-authenticatie-patch"
+			},
+			"extend-self-object-patch": {
+				"name": "Extend Self Object patch",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "patch",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "extend_input",
+				"configuration": {
+					"extend_input": {
+						"properties": [
+							"id"
+						]
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "extend-self-object-patch"
+			},
+			"extend-self-object-put": {
+				"name": "Extend Self Object put",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "extend_input",
+				"configuration": {
+					"extend_input": {
+						"properties": [
+							"id"
+						]
+					}
+				},
+				"order": 0,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "extend-self-object-put"
+			},
+			"zgw-filter-object-status": {
+				"name": "ZGW filter object status",
+				"description": "",
+				"reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/16",
+				"version": "0.0.3",
+				"action": "get",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "mapping",
+				"configuration": {
+					"mapping": "statusfilter-ztc"
+				},
+				"order": 1,
+				"configurations": [],
+				"created": "2025-05-23T09:33:40+00:00",
+				"updated": "2025-05-23T09:33:40+00:00",
+				"slug": "zgw-filter-object-status"
+			},
+			"zgw-publish-object": {
+				"name": "ZGW Publish Object",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "post",
+				"timing": "before",
+				"conditions": {
+					"==": [
+						1,
+						1
+					]
+				},
+				"type": "mapping",
+				"configuration": {
+					"mapping": "ztc-publish-object"
+				},
+				"order": 1,
+				"configurations": [],
+				"created": "2025-05-26T12:14:44+00:00",
+				"updated": "2025-05-26T12:14:44+00:00",
+				"slug": "zgw-publish-object"
+			},
+			"zgw-error-on-patch-published-object": {
+				"name": "ZGW Error on PATCH published object",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "patch",
+				"timing": "before",
+				"conditions": {
+					"and": [
+						{
+							"==": [
+								{
+									"var": "extendedParameters.id.concept"
+								},
+								false
+							]
+						},
+						{
+							"!!": {
+								"missing": [
+									"_parameters.eindeGeldigheid"
+								]
+							}
+						}
+					]
+				},
+				"type": "error",
+				"configuration": {
+					"error": {
+						"code": 400,
+						"name": "Cannot update published ZaakType"
+					}
+				},
+				"order": 2,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "zgw-error-on-patch-published-object"
+			},
+			"zgw-error-on-put-published-object": {
+				"name": "ZGW Error on PUT published object",
+				"description": "",
+				"reference": null,
+				"version": "0.0.1",
+				"action": "put",
+				"timing": "before",
+				"conditions": {
+					"and": [
+						{
+							"==": [
+								{
+									"var": "extendedParameters.id.concept"
+								},
+								false
+							]
+						}
+					]
+				},
+				"type": "error",
+				"configuration": {
+					"error": {
+						"code": 400,
+						"name": "Cannot update published ZaakType"
+					}
+				},
+				"order": 2,
+				"configurations": [],
+				"created": "2025-04-10T13:44:24+00:00",
+				"updated": "2025-04-10T13:44:24+00:00",
+				"slug": "zgw-error-on-put-published-object"
+			}
+		},
+		"endpoints": {
+			"besluittype-get-collection": {
+				"name": "BesluitTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "besluittype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:58:34+00:00"
+			},
+			"besluittype-post": {
+				"name": "BesluitType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "besluittype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:59:02+00:00"
+			},
+			"besluittype-get-item": {
+				"name": "BesluitType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "besluittype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:59:39+00:00"
+			},
+			"besluittype-put": {
+				"name": "BesluitType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put",
+					"extend-self-object-put",
+					"zgw-error-on-put-published-object"
+				],
+				"configurations": [],
+				"slug": "besluittype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:53:10+00:00"
+			},
+			"besluittype-patch": {
+				"name": "BesluitType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch",
+					"extend-self-object-patch",
+					"zgw-error-on-patch-published-object"
+				],
+				"configurations": [],
+				"slug": "besluittype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:51:16+00:00"
+			},
+			"besluittype-delete": {
+				"name": "BesluitType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "besluittype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:59:57+00:00"
+			},
+			"besluittype-publish": {
+				"name": "BesluitType PUBLISH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/besluittypen/{{id}}/publish",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"besluittypen",
+					"{{id}}",
+					"publish"
+				],
+				"endpointRegex": "#^ztc/api/v1/besluittypen(?:/([^/]+))?/publish$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/besluittype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post",
+					"zgw-publish-object"
+				],
+				"configurations": [],
+				"slug": "besluittype-publish",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:16:09+00:00"
+			},
+			"catalogus-get-collection": {
+				"name": "Catalogussen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/catalogussen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"catalogussen"
+				],
+				"endpointRegex": "#^ztc/api/v1/catalogussen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/catalogus",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "catalogus-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:10:28+00:00"
+			},
+			"catalogus-post": {
+				"name": "Catalogus POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/catalogussen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"catalogussen"
+				],
+				"endpointRegex": "#^ztc/api/v1/catalogussen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/catalogus",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "catalogus-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:57:54+00:00"
+			},
+			"catalogus-get-item": {
+				"name": "Catalogus GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/catalogussen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"catalogussen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/catalogussen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/catalogus",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "catalogus-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:14:29+00:00"
+			},
+			"eigenschap-get-collection": {
+				"name": "Eigenschappen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "eigenschap-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:05:36+00:00"
+			},
+			"eigenschap-post": {
+				"name": "Eigenschap POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "eigenschap-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:05:51+00:00"
+			},
+			"eigenschap-get-item": {
+				"name": "Eigenschap GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "eigenschap-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:06:28+00:00"
+			},
+			"eigenschap-put": {
+				"name": "Eigenschap PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "eigenschap-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:06:53+00:00"
+			},
+			"eigenschap-patch": {
+				"name": "Eigenschap PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "eigenschap-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:07:23+00:00"
+			},
+			"eigenschap-delete": {
+				"name": "Eigenschap DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/eigenschappen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"eigenschappen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/eigenschappen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/eigenschap",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "eigenschap-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:09:17+00:00"
+			},
+			"informatieobjecttype-get-collection": {
+				"name": "InformatieObjectTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:09:47+00:00"
+			},
+			"informatieobjecttype-post": {
+				"name": "InformatieObjectType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:10:13+00:00"
+			},
+			"informatieobjecttype-get-item": {
+				"name": "InformatieObjectType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:10:51+00:00"
+			},
+			"informatieobjecttype-put": {
+				"name": "InformatieObjectType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put",
+					"extend-self-object-put",
+					"zgw-error-on-put-published-object"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:12:28+00:00"
+			},
+			"informatieobjecttype-patch": {
+				"name": "InformatieObjectType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch",
+					"extend-self-object-patch",
+					"zgw-error-on-patch-published-object"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:13:51+00:00"
+			},
+			"informatieobjecttype-delete": {
+				"name": "InformatieObjectType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:14:12+00:00"
+			},
+			"informatieobjecttype-publish": {
+				"name": "InformatieObjectType PUBLISH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/informatieobjecttypen/{{id}}/publish",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"informatieobjecttypen",
+					"{{id}}",
+					"publish"
+				],
+				"endpointRegex": "#^ztc/api/v1/informatieobjecttypen(?:/([^/]+))?/publish$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/informatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post",
+					"zgw-publish-object"
+				],
+				"configurations": [],
+				"slug": "informatieobjecttype-publish",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:15:37+00:00"
+			},
+			"resultaattype-get-collection": {
+				"name": "ResultaatTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "resultaattype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:49+00:00"
+			},
+			"resultaattype-post": {
+				"name": "ResultaatType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "resultaattype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:49+00:00"
+			},
+			"resultaattype-get-item": {
+				"name": "ResultaatType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "resultaattype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:50+00:00"
+			},
+			"resultaattype-put": {
+				"name": "ResultaatType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "resultaattype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:49+00:00"
+			},
+			"resultaattype-patch": {
+				"name": "ResultaatType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "resultaattype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:54+00:00"
+			},
+			"resultaattype-delete": {
+				"name": "ResultaatType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/resultaattypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"resultaattypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/resultaattypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/resultaattype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "resultaattype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:01:54+00:00"
+			},
+			"roltype-get-collection": {
+				"name": "RolTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "roltype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:03+00:00"
+			},
+			"roltype-post": {
+				"name": "RolType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [
+				],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "roltype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:07+00:00"
+			},
+			"roltype-get-item": {
+				"name": "RolType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "roltype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:11+00:00"
+			},
+			"roltype-put": {
+				"name": "RolType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "roltype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:14+00:00"
+			},
+			"roltype-patch": {
+				"name": "RolType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "roltype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:20+00:00"
+			},
+			"roltype-delete": {
+				"name": "RolType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/roltypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"roltypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/roltypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/roltype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "roltype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:23+00:00"
+			},
+			"statustype-get-collection": {
+				"name": "StatusTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "statustype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:28+00:00"
+			},
+			"statustype-post": {
+				"name": "StatusType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "statustype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:35+00:00"
+			},
+			"statustype-get-item": {
+				"name": "StatusType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "statustype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:37+00:00"
+			},
+			"statustype-put": {
+				"name": "StatusType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "statustype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:44+00:00"
+			},
+			"statustype-patch": {
+				"name": "StatusType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "statustype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:45+00:00"
+			},
+			"statustype-delete": {
+				"name": "StatusType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/statustypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"statustypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/statustypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/statustype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "statustype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:47+00:00"
+			},
+			"zaakobjecttype-get-collection": {
+				"name": "ZaakObjectTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "zaakobjecttype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:50+00:00"
+			},
+			"zaakobjecttype-post": {
+				"name": "ZaakObjectType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "zaakobjecttype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:02:59+00:00"
+			},
+			"zaakobjecttype-get-item": {
+				"name": "ZaakObjectType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "zaakobjecttype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:02+00:00"
+			},
+			"zaakobjecttype-put": {
+				"name": "ZaakObjectType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "zaakobjecttype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:05+00:00"
+			},
+			"zaakobjecttype-patch": {
+				"name": "ZaakObjectType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "zaakobjecttype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:11+00:00"
+			},
+			"zaakobjecttype-delete": {
+				"name": "ZaakObjectType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaakobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaakobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaakobjecttypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaakobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "zaakobjecttype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:24+00:00"
+			},
+			"zaaktypeinformatieobjecttype-get-collection": {
+				"name": "ZaaktypeInformatieObjectTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:28+00:00"
+			},
+			"zaaktypeinformatieobjecttype-post": {
+				"name": "ZaaktypeInformatieObjectType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:31+00:00"
+			},
+			"zaaktypeinformatieobjecttype-get-item": {
+				"name": "ZaaktypeInformatieObjectType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:31+00:00"
+			},
+			"zaaktypeinformatieobjecttype-put": {
+				"name": "ZaaktypeInformatieObjectType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [
+				],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put"
+				],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:35+00:00"
+			},
+			"zaaktypeinformatieobjecttype-patch-item": {
+				"name": "ZaaktypeInformatieObjectType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch"
+				],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-patch-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:38+00:00"
+			},
+			"zaaktypeinformatieobjecttype-delete-item": {
+				"name": "ZaaktypeInformatieObjectType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktype-informatieobjecttypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktype-informatieobjecttypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktype-informatieobjecttypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktypeinformatieobjecttype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "zaaktypeinformatieobjecttype-delete-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:03:41+00:00"
+			},
+			"zaaktype-get-collection": {
+				"name": "ZaakTypen GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get",
+					"zgw-filter-object-status"
+				],
+				"configurations": [],
+				"slug": "zaaktype-get-collection",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T14:35:19+00:00"
+			},
+			"zaaktype-post": {
+				"name": "ZaakType POST",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post"
+				],
+				"configurations": [],
+				"slug": "zaaktype-post",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:07:24+00:00"
+			},
+			"zaaktype-get-item": {
+				"name": "ZaakType GET",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen/([^/]+)$#",
+				"method": "GET",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-get"
+				],
+				"configurations": [],
+				"slug": "zaaktype-get-item",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:23:15+00:00"
+			},
+			"zaaktype-put": {
+				"name": "ZaakType PUT",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
+				"method": "PUT",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-put",
+					"extend-self-object-put",
+					"zgw-error-on-put-published-object"
+				],
+				"configurations": [],
+				"slug": "zaaktype-put",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T10:04:25+00:00"
+			},
+			"zaaktype-patch": {
+				"name": "ZaakType PATCH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
+				"method": "PATCH",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-patch",
+					"extend-self-object-patch",
+					"zgw-error-on-patch-published-object"
+				],
+				"configurations": [],
+				"slug": "zaaktype-patch",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-27T09:39:50+00:00"
+			},
+			"zaaktype-delete": {
+				"name": "ZaakType DELETE",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?$#",
+				"method": "DELETE",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-delete"
+				],
+				"configurations": [],
+				"slug": "zaaktype-delete",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T11:09:16+00:00"
+			},
+			"zaaktype-publish": {
+				"name": "ZaakType PUBLISH",
+				"description": "",
+				"reference": "",
+				"version": "0.0.1",
+				"endpoint": "ztc/api/v1/zaaktypen/{{id}}/publish",
+				"endpointArray": [
+					"ztc",
+					"api",
+					"v1",
+					"zaaktypen",
+					"{{id}}",
+					"publish"
+				],
+				"endpointRegex": "#^ztc/api/v1/zaaktypen(?:/([^/]+))?/publish$#",
+				"method": "POST",
+				"targetType": "register/schema",
+				"targetId": "catalogi/zaaktype",
+				"conditions": [],
+				"inputMapping": null,
+				"outputMapping": null,
+				"rules": [
+					"zgw-authenticatie-post",
+					"zgw-publish-object"
+				],
+				"configurations": [],
+				"slug": "zaaktype-publish",
+				"created": "2025-05-26T11:04:38+00:00",
+				"updated": "2025-05-26T12:18:31+00:00"
+			}
+		},
+		"synchronizations": [],
+		"jobs": [],
+		"registers": {
+			"catalogi": {
+				"slug": "catalogi",
+				"title": "Catalogi",
+				"version": "0.0.2",
+				"description": "",
+				"schemas": [
+					"besluittype",
+					"catalogus",
+					"eigenschap",
+					"informatieobjecttype",
+					"resultaattype",
+					"roltype",
+					"statustype",
+					"zaakobjecttype",
+					"zaaktype",
+					"zaaktypeinformatieobjecttype"
+				],
+				"source": "",
+				"tablePrefix": "",
+				"folder": "",
+				"updated": "2025-05-16T11:33:05+00:00",
+				"created": "2025-05-14T11:49:55+00:00",
+				"owner": "",
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null
+			}
+		},
+		"schemas": {
+			"besluittype": {
+				"slug": "besluittype",
+				"title": "BesluitType",
+				"description": "",
+				"version": "0.0.9",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"beginGeldigheid",
+					"catalogus",
+					"concept",
+					"publicatieIndicatie",
+					"url"
+				],
+				"properties": {
+					"omschrijving": {
+						"type": "string",
+						"description": "Omschrijving van de aard van BESLUITen van het BESLUITTYPE.",
+						"title": "omschrijving",
+						"maxLength": 80
+					},
+					"omschrijvingGeneriek": {
+						"type": "string",
+						"description": "Algemeen gehanteerde omschrijving van de aard van BESLUITen van het BESLUITTYPE",
+						"title": "omschrijvingGeneriek",
+						"maxLength": 80
+					},
+					"besluitcategorie": {
+						"type": "string",
+						"description": "Typering van de aard van BESLUITen van het BESLUITTYPE.",
+						"title": "besluitcategorie",
+						"maxLength": 40
+					},
+					"reactietermijn": {
+						"type": "string",
+						"nullable": true,
+						"description": "Een tijdsduur in ISO 8601 formaat, gerekend vanaf de verzend- of publicatiedatum, waarbinnen verweer tegen een besluit van het besluittype mogelijk is.",
+						"title": "reactietermijn",
+						"format": "duration"
+					},
+					"publicatieIndicatie": {
+						"type": "boolean",
+						"description": "Aanduiding of BESLUITen van dit BESLUITTYPE gepubliceerd moeten worden.",
+						"title": "publicatieIndicatie"
+					},
+					"publicatietekst": {
+						"type": "string",
+						"description": "De generieke tekst van de publicatie van BESLUITen van dit BESLUITTYPE",
+						"title": "publicatietekst"
+					},
+					"publicatietermijn": {
+						"type": "string",
+						"nullable": true,
+						"description": "Een tijdsduur in ISO 8601 formaat, gerekend vanaf de verzend- of publicatiedatum, dat BESLUITen van dit BESLUITTYPE gepubliceerd moeten blijven.",
+						"title": "publicatietermijn",
+						"format": "duration"
+					},
+					"toelichting": {
+						"type": "string",
+						"description": "Een eventuele toelichting op dit BESLUITTYPE.",
+						"title": "toelichting"
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"description": "De datum waarop het is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"concept": {
+						"type": "boolean",
+						"readOnly": true,
+						"default": true,
+						"description": "Geeft aan of het object een concept betreft. Concepten zijn niet-definitieve versies en zouden niet gebruikt moeten worden buiten deze API.",
+						"title": "concept"
+					},
+					"resultaattypenOmschrijving": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"title": ""
+						},
+						"readOnly": true,
+						"description": "Omschrijving van de aard van resultaten van het RESULTAATTYPE.",
+						"title": "resultaattypenOmschrijving",
+						"uniqueItems": true,
+						"default": []
+					},
+					"vastgelegdIn": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"title": ""
+						},
+						"readOnly": true,
+						"description": "Omschrijving van de aard van informatieobjecten van dit INFORMATIEOBJECTTYPE.",
+						"title": "vastgelegdIn",
+						"uniqueItems": true,
+						"default": []
+					},
+					"catalogus": {
+						"description": "URL-referentie naar de CATALOGUS waartoe dit BESLUITTYPE behoort.",
+						"format": "uri",
+						"type": "string",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "catalogus"
+					},
+					"zaaktypen": {
+						"description": "ZAAKTYPE met ZAAKen die relevant kunnen zijn voor dit BESLUITTYPE",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "catalogus",
+						"$ref": "zaaktype",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "zaaktypen",
+						"uniqueItems": true
+					},
+					"informatieobjecttypen": {
+						"description": "URL-referenties naar het INFORMATIEOBJECTTYPE van informatieobjecten waarin besluiten van dit BESLUITTYPE worden vastgelegd.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "informatieobjecttypen",
+						"uniqueItems": true
+					},
+					"resultaattypen": {
+						"description": "Het BESLUITTYPE van besluiten die gepaard gaan met resultaten van het RESULTAATTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": "Is resultaat van",
+							"$ref": "resultaattype",
+							"inversedBy": "besluittypen"
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "resultaattypen",
+						"uniqueItems": true
+					},
+					"url": {
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "{{ uri }}",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": 1,
+						"maxLength": 1000,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "url"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T11:08:45+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"eigenschap": {
+				"slug": "eigenschap",
+				"title": "Eigenschap",
+				"description": "",
+				"version": "0.0.9",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"definitie",
+					"naam",
+					"url",
+					"zaaktype"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"naam": {
+						"type": "string",
+						"description": "De naam van de EIGENSCHAP",
+						"title": "naam",
+						"maxLength": 20
+					},
+					"definitie": {
+						"type": "string",
+						"description": "De beschrijving van de betekenis van deze EIGENSCHAP",
+						"title": "definitie",
+						"maxLength": 255
+					},
+					"toelichting": {
+						"type": "string",
+						"description": "Een toelichting op deze EIGENSCHAP en het belang hiervan voor zaken van dit ZAAKTYPE.",
+						"title": "toelichting",
+						"maxLength": 1000
+					},
+					"zaaktypeIdentificatie": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "zaaktypeIdentificatie",
+						"default": ""
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de EIGENSCHAP is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de EIGENSCHAP is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"specificatie": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/EigenschapSpecificatie"
+							}
+						],
+						"title": "specificatie"
+					},
+					"catalogus": {
+						"description": "",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "catalogus",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "catalogus"
+					},
+					"zaaktype": {
+						"description": "URL-referentie naar het ZAAKTYPE van de ZAAKen waarvoor deze EIGENSCHAP van belang is.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "zaaktype"
+					},
+					"statustype": {
+						"description": "Status type moet (onder andere) deze EIGENSCHAP hebben, voordat een STATUS van het STATUSTYPE kan worden gezet.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"nullable": true,
+						"title": "statustype"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T08:52:14+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"informatieobjecttype": {
+				"slug": "informatieobjecttype",
+				"title": "InformatieObjectType",
+				"description": "Serializer based on ``IOT-basis`` specified in XSD ``ztc0310_ent_basis.xsd``.",
+				"version": "0.0.8",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"beginGeldigheid",
+					"catalogus",
+					"concept",
+					"informatieobjectcategorie",
+					"omschrijving",
+					"url",
+					"vertrouwelijkheidaanduiding"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"omschrijving": {
+						"type": "string",
+						"description": "Omschrijving van de aard van informatieobjecten van dit INFORMATIEOBJECTTYPE.",
+						"title": "omschrijving",
+						"maxLength": 80
+					},
+					"vertrouwelijkheidaanduiding": {
+						"enum": [
+							"openbaar",
+							"beperkt_openbaar",
+							"intern",
+							"zaakvertrouwelijk",
+							"vertrouwelijk",
+							"confidentieel",
+							"geheim",
+							"zeer_geheim"
+						],
+						"description": "Aanduiding van de mate waarin informatieobjecten van dit INFORMATIEOBJECTTYPE voor de openbaarheid bestemd zijn.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
+						"title": "vertrouwelijkheidaanduiding",
+						"type": "string"
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"description": "De datum waarop het is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"concept": {
+						"type": "boolean",
+						"readOnly": true,
+						"description": "Geeft aan of het object een concept betreft. Concepten zijn niet-definitieve versies en zouden niet gebruikt moeten worden buiten deze API.",
+						"title": "concept",
+						"default": true
+					},
+					"besluittypen": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"readOnly": true,
+						"description": "URL-referenties naar het INFORMATIEOBJECTTYPE van informatieobjecten waarin besluiten van dit BESLUITTYPE worden vastgelegd.",
+						"title": "besluittypen",
+						"uniqueItems": true,
+						"$ref": "besluittype",
+						"inversedBy": "informatieobjecttypen"
+					},
+					"informatieobjectcategorie": {
+						"type": "string",
+						"title": "informatieobjectcategorie",
+						"description": "Typering van de aard van informatieobjecten van dit INFORMATIEOBJECTTYPE.",
+						"maxLength": 80
+					},
+					"trefwoord": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"maxLength": 30
+						},
+						"description": "Trefwoord(en) waarmee informatieobjecten van het INFORMATIEOBJECTTYPE kunnen worden gekarakteriseerd. (Gebruik een komma om waarden van elkaar te onderscheiden.)",
+						"title": "trefwoord"
+					},
+					"catalogus": {
+						"description": "URL-referentie naar de CATALOGUS waartoe dit INFORMATIEOBJECTTYPE behoort.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "catalogus"
+					},
+					"omschrijvingGeneriek": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/InformatieObjectTypeOmschrijvingGeneriek"
+							}
+						],
+						"title": "omschrijvingGeneriek"
+					},
+					"zaaktypen": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "zaaktype",
+						"inversedBy": "informatieobjecttypen",
+						"items": {
+							"cascadeDelete": false,
+							"$ref": "zaaktype"
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "zaaktypen"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T09:01:38+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"resultaattype": {
+				"slug": "resultaattype",
+				"title": "ResultaatType",
+				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+				"version": "0.0.12",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"omschrijving",
+					"selectielijstklasse",
+					"url",
+					"zaaktype"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"zaaktypeIdentificatie": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "zaaktypeIdentificatie"
+					},
+					"omschrijving": {
+						"type": "string",
+						"description": "Omschrijving van de aard van resultaten van het RESULTAATTYPE.",
+						"title": "omschrijving",
+						"maxLength": 30
+					},
+					"omschrijvingGeneriek": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Waarde van de omschrijving-generiek referentie (attribuut `omschrijving`)",
+						"title": "omschrijvingGeneriek"
+					},
+					"selectielijstklasse": {
+						"type": "string",
+						"format": "uri",
+						"description": "URL-referentie naar de, voor het archiefregime bij het RESULTAATTYPE relevante, categorie in de Selectielijst Archiefbescheiden (RESULTAAT in de Selectielijst API) van de voor het ZAAKTYPE verantwoordelijke overheidsorganisatie.",
+						"title": "selectielijstklasse",
+						"maxLength": 1000
+					},
+					"toelichting": {
+						"type": "string",
+						"description": "Een toelichting op dit RESULTAATTYPE en het belang hiervan voor ZAAKen waarin een resultaat van dit RESULTAATTYPE wordt geselecteerd.",
+						"title": "toelichting"
+					},
+					"archiefnominatie": {
+						"description": "Aanduiding die aangeeft of ZAAKen met een resultaat van dit RESULTAATTYPE blijvend moeten worden bewaard of (op termijn) moeten worden vernietigd. Indien niet expliciet opgegeven wordt dit gevuld vanuit de selectielijst.\n\nUitleg bij mogelijke waarden:\n\n* `blijvend_bewaren` - Het zaakdossier moet bewaard blijven en op de Archiefactiedatum overgedragen worden naar een archiefbewaarplaats.\n* `vernietigen` - Het zaakdossier moet op of na de Archiefactiedatum vernietigd worden.",
+						"title": "archiefnominatie",
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ArchiefnominatieEnum"
+							},
+							{
+								"$ref": "#/components/schemas/BlankEnum"
+							}
+						],
+						"type": "string"
+					},
+					"archiefactietermijn": {
+						"type": "string",
+						"nullable": true,
+						"description": "De termijn, na het vervallen van het bedrjfsvoeringsbelang, waarna het zaakdossier (de ZAAK met alle bijbehorende INFORMATIEOBJECTen) van een ZAAK met een resultaat van dit RESULTAATTYPE vernietigd of overgebracht (naar een archiefbewaarplaats) moet worden. Voor te vernietigen dossiers betreft het de in die Selectielijst genoemde bewaartermjn. Voor blijvend te bewaren zaakdossiers betreft het de termijn vanaf afronding van de zaak tot overbrenging (de procestermijn is dan nihil).",
+						"title": "archiefactietermijn",
+						"format": "duration"
+					},
+					"procesobjectaard": {
+						"type": "string",
+						"nullable": true,
+						"description": "Omschrijving van het object, subject of gebeurtenis waarop, vanuit archiveringsoptiek, het resultaattype bij zaken van dit type betrekking heeft.",
+						"title": "procesobjectaard",
+						"maxLength": 200
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de RESULTAATTYPE is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de RESULTAATTYPE is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"indicatieSpecifiek": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Aanduiding of het, vanuit archiveringsoptiek, een resultaattype betreft dat specifiek is voor een bepaalde procesobjectaard.",
+						"title": "indicatieSpecifiek"
+					},
+					"procestermijn": {
+						"type": "string",
+						"nullable": true,
+						"description": "De periode dat het zaakdossier na afronding van de zaak actief gebruikt en/of geraadpleegd wordt ter ondersteuning van de taakuitoefening van de organisatie.",
+						"title": "procestermijn",
+						"format": "duration"
+					},
+					"besluittypeOmschrijving": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"title": ""
+						},
+						"readOnly": true,
+						"description": "Omschrijving van de aard van BESLUITen van het BESLUITTYPE.",
+						"title": "besluittypeOmschrijving",
+						"uniqueItems": true
+					},
+					"informatieobjecttypeOmschrijving": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"title": ""
+						},
+						"readOnly": true,
+						"description": "Omschrijving van de aard van informatieobjecten van dit INFORMATIEOBJECTTYPE.",
+						"title": "informatieobjecttypeOmschrijving",
+						"uniqueItems": true
+					},
+					"zaaktype": {
+						"description": "URL-referentie naar het ZAAKTYPE van ZAAKen waarin resultaten van dit RESULTAATTYPE bereikt kunnen worden.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "zaaktype"
+					},
+					"catalogus": {
+						"description": "URL-referentie naar de CATALOGUS waartoe dit RESULTAATTYPE behoort.",
+						"type": "object",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "catalogus",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"nullable": true,
+						"title": "catalogus"
+					},
+					"brondatumArchiefprocedure": {
+						"description": "Specificatie voor het bepalen van de brondatum voor de start van de Archiefactietermijn (=brondatum) van het zaakdossier.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/BrondatumArchiefprocedure"
+							}
+						],
+						"nullable": true,
+						"title": "brondatumArchiefprocedure"
+					},
+					"besluittypen": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"nullable": true,
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "besluittypen",
+						"uniqueItems": true
+					},
+					"resultaattypeomschrijving": {
+						"description": "Algemeen gehanteerde omschrijving van de aard van resultaten van het RESULTAATTYPE. Dit moet een URL-referentie zijn naar de referenlijst van generieke resultaattypeomschrijvingen. Im ImZTC heet dit 'omschrijving generiek'",
+						"type": "array",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": 1000,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "resultaattypeomschrijving"
+					},
+					"informatieobjecttypen": {
+						"description": "De INFORMATIEOBJECTTYPEn die verplicht aanwezig moeten zijn in het zaakdossier van ZAAKen van dit ZAAKTYPE voordat een resultaat van dit RESULTAATTYPE kan worden gezet.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"nullable": true,
+							"title": "",
+							"$ref": "informatieobjecttype"
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "informatieobjecttypen",
+						"uniqueItems": true
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T09:06:41+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"roltype": {
+				"slug": "roltype",
+				"title": "RolType",
+				"description": "Adds nested create feature",
+				"version": "0.0.6",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"omschrijving",
+					"omschrijvingGeneriek",
+					"url",
+					"zaaktype"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"zaaktypeIdentificatie": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "zaaktypeIdentificatie"
+					},
+					"omschrijving": {
+						"type": "string",
+						"description": "Omschrijving van de aard van de ROL.",
+						"title": "omschrijving",
+						"maxLength": 100
+					},
+					"omschrijvingGeneriek": {
+						"enum": [
+							"adviseur",
+							"behandelaar",
+							"belanghebbende",
+							"beslisser",
+							"initiator",
+							"klantcontacter",
+							"zaakcoordinator",
+							"mede_initiator"
+						],
+						"description": "Algemeen gehanteerde omschrijving van de aard van de ROL.\n\nUitleg bij mogelijke waarden:\n\n* `adviseur` - (Adviseur) Kennis in dienst stellen van de behandeling van (een deel van) een zaak.\n* `behandelaar` - (Behandelaar) De vakinhoudelijke behandeling doen van (een deel van) een zaak.\n* `belanghebbende` - (Belanghebbende) Vanuit eigen en objectief belang rechtstreeks betrokken zijn bij de behandeling en/of de uitkomst van een zaak.\n* `beslisser` - (Beslisser) Nemen van besluiten die voor de uitkomst van een zaak noodzakelijk zijn.\n* `initiator` - (Initiator) Aanleiding geven tot de start van een zaak ..\n* `klantcontacter` - (Klantcontacter) Het eerste aanspreekpunt zijn voor vragen van burgers en bedrijven ..\n* `zaakcoordinator` - (Zaakco\u00f6rdinator) Er voor zorg dragen dat de behandeling van de zaak in samenhang uitgevoerd wordt conform de daarover gemaakte afspraken.\n* `mede_initiator` - Mede-initiator",
+						"title": "omschrijvingGeneriek",
+						"type": "string"
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"zaaktype": {
+						"description": "URL-referentie naar het ZAAKTYPE waar deze ROLTYPEn betrokken kunnen zijn.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "zaaktype"
+					},
+					"catalogus": {
+						"description": "URL-referentie naar de CATALOGUS waartoe dit ROLTYPE behoort.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"nullable": true,
+						"title": "catalogus"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T09:15:50+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"statustype": {
+				"slug": "statustype",
+				"title": "StatusType",
+				"description": "",
+				"version": "0.0.6",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"omschrijving",
+					"url",
+					"volgnummer",
+					"zaaktype"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"omschrijving": {
+						"type": "string",
+						"description": "Een korte, voor de initiator van de zaak relevante, omschrijving van de aard van de STATUS van zaken van een ZAAKTYPE.",
+						"title": "omschrijving",
+						"maxLength": 80
+					},
+					"omschrijvingGeneriek": {
+						"type": "string",
+						"description": "Algemeen gehanteerde omschrijving van de aard van STATUSsen van het STATUSTYPE",
+						"title": "omschrijvingGeneriek",
+						"maxLength": 80
+					},
+					"statustekst": {
+						"type": "string",
+						"description": "De tekst die wordt gebruikt om de Initiator te informeren over het bereiken van een STATUS van dit STATUSTYPE bij het desbetreffende ZAAKTYPE.",
+						"title": "statustekst",
+						"maxLength": 1000
+					},
+					"zaaktypeIdentificatie": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "zaaktypeIdentificatie"
+					},
+					"volgnummer": {
+						"type": "integer",
+						"maximum": 9999,
+						"minimum": 1,
+						"description": "Een volgnummer voor statussen van het STATUSTYPE binnen een zaak.",
+						"title": "volgnummer"
+					},
+					"isEindstatus": {
+						"type": "boolean",
+						"readOnly": true,
+						"description": "Geeft aan dat dit STATUSTYPE een eindstatus betreft. Dit gegeven is afgeleid uit alle STATUSTYPEn van dit ZAAKTYPE met het hoogste volgnummer.",
+						"title": "isEindstatus",
+						"default": false
+					},
+					"informeren": {
+						"type": "boolean",
+						"description": "Aanduiding die aangeeft of na het zetten van een STATUS van dit STATUSTYPE de Initiator moet worden ge\u00efnformeerd over de statusovergang.",
+						"title": "informeren"
+					},
+					"doorlooptijd": {
+						"type": "string",
+						"nullable": true,
+						"description": "De door de zaakbehandelende organisatie(s) gestelde norm voor de doorlooptijd voor het bereiken van STATUSsen van dit STATUSTYPE bij het desbetreffende ZAAKTYPE.",
+						"title": "doorlooptijd",
+						"format": "duration"
+					},
+					"toelichting": {
+						"type": "string",
+						"nullable": true,
+						"description": "Een eventuele toelichting op dit STATUSTYPE.",
+						"title": "toelichting",
+						"maxLength": 1000
+					},
+					"checklistitemStatustype": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/CheckListItem"
+						},
+						"title": "checklistitemStatustype"
+					},
+					"eigenschappen": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"nullable": true,
+							"title": ""
+						},
+						"description": "de EIGENSCHAPpen die verplicht een waarde moeten hebben gekregen, voordat een STATUS van dit STATUSTYPE kan worden gezet.",
+						"title": "eigenschappen",
+						"uniqueItems": true
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"zaaktype": {
+						"description": "URL-referentie naar het ZAAKTYPE van ZAAKen waarin STATUSsen van dit STATUSTYPE bereikt kunnen worden.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "zaaktype"
+					},
+					"catalogus": {
+						"description": "",
+						"type": "object",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "catalogus",
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "catalogus"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T09:17:11+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"zaakobjecttype": {
+				"slug": "zaakobjecttype",
+				"title": "ZaakObjectType",
+				"description": "",
+				"version": "0.0.7",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"anderObjecttype",
+					"beginGeldigheid",
+					"catalogus",
+					"objecttype",
+					"relatieOmschrijving",
+					"resultaattypen",
+					"statustypen",
+					"url",
+					"zaaktype",
+					"zaaktypeIdentificatie"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"anderObjecttype": {
+						"type": "boolean",
+						"description": "Aanduiding waarmee wordt aangegeven of het ZAAKOBJECTTYPE een ander, niet in RSGB en RGBZ voorkomend, objecttype betreft.",
+						"title": "anderObjecttype"
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"description": "De datum waarop het is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"objecttype": {
+						"type": "string",
+						"format": "uri",
+						"description": "URL-referentie naar de OBJECTTYPE waartoe dit ZAAKOBJECTTYPE behoort.",
+						"title": "objecttype",
+						"maxLength": 200
+					},
+					"relatieOmschrijving": {
+						"type": "string",
+						"description": "Omschrijving van de betrekking van het Objecttype op zaken van het gerelateerde ZAAKTYPE.",
+						"title": "relatieOmschrijving",
+						"maxLength": 80
+					},
+					"zaaktypeIdentificatie": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "zaaktypeIdentificatie"
+					},
+					"zaaktype": {
+						"description": "URL-referentie naar de ZAAKTYPE waartoe dit ZAAKOBJECTTYPE behoort.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "zaaktype"
+					},
+					"catalogus": {
+						"description": "URL-referentie naar de CATALOGUS waartoe dit ZAAKOBJECTTYPE behoort.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "catalogus"
+					},
+					"resultaattypen": {
+						"description": "URL-referenties naar de RESULTAATTYPEN.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "resultaattypen",
+						"uniqueItems": true
+					},
+					"statustypen": {
+						"description": "URL-referenties naar de STATUSTYPEN.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "statustypen",
+						"uniqueItems": true
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T09:20:03+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"zaaktype": {
+				"slug": "zaaktype",
+				"title": "ZaakType",
+				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+				"version": "0.0.20",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"url",
+					"aanleiding",
+					"beginGeldigheid",
+					"catalogus",
+					"concept",
+					"doel",
+					"doorlooptijd",
+					"handelingBehandelaar",
+					"handelingInitiator",
+					"identificatie",
+					"indicatieInternOfExtern",
+					"omschrijving",
+					"onderwerp",
+					"opschortingEnAanhoudingMogelijk",
+					"publicatieIndicatie",
+					"verantwoordelijke",
+					"verlengingMogelijk",
+					"versiedatum",
+					"vertrouwelijkheidaanduiding"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"identificatie": {
+						"type": "string",
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "identificatie",
+						"maxLength": 50
+					},
+					"omschrijving": {
+						"type": "string",
+						"description": "Omschrijving van de aard van ZAAKen van het ZAAKTYPE.",
+						"title": "omschrijving",
+						"maxLength": 80
+					},
+					"omschrijvingGeneriek": {
+						"type": "string",
+						"description": "Algemeen gehanteerde omschrijving van de aard van ZAAKen van het ZAAKTYPE",
+						"title": "omschrijvingGeneriek",
+						"maxLength": 80
+					},
+					"vertrouwelijkheidaanduiding": {
+						"enum": [
+							"openbaar",
+							"beperkt_openbaar",
+							"intern",
+							"zaakvertrouwelijk",
+							"vertrouwelijk",
+							"confidentieel",
+							"geheim",
+							"zeer_geheim"
+						],
+						"description": "Aanduiding van de mate waarin zaakdossiers van ZAAKen van dit ZAAKTYPE voor de openbaarheid bestemd zijn. Indien de zaak bij het aanmaken geen vertrouwelijkheidaanduiding krijgt, dan wordt deze waarde gezet.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
+						"title": "vertrouwelijkheidaanduiding",
+						"type": "string"
+					},
+					"doel": {
+						"type": "string",
+						"description": "Een omschrijving van hetgeen beoogd is te bereiken met een zaak van dit zaaktype.",
+						"title": "doel"
+					},
+					"aanleiding": {
+						"type": "string",
+						"description": "Een omschrijving van de gebeurtenis die leidt tot het starten van een ZAAK van dit ZAAKTYPE.",
+						"title": "aanleiding"
+					},
+					"toelichting": {
+						"type": "string",
+						"description": "Een eventuele toelichting op dit zaaktype, zoals een beschrijving van het procesverloop op de hoofdlijnen.",
+						"title": "toelichting"
+					},
+					"indicatieInternOfExtern": {
+						"enum": [
+							"intern",
+							"extern"
+						],
+						"description": "Een aanduiding waarmee onderscheid wordt gemaakt tussen ZAAKTYPEn die Intern respectievelijk Extern ge\u00efnitieerd worden. Indien van beide sprake kan zijn, dan prevaleert de externe initiatie.",
+						"title": "indicatieInternOfExtern",
+						"type": "string"
+					},
+					"handelingInitiator": {
+						"type": "string",
+						"description": "Werkwoord dat hoort bij de handeling die de initiator verricht bij dit zaaktype. Meestal 'aanvragen', 'indienen' of 'melden'. Zie ook het IOB model op https://www.gemmaonline.nl/index.php/Imztc_2.1/doc/attribuutsoort/zaaktype.handeling_initiator",
+						"title": "handelingInitiator",
+						"maxLength": 20
+					},
+					"onderwerp": {
+						"type": "string",
+						"description": "Het onderwerp van ZAAKen van dit ZAAKTYPE. In veel gevallen nauw gerelateerd aan de product- of dienstnaam uit de Producten- en Dienstencatalogus (PDC). Bijvoorbeeld: 'Evenementenvergunning', 'Geboorte', 'Klacht'. Zie ook het IOB model op https://www.gemmaonline.nl/index.php/Imztc_2.1/doc/attribuutsoort/zaaktype.onderwerp",
+						"title": "onderwerp",
+						"maxLength": 80
+					},
+					"handelingBehandelaar": {
+						"type": "string",
+						"description": "Werkwoord dat hoort bij de handeling die de behandelaar verricht bij het afdoen van ZAAKen van dit ZAAKTYPE. Meestal 'behandelen', 'uitvoeren', 'vaststellen' of 'onderhouden'. Zie ook het IOB model op https://www.gemmaonline.nl/index.php/Imztc_2.1/doc/attribuutsoort/zaaktype.handeling_behandelaar",
+						"title": "handelingBehandelaar",
+						"maxLength": 20
+					},
+					"doorlooptijd": {
+						"type": "string",
+						"description": "De periode waarbinnen volgens wet- en regelgeving een ZAAK van het ZAAKTYPE afgerond dient te zijn, in kalenderdagen.",
+						"title": "doorlooptijd",
+						"format": "duration"
+					},
+					"servicenorm": {
+						"type": "string",
+						"nullable": true,
+						"description": "De periode waarbinnen verwacht wordt dat een ZAAK van het ZAAKTYPE afgerond wordt conform de geldende servicenormen van de zaakbehandelende organisatie(s).",
+						"title": "servicenorm",
+						"format": "duration"
+					},
+					"opschortingEnAanhoudingMogelijk": {
+						"type": "boolean",
+						"title": "opschortingEnAanhoudingMogelijk",
+						"description": "Aanduiding die aangeeft of ZAAKen van dit mogelijk ZAAKTYPE kunnen worden opgeschort en/of aangehouden."
+					},
+					"verlengingMogelijk": {
+						"type": "boolean",
+						"description": "Aanduiding die aangeeft of de Doorlooptijd behandeling van ZAAKen van dit ZAAKTYPE kan worden verlengd.",
+						"title": "verlengingMogelijk"
+					},
+					"verlengingstermijn": {
+						"type": "string",
+						"nullable": true,
+						"description": "Een tijdsduur in ISO 8601 formaat waarmee de Doorlooptijd behandeling van ZAAKen van dit ZAAKTYPE kan worden verlengd. Mag alleen een waarde bevatten als verlenging mogelijk is.",
+						"title": "verlengingstermijn",
+						"format": "duration"
+					},
+					"trefwoorden": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"title": "Trefwoord",
+							"maxLength": 30
+						},
+						"description": "Een trefwoord waarmee ZAAKen van het ZAAKTYPE kunnen worden gekarakteriseerd.",
+						"title": "trefwoorden"
+					},
+					"publicatieIndicatie": {
+						"type": "boolean",
+						"description": "Aanduiding of (het starten van) een ZAAK dit ZAAKTYPE gepubliceerd moet worden.",
+						"title": "publicatieIndicatie"
+					},
+					"publicatietekst": {
+						"type": "string",
+						"description": "De generieke tekst van de publicatie van ZAAKen van dit ZAAKTYPE.",
+						"title": "publicatietekst"
+					},
+					"verantwoordingsrelatie": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"maxLength": 40
+						},
+						"description": "De relatie tussen ZAAKen van dit ZAAKTYPE en de beleidsmatige en/of financi\u00eble verantwoording.",
+						"title": "verantwoordingsrelatie"
+					},
+					"productenOfDiensten": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": "URL naar product/dienst",
+							"maxLength": 1000
+						},
+						"description": "Het product of de dienst die door ZAAKen van dit ZAAKTYPE wordt voortgebracht.",
+						"title": "productenOfDiensten"
+					},
+					"selectielijstProcestype": {
+						"type": "string",
+						"format": "uri",
+						"description": "URL-referentie naar een vanuit archiveringsoptiek onderkende groep processen met dezelfde kenmerken (PROCESTYPE in de Selectielijst API).",
+						"title": "selectielijstProcestype",
+						"maxLength": 200
+					},
+					"verantwoordelijke": {
+						"type": "string",
+						"description": "De (soort) organisatorische eenheid of (functie van) medewerker die verantwoordelijk is voor de uitvoering van zaken van het ZAAKTYPE.",
+						"title": "verantwoordelijke",
+						"maxLength": 50
+					},
+					"beginGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"description": "De datum waarop het is ontstaan.",
+						"title": "beginGeldigheid"
+					},
+					"eindeGeldigheid": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop het is opgeheven.",
+						"title": "eindeGeldigheid"
+					},
+					"beginObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum waarop de eerst versie van het object ontstaan is.",
+						"title": "beginObject"
+					},
+					"eindeObject": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "De datum van de aller laatste versie van het object.",
+						"title": "eindeObject"
+					},
+					"versiedatum": {
+						"type": "string",
+						"format": "date",
+						"description": "De datum waarop de (gewijzigde) kenmerken van het ZAAKTYPE geldig zijn geworden",
+						"title": "versiedatum"
+					},
+					"concept": {
+						"type": "boolean",
+						"readOnly": true,
+						"description": "Geeft aan of het object een concept betreft. Concepten zijn niet-definitieve versies en zouden niet gebruikt moeten worden buiten deze API.",
+						"title": "concept",
+						"default": true
+					},
+					"catalogus": {
+						"description": "URL-referentie naar de CATALOGUS waartoe dit ZAAKTYPE behoort.",
+						"type": "string",
+						"format": "uri",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "catalogus"
+					},
+					"zaakobjecttypen": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "zaakobjecttype",
+						"inversedBy": "zaaktype",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "zaakobjecttypen",
+						"uniqueItems": true
+					},
+					"statustypen": {
+						"description": "URL-referenties naar de STATUSTYPEN die mogelijk zijn binnen dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "statustype",
+						"inversedBy": "zaaktype",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "statustypen",
+						"uniqueItems": true
+					},
+					"resultaattypen": {
+						"description": "URL-referenties naar de RESULTAATTYPEN die mogelijk zijn binnen dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "resultaattype",
+						"inversedBy": "zaaktype",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "resultaattypen",
+						"uniqueItems": true
+					},
+					"eigenschappen": {
+						"description": "URL-referenties naar de EIGENSCHAPPEN die aanwezig moeten zijn in ZAKEN van dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "eigenschap",
+						"inversedBy": "zaaktype",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "eigenschappen",
+						"uniqueItems": true
+					},
+					"informatieobjecttypen": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "zaaktypen",
+						"$ref": "informatieobjecttype",
+						"items": {
+							"cascadeDelete": false,
+							"$ref": "informatieobjecttype"
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "informatieobjecttypen"
+					},
+					"roltypen": {
+						"description": "URL-referenties naar de ROLTYPEN die mogelijk zijn binnen dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "roltype",
+						"inversedBy": "zaaktype",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "roltypen",
+						"uniqueItems": true
+					},
+					"besluittypen": {
+						"description": "URL-referenties naar de BESLUITTYPEN die mogelijk zijn binnen dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "string",
+							"format": "uri",
+							"title": "heeft relevante besluittypen"
+						},
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "besluittypen",
+						"uniqueItems": true
+					},
+					"referentieproces": {
+						"description": "Het Referentieproces dat ten grondslag ligt aan dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": {},
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "referentieproces"
+							}
+						],
+						"title": "referentieproces"
+					},
+					"deelzaaktypen": {
+						"description": "De ZAAKTYPE(n) waaronder ZAAKen als deelzaak kunnen voorkomen bij ZAAKen van dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"nullable": true,
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "deelzaaktypen",
+						"uniqueItems": true
+					},
+					"gerelateerdeZaaktypen": {
+						"description": "De ZAAKTYPEn van zaken die relevant zijn voor zaken van dit ZAAKTYPE.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": [],
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"items": {
+							"type": "object"
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"title": "gerelateerdeZaaktypen"
+					},
+					"broncatalogus": {
+						"description": "De CATALOGUS waaraan het ZAAKTYPE is ontleend.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "broncatalogus"
+							}
+						],
+						"title": "broncatalogus"
+					},
+					"bronzaaktype": {
+						"description": "Het zaaktype binnen de CATALOGUS waaraan dit ZAAKTYPE is ontleend.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "",
+						"$ref": "",
+						"objectConfiguration": {
+							"handling": "nested-object",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"allOf": [
+							{
+								"$ref": "bronzaaktype"
+							}
+						],
+						"title": "bronzaaktype"
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T09:25:27+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"zaaktypeinformatieobjecttype": {
+				"slug": "zaaktypeinformatieobjecttype",
+				"title": "ZaakTypeInformatieObjectType",
+				"description": "Represent a ZaakTypeInformatieObjectType.\n\nRelatie met informatieobjecttype dat relevant is voor zaaktype.",
+				"version": "0.0.5",
+				"summary": null,
+				"icon": null,
+				"required": [
+					"informatieobjecttype",
+					"richting",
+					"url",
+					"volgnummer",
+					"zaaktype"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000,
+						"default": "{{ uri }}"
+					},
+					"zaaktype": {
+						"type": "string",
+						"format": "uri",
+						"description": "URL-referentie naar het ZAAKTYPE.",
+						"title": "zaaktype"
+					},
+					"zaaktypeIdentificatie": {
+						"type": "string",
+						"readOnly": true,
+						"description": "Unieke identificatie van het ZAAKTYPE binnen de CATALOGUS waarin het ZAAKTYPE voorkomt.",
+						"title": "zaaktypeIdentificatie"
+					},
+					"catalogus": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"title": "catalogus"
+					},
+					"informatieobjecttype": {
+						"type": "string",
+						"title": "informatieobjecttype",
+						"maxLength": 255
+					},
+					"volgnummer": {
+						"type": "integer",
+						"maximum": 999,
+						"minimum": 1,
+						"description": "Uniek volgnummer van het ZAAK-INFORMATIEOBJECTTYPE binnen het ZAAKTYPE.",
+						"title": "volgnummer"
+					},
+					"richting": {
+						"enum": [
+							"inkomend",
+							"intern",
+							"uitgaand"
+						],
+						"description": "Aanduiding van de richting van informatieobjecten van het gerelateerde INFORMATIEOBJECTTYPE bij zaken van het gerelateerde ZAAKTYPE.\n\nUitleg bij mogelijke waarden:\n\n* `inkomend` - Inkomend\n* `intern` - Intern\n* `uitgaand` - Uitgaand",
+						"title": "richting",
+						"type": "string"
+					},
+					"statustype": {
+						"type": "string",
+						"format": "uri",
+						"nullable": true,
+						"title": "statustype",
+						"description": "URL-referentie naar het STATUSTYPE waarbij deze INFORMATIEOBJECTTYPEn verplicht aanwezig moeten zijn."
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-15T11:45:54+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			},
+			"catalogus": {
+				"slug": "catalogus",
+				"title": "Catalogus",
+				"description": "",
+				"version": "0.0.8",
+				"summary": "",
+				"icon": null,
+				"required": [
+					"contactpersoonBeheerNaam",
+					"domein",
+					"rsin"
+				],
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri",
+						"readOnly": true,
+						"defaultValue": "{{ url }}",
+						"title": "url",
+						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+						"minLength": 1,
+						"maxLength": 1000
+					},
+					"domein": {
+						"type": "string",
+						"description": "Een afkorting waarmee wordt aangegeven voor welk domein in een CATALOGUS ZAAKTYPEn zijn uitgewerkt.",
+						"title": "domein",
+						"maxLength": 5
+					},
+					"rsin": {
+						"type": "string",
+						"description": "Het door een kamer toegekend uniek nummer voor de INGESCHREVEN NIET-NATUURLIJK PERSOON die de eigenaar is van een CATALOGUS.",
+						"title": "rsin",
+						"maxLength": 9
+					},
+					"contactpersoonBeheerNaam": {
+						"type": "string",
+						"title": "contactpersoonBeheerNaam",
+						"description": "De naam van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
+						"maxLength": 40
+					},
+					"contactpersoonBeheerTelefoonnummer": {
+						"type": "string",
+						"title": "contactpersoonBeheerTelefoonnummer",
+						"description": "Het telefoonnummer van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
+						"maxLength": 20
+					},
+					"contactpersoonBeheerEmailadres": {
+						"type": "string",
+						"format": "email",
+						"title": "contactpersoonBeheerEmailadres",
+						"description": "Het emailadres van de contactpersoon die verantwoordelijk is voor het beheer van de CATALOGUS.",
+						"maxLength": 254
+					},
+					"naam": {
+						"type": "string",
+						"nullable": true,
+						"description": "De benaming die is gegeven aan de zaaktypecatalogus.",
+						"title": "naam",
+						"maxLength": 200
+					},
+					"versie": {
+						"type": "string",
+						"nullable": true,
+						"description": "Versie-aanduiding van de van toepassing zijnde zaaktypecatalogus.",
+						"title": "versie",
+						"maxLength": 20
+					},
+					"begindatumVersie": {
+						"type": "string",
+						"format": "date",
+						"nullable": true,
+						"description": "Datum waarop de versie van de zaaktypecatalogus van toepassing is geworden.",
+						"title": "begindatumVersie"
+					},
+					"zaaktypen": {
+						"description": "URL-referenties naar ZAAKTYPEn die in deze CATALOGUS worden ontsloten.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "zaaktype",
+						"inversedBy": "catalogus",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "zaaktypen",
+						"uniqueItems": true
+					},
+					"besluittypen": {
+						"description": "URL-referenties naar BESLUITTYPEn die in deze CATALOGUS worden ontsloten.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "besluittype",
+						"inversedBy": "catalogus",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "besluittypen",
+						"uniqueItems": true
+					},
+					"informatieobjecttypen": {
+						"description": "URL-referenties naar INFORMATIEOBJECTTYPEn die in deze CATALOGUS worden ontsloten.",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"$ref": "informatieobjecttype",
+						"inversedBy": "catalogus",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": ""
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "informatieobjecttypen",
+						"uniqueItems": true
+					}
+				},
+				"archive": [],
+				"source": "",
+				"hardValidation": false,
+				"updated": "2025-05-16T08:48:22+00:00",
+				"created": "2025-05-15T11:45:54+00:00",
+				"maxDepth": 0,
+				"owner": null,
+				"application": null,
+				"organisation": null,
+				"authorization": null,
+				"deleted": null,
+				"configuration": null
+			}
+		}
+	},
+	"openapi": "3.0.0",
+	"info": {
+		"id": 3,
+		"title": "Catalogi",
+		"description": "",
+		"version": "0.0.2"
+	}
+}
