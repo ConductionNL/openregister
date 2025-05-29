@@ -95,7 +95,7 @@
 								</div>
 							</td>
 							<td>
-								<NcChip>{{ item.type }}</NcChip>
+								<span class="type-badge">{{ item.type }}</span>
 							</td>
 							<td>{{ item.register }}</td>
 							<td>
@@ -168,7 +168,6 @@ import {
 	NcCheckboxRadioSwitch,
 	NcActions,
 	NcActionButton,
-	NcChip,
 	NcDateTime,
 } from '@nextcloud/vue'
 import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
@@ -187,7 +186,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
-		NcChip,
 		NcDateTime,
 		DeleteEmpty,
 		Restore,
@@ -639,5 +637,16 @@ export default {
 .page-info {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9rem;
+}
+
+.type-badge {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 12px;
+	background: var(--color-primary-light);
+	color: var(--color-primary);
+	font-size: 0.8em;
+	font-weight: 500;
+	white-space: nowrap;
 }
 </style>

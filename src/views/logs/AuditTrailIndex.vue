@@ -187,7 +187,6 @@ import {
 	NcLoadingIcon,
 	NcActions,
 	NcActionButton,
-	NcChip,
 	NcDateTime,
 } from '@nextcloud/vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
@@ -209,7 +208,6 @@ export default {
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
-		NcChip,
 		NcDateTime,
 		TextBoxOutline,
 		Download,
