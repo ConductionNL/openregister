@@ -70,6 +70,46 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @return {number} Number of audit trails
 		 */
 		auditTrailCount: (state) => state.auditTrailList.length,
+
+		/**
+		 * Get unique actions from audit trail list
+		 * @param {object} state Current state
+		 * @return {string[]} Array of unique actions
+		 */
+		uniqueActions: (state) => {
+			const actions = [...new Set(state.auditTrailList.map(trail => trail.action).filter(Boolean))]
+			return actions.sort()
+		},
+
+		/**
+		 * Get unique register IDs from audit trail list
+		 * @param {object} state Current state
+		 * @return {number[]} Array of unique register IDs
+		 */
+		uniqueRegisters: (state) => {
+			const registers = [...new Set(state.auditTrailList.map(trail => trail.register).filter(Boolean))]
+			return registers.sort((a, b) => a - b)
+		},
+
+		/**
+		 * Get unique schema IDs from audit trail list
+		 * @param {object} state Current state
+		 * @return {number[]} Array of unique schema IDs
+		 */
+		uniqueSchemas: (state) => {
+			const schemas = [...new Set(state.auditTrailList.map(trail => trail.schema).filter(Boolean))]
+			return schemas.sort((a, b) => a - b)
+		},
+
+		/**
+		 * Get unique users from audit trail list
+		 * @param {object} state Current state
+		 * @return {string[]} Array of unique users
+		 */
+		uniqueUsers: (state) => {
+			const users = [...new Set(state.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
+			return users.sort()
+		},
 	},
 	actions: {
 		/**

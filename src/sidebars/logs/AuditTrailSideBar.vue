@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, auditTrailStore } from '../../store/store.js'
+import { navigationStore, auditTrailStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -336,39 +336,65 @@ export default {
 			actionDistribution: [],
 			topObjects: [],
 			filterTimeout: null,
-			actionOptions: [
-				{ label: this.t('openregister', 'Create'), value: 'create' },
-				{ label: this.t('openregister', 'Update'), value: 'update' },
-				{ label: this.t('openregister', 'Delete'), value: 'delete' },
-				{ label: this.t('openregister', 'Read'), value: 'read' },
-			],
-			registerOptions: [
-				{ label: this.t('openregister', 'Register 1'), value: '1' },
-				{ label: this.t('openregister', 'Register 2'), value: '2' },
-			],
-			schemaOptions: [
-				{ label: this.t('openregister', 'Schema 1'), value: '1' },
-				{ label: this.t('openregister', 'Schema 2'), value: '2' },
-			],
-			userOptions: [
-				{ label: this.t('openregister', 'Admin'), value: 'admin' },
-				{ label: this.t('openregister', 'User1'), value: 'user1' },
-				{ label: this.t('openregister', 'User2'), value: 'user2' },
-			],
-			exportFormatOptions: [
+		}
+	},
+	computed: {
+		actionOptions() {
+			return auditTrailStore.uniqueActions.map(action => ({
+				label: this.t('openregister', action.charAt(0).toUpperCase() + action.slice(1)),
+				value: action,
+			}))
+		},
+		registerOptions() {
+			return registerStore.registerList.map(register => ({
+				label: register.title || `Register ${register.id}`,
+				value: register.id,
+			}))
+		},
+		schemaOptions() {
+			return schemaStore.schemaList.map(schema => ({
+				label: schema.title || `Schema ${schema.id}`,
+				value: schema.id,
+			}))
+		},
+		userOptions() {
+			return auditTrailStore.uniqueUsers.map(user => ({
+				label: user,
+				value: user,
+			}))
+		},
+		exportFormatOptions() {
+			return [
 				{ label: 'CSV', value: 'csv' },
 				{ label: 'JSON', value: 'json' },
 				{ label: 'XML', value: 'xml' },
 				{ label: 'Plain Text', value: 'txt' },
-			],
-		}
+			]
+		},
 	},
 	watch: {
 		'auditTrailStore.auditTrailList'() {
 			this.updateFilteredCount()
+			this.loadStatistics()
+			this.loadActionDistribution()
+			this.loadTopObjects()
 		},
 	},
 	mounted() {
+		// Load required data
+		if (!registerStore.registerList.length) {
+			registerStore.refreshRegisterList()
+		}
+		
+		if (!schemaStore.schemaList.length) {
+			schemaStore.refreshSchemaList()
+		}
+
+		// Load initial audit trail data
+		if (!auditTrailStore.auditTrailList.length) {
+			auditTrailStore.refreshAuditTrailList()
+		}
+
 		this.loadStatistics()
 		this.loadActionDistribution()
 		this.loadTopObjects()
@@ -390,16 +416,51 @@ export default {
 		 * @return {void}
 		 */
 		applyFilters() {
-			const filters = {
-				actions: this.selectedActions.map(a => a.value),
-				registers: this.selectedRegisters.map(r => r.value),
-				schemas: this.selectedSchemas.map(s => s.value),
-				users: this.selectedUsers.map(u => u.value),
-				dateFrom: this.dateFrom || null,
-				dateTo: this.dateTo || null,
-				object: this.objectFilter || null,
-				onlyWithChanges: this.showOnlyWithChanges,
+			const filters = {}
+
+			// Build action filter
+			if (this.selectedActions && this.selectedActions.length > 0) {
+				filters.action = this.selectedActions.map(a => a.value).join(',')
 			}
+
+			// Build register filter
+			if (this.selectedRegisters && this.selectedRegisters.length > 0) {
+				filters.register = this.selectedRegisters.map(r => r.value).join(',')
+			}
+
+			// Build schema filter
+			if (this.selectedSchemas && this.selectedSchemas.length > 0) {
+				filters.schema = this.selectedSchemas.map(s => s.value).join(',')
+			}
+
+			// Build user filter
+			if (this.selectedUsers && this.selectedUsers.length > 0) {
+				filters.user = this.selectedUsers.map(u => u.value).join(',')
+			}
+
+			// Date filters
+			if (this.dateFrom) {
+				filters.dateFrom = this.dateFrom
+			}
+			if (this.dateTo) {
+				filters.dateTo = this.dateTo
+			}
+
+			// Object filter
+			if (this.objectFilter) {
+				filters.object = this.objectFilter
+			}
+
+			// Changes filter
+			if (this.showOnlyWithChanges) {
+				filters.onlyWithChanges = true
+			}
+
+			// Set filters in store and refresh data
+			auditTrailStore.setFilters(filters)
+			auditTrailStore.refreshAuditTrailList()
+
+			// Also emit for legacy compatibility
 			this.$root.$emit('audit-trail-filters-changed', filters)
 		},
 		/**
@@ -427,6 +488,7 @@ export default {
 		 */
 		updateFilteredCount() {
 			this.filteredCount = auditTrailStore.auditTrailCount
+			this.totalAuditTrails = auditTrailStore.pagination.total || auditTrailStore.auditTrailCount
 		},
 		/**
 		 * Export audit trails with current filters
@@ -452,6 +514,7 @@ export default {
 		 * @return {void}
 		 */
 		refreshAuditTrails() {
+			auditTrailStore.refreshAuditTrailList()
 			this.$root.$emit('audit-trail-refresh')
 		},
 		/**
@@ -460,15 +523,19 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				// TODO: Replace with actual API call
-				// const response = await fetch('/api/audit-trails/statistics')
-				// const stats = await response.json()
+				// Calculate statistics from current audit trail data
+				this.totalAuditTrails = auditTrailStore.pagination.total || auditTrailStore.auditTrailCount
 
-				// Mock data for now
-				this.totalAuditTrails = 1247
-				this.createCount = 123
-				this.updateCount = 567
-				this.deleteCount = 23
+				// Calculate counts for different actions in the last 24 hours
+				const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+				const recentTrails = auditTrailStore.auditTrailList.filter(trail => {
+					const createdDate = new Date(trail.created)
+					return createdDate >= oneDayAgo
+				})
+
+				this.createCount = recentTrails.filter(trail => trail.action === 'create').length
+				this.updateCount = recentTrails.filter(trail => trail.action === 'update').length
+				this.deleteCount = recentTrails.filter(trail => trail.action === 'delete').length
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 			}
@@ -479,22 +546,29 @@ export default {
 		 */
 		async loadActionDistribution() {
 			try {
-				// TODO: Replace with actual API call
-				// const response = await fetch('/api/audit-trails/distribution')
-				// const distribution = await response.json()
+				// Calculate action distribution from recent audit trail data
+				const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+				const recentTrails = auditTrailStore.auditTrailList.filter(trail => {
+					const createdDate = new Date(trail.created)
+					return createdDate >= oneDayAgo
+				})
 
-				// Mock data for now
-				const data = [
-					{ name: 'create', count: 123 },
-					{ name: 'update', count: 567 },
-					{ name: 'read', count: 456 },
-					{ name: 'delete', count: 23 },
-				]
+				// Count actions
+				const actionCounts = {}
+				recentTrails.forEach(trail => {
+					actionCounts[trail.action] = (actionCounts[trail.action] || 0) + 1
+				})
+
+				// Convert to distribution format
+				const data = Object.entries(actionCounts).map(([action, count]) => ({
+					name: action,
+					count,
+				}))
 
 				const total = data.reduce((sum, item) => sum + item.count, 0)
 				this.actionDistribution = data.map(item => ({
 					...item,
-					percentage: (item.count / total) * 100,
+					percentage: total > 0 ? (item.count / total) * 100 : 0,
 				}))
 			} catch (error) {
 				console.error('Error loading action distribution:', error)
@@ -506,17 +580,21 @@ export default {
 		 */
 		async loadTopObjects() {
 			try {
-				// TODO: Replace with actual API call
-				// const response = await fetch('/api/audit-trails/top-objects')
-				// this.topObjects = await response.json()
+				// Calculate top objects from audit trail data
+				const objectCounts = {}
+				auditTrailStore.auditTrailList.forEach(trail => {
+					const objectId = trail.object
+					objectCounts[objectId] = (objectCounts[objectId] || 0) + 1
+				})
 
-				// Mock data for now
-				this.topObjects = [
-					{ name: 'Object 123', count: 42 },
-					{ name: 'Object 456', count: 34 },
-					{ name: 'Object 789', count: 23 },
-					{ name: 'Object 012', count: 19 },
-				]
+				// Convert to top objects format and sort by count
+				this.topObjects = Object.entries(objectCounts)
+					.map(([objectId, count]) => ({
+						name: `Object ${objectId}`,
+						count,
+					}))
+					.sort((a, b) => b.count - a.count)
+					.slice(0, 4) // Top 4 objects
 			} catch (error) {
 				console.error('Error loading top objects:', error)
 			}
