@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore } from '../../store/store.js'
+// No setup script needed for this component
 </script>
 
 <template>
@@ -286,6 +286,14 @@ export default {
 			return this.selectedItems.length > 0 && !this.allSelected
 		},
 	},
+	watch: {
+		selectedItems() {
+			this.updateCounts()
+		},
+		filteredItems() {
+			this.updateCounts()
+		},
+	},
 	mounted() {
 		this.loadItems()
 
@@ -304,14 +312,6 @@ export default {
 		this.$root.$off('deleted-bulk-delete')
 		this.$root.$off('deleted-export-filtered')
 	},
-	watch: {
-		selectedItems() {
-			this.updateCounts()
-		},
-		filteredItems() {
-			this.updateCounts()
-		},
-	},
 	methods: {
 		/**
 		 * Load deleted items from API
@@ -323,7 +323,7 @@ export default {
 				// TODO: Replace with actual API call
 				// const response = await fetch('/api/deleted-items')
 				// this.items = await response.json()
-				
+
 				// Mock delay
 				await new Promise(resolve => setTimeout(resolve, 500))
 			} catch (error) {
@@ -397,7 +397,7 @@ export default {
 				// Remove from items array (mock)
 				this.items = this.items.filter(item => !this.selectedItems.includes(item.id))
 				this.selectedItems = []
-				
+
 				OC.Notification.showSuccess(this.t('openregister', 'Items restored successfully'))
 			} catch (error) {
 				console.error('Error restoring items:', error)
@@ -425,7 +425,7 @@ export default {
 				// Remove from items array (mock)
 				this.items = this.items.filter(item => !this.selectedItems.includes(item.id))
 				this.selectedItems = []
-				
+
 				OC.Notification.showSuccess(this.t('openregister', 'Items permanently deleted'))
 			} catch (error) {
 				console.error('Error deleting items:', error)
@@ -447,7 +447,7 @@ export default {
 				if (index > -1) {
 					this.items.splice(index, 1)
 				}
-				
+
 				OC.Notification.showSuccess(this.t('openregister', 'Item restored successfully'))
 			} catch (error) {
 				console.error('Error restoring item:', error)
@@ -473,7 +473,7 @@ export default {
 				if (index > -1) {
 					this.items.splice(index, 1)
 				}
-				
+
 				OC.Notification.showSuccess(this.t('openregister', 'Item permanently deleted'))
 			} catch (error) {
 				console.error('Error deleting item:', error)
@@ -487,15 +487,17 @@ export default {
 		 */
 		viewDetails(item) {
 			// TODO: Implement details modal or navigation
-			console.log('View details for item:', item)
+			// console.log('View details for item:', item)
 		},
 		/**
-		 * Export filtered items
+		 * Export filtered items with specified options
+		 * @param {object} options - Export options
 		 * @return {void}
 		 */
-		exportFiltered() {
+		exportFilteredItems(options) {
 			// TODO: Implement export functionality
-			console.log('Export filtered items:', this.filteredItems)
+			// console.log('Export filtered items:', this.filteredItems)
+			OC.Notification.showSuccess(this.t('openregister', 'Export started'))
 		},
 		/**
 		 * Refresh items list

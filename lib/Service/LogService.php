@@ -122,4 +122,60 @@ class LogService
     }//end count()
 
 
+    /**
+     * Get all audit trail logs with optional filtering
+     *
+     * @param array $config Configuration array containing:
+     *                      - limit: (int) Maximum number of items per page
+     *                      - offset: (int|null) Number of items to skip
+     *                      - page: (int|null) Current page number
+     *                      - filters: (array) Filter parameters
+     *                      - sort: (array) Sort parameters ['field' => 'ASC|DESC']
+     *                      - search: (string|null) Search term
+     *
+     * @return array Array of audit trail entries
+     */
+    public function getAllLogs(array $config=[]): array
+    {
+        return $this->auditTrailMapper->findAll(
+            limit: $config['limit'] ?? 20,
+            offset: $config['offset'] ?? 0,
+            filters: $config['filters'] ?? [],
+            sort: $config['sort'] ?? ['created' => 'DESC'],
+            search: $config['search'] ?? null
+        );
+
+    }//end getAllLogs()
+
+
+    /**
+     * Count all audit trail logs with optional filtering
+     *
+     * @param array $filters Optional filters to apply
+     *
+     * @return int Number of audit trail entries
+     */
+    public function countAllLogs(array $filters=[]): int
+    {
+        $logs = $this->auditTrailMapper->findAll(filters: $filters);
+        return count($logs);
+
+    }//end countAllLogs()
+
+
+    /**
+     * Get a single audit trail log by ID
+     *
+     * @param int $id The audit trail ID
+     *
+     * @return mixed The audit trail entry
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If audit trail not found
+     */
+    public function getLog(int $id)
+    {
+        return $this->auditTrailMapper->find($id);
+
+    }//end getLog()
+
+
 }//end class

@@ -9,6 +9,7 @@ import { useSchemaStore } from './modules/schema.js'
 import { useObjectStore } from './modules/object.js'
 import { useConfigurationStore } from './modules/configuration.js'
 import { useDashboardStore } from './modules/dashboard.js'
+import { useAuditTrailStore } from './modules/auditTrail.js'
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)
@@ -18,6 +19,7 @@ const schemaStore = useSchemaStore(pinia)
 const objectStore = useObjectStore(pinia)
 const configurationStore = useConfigurationStore(pinia)
 const dashboardStore = useDashboardStore(pinia)
+const auditTrailStore = useAuditTrailStore(pinia)
 
 export {
 	// generic
@@ -29,4 +31,5 @@ export {
 	objectStore,
 	configurationStore,
 	dashboardStore,
+	auditTrailStore,
 }

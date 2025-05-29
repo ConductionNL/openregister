@@ -9,7 +9,7 @@ import { navigationStore } from '../store/store.js'
 		<RegisterSideBar v-if="navigationStore.selected === 'register-detail'" />
 		<RegistersSideBar v-if="navigationStore.selected === 'registers'" />
 		<DeletedSideBar v-if="navigationStore.selected === 'deleted'" />
-		<LogsSideBar v-if="navigationStore.selected === 'logs'" />
+		<AuditTrailSideBar v-if="navigationStore.selected === 'auditTrails'" />
 	</div>
 </template>
 
@@ -19,7 +19,7 @@ import DashboardSideBar from './dashboard/DashboardSideBar.vue'
 import RegisterSideBar from './register/RegisterSideBar.vue'
 import RegistersSideBar from './register/RegistersSideBar.vue'
 import DeletedSideBar from './deleted/DeletedSideBar.vue'
-import LogsSideBar from './logs/LogsSideBar.vue'
+import AuditTrailSideBar from './logs/AuditTrailSideBar.vue'
 
 export default {
 	name: 'SideBars',
@@ -29,7 +29,7 @@ export default {
 		RegisterSideBar,
 		RegistersSideBar,
 		DeletedSideBar,
-		LogsSideBar,
+		AuditTrailSideBar,
 	},
 }
 </script>

@@ -134,20 +134,36 @@ import { navigationStore } from '../../store/store.js'
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Deletion Statistics') }}</h3>
 				<div class="statCard">
-					<div class="statNumber">{{ totalDeleted }}</div>
-					<div class="statLabel">{{ t('openregister', 'Total Deleted Items') }}</div>
+					<div class="statNumber">
+						{{ totalDeleted }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Total Deleted Items') }}
+					</div>
 				</div>
 				<div class="statCard">
-					<div class="statNumber">{{ deletedToday }}</div>
-					<div class="statLabel">{{ t('openregister', 'Deleted Today') }}</div>
+					<div class="statNumber">
+						{{ deletedToday }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Deleted Today') }}
+					</div>
 				</div>
 				<div class="statCard">
-					<div class="statNumber">{{ deletedThisWeek }}</div>
-					<div class="statLabel">{{ t('openregister', 'Deleted This Week') }}</div>
+					<div class="statNumber">
+						{{ deletedThisWeek }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Deleted This Week') }}
+					</div>
 				</div>
 				<div class="statCard">
-					<div class="statNumber">{{ oldestDays }}</div>
-					<div class="statLabel">{{ t('openregister', 'Oldest Item (days)') }}</div>
+					<div class="statNumber">
+						{{ oldestDays }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Oldest Item (days)') }}
+					</div>
 				</div>
 			</div>
 

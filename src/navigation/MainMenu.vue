@@ -43,12 +43,12 @@ import { navigationStore } from '../store/store.js'
 					<CogOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'deleted'" :name="t('openregister', 'Soft Deleted Items')" @click="navigationStore.setSelected('deleted')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'deleted'" :name="t('openregister', 'Deleted')" @click="navigationStore.setSelected('deleted')">
 				<template #icon>
 					<DeleteRestore :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'logs'" :name="t('openregister', 'Logs')" @click="navigationStore.setSelected('logs')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'auditTrails'" :name="t('openregister', 'Audit Trails')" @click="navigationStore.setSelected('auditTrails')">
 				<template #icon>
 					<TextBoxOutline :size="20" />
 				</template>

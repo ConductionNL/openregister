@@ -1,16 +1,16 @@
 <script setup>
-import { navigationStore } from '../../store/store.js'
+import { navigationStore, auditTrailStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		:name="t('openregister', 'Logs Management')"
-		:subtitle="t('openregister', 'Filter and analyze system logs')"
-		:subname="t('openregister', 'Advanced log filtering and export')"
-		:open="navigationStore.sidebarState.logs"
-		@update:open="(e) => navigationStore.setSidebarState('logs', e)">
+		:name="t('openregister', 'Audit Trail Management')"
+		:subtitle="t('openregister', 'Filter and analyze audit trails')"
+		:subname="t('openregister', 'Advanced audit trail filtering and export')"
+		:open="navigationStore.sidebarState.auditTrails"
+		@update:open="(e) => navigationStore.setSidebarState('auditTrails', e)">
 		<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
 			<template #icon>
 				<FilterOutline :size="20" />
@@ -20,31 +20,45 @@ import { navigationStore } from '../../store/store.js'
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Advanced Filters') }}</h3>
 				<div class="filterGroup">
-					<label>{{ t('openregister', 'Log Level') }}</label>
+					<label>{{ t('openregister', 'Action Type') }}</label>
 					<NcSelect
-						v-model="selectedLevels"
-						:options="logLevelOptions"
-						:placeholder="t('openregister', 'All levels')"
+						v-model="selectedActions"
+						:options="actionOptions"
+						:placeholder="t('openregister', 'All actions')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
 						<template #option="{ option }">
-							<span class="levelOption" :class="`level-${option.value}`">
-								<AlertCircle v-if="option.value === 'error'" :size="16" />
-								<Alert v-else-if="option.value === 'warning'" :size="16" />
-								<Information v-else-if="option.value === 'info'" :size="16" />
-								<BugOutline v-else-if="option.value === 'debug'" :size="16" />
+							<span class="actionOption" :class="`action-${option.value}`">
+								<Plus v-if="option.value === 'create'" :size="16" />
+								<Pencil v-else-if="option.value === 'update'" :size="16" />
+								<Delete v-else-if="option.value === 'delete'" :size="16" />
+								<Eye v-else-if="option.value === 'read'" :size="16" />
 								{{ option.label }}
 							</span>
 						</template>
 					</NcSelect>
 				</div>
 				<div class="filterGroup">
-					<label>{{ t('openregister', 'Source') }}</label>
+					<label>{{ t('openregister', 'Register') }}</label>
 					<NcSelect
-						v-model="selectedSources"
-						:options="sourceOptions"
-						:placeholder="t('openregister', 'All sources')"
+						v-model="selectedRegisters"
+						:options="registerOptions"
+						:placeholder="t('openregister', 'All registers')"
+						:multiple="true"
+						:clearable="true"
+						@input="applyFilters">
+						<template #option="{ option }">
+							{{ option.label }}
+						</template>
+					</NcSelect>
+				</div>
+				<div class="filterGroup">
+					<label>{{ t('openregister', 'Schema') }}</label>
+					<NcSelect
+						v-model="selectedSchemas"
+						:options="schemaOptions"
+						:placeholder="t('openregister', 'All schemas')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
@@ -81,24 +95,24 @@ import { navigationStore } from '../../store/store.js'
 						@input="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label>{{ t('openregister', 'Message Contains') }}</label>
+					<label>{{ t('openregister', 'Object ID') }}</label>
 					<NcTextField
-						v-model="messageFilter"
-						:label="t('openregister', 'Search in messages')"
-						:placeholder="t('openregister', 'Enter keywords...')"
+						v-model="objectFilter"
+						:label="t('openregister', 'Search by object ID')"
+						:placeholder="t('openregister', 'Enter object ID...')"
 						@update:modelValue="debouncedApplyFilters" />
 				</div>
 				<div class="filterGroup">
 					<NcCheckboxRadioSwitch
-						:checked="showOnlyWithErrors"
-						@update:checked="updateErrorFilter">
-						{{ t('openregister', 'Show only entries with stack traces') }}
+						:checked="showOnlyWithChanges"
+						@update:checked="updateChangesFilter">
+						{{ t('openregister', 'Show only entries with changes') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
 
 			<NcNoteCard type="info" class="filter-hint">
-				{{ t('openregister', 'Use filters to narrow down log entries by level, source, time period, or content.') }}
+				{{ t('openregister', 'Use filters to narrow down audit trail entries by action, register, schema, time period, or object.') }}
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
@@ -124,51 +138,51 @@ import { navigationStore } from '../../store/store.js'
 				</div>
 				<div class="actionGroup">
 					<NcCheckboxRadioSwitch
-						:checked="includeContext"
-						@update:checked="(value) => includeContext = value">
-						{{ t('openregister', 'Include context data') }}
+						:checked="includeChanges"
+						@update:checked="(value) => includeChanges = value">
+						{{ t('openregister', 'Include change data') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 				<div class="actionGroup">
 					<NcCheckboxRadioSwitch
-						:checked="includeStackTrace"
-						@update:checked="(value) => includeStackTrace = value">
-						{{ t('openregister', 'Include stack traces') }}
+						:checked="includeMetadata"
+						@update:checked="(value) => includeMetadata = value">
+						{{ t('openregister', 'Include metadata') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 				<div class="actionGroup">
 					<NcButton
 						type="primary"
 						:disabled="filteredCount === 0"
-						@click="exportLogs">
+						@click="exportAuditTrails">
 						<template #icon>
 							<Download :size="20" />
 						</template>
-						{{ t('openregister', 'Export Filtered Logs ({count})', { count: filteredCount }) }}
+						{{ t('openregister', 'Export Filtered Audit Trails ({count})', { count: filteredCount }) }}
 					</NcButton>
 				</div>
 			</div>
 
 			<!-- Actions Section -->
 			<div class="actionsSection">
-				<h3>{{ t('openregister', 'Log Actions') }}</h3>
+				<h3>{{ t('openregister', 'Audit Trail Actions') }}</h3>
 				<div class="actionGroup">
 					<NcButton
 						:disabled="filteredCount === 0"
-						@click="clearFilteredLogs">
+						@click="clearFilteredAuditTrails">
 						<template #icon>
 							<Delete :size="20" />
 						</template>
-						{{ t('openregister', 'Clear Filtered Logs') }}
+						{{ t('openregister', 'Clear Filtered Entries') }}
 					</NcButton>
 				</div>
 				<div class="actionGroup">
 					<NcButton
-						@click="refreshLogs">
+						@click="refreshAuditTrails">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
-						{{ t('openregister', 'Refresh Logs') }}
+						{{ t('openregister', 'Refresh Audit Trails') }}
 					</NcButton>
 				</div>
 			</div>
@@ -185,54 +199,70 @@ import { navigationStore } from '../../store/store.js'
 
 			<!-- Statistics Section -->
 			<div class="statsSection">
-				<h3>{{ t('openregister', 'Log Statistics') }}</h3>
+				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
 				<div class="statCard">
-					<div class="statNumber">{{ totalLogs }}</div>
-					<div class="statLabel">{{ t('openregister', 'Total Log Entries') }}</div>
+					<div class="statNumber">
+						{{ totalAuditTrails }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Total Audit Trail Entries') }}
+					</div>
 				</div>
-				<div class="statCard error">
-					<div class="statNumber">{{ errorCount }}</div>
-					<div class="statLabel">{{ t('openregister', 'Errors (24h)') }}</div>
+				<div class="statCard create">
+					<div class="statNumber">
+						{{ createCount }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Creates (24h)') }}
+					</div>
 				</div>
-				<div class="statCard warning">
-					<div class="statNumber">{{ warningCount }}</div>
-					<div class="statLabel">{{ t('openregister', 'Warnings (24h)') }}</div>
+				<div class="statCard update">
+					<div class="statNumber">
+						{{ updateCount }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Updates (24h)') }}
+					</div>
 				</div>
-				<div class="statCard info">
-					<div class="statNumber">{{ infoCount }}</div>
-					<div class="statLabel">{{ t('openregister', 'Info Messages (24h)') }}</div>
+				<div class="statCard delete">
+					<div class="statNumber">
+						{{ deleteCount }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Deletes (24h)') }}
+					</div>
 				</div>
 			</div>
 
-			<!-- Level Distribution -->
-			<div class="levelDistribution">
-				<h4>{{ t('openregister', 'Log Level Distribution (24h)') }}</h4>
-				<div v-for="level in levelDistribution" :key="level.name" class="levelBar">
-					<div class="levelLabel">
-						<span :class="`level-${level.name}`">{{ level.name.toUpperCase() }}</span>
-						<span class="levelCount">{{ level.count }}</span>
+			<!-- Action Distribution -->
+			<div class="actionDistribution">
+				<h4>{{ t('openregister', 'Action Distribution (24h)') }}</h4>
+				<div v-for="action in actionDistribution" :key="action.name" class="actionBar">
+					<div class="actionLabel">
+						<span :class="`action-${action.name}`">{{ action.name.toUpperCase() }}</span>
+						<span class="actionCount">{{ action.count }}</span>
 					</div>
-					<div class="levelProgress">
+					<div class="actionProgress">
 						<div
-							class="levelProgressBar"
-							:class="`level-${level.name}`"
-							:style="{ width: `${level.percentage}%` }" />
+							class="actionProgressBar"
+							:class="`action-${action.name}`"
+							:style="{ width: `${action.percentage}%` }" />
 					</div>
 				</div>
 			</div>
 
-			<!-- Top Sources -->
-			<div class="topSources">
-				<h4>{{ t('openregister', 'Top Log Sources') }}</h4>
-				<NcListItem v-for="(source, index) in topSources"
+			<!-- Top Objects -->
+			<div class="topObjects">
+				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
+				<NcListItem v-for="(object, index) in topObjects"
 					:key="index"
-					:name="source.name"
+					:name="object.name"
 					:bold="false">
 					<template #icon>
 						<CogOutline :size="32" />
 					</template>
 					<template #subname>
-						{{ t('openregister', '{count} entries', { count: source.count }) }}
+						{{ t('openregister', '{count} entries', { count: object.count }) }}
 					</template>
 				</NcListItem>
 			</div>
@@ -258,13 +288,12 @@ import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Alert from 'vue-material-design-icons/Alert.vue'
-import Information from 'vue-material-design-icons/Information.vue'
-import BugOutline from 'vue-material-design-icons/BugOutline.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
 
 export default {
-	name: 'LogsSideBar',
+	name: 'AuditTrailSideBar',
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
@@ -281,43 +310,45 @@ export default {
 		Delete,
 		Refresh,
 		CogOutline,
-		AlertCircle,
-		Alert,
-		Information,
-		BugOutline,
+		Plus,
+		Pencil,
+		Eye,
 	},
 	data() {
 		return {
 			activeTab: 'filters-tab',
-			selectedLevels: [],
-			selectedSources: [],
+			selectedActions: [],
+			selectedRegisters: [],
+			selectedSchemas: [],
 			selectedUsers: [],
 			dateFrom: '',
 			dateTo: '',
-			messageFilter: '',
-			showOnlyWithErrors: false,
+			objectFilter: '',
+			showOnlyWithChanges: false,
 			exportFormat: { label: 'CSV', value: 'csv' },
-			includeContext: true,
-			includeStackTrace: false,
+			includeChanges: true,
+			includeMetadata: false,
 			filteredCount: 0,
-			totalLogs: 0,
-			errorCount: 0,
-			warningCount: 0,
-			infoCount: 0,
-			levelDistribution: [],
-			topSources: [],
+			totalAuditTrails: 0,
+			createCount: 0,
+			updateCount: 0,
+			deleteCount: 0,
+			actionDistribution: [],
+			topObjects: [],
 			filterTimeout: null,
-			logLevelOptions: [
-				{ label: this.t('openregister', 'Error'), value: 'error' },
-				{ label: this.t('openregister', 'Warning'), value: 'warning' },
-				{ label: this.t('openregister', 'Info'), value: 'info' },
-				{ label: this.t('openregister', 'Debug'), value: 'debug' },
+			actionOptions: [
+				{ label: this.t('openregister', 'Create'), value: 'create' },
+				{ label: this.t('openregister', 'Update'), value: 'update' },
+				{ label: this.t('openregister', 'Delete'), value: 'delete' },
+				{ label: this.t('openregister', 'Read'), value: 'read' },
 			],
-			sourceOptions: [
-				{ label: this.t('openregister', 'ObjectService'), value: 'ObjectService' },
-				{ label: this.t('openregister', 'ValidationService'), value: 'ValidationService' },
-				{ label: this.t('openregister', 'AuthService'), value: 'AuthService' },
-				{ label: this.t('openregister', 'CacheService'), value: 'CacheService' },
+			registerOptions: [
+				{ label: this.t('openregister', 'Register 1'), value: '1' },
+				{ label: this.t('openregister', 'Register 2'), value: '2' },
+			],
+			schemaOptions: [
+				{ label: this.t('openregister', 'Schema 1'), value: '1' },
+				{ label: this.t('openregister', 'Schema 2'), value: '2' },
 			],
 			userOptions: [
 				{ label: this.t('openregister', 'Admin'), value: 'admin' },
@@ -332,18 +363,26 @@ export default {
 			],
 		}
 	},
+	watch: {
+		'auditTrailStore.auditTrailList'() {
+			this.updateFilteredCount()
+		},
+	},
 	mounted() {
 		this.loadStatistics()
-		this.loadLevelDistribution()
-		this.loadTopSources()
+		this.loadActionDistribution()
+		this.loadTopObjects()
 
 		// Listen for filtered count updates
-		this.$root.$on('logs-filtered-count', (count) => {
+		this.$root.$on('audit-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
+
+		// Watch store changes
+		this.updateFilteredCount()
 	},
 	beforeDestroy() {
-		this.$root.$off('logs-filtered-count')
+		this.$root.$off('audit-trail-filtered-count')
 	},
 	methods: {
 		/**
@@ -352,15 +391,16 @@ export default {
 		 */
 		applyFilters() {
 			const filters = {
-				levels: this.selectedLevels.map(l => l.value),
-				sources: this.selectedSources.map(s => s.value),
+				actions: this.selectedActions.map(a => a.value),
+				registers: this.selectedRegisters.map(r => r.value),
+				schemas: this.selectedSchemas.map(s => s.value),
 				users: this.selectedUsers.map(u => u.value),
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,
-				message: this.messageFilter || null,
-				onlyWithErrors: this.showOnlyWithErrors,
+				object: this.objectFilter || null,
+				onlyWithChanges: this.showOnlyWithChanges,
 			}
-			this.$root.$emit('logs-filters-changed', filters)
+			this.$root.$emit('audit-trail-filters-changed', filters)
 		},
 		/**
 		 * Debounced version of applyFilters for text input
@@ -373,105 +413,112 @@ export default {
 			}, 500)
 		},
 		/**
-		 * Update error filter
-		 * @param {boolean} value - Whether to show only errors
+		 * Update changes filter
+		 * @param {boolean} value - Whether to show only entries with changes
 		 * @return {void}
 		 */
-		updateErrorFilter(value) {
-			this.showOnlyWithErrors = value
+		updateChangesFilter(value) {
+			this.showOnlyWithChanges = value
 			this.applyFilters()
 		},
 		/**
-		 * Export logs with current filters
+		 * Update filtered count from store
 		 * @return {void}
 		 */
-		exportLogs() {
+		updateFilteredCount() {
+			this.filteredCount = auditTrailStore.auditTrailCount
+		},
+		/**
+		 * Export audit trails with current filters
+		 * @return {void}
+		 */
+		exportAuditTrails() {
 			const exportOptions = {
 				format: this.exportFormat.value,
-				includeContext: this.includeContext,
-				includeStackTrace: this.includeStackTrace,
+				includeChanges: this.includeChanges,
+				includeMetadata: this.includeMetadata,
 			}
-			this.$root.$emit('logs-export', exportOptions)
+			this.$root.$emit('audit-trail-export', exportOptions)
 		},
 		/**
-		 * Clear filtered logs
+		 * Clear filtered audit trails
 		 * @return {void}
 		 */
-		clearFilteredLogs() {
-			this.$root.$emit('logs-clear-filtered')
+		clearFilteredAuditTrails() {
+			this.$root.$emit('audit-trail-clear-filtered')
 		},
 		/**
-		 * Refresh logs
+		 * Refresh audit trails
 		 * @return {void}
 		 */
-		refreshLogs() {
-			this.$root.$emit('logs-refresh')
+		refreshAuditTrails() {
+			this.$root.$emit('audit-trail-refresh')
 		},
 		/**
-		 * Load log statistics
+		 * Load audit trail statistics
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
 			try {
 				// TODO: Replace with actual API call
-				// const response = await fetch('/api/logs/statistics')
+				// const response = await fetch('/api/audit-trails/statistics')
 				// const stats = await response.json()
 
 				// Mock data for now
-				this.totalLogs = 1247
-				this.errorCount = 23
-				this.warningCount = 67
-				this.infoCount = 156
+				this.totalAuditTrails = 1247
+				this.createCount = 123
+				this.updateCount = 567
+				this.deleteCount = 23
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 			}
 		},
 		/**
-		 * Load log level distribution data
+		 * Load action distribution data
 		 * @return {Promise<void>}
 		 */
-		async loadLevelDistribution() {
+		async loadActionDistribution() {
 			try {
 				// TODO: Replace with actual API call
-				// const response = await fetch('/api/logs/distribution')
+				// const response = await fetch('/api/audit-trails/distribution')
 				// const distribution = await response.json()
 
 				// Mock data for now
 				const data = [
-					{ name: 'error', count: 23 },
-					{ name: 'warning', count: 67 },
-					{ name: 'info', count: 156 },
-					{ name: 'debug', count: 89 },
+					{ name: 'create', count: 123 },
+					{ name: 'update', count: 567 },
+					{ name: 'read', count: 456 },
+					{ name: 'delete', count: 23 },
 				]
 
 				const total = data.reduce((sum, item) => sum + item.count, 0)
-				this.levelDistribution = data.map(item => ({
+				this.actionDistribution = data.map(item => ({
 					...item,
 					percentage: (item.count / total) * 100,
 				}))
 			} catch (error) {
-				console.error('Error loading level distribution:', error)
+				console.error('Error loading action distribution:', error)
 			}
 		},
 		/**
-		 * Load top log sources
+		 * Load top active objects
 		 * @return {Promise<void>}
 		 */
-		async loadTopSources() {
+		async loadTopObjects() {
 			try {
 				// TODO: Replace with actual API call
-				// const response = await fetch('/api/logs/top-sources')
-				// this.topSources = await response.json()
+				// const response = await fetch('/api/audit-trails/top-objects')
+				// this.topObjects = await response.json()
 
 				// Mock data for now
-				this.topSources = [
-					{ name: 'ObjectService', count: 342 },
-					{ name: 'ValidationService', count: 234 },
-					{ name: 'AuthService', count: 123 },
-					{ name: 'CacheService', count: 89 },
+				this.topObjects = [
+					{ name: 'Object 123', count: 42 },
+					{ name: 'Object 456', count: 34 },
+					{ name: 'Object 789', count: 23 },
+					{ name: 'Object 012', count: 19 },
 				]
 			} catch (error) {
-				console.error('Error loading top sources:', error)
+				console.error('Error loading top objects:', error)
 			}
 		},
 	},
@@ -523,26 +570,26 @@ export default {
 	margin-bottom: 12px;
 }
 
-.levelOption {
+.actionOption {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
-.levelOption.level-error {
-	color: var(--color-error);
+.actionOption.action-create {
+	color: var(--color-success);
 }
 
-.levelOption.level-warning {
+.actionOption.action-update {
 	color: var(--color-warning);
 }
 
-.levelOption.level-info {
-	color: var(--color-info);
+.actionOption.action-delete {
+	color: var(--color-error);
 }
 
-.levelOption.level-debug {
-	color: var(--color-text-maxcontrast);
+.actionOption.action-read {
+	color: var(--color-info);
 }
 
 .filter-hint,
@@ -562,16 +609,16 @@ export default {
 	text-align: center;
 }
 
-.statCard.error {
-	border-left: 4px solid var(--color-error);
+.statCard.create {
+	border-left: 4px solid var(--color-success);
 }
 
-.statCard.warning {
+.statCard.update {
 	border-left: 4px solid var(--color-warning);
 }
 
-.statCard.info {
-	border-left: 4px solid var(--color-info);
+.statCard.delete {
+	border-left: 4px solid var(--color-error);
 }
 
 .statNumber {
@@ -586,24 +633,24 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.levelDistribution,
-.topSources {
+.actionDistribution,
+.topObjects {
 	margin-top: 20px;
 }
 
-.levelDistribution h4,
-.topSources h4 {
+.actionDistribution h4,
+.topObjects h4 {
 	margin: 0 0 12px 0;
 	font-size: 1rem;
 	font-weight: 500;
 	color: var(--color-main-text);
 }
 
-.levelBar {
+.actionBar {
 	margin-bottom: 12px;
 }
 
-.levelLabel {
+.actionLabel {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -611,52 +658,52 @@ export default {
 	font-size: 0.9rem;
 }
 
-.levelLabel .level-error {
-	color: var(--color-error);
+.actionLabel .action-create {
+	color: var(--color-success);
 	font-weight: bold;
 }
 
-.levelLabel .level-warning {
+.actionLabel .action-update {
 	color: var(--color-warning);
 	font-weight: bold;
 }
 
-.levelLabel .level-info {
+.actionLabel .action-delete {
+	color: var(--color-error);
+	font-weight: bold;
+}
+
+.actionLabel .action-read {
 	color: var(--color-info);
 	font-weight: bold;
 }
 
-.levelLabel .level-debug {
-	color: var(--color-text-maxcontrast);
-	font-weight: bold;
-}
-
-.levelProgress {
+.actionProgress {
 	background: var(--color-background-darker);
 	border-radius: 4px;
 	height: 8px;
 	overflow: hidden;
 }
 
-.levelProgressBar {
+.actionProgressBar {
 	height: 100%;
 	transition: width 0.3s ease;
 }
 
-.levelProgressBar.level-error {
-	background: var(--color-error);
+.actionProgressBar.action-create {
+	background: var(--color-success);
 }
 
-.levelProgressBar.level-warning {
+.actionProgressBar.action-update {
 	background: var(--color-warning);
 }
 
-.levelProgressBar.level-info {
-	background: var(--color-info);
+.actionProgressBar.action-delete {
+	background: var(--color-error);
 }
 
-.levelProgressBar.level-debug {
-	background: var(--color-text-maxcontrast);
+.actionProgressBar.action-read {
+	background: var(--color-info);
 }
 
 /* Add some spacing between select inputs */
