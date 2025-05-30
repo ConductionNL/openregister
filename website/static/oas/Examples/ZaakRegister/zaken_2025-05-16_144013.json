@@ -2701,7 +2701,7 @@
 				"slug": "zaak",
 				"title": "Zaak",
 				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-				"version": "0.0.19",
+				"version": "0.0.21",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -3270,7 +3270,7 @@
 						"minItems": null,
 						"maxItems": null,
 						"cascadeDelete": false,
-						"inversedBy": "",
+						"inversedBy": "zaak",
 						"$ref": "rol",
 						"items": {
 							"type": "object",
@@ -3333,6 +3333,53 @@
 						"readOnly": true,
 						"nullable": true,
 						"title": "status"
+					},
+					"statussen": {
+						"description": "",
+						"type": "array",
+						"format": "",
+						"pattern": "",
+						"default": "",
+						"behavior": "",
+						"required": false,
+						"deprecated": false,
+						"visible": true,
+						"hideOnCollection": false,
+						"minLength": null,
+						"maxLength": null,
+						"example": "",
+						"immutable": false,
+						"minimum": null,
+						"maximum": null,
+						"multipleOf": null,
+						"exclusiveMin": false,
+						"exclusiveMax": false,
+						"minItems": null,
+						"maxItems": null,
+						"cascadeDelete": false,
+						"inversedBy": "zaak",
+						"$ref": "status",
+						"items": {
+							"type": "object",
+							"format": "uri",
+							"title": "",
+							"$ref": "status",
+							"inversedBy": "zaak"
+						},
+						"objectConfiguration": {
+							"handling": "uri",
+							"schema": ""
+						},
+						"fileConfiguration": {
+							"handling": "ignore",
+							"allowedMimeTypes": [],
+							"location": "",
+							"maxSize": 0
+						},
+						"oneOf": [],
+						"readOnly": true,
+						"title": "rollen",
+						"uniqueItems": true
 					},
 					"zaakinformatieobjecten": {
 						"description": "",
@@ -3781,7 +3828,7 @@
 				"slug": "zaakinformatieobject",
 				"title": "ZaakInformatieObject",
 				"description": "",
-				"version": "0.0.7",
+				"version": "0.0.8",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -3837,7 +3884,8 @@
 						"format": "date-time",
 						"readOnly": true,
 						"description": "De datum waarop de behandelende organisatie het INFORMATIEOBJECT heeft geregistreerd bij het OBJECT. Geldige waardes zijn datumtijden gelegen op of voor de huidige datum en tijd.",
-						"title": "registratiedatum"
+						"title": "registratiedatum",
+						"default": "{{ 'now'|date('c') }}"
 					},
 					"vernietigingsdatum": {
 						"type": "string",

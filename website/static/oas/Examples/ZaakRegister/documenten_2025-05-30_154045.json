@@ -69,7 +69,7 @@
                 },
                 "unset": [],
                 "cast": [],
-                "passThrough": false,
+                "passThrough": true,
                 "configurations": [],
                 "dateCreated": "2025-05-23T09:33:40+00:00",
                 "dateModified": "2025-05-23T09:33:40+00:00",
@@ -98,6 +98,121 @@
         },
         "sources": [],
         "rules": {
+            "zgw-authenticatie-post": {
+                "name": "ZGW Authenticatie POST",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "post",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-post"
+            },
+            "zgw-authenticatie-get": {
+                "name": "ZGW Authenticatie GET",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "get",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-get"
+            },
+            "zgw-authenticatie-put": {
+                "name": "ZGW Authenticatie PUT",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-put"
+            },
+            "zgw-authenticatie-delete": {
+                "name": "ZGW Authenticatie DELETE",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "delete",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-delete"
+            },
+            "zgw-authenticatie-patch": {
+                "name": "ZGW Authenticatie PATCH",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-patch"
+            },
             "zgw-audit-trail": {
                 "name": "ZGW Audit Trails",
                 "description": "",
@@ -241,121 +356,6 @@
                 "updated": "2025-05-28T11:58:22+00:00",
                 "slug": "zgw-set-indicatie-gebruiksrecht"
             },
-            "zgw-authenticatie-post": {
-                "name": "ZGW Authenticatie POST",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "post",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-post"
-            },
-            "zgw-authenticatie-get": {
-                "name": "ZGW Authenticatie GET",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "get",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-get"
-            },
-            "zgw-authenticatie-put": {
-                "name": "ZGW Authenticatie PUT",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "put",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-put"
-            },
-            "zgw-authenticatie-delete": {
-                "name": "ZGW Authenticatie DELETE",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "delete",
-                "timing": "before",
-                "conditions": [],
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-delete"
-            },
-            "zgw-authenticatie-patch": {
-                "name": "ZGW Authenticatie PATCH",
-                "description": "",
-                "reference": null,
-                "version": "0.0.1",
-                "action": "put",
-                "timing": "before",
-                "conditions": null,
-                "type": "authentication",
-                "configuration": {
-                    "authentication": {
-                        "type": "jwt",
-                        "users": [],
-                        "groups": [],
-                        "keys": []
-                    }
-                },
-                "order": 0,
-                "configurations": [],
-                "created": "2025-05-22T12:22:36+00:00",
-                "updated": "2025-05-22T12:22:36+00:00",
-                "slug": "zgw-authenticatie-patch"
-            },
             "zgw-write-file": {
                 "name": "ZGW Write File",
                 "description": "",
@@ -489,6 +489,29 @@
                 "created": "2025-05-26T08:36:12+00:00",
                 "updated": "2025-05-26T08:43:06+00:00",
                 "slug": "zgw-unlock-object"
+            },
+            "add-lock-to-body": {
+                "name": "Add lock to body",
+                "description": "",
+                "reference": null,
+                "version": "0.0.2",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "type": "mapping",
+                "configuration": {
+                    "mapping": 11
+                },
+                "order": 2,
+                "configurations": [],
+                "created": "2025-05-30T15:37:48+00:00",
+                "updated": "2025-05-30T15:40:04+00:00",
+                "slug": "add-lock-to-body"
             }
         },
         "endpoints": {
@@ -631,9 +654,9 @@
                 "conditions": [],
                 "inputMapping": null,
                 "outputMapping": null,
-                "rules":[
+                "rules": [
                     "zgw-authenticatie-post",
-					"zgw-write-file",
+                    "zgw-write-file",
                     "zgw-maak-bestandsdelen"
                 ],
                 "configurations": [],
@@ -670,7 +693,7 @@
                 "configurations": [],
                 "slug": "enkelvoudiginformatieobject-lock",
                 "created": "2025-05-22T09:41:40+00:00",
-                "updated": "2025-05-26T07:31:34+00:00"
+                "updated": "2025-05-30T15:38:28+00:00"
             },
             "enkelvoudiginformatieobject-unlock": {
                 "name": "EnkelvoudigInformatieObject UNLOCK",
@@ -695,12 +718,13 @@
                 "outputMapping": null,
                 "rules": [
                     "zgw-authenticatie-post",
-                    "zgw-change-post-to-get"
+                    "zgw-change-post-to-get",
+                    "zgw-unlock-object"
                 ],
                 "configurations": [],
                 "slug": "enkelvoudiginformatieobject-unlock",
                 "created": "2025-05-22T09:41:40+00:00",
-                "updated": "2025-05-26T08:38:08+00:00"
+                "updated": "2025-05-30T15:39:13+00:00"
             },
             "enkelvoudiginformatieobject-put": {
                 "name": "EnkelvoudigInformatieObject PUT",
@@ -1391,7 +1415,8 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": []
+                        "oneOf": [],
+                        "title": "omvang"
                     },
                     "informatieobject": {
                         "description": "",
@@ -1428,7 +1453,8 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": []
+                        "oneOf": [],
+                        "title": "informatieobject"
                     },
                     "voltooid": {
                         "description": "",
@@ -1465,7 +1491,8 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": []
+                        "oneOf": [],
+                        "title": "voltooid"
                     },
                     "id": {
                         "description": "",
@@ -1502,7 +1529,8 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": []
+                        "oneOf": [],
+                        "title": "id"
                     },
                     "volgnummer": {
                         "description": "",
@@ -1539,7 +1567,8 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": []
+                        "oneOf": [],
+                        "title": "volgnummer"
                     },
                     "url": {
                         "description": "",
@@ -1576,7 +1605,8 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": []
+                        "oneOf": [],
+                        "title": "url"
                     }
                 },
                 "archive": [],
@@ -1585,7 +1615,7 @@
                 "updated": "2025-05-28T14:10:25+00:00",
                 "created": "2025-05-28T09:03:57+00:00",
                 "maxDepth": 0,
-                "owner": null,
+                "owner": "",
                 "application": null,
                 "organisation": null,
                 "authorization": null,
@@ -1648,9 +1678,16 @@
                     "vertrouwelijkheidaanduiding": {
                         "description": "Aanduiding van de mate waarin het INFORMATIEOBJECT voor de openbaarheid bestemd is.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
                         "title": "vertrouwelijkheidaanduiding",
-						"enum": [
-							"openbaar","beperkt_openbaar","intern","zaakvertrouwelijk","vertrouwelijk","confidentieel","geheim",					  "zeer_geheim"
-						],
+                        "enum": [
+                            "openbaar",
+                            "beperkt_openbaar",
+                            "intern",
+                            "zaakvertrouwelijk",
+                            "vertrouwelijk",
+                            "confidentieel",
+                            "geheim",
+                            "zeer_geheim"
+                        ],
                         "type": "string"
                     },
                     "auteur": {
@@ -1759,10 +1796,11 @@
                         "items": {
                             "$ref": "bestandsdeel"
                         },
-						"inversedBy": "informatieobject",
+                        "inversedBy": "informatieobject",
                         "readOnly": true,
                         "title": "bestandsdelen",
-                        "default": []
+                        "default": [],
+                        "$ref": "bestandsdeel"
                     },
                     "trefwoorden": {
                         "description": "Een lijst van \u00e9\u00e9n of meer trefwoorden.",
@@ -1900,13 +1938,13 @@
                             "location": "",
                             "maxSize": 0
                         },
-						"enum": [
-							"in_bewerking",
-							"ter_vaststelling",
-							"definitief",
-							"gearchiveerd",
-							""
-						],
+                        "enum": [
+                            "in_bewerking",
+                            "ter_vaststelling",
+                            "definitief",
+                            "gearchiveerd",
+                            ""
+                        ],
                         "title": "status"
                     },
                     "gebruiksrechten": {
@@ -1918,7 +1956,8 @@
                         "items": {
                             "type": "object",
                             "$ref": "gebruiksrechten"
-                        }
+                        },
+                        "title": "gebruiksrechten"
                     },
                     "informatieobjecttype": {
                         "description": "URL-referentie naar het INFORMATIEOBJECTTYPE (in de Catalogi API).",
@@ -2134,25 +2173,15 @@
                 "slug": "objectinformatieobject",
                 "title": "ObjectInformatieObject",
                 "description": "",
-                "version": "0.0.2",
+                "version": "0.0.3",
                 "summary": "",
                 "icon": null,
                 "required": [
                     "informatieobject",
                     "object",
-                    "objectType",
-                    "url"
+                    "objectType"
                 ],
                 "properties": {
-                    "url": {
-                        "type": "string",
-                        "format": "uri",
-                        "readOnly": true,
-                        "title": "url",
-                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
-                        "minLength": 1,
-                        "maxLength": 1000
-                    },
                     "object": {
                         "type": "string",
                         "format": "uri",
@@ -2161,7 +2190,11 @@
                         "maxLength": 1000
                     },
                     "objectType": {
-						"enum": ["besluit", "zaak", "verzoek"],
+                        "enum": [
+                            "besluit",
+                            "zaak",
+                            "verzoek"
+                        ],
                         "title": "objectType",
                         "description": "Het type van het gerelateerde OBJECT.\n\nUitleg bij mogelijke waarden:\n\n* `besluit` - Besluit\n* `zaak` - Zaak",
                         "type": "string"
@@ -2203,12 +2236,52 @@
                         },
                         "oneOf": [],
                         "title": "informatieobject"
+                    },
+                    "url": {
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "{{ uri }}",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "order": null,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "url"
                     }
                 },
                 "archive": [],
                 "source": "",
                 "hardValidation": false,
-                "updated": "2025-05-16T10:55:30+00:00",
+                "updated": "2025-05-30T09:50:45+00:00",
                 "created": "2025-05-15T11:46:55+00:00",
                 "maxDepth": 0,
                 "owner": "",
@@ -2250,7 +2323,10 @@
                         "maxLength": 200
                     },
                     "aardRelatie": {
-						"enum": ["afzender", "geadresseerde"],
+                        "enum": [
+                            "afzender",
+                            "geadresseerde"
+                        ],
                         "description": "Omschrijving van de aard van de relatie van de BETROKKENE tot het INFORMATIEOBJECT.",
                         "title": "aardRelatie",
                         "type": "string"
@@ -2500,10 +2576,10 @@
             }
         },
         "objects": []
-	},
+    },
     "openapi": "3.0.0",
     "info": {
-        "id": 2,
+        "id": 3,
         "title": "Documenten",
         "description": "",
         "version": "0.0.4"
