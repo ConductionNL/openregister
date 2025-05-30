@@ -1596,7 +1596,7 @@
                 "slug": "enkelvoudiginformatieobject",
                 "title": "EnkelvoudigInformatieObject",
                 "description": "Serializer for the EnkelvoudigInformatieObject model",
-                "version": "0.0.11",
+                "version": "0.0.12",
                 "summary": "",
                 "icon": null,
                 "required": [
@@ -1648,14 +1648,9 @@
                     "vertrouwelijkheidaanduiding": {
                         "description": "Aanduiding van de mate waarin het INFORMATIEOBJECT voor de openbaarheid bestemd is.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
                         "title": "vertrouwelijkheidaanduiding",
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/VertrouwelijkheidaanduidingEnum"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BlankEnum"
-                            }
-                        ],
+						"enum": [
+							"openbaar","beperkt_openbaar","intern","zaakvertrouwelijk","vertrouwelijk","confidentieel","geheim",					  "zeer_geheim"
+						],
                         "type": "string"
                     },
                     "auteur": {
@@ -1762,8 +1757,9 @@
                     "bestandsdelen": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/BestandsDeel"
+                            "$ref": "bestandsdeel"
                         },
+						"inversedBy": "informatieobject",
                         "readOnly": true,
                         "title": "bestandsdelen",
                         "default": []
@@ -1904,14 +1900,13 @@
                             "location": "",
                             "maxSize": 0
                         },
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/StatusEnum"
-                            },
-                            {
-                                "$ref": "#/components/schemas/BlankEnum"
-                            }
-                        ],
+						"enum": [
+							"in_bewerking",
+							"ter_vaststelling",
+							"definitief",
+							"gearchiveerd",
+							""
+						],
                         "title": "status"
                     },
                     "gebruiksrechten": {
@@ -2259,11 +2254,7 @@
                         "maxLength": 200
                     },
                     "aardRelatie": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/AardRelatieEnum"
-                            }
-                        ],
+						"enum": ["afzender", "geadresseerde"],
                         "description": "Omschrijving van de aard van de relatie van de BETROKKENE tot het INFORMATIEOBJECT.",
                         "title": "aardRelatie",
                         "type": "string"
