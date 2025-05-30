@@ -2161,11 +2161,7 @@
                         "maxLength": 1000
                     },
                     "objectType": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ObjectTypeEnum"
-                            }
-                        ],
+						"enum": ["besluit", "zaak", "verzoek"],
                         "title": "objectType",
                         "description": "Het type van het gerelateerde OBJECT.\n\nUitleg bij mogelijke waarden:\n\n* `besluit` - Besluit\n* `zaak` - Zaak",
                         "type": "string"
