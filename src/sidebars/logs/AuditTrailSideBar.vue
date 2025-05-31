@@ -25,6 +25,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						v-model="selectedActions"
 						:options="actionOptions"
 						:placeholder="t('openregister', 'All actions')"
+						:input-label="t('openregister', 'Action Type')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
@@ -45,6 +46,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						v-model="selectedRegisters"
 						:options="registerOptions"
 						:placeholder="t('openregister', 'All registers')"
+						:input-label="t('openregister', 'Register')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
@@ -59,6 +61,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						v-model="selectedSchemas"
 						:options="schemaOptions"
 						:placeholder="t('openregister', 'All schemas')"
+						:input-label="t('openregister', 'Schema')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
@@ -73,6 +76,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						v-model="selectedUsers"
 						:options="userOptions"
 						:placeholder="t('openregister', 'All users')"
+						:input-label="t('openregister', 'User')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters">
@@ -130,6 +134,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						v-model="exportFormat"
 						:options="exportFormatOptions"
 						:placeholder="t('openregister', 'Select format')"
+						:input-label="t('openregister', 'Export Format')"
 						:clearable="false">
 						<template #option="{ option }">
 							{{ option.label }}
@@ -321,8 +326,8 @@ export default {
 			selectedRegisters: [],
 			selectedSchemas: [],
 			selectedUsers: [],
-			dateFrom: '',
-			dateTo: '',
+			dateFrom: null,
+			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
 			exportFormat: { label: 'CSV', value: 'csv' },
@@ -385,7 +390,7 @@ export default {
 		if (!registerStore.registerList.length) {
 			registerStore.refreshRegisterList()
 		}
-		
+
 		if (!schemaStore.schemaList.length) {
 			schemaStore.refreshSchemaList()
 		}
