@@ -1,5 +1,5 @@
 <script setup>
-// No setup script needed for this component
+import { deletedStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -12,12 +12,13 @@
 			</div>
 
 			<!-- Actions Bar -->
+			<div v-if="selectedItems.length > 0" class="selection-header">
+				<h3 class="selection-title">
+					{{ t('openregister', '{count} items selected', { count: selectedItems.length }) }}
+				</h3>
+			</div>
+			
 			<div class="actions-bar">
-				<div class="selection-info">
-					<span v-if="selectedItems.length > 0" class="selected-count">
-						{{ t('openregister', '{count} items selected', { count: selectedItems.length }) }}
-					</span>
-				</div>
 				<div class="actions">
 					<NcButton
 						v-if="selectedItems.length > 0"
@@ -47,7 +48,7 @@
 			</div>
 
 			<!-- Items Table -->
-			<div v-if="loading" class="loading">
+			<div v-if="deletedStore.deletedLoading" class="loading">
 				<NcLoadingIcon :size="64" />
 				<p>{{ t('openregister', 'Loading deleted items...') }}</p>
 			</div>
@@ -71,10 +72,11 @@
 									@update:checked="toggleSelectAll" />
 							</th>
 							<th>{{ t('openregister', 'Title') }}</th>
-							<th>{{ t('openregister', 'Type') }}</th>
 							<th>{{ t('openregister', 'Register') }}</th>
+							<th>{{ t('openregister', 'Schema') }}</th>
 							<th>{{ t('openregister', 'Deleted Date') }}</th>
 							<th>{{ t('openregister', 'Deleted By') }}</th>
+							<th>{{ t('openregister', 'Purge Date') }}</th>
 							<th>{{ t('openregister', 'Actions') }}</th>
 						</tr>
 					</thead>
@@ -90,18 +92,21 @@
 							</td>
 							<td class="title-column">
 								<div class="title-content">
-									<strong>{{ item.title }}</strong>
-									<span v-if="item.description" class="description">{{ item.description }}</span>
+									<strong>{{ getItemTitle(item) }}</strong>
+									<span v-if="getItemDescription(item)" class="description">{{ getItemDescription(item) }}</span>
 								</div>
 							</td>
+							<td>{{ getRegisterName(item['@self']?.register) }}</td>
+							<td>{{ getSchemaName(item['@self']?.schema) }}</td>
 							<td>
-								<span class="type-badge">{{ item.type }}</span>
+								<NcDateTime v-if="item['@self']?.deleted?.deleted" :timestamp="new Date(item['@self'].deleted.deleted)" :ignore-seconds="true" />
+								<span v-else>{{ t('openregister', 'Unknown') }}</span>
 							</td>
-							<td>{{ item.register }}</td>
+							<td>{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}</td>
 							<td>
-								<NcDateTime :timestamp="new Date(item.deletedAt)" :ignore-seconds="true" />
+								<span v-if="item['@self']?.deleted?.purgeDate">{{ formatPurgeDate(item['@self'].deleted.purgeDate) }}</span>
+								<span v-else>{{ t('openregister', 'No purge date set') }}</span>
 							</td>
-							<td>{{ item.deletedBy }}</td>
 							<td class="actions-column">
 								<NcActions>
 									<NcActionButton @click="restoreItem(item)">
@@ -109,12 +114,6 @@
 											<Restore :size="20" />
 										</template>
 										{{ t('openregister', 'Restore') }}
-									</NcActionButton>
-									<NcActionButton @click="viewDetails(item)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
 									</NcActionButton>
 									<NcActionButton @click="permanentlyDelete(item)">
 										<template #icon>
@@ -133,12 +132,12 @@
 			<div v-if="totalPages > 1" class="pagination">
 				<NcButton
 					:disabled="currentPage === 1"
-					@click="currentPage = 1">
+					@click="changePage(1)">
 					{{ t('openregister', 'First') }}
 				</NcButton>
 				<NcButton
 					:disabled="currentPage === 1"
-					@click="currentPage--">
+					@click="changePage(currentPage - 1)">
 					{{ t('openregister', 'Previous') }}
 				</NcButton>
 				<span class="page-info">
@@ -146,12 +145,12 @@
 				</span>
 				<NcButton
 					:disabled="currentPage === totalPages"
-					@click="currentPage++">
+					@click="changePage(currentPage + 1)">
 					{{ t('openregister', 'Next') }}
 				</NcButton>
 				<NcButton
 					:disabled="currentPage === totalPages"
-					@click="currentPage = totalPages">
+					@click="changePage(totalPages)">
 					{{ t('openregister', 'Last') }}
 				</NcButton>
 			</div>
@@ -174,7 +173,6 @@ import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 
 export default {
 	name: 'DeletedIndex',
@@ -191,91 +189,26 @@ export default {
 		Restore,
 		Delete,
 		Refresh,
-		Eye,
 	},
 	data() {
 		return {
-			loading: false,
-			currentPage: 1,
-			itemsPerPage: 25,
 			selectedItems: [],
-			filters: {},
-			// Mock data - replace with actual API calls
-			items: [
-				{
-					id: '1',
-					title: 'Sample Object',
-					description: 'A sample deleted object for testing',
-					type: 'Object',
-					register: 'Sample Register',
-					deletedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-					deletedBy: 'admin',
-				},
-				{
-					id: '2',
-					title: 'Test Schema',
-					description: 'Test schema that was removed',
-					type: 'Schema',
-					register: 'Test Register',
-					deletedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-					deletedBy: 'user1',
-				},
-				{
-					id: '3',
-					title: 'Legacy Configuration',
-					description: null,
-					type: 'Configuration',
-					register: 'Legacy Register',
-					deletedAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-					deletedBy: 'admin',
-				},
-				{
-					id: '4',
-					title: 'Old Data Source',
-					description: 'Deprecated data source connection',
-					type: 'Source',
-					register: 'Legacy Register',
-					deletedAt: new Date(Date.now() - 604800000).toISOString(), // 1 week ago
-					deletedBy: 'user2',
-				},
-				{
-					id: '5',
-					title: 'Archived Template',
-					description: 'Template that is no longer needed',
-					type: 'Template',
-					register: 'Archive Register',
-					deletedAt: new Date(Date.now() - 1209600000).toISOString(), // 2 weeks ago
-					deletedBy: 'admin',
-				},
-			],
 		}
 	},
 	computed: {
 		filteredItems() {
-			// Apply filters from sidebar
-			let filtered = [...this.items]
-
-			if (this.filters.register) {
-				filtered = filtered.filter(item => item.register === this.filters.register)
-			}
-			if (this.filters.deletedBy) {
-				filtered = filtered.filter(item => item.deletedBy === this.filters.deletedBy)
-			}
-			if (this.filters.dateFrom) {
-				filtered = filtered.filter(item => new Date(item.deletedAt) >= new Date(this.filters.dateFrom))
-			}
-			if (this.filters.dateTo) {
-				filtered = filtered.filter(item => new Date(item.deletedAt) <= new Date(this.filters.dateTo))
-			}
-
-			return filtered
+			// Items are already filtered by the store based on sidebar filters
+			return deletedStore.deletedList || []
 		},
 		paginatedItems() {
-			const start = (this.currentPage - 1) * this.itemsPerPage
-			return this.filteredItems.slice(start, start + this.itemsPerPage)
+			// Items are already paginated by the store
+			return this.filteredItems
 		},
 		totalPages() {
-			return Math.ceil(this.filteredItems.length / this.itemsPerPage)
+			return deletedStore.deletedPagination.pages || 1
+		},
+		currentPage() {
+			return deletedStore.deletedPagination.page || 1
 		},
 		allSelected() {
 			return this.paginatedItems.length > 0 && this.paginatedItems.every(item => this.selectedItems.includes(item.id))
@@ -292,17 +225,18 @@ export default {
 			this.updateCounts()
 		},
 	},
-	mounted() {
-		this.loadItems()
+	async mounted() {
+		// Load initial data
+		await this.loadItems()
+		
+		// Update counts
+		this.updateCounts()
 
 		// Listen for filter changes from sidebar
 		this.$root.$on('deleted-filters-changed', this.handleFiltersChanged)
 		this.$root.$on('deleted-bulk-restore', this.bulkRestore)
 		this.$root.$on('deleted-bulk-delete', this.bulkDelete)
 		this.$root.$on('deleted-export-filtered', this.exportFiltered)
-
-		// Emit counts to sidebar
-		this.updateCounts()
 	},
 	beforeDestroy() {
 		this.$root.$off('deleted-filters-changed')
@@ -312,22 +246,22 @@ export default {
 	},
 	methods: {
 		/**
-		 * Load deleted items from API
+		 * Load deleted items from store
 		 * @return {Promise<void>}
 		 */
 		async loadItems() {
-			this.loading = true
 			try {
-				// TODO: Replace with actual API call
-				// const response = await fetch('/api/deleted-items')
-				// this.items = await response.json()
-
-				// Mock delay
-				await new Promise(resolve => setTimeout(resolve, 500))
+				await deletedStore.fetchDeleted()
+				
+				// Load register and schema data if not already loaded
+				if (!registerStore.registerList.length) {
+					await registerStore.refreshRegisterList()
+				}
+				if (!schemaStore.schemaList.length) {
+					await schemaStore.refreshSchemaList()
+				}
 			} catch (error) {
 				console.error('Error loading deleted items:', error)
-			} finally {
-				this.loading = false
 			}
 		},
 		/**
@@ -335,9 +269,93 @@ export default {
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 */
-		handleFiltersChanged(filters) {
-			this.filters = filters
-			this.currentPage = 1 // Reset to first page when filters change
+		async handleFiltersChanged(filters) {
+			// Convert sidebar filters to API filters using @self.deleted notation
+			const apiFilters = this.convertFiltersToApiFormat(filters)
+			
+			deletedStore.setDeletedFilters(apiFilters)
+			
+			// Reset pagination and fetch new data
+			try {
+				await deletedStore.fetchDeleted({
+					page: 1,
+					filters: apiFilters,
+				})
+				
+				// Clear selection when filters change
+				this.selectedItems = []
+			} catch (error) {
+				console.error('Error applying filters:', error)
+			}
+		},
+		/**
+		 * Convert sidebar filters to API format using @self.deleted notation
+		 * @param {object} filters - Sidebar filters
+		 * @return {object} API filters
+		 */
+		convertFiltersToApiFormat(filters) {
+			const apiFilters = {}
+			
+			if (filters.register) {
+				apiFilters['@self.register'] = filters.register
+			}
+			if (filters.schema) {
+				apiFilters['@self.schema'] = filters.schema
+			}
+			if (filters.deletedBy) {
+				apiFilters['@self.deleted.deletedBy'] = filters.deletedBy
+			}
+			if (filters.dateFrom) {
+				apiFilters['@self.deleted.deleted'] = { gte: filters.dateFrom }
+			}
+			if (filters.dateTo) {
+				if (apiFilters['@self.deleted.deleted']) {
+					apiFilters['@self.deleted.deleted'].lte = filters.dateTo
+				} else {
+					apiFilters['@self.deleted.deleted'] = { lte: filters.dateTo }
+				}
+			}
+			
+			return apiFilters
+		},
+		/**
+		 * Get item title from object data
+		 * @param {object} item - The deleted item
+		 * @return {string} The item title
+		 */
+		getItemTitle(item) {
+			// Try various title fields, fallback to ID without "Object" prefix
+			return item.title || item.fileName || item.name || item.object?.title || item.object?.name || item.id
+		},
+		/**
+		 * Get item description from object data
+		 * @param {object} item - The deleted item
+		 * @return {string} The item description
+		 */
+		getItemDescription(item) {
+			return item.description || item.object?.description || item.object?.summary || null
+		},
+		/**
+		 * Get register name by ID
+		 * @param {string|number} registerId - The register ID
+		 * @return {string} The register name
+		 */
+		getRegisterName(registerId) {
+			if (!registerId) return t('openregister', 'Unknown Register')
+			
+			const register = registerStore.registerList.find(r => r.id === parseInt(registerId))
+			return register?.title || `Register ${registerId}`
+		},
+		/**
+		 * Get schema name by ID
+		 * @param {string|number} schemaId - The schema ID
+		 * @return {string} The schema name
+		 */
+		getSchemaName(schemaId) {
+			if (!schemaId) return t('openregister', 'Unknown Schema')
+			
+			const schema = schemaStore.schemaList.find(s => s.id === parseInt(schemaId))
+			return schema?.title || `Schema ${schemaId}`
 		},
 		/**
 		 * Toggle selection for all items on current page
@@ -386,20 +404,12 @@ export default {
 			if (this.selectedItems.length === 0) return
 
 			try {
-				// TODO: Replace with actual API call
-				// await fetch('/api/deleted-items/restore', {
-				//     method: 'POST',
-				//     body: JSON.stringify({ ids: this.selectedItems })
-				// })
-
-				// Remove from items array (mock)
-				this.items = this.items.filter(item => !this.selectedItems.includes(item.id))
+				await deletedStore.restoreMultiple(this.selectedItems)
 				this.selectedItems = []
-
-				OC.Notification.showSuccess(this.t('openregister', 'Items restored successfully'))
+				// Refresh the list
+				await this.loadItems()
 			} catch (error) {
 				console.error('Error restoring items:', error)
-				OC.Notification.showError(this.t('openregister', 'Error restoring items'))
 			}
 		},
 		/**
@@ -414,20 +424,12 @@ export default {
 			}
 
 			try {
-				// TODO: Replace with actual API call
-				// await fetch('/api/deleted-items/permanent-delete', {
-				//     method: 'DELETE',
-				//     body: JSON.stringify({ ids: this.selectedItems })
-				// })
-
-				// Remove from items array (mock)
-				this.items = this.items.filter(item => !this.selectedItems.includes(item.id))
+				await deletedStore.permanentlyDeleteMultiple(this.selectedItems)
 				this.selectedItems = []
-
-				OC.Notification.showSuccess(this.t('openregister', 'Items permanently deleted'))
+				// Refresh the list
+				await this.loadItems()
 			} catch (error) {
 				console.error('Error deleting items:', error)
-				OC.Notification.showError(this.t('openregister', 'Error deleting items'))
 			}
 		},
 		/**
@@ -437,19 +439,11 @@ export default {
 		 */
 		async restoreItem(item) {
 			try {
-				// TODO: Replace with actual API call
-				// await fetch(`/api/deleted-items/${item.id}/restore`, { method: 'POST' })
-
-				// Remove from items array (mock)
-				const index = this.items.findIndex(i => i.id === item.id)
-				if (index > -1) {
-					this.items.splice(index, 1)
-				}
-
-				OC.Notification.showSuccess(this.t('openregister', 'Item restored successfully'))
+				await deletedStore.restoreDeleted(item.id)
+				// Refresh the list
+				await this.loadItems()
 			} catch (error) {
 				console.error('Error restoring item:', error)
-				OC.Notification.showError(this.t('openregister', 'Error restoring item'))
 			}
 		},
 		/**
@@ -458,34 +452,17 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async permanentlyDelete(item) {
-			if (!confirm(this.t('openregister', 'Are you sure you want to permanently delete "{title}"? This action cannot be undone.', { title: item.title }))) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to permanently delete "{title}"? This action cannot be undone.', { title: this.getItemTitle(item) }))) {
 				return
 			}
 
 			try {
-				// TODO: Replace with actual API call
-				// await fetch(`/api/deleted-items/${item.id}`, { method: 'DELETE' })
-
-				// Remove from items array (mock)
-				const index = this.items.findIndex(i => i.id === item.id)
-				if (index > -1) {
-					this.items.splice(index, 1)
-				}
-
-				OC.Notification.showSuccess(this.t('openregister', 'Item permanently deleted'))
+				await deletedStore.permanentlyDelete(item.id)
+				// Refresh the list
+				await this.loadItems()
 			} catch (error) {
-				console.error('Error deleting item:', error)
-				OC.Notification.showError(this.t('openregister', 'Error deleting item'))
+				console.error('Error permanently deleting item:', error)
 			}
-		},
-		/**
-		 * View item details (could open a modal)
-		 * @param {object} item - Item to view
-		 * @return {void}
-		 */
-		viewDetails(item) {
-			// TODO: Implement details modal or navigation
-			// console.log('View details for item:', item)
 		},
 		/**
 		 * Export filtered items with specified options
@@ -493,9 +470,21 @@ export default {
 		 * @return {void}
 		 */
 		exportFilteredItems(options) {
-			// TODO: Implement export functionality
-			// console.log('Export filtered items:', this.filteredItems)
-			OC.Notification.showSuccess(this.t('openregister', 'Export started'))
+			// TODO: Implement export functionality for deleted items
+		},
+		/**
+		 * Change page
+		 * @param {number} page - The page number to change to
+		 * @return {Promise<void>}
+		 */
+		async changePage(page) {
+			try {
+				await deletedStore.fetchDeleted({ page })
+				// Clear selection when page changes
+				this.selectedItems = []
+			} catch (error) {
+				// Handle error silently
+			}
 		},
 		/**
 		 * Refresh items list
@@ -503,6 +492,7 @@ export default {
 		 */
 		async refreshItems() {
 			await this.loadItems()
+			this.selectedItems = []
 		},
 		/**
 		 * Update counts for sidebar
@@ -511,6 +501,21 @@ export default {
 		updateCounts() {
 			this.$root.$emit('deleted-selection-count', this.selectedItems.length)
 			this.$root.$emit('deleted-filtered-count', this.filteredItems.length)
+		},
+		/**
+		 * Format purge date in ISO format yyyy:mm:dd hh:mm
+		 * @param {string} timestamp - The purge date timestamp
+		 * @return {string} Formatted purge date
+		 */
+		formatPurgeDate(timestamp) {
+			const date = new Date(timestamp)
+			const year = date.getFullYear()
+			const month = String(date.getMonth() + 1).padStart(2, '0')
+			const day = String(date.getDate()).padStart(2, '0')
+			const hours = String(date.getHours()).padStart(2, '0')
+			const minutes = String(date.getMinutes()).padStart(2, '0')
+			
+			return `${year}:${month}:${day} ${hours}:${minutes}`
 		},
 	},
 }
@@ -537,9 +542,21 @@ export default {
 	margin: 0;
 }
 
+.selection-header {
+	margin-bottom: 20px;
+	padding: 10px;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+}
+
+.selection-title {
+	margin: 0;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+}
+
 .actions-bar {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 20px;
 	padding: 10px;
@@ -547,14 +564,11 @@ export default {
 	border-radius: var(--border-radius);
 }
 
-.selection-info .selected-count {
-	font-weight: 500;
-	color: var(--color-primary);
-}
-
 .actions {
 	display: flex;
-	gap: 10px;
+	align-items: center;
+	gap: 15px;
+	margin-left: auto;
 }
 
 .loading {
@@ -598,7 +612,8 @@ export default {
 }
 
 .title-column {
-	min-width: 250px;
+	min-width: 200px;
+	max-width: 250px;
 }
 
 .title-content {
@@ -639,14 +654,11 @@ export default {
 	font-size: 0.9rem;
 }
 
-.type-badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	background: var(--color-primary-light);
-	color: var(--color-primary);
-	font-size: 0.8em;
-	font-weight: 500;
-	white-space: nowrap;
+/* Responsive table adjustments */
+@media (max-width: 1200px) {
+	.title-column {
+		min-width: 150px;
+		max-width: 200px;
+	}
 }
 </style>

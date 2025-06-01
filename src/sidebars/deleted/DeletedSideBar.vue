@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { deletedStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -137,36 +137,44 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Deletion Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalDeleted }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Total Deleted Items') }}
-					</div>
+				
+				<div v-if="deletedStore.statisticsLoading" class="loading-stats">
+					<NcLoadingIcon :size="32" />
+					<p>{{ t('openregister', 'Loading statistics...') }}</p>
 				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deletedToday }}
+				
+				<div v-else>
+					<div class="statCard">
+						<div class="statNumber">
+							{{ deletedStore.statistics.totalDeleted }}
+						</div>
+						<div class="statLabel">
+							{{ t('openregister', 'Total Deleted Items') }}
+						</div>
 					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Deleted Today') }}
+					<div class="statCard">
+						<div class="statNumber">
+							{{ deletedStore.statistics.deletedToday }}
+						</div>
+						<div class="statLabel">
+							{{ t('openregister', 'Deleted Today') }}
+						</div>
 					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deletedThisWeek }}
+					<div class="statCard">
+						<div class="statNumber">
+							{{ deletedStore.statistics.deletedThisWeek }}
+						</div>
+						<div class="statLabel">
+							{{ t('openregister', 'Deleted This Week') }}
+						</div>
 					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Deleted This Week') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ oldestDays }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Oldest Item (days)') }}
+					<div class="statCard">
+						<div class="statNumber">
+							{{ deletedStore.statistics.oldestDays }}
+						</div>
+						<div class="statLabel">
+							{{ t('openregister', 'Oldest Item (days)') }}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -174,7 +182,17 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			<!-- Top Deleters -->
 			<div class="topDeleters">
 				<h4>{{ t('openregister', 'Top Deleters') }}</h4>
-				<NcListItem v-for="(deleter, index) in topDeleters"
+				
+				<div v-if="deletedStore.topDeletersLoading" class="loading-stats">
+					<NcLoadingIcon :size="24" />
+				</div>
+				
+				<div v-else-if="deletedStore.topDeleters.length === 0" class="no-data">
+					<p>{{ t('openregister', 'No deletion data available') }}</p>
+				</div>
+				
+				<NcListItem v-for="(deleter, index) in deletedStore.topDeleters"
+					v-else
 					:key="index"
 					:name="deleter.user"
 					:bold="false">
@@ -199,6 +217,7 @@ import {
 	NcButton,
 	NcListItem,
 	NcDateTimePickerNative,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import PlaylistCheck from 'vue-material-design-icons/PlaylistCheck.vue'
@@ -218,6 +237,7 @@ export default {
 		NcButton,
 		NcListItem,
 		NcDateTimePickerNative,
+		NcLoadingIcon,
 		FilterOutline,
 		PlaylistCheck,
 		ChartLine,
@@ -234,21 +254,12 @@ export default {
 			dateTo: null,
 			selectedCount: 0,
 			filteredCount: 0,
-			totalDeleted: 0,
-			deletedToday: 0,
-			deletedThisWeek: 0,
-			oldestDays: 0,
-			topDeleters: [],
 		}
 	},
 	computed: {
 		registerOptions() {
 			if (!registerStore.registerList || !registerStore.registerList.length) {
-				return [
-					{ label: this.t('openregister', 'Sample Register'), value: 'sample-register' },
-					{ label: this.t('openregister', 'Another Register'), value: 'another-register' },
-					{ label: this.t('openregister', 'Test Register'), value: 'test-register' },
-				]
+				return []
 			}
 			return registerStore.registerList.map(register => ({
 				label: register.title || `Register ${register.id}`,
@@ -257,11 +268,7 @@ export default {
 		},
 		schemaOptions() {
 			if (!registerStore.registerItem || !schemaStore.schemaList || !schemaStore.schemaList.length) {
-				return [
-					{ label: this.t('openregister', 'Sample Schema'), value: 'sample-schema' },
-					{ label: this.t('openregister', 'Another Schema'), value: 'another-schema' },
-					{ label: this.t('openregister', 'Test Schema'), value: 'test-schema' },
-				]
+				return []
 			}
 			return schemaStore.schemaList
 				.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
@@ -285,27 +292,43 @@ export default {
 			}
 		},
 		userOptions() {
-			// For deleted items, we might want to show users who have deleted items
-			// For now, return mock data
-			return [
-				{ label: this.t('openregister', 'Admin'), value: 'admin' },
-				{ label: this.t('openregister', 'User1'), value: 'user1' },
-				{ label: this.t('openregister', 'User2'), value: 'user2' },
-			]
+			// Get unique users from deleted items or provide default options
+			const users = new Set()
+			deletedStore.deletedList.forEach(item => {
+				const deletedBy = item['@self']?.deleted?.deletedBy
+				if (deletedBy) {
+					users.add(deletedBy)
+				}
+			})
+			
+			const userOptions = Array.from(users).map(user => ({
+				label: user,
+				value: user,
+			}))
+			
+			// Add some common default users if no data
+			if (userOptions.length === 0) {
+				return [
+					{ label: this.t('openregister', 'Admin'), value: 'admin' },
+				]
+			}
+			
+			return userOptions
 		},
 	},
-	mounted() {
+	async mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
+			await registerStore.refreshRegisterList()
 		}
 
 		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
+			await schemaStore.refreshSchemaList()
 		}
 
-		this.loadStatistics()
-		this.loadTopDeleters()
+		// Load statistics and top deleters
+		await this.loadStatistics()
+		await this.loadTopDeleters()
 
 		// Listen for selection count updates
 		this.$root.$on('deleted-selection-count', (count) => {
@@ -363,15 +386,7 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				// TODO: Replace with actual API call
-				// const response = await fetch('/api/deleted-items/statistics')
-				// const stats = await response.json()
-
-				// Mock data for now
-				this.totalDeleted = 15
-				this.deletedToday = 2
-				this.deletedThisWeek = 8
-				this.oldestDays = 45
+				await deletedStore.fetchStatistics()
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 			}
@@ -382,16 +397,7 @@ export default {
 		 */
 		async loadTopDeleters() {
 			try {
-				// TODO: Replace with actual API call
-				// const response = await fetch('/api/deleted-items/top-deleters')
-				// this.topDeleters = await response.json()
-
-				// Mock data for now
-				this.topDeleters = [
-					{ user: 'admin', count: 8 },
-					{ user: 'user1', count: 4 },
-					{ user: 'user2', count: 3 },
-				]
+				await deletedStore.fetchTopDeleters()
 			} catch (error) {
 				console.error('Error loading top deleters:', error)
 			}
@@ -474,6 +480,15 @@ export default {
 	padding: 16px;
 }
 
+.loading-stats {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9rem;
+}
+
 .statCard {
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
@@ -503,6 +518,13 @@ export default {
 	font-size: 1rem;
 	font-weight: 500;
 	color: var(--color-main-text);
+}
+
+.no-data {
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9rem;
+	padding: 20px;
 }
 
 /* Add some spacing between select inputs */
