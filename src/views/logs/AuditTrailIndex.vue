@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore } from '../../store/store.js'
+import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -135,9 +135,16 @@ import { auditTrailStore } from '../../store/store.js'
 									</NcActionButton>
 									<NcActionButton @click="copyData(auditTrail)">
 										<template #icon>
-											<ContentCopy :size="20" />
+											<Check v-if="copyStates[auditTrail.id]" :size="20" class="copy-success-icon" />
+											<ContentCopy v-else :size="20" />
 										</template>
-										{{ t('openregister', 'Copy Data') }}
+										{{ copyStates[auditTrail.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
+									</NcActionButton>
+									<NcActionButton class="delete-action" @click="deleteAuditTrail(auditTrail)">
+										<template #icon>
+											<Delete :size="20" />
+										</template>
+										{{ t('openregister', 'Delete') }}
 									</NcActionButton>
 								</NcActions>
 							</td>
@@ -176,6 +183,12 @@ import { auditTrailStore } from '../../store/store.js'
 				</NcButton>
 			</div>
 		</div>
+
+		<!-- Import the new modals -->
+		<DeleteAuditTrail />
+		<AuditTrailDetails />
+		<AuditTrailChanges />
+		<ClearAuditTrails />
 	</NcAppContent>
 </template>
 
@@ -198,6 +211,13 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+
+// Import the new modals
+import DeleteAuditTrail from '../../modals/logs/DeleteAuditTrail.vue'
+import AuditTrailDetails from '../../modals/logs/AuditTrailDetails.vue'
+import AuditTrailChanges from '../../modals/logs/AuditTrailChanges.vue'
+import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 
 export default {
 	name: 'AuditTrailIndex',
@@ -218,10 +238,17 @@ export default {
 		Pencil,
 		CompareHorizontal,
 		ContentCopy,
+		Check,
+		// Modal components
+		DeleteAuditTrail,
+		AuditTrailDetails,
+		AuditTrailChanges,
+		ClearAuditTrails,
 	},
 	data() {
 		return {
 			itemsPerPage: 50,
+			copyStates: {}, // Track copy state for each audit trail
 		}
 	},
 	computed: {
@@ -309,9 +336,10 @@ export default {
 		 * @return {void}
 		 */
 		viewDetails(auditTrail) {
-			// TODO: Implement details modal or navigation
+			// Set the audit trail item in the store
 			auditTrailStore.setAuditTrailItem(auditTrail)
-			// console.log('View details for audit trail:', auditTrail)
+			// Open the details modal
+			navigationStore.setDialog('auditTrailDetails')
 		},
 		/**
 		 * View changes information for an audit trail entry
@@ -319,8 +347,9 @@ export default {
 		 * @return {void}
 		 */
 		viewChanges(auditTrail) {
-			// TODO: Implement changes modal
-			// console.log('View changes for audit trail:', auditTrail.changed)
+			// Set the audit trail item and open the specialized changes modal
+			auditTrailStore.setAuditTrailItem(auditTrail)
+			navigationStore.setDialog('auditTrailChanges')
 		},
 		/**
 		 * Copy audit trail data to clipboard
@@ -331,10 +360,43 @@ export default {
 			try {
 				const data = JSON.stringify(auditTrail, null, 2)
 				await navigator.clipboard.writeText(data)
-				OC.Notification.showSuccess(this.t('openregister', 'Data copied to clipboard'))
+
+				// Set successful copy state
+				this.$set(this.copyStates, auditTrail.id, true)
+
+				// Show success notification with enhanced styling
+				OC.Notification.showSuccess(this.t('openregister', 'Audit trail data copied to clipboard'))
+
+				// Reset copy state after 2 seconds
+				setTimeout(() => {
+					this.$set(this.copyStates, auditTrail.id, false)
+				}, 2000)
+
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(this.t('openregister', 'Failed to copy data'))
+				// Fallback for older browsers or when clipboard API is not available
+				try {
+					const textArea = document.createElement('textarea')
+					textArea.value = JSON.stringify(auditTrail, null, 2)
+					document.body.appendChild(textArea)
+					textArea.select()
+					document.execCommand('copy')
+					document.body.removeChild(textArea)
+
+					// Set successful copy state for fallback method too
+					this.$set(this.copyStates, auditTrail.id, true)
+
+					OC.Notification.showSuccess(this.t('openregister', 'Audit trail data copied to clipboard'))
+
+					// Reset copy state after 2 seconds
+					setTimeout(() => {
+						this.$set(this.copyStates, auditTrail.id, false)
+					}, 2000)
+
+				} catch (fallbackError) {
+					console.error('Fallback copy failed:', fallbackError)
+					OC.Notification.showError(this.t('openregister', 'Failed to copy data to clipboard'))
+				}
 			}
 		},
 		/**
@@ -347,11 +409,49 @@ export default {
 		/**
 		 * Export filtered audit trails with specified options
 		 * @param {object} options - Export options
-		 * @return {void}
+		 * @return {Promise<void>}
 		 */
-		exportFilteredAuditTrails(options) {
-			// TODO: Implement export functionality
-			OC.Notification.showSuccess(this.t('openregister', 'Export started'))
+		async exportFilteredAuditTrails(options) {
+			try {
+				// Build query parameters
+				const params = new URLSearchParams()
+				params.append('format', options.format || 'csv')
+				params.append('includeChanges', options.includeChanges || false)
+				params.append('includeMetadata', options.includeMetadata || false)
+
+				// Add current filters
+				if (auditTrailStore.filters) {
+					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
+						if (value !== null && value !== undefined && value !== '') {
+							params.append(key, value)
+						}
+					})
+				}
+
+				// Make the API request
+				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`)
+				const result = await response.json()
+
+				if (result.success && result.data) {
+					// Create and trigger download
+					const blob = new Blob([result.data.content], { type: result.data.contentType })
+					const url = window.URL.createObjectURL(blob)
+					const a = document.createElement('a')
+					a.href = url
+					a.download = result.data.filename
+					document.body.appendChild(a)
+					a.click()
+					window.URL.revokeObjectURL(url)
+					document.body.removeChild(a)
+
+					OC.Notification.showSuccess(this.t('openregister', 'Export completed successfully'))
+				} else {
+					throw new Error(result.error || 'Export failed')
+				}
+			} catch (error) {
+				console.error('Error exporting audit trails:', error)
+				OC.Notification.showError(this.t('openregister', 'Export failed: {error}', { error: error.message }))
+			}
 		},
 		/**
 		 * Clear filtered audit trails
@@ -363,12 +463,50 @@ export default {
 			}
 
 			try {
-				// TODO: Implement actual clearing logic
-				OC.Notification.showSuccess(this.t('openregister', 'Audit trails cleared successfully'))
+				// Build query parameters for deletion
+				const params = new URLSearchParams()
+
+				// Add current filters to determine which logs to delete
+				if (auditTrailStore.filters) {
+					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
+						if (value !== null && value !== undefined && value !== '') {
+							params.append(key, value)
+						}
+					})
+				}
+
+				// Make the API request
+				const response = await fetch(`/index.php/apps/openregister/api/audit-trails?${params.toString()}`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				const result = await response.json()
+
+				if (result.success) {
+					OC.Notification.showSuccess(result.message || this.t('openregister', 'Audit trails cleared successfully'))
+					// Refresh the list
+					await this.loadAuditTrails()
+				} else {
+					throw new Error(result.error || 'Deletion failed')
+				}
 			} catch (error) {
 				console.error('Error clearing audit trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error clearing audit trails'))
+				OC.Notification.showError(this.t('openregister', 'Error clearing audit trails: {error}', { error: error.message }))
 			}
+		},
+		/**
+		 * Delete a single audit trail using the new modal
+		 * @param {object} auditTrail - Audit trail to delete
+		 * @return {void}
+		 */
+		deleteAuditTrail(auditTrail) {
+			// Set the audit trail item in the store
+			auditTrailStore.setAuditTrailItem(auditTrail)
+			// Open the delete modal
+			navigationStore.setDialog('deleteAuditTrail')
 		},
 		/**
 		 * Refresh audit trails list
@@ -573,5 +711,35 @@ export default {
 .action-badge.action-read {
 	background: var(--color-info);
 	color: white;
+}
+
+/* Add some spacing between select inputs */
+:deep(.v-select) {
+	margin-bottom: 8px;
+}
+
+/* Delete action styling */
+:deep(.delete-action) {
+	color: var(--color-error) !important;
+}
+
+:deep(.delete-action:hover) {
+	background-color: var(--color-error) !important;
+	color: var(--color-main-background) !important;
+}
+
+/* Copy success feedback styling */
+.copy-success-icon {
+	color: var(--color-success) !important;
+}
+
+:deep(.copy-success-icon) {
+	animation: copySuccess 0.3s ease-in-out;
+}
+
+@keyframes copySuccess {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.2); }
+	100% { transform: scale(1); }
 }
 </style>

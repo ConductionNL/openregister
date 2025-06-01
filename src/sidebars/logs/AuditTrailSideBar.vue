@@ -1,5 +1,9 @@
 <script setup>
-import { navigationStore, auditTrailStore, registerStore, schemaStore } from '../../store/store.js'
+import { navigationStore, auditTrailStore, registerStore, schemaStore, dashboardStore } from '../../store/store.js'
+import DeleteAuditTrail from '../../modals/logs/DeleteAuditTrail.vue'
+import AuditTrailDetails from '../../modals/logs/AuditTrailDetails.vue'
+import AuditTrailChanges from '../../modals/logs/AuditTrailChanges.vue'
+import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 </script>
 
 <template>
@@ -159,7 +163,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 				<div class="actionGroup">
 					<NcButton
 						type="primary"
-						:disabled="filteredCount === 0"
+						:disabled="false"
 						@click="exportAuditTrails">
 						<template #icon>
 							<Download :size="20" />
@@ -174,7 +178,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 				<h3>{{ t('openregister', 'Audit Trail Actions') }}</h3>
 				<div class="actionGroup">
 					<NcButton
-						:disabled="filteredCount === 0"
+						:disabled="false"
 						@click="clearFilteredAuditTrails">
 						<template #icon>
 							<Delete :size="20" />
@@ -274,6 +278,12 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 			</div>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
+
+	<!-- Import the new modals -->
+	<DeleteAuditTrail />
+	<AuditTrailDetails />
+	<AuditTrailChanges />
+	<ClearAuditTrails />
 </template>
 
 <script>
@@ -321,6 +331,10 @@ export default {
 		Pencil,
 		Eye,
 		FilterOffOutline,
+		DeleteAuditTrail,
+		AuditTrailDetails,
+		AuditTrailChanges,
+		ClearAuditTrails,
 	},
 	data() {
 		return {
@@ -464,10 +478,8 @@ export default {
 			schemaStore.refreshSchemaList()
 		}
 
-		// Load initial audit trail data
-		if (!auditTrailStore.auditTrailList.length) {
-			auditTrailStore.refreshAuditTrailList()
-		}
+		// Load initial audit trail data and ensure it's refreshed
+		this.loadAuditTrailData()
 
 		this.loadStatistics()
 		this.loadActionDistribution()
@@ -478,13 +490,29 @@ export default {
 			this.filteredCount = count
 		})
 
-		// Watch store changes
+		// Watch store changes and update count
 		this.updateFilteredCount()
 	},
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filtered-count')
 	},
 	methods: {
+		/**
+		 * Load audit trail data and update filtered count
+		 * @return {Promise<void>}
+		 */
+		async loadAuditTrailData() {
+			console.log('Loading audit trail data...')
+			try {
+				await auditTrailStore.refreshAuditTrailList()
+				this.updateFilteredCount()
+				console.log('Audit trail data loaded. Count:', this.filteredCount)
+			} catch (error) {
+				console.error('Error loading audit trail data:', error)
+				// Set count to 0 if loading fails
+				this.filteredCount = 0
+			}
+		},
 		/**
 		 * Clear all filters
 		 * @return {void}
@@ -497,24 +525,24 @@ export default {
 			this.dateTo = null
 			this.objectFilter = ''
 			this.showOnlyWithChanges = false
-			
+
 			// Clear global stores
 			registerStore.setRegisterItem(null)
 			schemaStore.setSchemaItem(null)
-			
+
 			// Clear store filters
 			auditTrailStore.setFilters({})
-			
+
 			// Method 2: If the store has a clearFilters method, use it
 			if (typeof auditTrailStore.clearFilters === 'function') {
 				auditTrailStore.clearFilters()
 			}
-			
+
 			// Method 3: Directly set filters to empty if accessible
 			if (auditTrailStore.filters) {
 				auditTrailStore.filters = {}
 			}
-			
+
 			// Refresh without applying filters through applyFilters (which might re-add them)
 			auditTrailStore.refreshAuditTrailList()
 		},
@@ -607,30 +635,90 @@ export default {
 		},
 		/**
 		 * Export audit trails with current filters
-		 * @return {void}
+		 * @return {Promise<void>}
 		 */
-		exportAuditTrails() {
-			const exportOptions = {
-				format: this.exportFormat.value,
-				includeChanges: this.includeChanges,
-				includeMetadata: this.includeMetadata,
+		async exportAuditTrails() {
+			console.log('Export button clicked')
+			console.log('Export format:', this.exportFormat)
+			console.log('Include changes:', this.includeChanges)
+			console.log('Include metadata:', this.includeMetadata)
+			console.log('Current filters:', auditTrailStore.filters)
+
+			try {
+				// Build query parameters
+				const params = new URLSearchParams()
+				params.append('format', this.exportFormat.value || 'csv')
+				params.append('includeChanges', this.includeChanges || false)
+				params.append('includeMetadata', this.includeMetadata || false)
+
+				// Add current filters
+				if (auditTrailStore.filters) {
+					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
+						if (value !== null && value !== undefined && value !== '') {
+							params.append(key, value)
+						}
+					})
+				}
+
+				console.log('API URL:', `/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`)
+
+				// Make the API request
+				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`)
+				console.log('Response status:', response.status)
+
+				const result = await response.json()
+				console.log('Response result:', result)
+
+				if (result.success && result.data) {
+					// Create and trigger download
+					const blob = new Blob([result.data.content], { type: result.data.contentType })
+					const url = window.URL.createObjectURL(blob)
+					const a = document.createElement('a')
+					a.href = url
+					a.download = result.data.filename
+					document.body.appendChild(a)
+					a.click()
+					window.URL.revokeObjectURL(url)
+					document.body.removeChild(a)
+
+					OC.Notification.showSuccess(this.t('openregister', 'Export completed successfully'))
+				} else {
+					throw new Error(result.error || 'Export failed')
+				}
+			} catch (error) {
+				console.error('Error exporting audit trails:', error)
+				OC.Notification.showError(this.t('openregister', 'Export failed: {error}', { error: error.message }))
 			}
-			this.$root.$emit('audit-trail-export', exportOptions)
 		},
 		/**
 		 * Clear filtered audit trails
 		 * @return {void}
 		 */
 		clearFilteredAuditTrails() {
-			this.$root.$emit('audit-trail-clear-filtered')
+			console.log('Clear filtered button clicked')
+			console.log('Current filters:', auditTrailStore.filters)
+
+			// Open the clear confirmation modal instead of using browser confirm
+			navigationStore.setDialog('clearAuditTrails')
 		},
 		/**
 		 * Refresh audit trails
-		 * @return {void}
+		 * @return {Promise<void>}
 		 */
-		refreshAuditTrails() {
-			auditTrailStore.refreshAuditTrailList()
-			this.$root.$emit('audit-trail-refresh')
+		async refreshAuditTrails() {
+			console.log('Refresh button clicked')
+
+			try {
+				await this.loadAuditTrailData()
+				// Update statistics as well
+				this.loadStatistics()
+				this.loadActionDistribution()
+				this.loadTopObjects()
+				OC.Notification.showSuccess(this.t('openregister', 'Audit trails refreshed successfully'))
+			} catch (error) {
+				console.error('Error refreshing audit trails:', error)
+				OC.Notification.showError(this.t('openregister', 'Error refreshing audit trails'))
+			}
 		},
 		/**
 		 * Load audit trail statistics
@@ -638,22 +726,41 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				// Calculate statistics from current audit trail data
-				this.totalAuditTrails = auditTrailStore.pagination.total || auditTrailStore.auditTrailCount
+				// Use dashboard store method instead of direct API call
+				await dashboardStore.fetchAuditTrailStatistics(24)
 
-				// Calculate counts for different actions in the last 24 hours
-				const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-				const recentTrails = auditTrailStore.auditTrailList.filter(trail => {
-					const createdDate = new Date(trail.created)
-					return createdDate >= oneDayAgo
-				})
-
-				this.createCount = recentTrails.filter(trail => trail.action === 'create').length
-				this.updateCount = recentTrails.filter(trail => trail.action === 'update').length
-				this.deleteCount = recentTrails.filter(trail => trail.action === 'delete').length
+				// Update local component state from store data
+				const stats = dashboardStore.statisticsData.auditTrailStats
+				if (stats) {
+					this.totalAuditTrails = stats.total
+					this.createCount = stats.creates
+					this.updateCount = stats.updates
+					this.deleteCount = stats.deletes
+				}
 			} catch (error) {
 				console.error('Error loading statistics:', error)
+				// Fallback to client-side calculation
+				this.fallbackLoadStatistics()
 			}
+		},
+		/**
+		 * Fallback method for client-side statistics calculation
+		 * @return {void}
+		 */
+		fallbackLoadStatistics() {
+			// Calculate statistics from current audit trail data
+			this.totalAuditTrails = auditTrailStore.pagination.total || auditTrailStore.auditTrailCount
+
+			// Calculate counts for different actions in the last 24 hours
+			const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+			const recentTrails = auditTrailStore.auditTrailList.filter(trail => {
+				const createdDate = new Date(trail.created)
+				return createdDate >= oneDayAgo
+			})
+
+			this.createCount = recentTrails.filter(trail => trail.action === 'create').length
+			this.updateCount = recentTrails.filter(trail => trail.action === 'update').length
+			this.deleteCount = recentTrails.filter(trail => trail.action === 'delete').length
 		},
 		/**
 		 * Load action distribution data
@@ -661,33 +768,49 @@ export default {
 		 */
 		async loadActionDistribution() {
 			try {
-				// Calculate action distribution from recent audit trail data
-				const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-				const recentTrails = auditTrailStore.auditTrailList.filter(trail => {
-					const createdDate = new Date(trail.created)
-					return createdDate >= oneDayAgo
-				})
+				// Use dashboard store method instead of direct API call
+				await dashboardStore.fetchActionDistribution(24)
 
-				// Count actions
-				const actionCounts = {}
-				recentTrails.forEach(trail => {
-					actionCounts[trail.action] = (actionCounts[trail.action] || 0) + 1
-				})
-
-				// Convert to distribution format
-				const data = Object.entries(actionCounts).map(([action, count]) => ({
-					name: action,
-					count,
-				}))
-
-				const total = data.reduce((sum, item) => sum + item.count, 0)
-				this.actionDistribution = data.map(item => ({
-					...item,
-					percentage: total > 0 ? (item.count / total) * 100 : 0,
-				}))
+				// Update local component state from store data
+				const distribution = dashboardStore.statisticsData.actionDistribution
+				if (distribution && distribution.actions) {
+					this.actionDistribution = distribution.actions
+				}
 			} catch (error) {
 				console.error('Error loading action distribution:', error)
+				// Fallback to client-side calculation
+				this.fallbackLoadActionDistribution()
 			}
+		},
+		/**
+		 * Fallback method for client-side action distribution calculation
+		 * @return {void}
+		 */
+		fallbackLoadActionDistribution() {
+			// Calculate action distribution from recent audit trail data
+			const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+			const recentTrails = auditTrailStore.auditTrailList.filter(trail => {
+				const createdDate = new Date(trail.created)
+				return createdDate >= oneDayAgo
+			})
+
+			// Count actions
+			const actionCounts = {}
+			recentTrails.forEach(trail => {
+				actionCounts[trail.action] = (actionCounts[trail.action] || 0) + 1
+			})
+
+			// Convert to distribution format
+			const data = Object.entries(actionCounts).map(([action, count]) => ({
+				name: action,
+				count,
+			}))
+
+			const total = data.reduce((sum, item) => sum + item.count, 0)
+			this.actionDistribution = data.map(item => ({
+				...item,
+				percentage: total > 0 ? (item.count / total) * 100 : 0,
+			}))
 		},
 		/**
 		 * Load top active objects
@@ -695,28 +818,44 @@ export default {
 		 */
 		async loadTopObjects() {
 			try {
-				// Calculate top objects from audit trail data
-				const objectCounts = {}
-				auditTrailStore.auditTrailList.forEach(trail => {
-					const objectId = trail.object
-					objectCounts[objectId] = (objectCounts[objectId] || 0) + 1
-				})
+				// Use dashboard store method instead of direct API call
+				await dashboardStore.fetchMostActiveObjects(4, 24)
 
-				// Convert to top objects format and sort by count
-				this.topObjects = Object.entries(objectCounts)
-					.map(([objectId, count]) => ({
-						name: `Object ${objectId}`,
-						count,
-					}))
-					.sort((a, b) => b.count - a.count)
-					.slice(0, 4) // Top 4 objects
+				// Update local component state from store data
+				const objects = dashboardStore.statisticsData.mostActiveObjects
+				if (objects && objects.objects) {
+					this.topObjects = objects.objects
+				}
 			} catch (error) {
 				console.error('Error loading top objects:', error)
+				// Fallback to client-side calculation
+				this.fallbackLoadTopObjects()
 			}
 		},
 		/**
+		 * Fallback method for client-side top objects calculation
+		 * @return {void}
+		 */
+		fallbackLoadTopObjects() {
+			// Calculate top objects from audit trail data
+			const objectCounts = {}
+			auditTrailStore.auditTrailList.forEach(trail => {
+				const objectId = trail.object
+				objectCounts[objectId] = (objectCounts[objectId] || 0) + 1
+			})
+
+			// Convert to top objects format and sort by count
+			this.topObjects = Object.entries(objectCounts)
+				.map(([objectId, count]) => ({
+					name: `Object ${objectId}`,
+					count,
+				}))
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 4) // Top 4 objects
+		},
+		/**
 		 * Handle register change
-		 * @param {Object} register - Selected register
+		 * @param {object} register - Selected register
 		 * @return {void}
 		 */
 		handleRegisterChange(register) {
@@ -726,7 +865,7 @@ export default {
 		},
 		/**
 		 * Handle schema change
-		 * @param {Object} schema - Selected schema
+		 * @param {object} schema - Selected schema
 		 * @return {void}
 		 */
 		handleSchemaChange(schema) {

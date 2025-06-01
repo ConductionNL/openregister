@@ -260,4 +260,149 @@ class AuditTrailController extends Controller
 
     }//end objects()
 
+
+    /**
+     * Export audit trail logs in specified format
+     *
+     * @return JSONResponse A JSON response containing the export data or file download
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function export(): JSONResponse
+    {
+        // Extract request parameters
+        $params = $this->extractRequestParameters();
+        
+        // Get export specific parameters
+        $format = $this->request->getParam('format', 'csv');
+        $includeChanges = $this->request->getParam('includeChanges', true);
+        $includeMetadata = $this->request->getParam('includeMetadata', false);
+
+        try {
+            // Build export configuration
+            $exportConfig = [
+                'filters' => $params['filters'],
+                'search' => $params['search'],
+                'includeChanges' => filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN),
+                'includeMetadata' => filter_var($includeMetadata, FILTER_VALIDATE_BOOLEAN),
+            ];
+
+            // Export logs using service
+            $exportResult = $this->logService->exportLogs($format, $exportConfig);
+
+            // Return export data
+            return new JSONResponse([
+                'success' => true,
+                'data' => [
+                    'content' => $exportResult['content'],
+                    'filename' => $exportResult['filename'],
+                    'contentType' => $exportResult['contentType'],
+                    'size' => strlen($exportResult['content']),
+                ]
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse([
+                'error' => 'Invalid export format: ' . $e->getMessage()
+            ], 400);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Export failed: ' . $e->getMessage()
+            ], 500);
+        }
+
+    }//end export()
+
+
+    /**
+     * Delete a single audit trail log
+     *
+     * @param int $id The audit trail ID to delete
+     *
+     * @return JSONResponse A JSON response indicating success or failure
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function destroy(int $id): JSONResponse
+    {
+        try {
+            $success = $this->logService->deleteLog($id);
+            
+            if ($success) {
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Audit trail deleted successfully'
+                ]);
+            } else {
+                return new JSONResponse([
+                    'error' => 'Failed to delete audit trail'
+                ], 500);
+            }
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse([
+                'error' => 'Audit trail not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Deletion failed: ' . $e->getMessage()
+            ], 500);
+        }
+
+    }//end destroy()
+
+
+    /**
+     * Delete multiple audit trail logs based on filters or specific IDs
+     *
+     * @return JSONResponse A JSON response with deletion results
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function destroyMultiple(): JSONResponse
+    {
+        // Extract request parameters
+        $params = $this->extractRequestParameters();
+        
+        // Get specific parameters for mass deletion
+        $ids = $this->request->getParam('ids', null);
+
+        try {
+            // Build deletion configuration
+            $deleteConfig = [
+                'filters' => $params['filters'],
+                'search' => $params['search'],
+            ];
+
+            // Add specific IDs if provided
+            if ($ids !== null) {
+                // Handle both comma-separated string and array
+                if (is_string($ids)) {
+                    $deleteConfig['ids'] = array_map('intval', explode(',', $ids));
+                } else if (is_array($ids)) {
+                    $deleteConfig['ids'] = array_map('intval', $ids);
+                }
+            }
+
+            // Delete logs using service
+            $result = $this->logService->deleteLogs($deleteConfig);
+
+            return new JSONResponse([
+                'success' => true,
+                'results' => $result,
+                'message' => sprintf(
+                    'Deleted %d audit trails successfully. %d failed.',
+                    $result['deleted'],
+                    $result['failed']
+                )
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Mass deletion failed: ' . $e->getMessage()
+            ], 500);
+        }
+
+    }//end destroyMultiple()
+
 }//end class
