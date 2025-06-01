@@ -434,14 +434,14 @@ class FileService
 
         // If Register is not provided, try to get it from the Schema
         if ($register === null && $schema !== null) {
-            $register = $this->registerMapper->find($schema->getRegisterId());
+            $register = $this->registerMapper->find($schema->getRegister());
         }
 
         // If Schema is not provided, try to get it from the Object Entity
         if ($schema === null) {
-            $schema = $this->schemaMapper->find($objectEntity->getSchemaId());
+            $schema = $this->schemaMapper->find($objectEntity->getSchema());
             if ($register === null) {
-                $register = $this->registerMapper->find($schema->getRegisterId());
+                $register = $this->registerMapper->find($objectEntity->getRegister());
             }
         }
 

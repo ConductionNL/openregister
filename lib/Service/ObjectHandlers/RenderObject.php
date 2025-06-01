@@ -508,7 +508,7 @@ class RenderObject
                                 }
                             }
 
-                            return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1);
+                            return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize();
                         },
                         $value
                         );
@@ -547,9 +547,9 @@ class RenderObject
                 }
 
                 if (is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1))->jsonSerialize();
                 } else {
-                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1))->jsonSerialize();
                 }
             }//end if
         }//end foreach
