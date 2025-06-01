@@ -16,6 +16,8 @@ export const useNavigationStore = defineStore('ui', {
 			registers: true,
 			register: true,
 			search: true,
+			deleted: true,
+			logs: true,
 		},
 	}),
 	actions: {
