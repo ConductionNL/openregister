@@ -99,7 +99,7 @@
 							</td>
 							<td>{{ item.register }}</td>
 							<td>
-								<NcDateTime :timestamp="item.deletedAt" :ignore-seconds="true" />
+								<NcDateTime :timestamp="new Date(item.deletedAt)" :ignore-seconds="true" />
 							</td>
 							<td>{{ item.deletedBy }}</td>
 							<td class="actions-column">

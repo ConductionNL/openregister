@@ -142,7 +142,13 @@ class AuditTrailMapper extends QBMapper
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
             } else {
-                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                // Handle comma-separated values (e.g., action=create,update)
+                if (strpos($value, ',') !== false) {
+                    $values = array_map('trim', explode(',', $value));
+                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                }
             }
         }//end foreach
 

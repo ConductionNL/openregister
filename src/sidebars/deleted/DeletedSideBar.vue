@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore } from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -22,11 +22,12 @@ import { navigationStore } from '../../store/store.js'
 				<div class="filterGroup">
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect
-						v-model="selectedRegister"
+						:model-value="selectedRegisterValue"
 						:options="registerOptions"
 						:placeholder="t('openregister', 'All registers')"
+						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@input="applyFilters">
+						@update:model-value="handleRegisterChange">
 						<template #option="{ option }">
 							{{ option.label }}
 						</template>
@@ -35,11 +36,13 @@ import { navigationStore } from '../../store/store.js'
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 					<NcSelect
-						v-model="selectedSchema"
+						:model-value="selectedSchemaValue"
 						:options="schemaOptions"
 						:placeholder="t('openregister', 'All schemas')"
+						:input-label="t('openregister', 'Schema')"
+						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@input="applyFilters">
+						@update:model-value="handleSchemaChange">
 						<template #option="{ option }">
 							{{ option.label }}
 						</template>
@@ -51,6 +54,7 @@ import { navigationStore } from '../../store/store.js'
 						v-model="selectedDeletedBy"
 						:options="userOptions"
 						:placeholder="t('openregister', 'Any user')"
+						:input-label="t('openregister', 'Deleted By')"
 						:clearable="true"
 						@input="applyFilters">
 						<template #option="{ option }">
@@ -225,11 +229,9 @@ export default {
 	data() {
 		return {
 			activeTab: 'filters-tab',
-			selectedRegister: null,
-			selectedSchema: null,
 			selectedDeletedBy: null,
-			dateFrom: '',
-			dateTo: '',
+			dateFrom: null,
+			dateTo: null,
 			selectedCount: 0,
 			filteredCount: 0,
 			totalDeleted: 0,
@@ -237,24 +239,71 @@ export default {
 			deletedThisWeek: 0,
 			oldestDays: 0,
 			topDeleters: [],
-			registerOptions: [
-				{ label: this.t('openregister', 'Sample Register'), value: 'sample-register' },
-				{ label: this.t('openregister', 'Another Register'), value: 'another-register' },
-				{ label: this.t('openregister', 'Test Register'), value: 'test-register' },
-			],
-			schemaOptions: [
-				{ label: this.t('openregister', 'Sample Schema'), value: 'sample-schema' },
-				{ label: this.t('openregister', 'Another Schema'), value: 'another-schema' },
-				{ label: this.t('openregister', 'Test Schema'), value: 'test-schema' },
-			],
-			userOptions: [
+		}
+	},
+	computed: {
+		registerOptions() {
+			if (!registerStore.registerList || !registerStore.registerList.length) {
+				return [
+					{ label: this.t('openregister', 'Sample Register'), value: 'sample-register' },
+					{ label: this.t('openregister', 'Another Register'), value: 'another-register' },
+					{ label: this.t('openregister', 'Test Register'), value: 'test-register' },
+				]
+			}
+			return registerStore.registerList.map(register => ({
+				label: register.title || `Register ${register.id}`,
+				value: register.id,
+			}))
+		},
+		schemaOptions() {
+			if (!registerStore.registerItem || !schemaStore.schemaList || !schemaStore.schemaList.length) {
+				return [
+					{ label: this.t('openregister', 'Sample Schema'), value: 'sample-schema' },
+					{ label: this.t('openregister', 'Another Schema'), value: 'another-schema' },
+					{ label: this.t('openregister', 'Test Schema'), value: 'test-schema' },
+				]
+			}
+			return schemaStore.schemaList
+				.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+				.map(schema => ({
+					label: schema.title || `Schema ${schema.id}`,
+					value: schema.id,
+				}))
+		},
+		selectedRegisterValue() {
+			if (!registerStore.registerItem) return null
+			return {
+				label: registerStore.registerItem.title || `Register ${registerStore.registerItem.id}`,
+				value: registerStore.registerItem.id,
+			}
+		},
+		selectedSchemaValue() {
+			if (!schemaStore.schemaItem) return null
+			return {
+				label: schemaStore.schemaItem.title || `Schema ${schemaStore.schemaItem.id}`,
+				value: schemaStore.schemaItem.id,
+			}
+		},
+		userOptions() {
+			// For deleted items, we might want to show users who have deleted items
+			// For now, return mock data
+			return [
 				{ label: this.t('openregister', 'Admin'), value: 'admin' },
 				{ label: this.t('openregister', 'User1'), value: 'user1' },
 				{ label: this.t('openregister', 'User2'), value: 'user2' },
-			],
-		}
+			]
+		},
 	},
 	mounted() {
+		// Load required data
+		if (!registerStore.registerList.length) {
+			registerStore.refreshRegisterList()
+		}
+
+		if (!schemaStore.schemaList.length) {
+			schemaStore.refreshSchemaList()
+		}
+
 		this.loadStatistics()
 		this.loadTopDeleters()
 
@@ -279,8 +328,8 @@ export default {
 		 */
 		applyFilters() {
 			const filters = {
-				register: this.selectedRegister?.value || null,
-				schema: this.selectedSchema?.value || null,
+				register: registerStore.registerItem?.id || null,
+				schema: schemaStore.schemaItem?.id || null,
 				deletedBy: this.selectedDeletedBy?.value || null,
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,
@@ -346,6 +395,29 @@ export default {
 			} catch (error) {
 				console.error('Error loading top deleters:', error)
 			}
+		},
+		/**
+		 * Handle register change
+		 * @param {Object} value - The selected register value
+		 * @return {void}
+		 */
+		handleRegisterChange(value) {
+			// Find the actual register object
+			const register = registerStore.registerList.find(r => r.id === value?.value)
+			registerStore.setRegisterItem(register || null)
+			schemaStore.setSchemaItem(null) // Clear schema when register changes
+			this.applyFilters()
+		},
+		/**
+		 * Handle schema change
+		 * @param {Object} value - The selected schema value
+		 * @return {void}
+		 */
+		handleSchemaChange(value) {
+			// Find the actual schema object
+			const schema = schemaStore.schemaList.find(s => s.id === value?.value)
+			schemaStore.setSchemaItem(schema || null)
+			this.applyFilters()
 		},
 	},
 }

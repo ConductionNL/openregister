@@ -102,7 +102,7 @@ import { auditTrailStore } from '../../store/store.js'
 								</span>
 							</td>
 							<td class="timestamp-column">
-								<NcDateTime :timestamp="auditTrail.created" :ignore-seconds="false" />
+								<NcDateTime :timestamp="new Date(auditTrail.created)" :ignore-seconds="false" />
 							</td>
 							<td class="object-column">
 								{{ auditTrail.object || '-' }}

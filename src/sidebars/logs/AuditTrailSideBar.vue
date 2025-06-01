@@ -20,6 +20,16 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Advanced Filters') }}</h3>
 				<div class="filterGroup">
+					<NcButton
+						type="secondary"
+						@click="clearAllFilters">
+						<template #icon>
+							<FilterOffOutline :size="20" />
+						</template>
+						{{ t('openregister', 'Clear All Filters') }}
+					</NcButton>
+				</div>
+				<div class="filterGroup">
 					<label>{{ t('openregister', 'Action Type') }}</label>
 					<NcSelect
 						v-model="selectedActions"
@@ -30,12 +40,12 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						:clearable="true"
 						@input="applyFilters">
 						<template #option="{ option }">
-							<span class="actionOption" :class="`action-${option.value}`">
+							<span v-if="option" class="actionOption" :class="`action-${option.value || ''}`">
 								<Plus v-if="option.value === 'create'" :size="16" />
 								<Pencil v-else-if="option.value === 'update'" :size="16" />
 								<Delete v-else-if="option.value === 'delete'" :size="16" />
 								<Eye v-else-if="option.value === 'read'" :size="16" />
-								{{ option.label }}
+								{{ option.label || option.value || '' }}
 							</span>
 						</template>
 					</NcSelect>
@@ -43,32 +53,23 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 				<div class="filterGroup">
 					<label>{{ t('openregister', 'Register') }}</label>
 					<NcSelect
-						v-model="selectedRegisters"
-						:options="registerOptions"
+						:model-value="selectedRegisterValue"
+						v-bind="registerOptions"
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
-						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
+						@update:model-value="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label>{{ t('openregister', 'Schema') }}</label>
 					<NcSelect
-						v-model="selectedSchemas"
-						:options="schemaOptions"
+						:model-value="selectedSchemaValue"
+						v-bind="schemaOptions"
 						:placeholder="t('openregister', 'All schemas')"
 						:input-label="t('openregister', 'Schema')"
-						:multiple="true"
+						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@input="applyFilters">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
+						@update:model-value="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label>{{ t('openregister', 'User') }}</label>
@@ -81,7 +82,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						:clearable="true"
 						@input="applyFilters">
 						<template #option="{ option }">
-							{{ option.label }}
+							<span v-if="option">{{ option.label || option.value || '' }}</span>
 						</template>
 					</NcSelect>
 				</div>
@@ -137,7 +138,7 @@ import { navigationStore, auditTrailStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Export Format')"
 						:clearable="false">
 						<template #option="{ option }">
-							{{ option.label }}
+							<span v-if="option">{{ option.label || option.value || '' }}</span>
 						</template>
 					</NcSelect>
 				</div>
@@ -296,6 +297,7 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
 
 export default {
 	name: 'AuditTrailSideBar',
@@ -318,13 +320,12 @@ export default {
 		Plus,
 		Pencil,
 		Eye,
+		FilterOffOutline,
 	},
 	data() {
 		return {
 			activeTab: 'filters-tab',
 			selectedActions: [],
-			selectedRegisters: [],
-			selectedSchemas: [],
 			selectedUsers: [],
 			dateFrom: null,
 			dateTo: null,
@@ -345,24 +346,84 @@ export default {
 	},
 	computed: {
 		actionOptions() {
-			return auditTrailStore.uniqueActions.map(action => ({
-				label: this.t('openregister', action.charAt(0).toUpperCase() + action.slice(1)),
-				value: action,
-			}))
+			// Return all possible CRUD actions instead of just what's in current data
+			return [
+				{
+					label: this.t('openregister', 'Create'),
+					value: 'create',
+				},
+				{
+					label: this.t('openregister', 'Read'),
+					value: 'read',
+				},
+				{
+					label: this.t('openregister', 'Update'),
+					value: 'update',
+				},
+				{
+					label: this.t('openregister', 'Delete'),
+					value: 'delete',
+				},
+			]
 		},
 		registerOptions() {
-			return registerStore.registerList.map(register => ({
-				label: register.title || `Register ${register.id}`,
-				value: register.id,
-			}))
+			return {
+				options: registerStore.registerList.map(register => ({
+					value: register.id,
+					label: register.title,
+					title: register.title,
+					register,
+				})),
+				reduce: option => option.register,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.register && option.register.title) || option.label || ''
+				},
+			}
 		},
 		schemaOptions() {
-			return schemaStore.schemaList.map(schema => ({
-				label: schema.title || `Schema ${schema.id}`,
+			if (!registerStore.registerItem) return { options: [] }
+
+			return {
+				options: schemaStore.schemaList
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.map(schema => ({
+						value: schema.id,
+						label: schema.title,
+						title: schema.title,
+						schema,
+					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
+			}
+		},
+		selectedRegisterValue() {
+			if (!registerStore.registerItem) return null
+			const register = registerStore.registerItem
+			return {
+				value: register.id,
+				label: register.title,
+				title: register.title,
+				register,
+			}
+		},
+		selectedSchemaValue() {
+			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
+			return {
 				value: schema.id,
-			}))
+				label: schema.title,
+				title: schema.title,
+				schema,
+			}
 		},
 		userOptions() {
+			if (!auditTrailStore.uniqueUsers || !auditTrailStore.uniqueUsers.length) {
+				return []
+			}
 			return auditTrailStore.uniqueUsers.map(user => ({
 				label: user,
 				value: user,
@@ -383,6 +444,14 @@ export default {
 			this.loadStatistics()
 			this.loadActionDistribution()
 			this.loadTopObjects()
+		},
+		// Watch for changes in the global stores
+		'registerStore.registerItem'() {
+			// Schema should be cleared when register changes, this happens in the change handler
+			this.applyFilters()
+		},
+		'schemaStore.schemaItem'() {
+			this.applyFilters()
 		},
 	},
 	mounted() {
@@ -417,30 +486,71 @@ export default {
 	},
 	methods: {
 		/**
+		 * Clear all filters
+		 * @return {void}
+		 */
+		clearAllFilters() {
+			// Clear component state
+			this.selectedActions = []
+			this.selectedUsers = []
+			this.dateFrom = null
+			this.dateTo = null
+			this.objectFilter = ''
+			this.showOnlyWithChanges = false
+			
+			// Clear global stores
+			registerStore.setRegisterItem(null)
+			schemaStore.setSchemaItem(null)
+			
+			// Clear store filters
+			auditTrailStore.setFilters({})
+			
+			// Method 2: If the store has a clearFilters method, use it
+			if (typeof auditTrailStore.clearFilters === 'function') {
+				auditTrailStore.clearFilters()
+			}
+			
+			// Method 3: Directly set filters to empty if accessible
+			if (auditTrailStore.filters) {
+				auditTrailStore.filters = {}
+			}
+			
+			// Refresh without applying filters through applyFilters (which might re-add them)
+			auditTrailStore.refreshAuditTrailList()
+		},
+		/**
 		 * Apply filters and emit to parent components
 		 * @return {void}
 		 */
 		applyFilters() {
 			const filters = {}
 
-			// Build action filter
-			if (this.selectedActions && this.selectedActions.length > 0) {
-				filters.action = this.selectedActions.map(a => a.value).join(',')
+			// Build action filter - ensure we have a real array, not just the Observer
+			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
+				// Convert to plain array to avoid Observer issues
+				const actions = this.selectedActions.slice()
+				if (actions.length > 0) {
+					filters.action = actions.map(a => a.value).join(',')
+				}
 			}
 
 			// Build register filter
-			if (this.selectedRegisters && this.selectedRegisters.length > 0) {
-				filters.register = this.selectedRegisters.map(r => r.value).join(',')
+			if (registerStore.registerItem) {
+				filters.register = registerStore.registerItem.id.toString()
 			}
 
 			// Build schema filter
-			if (this.selectedSchemas && this.selectedSchemas.length > 0) {
-				filters.schema = this.selectedSchemas.map(s => s.value).join(',')
+			if (schemaStore.schemaItem) {
+				filters.schema = schemaStore.schemaItem.id.toString()
 			}
 
-			// Build user filter
-			if (this.selectedUsers && this.selectedUsers.length > 0) {
-				filters.user = this.selectedUsers.map(u => u.value).join(',')
+			// Build user filter - ensure we have a real array, not just the Observer
+			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
+				// Convert to plain array to avoid Observer issues
+				const users = this.selectedUsers.slice()
+				if (users.length > 0) {
+					filters.user = users.map(u => u.value).join(',')
+				}
 			}
 
 			// Date filters
@@ -603,6 +713,25 @@ export default {
 			} catch (error) {
 				console.error('Error loading top objects:', error)
 			}
+		},
+		/**
+		 * Handle register change
+		 * @param {Object} register - Selected register
+		 * @return {void}
+		 */
+		handleRegisterChange(register) {
+			registerStore.setRegisterItem(register)
+			schemaStore.setSchemaItem(null) // Clear schema when register changes
+			this.applyFilters()
+		},
+		/**
+		 * Handle schema change
+		 * @param {Object} schema - Selected schema
+		 * @return {void}
+		 */
+		handleSchemaChange(schema) {
+			schemaStore.setSchemaItem(schema)
+			this.applyFilters()
 		},
 	},
 }
