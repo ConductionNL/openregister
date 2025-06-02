@@ -298,6 +298,10 @@ class DeletedController extends Controller
     /**
      * Restore multiple deleted objects
      *
+     * TODO: This function is unsafe as it doesn't filter by register/schema.
+     * In the future, add register and schema filtering to mass operations
+     * to prevent cross-register restoring.
+     *
      * @return JSONResponse A JSON response with restoration results
      *
      * @NoAdminRequired
@@ -313,31 +317,61 @@ class DeletedController extends Controller
             ], 400);
         }
 
-        $restored = 0;
-        $failed = 0;
+        try {
+            // Use findAll for better database performance - single query instead of multiple
+            $objects = $this->objectEntityMapper->findAll(
+                limit: null,
+                offset: null,
+                filters: [],
+                searchConditions: [],
+                searchParams: [],
+                sort: [],
+                search: null,
+                ids: $ids,
+                uses: null,
+                includeDeleted: true
+            );
 
-        foreach ($ids as $id) {
-            try {
-                $object = $this->objectEntityMapper->find($id, null, null, true);
+            // Track results
+            $restored = 0;
+            $failed = 0;
+            $foundIds = [];
+
+            // Process found objects
+            foreach ($objects as $object) {
+                $foundIds[] = $object->getId();
                 
-                if ($object->getDeleted() !== null) {
-                    $object->setDeleted(null);
-                    $this->objectEntityMapper->update($object, true);
-                    $restored++;
-                } else {
+                try {
+                    if ($object->getDeleted() !== null) {
+                        $object->setDeleted(null);
+                        $this->objectEntityMapper->update($object, true);
+                        $restored++;
+                    } else {
+                        // Object exists but is not deleted
+                        $failed++;
+                    }
+                } catch (\Exception $e) {
                     $failed++;
                 }
-            } catch (\Exception $e) {
-                $failed++;
             }
-        }
 
-        return new JSONResponse([
-            'success' => true,
-            'restored' => $restored,
-            'failed' => $failed,
-            'message' => "Restored {$restored} objects, {$failed} failed"
-        ]);
+            // Count objects that were requested but not found in database
+            $notFound = count(array_diff($ids, $foundIds));
+            $failed += $notFound;
+
+            return new JSONResponse([
+                'success' => true,
+                'restored' => $restored,
+                'failed' => $failed,
+                'notFound' => $notFound,
+                'message' => "Restored {$restored} objects, {$failed} failed" . 
+                            ($notFound > 0 ? " ({$notFound} not found)" : "")
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to restore objects: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -378,6 +412,10 @@ class DeletedController extends Controller
     /**
      * Permanently delete multiple objects
      *
+     * TODO: This function is unsafe as it doesn't filter by register/schema.
+     * In the future, add register and schema filtering to mass operations
+     * to prevent cross-register deleting.
+     *
      * @return JSONResponse A JSON response with deletion results
      *
      * @NoAdminRequired
@@ -393,30 +431,60 @@ class DeletedController extends Controller
             ], 400);
         }
 
-        $deleted = 0;
-        $failed = 0;
+        try {
+            // Use findAll for better database performance - single query instead of multiple
+            $objects = $this->objectEntityMapper->findAll(
+                limit: null,
+                offset: null,
+                filters: [],
+                searchConditions: [],
+                searchParams: [],
+                sort: [],
+                search: null,
+                ids: $ids,
+                uses: null,
+                includeDeleted: true
+            );
 
-        foreach ($ids as $id) {
-            try {
-                $object = $this->objectEntityMapper->find($id, null, null, true);
+            // Track results
+            $deleted = 0;
+            $failed = 0;
+            $foundIds = [];
+
+            // Process found objects
+            foreach ($objects as $object) {
+                $foundIds[] = $object->getId();
                 
-                if ($object->getDeleted() !== null) {
-                    $this->objectEntityMapper->delete($object);
-                    $deleted++;
-                } else {
+                try {
+                    if ($object->getDeleted() !== null) {
+                        $this->objectEntityMapper->delete($object);
+                        $deleted++;
+                    } else {
+                        // Object exists but is not deleted
+                        $failed++;
+                    }
+                } catch (\Exception $e) {
                     $failed++;
                 }
-            } catch (\Exception $e) {
-                $failed++;
             }
-        }
 
-        return new JSONResponse([
-            'success' => true,
-            'deleted' => $deleted,
-            'failed' => $failed,
-            'message' => "Permanently deleted {$deleted} objects, {$failed} failed"
-        ]);
+            // Count objects that were requested but not found in database
+            $notFound = count(array_diff($ids, $foundIds));
+            $failed += $notFound;
+
+            return new JSONResponse([
+                'success' => true,
+                'deleted' => $deleted,
+                'failed' => $failed,
+                'notFound' => $notFound,
+                'message' => "Permanently deleted {$deleted} objects, {$failed} failed" . 
+                            ($notFound > 0 ? " ({$notFound} not found)" : "")
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse([
+                'error' => 'Failed to permanently delete objects: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 }//end class 
