@@ -141,15 +141,15 @@ export default {
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
 			if (!changed) return false
-			
+
 			if (Array.isArray(changed)) {
 				return changed.length > 0
 			}
-			
+
 			if (typeof changed === 'object') {
 				return Object.keys(changed).length > 0
 			}
-			
+
 			return !!changed
 		},
 
@@ -159,12 +159,12 @@ export default {
 		 */
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
-			
+
 			const mainFields = [
-				'id', 'action', 'created', 'object', 'register', 
-				'schema', 'user', 'userName', 'size', 'changed', 'request'
+				'id', 'action', 'created', 'object', 'register',
+				'schema', 'user', 'userName', 'size', 'changed', 'request',
 			]
-			
+
 			return Object.entries(auditTrailStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
 				.filter(([, value]) => value !== null && value !== undefined && value !== '')
@@ -200,7 +200,7 @@ export default {
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
-			
+
 			try {
 				if (typeof changes === 'string') {
 					// Try to parse if it's a JSON string
@@ -211,7 +211,7 @@ export default {
 						return changes
 					}
 				}
-				
+
 				return JSON.stringify(changes, null, 2)
 			} catch (error) {
 				return String(changes)
@@ -225,7 +225,7 @@ export default {
 		 */
 		formatJson(data) {
 			if (!data) return ''
-			
+
 			try {
 				if (typeof data === 'string') {
 					// Try to parse if it's a JSON string
@@ -236,7 +236,7 @@ export default {
 						return data
 					}
 				}
-				
+
 				return JSON.stringify(data, null, 2)
 			} catch (error) {
 				return String(data)
@@ -262,7 +262,7 @@ export default {
 		 */
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
-			
+
 			if (typeof value === 'object') {
 				try {
 					return JSON.stringify(value, null, 2)
@@ -270,7 +270,7 @@ export default {
 					return String(value)
 				}
 			}
-			
+
 			return String(value)
 		},
 
@@ -422,4 +422,4 @@ export default {
 	max-height: 100px;
 	overflow-y: auto;
 }
-</style> 
+</style>

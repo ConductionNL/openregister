@@ -26,27 +26,24 @@ export const useNavigationStore = defineStore('ui', {
 		},
 		setSelected(selected) {
 			this.selected = selected
-			console.log('Active menu item set to ' + selected)
 		},
 		setSelectedCatalogus(selectedCatalogus) {
 			this.selectedCatalogus = selectedCatalogus
-			console.log('Active catalogus menu set to ' + selectedCatalogus)
 		},
 		setModal(modal) {
 			this.modal = modal
-			console.log('Active modal set to ' + modal)
 		},
 		setDialog(dialog) {
 			this.dialog = dialog
-			console.log('Active dialog set to ' + dialog)
 		},
 		setTransferData(data) {
 			this.transferData = data
 		},
 		getTransferData() {
-			const tempData = this.transferData
+			return this.transferData
+		},
+		clearTransferData() {
 			this.transferData = null
-			return tempData
 		},
 	},
 })

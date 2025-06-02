@@ -137,12 +137,12 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Deletion Statistics') }}</h3>
-				
+
 				<div v-if="deletedStore.statisticsLoading" class="loading-stats">
 					<NcLoadingIcon :size="32" />
 					<p>{{ t('openregister', 'Loading statistics...') }}</p>
 				</div>
-				
+
 				<div v-else>
 					<div class="statCard">
 						<div class="statNumber">
@@ -182,15 +182,15 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			<!-- Top Deleters -->
 			<div class="topDeleters">
 				<h4>{{ t('openregister', 'Top Deleters') }}</h4>
-				
+
 				<div v-if="deletedStore.topDeletersLoading" class="loading-stats">
 					<NcLoadingIcon :size="24" />
 				</div>
-				
+
 				<div v-else-if="deletedStore.topDeleters.length === 0" class="no-data">
 					<p>{{ t('openregister', 'No deletion data available') }}</p>
 				</div>
-				
+
 				<NcListItem v-for="(deleter, index) in deletedStore.topDeleters"
 					v-else
 					:key="index"
@@ -300,19 +300,19 @@ export default {
 					users.add(deletedBy)
 				}
 			})
-			
+
 			const userOptions = Array.from(users).map(user => ({
 				label: user,
 				value: user,
 			}))
-			
+
 			// Add some common default users if no data
 			if (userOptions.length === 0) {
 				return [
 					{ label: this.t('openregister', 'Admin'), value: 'admin' },
 				]
 			}
-			
+
 			return userOptions
 		},
 	},
@@ -404,7 +404,7 @@ export default {
 		},
 		/**
 		 * Handle register change
-		 * @param {Object} value - The selected register value
+		 * @param {object} value - The selected register value
 		 * @return {void}
 		 */
 		handleRegisterChange(value) {
@@ -416,7 +416,7 @@ export default {
 		},
 		/**
 		 * Handle schema change
-		 * @param {Object} value - The selected schema value
+		 * @param {object} value - The selected schema value
 		 * @return {void}
 		 */
 		handleSchemaChange(value) {

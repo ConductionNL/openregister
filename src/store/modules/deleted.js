@@ -16,7 +16,7 @@ export const useDeletedStore = defineStore('deleted', {
 		// Data
 		deletedList: [],
 		deletedItem: null,
-		
+
 		// Pagination
 		deletedPagination: {
 			total: 0,
@@ -54,7 +54,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted item
-		 * @param {Object} deletedItem - The deleted item to set
+		 * @param {object} deletedItem - The deleted item to set
 		 */
 		setDeletedItem(deletedItem) {
 			this.deletedItem = deletedItem
@@ -63,7 +63,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted pagination
-		 * @param {Object} pagination - The pagination object
+		 * @param {object} pagination - The pagination object
 		 */
 		setDeletedPagination(pagination) {
 			this.deletedPagination = {
@@ -75,7 +75,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set statistics
-		 * @param {Object} stats - The statistics object
+		 * @param {object} stats - The statistics object
 		 */
 		setStatistics(stats) {
 			this.statistics = {
@@ -96,7 +96,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Set deleted filters
-		 * @param {Object} filters - The filters to set
+		 * @param {object} filters - The filters to set
 		 */
 		setDeletedFilters(filters) {
 			this.deletedFilters = filters
@@ -114,8 +114,8 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Fetch deleted objects with optional filtering and pagination
-		 * @param {Object} options - Options for fetching
-		 * @return {Promise<Object>} The fetched data
+		 * @param {object} options - Options for fetching
+		 * @return {Promise<object>} The fetched data
 		 */
 		async fetchDeleted(options = {}) {
 			this.deletedLoading = true
@@ -125,7 +125,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 				// Build query parameters
 				const params = new URLSearchParams()
-				
+
 				// Add pagination
 				if (options.limit) params.append('limit', options.limit)
 				if (options.offset) params.append('offset', options.offset)
@@ -191,7 +191,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Fetch deleted object statistics
-		 * @return {Promise<Object>} The statistics data
+		 * @return {Promise<object>} The statistics data
 		 */
 		async fetchStatistics() {
 			this.statisticsLoading = true
@@ -262,7 +262,7 @@ export const useDeletedStore = defineStore('deleted', {
 		/**
 		 * Restore a deleted object
 		 * @param {string|number} id - The ID of the object to restore
-		 * @return {Promise<Object>} The response data
+		 * @return {Promise<object>} The response data
 		 */
 		async restoreDeleted(id) {
 			try {
@@ -296,7 +296,7 @@ export const useDeletedStore = defineStore('deleted', {
 		/**
 		 * Restore multiple deleted objects
 		 * @param {Array} ids - Array of object IDs to restore
-		 * @return {Promise<Object>} The response data
+		 * @return {Promise<object>} The response data
 		 */
 		async restoreMultiple(ids) {
 			try {
@@ -331,7 +331,7 @@ export const useDeletedStore = defineStore('deleted', {
 		/**
 		 * Permanently delete an object
 		 * @param {string|number} id - The ID of the object to permanently delete
-		 * @return {Promise<Object>} The response data
+		 * @return {Promise<object>} The response data
 		 */
 		async permanentlyDelete(id) {
 			try {
@@ -365,7 +365,7 @@ export const useDeletedStore = defineStore('deleted', {
 		/**
 		 * Permanently delete multiple objects
 		 * @param {Array} ids - Array of object IDs to permanently delete
-		 * @return {Promise<Object>} The response data
+		 * @return {Promise<object>} The response data
 		 */
 		async permanentlyDeleteMultiple(ids) {
 			try {
@@ -433,4 +433,4 @@ export const useDeletedStore = defineStore('deleted', {
 			console.info('Deleted store cleared')
 		},
 	},
-}) 
+})

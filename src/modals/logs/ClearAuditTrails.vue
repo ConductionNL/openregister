@@ -102,8 +102,8 @@ export default {
 			if (!auditTrailStore.filters) return {}
 			return Object.fromEntries(
 				Object.entries(auditTrailStore.filters).filter(([key, value]) =>
-					value !== null && value !== undefined && value !== ''
-				)
+					value !== null && value !== undefined && value !== '',
+				),
 			)
 		},
 	},
@@ -167,10 +167,10 @@ export default {
 					this.success = true
 					this.error = false
 					this.successMessage = result.message || this.t('openregister', '{count} audit trails cleared successfully', { count: this.filteredCount })
-					
+
 					// Refresh the audit trail list
 					await auditTrailStore.refreshAuditTrailList()
-					
+
 					// Auto-close after 3 seconds
 					this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
 				} else {
@@ -268,4 +268,4 @@ export default {
 .no-filters-warning {
 	margin-top: 16px;
 }
-</style> 
+</style>

@@ -1,5 +1,5 @@
 <script setup>
-import { deletedStore, registerStore, schemaStore } from '../../store/store.js'
+import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -17,7 +17,7 @@ import { deletedStore, registerStore, schemaStore } from '../../store/store.js'
 					{{ t('openregister', '{count} items selected', { count: selectedItems.length }) }}
 				</h3>
 			</div>
-			
+
 			<div class="actions-bar">
 				<div class="actions">
 					<NcButton
@@ -155,6 +155,10 @@ import { deletedStore, registerStore, schemaStore } from '../../store/store.js'
 				</NcButton>
 			</div>
 		</div>
+
+		<!-- Deletion Dialogs -->
+		<PermanentlyDeleteObject />
+		<PermanentlyDeleteMultiple />
 	</NcAppContent>
 </template>
 
@@ -174,6 +178,10 @@ import Restore from 'vue-material-design-icons/Restore.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 
+// Import deletion dialogs
+import PermanentlyDeleteObject from '../../modals/deleted/PermanentlyDeleteObject.vue'
+import PermanentlyDeleteMultiple from '../../modals/deleted/PermanentlyDeleteMultiple.vue'
+
 export default {
 	name: 'DeletedIndex',
 	components: {
@@ -189,6 +197,9 @@ export default {
 		Restore,
 		Delete,
 		Refresh,
+		// Deletion dialogs
+		PermanentlyDeleteObject,
+		PermanentlyDeleteMultiple,
 	},
 	data() {
 		return {
@@ -228,7 +239,7 @@ export default {
 	async mounted() {
 		// Load initial data
 		await this.loadItems()
-		
+
 		// Update counts
 		this.updateCounts()
 
@@ -237,12 +248,18 @@ export default {
 		this.$root.$on('deleted-bulk-restore', this.bulkRestore)
 		this.$root.$on('deleted-bulk-delete', this.bulkDelete)
 		this.$root.$on('deleted-export-filtered', this.exportFiltered)
+
+		// Listen for deletion events from modals
+		this.$root.$on('deleted-object-permanently-deleted', this.handleObjectDeleted)
+		this.$root.$on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
 	},
 	beforeDestroy() {
 		this.$root.$off('deleted-filters-changed')
 		this.$root.$off('deleted-bulk-restore')
 		this.$root.$off('deleted-bulk-delete')
 		this.$root.$off('deleted-export-filtered')
+		this.$root.$off('deleted-object-permanently-deleted')
+		this.$root.$off('deleted-objects-permanently-deleted')
 	},
 	methods: {
 		/**
@@ -252,7 +269,7 @@ export default {
 		async loadItems() {
 			try {
 				await deletedStore.fetchDeleted()
-				
+
 				// Load register and schema data if not already loaded
 				if (!registerStore.registerList.length) {
 					await registerStore.refreshRegisterList()
@@ -272,16 +289,16 @@ export default {
 		async handleFiltersChanged(filters) {
 			// Convert sidebar filters to API filters using @self.deleted notation
 			const apiFilters = this.convertFiltersToApiFormat(filters)
-			
+
 			deletedStore.setDeletedFilters(apiFilters)
-			
+
 			// Reset pagination and fetch new data
 			try {
 				await deletedStore.fetchDeleted({
 					page: 1,
 					filters: apiFilters,
 				})
-				
+
 				// Clear selection when filters change
 				this.selectedItems = []
 			} catch (error) {
@@ -295,7 +312,7 @@ export default {
 		 */
 		convertFiltersToApiFormat(filters) {
 			const apiFilters = {}
-			
+
 			if (filters.register) {
 				apiFilters['@self.register'] = filters.register
 			}
@@ -315,7 +332,7 @@ export default {
 					apiFilters['@self.deleted.deleted'] = { lte: filters.dateTo }
 				}
 			}
-			
+
 			return apiFilters
 		},
 		/**
@@ -342,7 +359,7 @@ export default {
 		 */
 		getRegisterName(registerId) {
 			if (!registerId) return t('openregister', 'Unknown Register')
-			
+
 			const register = registerStore.registerList.find(r => r.id === parseInt(registerId))
 			return register?.title || `Register ${registerId}`
 		},
@@ -353,7 +370,7 @@ export default {
 		 */
 		getSchemaName(schemaId) {
 			if (!schemaId) return t('openregister', 'Unknown Schema')
-			
+
 			const schema = schemaStore.schemaList.find(s => s.id === parseInt(schemaId))
 			return schema?.title || `Schema ${schemaId}`
 		},
@@ -413,24 +430,18 @@ export default {
 			}
 		},
 		/**
-		 * Permanently delete selected items
-		 * @return {Promise<void>}
+		 * Permanently delete selected items using dialog
+		 * @return {void}
 		 */
-		async bulkDelete() {
+		bulkDelete() {
 			if (this.selectedItems.length === 0) return
 
-			if (!confirm(this.t('openregister', 'Are you sure you want to permanently delete the selected items? This action cannot be undone.'))) {
-				return
-			}
+			// Get selected objects data
+			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
 
-			try {
-				await deletedStore.permanentlyDeleteMultiple(this.selectedItems)
-				this.selectedItems = []
-				// Refresh the list
-				await this.loadItems()
-			} catch (error) {
-				console.error('Error deleting items:', error)
-			}
+			// Set transfer data and open dialog
+			navigationStore.setTransferData(selectedObjects)
+			navigationStore.setDialog('permanentlyDeleteMultiple')
 		},
 		/**
 		 * Restore individual item
@@ -447,22 +458,46 @@ export default {
 			}
 		},
 		/**
-		 * Permanently delete individual item
+		 * Permanently delete individual item using dialog
 		 * @param {object} item - Item to delete
+		 * @return {void}
+		 */
+		permanentlyDelete(item) {
+			// Set transfer data and open dialog
+			navigationStore.setTransferData(item)
+			navigationStore.setDialog('permanentlyDeleteObject')
+		},
+		/**
+		 * Handle single object deletion event
+		 * @param {string} objectId - ID of deleted object
 		 * @return {Promise<void>}
 		 */
-		async permanentlyDelete(item) {
-			if (!confirm(this.t('openregister', 'Are you sure you want to permanently delete "{title}"? This action cannot be undone.', { title: this.getItemTitle(item) }))) {
-				return
+		async handleObjectDeleted(objectId) {
+			// Remove from selection if it was selected
+			const index = this.selectedItems.indexOf(objectId)
+			if (index > -1) {
+				this.selectedItems.splice(index, 1)
 			}
 
-			try {
-				await deletedStore.permanentlyDelete(item.id)
-				// Refresh the list
-				await this.loadItems()
-			} catch (error) {
-				console.error('Error permanently deleting item:', error)
-			}
+			// Refresh the list
+			await this.loadItems()
+		},
+		/**
+		 * Handle multiple objects deletion event
+		 * @param {Array<string>} objectIds - IDs of deleted objects
+		 * @return {Promise<void>}
+		 */
+		async handleObjectsDeleted(objectIds) {
+			// Remove from selection if they were selected
+			objectIds.forEach(id => {
+				const index = this.selectedItems.indexOf(id)
+				if (index > -1) {
+					this.selectedItems.splice(index, 1)
+				}
+			})
+
+			// Refresh the list
+			await this.loadItems()
 		},
 		/**
 		 * Export filtered items with specified options
@@ -514,7 +549,7 @@ export default {
 			const day = String(date.getDate()).padStart(2, '0')
 			const hours = String(date.getHours()).padStart(2, '0')
 			const minutes = String(date.getMinutes()).padStart(2, '0')
-			
+
 			return `${year}:${month}:${day} ${hours}:${minutes}`
 		},
 	},

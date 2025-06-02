@@ -43,7 +43,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 						</thead>
 						<tbody>
 							<tr v-for="(change, field) in changes" :key="field" class="change-row">
-								<td class="field-name">{{ field }}</td>
+								<td class="field-name">
+									{{ field }}
+								</td>
 								<td class="old-value">
 									<pre v-if="isObject(change.old)">{{ formatValue(change.old) }}</pre>
 									<span v-else>{{ formatValue(change.old) }}</span>
@@ -71,7 +73,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 			<!-- No changes message -->
 			<div v-else class="no-changes">
-				<NcEmptyContent 
+				<NcEmptyContent
 					:name="t('openregister', 'No changes recorded')"
 					:description="t('openregister', 'This audit trail entry does not contain any change information.')">
 					<template #icon>
@@ -142,15 +144,15 @@ export default {
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
 			if (!changed) return false
-			
+
 			if (Array.isArray(changed)) {
 				return changed.length > 0
 			}
-			
+
 			if (typeof changed === 'object') {
 				return Object.keys(changed).length > 0
 			}
-			
+
 			return !!changed
 		},
 
@@ -165,10 +167,10 @@ export default {
 			// Try to process as table-style changes
 			if (typeof changed === 'object' && !Array.isArray(changed)) {
 				// Check if it's in the format { field: { old: value, new: value } }
-				const hasStandardFormat = Object.values(changed).every(value => 
-					typeof value === 'object' && 
-					value !== null && 
-					(value.hasOwnProperty('old') || value.hasOwnProperty('new'))
+				const hasStandardFormat = Object.values(changed).every(value =>
+					typeof value === 'object'
+					&& value !== null
+					&& (value.hasOwnProperty('old') || value.hasOwnProperty('new')),
 				)
 
 				if (hasStandardFormat) {
@@ -217,7 +219,7 @@ export default {
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
-			
+
 			try {
 				if (typeof changes === 'string') {
 					// Try to parse if it's a JSON string
@@ -228,7 +230,7 @@ export default {
 						return changes
 					}
 				}
-				
+
 				return JSON.stringify(changes, null, 2)
 			} catch (error) {
 				return String(changes)
@@ -244,7 +246,7 @@ export default {
 			if (value === null) return 'null'
 			if (value === undefined) return 'undefined'
 			if (value === '') return '(empty)'
-			
+
 			if (typeof value === 'object') {
 				try {
 					return JSON.stringify(value, null, 2)
@@ -252,7 +254,7 @@ export default {
 					return String(value)
 				}
 			}
-			
+
 			return String(value)
 		},
 
@@ -291,14 +293,14 @@ export default {
 		getChangeTypeLabel(change) {
 			const type = this.getChangeType(change)
 			switch (type) {
-				case 'added':
-					return this.t('openregister', 'Added')
-				case 'removed':
-					return this.t('openregister', 'Removed')
-				case 'modified':
-					return this.t('openregister', 'Modified')
-				default:
-					return this.t('openregister', 'Unchanged')
+			case 'added':
+				return this.t('openregister', 'Added')
+			case 'removed':
+				return this.t('openregister', 'Removed')
+			case 'modified':
+				return this.t('openregister', 'Modified')
+			default:
+				return this.t('openregister', 'Unchanged')
 			}
 		},
 
@@ -501,4 +503,4 @@ export default {
 .no-changes {
 	padding: 40px 20px;
 }
-</style> 
+</style>
