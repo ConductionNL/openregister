@@ -987,13 +987,19 @@ class FileService
     /**
      * Overwrites an existing file in NextCloud.
      *
+     * This method updates the content and/or tags of an existing file. When updating tags,
+     * it preserves any existing 'object:' tags while replacing other user-defined tags.
+     *
      * @param string $filePath The path (from root) where to save the file, including filename and extension
      * @param mixed  $content  Optional content of the file. If null, only metadata like tags will be updated
-     * @param array  $tags     Optional array of tags to attach to the file
+     * @param array  $tags     Optional array of tags to attach to the file (excluding object tags which are preserved)
      *
      * @throws Exception If the file doesn't exist or if file operations fail
      *
      * @return File The updated file
+     *
+     * @phpstan-param array<int, string> $tags
+     * @psalm-param array<int, string> $tags
      */
     public function updateFile(string $filePath, mixed $content=null, array $tags=[]): File
     {
@@ -1003,7 +1009,7 @@ class FileService
         try {
             $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
-            // Check if file exists and delete it if it does.
+            // Check if file exists and update it if it does.
             try {
                 try {
                     $file = $userFolder->get(path: $filePath);
@@ -1018,7 +1024,16 @@ class FileService
                         }
                     }
 
-                    $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+                    // Get existing object tags to preserve them
+                    $existingTags = $this->getFileTags(fileId: $file->getId());
+                    $objectTags = array_filter($existingTags, static function (string $tag): bool {
+                        return str_starts_with($tag, 'object:');
+                    });
+
+                    // Combine object tags with new tags, avoiding duplicates
+                    $allTags = array_unique(array_merge($objectTags, $tags));
+
+                    $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
 
                     return $file;
                 } catch (NotFoundException $e) {
@@ -1144,7 +1159,30 @@ class FileService
     }//end attachTagsToFile()
 
     /**
+     * Generate the object tag for a given ObjectEntity.
+     *
+     * This method creates a standardized object tag that links a file to its parent object.
+     * The tag format is 'object:' followed by the object's UUID or ID.
+     *
+     * @param ObjectEntity $objectEntity The object entity to generate the tag for
+     *
+     * @return string The object tag in format 'object:uuid' or 'object:id'
+     *
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function generateObjectTag(ObjectEntity $objectEntity): string
+    {
+        // Use UUID if available, otherwise fall back to the numeric ID
+        $identifier = $objectEntity->getUuid() ?? (string) $objectEntity->getId();
+        return 'object:' . $identifier;
+    }//end generateObjectTag()
+
+    /**
      * Adds a new file to an object's folder with the OpenCatalogi user as owner.
+     *
+     * This method automatically adds an 'object:' tag containing the object's UUID
+     * in addition to any user-provided tags.
      *
      * @param ObjectEntity $objectEntity The object entity to add the file to
      * @param string       $fileName     The name of the file to create
@@ -1193,9 +1231,13 @@ class FileService
                 $this->createShareLink(path: $file->getPath());
             }
 
-            // Add tags to the file if provided
-            if (empty($tags) === false) {
-                $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+            // Automatically add object tag with the object's UUID
+            $objectTag = $this->generateObjectTag($objectEntity);
+            $allTags = array_merge([$objectTag], $tags);
+
+            // Add tags to the file (including the automatic object tag)
+            if (empty($allTags) === false) {
+                $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
             }
 
 			//@TODO: This sets the file array of an object, but we should check why this array is not added elsewhere
@@ -1218,6 +1260,73 @@ class FileService
             throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
         }
     }//end addFile()
+
+    /**
+     * Save a file to an object's folder (create new or update existing).
+     *
+     * This method provides a generic save functionality that checks if a file already exists
+     * for the given object. If it exists, the file will be updated; if not, a new file will
+     * be created. This is particularly useful for synchronization scenarios where you want
+     * to "upsert" files.
+     *
+     * @param ObjectEntity $objectEntity The object entity to save the file to
+     * @param string       $fileName     The name of the file to save
+     * @param string       $content      The content to write to the file
+     * @param bool         $share        Whether to create a share link for the file (only for new files)
+     * @param array        $tags         Optional array of tags to attach to the file
+     *
+     * @throws NotPermittedException If file operations fail due to permissions
+     * @throws Exception If file operations fail for other reasons
+     *
+     * @return File The saved file
+     *
+     * @phpstan-param array<int, string> $tags
+     * @psalm-param array<int, string> $tags
+     */
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+    {
+        try {
+            // Check if the file already exists for this object
+            $existingFile = $this->getFile(
+                object: $objectEntity,
+                filePath: $fileName
+            );
+
+            if ($existingFile !== null) {
+                // File exists, update it
+                $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
+
+                // Get the full path for the updateFile method
+                $fullPath = $this->getObjectFilePath($objectEntity, $fileName);
+
+                // Update the existing file
+                return $this->updateFile(
+                    filePath: $fullPath,
+                    content: $content,
+                    tags: $tags
+                );
+            } else {
+                // File doesn't exist, create it
+                $this->logger->info("File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
+
+                return $this->addFile(
+                    objectEntity: $objectEntity,
+                    fileName: $fileName,
+                    content: $content,
+                    share: $share,
+                    tags: $tags
+                );
+            }
+        } catch (NotPermittedException $e) {
+            // Log permission error and rethrow exception
+            $this->logger->error("Permission denied saving file $fileName: ".$e->getMessage());
+            throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
+        } catch (\Exception $e) {
+            // Log general error and rethrow exception
+            $this->logger->error("Failed to save file $fileName: ".$e->getMessage());
+            throw new \Exception("Failed to save file $fileName: ".$e->getMessage());
+        }
+    }//end saveFile()
 
     /**
      * Retrieves all available tags in the system.
@@ -1414,6 +1523,62 @@ class FileService
 
         return $file;
     }
+
+    /**
+     * Find all files tagged with a specific object identifier.
+     *
+     * This method searches for files that have been tagged with the 'object:' prefix
+     * followed by the specified object identifier (UUID or ID).
+     *
+     * @param string $objectIdentifier The object UUID or ID to search for
+     *
+     * @return array Array of file nodes that belong to the specified object
+     *
+     * @throws \Exception If there's an error during the search
+     *
+     * @psalm-return array<int, Node>
+     * @phpstan-return array<int, Node>
+     */
+    public function findFilesByObjectId(string $objectIdentifier): array
+    {
+        try {
+            // Create the object tag we're looking for
+            $objectTag = 'object:' . $objectIdentifier;
+
+            // Get the tag object
+            $tag = $this->systemTagManager->getTag(tagName: $objectTag, userVisible: true, userAssignable: true);
+
+            // Get all file IDs that have this tag
+            $fileIds = $this->systemTagMapper->getObjectIdsForTags(
+                tagIds: [$tag->getId()],
+                objectType: self::FILE_TAG_TYPE
+            );
+
+            $files = [];
+            if (empty($fileIds) === false) {
+                // Get the user folder to resolve file paths
+                $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+                // Convert file IDs to actual file nodes
+                foreach ($fileIds as $fileId) {
+                    try {
+                        $file = $userFolder->getById($fileId);
+                        if (!empty($file)) {
+                            $files = array_merge($files, $file);
+                        }
+                    } catch (NotFoundException) {
+                        // File might have been deleted, skip it
+                        continue;
+                    }
+                }
+            }
+
+            return $files;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to find files by object ID: ' . $e->getMessage());
+            throw new \Exception('Failed to find files by object ID: ' . $e->getMessage());
+        }
+    }//end findFilesByObjectId()
 
 }//end class
 
