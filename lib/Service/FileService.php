@@ -639,6 +639,8 @@ class FileService
      * @return mixed The return value from the callable
      *
      * @throws Exception If user switching fails or the callable throws
+     * 
+     * @todo Optimaly speaking, we should not need to use this method at all. So its here for a "now" solution. but should be removed for other solutions in the future.
      *
      * @psalm-template T
      * @psalm-param callable(): T $operation
