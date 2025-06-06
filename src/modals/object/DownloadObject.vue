@@ -1,3 +1,7 @@
+<script setup>
+import { objectStore, navigationStore } from '../../store/store.js'
+</script>
+
 <template>
 	<NcDialog v-if="navigationStore.modal === 'downloadObject'"
 		name="Download Object"
@@ -37,7 +41,6 @@
 </template>
 
 <script>
-import { objectStore, navigationStore } from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 import {
 	NcDialog,
