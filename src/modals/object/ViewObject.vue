@@ -126,7 +126,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												class="form-field">
 												<div v-if="value.type === 'string'" class="field-label-row">
 													<NcTextField
-														v-model="formData[key]"
+														v-model="formData[key] "
 														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
 														:placeholder="key"
 														:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
@@ -668,6 +668,17 @@ export default {
 			deep: true,
 			immediate: true,
 			handler(obj) {
+				// Only update JSON if we're not in JSON editor tab to avoid circular updates
+				if (this.editorTab === 0) {
+					// Create a clean copy of the form data
+					const draft = JSON.stringify(obj, null, 2)
+					// Only update if the content is different to avoid infinite loops
+					if (this.jsonData !== draft) {
+						this.jsonData = draft
+					}
+				}
+
+				// Update object editors for complex fields
 				for (const k in obj) {
 					if (typeof obj[k] === 'object' && obj[k] !== null) {
 						this.objectEditors[k] = JSON.stringify(obj[k], null, 2)
