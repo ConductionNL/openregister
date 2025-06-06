@@ -106,14 +106,15 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 		</NcAppSidebarTab>
 
 		<template #secondary-actions>
-			<NcActionButton :disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+			<NcActionButton close-after-click
+				:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
 				@click="openAddObjectModal">
 				<template #icon>
 					<Plus :size="20" />
 				</template>
 				Add
 			</NcActionButton>
-			<NcActionButton
+			<NcActionButton close-after-click
 				:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
 				@click="refreshObjects">
 				<template #icon>
@@ -121,39 +122,41 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</template>
 				Refresh
 			</NcActionButton>
-			<NcActionButton :disabled="!objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
+			<NcActionButton close-after-click :disabled="!objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
 				<template #icon>
 					<Delete :size="20" />
 				</template>
 				Delete {{ objectStore.selectedObjects?.length }} {{ objectStore.selectedObjects?.length > 1 ? 'objects' : 'object' }}
 			</NcActionButton>
-			<NcActionButton :disabled="!registerStore.registerItem"
+			<NcActionButton close-after-click
+				:disabled="!registerStore.registerItem"
 				@click="openEditRegisterModal">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Register
 			</NcActionButton>
-			<NcActionButton :disabled="!schemaStore.schemaItem"
+			<NcActionButton close-after-click
+				:disabled="!schemaStore.schemaItem"
 				@click="openEditSchemaModal">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Schema
 			</NcActionButton>
-			<NcActionButton disabled>
+			<NcActionButton close-after-click disabled>
 				<template #icon>
 					<Upload :size="20" />
 				</template>
 				Upload
 			</NcActionButton>
-			<NcActionButton disabled>
+			<NcActionButton close-after-click disabled>
 				<template #icon>
 					<Download :size="20" />
 				</template>
 				Download
 			</NcActionButton>
-			<NcActionButton disabled>
+			<NcActionButton close-after-click disabled>
 				<template #icon>
 					<FileMoveOutline :size="20" />
 				</template>

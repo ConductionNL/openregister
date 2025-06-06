@@ -470,14 +470,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="loading" :size="20" appearance="dark" />
 					</span>
 				</template>
-				<NcActionButton :disabled="!filesHasPublished" @click="selectAllAttachments('published')">
+				<NcActionButton close-after-click :disabled="!filesHasPublished" @click="selectAllAttachments('published')">
 					<template #icon>
 						<SelectAllIcon v-if="!allPublishedSelected" :size="20" />
 						<SelectRemove v-else :size="20" />
 					</template>
 					{{ !allPublishedSelected ? "Selecteer" : "Deselecteer" }} alle gepubliceerde bijlagen
 				</NcActionButton>
-				<NcActionButton :disabled="!filesHasUnpublished" @click="selectAllAttachments('unpublished')">
+				<NcActionButton close-after-click :disabled="!filesHasUnpublished" @click="selectAllAttachments('unpublished')">
 					<template #icon>
 						<SelectAllIcon v-if="!allUnpublishedSelected" :size="20" />
 						<SelectRemove v-else :size="20" />
