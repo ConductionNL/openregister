@@ -226,11 +226,11 @@ class SaveObject
 			throw new Exception('Data is not an array of objects');
 		}
 
-		if (isset($property['$ref']) === false) {
+		if (isset($property['$ref']) === true) {
 			$property['items']['$ref'] = $property['$ref'];
 		}
 
-		if (isset($property['inversedBy']) === false) {
+		if (isset($property['inversedBy']) === true) {
 			$property['items']['inversedBy'] = $property['inversedBy'];
 		}
 
