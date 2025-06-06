@@ -1,18 +1,18 @@
 <script setup>
-import { navigationStore, schemaStore } from '../../store/store.js'
+import { navigationStore, schemaStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
-		name="Delete Schema Property"
+		name="Verwijder Schema-eigenschap"
 		:can-close="false">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
-				<p>Schema property successfully deleted</p>
+				<p>Schema-eigenschap succesvol verwijderd</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>An error occurred while deleting the schema property</p>
+				<p>Er is een fout opgetreden bij het verwijderen van de schema-eigenschap</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -20,27 +20,29 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</div>
 
 		<p v-if="success === null">
-			Are you sure you want to permanently delete <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b>? This action cannot be undone.
+			Weet u zeker dat u <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
-
+		<NcNoteCard v-if="!canDelete" type="warning">
+			<p>Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken.</p>
+		</NcNoteCard>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{ success !== null ? 'Sluiten' : 'Annuleren' }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
-				:disabled="loading"
+				:disabled="loading || !canDelete"
 				icon="Delete"
 				type="error"
-				@click="DeleteProperty()">
+				@click="deleteProperty()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				Delete
+				Verwijder
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -69,17 +71,55 @@ export default {
 			success: null,
 			error: false,
 			closeModalTimeout: null,
+			objects: [],
+			isUpdated: false,
+		}
+	},
+	computed: {
+		canDelete() {
+			return this.objects.length === 0
+		},
+	},
+	updated() {
+		if (!this.isUpdated && navigationStore.modal === 'deleteSchemaProperty') {
+			this.isUpdated = true
+			this.initDialog()
 		}
 	},
 	methods: {
+		async initDialog() {
+			await registerStore.refreshRegisterList()
+			if (registerStore.registerList.length === 0) {
+				return
+			}
+
+			for (const reg of registerStore.registerList) {
+				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+					await objectStore.refreshObjectList({
+						register: reg.id,
+						schema: schemaStore.schemaItem.id,
+						search: '',
+					})
+					if (objectStore.objectList?.results?.length) {
+						for (const obj of objectStore.objectList.results) {
+							if (obj[schemaStore.schemaPropertyKey]) {
+								this.objects.push(obj)
+							}
+						}
+					}
+				}
+			}
+		},
 		closeModal() {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
 			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.error = false
+			this.objects = []
+			this.isUpdated = false
 		},
-		DeleteProperty() {
+		deleteProperty() {
 			this.loading = true
 
 			const schemaItemClone = { ...schemaStore.schemaItem }
@@ -88,6 +128,9 @@ export default {
 
 			const newSchemaItem = {
 				...schemaItemClone,
+				required: schemaItemClone.required.filter(
+					requiredProp => requiredProp !== schemaStore.schemaPropertyKey,
+				),
 			}
 
 			schemaStore.saveSchema(newSchemaItem)
@@ -95,7 +138,6 @@ export default {
 					this.loading = false
 					this.success = response.ok
 
-					// Wait for the user to read the feedback then close the modal
 					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				})
 				.catch((err) => {

@@ -97,16 +97,22 @@ export const useObjectStore = defineStore('object', {
 				description: 'Attached files count',
 				enabled: true, // Enabled by default
 			},
-			relations: {
-				label: 'Relations',
-				key: 'relations',
-				description: 'Related objects count',
-				enabled: false,
-			},
 			locked: {
 				label: 'Locked',
 				key: 'locked',
 				description: 'Lock status of the object',
+				enabled: false,
+			},
+			organization: {
+				label: 'Organization',
+				key: 'organization',
+				description: 'Organization that created the object',
+				enabled: false,
+			},
+			validation: {
+				label: 'Validation',
+				key: 'validation',
+				description: 'Validation status of the object',
 				enabled: false,
 			},
 			owner: {
@@ -125,6 +131,42 @@ export const useObjectStore = defineStore('object', {
 				label: 'Folder',
 				key: 'folder',
 				description: 'Storage folder location',
+				enabled: false,
+			},
+			geo: {
+				label: 'Geo',
+				key: 'geo',
+				description: 'Geographical location of the object',
+				enabled: false,
+			},
+			retention: {
+				label: 'Retention',
+				key: 'retention',
+				description: 'Retention status of the object',
+				enabled: false,
+			},
+			size: {
+				label: 'Size',
+				key: 'size',
+				description: 'Size of the object',
+				enabled: false,
+			},
+			published: {
+				label: 'Published',
+				key: 'published',
+				description: 'Published status of the object',
+				enabled: false,
+			},
+			depublished: {
+				label: 'Depublished',
+				key: 'depublished',
+				description: 'Depublished status of the object',
+				enabled: false,
+			},
+			deleted: {
+				label: 'Deleted',
+				key: 'deleted',
+				description: 'Deleted status of the object',
 				enabled: false,
 			},
 			created: {
@@ -149,7 +191,13 @@ export const useObjectStore = defineStore('object', {
 		_buildObjectPath({ register, schema, objectId = '' }) {
 			return `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 		},
-		async setObjectItem(objectItem) {
+		/**
+		 * Set the active object item, optionally skipping backend refresh to avoid infinite loops.
+		 * @param {object} objectItem - The object item to set
+		 * @param {boolean} skipRefresh - If true, do not fetch from backend (prevents recursion)
+		 */
+		async setObjectItem(objectItem, skipRefresh = false) {
+
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
 			console.info('Active object item set to ' + objectItem?.['@self']?.id)
 
@@ -171,13 +219,26 @@ export const useObjectStore = defineStore('object', {
 					])
 
 					console.info('Successfully fetched all related data for object', objectItem['@self'].id)
+
+					// define register, schema, and objectId before using them
+					const register = objectItem['@self'].register
+					const schema = objectItem['@self'].schema
+					const objectId = objectItem['@self'].id
+
+					// Fore a reload for view logging
+					if (!skipRefresh) {
+						await this.getObject({ register, schema, objectId })
+
+						console.info('Successfully fetched latest object data for object', objectItem['@self'].id)
+					}
+
 				} catch (error) {
 					console.error('Error fetching related data:', error)
 					// Clear data in case of error
 					this.clearRelatedData()
 				}
-			} else {
-				// Clear related data when no object is selected
+			} else if (objectItem === false) {
+				// Clear related data when object item is explicitly set to null
 				this.clearRelatedData()
 			}
 		},
@@ -189,7 +250,7 @@ export const useObjectStore = defineStore('object', {
 				),
 			}
 
-			console.info('Object list set to ' + objectList.length + ' items')
+			console.info('Object list set to ' + objectList.results.length + ' items')
 		},
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
@@ -312,9 +373,7 @@ export const useObjectStore = defineStore('object', {
 			try {
 				const response = await fetch(endpoint)
 				const data = await response.json()
-				this.setObjectItem(data)
-				this.getAuditTrails({ register, schema, objectId })
-				this.getRelations({ register, schema, objectId })
+				this.setObjectItem(data, true) // Prevent recursion by skipping refresh
 				return data
 			} catch (err) {
 				console.error(err)
@@ -348,6 +407,37 @@ export const useObjectStore = defineStore('object', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Delete a single object
+		 *
+		 * @param {string|number} objectId The ID of the object to delete
+		 * @param {object} options Optional parameters
+		 * @return {Promise} Promise that resolves when the object is deleted
+		 */
+		async deleteObject(objectId, options = {}) {
+			if (!objectId) throw new Error('No object id to delete')
+
+			// Resolve register / schema the same way refreshObjectList does
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+			if (!register || !schema) throw new Error('Register and schema are required')
+
+			const endpoint = this._buildObjectPath({ register, schema, objectId })
+
+			try {
+				const response = await fetch(endpoint, { method: 'DELETE' })
+				if (!response.ok) {
+					throw new Error(`Failed to delete object: ${response.statusText}`)
+				}
+				await this.refreshObjectList({ register, schema })
+				return { response }
+			} catch (error) {
+				console.error('Error deleting object:', error)
 				throw error
 			}
 		},
@@ -423,27 +513,6 @@ export const useObjectStore = defineStore('object', {
 				})
 				throw error
 			}
-		},
-		// RELATIONS
-		async getRelations(object, options = {}) {
-			if (!object?.id) throw new Error('No object id to get relations for')
-
-			let endpoint = this._buildObjectPath({
-				register: object.register,
-				schema: object.schema,
-				objectId: `${object.id}/relations`,
-			})
-
-			const params = []
-			if (options.search) params.push('_search=' + options.search)
-			if (options.limit) params.push('_limit=' + options.limit)
-			if (options.page) params.push('_page=' + options.page)
-			if (params.length) endpoint += '?' + params.join('&')
-
-			const response = await fetch(endpoint)
-			const data = (await response.json()).map(r => new ObjectEntity(r))
-			this.setRelations(data)
-			return { response, data }
 		},
 		// FILES
 		/**
@@ -832,6 +901,68 @@ export const useObjectStore = defineStore('object', {
 					limit: 20,
 					offset: 0,
 				})
+				throw error
+			}
+		},
+		/**
+		 * Upload files to an object using the multipart endpoint
+		 * @param {object} params - Upload parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {File[]} params.files - Array of File objects
+		 * @param {string[]} [params.labels] - Optional labels/tags
+		 * @param {boolean} [params.share] - Optional share flag
+		 * @return {Promise} API response
+		 */
+		async uploadFiles({ register, schema, objectId, files, labels = [], share = false }) {
+			if (!register || !schema || !objectId || !files?.length) {
+				throw new Error('Missing required parameters for file upload')
+			}
+
+			// Use the /filesMultipart endpoint for proper backend handling
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/filesMultipart`
+			const formData = new FormData()
+
+			// Append files
+			files.forEach((file, idx) => {
+				formData.append('files', file)
+			})
+			// Append labels/tags if present
+			if (labels && labels.length) {
+				formData.append('tags', labels.join(','))
+			}
+			// Append share flag
+			formData.append('share', share ? 'true' : 'false')
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					body: formData,
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to upload files: ${response.statusText}`)
+				}
+				return await response.json()
+			} catch (error) {
+				console.error('Error uploading files:', error)
+				throw error
+			}
+		},
+		/**
+		 * Fetch all tags from the backend
+		 * @return {Promise<{response: Response, data: Array}>} List of tags
+		 */
+		async getTags() {
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/tags')
+				if (!response.ok) {
+					throw new Error('Failed to fetch tags')
+				}
+				const data = await response.json()
+				return { response, data }
+			} catch (error) {
+				console.error('Error fetching tags:', error)
 				throw error
 			}
 		},

@@ -30,12 +30,14 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\File;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
@@ -73,7 +75,8 @@ class ValidateObject
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
-        private readonly IAppConfig $config
+        private readonly IAppConfig $config,
+        private readonly SchemaMapper $schemaMapper,
     ) {
 
     }//end __construct()
@@ -95,7 +98,9 @@ class ValidateObject
         object $schemaObject=new stdClass(),
         int $depth=0
     ): ValidationResult {
-        if ($schemaObject === new stdClass()) {
+
+        // Use == because === will never be true when comparing stdClass-instances
+        if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             } else if (is_int($schema) === true) {
@@ -103,11 +108,26 @@ class ValidateObject
             }
         }
 
+        // If schemaObject reuired is empty unset it.
+        if (isset($schemaObject->required) === true && empty($schemaObject->required) === true) {
+            unset($schemaObject->required);
+        }
+
         // If there are no properties, we don't need to validate.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Return a ValidationResult with null data indicating success.
             return new ValidationResult(null, null);
         }
+
+        // @todo This should be done earlier
+        unset($object['extend'], $object['filters']);
+
+        // Remove empty properties and empty arrays from the object.
+        $object = array_filter($object, function ($value) {
+            // Check if the value is not an empty array or an empty property.
+            // @todo we are filtering out arrays here, but we should not. This should be fixed in the validator.
+            return !(is_array($value) && empty($value)) && $value !== null && $value !== '' && is_array($value) === false;
+        });
 
         $validator = new Validator();
         $validator->setMaxErrors(100);
@@ -206,13 +226,14 @@ class ValidateObject
         $errors = [];
         if ($exception instanceof ValidationException) {
             $errors[] = [
-                'property' => $exception->getProperty(),
+                'property' => method_exists($exception, 'getProperty') ? $exception->getProperty() : null,
                 'message'  => $exception->getMessage(),
+                'errors' => (new ErrorFormatter())->format($exception->getErrors()),
             ];
         } else {
             foreach ($exception->getErrors() as $error) {
                 $errors[] = [
-                    'property' => $error['property'],
+                    'property' => isset($error['property']) ? $error['property'] : null,
                     'message'  => $error['message'],
                 ];
             }

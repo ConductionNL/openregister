@@ -1,22 +1,30 @@
 export type TObject = {
     '@self': {
         id: string
+        uuid: string
         uri: string
+        version: string | null
         register: string
         schema: string
-        relations: string
-        files: string
-        folder: string
+        schemaVersion: string | null
+        relations: string | Array<unknown> | null
+        files: string | Array<unknown> | null
+        folder: string | null
+        textRepresentation: string | null
+        locked: Array<unknown> | null
+        owner: string | null
+        authorization: Array<unknown> | null
+        application: string | null
+        organisation: string | null
+        validation: Array<unknown> | null
+        deleted: Array<unknown> | null
+        geo: Array<unknown> | null
+        retention: Array<unknown> | null
+        size: string | null
         updated: string
         created: string
-        locked: string[] | null
-        owner: string | null
-        organisation: string | null
-        application: string | null
-        version: string | null
-        deleted: string[] | null
-        geo: string[] | null
-        retention: string[] | null
+        published: string | null
+        depublished: string | null
     }
     [key: string]: unknown // Allow for additional properties
 }

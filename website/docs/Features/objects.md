@@ -442,3 +442,28 @@ The system only logs read actions when accessing individual objects (e.g., GET /
    - Focus on logging deliberate access to specific objects
    
 <ApiSchema id="open-register" example   pointer="#/components/schemas/AuditTrail" />
+
+## Delete Protection for Registers and Schemas
+
+Open Register now prevents the deletion of a register or schema if there are still objects attached to it. This ensures data integrity and prevents accidental loss of related data.
+
+### How it Works
+- When you attempt to delete a register or schema, the system checks for any objects that are still linked to it.
+- If any objects are found, the delete operation is blocked and an error is returned.
+- The error message will be:
+  - For registers: 'Cannot delete register: objects are still attached.'
+  - For schemas: 'Cannot delete schema: objects are still attached.'
+
+### How to Resolve
+- To delete a register or schema, first ensure that all objects associated with it are deleted or moved to another register or schema.
+- After all objects are removed, you can proceed with the deletion.
+
+This protection applies to all delete operations via the API and the user interface.
+
+## Delete Action Disabled in UI
+
+When viewing registers or schemas in the application, the Delete action in the action menu will be disabled if there are any objects still attached to that register or schema. When disabled, hovering over the Delete button will show a tooltip: 'Cannot delete: objects are still attached'.
+
+This provides a clear and immediate explanation to users and prevents accidental attempts to delete items that cannot be removed due to attached objects.
+
+This UI behavior complements the backend protection described above, ensuring both user experience and data integrity.

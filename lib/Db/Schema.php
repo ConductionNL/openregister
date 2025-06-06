@@ -281,11 +281,12 @@ class Schema extends Entity implements JsonSerializable
      * @param SchemaPropertyValidatorService $validator The schema property validator
      *
      * @throws Exception If the properties are invalid
+     *
      * @return bool True if the properties are valid
      */
     public function validateProperties(SchemaPropertyValidatorService $validator): bool
     {
-        // Check if properties are set and not empty
+        // Check if properties are set and not empty.
         if (empty($this->properties) === true) {
             return true;
         }
@@ -328,8 +329,8 @@ class Schema extends Entity implements JsonSerializable
             }
         }
 
-        // Validate properties if validator is provided
-        if ($validator !== null && isset($object['properties'])) {
+        // Validate properties if validator is provided.
+        if ($validator !== null && isset($object['properties']) === true) {
             $this->validateProperties($validator);
         }
 
@@ -426,8 +427,8 @@ class Schema extends Entity implements JsonSerializable
         $schema->version     = $this->version;
         $schema->type        = 'object';
         $schema->required    = $this->required;
-        $schema->$schema     = 'https://json-schema.org/draft/2020-12/schema';
-        $schema->$id         = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->{'$schema'}     = 'https://json-schema.org/draft/2020-12/schema';
+        $schema->{'$id'}         = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
         $schema->properties  = new stdClass();
 
         foreach ($this->properties as $propertyName => $property) {
@@ -446,25 +447,25 @@ class Schema extends Entity implements JsonSerializable
 
                         $nestedProp = new stdClass();
                         foreach ($subProperty as $key => $value) {
-                            $nestedProp->$key = $value;
+                            $nestedProp->{$key} = $value;
                         }
 
-                        $nestedProperties->$subName = $nestedProp;
+                        $nestedProperties->{$subName} = $nestedProp;
                     }
                 }
 
                 $nestedProperty->properties        = $nestedProperties;
-                $schema->properties->$propertyName = $nestedProperty;
+                $schema->properties->{$propertyName} = $nestedProperty;
             } else {
                 $prop = new stdClass();
                 foreach ($property as $key => $value) {
                     // Skip 'required' property on this level.
-                    if ($key !== 'required') {
-                        $prop->$key = $value;
+                    if ($key !== 'required' && empty($value) === false) {
+                        $prop->{$key} = $value;
                     }
                 }
 
-                $schema->properties->$propertyName = $prop;
+                $schema->properties->{$propertyName} = $prop;
             }//end if
         }//end foreach
 
@@ -476,7 +477,8 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the slug, ensuring it is always lowercase
      *
-     * @param  string|null $slug The slug to set
+     * @param string|null $slug The slug to set
+     *
      * @return void
      */
     public function setSlug(?string $slug): void
@@ -506,7 +508,8 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Set the icon for the schema
      *
-     * @param  string|null $icon The icon reference from Material Design Icons
+     * @param string|null $icon The icon reference from Material Design Icons
+     *
      * @return void
      */
     public function setIcon(?string $icon): void

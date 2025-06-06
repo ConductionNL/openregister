@@ -1,6 +1,6 @@
 <!-- eslint-disable -->
 <script setup>
-import { navigationStore, publicationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -76,7 +76,7 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 					</div>
 				</div>
 				<div v-if="labelOptions.value?.length && !loading"
-					ref="dropZoneRef"
+					ref="dropzone"
 					class="filesListDragDropNotice"
 					:class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
@@ -84,14 +84,14 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
 						</NcNoteCard>
 					</div>
-					<div v-if="checkForTooBigFiles(files)">
+					<div v-if="checkForTooBigFiles(filesComputed)">
 						<NcNoteCard type="warning">
 							<p class="folderLink">
 								Als je bestanden groter of gelijk aan 512MB wilt toevoegen, ga dan naar de
 								<NcButton type="secondary"
 									class="folderLinkButton"
 									aria-label="Open map"
-									@click="openFolder(publicationStore.publicationItem?.['@self']?.folder)">
+									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
 									<template #icon>
 										<FolderOutline :size="20" />
 									</template>
@@ -142,11 +142,11 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 						</div>
 					</div>
 				</div>
-				<div v-if="!files">
+				<div v-if="!filesComputed">
 					Geen bestanden geselecteerd
 				</div>
 
-				<table v-if="files" class="files-table">
+				<table v-if="filesComputed" class="files-table">
 					<thead>
 						<tr class="files-table-tr">
 							<th class="files-table-td-status" />
@@ -162,7 +162,7 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file of files" :key="file.name" class="files-table-tr">
+						<tr v-for="file of filesComputed" :key="file.name" class="files-table-tr">
 							<td>
 								<CheckCircle v-if="file.status === 'uploaded'" class="success" :size="20" />
 								<NcLoadingIcon v-if="file.status === 'uploading'" :size="20" />
@@ -256,12 +256,9 @@ import { navigationStore, publicationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { ref } from 'vue'
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
-
-import { ref } from 'vue'
-import { Attachment } from '../../entities/index.js'
-
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
 import TagEdit from 'vue-material-design-icons/TagEdit.vue'
@@ -273,11 +270,11 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
 
-const dropZoneRef = ref()
+const dropzone = ref(null)
 
 const { openFileUpload, files, reset, setTags } = useFileSelection({
 	allowMultiple: true,
-	dropzone: dropZoneRef,
+	dropzone,
 })
 
 export default {
@@ -288,13 +285,17 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
-	},
-	props: {
-		dropFiles: {
-			type: Array,
-			required: false,
-			default: null,
-		},
+		NcCheckboxRadioSwitch,
+		Plus,
+		TrayArrowDown,
+		TagEdit,
+		ContentSaveOutline,
+		FolderOutline,
+		CheckCircle,
+		AlphaXCircle,
+		Refresh,
+		Exclamation,
+		Minus,
 	},
 	data() {
 		return {
@@ -316,28 +317,26 @@ export default {
 		}
 	},
 	computed: {
-		// only used for watching
-		files() {
-			return files
+		objectItem() {
+			return objectStore.objectItem
 		},
-		inputValidation() {
-			const catalogiItem = new Attachment({
-				...publicationStore.attachmentItem,
-			})
-
-			const result = catalogiItem.validate()
-
-			return {
-				success: result.success,
-				errorMessages: result?.error?.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`) || [],
-				fieldErrors: result?.error?.formErrors?.fieldErrors || {},
-			}
+		registerId() {
+			return this.objectItem?.['@self']?.register
+		},
+		schemaId() {
+			return this.objectItem?.['@self']?.schema
+		},
+		objectId() {
+			return this.objectItem?.['@self']?.id
+		},
+		filesComputed() {
+			return files.value
 		},
 	},
 	watch: {
-		files: {
+		filesComputed: {
 			handler(newFiles, oldFiles) {
-				if (newFiles.value?.length) {
+				if (newFiles?.length) {
 					this.addAttachments()
 				}
 			},
@@ -351,7 +350,6 @@ export default {
 		},
 	},
 	mounted() {
-		publicationStore.setAttachmentItem([])
 		this.getAllTags()
 	},
 	methods: {
@@ -414,20 +412,22 @@ export default {
 
 		getAllTags() {
 			this.tagsLoading = true
-			publicationStore.getTags().then(({ response, data }) => {
-
-				const newLabelOptions = []
-				const newLabelOptionsEdit = []
-
-				newLabelOptions.push('Geen label')
+			objectStore.getTags().then(({ response, data }) => {
 
 				const tags = data.map((tag) => tag)
 
-				newLabelOptions.push(...tags)
-				newLabelOptionsEdit.push(...tags)
+				const newLabelOptions = new Set()
+				const newLabelOptionsEdit = new Set()
 
-				this.labelOptions.options = newLabelOptions
-				this.labelOptionsEdit.options = newLabelOptionsEdit
+				// add labels to set
+				newLabelOptions.add('Geen label')
+
+				tags.map(tag => newLabelOptions.add(tag))
+				tags.map(tag => newLabelOptionsEdit.add(tag))
+
+				// convert set to array
+				this.labelOptions.options = Array.from(newLabelOptions)
+				this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
 			}).finally(() => {
 				this.tagsLoading = false
 			})
@@ -468,11 +468,15 @@ export default {
 			}
 		},
 		checkIfDisabled() {
-			if (publicationStore.attachmentItem.downloadUrl || publicationStore.attachmentItem.title) return true
+			if (this.objectStore.objectItem.downloadUrl || this.objectStore.objectItem.title) return true
 			return false
 		},
 
 		async addAttachments(specificFile = null) {
+			if (!this.registerId || !this.schemaId || !this.objectId) {
+				this.error = 'Missing object context'
+				return
+			}
 			this.loading = true
 			this.error = null
 
@@ -484,7 +488,7 @@ export default {
 					filesToUpload = [specificFile]
 				} else {
 					// filter out successful and pending files
-					filesToUpload = this.files.value.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
+					filesToUpload = this.filesComputed.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
 
 					// filter out files too large
 					filesToUpload = filesToUpload.filter(file => !this.getTooBigFiles(file.size))
@@ -496,33 +500,41 @@ export default {
 				}
 
 				// file calls
-				const calls = filesToUpload.map(async (file) => {
-					// Set status to 'uploading'
+				const calls = await Promise.all(filesToUpload.map(async (file) => {
 					file.status = 'uploading'
+
 					try {
-						const response = await publicationStore.createPublicationAttachment([file], reset, this.share)
-						// Set status to 'uploaded' on success
-						if (response.status === 200) file.status = 'uploaded'
-						else file.status = 'failed'
+						const responseJson = await objectStore.uploadFiles({
+							register: this.registerId,
+							schema: this.schemaId,
+							objectId: this.objectId,
+							files: [file],
+							labels: this.labelOptions.value || [],
+							share: this.share,
+						})
 
-						return response
+						file.status = 'uploaded'
+
+						return [true, responseJson]
 					} catch (error) {
-						// Set status to 'failed' on error
 						file.status = 'failed'
-						throw error
+						return [false, error]
 					}
-				})
-
-				const results = await Promise.allSettled(calls)
+				}))
 
 				this.getAllTags()
 
-				publicationStore.getPublicationAttachments(publicationStore.publicationItem.id)
+				// Refresh files for the object
+				await objectStore.getFiles({
+					id: this.objectId,
+					register: this.registerId,
+					schema: this.schemaId,
+				})
 
-				const failed = results.filter(result => result.status === 'rejected')
+				const failed = calls.filter(result => result[0] === false)
 
 				if (failed.length > 0) {
-					this.error = failed[0].reason
+					this.error = failed[0][1].message
 				} else {
 					this.success = true
 				}

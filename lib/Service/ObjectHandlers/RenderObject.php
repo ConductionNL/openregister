@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -292,6 +293,7 @@ class RenderObject
         ?array $schemas=[],
         ?array $objects=[]
     ): ObjectEntity {
+
         // Add preloaded registers to the global cache.
         if (empty($registers) === false) {
             foreach ($registers as $id => $register) {
@@ -323,6 +325,10 @@ class RenderObject
 
         // Apply field filtering if specified.
         if (empty($fields) === false) {
+            $fields[] = '@self';
+            $fields[] = 'id';
+
+
             $filteredData = [];
             foreach ($fields as $field) {
                 if (isset($objectData[$field]) === true) {
@@ -363,83 +369,102 @@ class RenderObject
             $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields);
         }
 
-        $entity->setObject($objectData);
+		$entity->setObject($objectData);
 
-        return $entity;
+		return $entity;
 
     }//end renderEntity()
+
 
     /**
      * Handle extends containing a wildcard ($)
      *
      * @param array $objectData The data to extend
-     * @param array $extend The fields that should be extended
-     * @param int $depth The current depth.
+     * @param array $extend     The fields that should be extended
+     * @param int   $depth      The current depth.
+     *
      * @return array|Dot
      */
     private function handleWildcardExtends(array $objectData, array &$extend, int $depth): array
     {
         $objectData = new Dot($objectData);
-        if ($depth >=10) {
-            return $objectData;
+        if ($depth >= 10) {
+            return $objectData->all();
         }
 
-        $wildcardExtends = array_filter($extend, function (string $key) {
-            return str_contains($key, '.$.');
-        });
+        $wildcardExtends = array_filter(
+                $extend,
+                function (string $key) {
+                    return str_contains($key, '.$.');
+                }
+        );
 
-        foreach($wildcardExtends as $key => $wildcardExtend) {
+        $extendedRoots = [];
+
+        foreach ($wildcardExtends as $key => $wildcardExtend) {
             unset($extend[$key]);
 
             [$root, $extends] = explode(separator: '.$.', string: $wildcardExtend, limit: 2);
 
-            if(is_numeric($key) === true) {
+            if (is_numeric($key) === true) {
                 $extendedRoots[$root][] = $extends;
             } else {
-                [$root, $path] = explode(separator: '.$.',string: $key, limit: 2 );
+                [$root, $path] = explode(separator: '.$.', string: $key, limit: 2);
                 $extendedRoots[$root][$path] = $extends;
             }
-
         }
 
-        foreach($extendedRoots as $root => $extends) {
+        foreach ($extendedRoots as $root => $extends) {
             $data = $objectData->get($root);
-            foreach($data as $key => $datum) {
-                $data[$key] = $this->handleExtendDot($datum, $extends, $depth);
+            if (is_iterable($data) === false) {
+                continue;
+            }
+
+            foreach ($data as $key => $datum) {
+                $tmpExtends = $extends;
+                $data[$key] = $this->handleExtendDot($datum, $tmpExtends, $depth);
             }
 
             $objectData->set($root, $data);
         }
 
-        return $objectData->jsonSerialize();
-    }
+        return $objectData->all();
+
+    }//end handleWildcardExtends()
+
 
     /**
      * Handle extends on a dot array
      *
-     * @param array $data The data to extend.
+     * @param array $data   The data to extend.
      * @param array $extend The fields to extend.
-     * @param int $depth The current depth.
+     * @param int   $depth  The current depth.
+     *
      * @return array
-     * 
+     *
      * @throws \OCP\DB\Exception
      */
     private function handleExtendDot(array $data, array &$extend, int $depth): array
     {
-        $data = $this->handleWildcardExtends($data, $extend, $depth+1);
+        $data = $this->handleWildcardExtends($data, $extend, $depth + 1);
 
         $data = new Dot($data);
 
-        foreach($extend as $override => $key) {
-            // Skip if the key does not have to be extended
-            if($data->has(keys: $key) === false) {
+        foreach ($extend as $override => $key) {
+            // Skip if the key does not have to be extended.
+            if ($data->has(keys: $key) === false) {
                 continue;
             }
 
-            // Get all the keys that should be extended withtin the extended object
+            // Skip if the key starts with '@' (special fields)
+            if (str_starts_with($key, '@')) {
+                continue;
+            }
+
+            // Get all the keys that should be extended withtin the extended object.
             $keyExtends = array_map(
-                function(string $extendedKey) use ($key) {
-                    return substr(string: $extendedKey, offset: strlen(string: $key. '.'));
+                function (string $extendedKey) use ($key) {
+                    return substr(string: $extendedKey, offset: strlen(string: $key.'.'));
                 },
                 array_filter(
                     $extend,
@@ -451,34 +476,76 @@ class RenderObject
 
             $value = $data->get(key: $key);
 
-            // Make sure arrays are arrays
-            if($value instanceof Dot) {
+
+            // Make sure arrays are arrays.
+            if ($value instanceof Dot) {
                 $value = $value->jsonSerialize();
             }
 
-            // Extend the object(s)
+            // Skip if the value is null
+            if ($value === null) {
+                continue;
+            }
+
+            // Extend the object(s).
             if (is_array($value) === true) {
-                $renderedValue = array_map(function(string|int $identifier) use ($depth, $keyExtends) {
-                    $object = $this->getObject(id: $identifier);
-                    if ($object === null) {
-                        $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
-
-                        if (count($multiObject) === 1) {
-                            $object = array_shift($multiObject);
-                        } else {
-                            return null;
+                // Filter out null values and values starting with '@' before mapping
+                $value = array_filter(
+                        $value,
+                        function ($v) {
+                            return $v !== null && (is_string($v) === false || str_starts_with($v, '@') === false);
                         }
-                    }
-                    return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1);
-                }, $value);
+                        );
 
-                if(is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $renderedValue);
+                $renderedValue = array_map(
+                        function (string | int | array $identifier) use ($depth, $keyExtends) {
+
+                            $object = $this->getObject(id: $identifier);
+                            if ($object === null) {
+                                $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
+
+                                if (count($multiObject) === 1) {
+                                    $object = array_shift($multiObject);
+                                } else {
+                                    return null;
+                                }
+                            }
+
+                            return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize();
+                        },
+                        $value
+                        );
+
+                // Filter out any null values that might have been returned from the mapping
+                $renderedValue = array_filter(
+                        $renderedValue,
+                        function ($v) {
+                            return $v !== null;
+                        }
+                        );
+
+                if (is_numeric($override) === true) {
+                    $data->set(keys: $key, value: array_values($renderedValue));
+                    // Reset array keys
                 } else {
-                    $data->set(keys: $override, value: $renderedValue);
+                    $data->set(keys: $override, value: array_values($renderedValue));
+                    // Reset array keys
+                }
+            } else {
+                // Skip if the value starts with '@' or '_'
+                if (is_string($value) && (str_starts_with($value, '@') || str_starts_with($value, '_'))) {
+                    continue;
                 }
 
-            } else {
+
+				if(filter_var($value, FILTER_VALIDATE_URL) !== false) {
+					$path = parse_url($value, PHP_URL_PATH);
+					$pathExploded = explode('/', $path);
+
+					$value = end($pathExploded);
+				}
+
+
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {
@@ -490,17 +557,20 @@ class RenderObject
                         continue;
                     }
                 }
-                if(is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
-                } else {
-                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
-                }
-            }
 
-        }
+                if (is_numeric($override) === true) {
+                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize());
+                } else {
+                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize());
+                }
+
+            }//end if
+
+        }//end foreach
 
         return $data->jsonSerialize();
-    }
+
+    }//end handleExtendDot()
 
 
     /**
@@ -546,7 +616,6 @@ class RenderObject
 
         $objectDataDot = $this->handleExtendDot($objectData, $extend, $depth);
 
-
         return $objectDataDot;
 
     }//end extendObject()
@@ -567,7 +636,7 @@ class RenderObject
         $inversedProperties = array_filter(
                 $properties,
                 function ($property) {
-                    return isset($property['inversedBy']) && !empty($property['inversedBy']);
+                    return (isset($property['inversedBy']) && !empty($property['inversedBy'])) || (isset($property['items']['inversedBy']) && !empty($property['items']['inversedBy']));
                 }
                 );
 
@@ -616,8 +685,15 @@ class RenderObject
         // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
+
         // Set all found objects to the objectsCache.
-        $ids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $referencingObjects);
+        $ids            = array_map(
+                function (ObjectEntity $object) {
+                    return $object->getUuid();
+                },
+                $referencingObjects
+                );
+
         $objectsToCache = array_combine(keys: $ids, values: $referencingObjects);
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
@@ -625,31 +701,39 @@ class RenderObject
         foreach ($inversedProperties as $propertyName => $inversedBy) {
             $objectData[$propertyName] = [];
 
-            $inversedObjects = array_filter($referencingObjects, function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
-                $data = $object->jsonSerialize();
-                $schema = $object->getSchema();
+            $inversedObjects = array_values(array_filter(
+                    $referencingObjects,
+                    function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
+                        $data   = $object->jsonSerialize();
+                        $schema = $object->getSchema();
 
-                // @TODO: accomodate schema references.
-                if(isset($inversedBy['$ref']) === true) {
-                    $schemaId = substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1);
-                } else if (isset($inversedBy['items']['$ref']) === true) {
-                    $schemaId = substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1);
-                } else {
-                    return false;
-                }//end if
+                        // @TODO: accomodate schema references.
+                        if (isset($inversedBy['$ref']) === true) {
+                            $schemaId = str_contains(haystack: $inversedBy['$ref'], needle: '/') ? substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1) : $inversedBy['$ref'];
+                        } else if (isset($inversedBy['items']['$ref']) === true) {
+                            $schemaId = str_contains(haystack: $inversedBy['items']['$ref'], needle: '/') ? substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1) : $inversedBy['items']['$ref'];
+                        } else {
+                            return false;
+                        }//end if
 
-                return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
-            });
+						return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === (int) $object->getSchema();
+					}
+                    ));
 
-            $inversedUuids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $inversedObjects);
+            $inversedUuids = array_map(
+                    function (ObjectEntity $object) {
+                        return $object->getUuid();
+                    },
+                    $inversedObjects
+                    );
 
-            if($inversedBy['type'] === 'array') {
+            if ($inversedBy['type'] === 'array') {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
                 $objectData[$propertyName] = end($inversedUuids);
             }
-        }//end foreach
 
+        }//end foreach
 
         return $objectData;
 

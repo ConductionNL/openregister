@@ -1,31 +1,31 @@
 <script setup>
-import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
+import { navigationStore, objectStore, schemaStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
-	<div class="search-list">
-		<div class="search-list-table">
+	<div class="searchList">
+		<div class="searchListTable">
 			<VueDraggable v-model="objectStore.enabledColumns"
-				target=".sort-target"
+				target=".sortTarget"
 				animation="150"
-				draggable="> *:not(.static-column)">
+				draggable="> *:not(.staticColumn)">
 				<table class="table">
 					<thead>
 						<tr class="table-row sort-target">
 							<th class="static-column">
-								<input
+								<NcCheckboxRadioSwitch
 									:checked="objectStore.isAllSelected"
 									type="checkbox"
 									class="cursor-pointer"
-									@change="objectStore.toggleSelectAllObjects">
+									@update:checked="objectStore.toggleSelectAllObjects" />
 							</th>
 							<th v-for="column in objectStore.enabledColumns"
 								:key="column.id">
-								<span class="sticky-header column-title" :title="column.description">
+								<span class="stickyHeader columnTitle" :title="column.description">
 									{{ column.label }}
 								</span>
 							</th>
-							<th class="static-column column-title">
+							<th class="staticColumn columnTitle">
 								Actions
 							</th>
 						</tr>
@@ -35,11 +35,11 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 							:key="result['@self'].uuid"
 							class="table-row">
 							<td class="static-column">
-								<input
-									v-model="objectStore.selectedObjects"
-									:value="result['@self'].id"
+								<NcCheckboxRadioSwitch
+									:checked="objectStore.selectedObjects.includes(result['@self'].id)"
 									type="checkbox"
-									class="cursor-pointer">
+									class="cursor-pointer"
+									@update:checked="handleSelectObject(result['@self'].id)" />
 							</td>
 							<td v-for="column in objectStore.enabledColumns"
 								:key="column.id">
@@ -50,15 +50,21 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 									<span v-else-if="column.id === 'meta_created' || column.id === 'meta_updated'">
 										{{ getValidISOstring(result['@self'][column.key]) ? new Date(result['@self'][column.key]).toLocaleString() : 'N/A' }}
 									</span>
+									<span v-else-if="column.id === 'meta_register'">
+										<span>{{ registerStore.registerList.find(reg => reg.id === parseInt(result['@self'].register))?.title }}</span>
+									</span>
+									<span v-else-if="column.id === 'meta_schema'">
+										<span>{{ schemaStore.schemaList.find(schema => schema.id === parseInt(result['@self'].schema))?.title }}</span>
+									</span>
 									<span v-else>
-										{{ result['@self'][column.key] }}
+										{{ result['@self'][column.key] || 'N/A' }}
 									</span>
 								</template>
 								<template v-else>
 									<span>{{ result[column.key] ?? 'N/A' }}</span>
 								</template>
 							</td>
-							<td class="static-column">
+							<td class="staticColumn">
 								<NcActions class="actionsButton">
 									<NcActionButton @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 										<template #icon>
@@ -72,7 +78,7 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 										</template>
 										Edit
 									</NcActionButton>
-									<NcActionButton @click="deleteObject(result['@self'].id)">
+									<NcActionButton @click="deleteObject(result)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
@@ -86,7 +92,9 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 			</VueDraggable>
 		</div>
 
-		<div class="pagination-container">
+		<div class="paginationContainer">
+			<div class="empty-space" />
+
 			<BPagination
 				v-model="objectStore.pagination.page"
 				:total-rows="objectStore.objectList.total"
@@ -94,17 +102,26 @@ import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 				:first-number="true"
 				:last-number="true"
 				@change="onPageChange" />
+
+			<NcSelect v-model="objectStore.pagination.limit"
+				class="limit-selector"
+				:options="[10, 20, 50, 100]"
+				:disabled="loading"
+				:loading="loading"
+				:taggable="true"
+				:clearable="false"
+				@option:selected="(selectedOption) => onPageChange(objectStore.pagination.page, selectedOption)" />
 		</div>
 
-		<MassDeleteObject v-if="massDeleteObjectModal"
+		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'"
 			:selected-objects="objectStore.selectedObjects"
-			@close-modal="() => massDeleteObjectModal = false"
+			@close-modal="() => navigationStore.setDialog(null)"
 			@success="onMassDeleteSuccess" />
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble, NcSelect } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
@@ -130,7 +147,6 @@ export default {
 	},
 	data() {
 		return {
-			massDeleteObjectModal: false,
 		}
 	},
 	computed: {
@@ -162,19 +178,41 @@ export default {
 			window.open(link, type)
 		},
 		onMassDeleteSuccess() {
+			objectStore.selectedObjects = []
 			objectStore.refreshObjectList()
 		},
-		async deleteObject(id) {
+		async deleteObject(result) {
 			try {
-				await objectStore.deleteObject(id)
-				objectStore.refreshObjectList()
+				navigationStore.setDialog('deleteObject')
+				objectStore.setObjectItem({
+					'@self': {
+						id: result['@self'].id,
+						uuid: result['@self'].uuid,
+						register: result['@self'].register,
+						schema: result['@self'].schema,
+						title: result['@self'].title || result.name || result.title || result['@self'].id,
+					},
+				})
 			} catch (error) {
 				console.error('Failed to delete object:', error)
 			}
 		},
-		onPageChange(page) {
-			objectStore.setPagination(page)
+		// default limit to store pagination limit, if this is undefined the limit will be set to 14 underwater
+		onPageChange(page, limit = objectStore.pagination.limit) {
+			// ensure limit is a number (a custom limit is a string)
+			// and handle NaN values (NaN is not a value that can be replaced by the default value in a function)
+			limit = Number(limit)
+			isNaN(limit) && (limit = undefined) // setPagination handles default values.
+
+			objectStore.setPagination(page, limit)
 			objectStore.refreshObjectList()
+		},
+		handleSelectObject(id) {
+			if (objectStore.selectedObjects.includes(id)) {
+				objectStore.selectedObjects = objectStore.selectedObjects.filter(obj => obj !== id)
+			} else {
+				objectStore.selectedObjects.push(id)
+			}
 		},
 	},
 }
@@ -189,7 +227,7 @@ export default {
 </style>
 
 <style scoped>
-.search-list-header {
+.searchListHeader {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -197,13 +235,13 @@ export default {
     margin-bottom: 1rem;
 }
 
-.search-list-header h2 {
+.searchListHeader h2 {
     margin: 0;
     font-size: var(--default-font-size);
     font-weight: bold;
 }
 
-.search-list-table {
+.searchListTable {
     overflow-x: auto;
 }
 
@@ -212,28 +250,28 @@ export default {
 	border-collapse: collapse;
 }
 
-.table-row {
+.tableRow {
     color: var(--color-main-text);
     border-bottom: 1px solid var(--color-border);
 }
 
-.table-row > td {
+.tableRow > td {
     height: 55px;
     padding: 0 10px;
 }
-.table-row > th {
+.tableRow > th {
     padding: 0 10px;
 }
-.table-row > th > .sticky-header {
+.tableRow > th > .stickyHeader {
     position: sticky;
     left: 0;
 }
 
-.sort-target > th {
+.sortTarget > th {
     cursor: move;
 }
 
-.cursor-pointer {
+.cursorPointer {
     cursor: pointer !important;
 }
 
@@ -241,8 +279,22 @@ input[type="checkbox"] {
     box-shadow: none !important;
 }
 
-.pagination {
+.paginationContainer {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
     margin-block-start: 1rem;
+    margin-inline: 0.5rem;
+}
+
+.paginationContainer .limit-selector {
+    grid-column: 3;
+    justify-self: end;
+    min-width: 160px !important;
+}
+
+.pagination {
     display: flex;
 }
 .pagination :deep(.page-item > .page-link) {
@@ -275,8 +327,7 @@ input[type="checkbox"] {
     cursor: not-allowed !important;
 }
 
-/* Make column titles bold */
-.column-title {
+.columnTitle {
     font-weight: bold;
 }
 </style>
