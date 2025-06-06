@@ -86,17 +86,16 @@ Wilco
 - Uitleveren ZTC en DRC voor extern testen(mits geen bevindingen meer op interne tests)
 
 ### 28-5
-- Eerste rules test (@matthias) op ZTR /BRC
-- Verdere Rules ZTR /BRC
+- Eerste rules test (@matthias) op ZRC /BRC
+- Verdere Rules ZRC /BRC
 
 ### 30-5 
-- Finale  rules test (@matthias) op ZTR / BRC
-- Uitleveren ZTR /BRC voor extern testen (mits geen bevindingen meer op interne tests)
+- Finale  rules test (@matthias) op ZRC / BRC
+- Uitleveren ZRC /BRC voor extern testen (mits geen bevindingen meer op interne tests)
 
 ### 02-6
 - Start xxlnc inteegratie (nog geen indicatie of inschatting)
 - Notificatie (nog geen indicatie of inschatting)
-
 
 ## Parkeren / Obeservateis
 - Rules zijn per methods dat leid tot duplicaite, we willen graag meerede methods per rule of geen method

@@ -306,6 +306,42 @@ class SaveObject
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
+        
+        // Check if '@self' metadata exists and contains published/depublished properties
+        if (isset($data['@self']) && is_array($data['@self'])) {
+            $selfData = $data['@self'];
+
+            // Extract and set published property if present
+            if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['published']) === true) {
+                        $objectEntity->setPublished(new DateTime($selfData['published']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $objectEntity->setPublished(null);
+            }
+
+            // Extract and set depublished property if present
+            if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['depublished']) === true) {
+                        $objectEntity->setDepublished(new DateTime($selfData['depublished']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $objectEntity->setDepublished(null);
+            }
+        }
+
+        unset($data['@self'], $data['id']);
+
         // Set UUID if provided, otherwise generate a new one.
         if ($uuid !== null) {
             $objectEntity->setUuid($uuid);
@@ -450,7 +486,7 @@ class SaveObject
 
         // Lets filter out the id and @self properties from the old object.
         $oldObjectData = $oldObject->getObject();
-        unset($oldObjectData['id'], $oldObjectData['@self']);
+
         $oldObject->setObject($oldObjectData);
 
         // Set register ID based on input type.
@@ -468,6 +504,42 @@ class SaveObject
         } else {
             $schemaId = $schema;
         }
+        
+        // Check if '@self' metadata exists and contains published/depublished properties
+        if (isset($data['@self']) && is_array($data['@self'])) {
+            $selfData = $data['@self'];
+
+            // Extract and set published property if present
+            if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['published']) === true) {
+                        $existingObject->setPublished(new DateTime($selfData['published']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $existingObject->setPublished(null);
+            }
+
+            // Extract and set depublished property if present
+            if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['depublished']) === true) {
+                        $existingObject->setDepublished(new DateTime($selfData['depublished']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $existingObject->setDepublished(null);
+            }
+        }
+
+        // Remove @self and id from the data before setting object
+        unset($data['@self'], $data['id']);
 
         // Update the object properties.
         $existingObject->setRegister($registerId);
