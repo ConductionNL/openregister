@@ -20,7 +20,7 @@ import { navigationStore } from '../store/store.js'
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'search'" :name="t('openregister', 'Tables')" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'tableSearch'" :name="t('openregister', 'Tables')" @click="navigationStore.setSelected('tableSearch')">
 				<template #icon>
 					<TableMultiple :size="20" />
 				</template>

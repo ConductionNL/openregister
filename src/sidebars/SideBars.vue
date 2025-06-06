@@ -4,7 +4,7 @@ import { navigationStore } from '../store/store.js'
 
 <template>
 	<div>
-		<SearchSideBar v-if="navigationStore.selected === 'search'" />
+		<SearchSideBar v-if="navigationStore.selected === 'tableSearch'" />
 		<DashboardSideBar v-if="navigationStore.selected === 'dashboard'" />
 		<RegisterSideBar v-if="navigationStore.selected === 'register-detail'" />
 		<RegistersSideBar v-if="navigationStore.selected === 'registers'" />
