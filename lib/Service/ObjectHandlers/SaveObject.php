@@ -196,6 +196,11 @@ class SaveObject
 				&& (isset($property['$ref']) || isset($property['items']['$ref']))
 				&& (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true);
 		});
+        
+
+        if (isset($data[$property]) === false || empty($data[$property]) === true) {
+            return $data;
+        }
 
 		//@TODO this can be done asynchronous
 		foreach($objectProperties as $property => $definition) {
