@@ -202,7 +202,7 @@ class SaveObject
             if (isset($data[$property]) === false || empty($data[$property]) === true) {
                 continue;
             }
-            
+
             $this->cascadeSingleObject($objectEntity, $definition, $data[$property]);
 			unset($data[$property]);
 		}
@@ -211,7 +211,7 @@ class SaveObject
             if (isset($data[$property]) === false || empty($data[$property]) === true) {
                 continue;
             }
-            
+
             $this->cascadeMultipleObjects($objectEntity, $definition, $data[$property]);
 			unset($data[$property]);
 		}
@@ -230,7 +230,7 @@ class SaveObject
 			$property['items']['$ref'] = $property['$ref'];
 		}
 
-		if (isset($property['items']['inversedBy']) === false) {
+		if (isset($property['inversedBy']) === false) {
 			$property['items']['inversedBy'] = $property['inversedBy'];
 		}
 
