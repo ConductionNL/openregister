@@ -149,8 +149,6 @@ export default {
 					})
 				}
 
-				console.log('Delete API URL:', `/index.php/apps/openregister/api/audit-trails?${params.toString()}`)
-
 				// Make the API request
 				const response = await fetch(`/index.php/apps/openregister/api/audit-trails?${params.toString()}`, {
 					method: 'DELETE',
@@ -159,9 +157,7 @@ export default {
 					},
 				})
 
-				console.log('Delete response status:', response.status)
 				const result = await response.json()
-				console.log('Delete response result:', result)
 
 				if (result.success) {
 					this.success = true
