@@ -66,19 +66,19 @@ import { navigationStore, objectStore, schemaStore, registerStore } from '../../
 							</td>
 							<td class="staticColumn">
 								<NcActions class="actionsButton">
-									<NcActionButton @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
+									<NcActionButton close-after-click @click="navigationStore.setModal('viewObject'); objectStore.setObjectItem(result)">
 										<template #icon>
 											<Eye :size="20" />
 										</template>
 										View
 									</NcActionButton>
-									<NcActionButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
+									<NcActionButton close-after-click @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(result)">
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
 										Edit
 									</NcActionButton>
-									<NcActionButton @click="deleteObject(result)">
+									<NcActionButton close-after-click @click="deleteObject(result)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
