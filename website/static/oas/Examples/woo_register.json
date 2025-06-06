@@ -1,0 +1,697 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Woo Register",
+    "version": "1.0.1"
+  },
+  "components": {
+    "registers": {
+      "woo": {
+        "slug": "woo",
+        "title": "Woo",
+        "version": "1.0.1",
+        "description": "Woo-register met TOOI-informatiecategorieën",
+        "schemas": [
+          "vergaderstukken_decentrale_overheden",
+          "subsidieverplichtingen_anders_dan_met_beschikking",
+          "overige_besluiten_van_algemene_strekking",
+          "organisatie_en_werkwijze",
+          "ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag",
+          "onderzoeksrapporten",
+          "klachtoordelen",
+          "wetten_en_algemeen_verbindende_voorschriften",
+          "woo_verzoeken_en_besluiten",
+          "vergaderstukken_staten_generaal"
+        ]
+      }
+    },
+    "schemas": {
+      "vergaderstukken_decentrale_overheden": {
+        "slug": "vergaderstukken_decentrale_overheden",
+        "title": "Metadata TOOI  vergaderstukken decentrale overheden  ",
+        "$id": "https://openwoo.app/schemas/vergaderstukken_decentrale_overheden.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Vergaderstukken en verslagen van diverse decentrale overheden en hun commissies.",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "vergaderstukken decentrale overheden",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_db4862c3",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_db4862c3",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      },
+      "subsidieverplichtingen_anders_dan_met_beschikking": {
+        "slug": "subsidieverplichtingen_anders_dan_met_beschikking",
+        "title": "Metadata TOOI subsidieverplichtingen anders dan met beschikking",
+        "$id": "https://openwoo.app/schemas/subsidieverplichtingen_anders_dan_met_beschikking.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Subsidieverplichtingen die niet via een beschikking lopen, specifiek bij Ministerie van Binnenlandse Zaken. ",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "subsidieverplichtingen anders dan met beschikking",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_cf268088",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_cf268088",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      },
+      "overige_besluiten_van_algemene_strekking": {
+        "slug": "overige_besluiten_van_algemene_strekking",
+        "title": "Metadata TOOI overige besluiten van algemene strekking",
+        "$id": "https://openwoo.app/schemas/overige_besluiten_van_algemene_strekking.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Overige besluiten van algemene strekking. ",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "overige besluiten van algemene strekking",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_aab6bfc7",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_aab6bfc7",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      },
+      "organisatie_en_werkwijze": {
+        "slug": "organisatie_en_werkwijze",
+        "title": "Metadata TOOI organisatie en werkwijze",
+        "$id": "https://openwoo.app/schemas/organisatie_en_werkwijze.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.3",
+        "type": "object",
+        "description": "Informatie over de organisatie en werkwijze van bestuursorganen.",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "organisatie en werkwijze",
+            "required": true,
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_40a05794",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_40a05794",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      },
+      "ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag": {
+        "slug": "ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag",
+        "title": "Metadata TOOI ontwerpen van wet- en regelgeving met adviesaanvraag",
+        "$id": "https://openwoo.app/schemas/ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Ontwerpen van wetgeving waarover extern advies is gevraagd, inclusief de adviesaanvraag.",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "ontwerpen van wet- en regelgeving met adviesaanvraag",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_759721e2",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_759721e2",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      },
+      "onderzoeksrapporten": {
+        "slug": "onderzoeksrapporten",
+        "title": "Metadata TOOI onderzoeksrapporten",
+        "$id": "https://openwoo.app/schemas/onderzoeksrapporten.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Onderzoeksrapporten opgesteld op verzoek van bestuursorganen die geen taakuitvoering zijn, gericht op organisatie of beleidsevaluatie.",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "onderzoeksrapporten",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_fdaee95e",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_fdaee95e",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      },
+      "klachtoordelen": {
+        "slug": "klachtoordelen",
+        "title": "Metadata TOOI klachtoordelen",
+        "$id": "https://openwoo.app/schemas/klachtoordelen.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Schriftelijke oordelen in klachtprocedures.",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "klachtoordelen",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_a870c43d",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_a870c43d",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "datumBesluit": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Wanneer is er over de klacht besloten",
+            "required": true
+          },
+          "datumOntvangst": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Wanneer is de klacht binnen gekomen",
+            "required": true
+          },
+          "termijnoverschrijding": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Een (evenuteel) overschrijding van het beantwoordings termijn termijn"
+          },
+          "organisatieonderdeel": {
+            "type": "string",
+            "description": "",
+            "maxLength": 2555
+          },
+          "functiebenaming": {
+            "type": "string",
+            "description": "",
+            "maxLength": 2555
+          },
+          "gedraging": {
+            "type": "string",
+            "description": "",
+            "maxLength": 2555
+          },
+          "bevindingen": {
+            "type": "string",
+            "description": "",
+            "maxLength": 2555
+          },
+          "oordeel": {
+            "type": "string",
+            "description": "",
+            "maxLength": 2555
+          },
+          "conclusies": {
+            "type": "string",
+            "description": "",
+            "maxLength": 2555
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam",
+          "datumBesluit",
+          "datumOntvangst"
+        ]
+      },
+      "wetten_en_algemeen_verbindende_voorschriften": {
+        "slug": "wetten_en_algemeen_verbindende_voorschriften",
+        "title": "Metadata TOOI wetten en algemeen verbindende voorschriften",
+        "$id": "https://openwoo.app/schemas/wetten_en_algemeen_verbindende_voorschriften.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "description": "Wetten en andere algemeen verbindende voorschriften. ",
+        "properties": {
+          "tooiCategorieNaam": {
+            "const": "wetten en algemeen verbindende voorschriften",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)",
+            "type": "string"
+          },
+          "tooiCategorieId": {
+            "const": "c_139c6280",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)",
+            "type": "string"
+          },
+          "tooiCategorieUri": {
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_139c6280",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`",
+            "type": "string"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "$id": "https://openwoo.app/schemas/wetten_en_algemeen_verbindende_voorschriften.schema.json"
+      },
+      "woo_verzoeken_en_besluiten": {
+        "slug": "woo_verzoeken_en_besluiten",
+        "title": "Metadata TOOI Woo-verzoeken en -besluiten",
+        "$id": "https://openwoo.app/schemas/woo_verzoeken_en_besluiten.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Inhoud van schriftelijke Woo-verzoeken en besluiten daarop, inclusief verstrekte informatie.",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "Woo-verzoeken en -besluiten",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_3baef532",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_3baef532",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "datumBesluit": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Wanneer is er over het verzoek besloten",
+            "required": true
+          },
+          "datumOntvangst": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Wanneer is het verzoek binnen gekomen",
+            "required": true
+          },
+          "termijnoverschrijding": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Een (evenuteel) overschrijding van het beantwoordings termijn termijn"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam",
+          "datumBesluit",
+          "datumOntvangst"
+        ]
+      },
+      "vergaderstukken_staten_generaal": {
+        "slug": "vergaderstukken_staten_generaal",
+        "title": "Metadata TOOI vergaderstukken Staten-Generaal",
+        "$id": "https://openwoo.app/schemas/vergaderstukken_staten_generaal.schema.json",
+        "$schema": "https://docs.commongateway.nl/schemas/Entity.schema.json",
+        "version": "0.0.2",
+        "type": "object",
+        "description": "Vergaderstukken en verslagen van de Staten-Generaal, uitgezonderd vertrouwelijke informatie verstrekt aan de Staten-Generaal.  ",
+        "properties": {
+          "tooiCategorieNaam": {
+            "type": "string",
+            "const": "Vergaderstukken Staten-Generaal",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieId": {
+            "type": "string",
+            "const": "c_c76862ab",
+            "description": "De tooiCategorieId van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiCategorieUri": {
+            "type": "string",
+            "const": "https://identifier.overheid.nl/tooi/def/thes/kern/c_c76862ab",
+            "description": "De id van de categorie voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiCategorieId]`"
+          },
+          "tooiThemaNaam": {
+            "type": "string",
+            "description": "De naam van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaId": {
+            "type": "string",
+            "description": "De id van de TOOI categorie conform [diwoo metadata lijsten](https://standaarden.overheid.nl/diwoo/metadata/doc/0.9.1/diwoo-metadata-lijsten_xsd_Simple_Type_diwoo_scw_woo_informatiecategorieen)"
+          },
+          "tooiThemaUri": {
+            "type": "string",
+            "description": "De tooiThemaId van het thema voorafgegaan door `https://identifier.overheid.nl/tooi/def/thes/kern/[tooiThemaId]`"
+          },
+          "values": {
+            "type": "array",
+            "description": "Binnen KOOP Woo Index kunnen waardes niet uitlijnen op TOOI wel worden meegegeven in key value pair's. Deze zijn vervolgens wel doorzoekbaar maar geen onderdeel van de open.overheid.nl user interface",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tooiCategorieNaam"
+        ]
+      }
+    }
+  }
+}

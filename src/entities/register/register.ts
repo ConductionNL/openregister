@@ -12,6 +12,8 @@ export class Register implements TRegister {
 	public tablePrefix: string
 	public updated: string
 	public created: string
+	public slug: string
+	public stats?: TRegister['stats']
 
 	constructor(register: TRegister) {
 		this.id = register.id || ''
@@ -23,6 +25,8 @@ export class Register implements TRegister {
 		this.tablePrefix = register.tablePrefix || ''
 		this.updated = register.updated || ''
 		this.created = register.created || ''
+		this.slug = register.slug || ''
+		this.stats = register.stats
 	}
 
 	public validate(): SafeParseReturnType<TRegister, unknown> {
@@ -34,6 +38,7 @@ export class Register implements TRegister {
 			source: z.string(),
 			databaseId: z.string().min(1),
 			tablePrefix: z.string(),
+			slug: z.string().min(1),
 		})
 
 		return schema.safeParse(this)

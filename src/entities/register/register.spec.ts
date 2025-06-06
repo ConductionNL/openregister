@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Register } from './register'
 import { mockRegisterData } from './register.mock'
 
@@ -18,6 +17,7 @@ describe('Register Entity', () => {
 		expect(register.id).toBe('')
 		expect(register.title).toBe(mockRegisterData()[0].title)
 		expect(register.tablePrefix).toBe('')
+		expect(register.slug).toBe(mockRegisterData()[0].slug) // Added slug property check
 		expect(register.validate().success).toBe(true)
 	})
 
@@ -38,5 +38,13 @@ describe('Register Entity', () => {
 		expect(register.getFullTablePrefix('myorg_')).toBe('myorg_character_')
 		expect(register.getFullTablePrefix('myorg_')).toBe('myorg_character_')
 		expect(register.getFullTablePrefix('')).toBe('character_')
+	})
+
+	it('should create a Register entity with stats', () => {
+		const register = new Register(mockRegisterData()[0])
+		expect(register.stats).toBeDefined()
+		expect(register.stats?.objects?.total).toBe(20)
+		expect(register.stats?.logs?.total).toBe(3)
+		expect(register.stats?.files?.size).toBe(256)
 	})
 })

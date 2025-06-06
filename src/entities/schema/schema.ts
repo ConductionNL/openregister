@@ -13,6 +13,10 @@ export class Schema implements TSchema {
 	public archive: Record<string, any>
 	public updated: string
 	public created: string
+	public slug: string
+	public hardValidation: boolean
+	public maxDepth: number
+	public stats?: TSchema['stats']
 
 	constructor(schema: TSchema) {
 		this.id = schema.id || ''
@@ -25,6 +29,10 @@ export class Schema implements TSchema {
 		this.archive = schema.archive || {}
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
+		this.slug = schema.slug || ''
+		this.hardValidation = schema.hardValidation || false
+		this.maxDepth = schema.maxDepth || 0
+		this.stats = schema.stats
 	}
 
 	public validate(): SafeParseReturnType<TSchema, unknown> {
@@ -39,6 +47,9 @@ export class Schema implements TSchema {
 			archive: z.object({}),
 			updated: z.string(),
 			created: z.string(),
+			slug: z.string().min(1),
+			hardValidation: z.boolean(),
+			maxDepth: z.number().int().min(0),
 		})
 
 		return schema.safeParse(this)

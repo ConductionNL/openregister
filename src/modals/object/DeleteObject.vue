@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			Do you want to permanently delete <b>{{ objectStore.objectItem?.uuid }}</b>? This action cannot be undone.
+			Do you want to permanently delete <b>{{ objectStore.objectItem?.['@self']?.title }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -81,18 +81,19 @@ export default {
 		async deleteObject() {
 			this.loading = true
 
-			objectStore.deleteObject({
-				...objectStore.objectItem,
-			}).then(({ response }) => {
+			try {
+				const { response } = await objectStore.deleteObject(objectStore.objectItem['@self'].id)
 				this.success = response.ok
 				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeDialog, 2000))
-			}).catch((error) => {
+				if (response.ok) {
+					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
+				}
+			} catch (error) {
 				this.success = false
 				this.error = error.message || 'An error occurred while deleting the object'
-			}).finally(() => {
+			} finally {
 				this.loading = false
-			})
+			}
 		},
 	},
 }

@@ -1,65 +1,5 @@
-/**
- * @file DownloadObject.vue
- * @module Modals/Object
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
-
 <script setup>
 import { objectStore, navigationStore } from '../../store/store.js'
-import { getTheme } from '../../services/getTheme.js'
-import { ref, onMounted } from 'vue'
-import {
-	NcDialog,
-	NcButton,
-	NcNoteCard,
-} from '@nextcloud/vue'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
-import CodeMirror from 'vue-codemirror6'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-
-// Initialize refs
-const success = ref(null)
-const loading = ref(false)
-const error = ref(false)
-const closeModalTimeout = ref(null)
-
-// Methods
-const closeModal = () => {
-	navigationStore.setModal(false)
-	clearTimeout(closeModalTimeout.value)
-	success.value = null
-	loading.value = false
-	error.value = false
-}
-
-const downloadObject = async () => {
-	loading.value = true
-
-	try {
-		const response = await objectStore.downloadObject(objectStore.objectItem)
-		success.value = response.ok
-		error.value = false
-		if (response.ok) {
-			closeModalTimeout.value = setTimeout(closeModal, 2000)
-		}
-	} catch (error) {
-		success.value = false
-		error.value = error.message || 'An error occurred while downloading the object'
-	} finally {
-		loading.value = false
-	}
-}
-
-// Lifecycle hooks
-onMounted(() => {
-	if (objectStore.objectItem?.id) {
-		downloadObject()
-	}
-})
 </script>
 
 <template>
@@ -99,6 +39,78 @@ onMounted(() => {
 		</div>
 	</NcDialog>
 </template>
+
+<script>
+import { getTheme } from '../../services/getTheme.js'
+import {
+	NcDialog,
+	NcButton,
+	NcNoteCard,
+} from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
+
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+
+export default {
+	name: 'DownloadObject',
+	components: {
+		// components
+		NcDialog,
+		NcButton,
+		NcNoteCard,
+		CodeMirror,
+		// icons
+		Cancel,
+	},
+	data() {
+		return {
+			// store
+			objectStore,
+			navigationStore,
+			// state
+			success: null,
+			loading: false,
+			error: false,
+			closeModalTimeout: null,
+		}
+	},
+	mounted() {
+		if (objectStore.objectItem?.id) {
+			this.downloadObject()
+		}
+	},
+	methods: {
+		json,
+		jsonParseLinter,
+		getTheme,
+		closeModal() {
+			navigationStore.setModal(false)
+			clearTimeout(this.closeModalTimeout)
+			this.success = null
+			this.loading = false
+			this.error = false
+		},
+		async downloadObject() {
+			this.loading = true
+
+			try {
+				const response = await objectStore.downloadObject(objectStore.objectItem)
+				this.success = response.ok
+				this.error = false
+				if (response.ok) {
+					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+				}
+			} catch (error) {
+				this.success = false
+				this.error = error.message || 'An error occurred while downloading the object'
+			} finally {
+				this.loading = false
+			}
+		},
+	},
+}
+</script>
 
 <style scoped>
 .json-editor {

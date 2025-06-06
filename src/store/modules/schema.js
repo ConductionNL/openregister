@@ -7,22 +7,32 @@ export const useSchemaStore = defineStore('schema', {
 		schemaItem: false,
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
+		viewMode: 'cards',
 		filters: [], // List of query
 		pagination: {
 			page: 1,
 			limit: 20,
 		},
 	}),
+	getters: {
+		getViewMode: (state) => state.viewMode,
+	},
 	actions: {
+		setViewMode(mode) {
+			this.viewMode = mode
+			console.log('View mode set to:', mode)
+		},
 		setSchemaItem(schemaItem) {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
 			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
-		setSchemaList(schemaList) {
-			this.schemaList = schemaList.map(
-				(schemaItem) => new Schema(schemaItem),
-			)
-			console.log('Schema list set to ' + schemaList.length + ' items')
+		setSchemaList(schemas) {
+			// Ensure showProperties is reactive and default false for each schema
+			this.schemaList = schemas.map(schema => ({
+				...schema,
+				showProperties: typeof schema.showProperties === 'boolean' ? schema.showProperties : false,
+			}))
+			console.log('Schema list set to ' + schemas.length + ' items')
 		},
 		/**
 		 * Set pagination details
@@ -43,10 +53,10 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshSchemaList(search = null) {
-			// @todo this might belong in a service?
-			let endpoint = '/index.php/apps/openregister/api/schemas'
+			// Always include _extend[]=@self.stats to get statistics
+			let endpoint = '/index.php/apps/openregister/api/schemas?_extend[]=@self.stats'
 			if (search !== null && search !== '') {
-				endpoint = endpoint + '?_search=' + search
+				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -60,7 +70,8 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		// Function to get a single schema
 		async getSchema(id, options = { setItem: false }) {
-			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
+			// Always include _extend[]=@self.stats to get statistics
+			const endpoint = `/index.php/apps/openregister/api/schemas/${id}?_extend[]=@self.stats`
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',

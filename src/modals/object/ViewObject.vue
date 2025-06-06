@@ -8,173 +8,38 @@
  */
 
 <script setup>
-import { objectStore, navigationStore } from '../../store/store.js'
-import { ref, onMounted, computed, watch } from 'vue'
-import {
-	NcDialog,
-	NcButton,
-	NcNoteCard,
-	NcEmptyContent,
-	NcCounterBubble,
-} from '@nextcloud/vue'
-import { json } from '@codemirror/lang-json'
-import CodeMirror from 'vue-codemirror6'
-import { BTabs, BTab } from 'bootstrap-vue'
-import { getTheme } from '../../services/getTheme.js'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-
-// Initialize refs
-const objectItem = ref(null)
-const success = ref(null)
-const loading = ref(false)
-const error = ref(false)
-const closeModalTimeout = ref(null)
-const activeAttachment = ref(null)
-const fileLoading = ref(false)
-const relationsLoading = ref(false)
-const auditTrailLoading = ref(false)
-
-// Add a ref for the editor content
-const editorContent = ref(JSON.stringify(objectStore.objectItem, null, 2))
-
-// Watch for changes to objectStore.objectItem
-watch(() => objectStore.objectItem, (newValue) => {
-	if (newValue) {
-		editorContent.value = JSON.stringify(newValue, null, 2)
-	}
-}, { immediate: true })
-
-// Computed properties
-const hasObjectItem = computed(() => {
-	return objectStore.objectItem !== null
-		   && objectStore.objectItem !== undefined
-		   && objectStore.objectItem['@self'] !== undefined
-})
-
-// Pagination
-const pagination = ref({
-	files: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	auditTrails: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-	relations: {
-		limit: 200,
-		currentPage: 1,
-		totalPages: 1,
-	},
-})
-
-// Methods
-const closeModal = () => {
-	navigationStore.setModal(false)
-	clearTimeout(closeModalTimeout.value)
-	success.value = null
-	loading.value = false
-	error.value = false
-	objectItem.value = null
-}
-
-const getFiles = async () => {
-	if (!objectStore.objectItem['@self'].id) return
-	fileLoading.value = true
-	try {
-		await objectStore.getFiles(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.files.limit,
-			page: pagination.value.files.currentPage,
-		})
-	} finally {
-		fileLoading.value = false
-	}
-}
-
-const getAuditTrails = async () => {
-	if (!objectStore.objectItem['@self'].id) return
-	auditTrailLoading.value = true
-	try {
-		await objectStore.getAuditTrails(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.auditTrails.limit,
-			page: pagination.value.auditTrails.currentPage,
-		})
-	} finally {
-		auditTrailLoading.value = false
-	}
-}
-
-const getRelations = async () => {
-	if (!objectStore.objectItem['@self'].id) return
-	relationsLoading.value = true
-	try {
-		await objectStore.getRelations(objectStore.objectItem['@self'].id, {
-			limit: pagination.value.relations.limit,
-			page: pagination.value.relations.currentPage,
-		})
-	} finally {
-		relationsLoading.value = false
-	}
-}
-
-const openFile = (file) => {
-	// Extract the directory path without the filename
-	const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
-
-	// Remove the '/admin/files/' prefix if it exists
-	const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
-
-	// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
-	const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
-
-	// Open URL in new tab
-	window.open(filesAppUrl, '_blank')
-}
-
-const formatFileSize = (bytes) => {
-	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-	if (bytes === 0) return 'n/a'
-	const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-	if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-	if (i === 0) return bytes + ' ' + sizes[i]
-	return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-}
-
-// Lifecycle hooks
-onMounted(() => {
-	if (hasObjectItem.value && objectStore.objectItem['@self'].id) {
-		objectItem.value = objectStore.objectItem
-		getFiles()
-		getAuditTrails()
-		getRelations()
-	}
-})
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'viewObject' && hasObjectItem"
-		:name="'View Object (' + objectStore.objectItem['@self'].uuid + ')'"
+	<NcDialog v-if="navigationStore.modal === 'viewObject'"
+		:name="'View Object (' + objectStore.objectItem.title + ')'"
 		size="large"
 		:can-close="false">
-		<NcNoteCard v-if="success" type="success">
-			<p>Object successfully loaded</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<div v-if="!success" class="formContainer">
+		<div class="formContainer viewObjectDialog">
 			<!-- Metadata Display -->
 			<div class="detail-grid">
+				<div class="detail-item id-card" :class="{ 'empty-value': !objectStore.objectItem.id }">
+					<div class="id-card-header">
+						<span class="detail-label">ID:</span>
+						<NcButton class="copy-button" @click="copyToClipboard(objectStore.objectItem.id)">
+							<template #icon>
+								<Check v-if="isCopied" :size="20" />
+								<ContentCopy v-else :size="20" />
+							</template>
+							{{ isCopied ? 'Copied' : 'Copy' }}
+						</NcButton>
+					</div>
+					<span class="detail-value">{{ objectStore.objectItem.id }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].register }">
+					<span class="detail-label">Register:</span>
+					<span class="detail-value">{{ registerTitle }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].schema }">
+					<span class="detail-label">Schema:</span>
+					<span class="detail-value">{{ schemaTitle }}</span>
+				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].version }">
 					<span class="detail-label">Version:</span>
 					<span class="detail-value">{{ objectStore.objectItem['@self'].version || 'Not set' }}</span>
@@ -186,6 +51,18 @@ onMounted(() => {
 				<div class="detail-item">
 					<span class="detail-label">Updated:</span>
 					<span class="detail-value">{{ new Date(objectStore.objectItem['@self'].updated).toLocaleString() }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].published }">
+					<span class="detail-label">Published:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].published ? new Date(objectStore.objectItem['@self'].published).toLocaleString() : 'Not published' }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].depublished }">
+					<span class="detail-label">Depublished:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].depublished ? new Date(objectStore.objectItem['@self'].depublished).toLocaleString() : 'Not depublished' }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': objectStore.objectItem['@self'].validation === null }">
+					<span class="detail-label">Validation:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].validation !== null ? (objectStore.objectItem['@self'].validation ? 'Valid' : 'Invalid') : 'Not validated' }}</span>
 				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].owner }">
 					<span class="detail-label">Owner:</span>
@@ -204,7 +81,7 @@ onMounted(() => {
 			<!-- Display Object -->
 			<div v-if="objectStore.objectItem">
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
+					<BTabs v-model="activeTab" content-class="mt-3" justified>
 						<BTab title="Properties" active>
 							<div class="search-list-table">
 								<table class="table">
@@ -215,11 +92,20 @@ onMounted(() => {
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="(value, key) in objectStore.objectItem"
+										<tr
+											v-for="([key, value]) in objectProperties"
 											:key="key"
 											class="table-row">
-											<td>{{ key }}</td>
-											<td>{{ typeof value === 'object' ? JSON.stringify(value) : value }}</td>
+											<td class="prop-cell">
+												{{ key }}
+											</td>
+											<td class="value-cell">
+												<pre
+													v-if="typeof value === 'object' && value !== null"
+													class="json-value">{{ formatValue(value) }}</pre>
+												<span v-else-if="isValidDate(value)">{{ new Date(value).toLocaleString() }}</span>
+												<span v-else>{{ value }}</span>
+											</td>
 										</tr>
 									</tbody>
 								</table>
@@ -230,76 +116,249 @@ onMounted(() => {
 								<label>Object (JSON)</label>
 								<div :class="`codeMirrorContainer ${getTheme()}`">
 									<CodeMirror
-										v-model="editorContent"
+										:model-value="editorContent"
 										:basic="true"
+										:linter="jsonParseLinter()"
+										:lang="json()"
 										:readonly="true"
 										:dark="getTheme() === 'dark'"
-										:extensions="[json()]"
 										:tab-size="2"
 										style="height: 400px" />
 								</div>
 							</div>
 						</BTab>
-						<BTab title="Uses">
-							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0" class="search-list-table">
-								<table class="table">
-									<thead>
-										<tr class="table-row">
-											<th>Relation</th>
-											<th>Value</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(relation, key) in objectStore.objectItem.relations"
-											:key="key"
-											class="table-row">
-											<td>{{ key }}</td>
-											<td>{{ relation }}</td>
-										</tr>
-									</tbody>
-								</table>
+						<BTab title="Edit">
+							<div class="tabContainer">
+								<BTabs v-model="editorTab" content-class="mt-3" justified>
+									<BTab title="Form Editor" active>
+										<div v-if="currentSchema" class="form-editor">
+											<NcNoteCard v-if="success" type="success" class="note-card">
+												<p>Object successfully modified</p>
+											</NcNoteCard>
+											<div v-for="(value, key) in currentSchema.properties"
+												:key="key"
+												class="form-field">
+												<div v-if="value.type === 'string'" class="field-label-row">
+													<NcTextField
+														v-model="formData[key] "
+														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+														:placeholder="key"
+														:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
+													<NcButton
+														v-if="(key === 'id' || key === 'uri') && formData[key]"
+														class="copy-button"
+														size="small"
+														@click="copyToClipboard(formData[key])">
+														<template #icon>
+															<ContentCopy :size="16" />
+														</template>
+													</NcButton>
+												</div>
+
+												<NcCheckboxRadioSwitch v-else-if="value.type === 'boolean'"
+													v-model="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													type="switch" />
+												<NcTextField v-else-if="value.type === 'number'"
+													v-model.number="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													type="number" />
+
+												<template v-else-if="value.type === 'array'">
+													<label class="field-label">
+														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
+													</label>
+													<ul class="array-editor">
+														<li v-for="(item, i) in value" :key="i">
+															<NcTextField v-model="formData[key][i]"
+																class="array-item-input" />
+															<NcButton size="small"
+																@click="removeArrayItem(key, i)">
+																<template #icon>
+																	<Delete :size="16" />
+																</template>
+															</NcButton>
+														</li>
+													</ul>
+													<NcButton size="small"
+														@click="addArrayItem(key)">
+														<template #icon>
+															<Plus :size="16" />
+														</template>
+														Add element
+													</NcButton>
+												</template>
+
+												<template v-else-if="value.type === 'object' && value !== null">
+													<label class="field-label">
+														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
+													</label>
+													<CodeMirror
+														:model-value="objectEditors[key]"
+														:basic="true"
+														:dark="getTheme() === 'dark'"
+														:lang="json()"
+														:tab-size="2"
+														@update:model-value="val => updateObjectField(key, val)" />
+												</template>
+
+												<NcTextField v-else-if="value === null"
+													v-model="formData[key]"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													:placeholder="key"
+													:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
+											</div>
+										</div>
+										<NcEmptyContent v-else>
+											Please select a schema to edit the object
+										</NcEmptyContent>
+									</BTab>
+									<BTab title="JSON Editor">
+										<NcNoteCard v-if="success" type="success" class="note-card">
+											<p>Object successfully modified</p>
+										</NcNoteCard>
+										<div class="json-editor">
+											<div :class="`codeMirrorContainer ${getTheme()}`">
+												<CodeMirror
+													v-model="jsonData"
+													:basic="true"
+													placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+													:dark="getTheme() === 'dark'"
+													:linter="jsonParseLinter()"
+													:lang="json()"
+													:extensions="[json()]"
+													:tab-size="2"
+													style="height: 400px" />
+												<NcButton
+													class="format-json-button"
+													type="secondary"
+													size="small"
+													@click="formatJSON">
+													Format JSON
+												</NcButton>
+											</div>
+											<span v-if="!isValidJson(jsonData)" class="error-message">
+												Invalid JSON format
+											</span>
+										</div>
+									</BTab>
+								</BTabs>
 							</div>
-							<NcEmptyContent v-else>
-								No relations found
-							</NcEmptyContent>
-						</BTab>
-						<BTab title="Used by">
-							<div v-if="objectStore.relations.length" class="search-list-table">
+						</Btab>
+						<BTab title="Uses">
+							<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
 											<th>ID</th>
 											<th>URI</th>
+											<th>Schema</th>
+											<th>Register</th>
+											<th>Actions</th>
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="relation in objectStore.relations"
-											:key="relation.id"
+										<tr v-for="use in objectStore.uses.results"
+											:key="use['@self'].id"
 											class="table-row">
-											<td>{{ relation.id }}</td>
-											<td>{{ relation.uri }}</td>
+											<td>{{ use['@self'].id }}</td>
+											<td>{{ use['@self'].uri }}</td>
+											<td>{{ use['@self'].schema }}</td>
+											<td>{{ use['@self'].register }}</td>
+											<td>
+												<NcButton @click="objectStore.setObjectItem(use); navigationStore.setModal('viewObject')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View Object
+												</NcButton>
+											</td>
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="!relationsLoading && objectStore.relations.total > pagination.relations.limit" class="pagination">
-									<NcButton :disabled="pagination.relations.currentPage === 1" @click="pagination.relations.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.relations.currentPage }}</span>
-									<NcButton :disabled="pagination.relations.currentPage >= Math.ceil(objectStore.relations.total / pagination.relations.limit)" @click="pagination.relations.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No relations found
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No uses found for this object</p>
+							</NcNoteCard>
 						</BTab>
-						<BTab title="Files">
-							<div v-if="objectStore.files.results?.length > 0" class="search-list-table">
+						<BTab title="Used by">
+							<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 								<table class="table">
 									<thead>
 										<tr class="table-row">
+											<th>ID</th>
+											<th>URI</th>
+											<th>Schema</th>
+											<th>Register</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="usedBy in objectStore.used.results"
+											:key="usedBy['@self'].id"
+											class="table-row">
+											<td>{{ usedBy['@self'].id }}</td>
+											<td>{{ usedBy['@self'].uri }}</td>
+											<td>{{ usedBy['@self'].schema }}</td>
+											<td>{{ usedBy['@self'].register }}</td>
+											<td>
+												<NcButton @click="objectStore.setObjectItem(usedBy); navigationStore.setModal('viewObject')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View Object
+												</NcButton>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<NcNoteCard v-else type="info">
+								<p>No objects are using this object</p>
+							</NcNoteCard>
+						</BTab>
+						<BTab title="Contracts">
+							<div v-if="objectStore.contracts.length > 0" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th>ID</th>
+											<th>URI</th>
+											<th>Schema</th>
+											<th>Register</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="contract in objectStore.contracts"
+											:key="contract['@self'].id"
+											class="table-row">
+											<td>{{ contract['@self'].id }}</td>
+											<td>{{ contract['@self'].uri }}</td>
+											<td>{{ contract['@self'].schema }}</td>
+											<td>{{ contract['@self'].register }}</td>
+											<td>
+												<NcButton @click="objectStore.setObjectItem(contract); navigationStore.setModal('viewObject')">
+													<template #icon>
+														<Eye :size="20" />
+													</template>
+													View Object
+												</NcButton>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<NcNoteCard v-else type="info">
+								<p>No contracts found for this object</p>
+							</NcNoteCard>
+						</BTab>
+						<BTab title="Files">
+							<div v-if="objectStore.files?.results?.length > 0" class="search-list-table">
+								<table class="table">
+									<thead>
+										<tr class="table-row">
+											<th />
 											<th>Name</th>
 											<th>Size</th>
 											<th>Type</th>
@@ -317,7 +376,17 @@ onMounted(() => {
 												else activeAttachment = attachment.id
 											}">
 											<td>
-												<ExclamationThick v-if="!attachment.accessUrl || !attachment.downloadUrl" class="warningIcon" :size="20" />
+												<NcCheckboxRadioSwitch
+													:checked="selectedAttachments.includes(attachment.id)"
+													@update:checked="toggleSelection(attachment)" />
+											</td>
+											<td class="table-row-title">
+												<!-- Show lock icon if file is not shared -->
+												<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
+													v-tooltip="'Not shared'"
+													class="notSharedIcon"
+													:size="20" />
+												<!-- Show published icon if file is shared -->
 												<FileOutline v-else class="publishedIcon" :size="20" />
 												{{ attachment.name ?? attachment?.title }}
 											</td>
@@ -341,19 +410,10 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="!fileLoading && objectStore.files.total > pagination.files.limit" class="pagination">
-									<NcButton :disabled="pagination.files.currentPage === 1" @click="pagination.files.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.files.currentPage }}</span>
-									<NcButton :disabled="pagination.files.currentPage >= Math.ceil(objectStore.files.total / pagination.files.limit)" @click="pagination.files.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No attachments added yet
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No files have been attached to this object</p>
+							</NcNoteCard>
 						</BTab>
 						<BTab title="Audit Trails">
 							<div v-if="objectStore.auditTrails.results?.length" class="search-list-table">
@@ -386,19 +446,10 @@ onMounted(() => {
 										</tr>
 									</tbody>
 								</table>
-								<div v-if="!auditTrailLoading && objectStore.auditTrails.total > pagination.auditTrails.limit" class="pagination">
-									<NcButton :disabled="pagination.auditTrails.currentPage === 1" @click="pagination.auditTrails.currentPage--">
-										Previous
-									</NcButton>
-									<span>Page {{ pagination.auditTrails.currentPage }}</span>
-									<NcButton :disabled="pagination.auditTrails.currentPage >= Math.ceil(objectStore.auditTrails.total / pagination.auditTrails.limit)" @click="pagination.auditTrails.currentPage++">
-										Next
-									</NcButton>
-								</div>
 							</div>
-							<NcEmptyContent v-else>
-								No audit trails found
-							</NcEmptyContent>
+							<NcNoteCard v-else type="info">
+								<p>No audit trails found for this object</p>
+							</NcNoteCard>
 						</BTab>
 					</BTabs>
 				</div>
@@ -406,13 +457,47 @@ onMounted(() => {
 		</div>
 
 		<template #actions>
-			<NcButton @click="navigationStore.setModal('editObject'); objectStore.setObjectItem(objectStore.objectItem)">
+			<NcActions
+				v-if="objectStore.files?.results?.length > 0 && tabOptions[activeTab] === 'Files'"
+				:primary="true"
+				:menu-name="loading ? 'Laden...' : 'Acties'"
+				class="checkboxListActionButton"
+				:inline="0"
+				title="Acties die je kan uitvoeren op deze publicatie">
+				<template #icon>
+					<span>
+						<DotsHorizontal v-if="!loading" :size="20" />
+						<NcLoadingIcon v-if="loading" :size="20" appearance="dark" />
+					</span>
+				</template>
+				<NcActionButton :disabled="!filesHasPublished" @click="selectAllAttachments('published')">
+					<template #icon>
+						<SelectAllIcon v-if="!allPublishedSelected" :size="20" />
+						<SelectRemove v-else :size="20" />
+					</template>
+					{{ !allPublishedSelected ? "Selecteer" : "Deselecteer" }} alle gepubliceerde bijlagen
+				</NcActionButton>
+				<NcActionButton :disabled="!filesHasUnpublished" @click="selectAllAttachments('unpublished')">
+					<template #icon>
+						<SelectAllIcon v-if="!allUnpublishedSelected" :size="20" />
+						<SelectRemove v-else :size="20" />
+					</template>
+					{{ !allUnpublishedSelected ? "Selecteer" : "Deselecteer" }} alle ongepubliceerde bijlagen
+				</NcActionButton>
+			</NcActions>
+			<NcButton v-if="activeTab !== 2" @click="activeTab = 2">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Object
 			</NcButton>
-			<NcButton @click="navigationStore.setModal('addFile'); objectStore.setObjectItem(objectStore.objectItem)">
+			<NcButton v-if="activeTab === 2" @click="saveObject">
+				<template #icon>
+					<ContentSave :size="20" />
+				</template>
+				Save
+			</NcButton>
+			<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 				<template #icon>
 					<Upload :size="20" />
 				</template>
@@ -427,6 +512,420 @@ onMounted(() => {
 		</template>
 	</NcDialog>
 </template>
+
+<script>
+import {
+	NcDialog,
+	NcButton,
+	NcActions,
+	NcActionButton,
+	NcNoteCard,
+	NcCounterBubble,
+	NcTextField,
+	NcCheckboxRadioSwitch,
+	NcEmptyContent,
+} from '@nextcloud/vue'
+import { json, jsonParseLinter } from '@codemirror/lang-json'
+import CodeMirror from 'vue-codemirror6'
+import { BTabs, BTab } from 'bootstrap-vue'
+import { getTheme } from '../../services/getTheme.js'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+
+import SelectAllIcon from 'vue-material-design-icons/SelectAll.vue'
+import SelectRemove from 'vue-material-design-icons/SelectRemove.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+export default {
+	name: 'ViewObject',
+	components: {
+		NcDialog,
+		NcButton,
+		NcNoteCard,
+		NcCounterBubble,
+		NcTextField,
+		NcCheckboxRadioSwitch,
+		NcEmptyContent,
+		NcActions,
+		NcActionButton,
+		CodeMirror,
+		BTabs,
+		BTab,
+		Cancel,
+		FileOutline,
+		OpenInNew,
+		Eye,
+		Pencil,
+		Upload,
+		LockOutline,
+		ContentCopy,
+		Check,
+		Plus,
+		Delete,
+		ContentSave,
+		SelectAllIcon,
+		SelectRemove,
+		DotsHorizontal,
+		NcLoadingIcon,
+	},
+	data() {
+		return {
+			closeModalTimeout: null,
+			activeAttachment: null,
+			registerTitle: '',
+			schemaTitle: '',
+			isUpdated: false,
+			isCopied: false,
+			error: null,
+			success: null,
+			formData: {},
+			jsonData: '',
+			editorTab: 0,
+			activeTab: 0,
+			objectEditors: {},
+			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files', 'Audit Trails'],
+			selectedAttachments: [],
+			publishLoading: [],
+			depublishLoading: [],
+			fileIdsLoading: [],
+		}
+	},
+	computed: {
+		objectProperties() {
+			// Return array of [key, value] pairs, excluding '@self'
+			if (!objectStore?.objectItem) return []
+			return Object.entries(objectStore.objectItem).filter(([key]) => key !== '@self')
+		},
+		editorContent() {
+			return JSON.stringify(objectStore.objectItem, null, 2)
+		},
+		currentRegister() {
+			return registerStore.registerItem
+		},
+		currentSchema() {
+			return schemaStore.schemaItem
+		},
+		selectedPublishedCount() {
+			return this.selectedAttachments.filter((a) => {
+				const found = objectStore.files.results
+					?.find(item => item.id === a)
+				if (!found) return false
+
+				return !!found.published
+			}).length
+		},
+		selectedUnpublishedCount() {
+			return this.selectedAttachments.filter((a) => {
+				const found = objectStore.files.results
+					?.find(item => item.id === a)
+				if (!found) return false
+				return found.published === null
+			}).length
+		},
+		allPublishedSelected() {
+			const published = objectStore.files.results
+				?.filter(item => !!item.published)
+				.map(item => item.id) || []
+
+			if (!published.length) {
+				return false
+			}
+			return published.every(pubId => this.selectedAttachments.includes(pubId))
+		},
+		allUnpublishedSelected() {
+			const unpublished = objectStore.files.results
+				?.filter(item => !item.published)
+				.map(item => item.id) || []
+
+			if (!unpublished.length) {
+				return false
+			}
+			return unpublished.every(unpubId => this.selectedAttachments.includes(unpubId))
+		},
+		loading() {
+			return this.publishLoading.length > 0 || this.depublishLoading.length > 0 || this.fileIdsLoading.length > 0
+		},
+		filesHasPublished() {
+			return objectStore.files.results?.some(item => !!item.published)
+		},
+		filesHasUnpublished() {
+			return objectStore.files.results?.some(item => !item.published)
+		},
+	},
+	watch: {
+		objectStore: {
+			handler(newValue) {
+				if (newValue) {
+					this.initializeData()
+				}
+			},
+			deep: true,
+		},
+		jsonData: {
+			handler(newValue) {
+				if (this.editorTab === 1 && this.isValidJson(newValue)) {
+					this.updateFormFromJson()
+				}
+			},
+		},
+		formData: {
+			deep: true,
+			immediate: true,
+			handler(obj) {
+				// Only update JSON if we're not in JSON editor tab to avoid circular updates
+				if (this.editorTab === 0) {
+					// Create a clean copy of the form data
+					const draft = JSON.stringify(obj, null, 2)
+					// Only update if the content is different to avoid infinite loops
+					if (this.jsonData !== draft) {
+						this.jsonData = draft
+					}
+				}
+
+				// Update object editors for complex fields
+				for (const k in obj) {
+					if (typeof obj[k] === 'object' && obj[k] !== null) {
+						this.objectEditors[k] = JSON.stringify(obj[k], null, 2)
+					}
+				}
+			},
+		},
+	},
+	updated() {
+		if (!this.isUpdated && navigationStore.modal === 'viewObject') {
+			this.isUpdated = true
+			this.loadTitles()
+			this.initializeData()
+		}
+	},
+	methods: {
+		async loadTitles() {
+			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
+			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
+
+			this.registerTitle = register?.title || 'Not set'
+			this.schemaTitle = schema?.title || 'Not set'
+		},
+		closeModal() {
+			navigationStore.setModal(null)
+			this.isUpdated = false
+			this.registerTitle = ''
+			this.schemaTitle = ''
+		},
+		/**
+		 * Open a file in the Nextcloud Files app
+		 * @param {object} file - The file object to open
+		 */
+		openFile(file) {
+			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
+			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
+			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
+			window.open(filesAppUrl, '_blank')
+		},
+		/**
+		 * Format file size for display
+		 * @param {number} bytes - The file size in bytes
+		 * @return {string} The formatted file size
+		 */
+		formatFileSize(bytes) {
+			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+			if (bytes === 0) return 'n/a'
+			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
+			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
+			if (i === 0) return bytes + ' ' + sizes[i]
+			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		},
+		isValidDate(value) {
+			if (!value) return false
+			const date = new Date(value)
+			return date instanceof Date && !isNaN(date)
+		},
+		formatValue(val) {
+			return JSON.stringify(val, null, 2)
+		},
+		toggleSelection(attachment) {
+			const numericId = Number(attachment.id)
+			if (this.selectedAttachments.includes(numericId)) {
+				this.selectedAttachments = this.selectedAttachments.filter(itemId => itemId !== numericId)
+			} else {
+				this.selectedAttachments.push(numericId)
+			}
+		},
+		selectAllAttachments(mode) {
+			if (mode === 'published') {
+				const publishedIds = objectStore.files.results
+					?.filter(item => item.published)
+					.map(item => Number(item.id)) || []
+
+				const allSelected = publishedIds.length > 0 && publishedIds.every(id => this.selectedAttachments.includes(id))
+
+				if (!allSelected) {
+					this.selectedAttachments = Array.from(new Set([...this.selectedAttachments, ...publishedIds]))
+				} else {
+					this.selectedAttachments = this.selectedAttachments.filter(id => !publishedIds.includes(id))
+				}
+			} else if (mode === 'unpublished') {
+				const unpublishedIds = objectStore.files.results
+					?.filter(item => !item.published)
+					.map(item => Number(item.id)) || []
+
+				const allSelected = unpublishedIds.length > 0 && unpublishedIds.every(id => this.selectedAttachments.includes(id))
+
+				if (!allSelected) {
+					this.selectedAttachments = Array.from(new Set([...this.selectedAttachments, ...unpublishedIds]))
+				} else {
+					this.selectedAttachments = this.selectedAttachments.filter(id => !unpublishedIds.includes(id))
+				}
+			}
+		},
+		getTheme,
+		async copyToClipboard(text) {
+			try {
+				await navigator.clipboard.writeText(text)
+				this.isCopied = true
+				setTimeout(() => { this.isCopied = false }, 2000)
+			} catch (err) {
+				console.error('Failed to copy text:', err)
+			}
+		},
+		initializeData() {
+			if (!objectStore.objectItem) {
+				this.formData = {}
+				this.jsonData = JSON.stringify({ data: {} }, null, 2)
+				return
+			}
+			const initial = objectStore.objectItem
+
+			const filtered = {}
+			for (const key in initial) {
+				if (key !== '@self' && key !== 'id') {
+					filtered[key] = initial[key]
+				}
+			}
+			this.formData = JSON.parse(JSON.stringify(filtered))
+			this.jsonData = JSON.stringify(filtered, null, 2)
+		},
+
+		async saveObject() {
+			if (!this.currentRegister || !this.currentSchema) {
+				this.error = 'Register and schema are required'
+				return
+			}
+
+			this.loading = true
+			this.error = null
+
+			try {
+				let payload
+				if (this.editorTab === 1) {
+					payload = {
+						...JSON.parse(this.jsonData),
+						'@self': {
+							...objectStore.objectItem['@self'],
+						},
+					}
+				} else {
+					payload = {
+						...this.formData,
+						'@self': {
+							...objectStore.objectItem['@self'],
+						},
+					}
+				}
+
+				const { response } = await objectStore.saveObject(payload, {
+					register: this.currentRegister.id,
+					schema: this.currentSchema.id,
+				})
+
+				this.success = response.ok
+				if (this.success) {
+					setTimeout(() => {
+						this.success = null
+					}, 2000)
+				}
+			} catch (e) {
+				this.error = e.message || 'Failed to save object'
+				this.success = false
+			} finally {
+				this.loading = false
+			}
+		},
+		updateFormFromJson() {
+			try {
+				const parsed = JSON.parse(this.jsonData)
+				this.formData = parsed
+			} catch (e) {
+				this.error = 'Invalid JSON format'
+			}
+		},
+
+		updateJsonFromForm() {
+			const draft = {
+				...objectStore.objectItem,
+				data: this.formData,
+			}
+			this.jsonData = JSON.stringify(draft, null, 2)
+		},
+
+		isValidJson(str) {
+			if (!str || !str.trim()) {
+				return false
+			}
+			try {
+				JSON.parse(str)
+				return true
+			} catch (e) {
+				return false
+			}
+		},
+
+		formatJSON() {
+			try {
+				if (this.jsonData) {
+					const parsed = JSON.parse(this.jsonData)
+					this.jsonData = JSON.stringify(parsed, null, 2)
+				}
+			} catch (e) {
+				// Keep invalid JSON as-is
+			}
+		},
+
+		setFieldValue(key, value) {
+			this.formData[key] = value
+		},
+		toDisplay(v) { return v === null ? '' : v },
+		toPayload(v) { return v === '' ? null : v },
+
+		addArrayItem(key) { this.formData[key].push('') },
+		removeArrayItem(key, i) { this.formData[key].splice(i, 1) },
+		updateObjectField(key, val) {
+			this.objectEditors[key] = val
+			try {
+				this.formData[key] = JSON.parse(val)
+			} catch (e) {
+				console.error('Invalid JSON format:', e)
+			}
+		},
+	},
+}
+</script>
+
+<style>
+.modal-container:has(.viewObjectDialog) {
+	width: 1000px !important;
+}
+</style>
 
 <style scoped>
 .json-editor {
@@ -481,6 +980,7 @@ onMounted(() => {
 .table-row {
 	color: var(--color-main-text);
 	border-bottom: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
 }
 
 .table-row > td {
@@ -503,6 +1003,12 @@ onMounted(() => {
 	background-color: var(--color-primary-light);
 }
 
+.table-row-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
 .pagination {
 	display: flex;
 	justify-content: center;
@@ -521,10 +1027,12 @@ onMounted(() => {
 
 .detail-grid {
 	display: grid;
-	grid-template-columns: 1fr 1fr 1fr;  /* Exactly three columns */
-	gap: 12px;
-	margin: 20px auto;  /* Add margin to create spacing */
-	max-width: 100%;  /* Ensure it doesn't overflow */
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive columns */
+	gap: 16px;
+	margin-bottom: 20px; /* Remove auto, use 0 for left/right */
+	padding: 0 20px; /* Add horizontal padding to match modal */
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .detail-item {
@@ -534,6 +1042,77 @@ onMounted(() => {
 	background-color: var(--color-background-hover);
 	border-radius: 4px;
 	border-left: 3px solid var(--color-primary);
+}
+
+.id-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.id-card .detail-value {
+	word-break: break-all;
+	margin-top: 4px;
+}
+
+.copy-button {
+	flex-shrink: 0;
+}
+
+.detail-value-with-copy {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	justify-content: space-between;
+}
+
+.detail-value-with-copy .detail-value {
+	flex: 1;
+	word-break: break-all;
+}
+
+.search-list-table {
+	overflow-x: auto;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+	box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.table-row > th {
+	padding: 10px;
+	background: var(--color-primary-light);
+}
+
+.table tbody tr:nth-child(odd) {
+	background: var(--color-background-light);
+}
+
+.table tbody tr:hover {
+	background: var(--color-background-hover);
+}
+
+.prop-cell   {
+	width: 30%;
+	font-weight: 600;
+	border-left: 3px solid var(--color-primary);
+}
+.value-cell  {
+	width: 70%;
+	word-break: break-word;
+	border-radius: 4px;
+}
+
+.json-value {
+	background: var(--color-background-dark);
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	padding: 6px 8px;
+	margin: 6px;
+	white-space: pre-wrap;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: .875rem;
+	line-height: 1.35;
 }
 
 .detail-item.empty-value {
@@ -557,6 +1136,99 @@ onMounted(() => {
 .label,
 .value {
 	display: none;
+}
+
+.format-json-button {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	transform: translateY(100%);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.copy-button {
+	margin-top: 5px;
+}
+
+.error-message {
+	position: absolute;
+	bottom: 0;
+	right: 50%;
+	transform: translateY(100%) translateX(50%);
+	color: var(--color-error);
+	font-size: 0.8rem;
+	padding-top: 0.25rem;
+}
+
+/* Dark mode specific styles */
+.codeMirrorContainer.dark :deep(.cm-editor) {
+	background-color: var(--color-background-darker);
+}
+
+.codeMirrorContainer.light :deep(.cm-editor) {
+	background-color: var(--color-background-hover);
+}
+
+/* Add tab container styles */
+.tabContainer {
+	margin-top: 20px;
+}
+
+/* Style the tabs to match ViewObject */
+:deep(.nav-tabs) {
+	border-bottom: 1px solid var(--color-border);
+	margin-bottom: 15px;
+}
+
+:deep(.nav-tabs .nav-link) {
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--color-text-maxcontrast);
+	padding: 8px 16px;
+}
+
+:deep(.nav-tabs .nav-link.active) {
+	color: var(--color-main-text);
+	border-bottom: 2px solid var(--color-primary);
+	background-color: transparent;
+}
+
+:deep(.nav-tabs .nav-link:hover) {
+	border-bottom: 2px solid var(--color-border);
+}
+
+:deep(.tab-content) {
+	padding: 16px;
+	background-color: var(--color-main-background);
+}
+
+/* Form editor specific styles */
+.form-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.array-editor {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 6px;
+}
+.array-editor li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 /* CodeMirror */
