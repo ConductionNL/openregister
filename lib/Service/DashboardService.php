@@ -584,4 +584,79 @@ class DashboardService
         }
     }
 
+    /**
+     * Get audit trail statistics including total counts and recent activity
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
+     *
+     * @return array Array containing audit trail statistics:
+     *               - total: Total number of audit trails
+     *               - creates: Number of create actions in timeframe
+     *               - updates: Number of update actions in timeframe
+     *               - deletes: Number of delete actions in timeframe
+     *               - reads: Number of read actions in timeframe
+     */
+    public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    {
+        try {
+            return $this->auditTrailMapper->getDetailedStatistics($registerId, $schemaId, $hours);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail statistics: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'creates' => 0,
+                'updates' => 0,
+                'deletes' => 0,
+                'reads' => 0
+            ];
+        }
+    }
+
+    /**
+     * Get action distribution data for audit trails with percentages
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $hours      Optional number of hours to look back (default: 24)
+     *
+     * @return array Array containing action distribution data:
+     *               - actions: Array of action data with name, count, and percentage
+     */
+    public function getAuditTrailActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    {
+        try {
+            return $this->auditTrailMapper->getActionDistribution($registerId, $schemaId, $hours);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail action distribution: ' . $e->getMessage());
+            return [
+                'actions' => []
+            ];
+        }
+    }
+
+    /**
+     * Get most active objects based on audit trail activity
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $limit      Optional limit for number of results (default: 10)
+     * @param int|null $hours      Optional number of hours to look back (default: 24)
+     *
+     * @return array Array containing most active objects:
+     *               - objects: Array of object data with name, id, and count
+     */
+    public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array
+    {
+        try {
+            return $this->auditTrailMapper->getMostActiveObjects($registerId, $schemaId, $limit, $hours);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get most active objects: ' . $e->getMessage());
+            return [
+                'objects' => []
+            ];
+        }
+    }
+
 }//end class

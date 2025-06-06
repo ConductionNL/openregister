@@ -34,6 +34,10 @@ use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
 use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
 use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
+use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -75,6 +79,8 @@ class ObjectService
      * @param RenderObject       $renderHandler      Handler for object rendering.
      * @param SaveObject         $saveHandler        Handler for object saving.
      * @param ValidateObject     $validateHandler    Handler for object validation.
+     * @param PublishObject      $publishHandler     Handler for object publication.
+     * @param DepublishObject    $depublishHandler   Handler for object depublication.
      * @param RegisterMapper     $registerMapper     Mapper for register operations.
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
@@ -85,6 +91,8 @@ class ObjectService
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
         private readonly ValidateObject $validateHandler,
+        private readonly PublishObject $publishHandler,
+        private readonly DepublishObject $depublishHandler,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper
@@ -92,6 +100,15 @@ class ObjectService
 
     }//end __construct()
 
+    /**
+     * Get ValidateHandler
+     *
+     * @return ValidateObject
+     */
+    public function getValidateHandler(): ValidateObject
+    {
+        return $this->validateHandler;
+    }
 
     /**
      * Set the current register context.
@@ -262,7 +279,7 @@ class ObjectService
         // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false) {
-            throw new ValidationException($result->error()->message());
+            throw new ValidationException($result->error()->message(), errors: $result->error());
         }
 
         // Save the object using the current register and schema.
@@ -331,7 +348,7 @@ class ObjectService
         // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
         if ($result->isValid() === false) {
-            throw new ValidationException($result->error()->message());
+            throw new ValidationException($result->error()->message(), errors: $result->error());
         }
 
         // Save the object using the current register and schema.
@@ -416,7 +433,8 @@ class ObjectService
             search: $config['search'] ?? null,
             files: $config['files'] ?? false,
             uses: $config['uses'] ?? null,
-            ids: $config['ids'] ?? null
+            ids: $config['ids'] ?? null,
+            published: $config['published'] ?? false
         );
 
         // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
@@ -500,7 +518,8 @@ class ObjectService
             filters: $config['filters'] ?? [],
             search: $config['search'] ?? null,
             ids: $config['ids'] ?? null,
-            uses: $config['uses'] ?? null
+            uses: $config['uses'] ?? null,
+            published: $config['published'] ?? false
         );
 
     }//end count()
@@ -534,7 +553,7 @@ class ObjectService
     {
         // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
-        $logs   = $this->getHandler->findLogs($object);
+        $logs   = $this->getHandler->findLogs($object, filters: $filters);
 
         return $logs;
 
@@ -571,10 +590,12 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject($object, $this->currentSchema);
-        if ($result->isValid() === false && $this->currentSchema->getHardValidation() === true) {
-            throw new ValidationException($result->error()->message());
+        // Validate the object against the current schema only if hard validation is enabled.
+        if ($this->currentSchema->getHardValidation() === true) {
+            $result = $this->validateHandler->validateObject($object, $this->currentSchema);
+            if ($result->isValid() === false) {
+                throw new ValidationException($result->error()->message(), errors: $result->error());
+            }
         }
 
         // Save the object using the current register and schema.
@@ -688,6 +709,8 @@ class ObjectService
         $extend = $requestParams['extend'] ?? $requestParams['_extend'] ?? null;
         $page   = $requestParams['page'] ?? $requestParams['_page'] ?? null;
         $search = $requestParams['_search'] ?? null;
+        $fields = $requestParams['_fields'] ?? null;
+        $published = $requestParams['_published'] ?? false;
 
         if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
@@ -726,6 +749,8 @@ class ObjectService
                     "sort"    => $order,
                     "search"  => $search,
                     "extend"  => $extend,
+                    'fields'  => $fields,
+                    'published' => $published,
                 ]
                 );
 
@@ -883,5 +908,89 @@ class ObjectService
 
     }//end getFacets()
 
+	/**
+	 * Handle validation exceptions
+	 *
+	 * @param ValidationException|CustomValidationException $exception The exception to handle
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The resulting response
+	 *
+	 * @deprecated
+	 */
+    public function handleValidationException(ValidationException|CustomValidationException $exception) {
+        return $this->validateHandler->handleValidationException($exception);
+    }
+
+
+    /**
+     * Publish an object, setting its publication date to now or a specified date.
+     *
+     * @param string|null $uuid The UUID of the object to publish. If null, uses the current object.
+     * @param \DateTime|null $date Optional publication date. If null, uses current date/time.
+     *
+     * @return ObjectEntity The updated object entity.
+     *
+     * @throws \Exception If the object is not found or if there's an error during update.
+     */
+    public function publish(string $uuid = null, ?\DateTime $date = null): ObjectEntity
+    {
+
+        // Use the publish handler to publish the object
+        return $this->publishHandler->publish(
+            uuid: $uuid,
+            date: $date
+        );
+    }
+
+    /**
+     * Depublish an object, setting its depublication date to now or a specified date.
+     *
+     * @param string|null $uuid The UUID of the object to depublish. If null, uses the current object.
+     * @param \DateTime|null $date Optional depublication date. If null, uses current date/time.
+     *
+     * @return ObjectEntity The updated object entity.
+     *
+     * @throws \Exception If the object is not found or if there's an error during update.
+     */
+    public function depublish(string $uuid = null, ?\DateTime $date = null): ObjectEntity
+    {
+        // Use the depublish handler to depublish the object
+        return $this->depublishHandler->depublish(
+            uuid: $uuid,
+            date: $date
+        );
+    }
+
+	/**
+	 * Locks an object
+	 *
+	 * @param string|int $identifier The object to lock
+	 * @param string|null $process The process to lock the object for
+	 * @param int $duration The duration to set the lock for
+	 *
+	 * @return ObjectEntity The locked objectEntity
+	 * @throws DoesNotExistException
+	 *
+	 * @deprecated
+	 */
+	public function lockObject(string|int $identifier, ?string $process = null, int $duration = 3600): ObjectEntity
+	{
+		return $this->objectEntityMapper->lockObject(identifier: $identifier, process: $process, duration: $duration);
+	}
+
+	/**
+	 * Unlocks an object
+	 *
+	 * @param string|int $identifier The object to unlock
+	 *
+	 * @return ObjectEntity The unlocked objectEntity
+	 * @throws DoesNotExistException
+	 *
+	 * @deprecated
+	 */
+	public function unlockObject(string|int $identifier): ObjectEntity
+	{
+		return $this->objectEntityMapper->unlockObject(identifier: $identifier);
+	}
 
 }//end class

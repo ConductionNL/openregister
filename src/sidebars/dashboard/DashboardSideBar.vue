@@ -9,6 +9,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 		name="Dashboard"
 		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage."
 		:open="isSidebarOpen"
+		class="dashboard-sidebar"
 		@update:open="(e) => isSidebarOpen = e">
 		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
 			<template #icon>
@@ -24,6 +25,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:model-value="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
+						:input-label="t('openregister', 'Register')"
 						placeholder="Select a register"
 						@update:model-value="handleRegisterChange" />
 				</div>
@@ -33,6 +35,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
+						:input-label="t('openregister', 'Schema')"
 						placeholder="Select a schema"
 						@update:model-value="handleSchemaChange" />
 				</div>
@@ -372,6 +375,12 @@ export default {
 	},
 }
 </script>
+
+<style>
+.dashboard-sidebar .app-sidebar-header__subname {
+	white-space: normal !important;
+}
+</style>
 
 <style lang="scss" scoped>
 .section {

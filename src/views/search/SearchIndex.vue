@@ -42,6 +42,7 @@ import SearchList from './SearchList.vue'
 // Icons
 // import Download from 'vue-material-design-icons/Download.vue'
 // import Upload from 'vue-material-design-icons/Upload.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 export default {
 	name: 'SearchIndex',
@@ -107,7 +108,7 @@ export default {
 }
 
 /* Add styles for the delete button container */
-:deep(.button-vue) {
+:deep(.action-item__menutoggle) {
     margin-top: 15px;
     margin-right: 15px;
     padding-right: 15px;
@@ -121,5 +122,12 @@ export default {
 
 .loadingIcon {
     margin-inline-end: 1rem;
+}
+/* So that the actions menu is not overlapped by the sidebar button when it is closed */
+.sidebar-closed {
+	margin-right: 45px;
+}
+.actionsContainer {
+	display: flex;
 }
 </style>

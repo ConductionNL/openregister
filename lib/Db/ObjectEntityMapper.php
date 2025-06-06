@@ -99,9 +99,10 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by ID or UUID with optional register and schema
      *
-     * @param int|string    $identifier The ID or UUID of the object to find.
-     * @param Register|null $register   Optional register to filter by.
-     * @param Schema|null   $schema     Optional schema to filter by.
+     * @param int|string    $identifier     The ID or UUID of the object to find.
+     * @param Register|null $register       Optional register to filter by.
+     * @param Schema|null   $schema         Optional schema to filter by.
+     * @param bool          $includeDeleted Whether to include deleted objects.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found.
@@ -109,7 +110,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The ObjectEntity.
      */
-    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null): ObjectEntity
+    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -132,6 +133,11 @@ class ObjectEntityMapper extends QBMapper
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
                 )
             );
+
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
 
         // Add optional register filter if provided.
         if ($register !== null) {
@@ -319,7 +325,23 @@ class ObjectEntityMapper extends QBMapper
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
-        $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+
+        $sortInRoot = [];
+        foreach ($sort as $key => $descOrAsc) {
+            if (str_starts_with($key, '@self.')) {
+                $sortInRoot = [str_replace('@self.', '', $key) => $descOrAsc];
+                break;
+            }
+        }
+
+        if (empty($sortInRoot) === false) {
+            $qb = $this->databaseJsonService->orderInRoot(builder: $qb, order: $sortInRoot);
+        } else {
+            $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+        }
+
+
+        // var_dump($qb->getSQL());
 
         return $this->findEntities(query: $qb);
 
@@ -344,7 +366,8 @@ class ObjectEntityMapper extends QBMapper
         ?string $uses=null,
         bool $includeDeleted=false,
         ?Register $register=null,
-        ?Schema $schema=null
+        ?Schema $schema=null,
+        ?bool $published=false
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -383,6 +406,23 @@ class ObjectEntityMapper extends QBMapper
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
+
+        // If published filter is set, only include objects that are currently published.
+        if ($published === true) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            // published <= now AND (depublished IS NULL OR depublished > now)
+            $qb->andWhere(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull('published'),
+                    $qb->expr()->lte('published', $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull('depublished'),
+                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                    )
+                )
+            );
+        }
+        
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -489,16 +529,17 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Updates an entity in the database
      *
-     * @param Entity $entity The entity to update
+     * @param Entity $entity        The entity to update
+     * @param bool   $includeDeleted Whether to include deleted objects when finding the old object
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
      * @return Entity The updated entity
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity, bool $includeDeleted = false): Entity
     {
-        $oldObject = $this->find($entity->getId());
+        $oldObject = $this->find($entity->getId(), null, null, $includeDeleted);
 
         // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
@@ -561,8 +602,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::delete($object);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatch(
-            ObjectDeletedEvent::class,
+        $this->eventDispatcher->dispatchTyped(
             new ObjectDeletedEvent($object)
         );
 
@@ -846,19 +886,19 @@ class ObjectEntityMapper extends QBMapper
             if (empty($exclude) === false) {
                 foreach ($exclude as $combination) {
                     $orConditions = $qb->expr()->orX();
-                    
+
                     // Handle register exclusion.
                     if (isset($combination['register']) === true) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Handle schema exclusion.
                     if (isset($combination['schema']) === true) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Add the OR conditions to the main query.
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);

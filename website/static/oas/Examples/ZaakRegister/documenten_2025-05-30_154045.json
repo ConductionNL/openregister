@@ -1,0 +1,2587 @@
+{
+    "components": {
+        "mappings": {
+            "add-extend-gebruiksrechten": {
+                "name": "AddExtendGebruiksrechten",
+                "description": "",
+                "version": "0.0.6",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/4",
+                "mapping": {
+                    "_parameters._extend": "[\"gebruiksrechten\"]"
+                },
+                "unset": [],
+                "cast": {
+                    "_parameters._extend": "jsonToArray"
+                },
+                "passThrough": true,
+                "configurations": [],
+                "dateCreated": "2025-05-23T09:33:40+00:00",
+                "dateModified": "2025-05-23T09:33:40+00:00",
+                "slug": "add-extend-gebruiksrechten"
+            },
+            "bestandsdeel-to-filepart": {
+                "name": "Bestandsdeel to FilePart",
+                "description": "",
+                "version": "0.0.4",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/1",
+                "mapping": {
+                    "size": "body.omvang",
+                    "order": "body.volgnummer",
+                    "id": "body.id",
+                    "data": "parameters.inhoud",
+                    "object": "body.informatieobject"
+                },
+                "unset": [],
+                "cast": [],
+                "passThrough": false,
+                "configurations": [],
+                "dateCreated": "2025-05-23T09:33:40+00:00",
+                "dateModified": "2025-05-23T09:33:40+00:00",
+                "slug": "bestandsdeel-to-filepart"
+            },
+            "filepart-to-bestandsdeel": {
+                "name": "FilePart to Bestandsdeel",
+                "description": "",
+                "version": "0.0.4",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/2",
+                "mapping": {
+                    "informatieobject": "object",
+                    "volgnummer": "order",
+                    "omvang": "size",
+                    "id": "id",
+                    "voltooid": "successful"
+                },
+                "unset": [],
+                "cast": [],
+                "passThrough": false,
+                "configurations": [],
+                "dateCreated": "2025-05-23T09:33:40+00:00",
+                "dateModified": "2025-05-23T09:33:40+00:00",
+                "slug": "filepart-to-bestandsdeel"
+            },
+            "put-to-get": {
+                "name": "PUT to GET",
+                "description": "",
+                "version": "0.0.3",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/3",
+                "mapping": {
+                    "_method": "GET"
+                },
+                "unset": [],
+                "cast": [],
+                "passThrough": true,
+                "configurations": [],
+                "dateCreated": "2025-05-23T09:33:40+00:00",
+                "dateModified": "2025-05-23T09:33:40+00:00",
+                "slug": "put-to-get"
+            },
+            "set-indicatie-gebruiksrecht": {
+                "name": "SetIndicatieGebruiksrecht",
+                "description": "",
+                "version": "0.0.60",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/mappings/5",
+                "mapping": {
+                    "indicatieGebruiksrecht": "{% if gebruiksrechten|length > 0 %}{% set now = 'now'|date('Y-m-d\\TH:i:sP') %}{% if gebruiksrechten|filter(gebruiksrecht => now >= gebruiksrecht.startdatum and ((gebruiksrecht.einddatum is empty or gebruiksrecht.einddatum is null) or now <= gebruiksrecht.einddatum))|length > 0 %}true{%else%}false{%endif%}{% else %}null{% endif %}"
+                },
+                "unset": [
+                    "gebruiksrechten"
+                ],
+                "cast": {
+                    "indicatieGebruiksrecht": "?boolean"
+                },
+                "passThrough": true,
+                "configurations": [],
+                "dateCreated": "2025-05-23T09:33:40+00:00",
+                "dateModified": "2025-05-23T09:33:40+00:00",
+                "slug": "set-indicatie-gebruiksrecht"
+            }
+        },
+        "sources": [],
+        "rules": {
+            "zgw-authenticatie-post": {
+                "name": "ZGW Authenticatie POST",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "post",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-post"
+            },
+            "zgw-authenticatie-get": {
+                "name": "ZGW Authenticatie GET",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "get",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-get"
+            },
+            "zgw-authenticatie-put": {
+                "name": "ZGW Authenticatie PUT",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-put"
+            },
+            "zgw-authenticatie-delete": {
+                "name": "ZGW Authenticatie DELETE",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "delete",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-delete"
+            },
+            "zgw-authenticatie-patch": {
+                "name": "ZGW Authenticatie PATCH",
+                "description": "",
+                "reference": null,
+                "version": "0.0.1",
+                "action": "put",
+                "timing": "before",
+                "conditions": [],
+                "type": "authentication",
+                "configuration": {
+                    "authentication": {
+                        "type": "jwt",
+                        "users": [],
+                        "groups": [],
+                        "keys": []
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-22T12:22:36+00:00",
+                "updated": "2025-05-22T12:22:36+00:00",
+                "slug": "zgw-authenticatie-patch"
+            },
+            "zgw-audit-trail": {
+                "name": "ZGW Audit Trails",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/10",
+                "version": "0.0.2",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "and": [
+                        {
+                            "==": [
+                                1,
+                                1
+                            ]
+                        }
+                    ]
+                },
+                "type": "audit_trail",
+                "configuration": [],
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-23T12:35:27+00:00",
+                "slug": "zgw-audit-trail"
+            },
+            "zgw-file-download": {
+                "name": "ZGW Download File",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/4",
+                "version": "0.0.2",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "and": [
+                        {
+                            "==": [
+                                1,
+                                1
+                            ]
+                        }
+                    ]
+                },
+                "type": "download",
+                "configuration": {
+                    "download": {
+                        "fileIdPosition": 0
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-26T09:21:37+00:00",
+                "slug": "zgw-file-download"
+            },
+            "zgw-extend-gebruiksrechten": {
+                "name": "ZGW Extend Gebruiksrecht",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/5",
+                "version": "0.0.2",
+                "action": "get",
+                "timing": "before",
+                "conditions": [],
+                "type": "mapping",
+                "configuration": {
+                    "mapping": "add-extend-gebruiksrechten"
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-28T11:58:45+00:00",
+                "slug": "zgw-extend-gebruiksrechten"
+            },
+            "zgw-maak-bestandsdelen": {
+                "name": "ZGW Creeer Bestandsdelen",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/1",
+                "version": "0.0.7",
+                "action": "post",
+                "timing": "after",
+                "conditions": {
+                    "!": [
+                        {
+                            "var": "body.inhoud"
+                        }
+                    ]
+                },
+                "type": "fileparts_create",
+                "configuration": {
+                    "fileparts_create": {
+                        "sizeLocation": "body.bestandsomvang",
+                        "schemaId": "bestandsdeel",
+                        "filenameLocation": "body.titel",
+                        "filePartLocation": "body.bestandsdelen",
+                        "mappingId": "filepart-to-bestandsdeel"
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-28T09:15:52+00:00",
+                "slug": "zgw-maak-bestandsdelen"
+            },
+            "zgw-change-post-to-get": {
+                "name": "ZGW Change Post to GET",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/posttoget",
+                "version": "0.0.2",
+                "action": "post",
+                "timing": "before",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "type": "mapping",
+                "configuration": {
+                    "mapping": "put-to-get"
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-26T07:41:58+00:00",
+                "slug": "zgw-change-post-to-get"
+            },
+            "zgw-set-indicatie-gebruiksrecht": {
+                "name": "ZGW Set IndicatieGebruiksrecht",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/6",
+                "version": "0.0.2",
+                "action": "get",
+                "timing": "after",
+                "conditions": [],
+                "type": "mapping",
+                "configuration": {
+                    "mapping": "set-indicatie-gebruiksrecht"
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-28T11:58:22+00:00",
+                "slug": "zgw-set-indicatie-gebruiksrecht"
+            },
+            "zgw-write-file": {
+                "name": "ZGW Write File",
+                "description": "",
+                "reference": null,
+                "version": "0.0.2",
+                "action": "post",
+                "timing": "after",
+                "conditions": {
+                    "!!": [
+                        {
+                            "var": "body.inhoud"
+                        }
+                    ]
+                },
+                "type": "write_file",
+                "configuration": {
+                    "write_file": {
+                        "filePath": "body.inhoud",
+                        "fileNamePath": "body.titel",
+                        "tags": [],
+                        "autoShare": false
+                    }
+                },
+                "order": 0,
+                "configurations": [],
+                "created": "2025-05-26T09:05:59+00:00",
+                "updated": "2025-05-26T09:17:12+00:00",
+                "slug": "zgw-write-file"
+            },
+            "zgw-upload-bestandsdeel": {
+                "name": "ZGW Upload Bestandsdeel",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/2",
+                "version": "0.0.4",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "type": "filepart_upload",
+                "configuration": {
+                    "filepart_upload": {
+                        "mappingId": "bestandsdeel-to-filepart",
+                        "mappingOutId": 3
+                    }
+                },
+                "order": 1,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-23T09:33:40+00:00",
+                "slug": "zgw-upload-bestandsdeel"
+            },
+            "zgw-lock-object": {
+                "name": "ZGW Lock object",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/11",
+                "version": "0.0.4",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "and": [
+                        {
+                            "==": [
+                                1,
+                                1
+                            ]
+                        }
+                    ]
+                },
+                "type": "locking",
+                "configuration": {
+                    "locking": {
+                        "action": "lock",
+                        "timeout": 10
+                    }
+                },
+                "order": 1,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-26T08:36:26+00:00",
+                "slug": "zgw-lock-object"
+            },
+            "zgw-change-put-to-get": {
+                "name": "ZGW Change PUT to GET",
+                "description": "",
+                "reference": "http://nextcloud.local/index.php/apps/openconnector/api/rules/3",
+                "version": "0.0.2",
+                "action": "put",
+                "timing": "before",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "type": "mapping",
+                "configuration": {
+                    "mapping": "put-to-get"
+                },
+                "order": 1,
+                "configurations": [],
+                "created": "2025-05-23T09:33:40+00:00",
+                "updated": "2025-05-28T12:56:27+00:00",
+                "slug": "zgw-change-put-to-get"
+            },
+            "zgw-unlock-object": {
+                "name": "ZGW Unlock object",
+                "description": "",
+                "reference": null,
+                "version": "0.0.9",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "type": "locking",
+                "configuration": {
+                    "locking": {
+                        "action": "unlock",
+                        "timeout": 30
+                    }
+                },
+                "order": 1,
+                "configurations": [],
+                "created": "2025-05-26T08:36:12+00:00",
+                "updated": "2025-05-26T08:43:06+00:00",
+                "slug": "zgw-unlock-object"
+            },
+            "add-lock-to-body": {
+                "name": "Add lock to body",
+                "description": "",
+                "reference": null,
+                "version": "0.0.2",
+                "action": "get",
+                "timing": "after",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "type": "mapping",
+                "configuration": {
+                    "mapping": 11
+                },
+                "order": 2,
+                "configurations": [],
+                "created": "2025-05-30T15:37:48+00:00",
+                "updated": "2025-05-30T15:40:04+00:00",
+                "slug": "add-lock-to-body"
+            }
+        },
+        "endpoints": {
+            "enkelvoudiginformatieobject-get-item": {
+                "name": "EnkelvoudigInformatieObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get",
+                    "zgw-extend-gebruiksrechten",
+                    "zgw-set-indicatie-gebruiksrecht"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-get-item",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T11:57:55+00:00"
+            },
+            "enkelvoudiginformatieobject-get-collection": {
+                "name": "EnkelvoudigInformatieObject LIST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get",
+                    "zgw-extend-gebruiksrechten",
+                    "zgw-set-indicatie-gebruiksrecht"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-get-collection",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:18:00+00:00"
+            },
+            "enkelvoudiginformatieobject-audittrail-get-collection": {
+                "name": "EnkelvoudigInformatieObject LIST Audit Trail",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/audittrail",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}",
+                    "audittrail"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/audittrail$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get",
+                    "zgw-audit-trail"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-audittrail-get-collection",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-23T11:37:53+00:00"
+            },
+            "enkelvoudiginformatieobject-audittrail-get-item": {
+                "name": "EnkelvoudigInformatieObject GET Audit Trail",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/audittrail/{{audittrail-id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}",
+                    "audittrail",
+                    "{{audittrail-id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/audittrail/([^/]+)$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get",
+                    "zgw-audit-trail"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-audittrail-get-item",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-23T11:52:18+00:00"
+            },
+            "enkelvoudiginformatieobject-post": {
+                "name": "EnkelvoudigInformatieObject POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-post",
+                    "zgw-write-file",
+                    "zgw-maak-bestandsdelen"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-post",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T08:32:29+00:00"
+            },
+            "enkelvoudiginformatieobject-lock": {
+                "name": "EnkelvoudigInformatieObject LOCK",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/lock",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}",
+                    "lock"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/lock$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-post",
+                    "zgw-change-post-to-get",
+                    "zgw-lock-object"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-lock",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-30T15:38:28+00:00"
+            },
+            "enkelvoudiginformatieobject-unlock": {
+                "name": "EnkelvoudigInformatieObject UNLOCK",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/unlock",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}",
+                    "unlock"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/unlock$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-post",
+                    "zgw-change-post-to-get",
+                    "zgw-unlock-object"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-unlock",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-30T15:39:13+00:00"
+            },
+            "enkelvoudiginformatieobject-put": {
+                "name": "EnkelvoudigInformatieObject PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-put"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-put",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-26T08:57:16+00:00"
+            },
+            "enkelvoudiginformatieobject-patch": {
+                "name": "EnkelvoudigInformatieObject PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-patch"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-patch",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-26T08:58:00+00:00"
+            },
+            "enkelvoudiginformatieobject-delete": {
+                "name": "EnkelvoudigInformatieObject DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-delete"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-delete",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-26T08:58:32+00:00"
+            },
+            "gebruiksrecht-get-item": {
+                "name": "Gebruiksrecht GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "gebruiksrechten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/gebruiksrechten/([^/]+)$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/gebruiksrechten",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "gebruiksrecht-get-item",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:20:09+00:00"
+            },
+            "gebruiksrecht-get-collection": {
+                "name": "Gebruiksrecht LIST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/gebruiksrechten",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "gebruiksrechten"
+                ],
+                "endpointRegex": "#^drc/api/v1/gebruiksrechten#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/gebruiksrechten",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "gebruiksrecht-get-collection",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:20:42+00:00"
+            },
+            "gebruiksrecht-post": {
+                "name": "Gebruiksrecht POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/gebruiksrechten",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "gebruiksrechten"
+                ],
+                "endpointRegex": "#^drc/api/v1/gebruiksrechten#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "documenten/gebruiksrechten",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-post"
+                ],
+                "configurations": [],
+                "slug": "gebruiksrecht-post",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:22:03+00:00"
+            },
+            "gebruiksrecht-put": {
+                "name": "Gebruiksrecht PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "gebruiksrechten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/gebruiksrechten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "documenten/gebruiksrechten",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-put"
+                ],
+                "configurations": [],
+                "slug": "gebruiksrecht-put",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:23:27+00:00"
+            },
+            "gebruiksrecht-patch": {
+                "name": "Gebruiksrecht PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "gebruiksrechten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/gebruiksrechten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "documenten/gebruiksrecht",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-patch"
+                ],
+                "configurations": [],
+                "slug": "gebruiksrecht-patch",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:23:56+00:00"
+            },
+            "gebruiksrecht-delete": {
+                "name": "Gebruiksrecht DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/gebruiksrechten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "gebruiksrechten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/gebruiksrechten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "documenten/gebruiksrecht",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-delete"
+                ],
+                "configurations": [],
+                "slug": "gebruiksrecht-delete",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:24:24+00:00"
+            },
+            "verzending-get-item": {
+                "name": "Verzending GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/verzendingen/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "verzendingen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/verzendingen/([^/]+)$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/verzending",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "verzending-get-item",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:34:53+00:00"
+            },
+            "verzending-get-collection": {
+                "name": "Verzending LIST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/verzendingen",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "verzendingen"
+                ],
+                "endpointRegex": "#^drc/api/v1/verzendingen#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/verzending",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "verzending-get-collection",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:34:24+00:00"
+            },
+            "verzending-post": {
+                "name": "Verzending POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/verzendingen",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "verzendingen"
+                ],
+                "endpointRegex": "#^drc/api/v1/verzendingen#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "documenten/verzending",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-post"
+                ],
+                "configurations": [],
+                "slug": "verzending-post",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:33:21+00:00"
+            },
+            "verzending-put": {
+                "name": "Verzending PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/verzendingen/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "verzendingen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/verzendingen(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "documenten/verzending",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-put"
+                ],
+                "configurations": [],
+                "slug": "verzending-put",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:32:45+00:00"
+            },
+            "verzending-patch": {
+                "name": "Verzending PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/verzendingen/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "verzendingen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/verzendingen(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "documenten/verzending",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-patch"
+                ],
+                "configurations": [],
+                "slug": "verzending-patch",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:32:09+00:00"
+            },
+            "verzending-delete": {
+                "name": "Verzending DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/verzendingen/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "verzendingen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/verzendingen(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "documenten/verzending",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-delete"
+                ],
+                "configurations": [],
+                "slug": "verzending-delete",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:31:51+00:00"
+            },
+            "objectinformatieobject-get-item": {
+                "name": "Object-informatieobject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/objectinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "objectinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/objectinformatieobjecten/([^/]+)$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/objectinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "objectinformatieobject-get-item",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:31:10+00:00"
+            },
+            "objectinformatieobject-get-collection": {
+                "name": "Object-informatieobject LIST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/objectinformatieobjecten",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "objectinformatieobjecten"
+                ],
+                "endpointRegex": "#^drc/api/v1/objectinformatieobjecten#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/objectinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "objectinformatieobject-get-collection",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:30:00+00:00"
+            },
+            "objectinformatieobject-post": {
+                "name": "Object-informatieobject POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/objectinformatieobjecten",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "objectinformatieobjecten"
+                ],
+                "endpointRegex": "#^drc/api/v1/objectinformatieobjecten#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "documenten/objectinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-post"
+                ],
+                "configurations": [],
+                "slug": "objectinformatieobject-post",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:29:24+00:00"
+            },
+            "objectinformatieobject-delete": {
+                "name": "Object-informatieobject DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/objectinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "objectinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/objectinformatieobjecten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "documenten/objectinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-delete"
+                ],
+                "configurations": [],
+                "slug": "objectinformatieobject-delete",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:28:14+00:00"
+            },
+            "bestandsdeel-put": {
+                "name": "Bestandsdeel PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/bestandsdelen/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "bestandsdelen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^drc/api/v1/bestandsdelen(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "documenten/bestandsdeel",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-change-put-to-get",
+                    "zgw-upload-bestandsdeel",
+                    "zgw-authenticatie-put"
+                ],
+                "configurations": [],
+                "slug": "bestandsdeel-put",
+                "created": "2025-05-22T09:41:40+00:00",
+                "updated": "2025-05-28T12:42:57+00:00"
+            },
+            "enkelvoudiginformatieobject-download": {
+                "name": "EnkelvoudigInformatieObject DOWNLOAD",
+                "description": "",
+                "reference": "",
+                "version": "0.0.0",
+                "endpoint": "drc/api/v1/enkelvoudiginformatieobjecten/{{id}}/download",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "enkelvoudiginformatieobjecten",
+                    "{{id}}",
+                    "download"
+                ],
+                "endpointRegex": "#^drc/api/v1/enkelvoudiginformatieobjecten/([^/]+)/download$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/enkelvoudiginformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get",
+                    "zgw-file-download"
+                ],
+                "configurations": [],
+                "slug": "enkelvoudiginformatieobject-download",
+                "created": "2025-05-26T09:01:11+00:00",
+                "updated": "2025-05-26T09:20:31+00:00"
+            },
+            "bestandsdelen-get": {
+                "name": "Bestandsdelen GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "drc/api/v1/bestandsdelen/{{id}}",
+                "endpointArray": [
+                    "drc",
+                    "api",
+                    "v1",
+                    "bestandsdelen",
+                    "{{id}}"
+                ],
+                "endpointRegex": "",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "documenten/bestandsdeel",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [
+                    "zgw-authenticatie-get"
+                ],
+                "configurations": [],
+                "slug": "bestandsdelen-get",
+                "created": "2025-05-28T14:14:23+00:00",
+                "updated": "2025-05-28T14:24:04+00:00"
+            }
+        },
+        "synchronizations": [],
+        "jobs": [],
+        "registers": {
+            "documenten": {
+                "slug": "documenten",
+                "title": "Documenten",
+                "version": "0.0.4",
+                "description": "",
+                "schemas": [
+                    "bestandsdeel",
+                    "enkelvoudiginformatieobject",
+                    "gebruiksrechten",
+                    "objectinformatieobject",
+                    "verzending"
+                ],
+                "source": "",
+                "tablePrefix": "",
+                "folder": "",
+                "updated": "2025-05-28T09:40:28+00:00",
+                "created": "2025-05-15T11:46:45+00:00",
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null
+            }
+        },
+        "schemas": {
+            "bestandsdeel": {
+                "slug": "bestandsdeel",
+                "title": "Bestandsdeel",
+                "description": "",
+                "version": "0.0.12",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "volgnummer"
+                ],
+                "properties": {
+                    "omvang": {
+                        "description": "",
+                        "type": "integer",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "omvang"
+                    },
+                    "informatieobject": {
+                        "description": "",
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobject"
+                    },
+                    "voltooid": {
+                        "description": "",
+                        "type": "boolean",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "voltooid"
+                    },
+                    "id": {
+                        "description": "",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "id"
+                    },
+                    "volgnummer": {
+                        "description": "",
+                        "type": "integer",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": true,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": 0,
+                        "exclusiveMax": 0,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "volgnummer"
+                    },
+                    "url": {
+                        "description": "",
+                        "type": "string",
+                        "format": "",
+                        "pattern": "",
+                        "default": "{{ uri }}",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "url"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-28T14:10:25+00:00",
+                "created": "2025-05-28T09:03:57+00:00",
+                "maxDepth": 0,
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "enkelvoudiginformatieobject": {
+                "slug": "enkelvoudiginformatieobject",
+                "title": "EnkelvoudigInformatieObject",
+                "description": "Serializer for the EnkelvoudigInformatieObject model",
+                "version": "0.0.12",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "auteur",
+                    "beginRegistratie",
+                    "bronorganisatie",
+                    "creatiedatum",
+                    "taal",
+                    "titel",
+                    "url",
+                    "versie"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "default": "{{ uri }}",
+                        "required": true
+                    },
+                    "identificatie": {
+                        "type": "string",
+                        "description": "Een binnen een gegeven context ondubbelzinnige referentie naar het INFORMATIEOBJECT.",
+                        "title": "identificatie",
+                        "maxLength": 40
+                    },
+                    "bronorganisatie": {
+                        "type": "string",
+                        "description": "Het RSIN van de Niet-natuurlijk persoon zijnde de organisatie die het informatieobject heeft gecre\u00eberd of heeft ontvangen en als eerste in een samenwerkingsketen heeft vastgelegd.",
+                        "title": "bronorganisatie",
+                        "maxLength": 9
+                    },
+                    "creatiedatum": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Een datum of een gebeurtenis in de levenscyclus van het INFORMATIEOBJECT.",
+                        "title": "creatiedatum"
+                    },
+                    "titel": {
+                        "type": "string",
+                        "description": "De naam waaronder het INFORMATIEOBJECT formeel bekend is.",
+                        "title": "titel",
+                        "maxLength": 200
+                    },
+                    "vertrouwelijkheidaanduiding": {
+                        "description": "Aanduiding van de mate waarin het INFORMATIEOBJECT voor de openbaarheid bestemd is.\n\nUitleg bij mogelijke waarden:\n\n* `openbaar` - Openbaar\n* `beperkt_openbaar` - Beperkt openbaar\n* `intern` - Intern\n* `zaakvertrouwelijk` - Zaakvertrouwelijk\n* `vertrouwelijk` - Vertrouwelijk\n* `confidentieel` - Confidentieel\n* `geheim` - Geheim\n* `zeer_geheim` - Zeer geheim",
+                        "title": "vertrouwelijkheidaanduiding",
+                        "enum": [
+                            "openbaar",
+                            "beperkt_openbaar",
+                            "intern",
+                            "zaakvertrouwelijk",
+                            "vertrouwelijk",
+                            "confidentieel",
+                            "geheim",
+                            "zeer_geheim"
+                        ],
+                        "type": "string"
+                    },
+                    "auteur": {
+                        "type": "string",
+                        "description": "De persoon of organisatie die in de eerste plaats verantwoordelijk is voor het cre\u00ebren van de inhoud van het INFORMATIEOBJECT.",
+                        "title": "auteur",
+                        "maxLength": 200
+                    },
+                    "inhoudIsVervallen": {
+                        "description": "Geeft aan of de inhoud van het INFORMATIEOBJECT al dan niet  vervallen, dus niet langer geldig is.\n* `true` De inhoud van het INFORMATIEOBJECT is vervallen.\n* `false` De inhoud van het INFORMATIEOBJECT is niet vervallen.",
+                        "title": "inhoudIsVervallen",
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "formaat": {
+                        "type": "string",
+                        "description": "Het \"Media Type\" (voorheen \"MIME type\") voor de wijze waaropde inhoud van het INFORMATIEOBJECT is vastgelegd in een computerbestand. Voorbeeld: `application/msword`. Zie: https://www.iana.org/assignments/media-types/media-types.xhtml",
+                        "title": "formaat",
+                        "maxLength": 255
+                    },
+                    "taal": {
+                        "type": "string",
+                        "description": "Een ISO 639-2/B taalcode waarin de inhoud van het INFORMATIEOBJECT is vastgelegd. Voorbeeld: `dut`. Zie: https://www.iso.org/standard/4767.html",
+                        "title": "taal",
+                        "maxLength": 3,
+                        "minLength": 3
+                    },
+                    "versie": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "description": "Het (automatische) versienummer van het INFORMATIEOBJECT. Deze begint bij 1 als het INFORMATIEOBJECT aangemaakt wordt.",
+                        "title": "versie",
+                        "default": 1,
+                        "required": true
+                    },
+                    "beginRegistratie": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "description": "Een datumtijd in ISO8601 formaat waarop deze versie van het INFORMATIEOBJECT is aangemaakt of gewijzigd.",
+                        "title": "beginRegistratie",
+                        "default": "{{ 'now'|date('c') }}",
+                        "required": true
+                    },
+                    "bestandsnaam": {
+                        "type": "string",
+                        "description": "De naam van het fysieke bestand waarin de inhoud van het informatieobject is vastgelegd, inclusief extensie.",
+                        "title": "bestandsnaam",
+                        "maxLength": 255
+                    },
+                    "inhoud": {
+                        "type": "string",
+                        "description": "Download URL van de binaire inhoud.",
+                        "nullable": true,
+                        "title": "inhoud"
+                    },
+                    "bestandsomvang": {
+                        "type": "integer",
+                        "maximum": 9.223372036854776e+18,
+                        "minimum": 0,
+                        "format": "int64",
+                        "nullable": true,
+                        "description": "Aantal bytes dat de inhoud van INFORMATIEOBJECT in beslag neemt.",
+                        "title": "bestandsomvang"
+                    },
+                    "beschrijving": {
+                        "type": "string",
+                        "description": "Een generieke beschrijving van de inhoud van het INFORMATIEOBJECT.",
+                        "title": "beschrijving",
+                        "maxLength": 1000
+                    },
+                    "ontvangstdatum": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "<b>DEPRECATED</b> Dit attribuut is verplaatst naar resource Verzending. De datum waarop het INFORMATIEOBJECT ontvangen is. Verplicht te registreren voor INFORMATIEOBJECTen die van buiten de zaakbehandelende organisatie(s) ontvangen zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt.",
+                        "title": "ontvangstdatum"
+                    },
+                    "verzenddatum": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "<b>DEPRECATED</b> Dit attribuut is verplaatst naar resource Verzending. De datum waarop het INFORMATIEOBJECT verzonden is, zoals deze op het INFORMATIEOBJECT vermeld is. Dit geldt voor zowel inkomende als uitgaande INFORMATIEOBJECTen. Eenzelfde informatieobject kan niet tegelijk inkomend en uitgaand zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt.",
+                        "title": "verzenddatum"
+                    },
+                    "indicatieGebruiksrecht": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "description": "Indicatie of er beperkingen gelden aangaande het gebruik van het informatieobject anders dan raadpleging. Dit veld mag `null` zijn om aan te geven dat de indicatie nog niet bekend is. Als de indicatie gezet is, dan kan je de gebruiksrechten die van toepassing zijn raadplegen via de GEBRUIKSRECHTen resource.",
+                        "title": "indicatieGebruiksrecht"
+                    },
+                    "verschijningsvorm": {
+                        "type": "string",
+                        "description": "De essenti\u00eble opmaakaspecten van een INFORMATIEOBJECT.",
+                        "title": "verschijningsvorm"
+                    },
+                    "locked": {
+                        "type": "boolean",
+                        "readOnly": true,
+                        "description": "Geeft aan of het document gelocked is. Alleen als een document gelocked is, mogen er aanpassingen gemaakt worden.",
+                        "title": "locked",
+                        "default": false
+                    },
+                    "bestandsdelen": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "bestandsdeel"
+                        },
+                        "inversedBy": "informatieobject",
+                        "readOnly": true,
+                        "title": "bestandsdelen",
+                        "default": [],
+                        "$ref": "bestandsdeel"
+                    },
+                    "trefwoorden": {
+                        "description": "Een lijst van \u00e9\u00e9n of meer trefwoorden.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "bouwtekening",
+                            "vergunning",
+                            "aanvraag"
+                        ],
+                        "title": "trefwoorden"
+                    },
+                    "ondertekening": {
+                        "description": "Aanduiding van de rechtskracht van een informatieobject. Mag niet van een waarde zijn voorzien als de `status` de waarde 'in bewerking' of 'ter vaststelling' heeft.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Ondertekening"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "ondertekening"
+                    },
+                    "integriteit": {
+                        "description": "Uitdrukking van mate van volledigheid en onbeschadigd zijn van digitaal bestand.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Integriteit"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "integriteit"
+                    },
+                    "status": {
+                        "description": "Aanduiding van de stand van zaken van een INFORMATIEOBJECT. De waarden 'in bewerking' en 'ter vaststelling' komen niet voor als het attribuut `ontvangstdatum` van een waarde is voorzien. Wijziging van de Status in 'gearchiveerd' impliceert dat het informatieobject een duurzaam, niet-wijzigbaar Formaat dient te hebben.\n\nUitleg bij mogelijke waarden:\n\n* `in_bewerking` - (In bewerking) Aan het informatieobject wordt nog gewerkt.\n* `ter_vaststelling` - (Ter vaststelling) Informatieobject gereed maar moet nog vastgesteld worden.\n* `definitief` - (Definitief) Informatieobject door bevoegd iets of iemand vastgesteld dan wel ontvangen.\n* `gearchiveerd` - (Gearchiveerd) Informatieobject duurzaam bewaarbaar gemaakt; een gearchiveerd informatie-element.",
+                        "type": "object",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "status",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "enum": [
+                            "in_bewerking",
+                            "ter_vaststelling",
+                            "definitief",
+                            "gearchiveerd",
+                            ""
+                        ],
+                        "title": "status"
+                    },
+                    "gebruiksrechten": {
+                        "description": "Gebruiksrechten voor dit informatieobject",
+                        "type": "array",
+                        "format": "uri",
+                        "$ref": "gebruiksrechten",
+                        "inversedBy": "informatieobject",
+                        "items": {
+                            "type": "object",
+                            "$ref": "gebruiksrechten"
+                        },
+                        "title": "gebruiksrechten"
+                    },
+                    "informatieobjecttype": {
+                        "description": "URL-referentie naar het INFORMATIEOBJECTTYPE (in de Catalogi API).",
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 200,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": null,
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobjecttype"
+                    },
+                    "link": {
+                        "description": "De URL waarmee de inhoud van het INFORMATIEOBJECT op te vragen is.",
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "{{ uri~'/download' }}",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 200,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "link"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-28T14:12:32+00:00",
+                "created": "2025-05-15T11:46:55+00:00",
+                "maxDepth": 0,
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "gebruiksrechten": {
+                "slug": "gebruiksrechten",
+                "title": "Gebruiksrechten",
+                "description": "",
+                "version": "0.0.4",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "omschrijvingVoorwaarden",
+                    "startdatum"
+                ],
+                "properties": {
+                    "startdatum": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Begindatum van de periode waarin de gebruiksrechtvoorwaarden van toepassing zijn. Doorgaans is de datum van creatie van het informatieobject de startdatum.",
+                        "title": "startdatum"
+                    },
+                    "einddatum": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "title": "einddatum",
+                        "description": "Einddatum van de periode waarin de gebruiksrechtvoorwaarden van toepassing zijn."
+                    },
+                    "omschrijvingVoorwaarden": {
+                        "type": "string",
+                        "description": "Omschrijving van de van toepassing zijnde voorwaarden aan het gebruik anders dan raadpleging",
+                        "title": "omschrijvingVoorwaarden"
+                    },
+                    "url": {
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "type": "string",
+                        "format": null,
+                        "pattern": "",
+                        "default": "{{ uri }}",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "url"
+                    },
+                    "informatieobject": {
+                        "description": "URL-referentie naar het INFORMATIEOBJECT.",
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobject"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-28T11:50:07+00:00",
+                "created": "2025-05-15T11:46:55+00:00",
+                "maxDepth": 0,
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "objectinformatieobject": {
+                "slug": "objectinformatieobject",
+                "title": "ObjectInformatieObject",
+                "description": "",
+                "version": "0.0.3",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "informatieobject",
+                    "object",
+                    "objectType"
+                ],
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar het gerelateerde OBJECT (in deze of een andere API).",
+                        "title": "object",
+                        "maxLength": 1000
+                    },
+                    "objectType": {
+                        "enum": [
+                            "besluit",
+                            "zaak",
+                            "verzoek"
+                        ],
+                        "title": "objectType",
+                        "description": "Het type van het gerelateerde OBJECT.\n\nUitleg bij mogelijke waarden:\n\n* `besluit` - Besluit\n* `zaak` - Zaak",
+                        "type": "string"
+                    },
+                    "informatieobject": {
+                        "description": "URL-referentie naar het INFORMATIEOBJECT.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "enkelvoudiginformatieobject",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobject"
+                    },
+                    "url": {
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "{{ uri }}",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "order": null,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "readOnly": true,
+                        "title": "url"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-30T09:50:45+00:00",
+                "created": "2025-05-15T11:46:55+00:00",
+                "maxDepth": 0,
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "verzending": {
+                "slug": "verzending",
+                "title": "Verzending",
+                "description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
+                "version": "0.0.6",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "aardRelatie",
+                    "betrokkene",
+                    "contactPersoon",
+                    "informatieobject",
+                    "url"
+                ],
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "minLength": 1,
+                        "maxLength": 1000
+                    },
+                    "betrokkene": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "URL-referentie naar de betrokkene waarvan het informatieobject is ontvangen of waaraan dit is verzonden.",
+                        "title": "betrokkene",
+                        "maxLength": 200
+                    },
+                    "aardRelatie": {
+                        "enum": [
+                            "afzender",
+                            "geadresseerde"
+                        ],
+                        "description": "Omschrijving van de aard van de relatie van de BETROKKENE tot het INFORMATIEOBJECT.",
+                        "title": "aardRelatie",
+                        "type": "string"
+                    },
+                    "toelichting": {
+                        "type": "string",
+                        "description": "Verduidelijking van de afzender- of geadresseerde-relatie.",
+                        "title": "toelichting",
+                        "maxLength": 200
+                    },
+                    "ontvangstdatum": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "De datum waarop het INFORMATIEOBJECT ontvangen is. Verplicht te registreren voor INFORMATIEOBJECTen die van buiten de zaakbehandelende organisatie(s) ontvangen zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt. Vervangt het gelijknamige attribuut uit Informatieobject. Verplicht gevuld wanneer aardRelatie de waarde 'afzender' heeft.",
+                        "title": "ontvangstdatum"
+                    },
+                    "verzenddatum": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "De datum waarop het INFORMATIEOBJECT verzonden is, zoals deze op het INFORMATIEOBJECT vermeld is. Dit geldt voor zowel inkomende als uitgaande INFORMATIEOBJECTen. Eenzelfde informatieobject kan niet tegelijk inkomend en uitgaand zijn. Ontvangst en verzending is voorbehouden aan documenten die van of naar andere personen ontvangen of verzonden zijn waarbij die personen niet deel uit maken van de behandeling van de zaak waarin het document een rol speelt. Vervangt het gelijknamige attribuut uit Informatieobject. Verplicht gevuld wanneer aardRelatie de waarde 'geadresseerde' heeft.",
+                        "title": "verzenddatum"
+                    },
+                    "contactPersoon": {
+                        "type": "string",
+                        "format": "uri",
+                        "title": "contactPersoon",
+                        "description": "URL-referentie naar de persoon die als aanspreekpunt fungeert voor de BETROKKENE inzake het ontvangen of verzonden INFORMATIEOBJECT.",
+                        "maxLength": 1000
+                    },
+                    "contactpersoonnaam": {
+                        "type": "string",
+                        "description": "De opgemaakte naam van de persoon die als aanspreekpunt fungeert voorde BETROKKENE inzake het ontvangen of verzonden INFORMATIEOBJECT.",
+                        "title": "contactpersoonnaam",
+                        "maxLength": 40
+                    },
+                    "faxnummer": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "faxnummer van de ontvanger of afzender.",
+                        "title": "faxnummer",
+                        "maxLength": 15
+                    },
+                    "emailadres": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "emailadres van de ontvanger of afzender.",
+                        "title": "emailadres",
+                        "maxLength": 100
+                    },
+                    "mijnOverheid": {
+                        "type": "boolean",
+                        "description": "is het informatieobject verzonden via mijnOverheid naar de ontvanger.",
+                        "title": "mijnOverheid"
+                    },
+                    "telefoonnummer": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "telefoonnummer van de ontvanger of afzender.",
+                        "title": "telefoonnummer",
+                        "maxLength": 15
+                    },
+                    "informatieobject": {
+                        "description": "URL-referentie naar het informatieobject dat is ontvangen of verzonden.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "enkelvoudiginformatieobject",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobject"
+                    },
+                    "binnenlandsCorrespondentieadres": {
+                        "description": "Het correspondentieadres, betreffende een adresseerbaar object, van de BETROKKENE, zijnde afzender of geadresseerde, zoals vermeld in het ontvangen of verzonden INFORMATIEOBJECT indien dat afwijkt van het reguliere binnenlandse correspondentieadres van BETROKKENE.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BinnenlandsCorrespondentieadresVerzending"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "binnenlandsCorrespondentieadres"
+                    },
+                    "correspondentiePostadres": {
+                        "description": "De gegevens die tezamen een postbusadres of antwoordnummeradres vormen van BETROKKENE, zijnde afzender of geadresseerde, zoals vermeld in het ontvangen of verzonden INFORMATIEOBJECT en dat afwijkt van de reguliere correspondentiegegevens van BETROKKENE.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BuitenlandsCorrespondentiepostadresVerzending"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "correspondentiePostadres"
+                    },
+                    "buitenlandsCorrespondentieadres": {
+                        "description": "De gegevens van het adres in het buitenland van BETROKKENE, zijnde afzender of geadresseerde, zoals vermeld in het ontvangen of verzonden INFORMATIEOBJECT en dat afwijkt van de reguliere correspondentiegegevens van BETROKKENE.",
+                        "type": "array",
+                        "format": "",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "",
+                        "objectConfiguration": {
+                            "handling": "nested-object",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BuitenlandsCorrespondentieadresVerzending"
+                            }
+                        ],
+                        "nullable": true,
+                        "title": "buitenlandsCorrespondentieadres"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T11:03:41+00:00",
+                "created": "2025-05-15T11:46:55+00:00",
+                "maxDepth": 0,
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            }
+        },
+        "objects": []
+    },
+    "openapi": "3.0.0",
+    "info": {
+        "id": 3,
+        "title": "Documenten",
+        "description": "",
+        "version": "0.0.4"
+    }
+}

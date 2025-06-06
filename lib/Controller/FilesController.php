@@ -83,7 +83,7 @@ class FilesController extends Controller
     ): JSONResponse {
         try {
             // Get the raw files from the file service
-            $files = $this->fileService->getFiles($id);
+            $files = $this->fileService->getFiles(object: $id);
 
             // Format the files with pagination using request parameters
             $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
@@ -172,6 +172,75 @@ class FilesController extends Controller
         }//end try
 
     }//end create()
+
+
+    /**
+     * Save a file to an object (create new or update existing)
+     *
+     * This endpoint provides generic save functionality that automatically determines
+     * whether to create a new file or update an existing one. Perfect for synchronization
+     * scenarios where you want to "upsert" files.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to save the file to
+     *
+     * @return JSONResponse
+     */
+    public function save(
+        string $register,
+        string $schema,
+        string $id
+    ): JSONResponse {
+        // Set the schema and register to the object service (forces a check if the are valid).
+        $schema   = $this->objectService->setSchema($schema);
+        $register = $this->objectService->setRegister($register);
+        $object   = $this->objectService->setObject($id);
+
+        try {
+            $data = $this->request->getParams();
+            
+            // Validate required parameters
+            if (empty($data['name']) === true) {
+                return new JSONResponse(['error' => 'File name is required'], 400);
+            }
+            
+            if (empty($data['content']) === true) {
+                return new JSONResponse(['error' => 'File content is required'], 400);
+            }
+
+            // Extract parameters with defaults
+            $fileName = $data['name'];
+            $content = $data['content'];
+            $share = isset($data['share']) && $data['share'] === true;
+            $tags = $data['tags'] ?? [];
+
+            // Ensure tags is an array
+            if (is_string($tags) === true) {
+                $tags = explode(',', $tags);
+                $tags = array_map('trim', $tags);
+            }
+
+            $result = $this->fileService->saveFile(
+                objectEntity: $object,
+                fileName: $fileName,
+                content: $content,
+                share: $share,
+                tags: $tags
+            );
+
+            return new JSONResponse($this->fileService->formatFile($result));
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                400
+            );
+        }//end try
+
+    }//end save()
 
 
     /**
@@ -308,7 +377,7 @@ class FilesController extends Controller
             $data = $this->request->getParams();
             // Ensure tags is set to empty array if not provided
             $tags   = $data['tags'] ?? [];
-            $result = $this->fileService($filePath, $data['content'], $tags);
+            $result = $this->fileService->updateFile($filePath, $data['content'], $tags);
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(

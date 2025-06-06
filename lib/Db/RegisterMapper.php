@@ -301,16 +301,13 @@ class RegisterMapper extends QBMapper
     {
         $register = $this->find($id);
 
-        // Update version if not set in the object array.
-        if (empty($object['version']) === true) {
-            // Split the version into major, minor, and patch.
-            $version = explode('.', $register->getVersion());
-            // Increment the patch version.
-            if (isset($version[2]) === true) {
-                $version[2] = ((int) $version[2] + 1);
-                // Reassemble the version string.
-                $object['version'] = implode('.', $version);
-            }
+        
+
+        // Set or update the version.
+        if (isset($object['version']) === false) {
+            $version    = explode('.', $register->getVersion());
+            $version[2] = ((int) $version[2] + 1);
+            $register->setVersion(implode('.', $version));
         }
 
         $register->hydrate($object);
@@ -402,6 +399,44 @@ class RegisterMapper extends QBMapper
         return null;
 
     }//end hasSchemaWithTitle()
+
+    /**
+     * Get all register ID to slug mappings
+     *
+     * @return array<string,string> Array mapping register IDs to their slugs
+     */
+    public function getIdToSlugMap(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName());
+
+        $result = $qb->execute();
+        $mappings = [];
+        while ($row = $result->fetch()) {
+            $mappings[$row['id']] = $row['slug'];
+        }
+        return $mappings;
+    }
+
+    /**
+     * Get all register slug to ID mappings
+     *
+     * @return array<string,string> Array mapping register slugs to their IDs
+     */
+    public function getSlugToIdMap(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName());
+
+        $result = $qb->execute();
+        $mappings = [];
+        while ($row = $result->fetch()) {
+            $mappings[$row['slug']] = $row['id'];
+        }
+        return $mappings;
+    }
 
 
 }//end class

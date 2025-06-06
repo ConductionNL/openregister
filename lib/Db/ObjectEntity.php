@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\Entity;
 use OC\Files\Node\File;
 use OCP\IUserSession;
@@ -210,11 +211,21 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $depublished = null;
 
+    /**
+     * Last log entry related to this object (not persisted, runtime only)
+     *
+     * @var array|null
+     * @phpstan-var array<string, mixed>|null
+     * @psalm-var array<string, mixed>|null
+     */
+    private ?array $lastLog = null;
+
 
     /**
      * Initialize the entity and define field types
      */
-    public function __construct()
+    public function __construct(
+	)
     {
         $this->addType(fieldName:'uuid', type: 'string');
         $this->addType(fieldName:'uri', type: 'string');
@@ -246,13 +257,19 @@ class ObjectEntity extends Entity implements JsonSerializable
 
 
     /**
-     * Get the object data
+     * Get the object data and set the 'id' to the 'uuid'
      *
-     * @return array The object data or empty array if null
+     * @return array The object data with 'id' set to 'uuid', or empty array if null
      */
     public function getObject(): array
     {
-        return ($this->object ?? []);
+        // Initialize the object data with an empty array if null
+        $objectData = $this->object ?? [];
+
+        // Ensure 'id' is the first field by setting it before merging with object data
+        $objectData = array_merge(['id' => $this->uuid], $objectData);
+
+        return $objectData;
 
     }//end getObject()
 
@@ -264,7 +281,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getFiles(): array
     {
-        return ($this->files ?? []);
+		return ($this->files ?? []);
 
     }//end getFiles()
 
@@ -394,9 +411,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object          = $this->object;
+        $object = $this->object ?? []; // Default to an empty array if $this->object is null.
         $object['@self'] = $this->getObjectArray($object);
-        $object['id']    = $this->getUuid();
 
         // Let's merge and return.
         return $object;
@@ -509,7 +525,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
-            $lock = $this->locked;
+            $lock = $this->setLocked();
 
             // If locked by different user.
             if ($lock['user'] !== $userId) {
@@ -521,25 +537,25 @@ class ObjectEntity extends Entity implements JsonSerializable
             $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->locked = [
+            $this->setLocked([
                 'user'       => $userId,
                 'process'    => ($process ?? $lock['process']),
                 'created'    => $lock['created'],
                 'duration'   => $duration,
                 'expiration' => $newExpiration->format('c'),
-            ];
+            ]);
         } else {
             // Create new lock.
             $expiration = clone $now;
             $expiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->locked = [
+            $this->setLocked([
                 'user'       => $userId,
                 'process'    => $process,
                 'created'    => $now->format('c'),
                 'duration'   => $duration,
                 'expiration' => $expiration->format('c'),
-            ];
+            ]);
         }//end if
 
         return true;
@@ -574,7 +590,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             throw new Exception('Object is locked by another user');
         }
 
-        $this->locked = null;
+        $this->setLocked(null);
         return true;
 
     }//end unlock()
@@ -654,5 +670,31 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end delete()
 
+
+    /**
+     * Get the last log entry for this object (runtime only)
+     *
+     * @return array|null The last log entry or null if not set
+     * @phpstan-return array<string, mixed>|null
+     * @psalm-return array<string, mixed>|null
+     */
+    public function getLastLog(): ?array
+    {
+        return $this->lastLog;
+    }
+
+    /**
+     * Set the last log entry for this object (runtime only)
+     *
+     * @param array|null $log The log entry to set
+     * @phpstan-param array<string, mixed>|null $log
+     * @psalm-param array<string, mixed>|null $log
+     *
+     * @return void
+     */
+    public function setLastLog(?array $log = null): void
+    {
+        $this->lastLog = $log;
+    }
 
 }//end class

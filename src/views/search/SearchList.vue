@@ -1,6 +1,5 @@
 <script setup>
 import { navigationStore, objectStore, schemaStore, registerStore } from '../../store/store.js'
-import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 </script>
 
 <template>
@@ -58,7 +57,7 @@ import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } fro
 										<span>{{ schemaStore.schemaList.find(schema => schema.id === parseInt(result['@self'].schema))?.title }}</span>
 									</span>
 									<span v-else>
-										{{ result['@self'][column.key] }}
+										{{ result['@self'][column.key] || 'N/A' }}
 									</span>
 								</template>
 								<template v-else>
@@ -94,6 +93,8 @@ import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } fro
 		</div>
 
 		<div class="paginationContainer">
+			<div class="empty-space" />
+
 			<BPagination
 				v-model="objectStore.pagination.page"
 				:total-rows="objectStore.objectList.total"
@@ -101,6 +102,15 @@ import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } fro
 				:first-number="true"
 				:last-number="true"
 				@change="onPageChange" />
+
+			<NcSelect v-model="objectStore.pagination.limit"
+				class="limit-selector"
+				:options="[10, 20, 50, 100]"
+				:disabled="loading"
+				:loading="loading"
+				:taggable="true"
+				:clearable="false"
+				@option:selected="(selectedOption) => onPageChange(objectStore.pagination.page, selectedOption)" />
 		</div>
 
 		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'"
@@ -111,6 +121,7 @@ import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } fro
 </template>
 
 <script>
+import { NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble, NcSelect } from '@nextcloud/vue'
 import { BPagination } from 'bootstrap-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
@@ -186,8 +197,14 @@ export default {
 				console.error('Failed to delete object:', error)
 			}
 		},
-		onPageChange(page) {
-			objectStore.setPagination(page)
+		// default limit to store pagination limit, if this is undefined the limit will be set to 14 underwater
+		onPageChange(page, limit = objectStore.pagination.limit) {
+			// ensure limit is a number (a custom limit is a string)
+			// and handle NaN values (NaN is not a value that can be replaced by the default value in a function)
+			limit = Number(limit)
+			isNaN(limit) && (limit = undefined) // setPagination handles default values.
+
+			objectStore.setPagination(page, limit)
 			objectStore.refreshObjectList()
 		},
 		handleSelectObject(id) {
@@ -262,8 +279,22 @@ input[type="checkbox"] {
     box-shadow: none !important;
 }
 
-.pagination {
+.paginationContainer {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
     margin-block-start: 1rem;
+    margin-inline: 0.5rem;
+}
+
+.paginationContainer .limit-selector {
+    grid-column: 3;
+    justify-self: end;
+    min-width: 160px !important;
+}
+
+.pagination {
     display: flex;
 }
 .pagination :deep(.page-item > .page-link) {

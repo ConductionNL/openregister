@@ -8,6 +8,7 @@ export const useRegisterStore = defineStore('register', {
 		registerList: [],
 		loading: false,
 		error: null,
+		viewMode: 'cards',
 		activeTab: 'stats-tab',
 		filters: [], // List of query
 		pagination: {
@@ -20,11 +21,16 @@ export const useRegisterStore = defineStore('register', {
 		isLoading: (state) => state.loading,
 		getError: (state) => state.error,
 		getActiveTab: (state) => state.activeTab,
+		getViewMode: (state) => state.viewMode,
 	},
 	actions: {
 		setActiveTab(tab) {
 			this.activeTab = tab
 			console.log('Active tab set to:', tab)
+		},
+		setViewMode(mode) {
+			this.viewMode = mode
+			console.log('View mode set to:', mode)
 		},
 		setRegisterItem(registerItem) {
 			try {
@@ -229,7 +235,12 @@ export const useRegisterStore = defineStore('register', {
 
 			console.log('Importing register...')
 
-			const endpoint = '/index.php/apps/openregister/api/registers/import'
+			const registerId = this.registerItem?.id
+			if (!registerId) {
+				throw new Error('No register selected for import')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import?includeObjects=${includeObjects ? '1' : '0'}`
 			const formData = new FormData()
 			formData.append('file', file)
 			formData.append('includeObjects', includeObjects ? '1' : '0')

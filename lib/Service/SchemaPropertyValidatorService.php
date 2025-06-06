@@ -142,7 +142,7 @@ class SchemaPropertyValidatorService
         }
 
         // Validate array items if type is array.
-        if ($property['type'] === 'array' && isset($property['items']) === true) {
+        if ($property['type'] === 'array' && isset($property['items']) === true && isset($property['items']['$ref']) === false) {
             $this->validateProperty($property['items'], $path.'/items');
         }
 
@@ -171,6 +171,16 @@ class SchemaPropertyValidatorService
             if (is_array($property['enum']) === false || empty($property['enum']) === true) {
                 throw new Exception("'enum' at '$path' must be a non-empty array");
             }
+        }
+
+        // Validate visible property if present
+        if (isset($property['visible']) === true && is_bool($property['visible']) === false) {
+            throw new Exception("'visible' at '$path' must be a boolean");
+        }
+
+        // Validate hideOnCollection property if present
+        if (isset($property['hideOnCollection']) === true && is_bool($property['hideOnCollection']) === false) {
+            throw new Exception("'hideOnCollection' at '$path' must be a boolean");
         }
 
         return true;

@@ -51,7 +51,7 @@ class AuditTrailMapper extends QBMapper
      */
     public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
     {
-        parent::__construct($db, 'openregister_audit_trails');
+        parent::__construct($db, 'openregister_audit_trails', AuditTrail::class);
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
@@ -62,9 +62,9 @@ class AuditTrailMapper extends QBMapper
      *
      * @param int $id The id of the audit trail
      *
-     * @return Log The audit trail
+     * @return AuditTrail The audit trail
      */
-    public function find(int $id): Log
+    public function find(int $id): AuditTrail
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -142,7 +142,13 @@ class AuditTrailMapper extends QBMapper
             } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
             } else {
-                $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                // Handle comma-separated values (e.g., action=create,update)
+                if (strpos($value, ',') !== false) {
+                    $values = array_map('trim', explode(',', $value));
+                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                } else {
+                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
+                }
             }
         }//end foreach
 
@@ -239,21 +245,21 @@ class AuditTrailMapper extends QBMapper
      *
      * @param array $object The object to create the audit trail from
      *
-     * @return Log The created audit trail
+     * @return AuditTrail The created audit trail
      */
-    public function createFromArray(array $object): Log
+    public function createFromArray(array $object): AuditTrail
     {
-        $log = new Log();
-        $log->hydrate(object: $object);
+        $auditTrail = new AuditTrail();
+        $auditTrail->hydrate(object: $object);
 
         // Set uuid if not provided.
-        if ($log->getUuid() === null) {
-            $log->setUuid(Uuid::v4());
+        if ($auditTrail->getUuid() === null) {
+            $auditTrail->setUuid(Uuid::v4());
         }
 
-        $log->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object.
+        $auditTrail->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object.
 
-        return $this->insert(entity: $log);
+        return $this->insert(entity: $auditTrail);
 
     }//end createFromArray()
 
@@ -264,7 +270,7 @@ class AuditTrailMapper extends QBMapper
      * @param ObjectEntity|null $old The old state of the object
      * @param ObjectEntity|null $new The new state of the object
      * @param string|null     $action The action to create the audit trail for
-     * 
+     *
      * @return AuditTrail The created audit trail
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
@@ -274,8 +280,10 @@ class AuditTrailMapper extends QBMapper
             $action       = 'delete';
             $objectEntity = $old;
         } else if ($old === null && $action === 'update') {
-            $action       = 'create';
+            $action = 'create';
             $objectEntity = $new;
+        } else if ($action === 'delete') {
+            $objectEntity = $old;
         } else {
             $objectEntity = $new;
         }
@@ -536,19 +544,19 @@ class AuditTrailMapper extends QBMapper
             if (!empty($exclude)) {
                 foreach ($exclude as $combination) {
                     $orConditions = $qb->expr()->orX();
-                    
+
                     // Handle register exclusion
                     if (isset($combination['register'])) {
                         $orConditions->add($qb->expr()->isNull('register'));
                         $orConditions->add($qb->expr()->neq('register', $qb->createNamedParameter($combination['register'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Handle schema exclusion
                     if (isset($combination['schema'])) {
                         $orConditions->add($qb->expr()->isNull('schema'));
                         $orConditions->add($qb->expr()->neq('schema', $qb->createNamedParameter($combination['schema'], IQueryBuilder::PARAM_INT)));
                     }
-                    
+
                     // Add the OR conditions to the main query
                     if ($orConditions->count() > 0) {
                         $qb->andWhere($orConditions);
@@ -642,7 +650,7 @@ class AuditTrailMapper extends QBMapper
             // Process results into chart format
             $dateData = [];
             $actions = ['create', 'update', 'delete','read'];
-            
+
             // Initialize data structure
             foreach ($results as $row) {
                 $date = $row['date'];
@@ -674,6 +682,246 @@ class AuditTrailMapper extends QBMapper
             return [
                 'labels' => [],
                 'series' => []
+            ];
+        }
+    }
+
+
+    /**
+     * Get detailed statistics for audit trails including action counts within timeframe
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
+     *
+     * @return array Array containing detailed statistics:
+     *               - total: Total number of audit trails
+     *               - creates: Number of create actions in timeframe
+     *               - updates: Number of update actions in timeframe
+     *               - deletes: Number of delete actions in timeframe
+     *               - reads: Number of read actions in timeframe
+     */
+    public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    {
+        try {
+            // Get total count
+            $totalStats = $this->getStatistics($registerId, $schemaId);
+            $total = $totalStats['total'];
+
+            // Get recent action counts
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                'action',
+                $qb->createFunction('COUNT(*) as count')
+            )
+                ->from($this->getTableName())
+                ->where(
+                    $qb->expr()->gte(
+                        'created',
+                        $qb->createNamedParameter(
+                            (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                            IQueryBuilder::PARAM_STR
+                        )
+                    )
+                )
+                ->groupBy('action');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            // Initialize action counts
+            $actionCounts = [
+                'creates' => 0,
+                'updates' => 0,
+                'deletes' => 0,
+                'reads' => 0
+            ];
+
+            // Process results
+            foreach ($results as $row) {
+                $action = $row['action'];
+                $count = (int)$row['count'];
+
+                switch ($action) {
+                    case 'create':
+                        $actionCounts['creates'] = $count;
+                        break;
+                    case 'update':
+                        $actionCounts['updates'] = $count;
+                        break;
+                    case 'delete':
+                        $actionCounts['deletes'] = $count;
+                        break;
+                    case 'read':
+                        $actionCounts['reads'] = $count;
+                        break;
+                }
+            }
+
+            return [
+                'total' => $total,
+                'creates' => $actionCounts['creates'],
+                'updates' => $actionCounts['updates'],
+                'deletes' => $actionCounts['deletes'],
+                'reads' => $actionCounts['reads']
+            ];
+        } catch (\Exception $e) {
+            return [
+                'total' => 0,
+                'creates' => 0,
+                'updates' => 0,
+                'deletes' => 0,
+                'reads' => 0
+            ];
+        }
+    }
+
+
+    /**
+     * Get action distribution data with percentages
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $hours      Optional number of hours to look back (default: 24)
+     *
+     * @return array Array containing action distribution data:
+     *               - actions: Array of action data with name, count, and percentage
+     */
+    public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                'action',
+                $qb->createFunction('COUNT(*) as count')
+            )
+                ->from($this->getTableName())
+                ->where(
+                    $qb->expr()->gte(
+                        'created',
+                        $qb->createNamedParameter(
+                            (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                            IQueryBuilder::PARAM_STR
+                        )
+                    )
+                )
+                ->groupBy('action');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            // Calculate total for percentages
+            $total = 0;
+            $actionData = [];
+
+            foreach ($results as $row) {
+                $count = (int)$row['count'];
+                $total += $count;
+                $actionData[] = [
+                    'name' => $row['action'],
+                    'count' => $count
+                ];
+            }
+
+            // Calculate percentages
+            foreach ($actionData as &$action) {
+                $action['percentage'] = $total > 0 ? round(($action['count'] / $total) * 100, 2) : 0;
+            }
+
+            return [
+                'actions' => $actionData
+            ];
+        } catch (\Exception $e) {
+            return [
+                'actions' => []
+            ];
+        }
+    }
+
+
+    /**
+     * Get most active objects based on audit trail activity
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $limit      Optional limit for number of results (default: 10)
+     * @param int|null $hours      Optional number of hours to look back (default: 24)
+     *
+     * @return array Array containing most active objects:
+     *               - objects: Array of object data with name, id, and count
+     */
+    public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                'object',
+                $qb->createFunction('COUNT(*) as count')
+            )
+                ->from($this->getTableName())
+                ->where(
+                    $qb->expr()->gte(
+                        'created',
+                        $qb->createNamedParameter(
+                            (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                            IQueryBuilder::PARAM_STR
+                        )
+                    )
+                )
+                ->groupBy('object')
+                ->orderBy('count', 'DESC');
+
+            // Add register filter if provided
+            if ($registerId !== null) {
+                $qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Add schema filter if provided
+            if ($schemaId !== null) {
+                $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            }
+
+            // Apply limit
+            if ($limit !== null) {
+                $qb->setMaxResults($limit);
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            // Format results
+            $objects = [];
+            foreach ($results as $row) {
+                $objects[] = [
+                    'id' => $row['object'],
+                    'name' => 'Object ' . $row['object'], // Could be enhanced to get actual object name
+                    'count' => (int)$row['count']
+                ];
+            }
+
+            return [
+                'objects' => $objects
+            ];
+        } catch (\Exception $e) {
+            return [
+                'objects' => []
             ];
         }
     }

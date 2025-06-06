@@ -103,6 +103,18 @@ export const useObjectStore = defineStore('object', {
 				description: 'Lock status of the object',
 				enabled: false,
 			},
+			organization: {
+				label: 'Organization',
+				key: 'organization',
+				description: 'Organization that created the object',
+				enabled: false,
+			},
+			validation: {
+				label: 'Validation',
+				key: 'validation',
+				description: 'Validation status of the object',
+				enabled: false,
+			},
 			owner: {
 				label: 'Owner',
 				key: 'owner',
@@ -119,6 +131,42 @@ export const useObjectStore = defineStore('object', {
 				label: 'Folder',
 				key: 'folder',
 				description: 'Storage folder location',
+				enabled: false,
+			},
+			geo: {
+				label: 'Geo',
+				key: 'geo',
+				description: 'Geographical location of the object',
+				enabled: false,
+			},
+			retention: {
+				label: 'Retention',
+				key: 'retention',
+				description: 'Retention status of the object',
+				enabled: false,
+			},
+			size: {
+				label: 'Size',
+				key: 'size',
+				description: 'Size of the object',
+				enabled: false,
+			},
+			published: {
+				label: 'Published',
+				key: 'published',
+				description: 'Published status of the object',
+				enabled: false,
+			},
+			depublished: {
+				label: 'Depublished',
+				key: 'depublished',
+				description: 'Depublished status of the object',
+				enabled: false,
+			},
+			deleted: {
+				label: 'Deleted',
+				key: 'deleted',
+				description: 'Deleted status of the object',
 				enabled: false,
 			},
 			created: {
@@ -202,7 +250,7 @@ export const useObjectStore = defineStore('object', {
 				),
 			}
 
-			console.info('Object list set to ' + objectList.length + ' items')
+			console.info('Object list set to ' + objectList.results.length + ' items')
 		},
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)

@@ -9,8 +9,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 		name="Object selection"
 		subtitle="Select register and schema"
 		subname="Within the federative network"
-		:open="isSidebarOpen"
-		@update:open="(e) => isSidebarOpen = e">
+		:open="navigationStore.sidebarState.search"
+		@update:open="(e) => navigationStore.setSidebarState('search', e)">
 		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
@@ -113,6 +113,14 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</template>
 				Add
 			</NcActionButton>
+			<NcActionButton
+				:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+				@click="refreshObjects">
+				<template #icon>
+					<Refresh :size="20" />
+				</template>
+				Refresh
+			</NcActionButton>
 			<NcActionButton :disabled="!objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
 				<template #icon>
 					<Delete :size="20" />
@@ -165,6 +173,7 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import FileMoveOutline from 'vue-material-design-icons/FileMoveOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -187,7 +196,6 @@ export default {
 			searchQuery: '',
 			activeTab: 'search-tab',
 			searchTimeout: null,
-			isSidebarOpen: true,
 		}
 	},
 	computed: {
@@ -339,6 +347,10 @@ export default {
 		},
 		openEditSchemaModal() {
 			navigationStore.setModal('editSchema')
+		},
+
+		async refreshObjects() {
+			await objectStore.refreshObjectList()
 		},
 	},
 }
