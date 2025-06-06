@@ -42,7 +42,6 @@ import SearchList from './SearchList.vue'
 // Icons
 // import Download from 'vue-material-design-icons/Download.vue'
 // import Upload from 'vue-material-design-icons/Upload.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 export default {
 	name: 'SearchIndex',
