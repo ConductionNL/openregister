@@ -31,6 +31,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
@@ -78,6 +79,7 @@ class SaveObject
         private readonly IUserSession $userSession,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         ArrayLoader $arrayLoader,
     ) {
@@ -183,11 +185,77 @@ class SaveObject
         return array_merge($renderedDefaultValues, $data);
     }//end setDefaultValues
 
+	private function cascadeObjects (ObjectEntity $objectEntity, Schema $schema, array $data): array
+	{
+		$properties = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true)['properties'];
+
+		$objectProperties = array_filter($properties, function(array $property) {
+			return $property['type'] === 'object' && isset($property['$ref']) === true && isset($property['inversedBy']) === true;
+		});
+
+		$arrayObjectProperties = array_filter($properties, function(array $property) {
+			return $property['type'] === 'array'
+				&& (isset($property['$ref']) || isset($property['items']['$ref']))
+				&& (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true);
+		});
+
+		//@TODO this can be done asynchronous
+		foreach($objectProperties as $property => $definition) {
+            if (isset($data[$property]) === false || empty($data[$property]) === true) {
+                continue;
+            }
+
+            $this->cascadeSingleObject($objectEntity, $definition, $data[$property]);
+			unset($data[$property]);
+		}
+
+		foreach($arrayObjectProperties as $property => $definition) {
+            if (isset($data[$property]) === false || empty($data[$property]) === true) {
+                continue;
+            }
+
+            $this->cascadeMultipleObjects($objectEntity, $definition, $data[$property]);
+			unset($data[$property]);
+		}
+
+
+		return $data;
+	}
+
+	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): void
+	{
+		if(array_is_list($propData) === false) {
+			throw new Exception('Data is not an array of objects');
+		}
+
+		if (isset($property['$ref']) === true) {
+			$property['items']['$ref'] = $property['$ref'];
+		}
+
+		if (isset($property['inversedBy']) === true) {
+			$property['items']['inversedBy'] = $property['inversedBy'];
+		}
+
+		$propData = array_map(function(array $object) use ($objectEntity, $property) {
+			$this->cascadeSingleObject($objectEntity, $property['items'], $object);
+			return $object;
+		}, $propData);
+
+	}
+
+	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): void
+	{
+		$objectId = $objectEntity->getUuid();
+
+		$object[$definition['inversedBy']] = $objectId;
+		$this->saveObject($objectEntity->getRegister(), $definition['$ref'], $object, $object['id'] ?? $object['@self']['id'] ?? null);
+	}
+
 
     /**
      * Saves an object.
      *
-     * @param Register|int|string $register The register containing the object.
+     * @param Register|int|string|null $register The register containing the object.
      * @param Schema|int|string   $schema   The schema to validate against.
      * @param array               $data     The object data to save.
      * @param string|null         $uuid     The UUID of the object to update (if updating).
@@ -197,19 +265,14 @@ class SaveObject
      * @throws Exception If there is an error during save.
      */
     public function saveObject(
-        Register | int | string $register,
+        Register | int | string | null $register,
         Schema | int | string $schema,
         array $data,
         ?string $uuid=null
     ): ObjectEntity {
-
-        // Set register ID based on input type.
-        $registerId = null;
-        if ($register instanceof Register) {
-            $registerId = $register->getId();
-        } else {
-            $registerId = $register;
-        }
+        // Remove the @self property from the data.
+        unset($data['@self']);
+        unset($data['id']);
 
         // Set schema ID based on input type.
         $schemaId = null;
@@ -219,10 +282,16 @@ class SaveObject
             $schemaId = $schema;
         }
 
+        // Find register by schema
+        // @todo this will cause saving in unspecified register if a schema is configured in multiple registers
+        $registerId = $this->registerMapper->getFirstRegisterWithSchema((int) $schemaId);
+        $register = $this->registerMapper->find($registerId);
+
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
+				$data = $this->cascadeObjects($existingObject, $schema, $data);
 				$data = $this->setDefaultValues($existingObject, $schema, $data);
                 return $this->updateObject($register, $schema, $data, $existingObject);
             } catch (\Exception $e) {
@@ -292,7 +361,7 @@ class SaveObject
         if ($schema instanceof Schema === false) {
             $schema = $this->schemaMapper->find($schemaId);
         }
-
+		$data = $this->cascadeObjects($objectEntity, $schema, $data);
         $data = $this->setDefaultValues($objectEntity, $schema, $data);
         $objectEntity->setObject($data);
 
