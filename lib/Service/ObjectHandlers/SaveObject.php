@@ -183,6 +183,64 @@ class SaveObject
         return array_merge($renderedDefaultValues, $data);
     }//end setDefaultValues
 
+	private function cascadeObjects (ObjectEntity $objectEntity, Schema $schema, array $data): array
+	{
+		$properties = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true)['properties'];
+
+		$objectProperties = array_filter($properties, function(array $property) {
+			return $property['type'] === 'object' && isset($property['$ref']) === true && isset($property['inversedBy']) === true;
+		});
+
+		$arrayObjectProperties = array_filter($properties, function(array $property) {
+			return $property['type'] === 'array'
+				&& (isset($property['$ref']) || isset($property['items']['$ref']))
+				&& (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true);
+		});
+
+		//@TODO this can be done asynchronous
+		foreach($objectProperties as $property => $definition) {
+			$this->cascadeSingleObject($objectEntity, $definition, $data[$property]);
+			unset($data[$property]);
+		}
+
+		foreach($arrayObjectProperties as $property => $definition) {
+			$this->cascadeMultipleObjects($objectEntity, $definition, $data[$property]);
+			unset($data[$property]);
+		}
+
+
+		return $data;
+	}
+
+	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): void
+	{
+		if(array_is_list($propData) === false) {
+			throw new Exception('Data is not an array of objects');
+		}
+
+		if (isset($property['items']['$ref']) === false) {
+			$property['items']['$ref'] = $property['$ref'];
+		}
+
+		if (isset($property['items']['inversedBy']) === false) {
+			$property['items']['inversedBy'] = $property['inversedBy'];
+		}
+
+		$propData = array_map(function(array $object) use ($objectEntity, $property) {
+			$this->cascadeSingleObject($objectEntity, $property['items'], $object);
+			return $object;
+		}, $propData);
+
+	}
+
+	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): void
+	{
+		$objectId = $objectEntity->getUuid();
+
+		$object[$definition['inversedBy']] = $objectId;
+		$this->saveObject($objectEntity->getRegister(), $definition['$ref'], $object, $object['id'] ?? $object['@self']['id'] ?? null);
+	}
+
 
     /**
      * Saves an object.
@@ -225,6 +283,7 @@ class SaveObject
         if ($uuid !== null) {
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
+				$data = $this->cascadeObjects($existingObject, $schema, $data);
 				$data = $this->setDefaultValues($existingObject, $schema, $data);
                 return $this->updateObject($register, $schema, $data, $existingObject);
             } catch (\Exception $e) {
@@ -258,7 +317,7 @@ class SaveObject
         if ($schema instanceof Schema === false) {
             $schema = $this->schemaMapper->find($schemaId);
         }
-
+		$data = $this->cascadeObjects($objectEntity, $schema, $data);
         $data = $this->setDefaultValues($objectEntity, $schema, $data);
         $objectEntity->setObject($data);
 
