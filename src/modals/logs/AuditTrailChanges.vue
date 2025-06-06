@@ -170,7 +170,7 @@ export default {
 				const hasStandardFormat = Object.values(changed).every(value =>
 					typeof value === 'object'
 					&& value !== null
-					&& (value.hasOwnProperty('old') || value.hasOwnProperty('new')),
+					&& (Object.prototype.hasOwnProperty.call(value, 'old') || Object.prototype.hasOwnProperty.call(value, 'new')),
 				)
 
 				if (hasStandardFormat) {
@@ -273,10 +273,10 @@ export default {
 		 * @return {string} CSS class for change type
 		 */
 		getChangeType(change) {
-			if (!change.hasOwnProperty('old') && change.hasOwnProperty('new')) {
+			if (!Object.prototype.hasOwnProperty.call(change, 'old') && Object.prototype.hasOwnProperty.call(change, 'new')) {
 				return 'added'
 			}
-			if (change.hasOwnProperty('old') && !change.hasOwnProperty('new')) {
+			if (Object.prototype.hasOwnProperty.call(change, 'old') && !Object.prototype.hasOwnProperty.call(change, 'new')) {
 				return 'removed'
 			}
 			if (change.old !== change.new) {
