@@ -27,6 +27,16 @@ export const useDashboardStore = defineStore('dashboard', {
 			objectsBySchema: false,
 			objectsBySize: false,
 		},
+		statisticsData: {
+			auditTrailStats: null,
+			actionDistribution: null,
+			mostActiveObjects: null,
+		},
+		statisticsLoading: {
+			auditTrailStats: false,
+			actionDistribution: false,
+			mostActiveObjects: false,
+		},
 	}),
 
 	getters: {
@@ -38,6 +48,8 @@ export const useDashboardStore = defineStore('dashboard', {
 		getDateRange: (state) => state.dateRange,
 		getChartData: (state) => state.chartData,
 		isChartLoading: (state) => state.chartLoading,
+		getStatisticsData: (state) => state.statisticsData,
+		isStatisticsLoading: (state) => state.statisticsLoading,
 	},
 
 	actions: {
@@ -70,6 +82,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				await this.fetchRegisters()
 				// Fetch all chart data to update dashboard charts
 				await this.fetchAllChartData()
+				// Fetch all statistics to update audit trail sidebar
+				await this.fetchAllStatistics()
 			})
 		},
 
@@ -197,6 +211,109 @@ export const useDashboardStore = defineStore('dashboard', {
 		},
 
 		/**
+		 * Fetch audit trail statistics
+		 * @param {number|null} hours - Number of hours to look back for recent activity (default: 24)
+		 * @return {Promise<void>}
+		 */
+		async fetchAuditTrailStatistics(hours = 24) {
+			if (this.statisticsLoading.auditTrailStats) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			try {
+				this.statisticsLoading.auditTrailStats = true
+				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/audit-trail'), {
+					params: {
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
+						hours,
+					},
+				})
+				this.statisticsData.auditTrailStats = response.data
+			} catch (error) {
+				console.error('Error fetching audit trail statistics:', error)
+				throw error
+			} finally {
+				this.statisticsLoading.auditTrailStats = false
+			}
+		},
+
+		/**
+		 * Fetch action distribution data
+		 * @param {number|null} hours - Number of hours to look back (default: 24)
+		 * @return {Promise<void>}
+		 */
+		async fetchActionDistribution(hours = 24) {
+			if (this.statisticsLoading.actionDistribution) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			try {
+				this.statisticsLoading.actionDistribution = true
+				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/audit-trail-distribution'), {
+					params: {
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
+						hours,
+					},
+				})
+				this.statisticsData.actionDistribution = response.data
+			} catch (error) {
+				console.error('Error fetching action distribution:', error)
+				throw error
+			} finally {
+				this.statisticsLoading.actionDistribution = false
+			}
+		},
+
+		/**
+		 * Fetch most active objects
+		 * @param {number|null} limit - Number of results to return (default: 10)
+		 * @param {number|null} hours - Number of hours to look back (default: 24)
+		 * @return {Promise<void>}
+		 */
+		async fetchMostActiveObjects(limit = 10, hours = 24) {
+			if (this.statisticsLoading.mostActiveObjects) return
+
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			try {
+				this.statisticsLoading.mostActiveObjects = true
+				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/most-active-objects'), {
+					params: {
+						registerId: registerStore.registerItem?.id,
+						schemaId: schemaStore.schemaItem?.id,
+						limit,
+						hours,
+					},
+				})
+				this.statisticsData.mostActiveObjects = response.data
+			} catch (error) {
+				console.error('Error fetching most active objects:', error)
+				throw error
+			} finally {
+				this.statisticsLoading.mostActiveObjects = false
+			}
+		},
+
+		/**
+		 * Fetch all statistics data in parallel
+		 * @param {number|null} hours - Number of hours to look back (default: 24)
+		 * @param {number|null} limit - Number of results for most active objects (default: 10)
+		 * @return {Promise<void>}
+		 */
+		async fetchAllStatistics(hours = 24, limit = 10) {
+			await Promise.all([
+				this.fetchAuditTrailStatistics(hours),
+				this.fetchActionDistribution(hours),
+				this.fetchMostActiveObjects(limit, hours),
+			])
+		},
+
+		/**
 		 * Preload dashboard data
 		 * @return {Promise<Array>}
 		 */
@@ -204,6 +321,7 @@ export const useDashboardStore = defineStore('dashboard', {
 			if (!this.isInitialized && !this.loading) {
 				await this.fetchRegisters()
 				await this.fetchAllChartData()
+				await this.fetchAllStatistics()
 				this.isInitialized = true
 			}
 			return this.registers
@@ -273,6 +391,16 @@ export const useDashboardStore = defineStore('dashboard', {
 				objectsBySchema: false,
 				objectsBySize: false,
 			}
+			this.statisticsData = {
+				auditTrailStats: null,
+				actionDistribution: null,
+				mostActiveObjects: null,
+			}
+			this.statisticsLoading = {
+				auditTrailStats: false,
+				actionDistribution: false,
+				mostActiveObjects: false,
+			}
 		},
 	},
 })
@@ -296,5 +424,7 @@ export function setupDashboardStoreWatchers() {
 		dashboardStore.fetchRegisters()
 		// Fetch all chart data to update dashboard charts
 		dashboardStore.fetchAllChartData()
+		// Fetch all statistics to update audit trail sidebar
+		dashboardStore.fetchAllStatistics()
 	})
 }

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Formats\BsnFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
@@ -120,7 +121,7 @@ class ValidateObject
 
         // @todo This should be done earlier
         unset($object['extend'], $object['filters']);
-        
+
         // Remove empty properties and empty arrays from the object.
         $object = array_filter($object, function ($value) {
             // Check if the value is not an empty array or an empty property.
@@ -227,6 +228,7 @@ class ValidateObject
             $errors[] = [
                 'property' => method_exists($exception, 'getProperty') ? $exception->getProperty() : null,
                 'message'  => $exception->getMessage(),
+                'errors' => (new ErrorFormatter())->format($exception->getErrors()),
             ];
         } else {
             foreach ($exception->getErrors() as $error) {

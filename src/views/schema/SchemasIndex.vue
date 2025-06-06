@@ -183,7 +183,7 @@ import formatBytes from '../../services/formatBytes.js'
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="(property, key) in schema.properties" :key="key">
+									<tr v-for="(property, key) in sortedProperties(schema)" :key="key">
 										<td>{{ key }}</td>
 										<td>{{ property.type }}</td>
 										<td>
@@ -328,6 +328,30 @@ export default {
 		InformationOutline,
 		TableIcon,
 		ListIcon,
+	},
+	computed: {
+		sortedProperties() {
+			return (schema) => {
+				const properties = schema.properties || {}
+				return Object.entries(properties)
+					.sort(([keyA, propA], [keyB, propB]) => {
+						const orderA = propA.order || 0
+						const orderB = propB.order || 0
+						if (orderA > 0 && orderB > 0) {
+							return orderA - orderB
+						}
+						if (orderA > 0) return -1
+						if (orderB > 0) return 1
+						const createdA = propA.created || ''
+						const createdB = propB.created || ''
+						return createdA.localeCompare(createdB)
+					})
+					.reduce((acc, [key, value]) => {
+						acc[key] = value
+						return acc
+					}, {})
+			}
+		},
 	},
 }
 </script>

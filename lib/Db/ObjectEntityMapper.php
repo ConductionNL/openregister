@@ -99,9 +99,10 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Find an object by ID or UUID with optional register and schema
      *
-     * @param int|string    $identifier The ID or UUID of the object to find.
-     * @param Register|null $register   Optional register to filter by.
-     * @param Schema|null   $schema     Optional schema to filter by.
+     * @param int|string    $identifier     The ID or UUID of the object to find.
+     * @param Register|null $register       Optional register to filter by.
+     * @param Schema|null   $schema         Optional schema to filter by.
+     * @param bool          $includeDeleted Whether to include deleted objects.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects are found.
@@ -109,7 +110,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity The ObjectEntity.
      */
-    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null): ObjectEntity
+    public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -132,6 +133,11 @@ class ObjectEntityMapper extends QBMapper
                     $qb->expr()->eq('uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
                 )
             );
+
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
 
         // Add optional register filter if provided.
         if ($register !== null) {
@@ -523,16 +529,17 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Updates an entity in the database
      *
-     * @param Entity $entity The entity to update
+     * @param Entity $entity        The entity to update
+     * @param bool   $includeDeleted Whether to include deleted objects when finding the old object
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
      * @return Entity The updated entity
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity, bool $includeDeleted = false): Entity
     {
-        $oldObject = $this->find($entity->getId());
+        $oldObject = $this->find($entity->getId(), null, null, $includeDeleted);
 
         // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();

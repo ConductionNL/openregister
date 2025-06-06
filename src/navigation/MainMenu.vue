@@ -5,22 +5,22 @@ import { navigationStore } from '../store/store.js'
 <template>
 	<NcAppNavigation>
 		<NcAppNavigationList>
-			<NcAppNavigationItem :active="navigationStore.selected === 'dashboard'" name="Dashboard" @click="navigationStore.setSelected('dashboard')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'dashboard'" :name="t('openregister', 'Dashboard')" @click="navigationStore.setSelected('dashboard')">
 				<template #icon>
 					<Finance :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'registers'" name="Registers" @click="navigationStore.setSelected('registers')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'registers'" :name="t('openregister', 'Registers')" @click="navigationStore.setSelected('registers')">
 				<template #icon>
 					<DatabaseOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'schemas'" name="Schemas" @click="navigationStore.setSelected('schemas')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'schemas'" :name="t('openregister', 'Schemas')" @click="navigationStore.setSelected('schemas')">
 				<template #icon>
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'search'" name="Tables" @click="navigationStore.setSelected('search')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'search'" :name="t('openregister', 'Tables')" @click="navigationStore.setSelected('search')">
 				<template #icon>
 					<TableMultiple :size="20" />
 				</template>
@@ -33,14 +33,24 @@ import { navigationStore } from '../store/store.js'
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
-			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" name="Data sources" @click="navigationStore.setSelected('sources')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" :name="t('openregister', 'Data sources')" @click="navigationStore.setSelected('sources')">
 				<template #icon>
 					<DatabaseArrowRightOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="navigationStore.selected === 'configurations'" name="Configurations" @click="navigationStore.setSelected('configurations')">
+			<NcAppNavigationItem :active="navigationStore.selected === 'configurations'" :name="t('openregister', 'Configurations')" @click="navigationStore.setSelected('configurations')">
 				<template #icon>
 					<CogOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'deleted'" :name="t('openregister', 'Deleted')" @click="navigationStore.setSelected('deleted')">
+				<template #icon>
+					<DeleteRestore :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'auditTrails'" :name="t('openregister', 'Audit Trails')" @click="navigationStore.setSelected('auditTrails')">
+				<template #icon>
+					<TextBoxOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
@@ -63,6 +73,8 @@ import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRi
 // import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 
 export default {
 	name: 'MainMenu',
@@ -80,6 +92,8 @@ export default {
 		TableMultiple,
 		// LayersSearchOutline,
 		CogOutline,
+		DeleteRestore,
+		TextBoxOutline,
 	},
 	methods: {
 		openLink(url, type = '') {

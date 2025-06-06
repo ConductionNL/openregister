@@ -18,18 +18,20 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		:can-close="false">
 		<div class="formContainer viewObjectDialog">
 			<!-- Metadata Display -->
-			<div class="detail-item id-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].id }">
-				<span class="detail-label">ID:</span>
-				<span class="detail-value">{{ objectStore.objectItem.id }}</span>
-				<NcButton @click="copyToClipboard(objectStore.objectItem.id)">
-					<template #icon>
-						<Check v-if="isCopied" :size="20" />
-						<ContentCopy v-else :size="20" />
-					</template>
-					{{ isCopied ? 'Copied' : 'Copy' }}
-				</NcButton>
-			</div>
 			<div class="detail-grid">
+				<div class="detail-item id-card" :class="{ 'empty-value': !objectStore.objectItem.id }">
+					<div class="id-card-header">
+						<span class="detail-label">ID:</span>
+						<NcButton class="copy-button" @click="copyToClipboard(objectStore.objectItem.id)">
+							<template #icon>
+								<Check v-if="isCopied" :size="20" />
+								<ContentCopy v-else :size="20" />
+							</template>
+							{{ isCopied ? 'Copied' : 'Copy' }}
+						</NcButton>
+					</div>
+					<span class="detail-value">{{ objectStore.objectItem.id }}</span>
+				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].register }">
 					<span class="detail-label">Register:</span>
 					<span class="detail-value">{{ registerTitle }}</span>
@@ -49,6 +51,18 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div class="detail-item">
 					<span class="detail-label">Updated:</span>
 					<span class="detail-value">{{ new Date(objectStore.objectItem['@self'].updated).toLocaleString() }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].published }">
+					<span class="detail-label">Published:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].published ? new Date(objectStore.objectItem['@self'].published).toLocaleString() : 'Not published' }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].depublished }">
+					<span class="detail-label">Depublished:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].depublished ? new Date(objectStore.objectItem['@self'].depublished).toLocaleString() : 'Not depublished' }}</span>
+				</div>
+				<div class="detail-item" :class="{ 'empty-value': objectStore.objectItem['@self'].validation === null }">
+					<span class="detail-label">Validation:</span>
+					<span class="detail-value">{{ objectStore.objectItem['@self'].validation !== null ? (objectStore.objectItem['@self'].validation ? 'Valid' : 'Invalid') : 'Not validated' }}</span>
 				</div>
 				<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].owner }">
 					<span class="detail-label">Owner:</span>
@@ -1030,12 +1044,32 @@ export default {
 	border-left: 3px solid var(--color-primary);
 }
 
-.id-item {
-	flex-direction: row;
-	gap: 10px;
-	align-items: center;
+.id-card-header {
+	display: flex;
 	justify-content: space-between;
-	margin: 20px 20px 10px;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.id-card .detail-value {
+	word-break: break-all;
+	margin-top: 4px;
+}
+
+.copy-button {
+	flex-shrink: 0;
+}
+
+.detail-value-with-copy {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	justify-content: space-between;
+}
+
+.detail-value-with-copy .detail-value {
+	flex: 1;
+	word-break: break-all;
 }
 
 .search-list-table {
