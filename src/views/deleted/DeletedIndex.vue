@@ -12,13 +12,15 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 			</div>
 
 			<!-- Actions Bar -->
-			<div v-if="selectedItems.length > 0" class="selection-header">
-				<h3 class="selection-title">
-					{{ t('openregister', '{count} items selected', { count: selectedItems.length }) }}
-				</h3>
-			</div>
-
 			<div class="actions-bar">
+				<div class="deleted-items-info">
+					<span class="total-count">
+						{{ t('openregister', '{count} deleted items', { count: filteredItems.length }) }}
+					</span>
+					<span v-if="selectedItems.length > 0" class="selection-indicator">
+						({{ t('openregister', '{count} selected', { count: selectedItems.length }) }})
+					</span>
+				</div>
 				<div class="actions">
 					<NcButton
 						v-if="selectedItems.length > 0"
@@ -27,7 +29,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 						<template #icon>
 							<Restore :size="20" />
 						</template>
-						{{ t('openregister', 'Restore Selected') }}
+						{{ t('openregister', 'Restore ({count})', { count: selectedItems.length }) }}
 					</NcButton>
 					<NcButton
 						v-if="selectedItems.length > 0"
@@ -36,7 +38,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 						<template #icon>
 							<Delete :size="20" />
 						</template>
-						{{ t('openregister', 'Permanently Delete Selected') }}
+						{{ t('openregister', 'Delete ({count})', { count: selectedItems.length }) }}
 					</NcButton>
 					<NcButton @click="refreshItems">
 						<template #icon>
@@ -95,7 +97,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 							<td>{{ getRegisterName(item['@self']?.register) }}</td>
 							<td>{{ getSchemaName(item['@self']?.schema) }}</td>
 							<td>
-								<NcDateTime v-if="item['@self']?.deleted?.deleted" :timestamp="new Date(item['@self'].deleted.deleted)" :ignore-seconds="true" />
+								<span v-if="item['@self']?.deleted?.deleted">{{ formatPurgeDate(item['@self'].deleted.deleted) }}</span>
 								<span v-else>{{ t('openregister', 'Unknown') }}</span>
 							</td>
 							<td>{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}</td>
@@ -167,7 +169,6 @@ import {
 	NcCheckboxRadioSwitch,
 	NcActions,
 	NcActionButton,
-	NcDateTime,
 } from '@nextcloud/vue'
 import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
@@ -188,7 +189,6 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
-		NcDateTime,
 		DeleteEmpty,
 		Restore,
 		Delete,
@@ -580,6 +580,7 @@ export default {
 
 .header h1 {
 	margin: 0 0 10px 0;
+	padding-left: 24px;
 	font-size: 2rem;
 	font-weight: 300;
 }
@@ -589,33 +590,36 @@ export default {
 	margin: 0;
 }
 
-.selection-header {
-	margin-bottom: 20px;
-	padding: 10px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.selection-title {
-	margin: 0;
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
 .actions-bar {
 	display: flex;
+	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 20px;
 	padding: 10px;
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
+}
+
+.deleted-items-info {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.total-count {
+	font-weight: 500;
+	color: var(--color-main-text);
+}
+
+.selection-indicator {
+	font-size: 0.9rem;
+	color: var(--color-primary);
 }
 
 .actions {
 	display: flex;
 	align-items: center;
 	gap: 15px;
-	margin-left: auto;
 }
 
 .table-container {
@@ -649,8 +653,10 @@ export default {
 }
 
 .title-column {
-	min-width: 200px;
-	max-width: 250px;
+	min-width: 120px;
+	max-width: 200px;
+	word-wrap: break-word;
+	overflow: hidden;
 }
 
 .title-content {
@@ -662,11 +668,29 @@ export default {
 .description {
 	font-size: 0.9em;
 	color: var(--color-text-maxcontrast);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Register and Schema column width limits */
+.items-table td:nth-child(3), /* Register column */
+.items-table td:nth-child(4) { /* Schema column */
+	max-width: 150px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.items-table th:nth-child(3), /* Register header */
+.items-table th:nth-child(4) { /* Schema header */
+	max-width: 150px;
 }
 
 .actions-column {
 	width: 120px;
 	text-align: center;
+	min-width: 120px;
 }
 
 .item-row:hover {
