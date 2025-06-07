@@ -15,19 +15,19 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton @click="navigationStore.setModal('editConfiguration')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('editConfiguration')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton @click="navigationStore.setModal('exportConfiguration')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('exportConfiguration')">
 							<template #icon>
 								<Download :size="20" />
 							</template>
 							Export
 						</NcActionButton>
-						<NcActionButton @click="navigationStore.setDialog('deleteConfiguration')">
+						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteConfiguration')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>

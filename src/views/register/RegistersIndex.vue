@@ -37,25 +37,25 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 					:primary="true"
 					:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
 					menu-name="Dashboard actions">
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+					<NcActionButton close-after-click @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
 						Add Register
 					</NcActionButton>
-					<NcActionButton @click="dashboardStore.fetchRegisters()">
+					<NcActionButton close-after-click @click="dashboardStore.fetchRegisters()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+					<NcActionButton close-after-click @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
 						Import
 					</NcActionButton>
-					<NcActionButton @click="openAllApisDoc">
+					<NcActionButton close-after-click @click="openAllApisDoc">
 						<template #icon>
 							<ApiIcon :size="20" />
 						</template>
@@ -87,47 +87,48 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
-								<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+								<NcActionButton close-after-click :disabled="calculating === register.id" @click="calculateSizes(register)">
 									<template #icon>
 										<Calculator :size="20" />
 									</template>
 									Calculate Sizes
 								</NcActionButton>
-								<NcActionButton @click="registerStore.setRegisterItem({
-									...register,
-									schemas: register.schemas.map(schema => schema.id)
-								}); navigationStore.setModal('editRegister')">
+								<NcActionButton close-after-click
+									@click="registerStore.setRegisterItem({
+										...register,
+										schemas: register.schemas.map(schema => schema.id)
+									}); navigationStore.setModal('editRegister')">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>
 									Edit
 								</NcActionButton>
-								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
+								<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
 									<template #icon>
 										<Export :size="20" />
 									</template>
 									Export
 								</NcActionButton>
-								<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
+								<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 									<template #icon>
 										<Upload :size="20" />
 									</template>
 									Import
 								</NcActionButton>
-								<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
+								<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
 									<template #icon>
 										<ApiIcon :size="20" />
 									</template>
 									View API Documentation
 								</NcActionButton>
-								<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
+								<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); downloadOas(register)">
 									<template #icon>
 										<Download :size="20" />
 									</template>
 									Download API Specification
 								</NcActionButton>
-								<NcActionButton
-									v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+								<NcActionButton v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+									close-after-click
 									:disabled="register.stats?.total > 0"
 									@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
 									<template #icon>
@@ -135,7 +136,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 									</template>
 									Delete
 								</NcActionButton>
-								<NcActionButton @click="viewRegisterDetails(register)">
+								<NcActionButton close-after-click @click="viewRegisterDetails(register)">
 									<template #icon>
 										<InformationOutline :size="20" />
 									</template>
@@ -316,47 +317,48 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 										<template #icon>
 											<DotsHorizontal :size="20" />
 										</template>
-										<NcActionButton :disabled="calculating === register.id" @click="calculateSizes(register)">
+										<NcActionButton close-after-click :disabled="calculating === register.id" @click="calculateSizes(register)">
 											<template #icon>
 												<Calculator :size="20" />
 											</template>
 											Calculate Sizes
 										</NcActionButton>
-										<NcActionButton @click="registerStore.setRegisterItem({
-											...register,
-											schemas: register.schemas.map(schema => schema.id)
-										}); navigationStore.setModal('editRegister')">
+										<NcActionButton close-after-click
+											@click="registerStore.setRegisterItem({
+												...register,
+												schemas: register.schemas.map(schema => schema.id)
+											}); navigationStore.setModal('editRegister')">
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
 											Edit
 										</NcActionButton>
-										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
+										<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('exportRegister')">
 											<template #icon>
 												<Export :size="20" />
 											</template>
 											Export
 										</NcActionButton>
-										<NcActionButton @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
+										<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); navigationStore.setModal('importRegister')">
 											<template #icon>
 												<Upload :size="20" />
 											</template>
 											Import
 										</NcActionButton>
-										<NcActionButton @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
+										<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); viewOasDoc(register)">
 											<template #icon>
 												<ApiIcon :size="20" />
 											</template>
 											View API Documentation
 										</NcActionButton>
-										<NcActionButton @click="registerStore.setRegisterItem(register); downloadOas(register)">
+										<NcActionButton close-after-click @click="registerStore.setRegisterItem(register); downloadOas(register)">
 											<template #icon>
 												<Download :size="20" />
 											</template>
 											Download API Specification
 										</NcActionButton>
-										<NcActionButton
-											v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+										<NcActionButton v-tooltip="register.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+											close-after-click
 											:disabled="register.stats?.total > 0"
 											@click="registerStore.setRegisterItem(register); navigationStore.setDialog('deleteRegister')">
 											<template #icon>
@@ -364,7 +366,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 											</template>
 											Delete
 										</NcActionButton>
-										<NcActionButton @click="viewRegisterDetails(register)">
+										<NcActionButton close-after-click @click="viewRegisterDetails(register)">
 											<template #icon>
 												<InformationOutline :size="20" />
 											</template>

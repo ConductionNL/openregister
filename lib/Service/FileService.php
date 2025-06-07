@@ -557,6 +557,121 @@ class FileService
     }//end getUser()
 
     /**
+     * Switch to the OpenRegister user for file operations.
+     *
+     * This method preserves the current user context and switches to the OpenRegister
+     * system user for file operations. Must be paired with switchBackToOriginalUser().
+     *
+     * @return IUser|null The original user that was active before switching
+     *
+     * @throws Exception If switching to OpenRegister user fails
+     *
+     * @psalm-return IUser|null
+     * @phpstan-return IUser|null
+     */
+    private function switchToFileOperationUser(): ?IUser
+    {
+        // Store the current user for restoration later
+        $originalUser = $this->userSession->getUser();
+        
+        try {
+            // Get the OpenRegister user
+            $openRegisterUser = $this->getUser();
+            
+            // Switch to the OpenRegister user context
+            $this->userSession->setUser($openRegisterUser);
+            
+            $this->logger->debug(
+                'Switched to OpenRegister user for file operations. Original user: {originalUser}', 
+                ['originalUser' => $originalUser ? $originalUser->getUID() : 'anonymous']
+            );
+            
+            return $originalUser;
+        } catch (Exception $e) {
+            $this->logger->error('Failed to switch to file operation user: ' . $e->getMessage());
+            throw new Exception('Failed to switch to file operation user: ' . $e->getMessage());
+        }
+    }//end switchToFileOperationUser()
+
+    /**
+     * Switch back to the original user after file operations.
+     *
+     * This method restores the original user context that was active before
+     * switchToFileOperationUser() was called.
+     *
+     * @param IUser|null $originalUser The original user to restore (from switchToFileOperationUser)
+     *
+     * @return void
+     *
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function switchBackToOriginalUser(?IUser $originalUser): void
+    {
+        try {
+            if ($originalUser !== null) {
+                $this->userSession->setUser($originalUser);
+                $this->logger->debug(
+                    'Switched back to original user: {originalUser}', 
+                    ['originalUser' => $originalUser->getUID()]
+                );
+            } else {
+                // If there was no original user (anonymous session), clear the session
+                $this->userSession->setUser(null);
+                $this->logger->debug('Switched back to anonymous session');
+            }
+        } catch (Exception $e) {
+            $this->logger->error('Failed to switch back to original user: ' . $e->getMessage());
+            // Don't throw here as this could mask the original exception from file operations
+        }
+    }//end switchBackToOriginalUser()
+
+    /**
+     * Execute a callable with proper user context switching.
+     *
+     * This method handles the complete user switching workflow:
+     * 1. Switch to OpenRegister user
+     * 2. Execute the provided callable
+     * 3. Switch back to original user (even if callable throws)
+     *
+     * @param callable $operation The operation to execute under OpenRegister user context
+     *
+     * @return mixed The return value from the callable
+     *
+     * @throws Exception If user switching fails or the callable throws
+     * 
+     * @todo Optimaly speaking, we should not need to use this method at all. So its here for a "now" solution. but should be removed for other solutions in the future.
+     *
+     * @psalm-template T
+     * @psalm-param callable(): T $operation
+     * @psalm-return T
+     * @phpstan-template T
+     * @phpstan-param callable(): T $operation
+     * @phpstan-return T
+     */
+    private function executeWithFileUserContext(callable $operation): mixed
+    {
+        $originalUser = null;
+        
+        try {
+            // Switch to file operation user
+            $originalUser = $this->switchToFileOperationUser();
+            
+            // Execute the operation
+            $result = $operation();
+            
+            // Switch back to original user
+            $this->switchBackToOriginalUser($originalUser);
+            
+            return $result;
+        } catch (Exception $e) {
+            // Ensure we always switch back, even if operation fails
+            $this->switchBackToOriginalUser($originalUser);
+            throw $e;
+        }
+    }//end executeWithFileUserContext()
+
+    /**
      * Gets a NextCloud Node object for the given file or folder path.
      *
      * @param string $path The path to get the Node object for
@@ -565,13 +680,15 @@ class FileService
      */
     public function getNode(string $path): ?Node
     {
-        try {
-            $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
-            return $userFolder->get(path: $path);
-        } catch (NotFoundException | NotPermittedException $e) {
-            $this->logger->error(message: $e->getMessage());
-            return null;
-        }
+        return $this->executeWithFileUserContext(function () use ($path): ?Node {
+            try {
+                $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+                return $userFolder->get(path: $path);
+            } catch (NotFoundException | NotPermittedException $e) {
+                $this->logger->error(message: $e->getMessage());
+                return null;
+            }
+        });
     }//end getNode()
 
     /**
@@ -864,43 +981,45 @@ class FileService
      */
     public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {
-        $path = trim(string: $path, characters: '/');
-        if ($permissions === null) {
-            $permissions = 31;
-            if ($shareType === 3) {
-                $permissions = 1;
+        return $this->executeWithFileUserContext(function () use ($path, $shareType, $permissions): string {
+            $path = trim(string: $path, characters: '/');
+            if ($permissions === null) {
+                $permissions = 31;
+                if ($shareType === 3) {
+                    $permissions = 1;
+                }
             }
-        }
 
-        $userId = $this->getUser()->getUID();
+            $userId = $this->getUser()->getUID();
 
-        try {
-            $userFolder = $this->rootFolder->getUserFolder(userId: $userId);
-        } catch (NotPermittedException) {
-            $this->logger->error("Can't create share link for $path because user (folder) for user $userId couldn't be found.");
-            return "User (folder) couldn't be found.";
-        }
+            try {
+                $userFolder = $this->rootFolder->getUserFolder(userId: $userId);
+            } catch (NotPermittedException) {
+                $this->logger->error("Can't create share link for $path because user (folder) for user $userId couldn't be found.");
+                return "User (folder) couldn't be found.";
+            }
 
-        try {
-            $file = $this->rootFolder->get($path);
-            // $file = $userFolder->get(path: $path);
-        } catch (NotFoundException $e) {
-            $this->logger->error("Can't create share link for $path because file doesn't exist.");
-            return 'File not found at '.$path;
-        }
+            try {
+                $file = $this->rootFolder->get($path);
+                // $file = $userFolder->get(path: $path);
+            } catch (NotFoundException $e) {
+                $this->logger->error("Can't create share link for $path because file doesn't exist.");
+                return 'File not found at '.$path;
+            }
 
-        try {
-            $share = $this->createShare([
-                'path'        => $path,
-                'file'        => $file,
-                'shareType'   => $shareType,
-                'permissions' => $permissions,
-            ]);
-            return $this->getShareLink($share);
-        } catch (Exception $exception) {
-            $this->logger->error("Can't create share link for $path: ".$exception->getMessage());
-            throw new Exception('Can\'t create share link.');
-        }
+            try {
+                $share = $this->createShare([
+                    'path'        => $path,
+                    'file'        => $file,
+                    'shareType'   => $shareType,
+                    'permissions' => $permissions,
+                ]);
+                return $this->getShareLink($share);
+            } catch (Exception $exception) {
+                $this->logger->error("Can't create share link for $path: ".$exception->getMessage());
+                throw new Exception('Can\'t create share link.');
+            }
+        });
     }//end createShareLink()
 
     /**
@@ -941,99 +1060,118 @@ class FileService
      */
     public function createFolder(string $folderPath): bool
     {
-        $folderPath = trim(string: $folderPath, characters: '/');
+        return $this->executeWithFileUserContext(function () use ($folderPath): bool {
+            $folderPath = trim(string: $folderPath, characters: '/');
 
-        // Get the current user.
-        $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+            // Get the current user.
+            $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
-        // Check if folder exists and if not create it.
-        try {
-            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
+            // Check if folder exists and if not create it.
             try {
-                $userFolder->get(self::ROOT_FOLDER);
-            } catch (NotFoundException) {
-                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+                // First, check if the root folder exists, and if not, create it and share it with the openregister group.
+                try {
+                    $userFolder->get(self::ROOT_FOLDER);
+                } catch (NotFoundException) {
+                    $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
 
-                if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
-                    $this->groupManager->createGroup(self::APP_GROUP);
+                    if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
+                        $this->groupManager->createGroup(self::APP_GROUP);
+                    }
+
+                    $this->createShare([
+                        'path'        => self::ROOT_FOLDER,
+                        'nodeId'      => $rootFolder->getId(),
+                        'nodeType'    => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
+                        'shareType'   => 1,
+                        'permissions' => 31,
+                        'sharedWith'  => self::APP_GROUP,
+                    ]);
                 }
 
-                $this->createShare([
-                    'path'        => self::ROOT_FOLDER,
-                    'nodeId'      => $rootFolder->getId(),
-                    'nodeType'    => $rootFolder->getType() === 'file' ? $rootFolder->getType() : 'folder',
-                    'shareType'   => 1,
-                    'permissions' => 31,
-                    'sharedWith'  => self::APP_GROUP,
-                ]);
-            }
+                try {
+                    $userFolder->get(path: $folderPath);
+                } catch (NotFoundException) {
+                    $userFolder->newFolder(path: $folderPath);
+                    return true;
+                }
 
-            try {
-                $userFolder->get(path: $folderPath);
-            } catch (NotFoundException) {
-                $userFolder->newFolder(path: $folderPath);
-                return true;
+                // Folder already exists.
+                $this->logger->info("This folder already exists: $folderPath");
+                return false;
+            } catch (NotPermittedException $e) {
+                $this->logger->error("Can't create folder $folderPath: ".$e->getMessage());
+                throw new Exception("Can't create folder $folderPath");
             }
-
-            // Folder already exists.
-            $this->logger->info("This folder already exists: $folderPath");
-            return false;
-        } catch (NotPermittedException $e) {
-            $this->logger->error("Can't create folder $folderPath: ".$e->getMessage());
-            throw new Exception("Can't create folder $folderPath");
-        }
+        });
     }//end createFolder()
 
     /**
      * Overwrites an existing file in NextCloud.
      *
+     * This method updates the content and/or tags of an existing file. When updating tags,
+     * it preserves any existing 'object:' tags while replacing other user-defined tags.
+     *
      * @param string $filePath The path (from root) where to save the file, including filename and extension
      * @param mixed  $content  Optional content of the file. If null, only metadata like tags will be updated
-     * @param array  $tags     Optional array of tags to attach to the file
+     * @param array  $tags     Optional array of tags to attach to the file (excluding object tags which are preserved)
      *
      * @throws Exception If the file doesn't exist or if file operations fail
      *
      * @return File The updated file
+     *
+     * @phpstan-param array<int, string> $tags
+     * @psalm-param array<int, string> $tags
      */
     public function updateFile(string $filePath, mixed $content=null, array $tags=[]): File
     {
-        // @todo: this can update any file, we might want to check if the file is in the object folder first
-        $filePath = trim(string: $filePath, characters: '/');
+        return $this->executeWithFileUserContext(function () use ($filePath, $content, $tags): File {
+            // @todo: this can update any file, we might want to check if the file is in the object folder first
+            $filePath = trim(string: $filePath, characters: '/');
 
-        try {
-            $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
-
-            // Check if file exists and delete it if it does.
             try {
+                $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+                // Check if file exists and update it if it does.
                 try {
-                    $file = $userFolder->get(path: $filePath);
+                    try {
+                        $file = $userFolder->get(path: $filePath);
 
-                    // If content is not null, update the file content
-                    if ($content !== null) {
-                        try {
-                            $file->putContent(data: $content);
-                        } catch (NotPermittedException $e) {
-                            $this->logger->error("Can't write content to file: ".$e->getMessage());
-                            throw new Exception("Can't write content to file: ".$e->getMessage());
+                        // If content is not null, update the file content
+                        if ($content !== null) {
+                            try {
+                                $file->putContent(data: $content);
+                            } catch (NotPermittedException $e) {
+                                $this->logger->error("Can't write content to file: ".$e->getMessage());
+                                throw new Exception("Can't write content to file: ".$e->getMessage());
+                            }
                         }
+
+                        // Get existing object tags to preserve them
+                        $existingTags = $this->getFileTags(fileId: $file->getId());
+                        $objectTags = array_filter($existingTags, static function (string $tag): bool {
+                            return str_starts_with($tag, 'object:');
+                        });
+
+                        // Combine object tags with new tags, avoiding duplicates
+                        $allTags = array_unique(array_merge($objectTags, $tags));
+
+                        $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
+
+                        return $file;
+                    } catch (NotFoundException $e) {
+                        // File does not exist.
+                        $this->logger->warning("File $filePath does not exist.");
+                        throw new Exception("File $filePath does not exist");
                     }
-
-                    $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-
-                    return $file;
-                } catch (NotFoundException $e) {
-                    // File does not exist.
-                    $this->logger->warning("File $filePath does not exist.");
-                    throw new Exception("File $filePath does not exist");
+                } catch (NotPermittedException | InvalidPathException $e) {
+                    $this->logger->error("Can't update file $filePath: ".$e->getMessage());
+                    throw new Exception("Can't update file $filePath");
                 }
-            } catch (NotPermittedException | InvalidPathException $e) {
+            } catch (NotPermittedException $e) {
                 $this->logger->error("Can't update file $filePath: ".$e->getMessage());
                 throw new Exception("Can't update file $filePath");
             }
-        } catch (NotPermittedException $e) {
-            $this->logger->error("Can't update file $filePath: ".$e->getMessage());
-            throw new Exception("Can't update file $filePath");
-        }
+        });
     }//end updateFile()
 
     /**
@@ -1052,41 +1190,168 @@ class FileService
     /**
      * Deletes a file from NextCloud.
      *
-     * @param string $filePath Path (from root) to the file you want to delete
+     * This method can accept either a file path string or a Node object for deletion.
+     * When a Node object is provided, it will be deleted directly. When a string path
+     * is provided, the file will be located first and then deleted.
      *
-     * @throws Exception If deleting the file is not permitted
+     * If an ObjectEntity is provided, the method will also update the object's files
+     * array to remove the reference to the deleted file and save the updated object.
+     *
+     * @param Node|string        $file   The file Node object or path (from root) to the file you want to delete
+     * @param ObjectEntity|null  $object Optional object entity to update the files array for
+     *
+     * @throws Exception If deleting the file is not permitted or file operations fail
      *
      * @return bool True if successful, false if the file didn't exist
+     *
+     * @psalm-param Node|string $file
+     * @phpstan-param Node|string $file
+     * @psalm-param ObjectEntity|null $object
+     * @phpstan-param ObjectEntity|null $object
      */
-    public function deleteFile(string $filePath): bool
+    public function deleteFile(Node | string $file, ?ObjectEntity $object = null): bool
     {
-        // @todo: this can delete any file, we might want to check if the file is in the object folder first
-        $filePath = trim(string: $filePath, characters: '/');
-
-        try {
-            $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
-
-            // Check if file exists and delete it if it does.
+        return $this->executeWithFileUserContext(function () use ($file, $object): bool {
             try {
-                try {
-                    $file = $userFolder->get(path: $filePath);
-                    $file->delete();
+                $deletedFilePath = null;
+                $fileDeleted = false;
 
-                    return true;
-                } catch (NotFoundException) {
-                    // File does not exist.
-                    $this->logger->warning("File $filePath does not exist.");
-                    return false;
+                // If we received a Node object, delete it directly
+                if ($file instanceof Node) {
+                    $deletedFilePath = $file->getPath();
+                    $fileName = $file->getName();
+                    $this->logger->info("Deleting file node: $fileName");
+                    $file->delete();
+                    $fileDeleted = true;
+                } else {
+                    // If we received a string path, locate the file first then delete it
+                    // @todo: this can delete any file, we might want to check if the file is in the object folder first
+                    $filePath = trim(string: $file, characters: '/');
+                    $deletedFilePath = $filePath;
+
+                    $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+                    // Check if file exists and delete it if it does.
+                    try {
+                        $fileNode = $userFolder->get(path: $filePath);
+                        $this->logger->info("Deleting file at path: $filePath");
+                        $fileNode->delete();
+                        $fileDeleted = true;
+                    } catch (NotFoundException) {
+                        // File does not exist.
+                        $this->logger->warning("File $filePath does not exist.");
+                        $fileDeleted = false;
+                    }
                 }
+
+                // If the file was successfully deleted and an object was provided, update the object's files array
+                if ($fileDeleted && $object !== null && $deletedFilePath !== null) {
+                    $this->updateObjectFilesArray($object, $deletedFilePath);
+                }
+
+                return $fileDeleted;
+
             } catch (NotPermittedException | InvalidPathException $e) {
+                $filePath = $file instanceof Node ? $file->getPath() : $file;
                 $this->logger->error("Can't delete file $filePath: ".$e->getMessage());
-                throw new Exception("Can't delete file $filePath");
+                throw new Exception("Can't delete file $filePath: ".$e->getMessage());
+            } catch (Exception $e) {
+                $filePath = $file instanceof Node ? $file->getPath() : $file;
+                $this->logger->error("Can't delete file $filePath: ".$e->getMessage());
+                throw new Exception("Can't delete file $filePath: ".$e->getMessage());
             }
-        } catch (NotPermittedException $e) {
-            $this->logger->error("Can't delete file $filePath: ".$e->getMessage());
-            throw new Exception("Can't delete file $filePath");
-        }
+        });
     }//end deleteFile()
+
+    /**
+     * Update an object's files array by removing a deleted file reference.
+     *
+     * This method searches through the object's files array and removes any entries
+     * that reference the deleted file path. It handles both absolute and relative paths.
+     *
+     * @param ObjectEntity $object           The object entity to update
+     * @param string       $deletedFilePath  The path of the deleted file
+     *
+     * @return void
+     *
+     * @throws Exception If updating the object fails
+     *
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function updateObjectFilesArray(ObjectEntity $object, string $deletedFilePath): void
+    {
+        try {
+            // Get the current files array from the object
+            $objectFiles = $object->getFiles() ?? [];
+            
+            if (empty($objectFiles)) {
+                $this->logger->debug("Object {$object->getId()} has no files array to update");
+                return;
+            }
+
+            $originalCount = count($objectFiles);
+            $updatedFiles = [];
+
+            // Extract just the filename from the deleted file path for comparison
+            $deletedFileName = basename($deletedFilePath);
+
+            // Filter out any files that match the deleted file
+            foreach ($objectFiles as $fileEntry) {
+                $shouldKeep = true;
+
+                // Handle different possible structures of file entries
+                if (is_array($fileEntry)) {
+                    // Check various possible path fields in the file entry
+                    $pathFields = ['path', 'title', 'name', 'filename', 'accessUrl', 'downloadUrl'];
+                    
+                    foreach ($pathFields as $field) {
+                        if (isset($fileEntry[$field])) {
+                            $entryPath = $fileEntry[$field];
+                            $entryFileName = basename($entryPath);
+                            
+                            // Check if this entry references the deleted file
+                            if ($entryPath === $deletedFilePath || 
+                                $entryFileName === $deletedFileName ||
+                                str_ends_with($entryPath, $deletedFilePath)) {
+                                $shouldKeep = false;
+                                $this->logger->info("Removing file entry from object {$object->getId()}: $entryPath");
+                                break;
+                            }
+                        }
+                    }
+                } else if (is_string($fileEntry)) {
+                    // Handle simple string entries
+                    $entryFileName = basename($fileEntry);
+                    if ($fileEntry === $deletedFilePath || 
+                        $entryFileName === $deletedFileName ||
+                        str_ends_with($fileEntry, $deletedFilePath)) {
+                        $shouldKeep = false;
+                        $this->logger->info("Removing file entry from object {$object->getId()}: $fileEntry");
+                    }
+                }
+
+                if ($shouldKeep) {
+                    $updatedFiles[] = $fileEntry;
+                }
+            }
+
+            // Only update the object if files were actually removed
+            if (count($updatedFiles) < $originalCount) {
+                $removedCount = $originalCount - count($updatedFiles);
+                $this->logger->info("Removed $removedCount file reference(s) from object {$object->getId()}");
+                
+                $object->setFiles($updatedFiles);
+                $this->objectEntityMapper->update($object);
+            } else {
+                $this->logger->debug("No file references found to remove from object {$object->getId()}");
+            }
+
+        } catch (Exception $e) {
+            $this->logger->error("Failed to update object files array for object {$object->getId()}: " . $e->getMessage());
+            throw new Exception("Failed to update object files array: " . $e->getMessage());
+        }
+    }//end updateObjectFilesArray()
 
     /**
      * Attach tags to a file.
@@ -1144,7 +1409,30 @@ class FileService
     }//end attachTagsToFile()
 
     /**
+     * Generate the object tag for a given ObjectEntity.
+     *
+     * This method creates a standardized object tag that links a file to its parent object.
+     * The tag format is 'object:' followed by the object's UUID or ID.
+     *
+     * @param ObjectEntity $objectEntity The object entity to generate the tag for
+     *
+     * @return string The object tag in format 'object:uuid' or 'object:id'
+     *
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function generateObjectTag(ObjectEntity $objectEntity): string
+    {
+        // Use UUID if available, otherwise fall back to the numeric ID
+        $identifier = $objectEntity->getUuid() ?? (string) $objectEntity->getId();
+        return 'object:' . $identifier;
+    }//end generateObjectTag()
+
+    /**
      * Adds a new file to an object's folder with the OpenCatalogi user as owner.
+     *
+     * This method automatically adds an 'object:' tag containing the object's UUID
+     * in addition to any user-provided tags.
      *
      * @param ObjectEntity $objectEntity The object entity to add the file to
      * @param string       $fileName     The name of the file to create
@@ -1162,62 +1450,135 @@ class FileService
      */
     public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
     {
+        return $this->executeWithFileUserContext(function () use ($objectEntity, $fileName, $content, $share, $tags): File {
+            try {
+                // Create new file in the folder
+                $folder = $this->getObjectFolder(
+                    objectEntity: $objectEntity,
+                    register: $objectEntity->getRegister(),
+                    schema: $objectEntity->getSchema()
+                );
+
+                // Check if the content is base64 encoded and decode it if necessary
+                if (base64_encode(base64_decode($content, true)) === $content) {
+                    $content = base64_decode($content);
+                }
+
+                // Check if the file name is empty
+                if (empty($fileName) === true) {
+                    throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
+                }
+
+                /**
+                 * @var File $file
+                 */
+                $file = $folder->newFile($fileName);            
+                
+                // Write content to the file
+                $file->putContent($content);
+
+                // Create a share link for the file if requested
+                if ($share === true) {
+                    $this->createShareLink(path: $file->getPath());
+                }
+
+                // Automatically add object tag with the object's UUID
+                $objectTag = $this->generateObjectTag($objectEntity);
+                $allTags = array_merge([$objectTag], $tags);
+
+                // Add tags to the file (including the automatic object tag)
+                if (empty($allTags) === false) {
+                    $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
+                }
+
+                //@TODO: This sets the file array of an object, but we should check why this array is not added elsewhere
+                $objectFiles = $objectEntity->getFiles();
+
+                $objectFiles[] = $this->formatFile($file);
+                $objectEntity->setFiles($objectFiles);
+
+                $this->objectEntityMapper->update($objectEntity);
+
+                return $file;
+
+            } catch (NotPermittedException $e) {
+                // Log permission error and rethrow exception
+                $this->logger->error("Permission denied creating file $fileName: ".$e->getMessage());
+                throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
+            } catch (\Exception $e) {
+                // Log general error and rethrow exception
+                $this->logger->error("Failed to create file $fileName: ".$e->getMessage());
+                throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
+            }
+        });
+    }//end addFile()
+
+    /**
+     * Save a file to an object's folder (create new or update existing).
+     *
+     * This method provides a generic save functionality that checks if a file already exists
+     * for the given object. If it exists, the file will be updated; if not, a new file will
+     * be created. This is particularly useful for synchronization scenarios where you want
+     * to "upsert" files.
+     *
+     * @param ObjectEntity $objectEntity The object entity to save the file to
+     * @param string       $fileName     The name of the file to save
+     * @param string       $content      The content to write to the file
+     * @param bool         $share        Whether to create a share link for the file (only for new files)
+     * @param array        $tags         Optional array of tags to attach to the file
+     *
+     * @throws NotPermittedException If file operations fail due to permissions
+     * @throws Exception If file operations fail for other reasons
+     *
+     * @return File The saved file
+     *
+     * @phpstan-param array<int, string> $tags
+     * @psalm-param array<int, string> $tags
+     */
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+    {
         try {
-            // Create new file in the folder
-            $folder = $this->getObjectFolder(
-                objectEntity: $objectEntity,
-                register: $objectEntity->getRegister(),
-                schema: $objectEntity->getSchema()
+            // Check if the file already exists for this object
+            $existingFile = $this->getFile(
+                object: $objectEntity,
+                filePath: $fileName
             );
 
-            // Check if the content is base64 encoded and decode it if necessary
-            if (base64_encode(base64_decode($content, true)) === $content) {
-                $content = base64_decode($content);
+            if ($existingFile !== null) {
+                // File exists, update it
+                $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
+
+                // Get the full path for the updateFile method
+                $fullPath = $this->getObjectFilePath($objectEntity, $fileName);
+
+                // Update the existing file
+                return $this->updateFile(
+                    filePath: $fullPath,
+                    content: $content,
+                    tags: $tags
+                );
+            } else {
+                // File doesn't exist, create it
+                $this->logger->info("File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
+
+                return $this->addFile(
+                    objectEntity: $objectEntity,
+                    fileName: $fileName,
+                    content: $content,
+                    share: $share,
+                    tags: $tags
+                );
             }
-
-            // Check if the file name is empty
-            if (empty($fileName) === true) {
-                throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
-            }
-
-            /**
-             * @var File $file
-             */
-            $file = $folder->newFile($fileName);            
-            
-            // Write content to the file
-            $file->putContent($content);
-
-            // Create a share link for the file if requested
-            if ($share === true) {
-                $this->createShareLink(path: $file->getPath());
-            }
-
-            // Add tags to the file if provided
-            if (empty($tags) === false) {
-                $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-            }
-
-			//@TODO: This sets the file array of an object, but we should check why this array is not added elsewhere
-			$objectFiles = $objectEntity->getFiles();
-
-			$objectFiles[] = $this->formatFile($file);
-			$objectEntity->setFiles($objectFiles);
-
-			$this->objectEntityMapper->update($objectEntity);
-
-            return $file;
-
         } catch (NotPermittedException $e) {
             // Log permission error and rethrow exception
-            $this->logger->error("Permission denied creating file $fileName: ".$e->getMessage());
-            throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
+            $this->logger->error("Permission denied saving file $fileName: ".$e->getMessage());
+            throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
         } catch (\Exception $e) {
             // Log general error and rethrow exception
-            $this->logger->error("Failed to create file $fileName: ".$e->getMessage());
-            throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
+            $this->logger->error("Failed to save file $fileName: ".$e->getMessage());
+            throw new \Exception("Failed to save file $fileName: ".$e->getMessage());
         }
-    }//end addFile()
+    }//end saveFile()
 
     /**
      * Retrieves all available tags in the system.
@@ -1414,6 +1775,64 @@ class FileService
 
         return $file;
     }
+
+    /**
+     * Find all files tagged with a specific object identifier.
+     *
+     * This method searches for files that have been tagged with the 'object:' prefix
+     * followed by the specified object identifier (UUID or ID).
+     *
+     * @param string $objectIdentifier The object UUID or ID to search for
+     *
+     * @return array Array of file nodes that belong to the specified object
+     *
+     * @throws \Exception If there's an error during the search
+     *
+     * @psalm-return array<int, Node>
+     * @phpstan-return array<int, Node>
+     */
+    public function findFilesByObjectId(string $objectIdentifier): array
+    {
+        return $this->executeWithFileUserContext(function () use ($objectIdentifier): array {
+            try {
+                // Create the object tag we're looking for
+                $objectTag = 'object:' . $objectIdentifier;
+
+                // Get the tag object
+                $tag = $this->systemTagManager->getTag(tagName: $objectTag, userVisible: true, userAssignable: true);
+
+                // Get all file IDs that have this tag
+                $fileIds = $this->systemTagMapper->getObjectIdsForTags(
+                    tagIds: [$tag->getId()],
+                    objectType: self::FILE_TAG_TYPE
+                );
+
+                $files = [];
+                if (empty($fileIds) === false) {
+                    // Get the user folder to resolve file paths
+                    $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+                    // Convert file IDs to actual file nodes
+                    foreach ($fileIds as $fileId) {
+                        try {
+                            $file = $userFolder->getById($fileId);
+                            if (!empty($file)) {
+                                $files = array_merge($files, $file);
+                            }
+                        } catch (NotFoundException) {
+                            // File might have been deleted, skip it
+                            continue;
+                        }
+                    }
+                }
+
+                return $files;
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to find files by object ID: ' . $e->getMessage());
+                throw new \Exception('Failed to find files by object ID: ' . $e->getMessage());
+            }
+        });
+    }//end findFilesByObjectId()
 
 }//end class
 

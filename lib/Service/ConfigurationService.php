@@ -660,7 +660,7 @@ class ConfigurationService
                     $schemaData['title'] = $key;
                 }
 
-                $schema = $this->importSchema(data: $schemaData, owner: $owner, slugsAndIdsMap: $slugsAndIdsMap);
+                $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner);
                 if ($schema !== null) {
                     // Store schema in map by slug for reference.
                     $this->schemasMap[$schema->getSlug()] = $schema;
@@ -834,13 +834,13 @@ class ConfigurationService
     /**
      * Import a schema from configuration data
      *
-     * @param array       $data  The schema data.
-     * @param string|null $owner The owner of the schema.
+     * @param array       $data           The schema data.
      * @param array       $slugsAndIdsMap Slugs with their ids.
+     * @param string|null $owner          The owner of the schema.
      *
      * @return Schema|null The imported schema or null if skipped.
      */
-    private function importSchema(array $data, ?string $owner=null, array $slugsAndIdsMap): ?Schema
+    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null): ?Schema
     {
         try {
             // Remove id and uuid from the data.

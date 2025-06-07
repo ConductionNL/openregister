@@ -16,19 +16,19 @@ import { configurationStore, navigationStore, searchStore } from '../../store/st
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
-					<NcActionButton @click="configurationStore.refreshConfigurationList()">
+					<NcActionButton close-after-click @click="configurationStore.refreshConfigurationList()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="configurationStore.setConfigurationItem(null); navigationStore.setModal('editConfiguration')">
+					<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(null); navigationStore.setModal('editConfiguration')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
 						Add Configuration
 					</NcActionButton>
-					<NcActionButton @click="navigationStore.setModal('importConfiguration')">
+					<NcActionButton close-after-click @click="navigationStore.setModal('importConfiguration')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
@@ -52,13 +52,13 @@ import { configurationStore, navigationStore, searchStore } from '../../store/st
 						{{ configuration?.description }}
 					</template>
 					<template #actions>
-						<NcActionButton @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('editConfiguration')">
+						<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setModal('editConfiguration')">
 							<template #icon>
 								<Pencil />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton @click="configurationStore.setConfigurationItem(configuration); navigationStore.setDialog('deleteConfiguration')">
+						<NcActionButton close-after-click @click="configurationStore.setConfigurationItem(configuration); navigationStore.setDialog('deleteConfiguration')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>

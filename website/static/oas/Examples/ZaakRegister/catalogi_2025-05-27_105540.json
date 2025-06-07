@@ -2092,7 +2092,7 @@
 				"slug": "besluittype",
 				"title": "BesluitType",
 				"description": "",
-				"version": "0.0.9",
+				"version": "0.0.10",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -2383,7 +2383,6 @@
 					"url": {
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
 						"type": "string",
-						"format": "uri",
 						"pattern": "",
 						"default": "{{ uri }}",
 						"behavior": "",
@@ -2437,7 +2436,7 @@
 				"slug": "eigenschap",
 				"title": "Eigenschap",
 				"description": "",
-				"version": "0.0.9",
+				"version": "0.0.10",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -2449,7 +2448,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -2683,7 +2681,7 @@
 				"slug": "informatieobjecttype",
 				"title": "InformatieObjectType",
 				"description": "Serializer based on ``IOT-basis`` specified in XSD ``ztc0310_ent_basis.xsd``.",
-				"version": "0.0.8",
+				"version": "0.0.9",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -2698,7 +2696,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -2930,7 +2927,7 @@
 				"slug": "resultaattype",
 				"title": "ResultaatType",
 				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-				"version": "0.0.12",
+				"version": "0.0.13",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -2942,7 +2939,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -3334,7 +3330,7 @@
 				"slug": "roltype",
 				"title": "RolType",
 				"description": "Adds nested create feature",
-				"version": "0.0.6",
+				"version": "0.0.7",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -3346,7 +3342,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -3500,7 +3495,7 @@
 				"slug": "statustype",
 				"title": "StatusType",
 				"description": "",
-				"version": "0.0.6",
+				"version": "0.0.7",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -3512,7 +3507,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -3717,7 +3711,7 @@
 				"slug": "zaakobjecttype",
 				"title": "ZaakObjectType",
 				"description": "",
-				"version": "0.0.7",
+				"version": "0.0.8",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -3735,7 +3729,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -3971,7 +3964,7 @@
 				"slug": "zaaktype",
 				"title": "ZaakType",
 				"description": "Set gegevensgroepdata from validated nested data.\n\nUsage: include the mixin on the ModelSerializer that has gegevensgroepen.",
-				"version": "0.0.20",
+				"version": "0.0.21",
 				"summary": "",
 				"icon": null,
 				"required": [
@@ -3998,7 +3991,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
@@ -4785,7 +4777,7 @@
 				"slug": "zaaktypeinformatieobjecttype",
 				"title": "ZaakTypeInformatieObjectType",
 				"description": "Represent a ZaakTypeInformatieObjectType.\n\nRelatie met informatieobjecttype dat relevant is voor zaaktype.",
-				"version": "0.0.5",
+				"version": "0.0.6",
 				"summary": null,
 				"icon": null,
 				"required": [
@@ -4798,7 +4790,6 @@
 				"properties": {
 					"url": {
 						"type": "string",
-						"format": "uri",
 						"readOnly": true,
 						"title": "url",
 						"description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",

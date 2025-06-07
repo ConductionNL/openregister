@@ -16,13 +16,13 @@ import { sourceStore, navigationStore, searchStore } from '../../store/store.js'
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
-					<NcActionButton @click="sourceStore.refreshSourceList()">
+					<NcActionButton close-after-click @click="sourceStore.refreshSourceList()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton @click="sourceStore.setSourceItem(null); navigationStore.setModal('editSource')">
+					<NcActionButton close-after-click @click="sourceStore.setSourceItem(null); navigationStore.setModal('editSource')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
@@ -46,13 +46,13 @@ import { sourceStore, navigationStore, searchStore } from '../../store/store.js'
 						{{ source?.description }}
 					</template>
 					<template #actions>
-						<NcActionButton @click="sourceStore.setSourceItem(source); navigationStore.setModal('editSource')">
+						<NcActionButton close-after-click @click="sourceStore.setSourceItem(source); navigationStore.setModal('editSource')">
 							<template #icon>
 								<Pencil />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton @click="sourceStore.setSourceItem(source); navigationStore.setDialog('deleteSource')">
+						<NcActionButton close-after-click @click="sourceStore.setSourceItem(source); navigationStore.setDialog('deleteSource')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>

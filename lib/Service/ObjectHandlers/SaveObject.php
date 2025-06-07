@@ -436,6 +436,41 @@ class SaveObject
             $schemaId = $schema;
         }
         
+        // Check if '@self' metadata exists and contains published/depublished properties
+        if (isset($data['@self']) && is_array($data['@self'])) {
+            $selfData = $data['@self'];
+
+            // Extract and set published property if present
+            if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['published']) === true) {
+                        $existingObject->setPublished(new DateTime($selfData['published']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $existingObject->setPublished(null);
+            }
+
+            // Extract and set depublished property if present
+            if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
+                try {
+                    // Convert string to DateTime if it's a valid date string
+                    if (is_string($selfData['depublished']) === true) {
+                        $existingObject->setDepublished(new DateTime($selfData['depublished']));
+                    }
+                } catch (Exception $exception) {
+                    // Silently ignore invalid date formats
+                }
+            } else {
+                $existingObject->setDepublished(null);
+            }
+        }
+
+        // Remove @self and id from the data before setting object
+        unset($data['@self'], $data['id']);
 
         // Update the object properties.
         $existingObject->setRegister($registerId);

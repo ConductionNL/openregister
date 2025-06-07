@@ -39,13 +39,13 @@ import formatBytes from '../../services/formatBytes.js'
 					:inline="1"
 					:primary="true"
 					menu-name="Schema actions">
-					<NcActionButton @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
+					<NcActionButton close-after-click @click="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<PlusCircleOutline :size="20" />
 						</template>
 						Add Schema
 					</NcActionButton>
-					<NcActionButton @click="schemaStore.refreshSchemaList()">
+					<NcActionButton close-after-click @click="schemaStore.refreshSchemaList()">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
@@ -71,26 +71,26 @@ import formatBytes from '../../services/formatBytes.js'
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
-								<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+								<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>
 									Edit
 								</NcActionButton>
-								<NcActionButton @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
+								<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
 									<template #icon>
 										<PlusCircleOutline :size="20" />
 									</template>
 									Add Property
 								</NcActionButton>
-								<NcActionButton @click="schemaStore.downloadSchema(schema)">
+								<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
 									<template #icon>
 										<Download :size="20" />
 									</template>
 									Download
 								</NcActionButton>
-								<NcActionButton
-									v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+								<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+									close-after-click
 									:disabled="schema.stats?.objects?.total > 0"
 									@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
 									<template #icon>
@@ -98,7 +98,7 @@ import formatBytes from '../../services/formatBytes.js'
 									</template>
 									Delete
 								</NcActionButton>
-								<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+								<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
 									<template #icon>
 										<InformationOutline :size="20" />
 									</template>
@@ -183,19 +183,21 @@ import formatBytes from '../../services/formatBytes.js'
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="(property, key) in schema.properties" :key="key">
+									<tr v-for="(property, key) in sortedProperties(schema)" :key="key">
 										<td>{{ key }}</td>
 										<td>{{ property.type }}</td>
 										<td>
 											<NcActions :primary="false">
-												<NcActionButton :aria-label="'Edit ' + key"
+												<NcActionButton close-after-click
+													:aria-label="'Edit ' + key"
 													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
 													<template #icon>
 														<Pencil :size="16" />
 													</template>
 													Edit
 												</NcActionButton>
-												<NcActionButton :aria-label="'Delete ' + key"
+												<NcActionButton close-after-click
+													:aria-label="'Delete ' + key"
 													@click="schemaStore.setSchemaPropertyKey(key); schemaStore.setSchemaItem(schema); navigationStore.setModal('deleteSchemaProperty')">
 													<template #icon>
 														<TrashCanOutline :size="16" />
@@ -252,26 +254,26 @@ import formatBytes from '../../services/formatBytes.js'
 										<template #icon>
 											<DotsHorizontal :size="20" />
 										</template>
-										<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
+										<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchema')">
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
 											Edit
 										</NcActionButton>
-										<NcActionButton @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
+										<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); schemaStore.setSchemaItem(schema); navigationStore.setModal('editSchemaProperty')">
 											<template #icon>
 												<PlusCircleOutline :size="20" />
 											</template>
 											Add Property
 										</NcActionButton>
-										<NcActionButton @click="schemaStore.downloadSchema(schema)">
+										<NcActionButton close-after-click @click="schemaStore.downloadSchema(schema)">
 											<template #icon>
 												<Download :size="20" />
 											</template>
 											Download
 										</NcActionButton>
-										<NcActionButton
-											v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+										<NcActionButton v-tooltip="schema.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+											close-after-click
 											:disabled="schema.stats?.objects?.total > 0"
 											@click="schemaStore.setSchemaItem(schema); navigationStore.setDialog('deleteSchema')">
 											<template #icon>
@@ -279,7 +281,7 @@ import formatBytes from '../../services/formatBytes.js'
 											</template>
 											Delete
 										</NcActionButton>
-										<NcActionButton @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
+										<NcActionButton close-after-click @click="schemaStore.setSchemaItem(schema); navigationStore.setSelected('schemaDetails')">
 											<template #icon>
 												<InformationOutline :size="20" />
 											</template>
@@ -328,6 +330,30 @@ export default {
 		InformationOutline,
 		TableIcon,
 		ListIcon,
+	},
+	computed: {
+		sortedProperties() {
+			return (schema) => {
+				const properties = schema.properties || {}
+				return Object.entries(properties)
+					.sort(([keyA, propA], [keyB, propB]) => {
+						const orderA = propA.order || 0
+						const orderB = propB.order || 0
+						if (orderA > 0 && orderB > 0) {
+							return orderA - orderB
+						}
+						if (orderA > 0) return -1
+						if (orderB > 0) return 1
+						const createdA = propA.created || ''
+						const createdB = propB.created || ''
+						return createdA.localeCompare(createdB)
+					})
+					.reduce((acc, [key, value]) => {
+						acc[key] = value
+						return acc
+					}, {})
+			}
+		},
 	},
 }
 </script>

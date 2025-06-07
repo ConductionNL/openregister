@@ -266,4 +266,77 @@ class DashboardController extends Controller
     }//end getObjectsBySizeChart()
 
 
+    /**
+     * Get audit trail statistics for the dashboard sidebar
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
+     *
+     * @return JSONResponse The statistics data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
+    {
+        try {
+            $data = $this->dashboardService->getAuditTrailStatistics($registerId, $schemaId, $hours);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end getAuditTrailStatistics()
+
+
+    /**
+     * Get action distribution data for audit trails
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $hours      Optional number of hours to look back (default: 24)
+     *
+     * @return JSONResponse The action distribution data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
+    {
+        try {
+            $data = $this->dashboardService->getAuditTrailActionDistribution($registerId, $schemaId, $hours);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end getAuditTrailActionDistribution()
+
+
+    /**
+     * Get most active objects based on audit trail activity
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     * @param int|null $limit      Optional limit for number of results (default: 10)
+     * @param int|null $hours      Optional number of hours to look back (default: 24)
+     *
+     * @return JSONResponse The most active objects data
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): JSONResponse
+    {
+        try {
+            $data = $this->dashboardService->getMostActiveObjects($registerId, $schemaId, $limit, $hours);
+            return new JSONResponse($data);
+        } catch (\Exception $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 500);
+        }
+
+    }//end getMostActiveObjects()
+
+
 }//end class

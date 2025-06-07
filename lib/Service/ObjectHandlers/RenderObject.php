@@ -293,6 +293,7 @@ class RenderObject
         ?array $schemas=[],
         ?array $objects=[]
     ): ObjectEntity {
+
         // Add preloaded registers to the global cache.
         if (empty($registers) === false) {
             foreach ($registers as $id => $register) {
@@ -475,6 +476,7 @@ class RenderObject
 
             $value = $data->get(key: $key);
 
+
             // Make sure arrays are arrays.
             if ($value instanceof Dot) {
                 $value = $value->jsonSerialize();
@@ -496,7 +498,8 @@ class RenderObject
                         );
 
                 $renderedValue = array_map(
-                        function (string | int $identifier) use ($depth, $keyExtends) {
+                        function (string | int | array $identifier) use ($depth, $keyExtends) {
+
                             $object = $this->getObject(id: $identifier);
                             if ($object === null) {
                                 $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
@@ -534,6 +537,15 @@ class RenderObject
                     continue;
                 }
 
+
+				if(filter_var($value, FILTER_VALIDATE_URL) !== false) {
+					$path = parse_url($value, PHP_URL_PATH);
+					$pathExploded = explode('/', $path);
+
+					$value = end($pathExploded);
+				}
+
+
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {
@@ -547,11 +559,13 @@ class RenderObject
                 }
 
                 if (is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1))->jsonSerialize();
+                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize());
                 } else {
-                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1))->jsonSerialize();
+                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize());
                 }
+
             }//end if
+
         }//end foreach
 
         return $data->jsonSerialize();
@@ -702,8 +716,8 @@ class RenderObject
                             return false;
                         }//end if
 
-                        return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === (int) $object->getSchema();
-                    }
+						return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === (int) $object->getSchema();
+					}
                     ));
 
             $inversedUuids = array_map(
