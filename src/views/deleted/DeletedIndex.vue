@@ -17,7 +17,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', '{count} deleted items', { count: filteredItems.length }) }}
+						{{ t('openregister', 'Showing {showing} of {total} deleted items', { showing: paginatedItems.length, total: deletedStore.deletedPagination.total }) }}
 					</span>
 					<span v-if="selectedItems.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: selectedItems.length }) }})
@@ -139,31 +139,14 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 			</div>
 
 			<!-- Pagination -->
-			<div v-if="totalPages > 1" class="viewPagination">
-				<NcButton
-					:disabled="currentPage === 1"
-					@click="changePage(1)">
-					{{ t('openregister', 'First') }}
-				</NcButton>
-				<NcButton
-					:disabled="currentPage === 1"
-					@click="changePage(currentPage - 1)">
-					{{ t('openregister', 'Previous') }}
-				</NcButton>
-				<span class="viewPageInfo">
-					{{ t('openregister', 'Page {current} of {total}', { current: currentPage, total: totalPages }) }}
-				</span>
-				<NcButton
-					:disabled="currentPage === totalPages"
-					@click="changePage(currentPage + 1)">
-					{{ t('openregister', 'Next') }}
-				</NcButton>
-				<NcButton
-					:disabled="currentPage === totalPages"
-					@click="changePage(totalPages)">
-					{{ t('openregister', 'Last') }}
-				</NcButton>
-			</div>
+			<PaginationComponent
+				:current-page="currentPage"
+				:total-pages="totalPages"
+				:total-items="deletedStore.deletedPagination.total"
+				:current-page-size="deletedStore.deletedPagination.limit || 20"
+				:min-items-to-show="10"
+				@page-changed="onPageChanged"
+				@page-size-changed="onPageSizeChanged" />
 		</div>
 
 		<!-- Deletion Dialogs -->
@@ -190,6 +173,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 // Import deletion dialogs
 import PermanentlyDeleteObject from '../../modals/deleted/PermanentlyDeleteObject.vue'
 import PermanentlyDeleteMultiple from '../../modals/deleted/PermanentlyDeleteMultiple.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'DeletedIndex',
@@ -208,6 +192,7 @@ export default {
 		// Deletion dialogs
 		PermanentlyDeleteObject,
 		PermanentlyDeleteMultiple,
+		PaginationComponent,
 	},
 	data() {
 		return {
@@ -532,17 +517,37 @@ export default {
 			// TODO: Implement export functionality for deleted items
 		},
 		/**
-		 * Change page
+		 * Handle page change from pagination component
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 */
-		async changePage(page) {
+		async onPageChanged(page) {
 			try {
-				await deletedStore.fetchDeleted({ page })
+				await deletedStore.fetchDeleted({
+					page,
+					limit: deletedStore.deletedPagination.limit,
+				})
 				// Clear selection when page changes
 				this.selectedItems = []
 			} catch (error) {
 				// Handle error silently
+			}
+		},
+		/**
+		 * Handle page size change from pagination component
+		 * @param {number} pageSize - The new page size
+		 * @return {Promise<void>}
+		 */
+		async onPageSizeChanged(pageSize) {
+			try {
+				await deletedStore.fetchDeleted({
+					page: 1,
+					limit: pageSize,
+				})
+				// Clear selection when page size changes
+				this.selectedItems = []
+			} catch (error) {
+				console.error('Error changing page size:', error)
 			}
 		},
 		/**

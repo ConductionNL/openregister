@@ -27,6 +27,7 @@ import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 					<div class="filterGroup">
 						<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 						<NcSelect
+							id="registerSelect"
 							:model-value="selectedRegisterValue"
 							:options="registerOptions.options"
 							:placeholder="t('openregister', 'All registers')"
@@ -43,6 +44,7 @@ import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 					<div class="filterGroup">
 						<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 						<NcSelect
+							id="schemaSelect"
 							:model-value="selectedSchemaValue"
 							:options="schemaOptions.options"
 							:placeholder="t('openregister', 'All schemas')"
@@ -60,6 +62,7 @@ import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 					<div class="filterGroup">
 						<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
 						<NcSelect
+							id="actionSelect"
 							v-model="selectedActions"
 							:options="actionOptions"
 							:placeholder="t('openregister', 'All actions')"
@@ -75,6 +78,7 @@ import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 					<div class="filterGroup">
 						<label for="userSelect">{{ t('openregister', 'Users') }}</label>
 						<NcSelect
+							id="userSelect"
 							v-model="selectedUsers"
 							:options="userOptions"
 							:placeholder="t('openregister', 'All users')"
@@ -143,6 +147,7 @@ import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 					<div class="exportGroup">
 						<label for="formatSelect">{{ t('openregister', 'Export Format') }}</label>
 						<NcSelect
+							id="formatSelect"
 							v-model="exportFormat"
 							:options="exportFormatOptions"
 							:placeholder="t('openregister', 'Select format')"

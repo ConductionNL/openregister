@@ -14,8 +14,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
 				<div class="viewInfo">
+					<!-- Display pagination info: showing current page items out of total items -->
 					<span class="viewTotalCount">
-						{{ t('openregister', '{count} audit trail entries', { count: auditTrailStore.auditTrailCount }) }}
+						{{ t('openregister', 'Showing {showing} of {total} audit trail entries', { showing: paginatedAuditTrails.length, total: auditTrailStore.pagination.total || 0 }) }}
 					</span>
 					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
@@ -154,34 +155,14 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Pagination -->
-			<div v-if="auditTrailStore.pagination.pages > 1" class="viewPagination">
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === 1"
-					@click="goToPage(1)">
-					{{ t('openregister', 'First') }}
-				</NcButton>
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === 1"
-					@click="goToPage(auditTrailStore.pagination.page - 1)">
-					{{ t('openregister', 'Previous') }}
-				</NcButton>
-				<span class="viewPageInfo">
-					{{ t('openregister', 'Page {current} of {total}', {
-						current: auditTrailStore.pagination.page,
-						total: auditTrailStore.pagination.pages
-					}) }}
-				</span>
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === auditTrailStore.pagination.pages"
-					@click="goToPage(auditTrailStore.pagination.page + 1)">
-					{{ t('openregister', 'Next') }}
-				</NcButton>
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === auditTrailStore.pagination.pages"
-					@click="goToPage(auditTrailStore.pagination.pages)">
-					{{ t('openregister', 'Last') }}
-				</NcButton>
-			</div>
+			<PaginationComponent
+				:current-page="auditTrailStore.pagination.page || 1"
+				:total-pages="auditTrailStore.pagination.pages || 1"
+				:total-items="auditTrailStore.pagination.total || 0"
+				:current-page-size="auditTrailStore.pagination.limit || 50"
+				:min-items-to-show="10"
+				@page-changed="onPageChanged"
+				@page-size-changed="onPageSizeChanged" />
 		</div>
 
 		<!-- Import the new modals -->
@@ -218,6 +199,7 @@ import DeleteAuditTrail from '../../modals/logs/DeleteAuditTrail.vue'
 import AuditTrailDetails from '../../modals/logs/AuditTrailDetails.vue'
 import AuditTrailChanges from '../../modals/logs/AuditTrailChanges.vue'
 import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'AuditTrailIndex',
@@ -244,6 +226,7 @@ export default {
 		AuditTrailDetails,
 		AuditTrailChanges,
 		ClearAuditTrails,
+		PaginationComponent,
 	},
 	data() {
 		return {
@@ -317,18 +300,6 @@ export default {
 		 */
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
-		},
-		/**
-		 * Go to specific page
-		 * @param {number} page - Page number
-		 * @return {Promise<void>}
-		 */
-		async goToPage(page) {
-			try {
-				await auditTrailStore.refreshAuditTrailList({ page })
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
 		},
 		/**
 		 * View detailed information for an audit trail entry
@@ -521,6 +492,33 @@ export default {
 		 */
 		updateCounts() {
 			this.$root.$emit('audit-trail-filtered-count', auditTrailStore.auditTrailCount)
+		},
+		/**
+		 * Handle page change from pagination component
+		 * @param {number} page - The page number to change to
+		 * @return {Promise<void>}
+		 */
+		async onPageChanged(page) {
+			try {
+				await auditTrailStore.refreshAuditTrailList({ page })
+			} catch (error) {
+				console.error('Error loading page:', error)
+			}
+		},
+		/**
+		 * Handle page size change from pagination component
+		 * @param {number} pageSize - The new page size
+		 * @return {Promise<void>}
+		 */
+		async onPageSizeChanged(pageSize) {
+			try {
+				await auditTrailStore.refreshAuditTrailList({
+					page: 1,
+					limit: pageSize,
+				})
+			} catch (error) {
+				console.error('Error changing page size:', error)
+			}
 		},
 	},
 }

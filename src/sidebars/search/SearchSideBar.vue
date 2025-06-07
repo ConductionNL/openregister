@@ -20,8 +20,9 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Register') }}</label>
+					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect v-bind="registerOptions"
+						id="registerSelect"
 						:model-value="selectedRegisterValue"
 						input-label="Register"
 						:loading="registerLoading"
@@ -32,6 +33,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 					<NcSelect v-bind="schemaOptions"
+						id="schemaSelect"
 						:model-value="selectedSchemaValue"
 						input-label="Schema"
 						:loading="schemaLoading"

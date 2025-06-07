@@ -318,11 +318,77 @@
 /* Pagination */
 .viewPagination {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   margin-top: 30px;
   padding: 20px;
+  flex-wrap: nowrap;
+}
+
+.viewPaginationPageSize {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.viewPaginationPageSize label {
+  font-size: 0.9rem;
+  color: var(--color-text-maxcontrast);
+  white-space: nowrap;
+}
+
+.viewPaginationPageSize .select {
+  min-width: 100px !important;
+  max-width: 120px !important;
+}
+
+.pagination-page-size-select {
+  min-width: 100px !important;
+  max-width: 120px !important;
+}
+
+.pagination-page-size-select .vs__dropdown-toggle {
+  min-width: 100px !important;
+  max-width: 120px !important;
+}
+
+.pagination-page-size-select .vs__selected {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.pagination-page-size-select .vs__dropdown-menu {
+  min-width: 100px !important;
+}
+
+.viewPaginationNav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.viewPaginationNumbers {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.viewPaginationEllipsis {
+  padding: 0 5px;
+  color: var(--color-text-maxcontrast);
+  font-size: 0.9rem;
+}
+
+.viewPaginationInfo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .viewPageInfo {
@@ -358,5 +424,24 @@
   .tableColumnTitle {
     min-width: 150px;
     max-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .viewPagination {
+    gap: 10px;
+    padding: 15px 10px;
+  }
+  
+  .viewPaginationPageSize label {
+    display: none;
+  }
+  
+  .viewPaginationNav {
+    gap: 5px;
+  }
+  
+  .viewPaginationNumbers {
+    gap: 3px;
   }
 }

@@ -22,6 +22,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 				<div class="filterGroup">
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect
+						id="registerSelect"
 						:model-value="selectedRegisterValue"
 						:options="registerOptions"
 						:placeholder="t('openregister', 'All registers')"
@@ -36,6 +37,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 					<NcSelect
+						id="schemaSelect"
 						:model-value="selectedSchemaValue"
 						:options="schemaOptions"
 						:placeholder="t('openregister', 'All schemas')"
@@ -51,6 +53,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 				<div class="filterGroup">
 					<label for="deletedBySelect">{{ t('openregister', 'Deleted By') }}</label>
 					<NcSelect
+						id="deletedBySelect"
 						v-model="selectedDeletedBy"
 						:options="userOptions"
 						:placeholder="t('openregister', 'Any user')"
