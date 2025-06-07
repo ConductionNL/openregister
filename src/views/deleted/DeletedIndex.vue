@@ -4,24 +4,26 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 
 <template>
 	<NcAppContent>
-		<div class="container">
+		<div class="viewContainer">
 			<!-- Header -->
-			<div class="header">
-				<h1>{{ t('openregister', 'Soft Deleted Items') }}</h1>
+			<div class="viewHeader">
+				<h1 class="viewHeaderTitleIndented">
+					{{ t('openregister', 'Soft Deleted Items') }}
+				</h1>
 				<p>{{ t('openregister', 'Manage and restore soft deleted items from your registers') }}</p>
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="actions-bar">
-				<div class="deleted-items-info">
-					<span class="total-count">
+			<div class="viewActionsBar">
+				<div class="viewInfo">
+					<span class="viewTotalCount">
 						{{ t('openregister', '{count} deleted items', { count: filteredItems.length }) }}
 					</span>
-					<span v-if="selectedItems.length > 0" class="selection-indicator">
+					<span v-if="selectedItems.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: selectedItems.length }) }})
 					</span>
 				</div>
-				<div class="actions">
+				<div class="viewActions">
 					<NcButton
 						v-if="selectedItems.length > 0"
 						type="primary"
@@ -38,7 +40,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 						<template #icon>
 							<Delete :size="20" />
 						</template>
-						{{ t('openregister', 'Delete ({count})', { count: selectedItems.length }) }}
+						{{ t('openregister', 'Purge ({count})', { count: selectedItems.length }) }}
 					</NcButton>
 					<NcButton @click="refreshItems">
 						<template #icon>
@@ -59,43 +61,53 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 				</template>
 			</NcEmptyContent>
 
-			<div v-else class="table-container">
-				<table class="items-table">
+			<div v-else class="viewTableContainer">
+				<table class="viewTable itemsTable">
 					<thead>
 						<tr>
-							<th class="checkbox-column">
+							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:checked="allSelected"
 									:indeterminate="someSelected"
 									@update:checked="toggleSelectAll" />
 							</th>
 							<th>{{ t('openregister', 'Title') }}</th>
-							<th>{{ t('openregister', 'Register') }}</th>
-							<th>{{ t('openregister', 'Schema') }}</th>
+							<th class="tableColumnConstrained">
+								{{ t('openregister', 'Register') }}
+							</th>
+							<th class="tableColumnConstrained">
+								{{ t('openregister', 'Schema') }}
+							</th>
 							<th>{{ t('openregister', 'Deleted Date') }}</th>
 							<th>{{ t('openregister', 'Deleted By') }}</th>
 							<th>{{ t('openregister', 'Purge Date') }}</th>
-							<th>{{ t('openregister', 'Actions') }}</th>
+							<th class="tableColumnActions">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr v-for="item in paginatedItems"
 							:key="item.id"
-							class="item-row"
-							:class="{ selected: selectedItems.includes(item.id) }">
-							<td class="checkbox-column">
+							class="viewTableRow itemRow"
+							:class="{ viewTableRowSelected: selectedItems.includes(item.id) }">
+							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:checked="selectedItems.includes(item.id)"
 									@update:checked="(checked) => toggleItemSelection(item.id, checked)" />
 							</td>
-							<td class="title-column">
-								<div class="title-content">
+							<td class="tableColumnTitle">
+								<div class="titleContent">
 									<strong>{{ getItemTitle(item) }}</strong>
-									<span v-if="getItemDescription(item)" class="description">{{ getItemDescription(item) }}</span>
+									<span v-if="getItemDescription(item)" class="textDescription textEllipsis">{{ getItemDescription(item) }}</span>
 								</div>
 							</td>
-							<td>{{ getRegisterName(item['@self']?.register) }}</td>
-							<td>{{ getSchemaName(item['@self']?.schema) }}</td>
+							<td class="tableColumnConstrained">
+								{{ getRegisterName(item['@self']?.register) }}
+							</td>
+							<td class="tableColumnConstrained">
+								{{ getSchemaName(item['@self']?.schema) }}
+							</td>
 							<td>
 								<span v-if="item['@self']?.deleted?.deleted">{{ formatPurgeDate(item['@self'].deleted.deleted) }}</span>
 								<span v-else>{{ t('openregister', 'Unknown') }}</span>
@@ -105,7 +117,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 								<span v-if="item['@self']?.deleted?.purgeDate">{{ formatPurgeDate(item['@self'].deleted.purgeDate) }}</span>
 								<span v-else>{{ t('openregister', 'No purge date set') }}</span>
 							</td>
-							<td class="actions-column">
+							<td class="tableColumnActions">
 								<NcActions>
 									<NcActionButton close-after-click @click="restoreItem(item)">
 										<template #icon>
@@ -127,7 +139,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 			</div>
 
 			<!-- Pagination -->
-			<div v-if="totalPages > 1" class="pagination">
+			<div v-if="totalPages > 1" class="viewPagination">
 				<NcButton
 					:disabled="currentPage === 1"
 					@click="changePage(1)">
@@ -138,7 +150,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 					@click="changePage(currentPage - 1)">
 					{{ t('openregister', 'Previous') }}
 				</NcButton>
-				<span class="page-info">
+				<span class="viewPageInfo">
 					{{ t('openregister', 'Page {current} of {total}', { current: currentPage, total: totalPages }) }}
 				</span>
 				<NcButton
@@ -569,157 +581,5 @@ export default {
 </script>
 
 <style scoped>
-.container {
-	padding: 20px;
-	max-width: 100%;
-}
-
-.header {
-	margin-bottom: 30px;
-}
-
-.header h1 {
-	margin: 0 0 10px 0;
-	padding-left: 24px;
-	font-size: 2rem;
-	font-weight: 300;
-}
-
-.header p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.actions-bar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 10px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.deleted-items-info {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-
-.total-count {
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.selection-indicator {
-	font-size: 0.9rem;
-	color: var(--color-primary);
-}
-
-.actions {
-	display: flex;
-	align-items: center;
-	gap: 15px;
-}
-
-.table-container {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 2px 4px var(--color-box-shadow);
-}
-
-.items-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.items-table th,
-.items-table td {
-	padding: 12px;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.items-table th {
-	background: var(--color-background-hover);
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.checkbox-column {
-	width: 50px;
-	text-align: center;
-}
-
-.title-column {
-	min-width: 120px;
-	max-width: 200px;
-	word-wrap: break-word;
-	overflow: hidden;
-}
-
-.title-content {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.description {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-/* Register and Schema column width limits */
-.items-table td:nth-child(3), /* Register column */
-.items-table td:nth-child(4) { /* Schema column */
-	max-width: 150px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.items-table th:nth-child(3), /* Register header */
-.items-table th:nth-child(4) { /* Schema header */
-	max-width: 150px;
-}
-
-.actions-column {
-	width: 120px;
-	text-align: center;
-	min-width: 120px;
-}
-
-.item-row:hover {
-	background: var(--color-background-hover);
-}
-
-.item-row.selected {
-	background: var(--color-primary-light);
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 20px;
-	margin-top: 30px;
-	padding: 20px;
-}
-
-.page-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9rem;
-}
-
-/* Responsive table adjustments */
-@media (max-width: 1200px) {
-	.title-column {
-		min-width: 150px;
-		max-width: 200px;
-	}
-}
+/* No component-specific styles needed - all styles are now generic in main.css */
 </style>

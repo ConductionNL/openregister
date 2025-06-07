@@ -187,3 +187,176 @@
   margin-left: 16px;
   color: inherit;
 }
+
+/* Common View Patterns */
+
+/* Container and Layout */
+.viewContainer {
+  padding: 20px;
+  max-width: 100%;
+}
+
+.viewHeader {
+  margin-bottom: 30px;
+}
+
+.viewHeader h1 {
+  margin: 0 0 10px 0;
+  font-size: 2rem;
+  font-weight: 300;
+}
+
+.viewHeaderTitleIndented {
+  padding-left: 24px;
+}
+
+.viewHeader p {
+  color: var(--color-text-maxcontrast);
+  margin: 0;
+}
+
+/* Actions Bar */
+.viewActionsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: var(--color-background-hover);
+  border-radius: var(--border-radius);
+}
+
+.viewInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viewTotalCount {
+  font-weight: 500;
+  color: var(--color-main-text);
+}
+
+.viewIndicator {
+  font-size: 0.9rem;
+  color: var(--color-primary);
+}
+
+.viewActions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Table Styling */
+.viewTableContainer {
+  background: var(--color-main-background);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 2px 4px var(--color-box-shadow);
+}
+
+.viewTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.viewTable th,
+.viewTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.viewTable th {
+  background: var(--color-background-hover);
+  font-weight: 500;
+  color: var(--color-text-maxcontrast);
+}
+
+.viewTableRow:hover {
+  background: var(--color-background-hover);
+}
+
+.viewTableRowSelected {
+  background: var(--color-primary-light);
+}
+
+/* Table Column Types */
+.tableColumnCheckbox {
+  width: 50px;
+  text-align: center;
+}
+
+.tableColumnActions {
+  width: 120px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.tableColumnConstrained {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tableColumnTitle {
+  min-width: 120px;
+  max-width: 200px;
+  word-wrap: break-word;
+  overflow: hidden;
+}
+
+/* Title Content Layout */
+.titleContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Pagination */
+.viewPagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 30px;
+  padding: 20px;
+}
+
+.viewPageInfo {
+  color: var(--color-text-maxcontrast);
+  font-size: 0.9rem;
+}
+
+/* Loading States */
+.viewLoading {
+  text-align: center;
+  padding: 50px;
+}
+
+.viewLoading p {
+  margin-top: 20px;
+  color: var(--color-text-maxcontrast);
+}
+
+/* Text Utilities */
+.textEllipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.textDescription {
+  font-size: 0.9em;
+  color: var(--color-text-maxcontrast);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .tableColumnTitle {
+    min-width: 150px;
+    max-width: 200px;
+  }
+}
