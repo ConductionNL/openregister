@@ -23,32 +23,24 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect
 						id="registerSelect"
+						v-bind="registerOptions"
 						:model-value="selectedRegisterValue"
-						:options="registerOptions"
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
+						@update:model-value="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 					<NcSelect
 						id="schemaSelect"
+						v-bind="schemaOptions"
 						:model-value="selectedSchemaValue"
-						:options="schemaOptions"
 						:placeholder="t('openregister', 'All schemas')"
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
+						@update:model-value="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="deletedBySelect">{{ t('openregister', 'Deleted By') }}</label>
@@ -261,37 +253,57 @@ export default {
 	},
 	computed: {
 		registerOptions() {
-			if (!registerStore.registerList || !registerStore.registerList.length) {
-				return []
+			return {
+				options: registerStore.registerList.map(register => ({
+					value: register.id,
+					label: register.title,
+					title: register.title,
+					register,
+				})),
+				reduce: option => option.register,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.register && option.register.title) || option.label || ''
+				},
 			}
-			return registerStore.registerList.map(register => ({
-				label: register.title || `Register ${register.id}`,
-				value: register.id,
-			}))
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem || !schemaStore.schemaList || !schemaStore.schemaList.length) {
-				return []
+			if (!registerStore.registerItem) return { options: [] }
+
+			return {
+				options: schemaStore.schemaList
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.map(schema => ({
+						value: schema.id,
+						label: schema.title,
+						title: schema.title,
+						schema,
+					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
 			}
-			return schemaStore.schemaList
-				.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
-				.map(schema => ({
-					label: schema.title || `Schema ${schema.id}`,
-					value: schema.id,
-				}))
 		},
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
+			const register = registerStore.registerItem
 			return {
-				label: registerStore.registerItem.title || `Register ${registerStore.registerItem.id}`,
-				value: registerStore.registerItem.id,
+				value: register.id,
+				label: register.title,
+				title: register.title,
+				register,
 			}
 		},
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
 			return {
-				label: schemaStore.schemaItem.title || `Schema ${schemaStore.schemaItem.id}`,
-				value: schemaStore.schemaItem.id,
+				value: schema.id,
+				label: schema.title,
+				title: schema.title,
+				schema,
 			}
 		},
 		userOptions() {
@@ -407,25 +419,21 @@ export default {
 		},
 		/**
 		 * Handle register change
-		 * @param {object} value - The selected register value
+		 * @param {object} register - The selected register object
 		 * @return {void}
 		 */
-		handleRegisterChange(value) {
-			// Find the actual register object
-			const register = registerStore.registerList.find(r => r.id === value?.value)
-			registerStore.setRegisterItem(register || null)
+		handleRegisterChange(register) {
+			registerStore.setRegisterItem(register)
 			schemaStore.setSchemaItem(null) // Clear schema when register changes
 			this.applyFilters()
 		},
 		/**
 		 * Handle schema change
-		 * @param {object} value - The selected schema value
+		 * @param {object} schema - The selected schema object
 		 * @return {void}
 		 */
-		handleSchemaChange(value) {
-			// Find the actual schema object
-			const schema = schemaStore.schemaList.find(s => s.id === value?.value)
-			schemaStore.setSchemaItem(schema || null)
+		handleSchemaChange(schema) {
+			schemaStore.setSchemaItem(schema)
 			this.applyFilters()
 		},
 	},

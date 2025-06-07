@@ -6,7 +6,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 	<NcAppContent>
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
+			<div class="viewHeaderTitleIndented">
 				<h1>{{ t('openregister', 'Audit Trails') }}</h1>
 				<p>{{ t('openregister', 'View and analyze system audit trails with advanced filtering capabilities') }}</p>
 			</div>

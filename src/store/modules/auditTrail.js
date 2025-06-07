@@ -295,6 +295,79 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
+		 * Get audit trail statistics
+		 * @return {Promise<object>} The statistics
+		 */
+		async getStatistics() {
+			try {
+				await this.fetchStatistics()
+				return this.statistics
+			} catch (error) {
+				console.error('Error getting statistics:', error)
+				return {
+					total: 0,
+					create: 0,
+					update: 0,
+					delete: 0,
+					read: 0,
+				}
+			}
+		},
+
+		/**
+		 * Get action distribution data
+		 * @return {Promise<Array>} The action distribution
+		 */
+		async getActionDistribution() {
+			try {
+				// Calculate from current audit trail list
+				const actions = ['create', 'update', 'delete', 'read']
+				const total = this.auditTrailList.length
+
+				return actions.map(action => {
+					const count = this.auditTrailList.filter(item => item.action === action).length
+					return {
+						action,
+						count,
+						percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+					}
+				}).filter(item => item.count > 0)
+			} catch (error) {
+				console.error('Error getting action distribution:', error)
+				return []
+			}
+		},
+
+		/**
+		 * Get top objects by audit trail count
+		 * @return {Promise<Array>} The top objects
+		 */
+		async getTopObjects() {
+			try {
+				// Count audit trails per object
+				const objectCounts = {}
+				this.auditTrailList.forEach(item => {
+					if (item.object) {
+						objectCounts[item.object] = (objectCounts[item.object] || 0) + 1
+					}
+				})
+
+				// Sort by count and return top 10
+				return Object.entries(objectCounts)
+					.map(([objectId, count]) => ({
+						id: objectId,
+						name: `Object ${objectId}`,
+						count,
+					}))
+					.sort((a, b) => b.count - a.count)
+					.slice(0, 10)
+			} catch (error) {
+				console.error('Error getting top objects:', error)
+				return []
+			}
+		},
+
+		/**
 		 * Clear all audit trail store data
 		 */
 		clearAuditTrailStore() {
