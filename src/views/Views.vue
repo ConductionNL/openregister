@@ -13,7 +13,7 @@ import { navigationStore } from '../store/store.js'
 			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 			<SchemaDetails v-if="navigationStore.selected === 'schemaDetails'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
-			<SearchIndex v-if="navigationStore.selected === 'search'" />
+			<SearchIndex v-if="navigationStore.selected === 'tableSearch'" />
 			<ConfigurationsIndex v-if="navigationStore.selected === 'configurations'" />
 			<DeletedIndex v-if="navigationStore.selected === 'deleted'" />
 			<AuditTrailIndex v-if="navigationStore.selected === 'auditTrails'" />

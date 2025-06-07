@@ -109,13 +109,13 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 							</td>
 							<td class="actions-column">
 								<NcActions>
-									<NcActionButton @click="restoreItem(item)">
+									<NcActionButton close-after-click @click="restoreItem(item)">
 										<template #icon>
 											<Restore :size="20" />
 										</template>
 										{{ t('openregister', 'Restore') }}
 									</NcActionButton>
-									<NcActionButton @click="permanentlyDelete(item)">
+									<NcActionButton close-after-click @click="permanentlyDelete(item)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>

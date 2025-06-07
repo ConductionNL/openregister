@@ -121,26 +121,26 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 							</td>
 							<td class="actions-column">
 								<NcActions>
-									<NcActionButton @click="viewDetails(auditTrail)">
+									<NcActionButton close-after-click @click="viewDetails(auditTrail)">
 										<template #icon>
 											<Eye :size="20" />
 										</template>
 										{{ t('openregister', 'View Details') }}
 									</NcActionButton>
-									<NcActionButton v-if="auditTrail.changed && (Array.isArray(auditTrail.changed) ? auditTrail.changed.length > 0 : Object.keys(auditTrail.changed).length > 0)" @click="viewChanges(auditTrail)">
+									<NcActionButton v-if="auditTrail.changed && (Array.isArray(auditTrail.changed) ? auditTrail.changed.length > 0 : Object.keys(auditTrail.changed).length > 0)" close-after-click @click="viewChanges(auditTrail)">
 										<template #icon>
 											<CompareHorizontal :size="20" />
 										</template>
 										{{ t('openregister', 'View Changes') }}
 									</NcActionButton>
-									<NcActionButton @click="copyData(auditTrail)">
+									<NcActionButton close-after-click @click="copyData(auditTrail)">
 										<template #icon>
 											<Check v-if="copyStates[auditTrail.id]" :size="20" class="copy-success-icon" />
 											<ContentCopy v-else :size="20" />
 										</template>
 										{{ copyStates[auditTrail.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
 									</NcActionButton>
-									<NcActionButton class="delete-action" @click="deleteAuditTrail(auditTrail)">
+									<NcActionButton close-after-click class="delete-action" @click="deleteAuditTrail(auditTrail)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
