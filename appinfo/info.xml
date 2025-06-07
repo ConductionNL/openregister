@@ -22,7 +22,7 @@ Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
 
 Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
     ]]></description>
-    <version>0.1.77</version>
+    <version>0.1.78</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -36,6 +36,7 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
         <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
     </documentation>
+
     <dependencies>
         <php min-version="8.0" min-int-size="64"/>
         <database min-version="10">pgsql</database>
@@ -43,6 +44,11 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <database min-version="8.0">mysql</database>
         <nextcloud min-version="28" max-version="32"/>
     </dependencies>
+
+	<background-jobs>
+		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
+	</background-jobs>
+
     <navigations>
         <navigation>
             <id>openregister</id>
