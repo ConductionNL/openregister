@@ -48,16 +48,12 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 			</div>
 
 			<!-- Items Table -->
-			<div v-if="deletedStore.deletedLoading" class="loading">
-				<NcLoadingIcon :size="64" />
-				<p>{{ t('openregister', 'Loading deleted items...') }}</p>
-			</div>
-
-			<NcEmptyContent v-else-if="!filteredItems.length"
-				:name="t('openregister', 'No deleted items found')"
-				:description="t('openregister', 'There are no deleted items matching your current filters.')">
+			<NcEmptyContent v-if="deletedStore.deletedLoading || !filteredItems.length"
+				:name="emptyContentName"
+				:description="emptyContentDescription">
 				<template #icon>
-					<DeleteEmpty />
+					<NcLoadingIcon v-if="deletedStore.deletedLoading" />
+					<DeleteEmpty v-else />
 				</template>
 			</NcEmptyContent>
 
@@ -226,6 +222,22 @@ export default {
 		},
 		someSelected() {
 			return this.selectedItems.length > 0 && !this.allSelected
+		},
+		emptyContentName() {
+			if (deletedStore.deletedLoading) {
+				return t('openregister', 'Loading deleted items...')
+			} else if (!this.filteredItems.length) {
+				return t('openregister', 'No deleted items found')
+			}
+			return ''
+		},
+		emptyContentDescription() {
+			if (deletedStore.deletedLoading) {
+				return t('openregister', 'Please wait while we fetch your deleted items.')
+			} else if (!this.filteredItems.length) {
+				return t('openregister', 'There are no deleted items matching your current filters.')
+			}
+			return ''
 		},
 	},
 	watch: {
@@ -604,16 +616,6 @@ export default {
 	align-items: center;
 	gap: 15px;
 	margin-left: auto;
-}
-
-.loading {
-	text-align: center;
-	padding: 50px;
-}
-
-.loading p {
-	margin-top: 20px;
-	color: var(--color-text-maxcontrast);
 }
 
 .table-container {
