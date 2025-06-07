@@ -437,10 +437,12 @@ export default {
 			}
 		},
 		userOptions() {
-			if (!auditTrailStore.uniqueUsers || !auditTrailStore.uniqueUsers.length) {
+			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
 				return []
 			}
-			return auditTrailStore.uniqueUsers.map(user => ({
+			// Get unique users from audit trail list
+			const users = [...new Set(auditTrailStore.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
+			return users.map(user => ({
 				label: user,
 				value: user,
 			}))
@@ -529,20 +531,26 @@ export default {
 			schemaStore.setSchemaItem(null)
 
 			// Clear store filters
-			auditTrailStore.setFilters({})
-
-			// Method 2: If the store has a clearFilters method, use it
-			if (typeof auditTrailStore.clearFilters === 'function') {
-				auditTrailStore.clearFilters()
-			}
-
-			// Method 3: Directly set filters to empty if accessible
-			if (auditTrailStore.filters) {
-				auditTrailStore.filters = {}
-			}
+			auditTrailStore.setAuditTrailFilters({})
 
 			// Refresh without applying filters through applyFilters (which might re-add them)
 			auditTrailStore.refreshAuditTrailList()
+		},
+		/**
+		 * Clear filters (alias for clearAllFilters for template compatibility)
+		 * @return {void}
+		 */
+		clearFilters() {
+			this.clearAllFilters()
+		},
+		/**
+		 * Handle object filter change with debouncing
+		 * @param {string} value - The filter value
+		 * @return {void}
+		 */
+		handleObjectFilterChange(value) {
+			this.objectFilter = value
+			this.debouncedApplyFilters()
 		},
 		/**
 		 * Apply filters and emit to parent components
@@ -598,7 +606,7 @@ export default {
 			}
 
 			// Set filters in store and refresh data
-			auditTrailStore.setFilters(filters)
+			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
 
 			// Also emit for legacy compatibility
@@ -628,8 +636,8 @@ export default {
 		 * @return {void}
 		 */
 		updateFilteredCount() {
-			this.filteredCount = auditTrailStore.auditTrailCount
-			this.totalAuditTrails = auditTrailStore.pagination.total || auditTrailStore.auditTrailCount
+			this.filteredCount = auditTrailStore.auditTrailList.length
+			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
 		},
 		/**
 		 * Export audit trails with current filters

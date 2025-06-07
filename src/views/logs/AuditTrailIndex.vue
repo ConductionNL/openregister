@@ -16,7 +16,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				<div class="viewInfo">
 					<!-- Display pagination info: showing current page items out of total items -->
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} audit trail entries', { showing: paginatedAuditTrails.length, total: auditTrailStore.pagination.total || 0 }) }}
+						{{ t('openregister', 'Showing {showing} of {total} audit trail entries', { showing: paginatedAuditTrails.length, total: auditTrailStore.auditTrailPagination.total || 0 }) }}
 					</span>
 					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
@@ -45,7 +45,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Audit Trails Table -->
-			<div v-if="auditTrailStore.isLoading" class="viewLoading">
+			<div v-if="auditTrailStore.auditTrailLoading" class="viewLoading">
 				<NcLoadingIcon :size="64" />
 				<p>{{ t('openregister', 'Loading audit trails...') }}</p>
 			</div>
@@ -128,7 +128,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 										</template>
 										{{ t('openregister', 'View Details') }}
 									</NcActionButton>
-									<NcActionButton v-if="auditTrail.changed && (Array.isArray(auditTrail.changed) ? auditTrail.changed.length > 0 : Object.keys(auditTrail.changed).length > 0)" close-after-click @click="viewChanges(auditTrail)">
+									<NcActionButton v-if="hasChanges(auditTrail)" close-after-click @click="viewChanges(auditTrail)">
 										<template #icon>
 											<CompareHorizontal :size="20" />
 										</template>
@@ -156,10 +156,10 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 			<!-- Pagination -->
 			<PaginationComponent
-				:current-page="auditTrailStore.pagination.page || 1"
-				:total-pages="auditTrailStore.pagination.pages || 1"
-				:total-items="auditTrailStore.pagination.total || 0"
-				:current-page-size="auditTrailStore.pagination.limit || 50"
+				:current-page="auditTrailStore.auditTrailPagination.page || 1"
+				:total-pages="auditTrailStore.auditTrailPagination.pages || 1"
+				:total-items="auditTrailStore.auditTrailPagination.total || 0"
+				:current-page-size="auditTrailStore.auditTrailPagination.limit || 50"
 				:min-items-to-show="10"
 				@page-changed="onPageChanged"
 				@page-size-changed="onPageSizeChanged" />
@@ -236,24 +236,39 @@ export default {
 	},
 	computed: {
 		hasActiveFilters() {
-			return Object.keys(auditTrailStore.filters || {}).some(key =>
-				auditTrailStore.filters[key] !== null
-				&& auditTrailStore.filters[key] !== undefined
-				&& auditTrailStore.filters[key] !== '',
+			return Object.keys(auditTrailStore.auditTrailFilters || {}).some(key =>
+				auditTrailStore.auditTrailFilters[key] !== null
+				&& auditTrailStore.auditTrailFilters[key] !== undefined
+				&& auditTrailStore.auditTrailFilters[key] !== '',
 			)
 		},
 		paginatedAuditTrails() {
-			// The store handles pagination, so we return the full list
-			return auditTrailStore.auditTrailList
+			// Ensure we always return a clean array
+			try {
+				return Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList : []
+			} catch (error) {
+				console.error('Error accessing auditTrailList:', error)
+				return []
+			}
 		},
 	},
 	watch: {
-		'auditTrailStore.auditTrailList'() {
-			this.updateCounts()
+		paginatedAuditTrails: {
+			handler() {
+				this.$nextTick(() => {
+					this.updateCounts()
+				})
+			},
+			deep: false,
 		},
 	},
 	mounted() {
-		this.loadAuditTrails()
+		// Initialize with safe defaults
+		try {
+			this.loadAuditTrails()
+		} catch (error) {
+			console.error('Error in mounted loadAuditTrails:', error)
+		}
 
 		// Listen for filter changes from sidebar
 		this.$root.$on('audit-trail-filters-changed', this.handleFiltersChanged)
@@ -261,8 +276,10 @@ export default {
 		this.$root.$on('audit-trail-clear-filtered', this.clearAuditTrails)
 		this.$root.$on('audit-trail-refresh', this.refreshAuditTrails)
 
-		// Emit counts to sidebar
-		this.updateCounts()
+		// Emit counts to sidebar with delay to ensure store is ready
+		this.$nextTick(() => {
+			this.updateCounts()
+		})
 	},
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filters-changed')
@@ -289,7 +306,7 @@ export default {
 		 * @return {void}
 		 */
 		handleFiltersChanged(filters) {
-			auditTrailStore.setFilters(filters)
+			auditTrailStore.setAuditTrailFilters(filters)
 			// Refresh with new filters
 			this.loadAuditTrails()
 		},
@@ -491,7 +508,13 @@ export default {
 		 * @return {void}
 		 */
 		updateCounts() {
-			this.$root.$emit('audit-trail-filtered-count', auditTrailStore.auditTrailCount)
+			try {
+				const count = Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList.length : 0
+				this.$root.$emit('audit-trail-filtered-count', count)
+			} catch (error) {
+				console.error('Error updating counts:', error)
+				this.$root.$emit('audit-trail-filtered-count', 0)
+			}
 		},
 		/**
 		 * Handle page change from pagination component
@@ -500,7 +523,10 @@ export default {
 		 */
 		async onPageChanged(page) {
 			try {
-				await auditTrailStore.refreshAuditTrailList({ page })
+				await auditTrailStore.fetchAuditTrails({
+					page,
+					limit: auditTrailStore.auditTrailPagination.limit,
+				})
 			} catch (error) {
 				console.error('Error loading page:', error)
 			}
@@ -512,12 +538,35 @@ export default {
 		 */
 		async onPageSizeChanged(pageSize) {
 			try {
-				await auditTrailStore.refreshAuditTrailList({
+				await auditTrailStore.fetchAuditTrails({
 					page: 1,
 					limit: pageSize,
 				})
 			} catch (error) {
 				console.error('Error changing page size:', error)
+			}
+		},
+		/**
+		 * Check if audit trail has changes
+		 * @param {object} auditTrail - The audit trail item
+		 * @return {boolean} Whether the audit trail has changes
+		 */
+		hasChanges(auditTrail) {
+			try {
+				if (!auditTrail || !auditTrail.changed) return false
+
+				if (Array.isArray(auditTrail.changed)) {
+					return auditTrail.changed.length > 0
+				}
+
+				if (typeof auditTrail.changed === 'object') {
+					return Object.keys(auditTrail.changed).length > 0
+				}
+
+				return false
+			} catch (error) {
+				console.error('Error checking changes:', error)
+				return false
 			}
 		},
 	},

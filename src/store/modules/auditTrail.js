@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { defineStore } from 'pinia'
-import { AuditTrail } from '../../entities/index.js'
+
+const apiUrl = '/index.php/apps/openregister/api'
 
 /**
  * Store for managing audit trail logs
@@ -8,332 +9,314 @@ import { AuditTrail } from '../../entities/index.js'
  */
 export const useAuditTrailStore = defineStore('auditTrail', {
 	state: () => ({
-		/**
-		 * Currently selected audit trail item
-		 * @type {AuditTrail|false}
-		 */
-		auditTrailItem: false,
+		// Loading states
+		auditTrailLoading: false,
+		statisticsLoading: false,
 
-		/**
-		 * List of audit trail entries
-		 * @type {AuditTrail[]}
-		 */
+		// Data
 		auditTrailList: [],
+		auditTrailItem: null,
 
-		/**
-		 * View mode for displaying audit trails
-		 * @type {string}
-		 */
-		viewMode: 'list',
-
-		/**
-		 * Filter criteria for audit trail queries
-		 * @type {object}
-		 */
-		filters: {},
-
-		/**
-		 * Pagination settings
-		 * @type {object}
-		 */
-		pagination: {
-			page: 1,
-			limit: 20,
+		// Pagination
+		auditTrailPagination: {
 			total: 0,
-			pages: 0,
+			page: 1,
+			pages: 1,
+			limit: 50,
+			offset: 0,
 		},
 
-		/**
-		 * Loading state
-		 * @type {boolean}
-		 */
-		loading: false,
+		// Statistics
+		statistics: {
+			total: 0,
+			create: 0,
+			update: 0,
+			delete: 0,
+			read: 0,
+		},
+
+		// Filters
+		auditTrailFilters: {},
+		auditTrailSearch: '',
 	}),
-	getters: {
-		/**
-		 * Get current view mode
-		 * @param {object} state Current state
-		 * @return {string} Current view mode
-		 */
-		getViewMode: (state) => state.viewMode,
 
-		/**
-		 * Get loading state
-		 * @param {object} state Current state
-		 * @return {boolean} Loading state
-		 */
-		isLoading: (state) => state.loading,
-
-		/**
-		 * Get filtered audit trails count
-		 * @param {object} state Current state
-		 * @return {number} Number of audit trails
-		 */
-		auditTrailCount: (state) => state.auditTrailList.length,
-
-		/**
-		 * Get unique actions from audit trail list
-		 * @param {object} state Current state
-		 * @return {string[]} Array of unique actions
-		 */
-		uniqueActions: (state) => {
-			const actions = [...new Set(state.auditTrailList.map(trail => trail.action).filter(Boolean))]
-			return actions.sort()
-		},
-
-		/**
-		 * Get unique register IDs from audit trail list
-		 * @param {object} state Current state
-		 * @return {number[]} Array of unique register IDs
-		 */
-		uniqueRegisters: (state) => {
-			const registers = [...new Set(state.auditTrailList.map(trail => trail.register).filter(Boolean))]
-			return registers.sort((a, b) => a - b)
-		},
-
-		/**
-		 * Get unique schema IDs from audit trail list
-		 * @param {object} state Current state
-		 * @return {number[]} Array of unique schema IDs
-		 */
-		uniqueSchemas: (state) => {
-			const schemas = [...new Set(state.auditTrailList.map(trail => trail.schema).filter(Boolean))]
-			return schemas.sort((a, b) => a - b)
-		},
-
-		/**
-		 * Get unique users from audit trail list
-		 * @param {object} state Current state
-		 * @return {string[]} Array of unique users
-		 */
-		uniqueUsers: (state) => {
-			const users = [...new Set(state.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
-			return users.sort()
-		},
-	},
 	actions: {
 		/**
-		 * Set view mode for audit trail display
-		 * @param {string} mode View mode ('list', 'table', 'detail')
+		 * Set audit trail list
+		 * @param {Array} auditTrailList - The audit trail list to set
 		 */
-		setViewMode(mode) {
-			this.viewMode = mode
-			console.log('AuditTrail view mode set to:', mode)
+		setAuditTrailList(auditTrailList) {
+			// Ensure we have a clean array without reactive references
+			this.auditTrailList = Array.isArray(auditTrailList) ? [...auditTrailList] : []
+			console.info('Audit trail list set to:', this.auditTrailList.length, 'items')
 		},
 
 		/**
-		 * Set currently selected audit trail item
-		 * @param {object|null} auditTrailItem Audit trail item or null
+		 * Set audit trail item
+		 * @param {object} auditTrailItem - The audit trail item to set
 		 */
 		setAuditTrailItem(auditTrailItem) {
-			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
-			console.log('Active audit trail item set to ' + (auditTrailItem?.id || 'null'))
+			this.auditTrailItem = auditTrailItem
+			console.info('Audit trail item set to:', auditTrailItem)
 		},
 
 		/**
-		 * Set the list of audit trail entries
-		 * @param {object[]} auditTrails Array of audit trail objects
+		 * Set audit trail pagination
+		 * @param {object} pagination - The pagination object
 		 */
-		setAuditTrailList(auditTrails) {
-			this.auditTrailList = auditTrails.map(auditTrail => new AuditTrail(auditTrail))
-			console.log('AuditTrail list set to ' + auditTrails.length + ' items')
+		setAuditTrailPagination(pagination) {
+			this.auditTrailPagination = {
+				...this.auditTrailPagination,
+				...pagination,
+			}
+			console.info('Audit trail pagination set to:', this.auditTrailPagination)
 		},
 
 		/**
-		 * Set pagination details
-		 * @param {number} page Current page number
-		 * @param {number} limit Number of items per page
-		 * @param {number} total Total number of items
-		 * @param {number} pages Total number of pages
+		 * Set statistics
+		 * @param {object} stats - The statistics object
 		 */
-		setPagination(page, limit = 20, total = 0, pages = 0) {
-			this.pagination = { page, limit, total, pages }
-			console.info('AuditTrail pagination set to', { page, limit, total, pages })
+		setStatistics(stats) {
+			this.statistics = {
+				...this.statistics,
+				...stats,
+			}
+			console.info('Statistics set to:', this.statistics)
 		},
 
 		/**
-		 * Set query filters for audit trail list
-		 * @param {object} filters Filter criteria to apply
+		 * Set audit trail filters
+		 * @param {object} filters - The filters to set
 		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-			console.info('AuditTrail query filters set to', this.filters)
+		setAuditTrailFilters(filters) {
+			this.auditTrailFilters = filters
+			console.info('Audit trail filters set to:', filters)
 		},
 
 		/**
-		 * Clear all filters
+		 * Set audit trail search
+		 * @param {string} search - The search term
 		 */
-		clearFilters() {
-			this.filters = {}
-			console.info('AuditTrail filters cleared')
+		setAuditTrailSearch(search) {
+			this.auditTrailSearch = search
+			console.info('Audit trail search set to:', search)
 		},
 
 		/**
-		 * Set loading state
-		 * @param {boolean} loading Loading state
+		 * Fetch audit trails with optional filtering and pagination
+		 * @param {object} options - Options for fetching
+		 * @return {Promise<object>} The fetched data
 		 */
-		setLoading(loading) {
-			this.loading = loading
-		},
-
-		/**
-		 * Refresh audit trail list from API
-		 * @param {object} options Query options
-		 * @param {string|null} options.search Search term
-		 * @param {object} options.filters Additional filters
-		 * @param {number} options.page Page number
-		 * @param {number} options.limit Items per page
-		 * @return {Promise<object>} Response data
-		 */
-		async refreshAuditTrailList(options = {}) {
-			this.setLoading(true)
+		async fetchAuditTrails(options = {}) {
+			this.auditTrailLoading = true
 
 			try {
+				console.info('Fetching audit trails with options:', options)
+
 				// Build query parameters
 				const params = new URLSearchParams()
 
 				// Add pagination
-				if (options.page) params.append('page', options.page.toString())
-				if (options.limit) params.append('limit', options.limit.toString())
+				if (options.limit) params.append('limit', options.limit)
+				if (options.offset) params.append('offset', options.offset)
+				if (options.page) params.append('page', options.page)
 
 				// Add search
-				if (options.search) params.append('_search', encodeURIComponent(options.search))
+				if (options.search || this.auditTrailSearch) {
+					params.append('search', options.search || this.auditTrailSearch)
+				}
 
 				// Add filters
-				const allFilters = { ...this.filters, ...options.filters }
-				Object.entries(allFilters).forEach(([key, value]) => {
+				const filters = { ...this.auditTrailFilters, ...options.filters }
+				Object.entries(filters).forEach(([key, value]) => {
 					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value.toString())
+						params.append(key, value)
 					}
 				})
 
-				// Build endpoint
-				const endpoint = `/index.php/apps/openregister/api/audit-trails?${params.toString()}`
-
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
+				// Add sort
+				if (options.sort) {
+					Object.entries(options.sort).forEach(([field, direction]) => {
+						params.append('sort', field)
+						params.append('order', direction)
+					})
 				}
 
+				const url = `${apiUrl}/audit-trails?${params.toString()}`
+				console.info('Fetching from URL:', url)
+
+				const response = await fetch(url, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
+					},
+				})
+
 				const data = await response.json()
+				console.info('Audit trail fetch response:', data)
 
-				// Set data in store
-				this.setAuditTrailList(data.results || [])
-				this.setPagination(
-					data.page || 1,
-					data.limit || 20,
-					data.total || 0,
-					data.pages || 0,
-				)
+				if (!response.ok) {
+					throw new Error(data.error || 'Failed to fetch audit trails')
+				}
 
-				return { response, data }
+				// Update store state - ensure we pass clean data
+				this.setAuditTrailList(data.results ? JSON.parse(JSON.stringify(data.results)) : [])
+				this.setAuditTrailPagination({
+					total: data.total || 0,
+					page: data.page || 1,
+					pages: data.pages || 1,
+					limit: data.limit || 50,
+					offset: data.offset || 0,
+				})
+
+				return data
 			} catch (error) {
-				console.error('Error refreshing audit trail list:', error)
+				console.error('Error fetching audit trails:', error)
 				throw error
 			} finally {
-				this.setLoading(false)
+				this.auditTrailLoading = false
 			}
 		},
 
 		/**
-		 * Get audit trails for a specific object
-		 * @param {string} register Register identifier
-		 * @param {string} schema Schema identifier
-		 * @param {string} objectId Object identifier
-		 * @param {object} options Query options
-		 * @return {Promise<object>} Response data
+		 * Fetch audit trail statistics
+		 * @return {Promise<object>} The statistics data
 		 */
-		async getObjectAuditTrails(register, schema, objectId, options = {}) {
-			this.setLoading(true)
+		async fetchStatistics() {
+			this.statisticsLoading = true
 
 			try {
-				// Build query parameters
-				const params = new URLSearchParams()
+				console.info('Fetching audit trail statistics')
 
-				// Add pagination
-				if (options.page) params.append('page', options.page.toString())
-				if (options.limit) params.append('limit', options.limit.toString())
-
-				// Add search
-				if (options.search) params.append('_search', encodeURIComponent(options.search))
-
-				// Add filters
-				const allFilters = { ...this.filters, ...options.filters }
-				Object.entries(allFilters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value.toString())
-					}
-				})
-
-				// Build endpoint for object-specific audit trails
-				const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/audit-trails?${params.toString()}`
-
-				const response = await fetch(endpoint, {
+				const response = await fetch(`${apiUrl}/audit-trails/statistics`, {
 					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
+					},
 				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
 
 				const data = await response.json()
+				console.info('Statistics response:', data)
 
-				// Set data in store
-				this.setAuditTrailList(data.results || [])
-				this.setPagination(
-					data.page || 1,
-					data.limit || 20,
-					data.total || 0,
-					data.pages || 0,
-				)
+				if (!response.ok) {
+					throw new Error(data.error || 'Failed to fetch statistics')
+				}
 
-				return { response, data }
+				this.setStatistics(data)
+				return data
 			} catch (error) {
-				console.error('Error getting object audit trails:', error)
+				console.error('Error fetching statistics:', error)
 				throw error
 			} finally {
-				this.setLoading(false)
+				this.statisticsLoading = false
 			}
 		},
 
 		/**
-		 * Get a single audit trail by ID
-		 * @param {string|number} id Audit trail ID
-		 * @param {object} options Options
-		 * @param {boolean} options.setItem Whether to set as active item
-		 * @return {Promise<AuditTrail>} Audit trail data
+		 * Delete a single audit trail
+		 * @param {string|number} id - The ID of the audit trail to delete
+		 * @return {Promise<object>} The response data
 		 */
-		async getAuditTrail(id, options = { setItem: false }) {
-			this.setLoading(true)
-
+		async deleteAuditTrail(id) {
 			try {
-				const endpoint = `/index.php/apps/openregister/api/audit-trails/${id}`
+				console.info('Deleting audit trail:', id)
 
-				const response = await fetch(endpoint, {
-					method: 'GET',
+				const response = await fetch(`${apiUrl}/audit-trails/${id}`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
+					},
 				})
 
+				const data = await response.json()
+				console.info('Delete response:', data)
+
 				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
+					throw new Error(data.error || 'Failed to delete audit trail')
 				}
+
+				// Remove from audit trail list
+				this.auditTrailList = this.auditTrailList.filter(item => item.id !== id)
+
+				return data
+			} catch (error) {
+				console.error('Error deleting audit trail:', error)
+				throw error
+			}
+		},
+
+		/**
+		 * Delete multiple audit trails
+		 * @param {Array} ids - Array of audit trail IDs to delete
+		 * @return {Promise<object>} The response data
+		 */
+		async deleteMultipleAuditTrails(ids) {
+			try {
+				console.info('Deleting multiple audit trails:', ids)
+
+				const response = await fetch(`${apiUrl}/audit-trails`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
+					},
+					body: JSON.stringify({ ids }),
+				})
 
 				const data = await response.json()
-				const auditTrail = new AuditTrail(data)
+				console.info('Bulk delete response:', data)
 
-				if (options.setItem) {
-					this.setAuditTrailItem(auditTrail)
+				if (!response.ok) {
+					throw new Error(data.error || 'Failed to delete audit trails')
 				}
 
-				return auditTrail
+				// Remove deleted audit trails from list
+				this.auditTrailList = this.auditTrailList.filter(item => !ids.includes(item.id))
+
+				return data
 			} catch (error) {
-				console.error('Error getting audit trail:', error)
+				console.error('Error deleting audit trails:', error)
 				throw error
-			} finally {
-				this.setLoading(false)
 			}
+		},
+
+		/**
+		 * Refresh audit trail list with current filters
+		 * @return {Promise} The refresh promise
+		 */
+		async refreshAuditTrailList() {
+			return this.fetchAuditTrails({
+				limit: this.auditTrailPagination.limit,
+				page: this.auditTrailPagination.page,
+			})
+		},
+
+		/**
+		 * Clear all audit trail store data
+		 */
+		clearAuditTrailStore() {
+			this.auditTrailList = []
+			this.auditTrailItem = null
+			this.auditTrailPagination = {
+				total: 0,
+				page: 1,
+				pages: 1,
+				limit: 50,
+				offset: 0,
+			}
+			this.statistics = {
+				total: 0,
+				create: 0,
+				update: 0,
+				delete: 0,
+				read: 0,
+			}
+			this.auditTrailFilters = {}
+			this.auditTrailSearch = ''
+			console.info('Audit trail store cleared')
 		},
 	},
 })
