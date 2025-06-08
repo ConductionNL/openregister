@@ -11,14 +11,14 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 		subname="Within the federative network"
 		:open="navigationStore.sidebarState.search"
 		@update:open="(e) => navigationStore.setSidebarState('search', e)">
-		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
+		<NcAppSidebarTab id="filters-tab" name="Filters" :order="1">
 			<template #icon>
-				<Magnify :size="20" />
+				<FilterOutline :size="20" />
 			</template>
 
 			<!-- Filter Section -->
 			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
+				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
 				<div class="filterGroup">
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect v-bind="registerOptions"
@@ -170,7 +170,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 
 <script>
 import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcActionButton } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -190,7 +190,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcTextField,
 		NcActionButton,
-		Magnify,
+		FilterOutline,
 		FormatColumns,
 	},
 	data() {
@@ -199,7 +199,7 @@ export default {
 			schemaLoading: false,
 			ignoreNextPageWatch: false,
 			searchQuery: '',
-			activeTab: 'search-tab',
+			activeTab: 'filters-tab',
 			searchTimeout: null,
 		}
 	},

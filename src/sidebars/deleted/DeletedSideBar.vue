@@ -77,54 +77,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="actions-tab" :name="t('openregister', 'Bulk Actions')" :order="2">
-			<template #icon>
-				<PlaylistCheck :size="20" />
-			</template>
-
-			<!-- Bulk Actions Section -->
-			<div class="actionsSection">
-				<h3>{{ t('openregister', 'Bulk Operations') }}</h3>
-				<div class="actionGroup">
-					<NcButton
-						type="primary"
-						:disabled="selectedCount === 0"
-						@click="bulkRestore">
-						<template #icon>
-							<Restore :size="20" />
-						</template>
-						{{ t('openregister', 'Restore Selected ({count})', { count: selectedCount }) }}
-					</NcButton>
-				</div>
-				<div class="actionGroup">
-					<NcButton
-						type="error"
-						:disabled="selectedCount === 0"
-						@click="bulkDelete">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Permanently Delete Selected ({count})', { count: selectedCount }) }}
-					</NcButton>
-				</div>
-				<div class="actionGroup">
-					<NcButton
-						:disabled="filteredCount === 0"
-						@click="exportFiltered">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Export Filtered Items') }}
-					</NcButton>
-				</div>
-			</div>
-
-			<NcNoteCard type="warning" class="action-hint">
-				{{ t('openregister', 'Permanent deletion cannot be undone. Please be careful with bulk operations.') }}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="3">
+		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
@@ -209,17 +162,12 @@ import {
 	NcAppSidebarTab,
 	NcSelect,
 	NcNoteCard,
-	NcButton,
 	NcListItem,
 	NcDateTimePickerNative,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import PlaylistCheck from 'vue-material-design-icons/PlaylistCheck.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
-import Restore from 'vue-material-design-icons/Restore.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 
 export default {
@@ -229,16 +177,11 @@ export default {
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcButton,
 		NcListItem,
 		NcDateTimePickerNative,
 		NcLoadingIcon,
 		FilterOutline,
-		PlaylistCheck,
 		ChartLine,
-		Restore,
-		Delete,
-		Download,
 		AccountCircle,
 	},
 	data() {
@@ -247,7 +190,6 @@ export default {
 			selectedDeletedBy: null,
 			dateFrom: null,
 			dateTo: null,
-			selectedCount: 0,
 			filteredCount: 0,
 		}
 	},
@@ -345,18 +287,12 @@ export default {
 		await this.loadStatistics()
 		await this.loadTopDeleters()
 
-		// Listen for selection count updates
-		this.$root.$on('deleted-selection-count', (count) => {
-			this.selectedCount = count
-		})
-
 		// Listen for filtered count updates
 		this.$root.$on('deleted-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 	},
 	beforeDestroy() {
-		this.$root.$off('deleted-selection-count')
 		this.$root.$off('deleted-filtered-count')
 	},
 	methods: {
@@ -373,27 +309,6 @@ export default {
 				dateTo: this.dateTo || null,
 			}
 			this.$root.$emit('deleted-filters-changed', filters)
-		},
-		/**
-		 * Execute bulk restore operation
-		 * @return {void}
-		 */
-		bulkRestore() {
-			this.$root.$emit('deleted-bulk-restore')
-		},
-		/**
-		 * Execute bulk delete operation
-		 * @return {void}
-		 */
-		bulkDelete() {
-			this.$root.$emit('deleted-bulk-delete')
-		},
-		/**
-		 * Export filtered items
-		 * @return {void}
-		 */
-		exportFiltered() {
-			this.$root.$emit('deleted-export-filtered')
 		},
 		/**
 		 * Load deletion statistics
@@ -442,20 +357,17 @@ export default {
 
 <style scoped>
 .filterSection,
-.actionsSection,
 .statsSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
 .filterSection:last-child,
-.actionsSection:last-child,
 .statsSection:last-child {
 	border-bottom: none;
 }
 
 .filterSection h3,
-.actionsSection h3,
 .statsSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
@@ -477,13 +389,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
-
-.filter-hint,
-.action-hint {
+.filter-hint {
 	margin: 8px 16px;
 }
 
