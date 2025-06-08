@@ -64,7 +64,7 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 			</span>
 			<div class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
-				<div class="chartsContainer">
+				<div class="chartGrid">
 					<!-- Audit Trail Actions Chart -->
 					<div class="chartCard">
 						<h3>Audit Trail Actions</h3>
@@ -231,7 +231,7 @@ export default {
 	padding-inline: 20px;
 }
 
-.chartsContainer {
+.chartGrid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 20px;
@@ -253,7 +253,7 @@ export default {
 }
 
 @media screen and (max-width: 1024px) {
-	.chartsContainer {
+	.chartGrid {
 		grid-template-columns: 1fr;
 	}
 }
