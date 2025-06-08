@@ -120,74 +120,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="export-tab" :name="t('openregister', 'Export & Actions')" :order="2">
-			<template #icon>
-				<Download :size="20" />
-			</template>
-
-			<!-- Export Section -->
-			<div class="exportSection">
-				<h3>{{ t('openregister', 'Export Audit Trails') }}</h3>
-				<div class="exportGroup">
-					<label for="formatSelect">{{ t('openregister', 'Export Format') }}</label>
-					<NcSelect
-						id="formatSelect"
-						v-model="exportFormat"
-						:options="exportFormatOptions"
-						:placeholder="t('openregister', 'Select format')"
-						:input-label="t('openregister', 'Export Format')"
-						:clearable="false">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="exportGroup">
-					<NcCheckboxRadioSwitch v-model="includeChanges">
-						{{ t('openregister', 'Include change details') }}
-					</NcCheckboxRadioSwitch>
-				</div>
-				<div class="exportGroup">
-					<NcCheckboxRadioSwitch v-model="includeMetadata">
-						{{ t('openregister', 'Include metadata') }}
-					</NcCheckboxRadioSwitch>
-				</div>
-			</div>
-
-			<div class="actionGroup">
-				<NcButton
-					type="primary"
-					:disabled="filteredCount === 0"
-					@click="exportFilteredAuditTrails">
-					<template #icon>
-						<Download :size="20" />
-					</template>
-					{{ t('openregister', 'Export Filtered ({count})', { count: filteredCount }) }}
-				</NcButton>
-			</div>
-
-			<!-- Bulk Actions Section -->
-			<div class="bulkActionsSection">
-				<h3>{{ t('openregister', 'Bulk Actions') }}</h3>
-				<div class="actionGroup">
-					<NcButton
-						type="error"
-						:disabled="filteredCount === 0"
-						@click="clearFilteredAuditTrails">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Clear Filtered Entries ({count})', { count: filteredCount }) }}
-					</NcButton>
-				</div>
-			</div>
-
-			<NcNoteCard type="warning" class="export-hint">
-				{{ t('openregister', 'Exports include all filtered entries. Clearing entries will permanently delete them from the audit trail.') }}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="3">
+		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
@@ -280,9 +213,7 @@ import {
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -302,9 +233,7 @@ export default {
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		FilterOutline,
-		Download,
 		ChartLine,
-		Delete,
 		CogOutline,
 		Plus,
 		Pencil,
@@ -320,9 +249,6 @@ export default {
 			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
-			exportFormat: { label: 'CSV', value: 'csv' },
-			includeChanges: true,
-			includeMetadata: false,
 			filteredCount: 0,
 			totalAuditTrails: 0,
 			createCount: 0,
@@ -419,14 +345,6 @@ export default {
 				label: user,
 				value: user,
 			}))
-		},
-		exportFormatOptions() {
-			return [
-				{ label: 'CSV', value: 'csv' },
-				{ label: 'JSON', value: 'json' },
-				{ label: 'XML', value: 'xml' },
-				{ label: 'Plain Text', value: 'txt' },
-			]
 		},
 	},
 	watch: {
@@ -613,101 +531,6 @@ export default {
 			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
 		},
 		/**
-		 * Export audit trails with current filters
-		 * @return {Promise<void>}
-		 */
-		async exportFilteredAuditTrails() {
-			try {
-				// Build query parameters for export
-				const params = new URLSearchParams()
-
-				// Add current filters
-				const filters = auditTrailStore.auditTrailFilters
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						if (Array.isArray(value)) {
-							value.forEach(v => params.append(key, v))
-						} else {
-							params.append(key, value)
-						}
-					}
-				})
-
-				// Add format and options
-				params.append('format', this.exportFormat.value)
-				params.append('includeChanges', this.includeChanges.toString())
-				params.append('includeMetadata', this.includeMetadata.toString())
-
-				// Create download link
-				const url = `/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`
-
-				// Handle the download
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				if (response.ok) {
-					const result = await response.blob()
-
-					// Create download
-					const link = document.createElement('a')
-					link.href = URL.createObjectURL(result)
-					link.download = `audit-trails-${new Date().toISOString().split('T')[0]}.${this.exportFormat.value}`
-					document.body.appendChild(link)
-					link.click()
-					document.body.removeChild(link)
-					URL.revokeObjectURL(link.href)
-
-					navigationStore.setNotification({
-						type: 'success',
-						message: this.t('openregister', 'Audit trails exported successfully'),
-					})
-				} else {
-					throw new Error('Export failed')
-				}
-			} catch (error) {
-				navigationStore.setNotification({
-					type: 'error',
-					message: this.t('openregister', 'Failed to export audit trails'),
-				})
-			}
-		},
-		/**
-		 * Clear filtered audit trails
-		 * @return {void}
-		 */
-		clearFilteredAuditTrails() {
-			navigationStore.setDialog({
-				type: 'clearAuditTrails',
-				data: {
-					filters: auditTrailStore.auditTrailFilters,
-					count: this.filteredCount,
-				},
-			})
-		},
-		/**
-		 * Refresh audit trails
-		 * @return {Promise<void>}
-		 */
-		async refreshAuditTrails() {
-			try {
-				await auditTrailStore.refreshAuditTrailList()
-				this.updateFilteredCount()
-				navigationStore.setNotification({
-					type: 'success',
-					message: this.t('openregister', 'Audit trails refreshed'),
-				})
-			} catch (error) {
-				navigationStore.setNotification({
-					type: 'error',
-					message: this.t('openregister', 'Failed to refresh audit trails'),
-				})
-			}
-		},
-		/**
 		 * Load statistics
 		 * @return {Promise<void>}
 		 */
@@ -778,23 +601,17 @@ export default {
 
 <style scoped>
 .filterSection,
-.exportSection,
-.actionsSection,
 .statsSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
 .filterSection:last-child,
-.exportSection:last-child,
-.actionsSection:last-child,
 .statsSection:last-child {
 	border-bottom: none;
 }
 
 .filterSection h3,
-.exportSection h3,
-.actionsSection h3,
 .statsSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
@@ -843,8 +660,7 @@ export default {
 	color: var(--color-info);
 }
 
-.filter-hint,
-.export-hint {
+.filter-hint {
 	margin: 8px 16px;
 }
 

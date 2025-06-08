@@ -623,6 +623,55 @@
   color: var(--color-text-maxcontrast);
 }
 
+/* Statistics Table Styling */
+.statisticsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  background: var(--color-main-background);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.statisticsTable th,
+.statisticsTable td {
+  padding: 8px 12px;
+  text-align: start;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.statisticsTable th {
+  background-color: var(--color-background-darker);
+  color: var(--color-text-maxcontrast);
+  font-weight: normal;
+}
+
+.statisticsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.statisticsTable .subRow td {
+  color: var(--color-text-maxcontrast);
+}
+
+.statisticsTable .indented {
+  padding-left: 24px;
+}
+
+/* Table styling variations */
+.tableOfContents thead th {
+  background-color: var(--color-primary-light);
+  font-weight: 600;
+}
+
+.tableOfContents tbody tr:nth-child(odd) {
+  background-color: transparent;
+}
+
+.tableOfContents tbody tr:nth-child(even) {
+  background-color: var(--color-border);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 1200px) {
   .tableColumnTitle {

@@ -29,58 +29,53 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton
-						v-if="objectStore.selectedObjects.length > 0"
-						type="error"
-						@click="bulkDeleteObjects">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Delete ({count})', { count: objectStore.selectedObjects.length }) }}
-					</NcButton>
-					<NcButton
-						type="primary"
-						@click="addObject">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Add Object') }}
-					</NcButton>
-					<NcButton @click="refreshObjects">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+					<NcActions
+						:force-name="true"
+						:inline="objectStore.selectedObjects.length > 0 ? 3 : 2"
+						menu-name="Actions">
+						<NcActionButton
+							v-if="objectStore.selectedObjects.length > 0"
+							type="error"
+							close-after-click
+							@click="bulkDeleteObjects">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							Delete ({{ objectStore.selectedObjects.length }})
+						</NcActionButton>
+						<NcActionButton
+							:primary="true"
+							close-after-click
+							@click="addObject">
+							<template #icon>
+								<Plus :size="20" />
+							</template>
+							Add Object
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="refreshObjects">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							Refresh
+						</NcActionButton>
+					</NcActions>
 				</div>
 			</div>
 
 			<!-- Warning when no register is selected -->
-			<NcNoteCard v-if="showNoRegisterWarning" type="warning">
-				<p>Please select a register in the sidebar to view objects</p>
-			</NcNoteCard>
-
-			<!-- Warning when no schema is selected -->
-			<NcNoteCard v-if="showNoSchemaWarning" type="warning">
-				<p>Please select a schema in the sidebar to view objects</p>
-			</NcNoteCard>
-
-			<!-- Message when no objects found -->
-			<NcNoteCard v-if="showNoObjectsMessage" type="info">
-				<p>There are no objects that match this filter</p>
-			</NcNoteCard>
-
-			<!-- Loading State -->
-			<NcEmptyContent v-if="objectStore.loading"
-				:name="t('openregister', 'Loading objects...')"
-				:description="t('openregister', 'Please wait while we fetch your objects.')">
+			<NcEmptyContent v-if="showNoRegisterWarning || showNoSchemaWarning || objectStore.loading || showNoObjectsMessage"
+				:name="emptyContentName"
+				:description="emptyContentDescription">
 				<template #icon>
-					<NcLoadingIcon :size="64" />
+					<NcLoadingIcon v-if="objectStore.loading" :size="64" />
+					<FileTreeOutline v-else :size="64" />
 				</template>
 			</NcEmptyContent>
 
 			<!-- Search List Content -->
-			<div v-if="!objectStore.loading && objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" class="searchList">
+			<div v-else-if="objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" class="searchList">
 				<div class="viewTableContainer">
 					<VueDraggable v-model="objectStore.enabledColumns"
 						target=".sortTarget"
@@ -172,68 +167,53 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<div class="paginationContainer">
 					<div class="empty-space" />
 
-					<BPagination
-						v-model="objectStore.pagination.page"
-						:total-rows="objectStore.objectList.total"
-						:per-page="objectStore.pagination.limit"
-						:first-number="true"
-						:last-number="true"
-						@change="onPageChange" />
-
-					<NcSelect v-model="objectStore.pagination.limit"
-						class="limit-selector"
-						:options="[10, 20, 50, 100]"
-						:disabled="loading"
-						:loading="loading"
-						:taggable="true"
-						:clearable="false"
-						@option:selected="(selectedOption) => onPageChange(objectStore.pagination.page, selectedOption)" />
+					<PaginationComponent
+						:current-page="objectStore.pagination.page || 1"
+						:total-pages="Math.ceil((objectStore.objectList.total || 0) / (objectStore.pagination.limit || 20))"
+						:total-items="objectStore.objectList.total || 0"
+						:current-page-size="objectStore.pagination.limit || 20"
+						:min-items-to-show="10"
+						@page-changed="onPageChanged"
+						@page-size-changed="onPageSizeChanged" />
 				</div>
-
-				<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'"
-					:selected-objects="objectStore.selectedObjects"
-					@close-modal="() => navigationStore.setDialog(null)"
-					@success="onMassDeleteSuccess" />
 			</div>
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcNoteCard, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble, NcSelect, NcButton } from '@nextcloud/vue'
-import { BPagination } from 'bootstrap-vue'
+import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
+import formatBytes from '../../services/formatBytes.js'
 
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 
-import MassDeleteObject from '../../modals/object/MassDeleteObject.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'SearchIndex',
 	components: {
 		NcAppContent,
-		NcNoteCard,
 		NcLoadingIcon,
 		NcEmptyContent,
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
 		NcCounterBubble,
-		NcSelect,
-		NcButton,
-		BPagination,
 		VueDraggable,
 		Eye,
 		Pencil,
 		Delete,
 		Plus,
 		Refresh,
-		MassDeleteObject,
+		PaginationComponent,
+		FileTreeOutline,
 	},
 	data() {
 		return {
@@ -279,6 +259,30 @@ export default {
 		},
 		schemaProperties() {
 			return Object.values(this.selectedSchema?.properties || {}) || []
+		},
+		emptyContentName() {
+			if (this.showNoRegisterWarning) {
+				return 'No register selected'
+			} else if (this.showNoSchemaWarning) {
+				return 'No schema selected'
+			} else if (this.loading) {
+				return 'Loading objects...'
+			} else if (this.showNoObjectsMessage) {
+				return 'No objects found'
+			}
+			return ''
+		},
+		emptyContentDescription() {
+			if (this.showNoRegisterWarning) {
+				return 'Please select a register in the sidebar to view objects'
+			} else if (this.showNoSchemaWarning) {
+				return 'Please select a schema in the sidebar to view objects'
+			} else if (this.loading) {
+				return 'Please wait while we fetch your objects.'
+			} else if (this.showNoObjectsMessage) {
+				return 'There are no objects that match this filter'
+			}
+			return ''
 		},
 	},
 	watch: {
@@ -326,6 +330,12 @@ export default {
 			objectStore.setPagination(page, limit)
 			objectStore.refreshObjectList()
 		},
+		onPageChanged(page) {
+			this.onPageChange(page)
+		},
+		onPageSizeChanged(pageSize) {
+			this.onPageChange(1, pageSize)
+		},
 		handleSelectObject(id) {
 			if (objectStore.selectedObjects.includes(id)) {
 				objectStore.selectedObjects = objectStore.selectedObjects.filter(obj => obj !== id)
@@ -351,6 +361,7 @@ export default {
 			objectStore.selectedObjects = []
 		},
 		getValidISOstring,
+		formatBytes,
 	},
 }
 </script>
@@ -397,51 +408,10 @@ input[type="checkbox"] {
 }
 
 .paginationContainer {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 1rem;
+    display: flex;
+    justify-content: center;
     margin-block-start: 1rem;
     margin-inline: 0.5rem;
-}
-
-.paginationContainer .limit-selector {
-    grid-column: 3;
-    justify-self: end;
-    min-width: 160px !important;
-}
-
-.pagination {
-    display: flex;
-}
-.pagination :deep(.page-item > .page-link) {
-    width: 35px !important;
-    height: 35px !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-primary-element-light-text) !important;
-    background-color: var(--color-primary-element-light) !important;
-    padding: 0 !important;
-    font-size: var(--default-font-size) !important;
-    min-height: var(--default-clickable-area) !important;
-    margin: 3px !important;
-    margin-inline-start: 0 !important;
-    border-radius: var(--border-radius-element) !important;
-    line-height: 18.75px !important;
-    vertical-align: middle !important;
-    font-weight: bold !important;
-    font-family: var(--font-face) !important;
-}
-.pagination :deep(.page-item.active > .page-link) {
-    color: var(--color-primary-element-text) !important;
-    background-color: var(--color-primary-element) !important;
-}
-.pagination :deep(.page-item.disabled > .page-link) {
-    color: var(--color-primary-element-light-text) !important;
-    background-color: var(--color-primary-element-light) !important;
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
 }
 
 .columnTitle {

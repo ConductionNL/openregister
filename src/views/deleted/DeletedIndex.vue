@@ -1,5 +1,6 @@
 <script setup>
 import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -24,30 +25,39 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton
-						v-if="selectedItems.length > 0"
-						type="primary"
-						@click="bulkRestore">
-						<template #icon>
-							<Restore :size="20" />
-						</template>
-						{{ t('openregister', 'Restore ({count})', { count: selectedItems.length }) }}
-					</NcButton>
-					<NcButton
-						v-if="selectedItems.length > 0"
-						type="error"
-						@click="bulkDelete">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Purge ({count})', { count: selectedItems.length }) }}
-					</NcButton>
-					<NcButton @click="refreshItems">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+					<NcActions
+						:force-name="true"
+						:inline="selectedItems.length > 0 ? 3 : 1"
+						menu-name="Actions">
+						<NcActionButton
+							v-if="selectedItems.length > 0"
+							type="primary"
+							close-after-click
+							@click="bulkRestore">
+							<template #icon>
+								<Restore :size="20" />
+							</template>
+							{{ t('openregister', 'Restore ({count})', { count: selectedItems.length }) }}
+						</NcActionButton>
+						<NcActionButton
+							v-if="selectedItems.length > 0"
+							type="error"
+							close-after-click
+							@click="bulkDelete">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							{{ t('openregister', 'Purge ({count})', { count: selectedItems.length }) }}
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="refreshItems">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							{{ t('openregister', 'Refresh') }}
+						</NcActionButton>
+					</NcActions>
 				</div>
 			</div>
 
@@ -148,10 +158,6 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 				@page-changed="onPageChanged"
 				@page-size-changed="onPageSizeChanged" />
 		</div>
-
-		<!-- Deletion Dialogs -->
-		<PermanentlyDeleteObject />
-		<PermanentlyDeleteMultiple />
 	</NcAppContent>
 </template>
 
@@ -159,7 +165,6 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 import {
 	NcAppContent,
 	NcEmptyContent,
-	NcButton,
 	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
 	NcActions,
@@ -170,9 +175,6 @@ import Restore from 'vue-material-design-icons/Restore.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 
-// Import deletion dialogs
-import PermanentlyDeleteObject from '../../modals/deleted/PermanentlyDeleteObject.vue'
-import PermanentlyDeleteMultiple from '../../modals/deleted/PermanentlyDeleteMultiple.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -180,7 +182,6 @@ export default {
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcActions,
@@ -189,9 +190,6 @@ export default {
 		Restore,
 		Delete,
 		Refresh,
-		// Deletion dialogs
-		PermanentlyDeleteObject,
-		PermanentlyDeleteMultiple,
 		PaginationComponent,
 	},
 	data() {
@@ -581,6 +579,7 @@ export default {
 
 			return `${year}:${month}:${day} ${hours}:${minutes}`
 		},
+		formatBytes,
 	},
 }
 </script>

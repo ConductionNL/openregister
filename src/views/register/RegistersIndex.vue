@@ -17,7 +17,10 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {count} registers', { count: filteredRegisters.length }) }}
+						{{ t('openregister', 'Showing {showing} of {total} registers', { showing: filteredRegisters.length, total: dashboardStore.registers.length }) }}
+					</span>
+					<span v-if="selectedRegisters.length > 0" class="viewIndicator">
+						({{ t('openregister', '{count} selected', { count: selectedRegisters.length }) }})
 					</span>
 				</div>
 				<div class="viewActions">
@@ -46,11 +49,13 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 
 					<NcActions
 						:force-name="true"
-						:inline="1"
-						:primary="true"
+						:inline="2"
 						:class="{ 'sidebar-closed': !navigationStore.sidebarState.registers }"
-						menu-name="Dashboard actions">
-						<NcActionButton close-after-click @click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
+						menu-name="Actions">
+						<NcActionButton
+							:primary="true"
+							close-after-click
+							@click="registerStore.setRegisterItem(null); navigationStore.setModal('editRegister')">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -78,30 +83,21 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				</div>
 			</div>
 
-			<!-- Loading State -->
-			<NcEmptyContent v-if="dashboardStore.loading"
-				:name="t('openregister', 'Loading registers...')"
-				:description="t('openregister', 'Please wait while we fetch your registers.')">
+			<!-- Loading, Error, and Empty States -->
+			<NcEmptyContent v-if="dashboardStore.loading || dashboardStore.error || !filteredRegisters.length"
+				:name="emptyContentName"
+				:description="emptyContentDescription">
 				<template #icon>
-					<NcLoadingIcon :size="64" />
+					<NcLoadingIcon v-if="dashboardStore.loading" :size="64" />
+					<DatabaseOutline v-else :size="64" />
 				</template>
 			</NcEmptyContent>
 
-			<!-- Error State -->
-			<NcEmptyContent v-else-if="dashboardStore.error"
-				:name="dashboardStore.error"
-				icon="icon-error" />
-
-			<!-- Empty State -->
-			<NcEmptyContent v-else-if="!filteredRegisters.length"
-				:name="t('openregister', 'No registers found')"
-				icon="icon-folder" />
-
 			<!-- Content -->
-			<div v-else class="dashboardContent">
+			<div v-else>
 				<template v-if="registerStore.viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="register in filteredRegisters" :key="register.id" class="card">
+						<div v-for="register in paginatedRegisters" :key="register.id" class="card">
 							<div class="cardHeader">
 								<h2 v-tooltip.bottom="register.description">
 									<DatabaseOutline :size="20" />
@@ -314,23 +310,37 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 				</template>
 				<template v-else>
 					<div class="viewTableContainer">
-						<table class="viewTable registerStats tableOfContents">
+						<table class="viewTable">
 							<thead>
 								<tr>
-									<th>Title</th>
-									<th>Objects (Total/Size)</th>
-									<th>Logs (Total/Size)</th>
-									<th>Files (Total/Size)</th>
-									<th>Schemas</th>
-									<th>Created</th>
-									<th>Updated</th>
+									<th class="tableColumnCheckbox">
+										<NcCheckboxRadioSwitch
+											:checked="allSelected"
+											:indeterminate="someSelected"
+											@update:checked="toggleSelectAll" />
+									</th>
+									<th>{{ t('openregister', 'Title') }}</th>
+									<th>{{ t('openregister', 'Objects (Total/Size)') }}</th>
+									<th>{{ t('openregister', 'Logs (Total/Size)') }}</th>
+									<th>{{ t('openregister', 'Files (Total/Size)') }}</th>
+									<th>{{ t('openregister', 'Schemas') }}</th>
+									<th>{{ t('openregister', 'Created') }}</th>
+									<th>{{ t('openregister', 'Updated') }}</th>
 									<th class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
 									</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="register in filteredRegisters" :key="register.id" class="viewTableRow">
+								<tr v-for="register in paginatedRegisters"
+									:key="register.id"
+									class="viewTableRow"
+									:class="{ viewTableRowSelected: selectedRegisters.includes(register.id) }">
+									<td class="tableColumnCheckbox">
+										<NcCheckboxRadioSwitch
+											:checked="selectedRegisters.includes(register.id)"
+											@update:checked="(checked) => toggleRegisterSelection(register.id, checked)" />
+									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
 											<strong>{{ register.title }}</strong>
@@ -413,6 +423,17 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 					</div>
 				</template>
 			</div>
+
+			<!-- Pagination -->
+			<PaginationComponent
+				v-if="filteredRegisters.length > 0"
+				:current-page="registerStore.pagination.page || 1"
+				:total-pages="Math.ceil(filteredRegisters.length / (registerStore.pagination.limit || 20))"
+				:total-items="filteredRegisters.length"
+				:current-page-size="registerStore.pagination.limit || 20"
+				:min-items-to-show="10"
+				@page-changed="onPageChanged"
+				@page-size-changed="onPageSizeChanged" />
 		</div>
 	</NcAppContent>
 </template>
@@ -437,6 +458,7 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import formatBytes from '../../services/formatBytes.js'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'RegistersIndex',
@@ -462,12 +484,14 @@ export default {
 		Refresh,
 		Plus,
 		InformationOutline,
+		PaginationComponent,
 	},
 	data() {
 		return {
 			expandedSchemas: [],
 			calculating: null,
 			showSchemas: {},
+			selectedRegisters: [],
 		}
 	},
 	computed: {
@@ -477,17 +501,52 @@ export default {
 				&& register.title !== 'Orphaned Items',
 			)
 		},
+		paginatedRegisters() {
+			const start = ((registerStore.pagination.page || 1) - 1) * (registerStore.pagination.limit || 20)
+			const end = start + (registerStore.pagination.limit || 20)
+			return this.filteredRegisters.slice(start, end)
+		},
 		isSchemaExpanded() {
 			return (schemaId) => this.expandedSchemas.includes(schemaId)
 		},
 		isSchemasVisible() {
 			return (registerId) => this.showSchemas[registerId] || false
 		},
+		allSelected() {
+			return this.filteredRegisters.length > 0 && this.filteredRegisters.every(register => this.selectedRegisters.includes(register.id))
+		},
+		someSelected() {
+			return this.selectedRegisters.length > 0 && !this.allSelected
+		},
+		emptyContentName() {
+			if (dashboardStore.error) {
+				return dashboardStore.error
+			} else if (!this.filteredRegisters.length) {
+				return t('openregister', 'No registers found')
+			} else {
+				return t('openregister', 'Loading registers...')
+			}
+		},
+		emptyContentDescription() {
+			if (dashboardStore.error) {
+				return t('openregister', 'Please try again later.')
+			} else if (!this.filteredRegisters.length) {
+				return t('openregister', 'No registers are available.')
+			} else {
+				return t('openregister', 'Please wait while we fetch your registers.')
+			}
+		},
 	},
 	mounted() {
 		dashboardStore.preload()
 	},
 	methods: {
+		onPageChanged(page) {
+			registerStore.setPagination(page, registerStore.pagination.limit)
+		},
+		onPageSizeChanged(pageSize) {
+			registerStore.setPagination(1, pageSize)
+		},
 		toggleSchema(schemaId) {
 			const index = this.expandedSchemas.indexOf(schemaId)
 			if (index > -1) {
@@ -560,6 +619,22 @@ export default {
 			// Navigate to detail view which will use dashboard store data
 			navigationStore.setSelected('register-detail')
 		},
+
+		toggleSelectAll(checked) {
+			if (checked) {
+				this.selectedRegisters = this.filteredRegisters.map(register => register.id)
+			} else {
+				this.selectedRegisters = []
+			}
+		},
+
+		toggleRegisterSelection(registerId, checked) {
+			if (checked) {
+				this.selectedRegisters.push(registerId)
+			} else {
+				this.selectedRegisters = this.selectedRegisters.filter(id => id !== registerId)
+			}
+		},
 	},
 }
 </script>
@@ -569,56 +644,6 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin-inline-start: 4px;
-}
-
-.statisticsTable {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 0.9em;
-	background: var(--color-main-background);
-	border-radius: var(--border-radius);
-	overflow: hidden;
-
-	th, td {
-		padding: 8px 12px;
-		text-align: start;
-		border-block-end: 1px solid var(--color-border);
-	}
-
-	th {
-		background-color: var(--color-background-darker);
-		color: var(--color-text-maxcontrast);
-		font-weight: normal;
-	}
-
-	tr:last-child td {
-		border-block-end: none;
-	}
-
-	.subRow td {
-		color: var(--color-text-maxcontrast);
-	}
-
-	.indented {
-		padding-inline-start: 24px;
-	}
-}
-
-.tableOfContents {
-	thead {
-		th {
-			background-color: var(--color-primary-light);
-			font-weight: 600;
-		}
-	}
-	tbody {
-		tr:nth-child(odd) {
-			background-color: transparent;
-		}
-		tr:nth-child(even) {
-			background-color: var(--color-border);
-		}
-	}
 }
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */

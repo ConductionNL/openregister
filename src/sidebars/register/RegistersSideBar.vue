@@ -173,29 +173,12 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 				</div>
 			</div>
 		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="settings-tab" name="Settings" :order="2">
-			<template #icon>
-				<Cog :size="20" />
-			</template>
-
-			<!-- Settings Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					Register Settings
-				</h3>
-				<NcNoteCard type="info">
-					Settings will be added in a future update
-				</NcNoteCard>
-			</div>
-		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
 import formatBytes from '../../services/formatBytes.js'
 // Ensure data is loaded
 dashboardStore.preload()
@@ -206,10 +189,8 @@ export default {
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcLoadingIcon,
-		NcNoteCard,
 		// Icons
 		ChartBar,
-		Cog,
 		NcSelect,
 	},
 	data() {

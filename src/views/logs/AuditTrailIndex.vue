@@ -1,13 +1,16 @@
 <script setup>
 import { auditTrailStore, navigationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
 	<NcAppContent>
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeaderTitleIndented">
-				<h1>{{ t('openregister', 'Audit Trails') }}</h1>
+			<div class="viewHeader">
+				<h1 class="viewHeaderTitleIndented">
+					{{ t('openregister', 'Audit Trails') }}
+				</h1>
 				<p>{{ t('openregister', 'View and analyze system audit trails with advanced filtering capabilities') }}</p>
 			</div>
 
@@ -21,26 +24,42 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
 					</span>
+					<span v-if="selectedAuditTrails.length > 0" class="viewIndicator">
+						({{ t('openregister', '{count} selected', { count: selectedAuditTrails.length }) }})
+					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton @click="exportAuditTrails">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Export') }}
-					</NcButton>
-					<NcButton @click="clearAuditTrails">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Clear Filtered') }}
-					</NcButton>
-					<NcButton @click="refreshAuditTrails">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+					<NcActions
+						:force-name="true"
+						:inline="selectedAuditTrails.length > 0 ? 3 : 2"
+						menu-name="Actions">
+						<NcActionButton
+							v-if="selectedAuditTrails.length > 0"
+							type="error"
+							close-after-click
+							@click="bulkDeleteAuditTrails">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							{{ t('openregister', 'Delete ({count})', { count: selectedAuditTrails.length }) }}
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="exportAuditTrails">
+							<template #icon>
+								<Download :size="20" />
+							</template>
+							{{ t('openregister', 'Export') }}
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="refreshAuditTrails">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							{{ t('openregister', 'Refresh') }}
+						</NcActionButton>
+					</NcActions>
 				</div>
 			</div>
 
@@ -62,6 +81,12 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				<table class="viewTable auditTrailsTable">
 					<thead>
 						<tr>
+							<th class="tableColumnCheckbox">
+								<NcCheckboxRadioSwitch
+									:checked="allSelected"
+									:indeterminate="someSelected"
+									@update:checked="toggleSelectAll" />
+							</th>
 							<th class="actionColumn">
 								{{ t('openregister', 'Action') }}
 							</th>
@@ -93,6 +118,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 							:key="auditTrail.id"
 							class="viewTableRow auditTrailRow"
 							:class="`action-${auditTrail.action}`">
+							<td class="tableColumnCheckbox">
+								<NcCheckboxRadioSwitch
+									:checked="selectedAuditTrails.includes(auditTrail.id)"
+									@update:checked="(checked) => toggleAuditTrailSelection(auditTrail.id, checked)" />
+							</td>
 							<td class="actionColumn">
 								<span class="actionBadge" :class="`action-${auditTrail.action}`">
 									<Plus v-if="auditTrail.action === 'create'" :size="16" />
@@ -118,7 +148,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 								{{ auditTrail.schema || '-' }}
 							</td>
 							<td class="sizeColumn">
-								{{ auditTrail.size || '-' }}
+								{{ formatBytes(auditTrail.size) }}
 							</td>
 							<td class="tableColumnActions">
 								<NcActions>
@@ -164,12 +194,6 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				@page-changed="onPageChanged"
 				@page-size-changed="onPageSizeChanged" />
 		</div>
-
-		<!-- Import the new modals -->
-		<DeleteAuditTrail />
-		<AuditTrailDetails />
-		<AuditTrailChanges />
-		<ClearAuditTrails />
 	</NcAppContent>
 </template>
 
@@ -177,11 +201,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 import {
 	NcAppContent,
 	NcEmptyContent,
-	NcButton,
 	NcLoadingIcon,
 	NcActions,
 	NcActionButton,
 	NcDateTime,
+	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -194,11 +218,6 @@ import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
 
-// Import the new modals
-import DeleteAuditTrail from '../../modals/logs/DeleteAuditTrail.vue'
-import AuditTrailDetails from '../../modals/logs/AuditTrailDetails.vue'
-import AuditTrailChanges from '../../modals/logs/AuditTrailChanges.vue'
-import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -206,11 +225,11 @@ export default {
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcButton,
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
 		NcDateTime,
+		NcCheckboxRadioSwitch,
 		TextBoxOutline,
 		Download,
 		Delete,
@@ -221,17 +240,13 @@ export default {
 		CompareHorizontal,
 		ContentCopy,
 		Check,
-		// Modal components
-		DeleteAuditTrail,
-		AuditTrailDetails,
-		AuditTrailChanges,
-		ClearAuditTrails,
 		PaginationComponent,
 	},
 	data() {
 		return {
 			itemsPerPage: 50,
 			copyStates: {}, // Track copy state for each audit trail
+			selectedAuditTrails: [],
 		}
 	},
 	computed: {
@@ -250,6 +265,12 @@ export default {
 				console.error('Error accessing auditTrailList:', error)
 				return []
 			}
+		},
+		allSelected() {
+			return this.paginatedAuditTrails.length > 0 && this.paginatedAuditTrails.every(auditTrail => this.selectedAuditTrails.includes(auditTrail.id))
+		},
+		someSelected() {
+			return this.selectedAuditTrails.length > 0 && !this.allSelected
 		},
 	},
 	watch: {
@@ -273,7 +294,6 @@ export default {
 		// Listen for filter changes from sidebar
 		this.$root.$on('audit-trail-filters-changed', this.handleFiltersChanged)
 		this.$root.$on('audit-trail-export', this.handleExport)
-		this.$root.$on('audit-trail-clear-filtered', this.clearAuditTrails)
 		this.$root.$on('audit-trail-refresh', this.refreshAuditTrails)
 
 		// Emit counts to sidebar with delay to ensure store is ready
@@ -284,7 +304,6 @@ export default {
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filters-changed')
 		this.$root.$off('audit-trail-export')
-		this.$root.$off('audit-trail-clear-filtered')
 		this.$root.$off('audit-trail-refresh')
 	},
 	methods: {
@@ -442,50 +461,6 @@ export default {
 			}
 		},
 		/**
-		 * Clear filtered audit trails
-		 * @return {Promise<void>}
-		 */
-		async clearAuditTrails() {
-			if (!confirm(this.t('openregister', 'Are you sure you want to clear the filtered audit trails? This action cannot be undone.'))) {
-				return
-			}
-
-			try {
-				// Build query parameters for deletion
-				const params = new URLSearchParams()
-
-				// Add current filters to determine which logs to delete
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
-						if (value !== null && value !== undefined && value !== '') {
-							params.append(key, value)
-						}
-					})
-				}
-
-				// Make the API request
-				const response = await fetch(`/index.php/apps/openregister/api/audit-trails?${params.toString()}`, {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				})
-
-				const result = await response.json()
-
-				if (result.success) {
-					OC.Notification.showSuccess(result.message || this.t('openregister', 'Audit trails cleared successfully'))
-					// Refresh the list
-					await this.loadAuditTrails()
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
-			} catch (error) {
-				console.error('Error clearing audit trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error clearing audit trails: {error}', { error: error.message }))
-			}
-		},
-		/**
 		 * Delete a single audit trail using the new modal
 		 * @param {object} auditTrail - Audit trail to delete
 		 * @return {void}
@@ -527,6 +502,8 @@ export default {
 					page,
 					limit: auditTrailStore.auditTrailPagination.limit,
 				})
+				// Clear selection when page changes
+				this.selectedAuditTrails = []
 			} catch (error) {
 				console.error('Error loading page:', error)
 			}
@@ -542,6 +519,8 @@ export default {
 					page: 1,
 					limit: pageSize,
 				})
+				// Clear selection when page size changes
+				this.selectedAuditTrails = []
 			} catch (error) {
 				console.error('Error changing page size:', error)
 			}
@@ -567,6 +546,58 @@ export default {
 			} catch (error) {
 				console.error('Error checking changes:', error)
 				return false
+			}
+		},
+		formatBytes,
+		toggleSelectAll(checked) {
+			if (checked) {
+				this.selectedAuditTrails = this.paginatedAuditTrails.map(auditTrail => auditTrail.id)
+			} else {
+				this.selectedAuditTrails = []
+			}
+		},
+		toggleAuditTrailSelection(id, checked) {
+			if (checked) {
+				this.selectedAuditTrails.push(id)
+			} else {
+				this.selectedAuditTrails = this.selectedAuditTrails.filter(i => i !== id)
+			}
+		},
+		/**
+		 * Delete selected audit trails using bulk operation
+		 * @return {Promise<void>}
+		 */
+		async bulkDeleteAuditTrails() {
+			if (this.selectedAuditTrails.length === 0) return
+
+			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected audit trails? This action cannot be undone.'))) {
+				return
+			}
+
+			try {
+				// Make the API request to delete selected audit trails
+				const response = await fetch('/index.php/apps/openregister/api/audit-trails/bulk-delete', {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ ids: this.selectedAuditTrails }),
+				})
+
+				const result = await response.json()
+
+				if (result.success) {
+					OC.Notification.showSuccess(result.message || this.t('openregister', 'Selected audit trails deleted successfully'))
+					// Clear selection
+					this.selectedAuditTrails = []
+					// Refresh the list
+					await this.loadAuditTrails()
+				} else {
+					throw new Error(result.error || 'Deletion failed')
+				}
+			} catch (error) {
+				console.error('Error deleting audit trails:', error)
+				OC.Notification.showError(this.t('openregister', 'Error deleting audit trails: {error}', { error: error.message }))
 			}
 		},
 	},
