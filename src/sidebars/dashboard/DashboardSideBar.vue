@@ -25,6 +25,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:model-value="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
+						:input-label="t('openregister', 'Register')"
 						placeholder="Select a register"
 						@update:model-value="handleRegisterChange" />
 				</div>
@@ -34,6 +35,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
+						:input-label="t('openregister', 'Schema')"
 						placeholder="Select a schema"
 						@update:model-value="handleSchemaChange" />
 				</div>

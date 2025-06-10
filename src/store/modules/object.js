@@ -250,7 +250,7 @@ export const useObjectStore = defineStore('object', {
 				),
 			}
 
-			console.info('Object list set to ' + objectList.length + ' items')
+			console.info('Object list set to ' + objectList.results.length + ' items')
 		},
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
