@@ -31,6 +31,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
@@ -78,6 +79,7 @@ class SaveObject
         private readonly IUserSession $userSession,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         ArrayLoader $arrayLoader,
     ) {
@@ -253,7 +255,7 @@ class SaveObject
     /**
      * Saves an object.
      *
-     * @param Register|int|string $register The register containing the object.
+     * @param Register|int|string|null $register The register containing the object.
      * @param Schema|int|string   $schema   The schema to validate against.
      * @param array               $data     The object data to save.
      * @param string|null         $uuid     The UUID of the object to update (if updating).
@@ -263,19 +265,14 @@ class SaveObject
      * @throws Exception If there is an error during save.
      */
     public function saveObject(
-        Register | int | string $register,
+        Register | int | string | null $register,
         Schema | int | string $schema,
         array $data,
         ?string $uuid=null
     ): ObjectEntity {
-
-        // Set register ID based on input type.
-        $registerId = null;
-        if ($register instanceof Register) {
-            $registerId = $register->getId();
-        } else {
-            $registerId = $register;
-        }
+        // Remove the @self property from the data.
+        unset($data['@self']);
+        unset($data['id']);
 
         // Set schema ID based on input type.
         $schemaId = null;
@@ -284,6 +281,11 @@ class SaveObject
         } else {
             $schemaId = $schema;
         }
+
+        // Find register by schema
+        // @todo this will cause saving in unspecified register if a schema is configured in multiple registers
+        $registerId = $this->registerMapper->getFirstRegisterWithSchema((int) $schemaId);
+        $register = $this->registerMapper->find($registerId);
 
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {

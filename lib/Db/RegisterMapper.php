@@ -376,6 +376,24 @@ class RegisterMapper extends QBMapper
 
     }//end getSchemasByRegisterId()
 
+    public function getFirstRegisterWithSchema(int $schemaId): ?int
+    {
+        $qb = $this->db->getQueryBuilder();
+    
+        // REGEXP: match number with optional whitespace and newlines
+        $pattern = '[[:<:]]' . $schemaId . '[[:>:]]';
+    
+        $qb->select('id')
+            ->from('openregister_registers')
+            ->where('`schemas` REGEXP :pattern')
+            ->setParameter('pattern', $pattern)
+            ->setMaxResults(1);
+    
+        $result = $qb->executeQuery()->fetchOne();
+    
+        return $result !== false ? (int) $result : null;
+    }
+    
 
     /**
      * Check if a register has a schema with a specific title
