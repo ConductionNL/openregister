@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, navigationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -199,7 +199,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								</tr>
 								<tr>
 									<td>{{ t('openregister', 'Schemas') }}</td>
-									<td>{{ register.schemas?.length || 0 }}</td>
+									<td>{{ schemaLength || register.schemas.length }}</td>
 									<td>
 										<button class="schemaToggle" @click.stop="toggleSchemaVisibility(register.id)">
 											{{ isSchemasVisible(register.id) ? t('openregister', 'Hide') : t('openregister', 'Show') }}
@@ -449,9 +449,14 @@ export default {
 		isSchemasVisible() {
 			return (registerId) => this.showSchemas[registerId] || false
 		},
+		schemaLength() {
+			if (!registerStore.registerItem?.schemas) return 0
+			return schemaStore.schemaList.filter(schema => registerStore.registerItem.schemas.includes(schema.id)).length
+		},
 	},
 	mounted() {
 		dashboardStore.preload()
+		schemaStore.refreshSchemaList()
 	},
 	methods: {
 		toggleSchema(schemaId) {

@@ -29,31 +29,31 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton close-after-click  @click="navigationStore.setModal('editSchema')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('editSchema')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
+						<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
 							<template #icon>
 								<PlusCircleOutline />
 							</template>
 							Add Property
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="navigationStore.setModal('uploadSchema')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('uploadSchema')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
+						<NcActionButton close-after-click @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
 							<template #icon>
 								<Download :size="20" />
 							</template>
 							Download
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="navigationStore.setDialog('deleteSchema')">
+						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
