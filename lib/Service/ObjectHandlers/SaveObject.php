@@ -280,6 +280,7 @@ class SaveObject
             $schemaId = $schema->getId();
         } else {
             $schemaId = $schema;
+            $schema = $this->schemaMapper->find($schema);
         }
 
         // Find register by schema
