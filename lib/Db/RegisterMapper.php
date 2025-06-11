@@ -375,7 +375,18 @@ class RegisterMapper extends QBMapper
         return $schemas;
 
     }//end getSchemasByRegisterId()
-
+    
+    /**
+     * Retrieves the ID of the first register that includes the given schema ID.
+     *
+     * This method searches the `openregister_registers` table for a register
+     * whose `schemas` field (a string) contains the specified schema ID, using
+     * a regular expression for exact word matching. If a match is found, the ID
+     * of the first such register is returned. Otherwise, it returns null.
+     *
+     * @param int $schemaId The ID of the schema to search for.
+     * @return int|null The ID of the first matching register, or null if none found.
+     */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
         $qb = $this->db->getQueryBuilder();
