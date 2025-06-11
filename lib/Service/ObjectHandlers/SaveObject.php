@@ -185,6 +185,16 @@ class SaveObject
         return array_merge($renderedDefaultValues, $data);
     }//end setDefaultValues
 
+	/**
+	 * Cascades objects from the data array.
+	 *
+	 * @param ObjectEntity $objectEntity The parent object
+	 * @param Schema $schema The of the parent object.
+	 * @param array $data The data from which to create the cascaded object.
+	 *
+	 * @return array
+	 * @throws Exception
+	 */
 	private function cascadeObjects (ObjectEntity $objectEntity, Schema $schema, array $data): array
 	{
 		$properties = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true)['properties'];
@@ -222,6 +232,16 @@ class SaveObject
 		return $data;
 	}
 
+	/**
+	 * Cascade multiple objects from an array of objects in the data.
+	 *
+	 * @param ObjectEntity $objectEntity The parent object.
+	 * @param array $property The property to add the objects to.
+	 * @param array $propData The data in the property.
+	 *
+	 * @return void
+	 * @throws Exception
+	 */
 	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): void
 	{
 		if(array_is_list($propData) === false) {
@@ -243,6 +263,15 @@ class SaveObject
 
 	}
 
+	/**
+	 * Cascade a single object form an object in the source data
+	 *
+	 * @param ObjectEntity $objectEntity The parent object.
+	 * @param array $definition The definition of the property the cascaded object is found in.
+	 * @param array $object The object to cascade.
+	 * @return void
+	 * @throws Exception
+	 */
 	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): void
 	{
 		$objectId = $objectEntity->getUuid();
@@ -307,7 +336,7 @@ class SaveObject
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
-        
+
         // Check if '@self' metadata exists and contains published/depublished properties
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
@@ -505,7 +534,7 @@ class SaveObject
         } else {
             $schemaId = $schema;
         }
-        
+
         // Check if '@self' metadata exists and contains published/depublished properties
         if (isset($data['@self']) && is_array($data['@self'])) {
             $selfData = $data['@self'];
