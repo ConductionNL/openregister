@@ -2173,6 +2173,180 @@ class FileService
     }
 
     /**
+     * Create a ZIP archive containing all files for a specific object.
+     *
+     * This method retrieves all files associated with an object and creates a ZIP archive
+     * containing all the files. The ZIP file is created in the system's temporary directory
+     * and can be downloaded by the client.
+     *
+     * @param ObjectEntity|string $object The object entity or object UUID/ID
+     * @param string|null        $zipName Optional custom name for the ZIP file
+     *
+     * @throws Exception If ZIP creation fails or object not found
+     * @throws NotFoundException If the object folder is not found
+     * @throws NotPermittedException If file access is not permitted
+     *
+     * @return array{
+     *     path: string,
+     *     filename: string,
+     *     size: int,
+     *     mimeType: string
+     * } Information about the created ZIP file
+     *
+     * @psalm-return array{path: string, filename: string, size: int, mimeType: string}
+     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
+     */
+    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
+    {
+        return $this->executeWithFileUserContext(function () use ($object, $zipName): array {
+            // If string ID provided, try to find the object entity
+            if (is_string($object) === true) {
+                try {
+                    $object = $this->objectEntityMapper->find($object);
+                } catch (Exception $e) {
+                    throw new Exception("Object not found: " . $e->getMessage());
+                }
+            }
+
+            $this->logger->info("Creating ZIP archive for object: " . $object->getId());
+
+            // Check if ZipArchive extension is available
+            if (class_exists('ZipArchive') === false) {
+                throw new Exception('PHP ZipArchive extension is not available');
+            }
+
+            // Get all files for the object
+            $files = $this->getFiles($object);
+
+            if (empty($files) === true) {
+                throw new Exception('No files found for this object');
+            }
+
+            $this->logger->info("Found " . count($files) . " files for object " . $object->getId());
+
+            // Generate ZIP filename
+            if ($zipName === null) {
+                $objectIdentifier = $object->getUuid() ?? (string) $object->getId();
+                $zipName = 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
+            } else if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
+                $zipName .= '.zip';
+            }
+
+            // Create temporary file for the ZIP
+            $tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+
+            // Create new ZIP archive
+            $zip = new \ZipArchive();
+            $result = $zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+            if ($result !== true) {
+                throw new Exception("Cannot create ZIP file: " . $this->getZipErrorMessage($result));
+            }
+
+            $addedFiles = 0;
+            $skippedFiles = 0;
+
+            // Add each file to the ZIP archive
+            foreach ($files as $file) {
+                try {
+                    if ($file instanceof \OCP\Files\File === false) {
+                        $this->logger->warning("Skipping non-file node: " . $file->getName());
+                        $skippedFiles++;
+                        continue;
+                    }
+
+                    // Get file content
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+
+                    // Add file to ZIP with its original name
+                    $added = $zip->addFromString($fileName, $fileContent);
+
+                    if ($added === false) {
+                        $this->logger->error("Failed to add file to ZIP: " . $fileName);
+                        $skippedFiles++;
+                        continue;
+                    }
+
+                    $addedFiles++;
+                    $this->logger->debug("Added file to ZIP: " . $fileName);
+
+                } catch (Exception $e) {
+                    $this->logger->error("Error processing file " . $file->getName() . ": " . $e->getMessage());
+                    $skippedFiles++;
+                    continue;
+                }
+            }
+
+            // Close the ZIP archive
+            $closeResult = $zip->close();
+            if ($closeResult === false) {
+                throw new Exception("Failed to finalize ZIP archive");
+            }
+
+            $this->logger->info("ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files");
+
+            // Check if ZIP file was created successfully
+            if (file_exists($tempZipPath) === false) {
+                throw new Exception("ZIP file was not created successfully");
+            }
+
+            $fileSize = filesize($tempZipPath);
+            if ($fileSize === false) {
+                throw new Exception("Cannot determine ZIP file size");
+            }
+
+            return [
+                'path' => $tempZipPath,
+                'filename' => $zipName,
+                'size' => $fileSize,
+                'mimeType' => 'application/zip'
+            ];
+        });
+    }//end createObjectFilesZip()
+
+    /**
+     * Get a human-readable error message for ZipArchive error codes.
+     *
+     * @param int $errorCode The ZipArchive error code
+     *
+     * @return string Human-readable error message
+     *
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function getZipErrorMessage(int $errorCode): string
+    {
+        return match ($errorCode) {
+            \ZipArchive::ER_OK => 'No error',
+            \ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
+            \ZipArchive::ER_RENAME => 'Renaming temporary file failed',
+            \ZipArchive::ER_CLOSE => 'Closing zip archive failed',
+            \ZipArchive::ER_SEEK => 'Seek error',
+            \ZipArchive::ER_READ => 'Read error',
+            \ZipArchive::ER_WRITE => 'Write error',
+            \ZipArchive::ER_CRC => 'CRC error',
+            \ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
+            \ZipArchive::ER_NOENT => 'No such file',
+            \ZipArchive::ER_EXISTS => 'File already exists',
+            \ZipArchive::ER_OPEN => 'Can\'t open file',
+            \ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
+            \ZipArchive::ER_ZLIB => 'Zlib error',
+            \ZipArchive::ER_MEMORY => 'Memory allocation failure',
+            \ZipArchive::ER_CHANGED => 'Entry has been changed',
+            \ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
+            \ZipArchive::ER_EOF => 'Premature EOF',
+            \ZipArchive::ER_INVAL => 'Invalid argument',
+            \ZipArchive::ER_NOZIP => 'Not a zip archive',
+            \ZipArchive::ER_INTERNAL => 'Internal error',
+            \ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+            \ZipArchive::ER_REMOVE => 'Can\'t remove file',
+            \ZipArchive::ER_DELETED => 'Entry has been deleted',
+            default => "Unknown error code: $errorCode"
+        };
+    }//end getZipErrorMessage()
+
+    /**
      * Find all files tagged with a specific object identifier.
      *
      * This method searches for files that have been tagged with the 'object:' prefix

@@ -1020,4 +1020,80 @@ class ObjectsController extends Controller
         }
     }
 
+    /**
+     * Download all files of an object as a ZIP archive
+     *
+     * This method creates a ZIP file containing all files associated with a specific object
+     * and returns it as a downloadable file. The ZIP file includes all files stored in the
+     * object's folder with their original names.
+     *
+     * @param string        $id            The identifier of the object to download files for
+     * @param string        $register      The register (identifier or slug) to search within
+     * @param string        $schema        The schema (identifier or slug) to search within
+     * @param ObjectService $objectService The object service for handling object operations
+     *
+     * @return DataDownloadResponse|JSONResponse ZIP file download response or error response
+     *
+     * @throws ContainerExceptionInterface If there's an issue with dependency injection
+     * @throws NotFoundExceptionInterface If the FileService dependency is not found
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function downloadFiles(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): DataDownloadResponse | JSONResponse {
+        try {
+            // Set the context for the object service
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
+
+            // Get the object to ensure it exists and we have access
+            $object = $objectService->find($id);
+
+            // Get the FileService from the container
+            /** @var FileService $fileService */
+            $fileService = $this->container->get(FileService::class);
+
+            // Optional: get custom filename from query parameters
+            $customFilename = $this->request->getParam('filename');
+
+            // Create the ZIP archive
+            $zipInfo = $fileService->createObjectFilesZip($object, $customFilename);
+
+            // Read the ZIP file content
+            $zipContent = file_get_contents($zipInfo['path']);
+            if ($zipContent === false) {
+                // Clean up temporary file
+                if (file_exists($zipInfo['path'])) {
+                    unlink($zipInfo['path']);
+                }
+                throw new \Exception('Failed to read ZIP file content');
+            }
+
+            // Clean up temporary file after reading
+            if (file_exists($zipInfo['path'])) {
+                unlink($zipInfo['path']);
+            }
+
+            // Return the ZIP file as a download response
+            return new DataDownloadResponse(
+                $zipContent,
+                $zipInfo['filename'],
+                $zipInfo['mimeType']
+            );
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to create ZIP file: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end downloadFiles()
+
 }//end class
