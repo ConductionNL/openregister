@@ -1192,7 +1192,7 @@ class FileService
             }
 
             // Update tags if provided
-            if (!empty($tags)) {
+            if (empty($tags) === false) {
                 // Get existing object tags to preserve them
                 $existingTags = $this->getFileTags(fileId: $file->getId());
                 $objectTags = array_filter($existingTags, static function (string $tag): bool {
@@ -1299,7 +1299,7 @@ class FileService
                     }
 
                     // If object wasn't provided or file wasn't found in object folder, try user folder
-                    if (!$fileDeleted) {
+                    if ($fileDeleted === false) {
                         $this->logger->info("deleteFile: Trying user folder approach...");
                         $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
@@ -1816,7 +1816,7 @@ class FileService
                 schema: $object->getSchema()
             );
             
-            if (!$objectFolder) {
+            if ($objectFolder === false) {
                 $this->logger->error("publishFile: Could not get object folder for object: " . $object->getId());
                 throw new Exception('Object folder not found.');
             }
@@ -1845,7 +1845,7 @@ class FileService
             }
 
             // Verify file exists and is a File instance
-            if (!$file instanceof File) {
+            if ($file instanceof File === false) {
                 $this->logger->error("publishFile: Found node is not a File instance, it's a: " . get_class($file));
                 throw new Exception('File not found.');
             }
@@ -1901,7 +1901,7 @@ class FileService
                 schema: $object->getSchema()
             );
             
-            if (!$objectFolder) {
+            if ($objectFolder === false) {
                 $this->logger->error("unpublishFile: Could not get object folder for object: " . $object->getId());
                 throw new Exception('Object folder not found.');
             }
@@ -1930,7 +1930,7 @@ class FileService
             }
 
             // Verify file exists and is a File instance
-            if (!$file instanceof File) {
+            if ($file instanceof File === false) {
                 $this->logger->error("unpublishFile: Found node is not a File instance, it's a: " . get_class($file));
                 throw new Exception('File not found.');
             }
