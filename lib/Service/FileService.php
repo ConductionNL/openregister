@@ -1148,7 +1148,7 @@ class FileService
                         schema: $object->getSchema()
                     );
                     
-                    if ($objectFolder) {
+                    if ($objectFolder !== null) {
                         $this->logger->info("updateFile: Object folder path: " . $objectFolder->getPath());
                         
                         // Try to get the file from object folder
@@ -1279,7 +1279,7 @@ class FileService
                                 schema: $object->getSchema()
                             );
                             
-                            if ($objectFolder) {
+                            if ($objectFolder !== null) {
                                 $this->logger->info("deleteFile: Object folder path: " . $objectFolder->getPath());
                                 
                                 // Try to get the file from object folder
