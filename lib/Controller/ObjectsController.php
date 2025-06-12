@@ -473,9 +473,14 @@ class ObjectsController extends Controller
         try {
             $existingObject = $this->objectService->find($id);
 
+            // Get the resolved register and schema IDs from the ObjectService
+            // This ensures proper handling of both numeric IDs and slug identifiers
+            $resolvedRegisterId = $objectService->getRegister(); // Returns the current register ID
+            $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
+
             // Verify that the object belongs to the specified register and schema.
-            if ((int) $existingObject->getRegister() !== (int) $register
-                || (int) $existingObject->getSchema() !== (int) $schema
+            if ($existingObject->getRegister() !== $resolvedRegisterId
+                || $existingObject->getSchema() !== $resolvedSchemaId
             ) {
                 return new JSONResponse(
                     ['error' => 'Object not found in specified register/schema'],
