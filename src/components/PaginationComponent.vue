@@ -62,6 +62,7 @@
 				:value="currentPageSizeOption"
 				:options="pageSizeOptions"
 				:clearable="false"
+				input-label="Items per page"
 				@option:selected="changePageSize" />
 		</div>
 	</div>

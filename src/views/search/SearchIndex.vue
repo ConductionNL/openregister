@@ -35,7 +35,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 						menu-name="Actions">
 						<NcActionButton
 							v-if="objectStore.selectedObjects.length > 0"
-							type="error"
 							close-after-click
 							@click="bulkDeleteObjects">
 							<template #icon>
@@ -78,7 +77,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			<div v-else-if="objectStore.objectList?.results?.length && registerStore.registerItem && schemaStore.schemaItem" class="searchList">
 				<div class="viewTableContainer">
 					<VueDraggable v-model="objectStore.enabledColumns"
-						target=".sortTarget"
+						target=".sort-target"
 						animation="150"
 						draggable="> *:not(.staticColumn)">
 						<table class="viewTable">
@@ -91,8 +90,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 											class="cursor-pointer"
 											@update:checked="objectStore.toggleSelectAllObjects" />
 									</th>
-									<th v-for="column in objectStore.enabledColumns"
-										:key="column.id">
+									<th v-for="(column, index) in objectStore.enabledColumns"
+										:key="`header-${column.id || column.key || `col-${index}`}`">
 										<span class="stickyHeader columnTitle" :title="column.description">
 											{{ column.label }}
 										</span>
@@ -104,7 +103,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							</thead>
 							<tbody>
 								<tr v-for="result in objectStore.objectList.results"
-									:key="result['@self'].uuid"
+									:key="result['@self'].id || result.id"
 									class="viewTableRow">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
@@ -113,8 +112,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 											class="cursor-pointer"
 											@update:checked="handleSelectObject(result['@self'].id)" />
 									</td>
-									<td v-for="column in objectStore.enabledColumns"
-										:key="column.id">
+									<td v-for="(column, index) in objectStore.enabledColumns"
+										:key="`cell-${result['@self'].id}-${column.id || column.key || `col-${index}`}`">
 										<template v-if="column.id.startsWith('meta_')">
 											<span v-if="column.id === 'meta_files'">
 												<NcCounterBubble :count="result['@self'].files ? result['@self'].files.length : 0" />

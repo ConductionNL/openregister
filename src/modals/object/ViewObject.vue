@@ -87,17 +87,32 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<table class="viewTable">
 									<thead>
 										<tr class="viewTableRow">
-											<th class="tableColumnConstrained">Property</th>
-											<th class="tableColumnExpanded">Value</th>
+											<th class="tableColumnConstrained">
+												Property
+											</th>
+											<th class="tableColumnExpanded">
+												Value
+											</th>
 										</tr>
 									</thead>
 									<tbody>
 										<tr
 											v-for="([key, value]) in objectProperties"
 											:key="key"
-											class="viewTableRow">
+											class="viewTableRow"
+											:class="getPropertyValidationClass(key, value)">
 											<td class="tableColumnConstrained prop-cell">
-												{{ key }}
+												<div class="prop-cell-content">
+													<AlertCircle v-if="getPropertyValidationClass(key, value) === 'property-invalid'"
+														v-tooltip="getPropertyErrorMessage(key, value)"
+														class="validation-icon error-icon"
+														:size="16" />
+													<Alert v-else-if="getPropertyValidationClass(key, value) === 'property-warning'"
+														v-tooltip="getPropertyWarningMessage(key, value)"
+														class="validation-icon warning-icon"
+														:size="16" />
+													{{ key }}
+												</div>
 											</td>
 											<td class="tableColumnExpanded value-cell">
 												<pre
@@ -135,15 +150,16 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 											<NcNoteCard v-if="success" type="success" class="note-card">
 												<p>Object successfully modified</p>
 											</NcNoteCard>
-											<div v-for="(value, key) in currentSchema.properties"
+											<div v-for="(value, key) in formFields"
 												:key="key"
 												class="form-field">
 												<div v-if="value && value.type === 'string'" class="field-label-row">
 													<NcTextField
-														v-model="formData[key] "
-														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+														:model-value="formData[key] || ''"
+														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
 														:placeholder="key"
-														:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
+														:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || value.description || key"
+														@update:model-value="val => setFieldValue(key, val)" />
 													<NcButton
 														v-if="(key === 'id' || key === 'uri') && formData[key]"
 														class="copy-button"
@@ -156,22 +172,26 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</div>
 
 												<NcCheckboxRadioSwitch v-else-if="value && value.type === 'boolean'"
-													v-model="formData[key]"
-													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
-													type="switch" />
+													:model-value="formData[key] || false"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
+													type="switch"
+													@update:model-value="val => setFieldValue(key, val)" />
 												<NcTextField v-else-if="value && value.type === 'number'"
-													v-model.number="formData[key]"
-													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
-													type="number" />
+													:model-value="formData[key] || 0"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
+													type="number"
+													@update:model-value="val => setFieldValue(key, Number(val))" />
 
 												<template v-else-if="value && value.type === 'array'">
 													<label class="field-label">
-														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
+														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key }}
 													</label>
 													<ul class="array-editor">
 														<li v-for="(item, i) in formData[key] || []" :key="i">
-															<NcTextField v-model="formData[key][i]"
-																class="array-item-input" />
+															<NcTextField
+																:model-value="formData[key] ? formData[key][i] || '' : ''"
+																class="array-item-input"
+																@update:model-value="val => updateArrayItem(key, i, val)" />
 															<NcButton size="small"
 																@click="removeArrayItem(key, i)">
 																<template #icon>
@@ -191,10 +211,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 												<template v-else-if="value && value.type === 'object' && value !== null">
 													<label class="field-label">
-														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
+														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key }}
 													</label>
 													<CodeMirror
-														:model-value="objectEditors[key]"
+														:model-value="objectEditors[key] || '{}'"
 														:basic="true"
 														:dark="getTheme() === 'dark'"
 														:lang="json()"
@@ -203,10 +223,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</template>
 
 												<NcTextField v-else
-													v-model="formData[key]"
-													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
+													:model-value="formData[key] || ''"
+													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
 													:placeholder="key"
-													:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || key" />
+													:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || value.description || key"
+													@update:model-value="val => setFieldValue(key, val)" />
 											</div>
 										</div>
 										<NcEmptyContent v-else>
@@ -369,30 +390,50 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													:indeterminate="someFilesSelected"
 													@update:checked="toggleSelectAllFiles" />
 											</th>
-											<th class="tableColumnExpanded">Name</th>
-											<th class="tableColumnConstrained">Size</th>
-											<th class="tableColumnConstrained">Type</th>
-											<th class="tableColumnConstrained">Labels</th>
+											<th class="tableColumnExpanded">
+												Name
+											</th>
+											<th class="tableColumnConstrained">
+												Size
+											</th>
+											<th class="tableColumnConstrained">
+												Type
+											</th>
+											<th class="tableColumnConstrained">
+												Labels
+											</th>
 											<th class="tableColumnActions">
 												<NcActions v-if="selectedAttachments.length > 0" force-menu>
 													<template #icon>
 														<DotsHorizontal :size="20" />
 													</template>
-													<NcActionButton close-after-click @click="publishSelectedFiles">
+													<NcActionButton
+														close-after-click
+														:disabled="publishLoading.length > 0"
+														@click="publishSelectedFiles">
 														<template #icon>
-															<FileOutline :size="20" />
+															<NcLoadingIcon v-if="publishLoading.length > 0" :size="20" />
+															<FileOutline v-else :size="20" />
 														</template>
 														Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 													</NcActionButton>
-													<NcActionButton close-after-click @click="depublishSelectedFiles">
+													<NcActionButton
+														close-after-click
+														:disabled="depublishLoading.length > 0"
+														@click="depublishSelectedFiles">
 														<template #icon>
-															<LockOutline :size="20" />
+															<NcLoadingIcon v-if="depublishLoading.length > 0" :size="20" />
+															<LockOutline v-else :size="20" />
 														</template>
 														Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 													</NcActionButton>
-													<NcActionButton close-after-click type="error" @click="deleteSelectedFiles">
+													<NcActionButton
+														close-after-click
+														:disabled="fileIdsLoading.length > 0"
+														@click="deleteSelectedFiles">
 														<template #icon>
-															<Delete :size="20" />
+															<NcLoadingIcon v-if="fileIdsLoading.length > 0" :size="20" />
+															<Delete v-else :size="20" />
 														</template>
 														Delete {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 													</NcActionButton>
@@ -425,8 +466,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												<FileOutline v-else class="publishedIcon" :size="20" />
 												{{ attachment.name ?? attachment?.title }}
 											</td>
-											<td class="tableColumnConstrained">{{ formatFileSize(attachment?.size) }}</td>
-											<td class="tableColumnConstrained">{{ attachment?.type || 'No type' }}</td>
+											<td class="tableColumnConstrained">
+												{{ formatFileSize(attachment?.size) }}
+											</td>
+											<td class="tableColumnConstrained">
+												{{ attachment?.type || 'No type' }}
+											</td>
 											<td class="tableColumnConstrained">
 												<div class="fileLabelsContainer">
 													<NcCounterBubble v-for="label of attachment.labels" :key="label">
@@ -448,30 +493,35 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</template>
 														Labels
 													</NcActionButton>
-													<NcActionButton 
+													<NcActionButton
 														v-if="!attachment.accessUrl && !attachment.downloadUrl"
-														close-after-click 
+														close-after-click
+														:disabled="publishLoading.includes(attachment.id)"
 														@click="publishFile(attachment)">
 														<template #icon>
-															<FileOutline :size="20" />
+															<NcLoadingIcon v-if="publishLoading.includes(attachment.id)" :size="20" />
+															<FileOutline v-else :size="20" />
 														</template>
 														Publish
 													</NcActionButton>
-													<NcActionButton 
+													<NcActionButton
 														v-else
-														close-after-click 
+														close-after-click
+														:disabled="depublishLoading.includes(attachment.id)"
 														@click="depublishFile(attachment)">
 														<template #icon>
-															<LockOutline :size="20" />
+															<NcLoadingIcon v-if="depublishLoading.includes(attachment.id)" :size="20" />
+															<LockOutline v-else :size="20" />
 														</template>
 														Depublish
 													</NcActionButton>
-													<NcActionButton 
-														close-after-click 
-														type="error"
+													<NcActionButton
+														close-after-click
+														:disabled="fileIdsLoading.includes(attachment.id)"
 														@click="deleteFile(attachment)">
 														<template #icon>
-															<Delete :size="20" />
+															<NcLoadingIcon v-if="fileIdsLoading.includes(attachment.id)" :size="20" />
+															<Delete v-else :size="20" />
 														</template>
 														Delete
 													</NcActionButton>
@@ -496,7 +546,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								@page-changed="onFilesPageChanged"
 								@page-size-changed="onFilesPageSizeChanged" />
 						</BTab>
-
 					</BTabs>
 				</div>
 			</div>
@@ -548,6 +597,7 @@ import {
 	NcTextField,
 	NcCheckboxRadioSwitch,
 	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
@@ -565,11 +615,11 @@ import Check from 'vue-material-design-icons/Check.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-
+import Alert from 'vue-material-design-icons/Alert.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 export default {
 	name: 'ViewObject',
@@ -581,6 +631,7 @@ export default {
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		NcEmptyContent,
+		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
 		CodeMirror,
@@ -601,6 +652,8 @@ export default {
 		TextBoxOutline,
 		Tag,
 		DotsHorizontal,
+		Alert,
+		AlertCircle,
 		PaginationComponent,
 	},
 	data() {
@@ -703,6 +756,44 @@ export default {
 		},
 		someFilesSelected() {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
+		},
+		formFields() {
+			// Combine schema properties and object properties
+			const fields = {}
+
+			// First, add all schema properties
+			if (this.currentSchema && this.currentSchema.properties) {
+				for (const [key, value] of Object.entries(this.currentSchema.properties)) {
+					fields[key] = value || { type: 'string' }
+				}
+			}
+
+			// Then, add any object properties that aren't in the schema
+			if (objectStore.objectItem) {
+				for (const [key, value] of Object.entries(objectStore.objectItem)) {
+					if (key !== '@self' && key !== 'id' && !fields[key]) {
+						// Infer type from the value
+						let type = 'string'
+						if (typeof value === 'boolean') {
+							type = 'boolean'
+						} else if (typeof value === 'number') {
+							type = 'number'
+						} else if (Array.isArray(value)) {
+							type = 'array'
+						} else if (typeof value === 'object' && value !== null) {
+							type = 'object'
+						}
+
+						fields[key] = {
+							type,
+							title: key,
+							description: `Property: ${key}`,
+						}
+					}
+				}
+			}
+
+			return fields
 		},
 	},
 	watch: {
@@ -821,6 +912,41 @@ export default {
 					filtered[key] = initial[key]
 				}
 			}
+
+			// Ensure all form fields exist in formData, even if they're undefined in the object
+			// We need to use a timeout to ensure formFields computed property is available
+			this.$nextTick(() => {
+				if (this.formFields) {
+					for (const key in this.formFields) {
+						if (!(key in filtered)) {
+							const fieldType = this.formFields[key]?.type
+							// Initialize with appropriate default values based on type
+							switch (fieldType) {
+							case 'string':
+								filtered[key] = ''
+								break
+							case 'number':
+								filtered[key] = 0
+								break
+							case 'boolean':
+								filtered[key] = false
+								break
+							case 'array':
+								filtered[key] = []
+								break
+							case 'object':
+								filtered[key] = {}
+								break
+							default:
+								filtered[key] = ''
+							}
+						}
+					}
+					// Update formData after ensuring all fields exist
+					this.formData = { ...this.formData, ...filtered }
+				}
+			})
+
 			this.formData = JSON.parse(JSON.stringify(filtered))
 			this.jsonData = JSON.stringify(filtered, null, 2)
 		},
@@ -913,18 +1039,24 @@ export default {
 		setFieldValue(key, value) {
 			this.formData[key] = value
 		},
+		updateArrayItem(key, index, value) {
+			if (!this.formData[key]) {
+				this.formData[key] = []
+			}
+			this.formData[key][index] = value
+		},
 		toDisplay(v) { return v === null ? '' : v },
 		toPayload(v) { return v === '' ? null : v },
 
-		addArrayItem(key) { 
+		addArrayItem(key) {
 			if (!this.formData[key] || !Array.isArray(this.formData[key])) {
 				this.formData[key] = []
 			}
-			this.formData[key].push('') 
+			this.formData[key].push('')
 		},
-		removeArrayItem(key, i) { 
+		removeArrayItem(key, i) {
 			if (this.formData[key] && Array.isArray(this.formData[key])) {
-				this.formData[key].splice(i, 1) 
+				this.formData[key].splice(i, 1)
 			}
 		},
 		updateObjectField(key, val) {
@@ -975,26 +1107,27 @@ export default {
 
 			try {
 				this.publishLoading = [...this.selectedAttachments]
-				
+
 				// Get the selected files
-				const selectedFiles = objectStore.files.results.filter(file => 
-					this.selectedAttachments.includes(file.id)
+				const selectedFiles = objectStore.files.results.filter(file =>
+					this.selectedAttachments.includes(file.id),
 				)
 
 				// Publish each file
 				for (const file of selectedFiles) {
-					// You'll need to implement the actual publish API call here
-					// This is a placeholder for the actual implementation
-					console.log('Publishing file:', file.name)
+					await objectStore.publishFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						filePath: file.title || file.name || file.path,
+					})
 				}
 
 				// Clear selection after successful operation
 				this.selectedAttachments = []
-				
-				// Refresh files list
-				// You may need to call a refresh method here
-				
+
 			} catch (error) {
+				// eslint-disable-next-line no-console
 				console.error('Error publishing files:', error)
 			} finally {
 				this.publishLoading = []
@@ -1005,26 +1138,27 @@ export default {
 
 			try {
 				this.depublishLoading = [...this.selectedAttachments]
-				
+
 				// Get the selected files
-				const selectedFiles = objectStore.files.results.filter(file => 
-					this.selectedAttachments.includes(file.id)
+				const selectedFiles = objectStore.files.results.filter(file =>
+					this.selectedAttachments.includes(file.id),
 				)
 
 				// Depublish each file
 				for (const file of selectedFiles) {
-					// You'll need to implement the actual depublish API call here
-					// This is a placeholder for the actual implementation
-					console.log('Depublishing file:', file.name)
+					await objectStore.unpublishFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						filePath: file.title || file.name || file.path,
+					})
 				}
 
 				// Clear selection after successful operation
 				this.selectedAttachments = []
-				
-				// Refresh files list
-				// You may need to call a refresh method here
-				
+
 			} catch (error) {
+				// eslint-disable-next-line no-console
 				console.error('Error depublishing files:', error)
 			} finally {
 				this.depublishLoading = []
@@ -1033,32 +1167,29 @@ export default {
 		async deleteSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return
 
-			const confirmed = confirm(`Are you sure you want to delete ${this.selectedAttachments.length} file${this.selectedAttachments.length > 1 ? 's' : ''}? This action cannot be undone.`)
-			if (!confirmed) return
-
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
-				
-				// Get the selected files
-				const selectedFiles = objectStore.files.results.filter(file => 
-					this.selectedAttachments.includes(file.id)
-				)
 
-				// Delete each file
+				// Get the selected files
+				const selectedFiles = objectStore.files.results?.filter(item =>
+					this.selectedAttachments.includes(item.id),
+				) || []
+
+				// Delete each selected file
 				for (const file of selectedFiles) {
-					// You'll need to implement the actual delete API call here
-					// This is a placeholder for the actual implementation
-					console.log('Deleting file:', file.name)
+					await objectStore.deleteFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						filePath: file.title || file.name || file.path,
+					})
 				}
 
-				// Clear selection after successful operation
+				// Clear selection - files list is automatically refreshed by the store methods
 				this.selectedAttachments = []
-				
-				// Refresh files list
-				// You may need to call a refresh method here
-				
 			} catch (error) {
-				console.error('Error deleting files:', error)
+				// eslint-disable-next-line no-console
+				console.error('Failed to delete selected files:', error)
 			} finally {
 				this.fileIdsLoading = []
 			}
@@ -1066,16 +1197,18 @@ export default {
 		async publishFile(file) {
 			try {
 				this.publishLoading.push(file.id)
-				
-				// You'll need to implement the actual publish API call here
-				// This is a placeholder for the actual implementation
-				console.log('Publishing single file:', file.name)
-				
-				// Refresh files list after successful operation
-				// You may need to call a refresh method here
-				
+
+				await objectStore.publishFile({
+					register: objectStore.objectItem['@self'].register,
+					schema: objectStore.objectItem['@self'].schema,
+					objectId: objectStore.objectItem.id,
+					filePath: file.title || file.name || file.path,
+				})
+
+				// Files list is automatically refreshed by the store method
 			} catch (error) {
-				console.error('Error publishing file:', error)
+				// eslint-disable-next-line no-console
+				console.error('Failed to publish file:', error)
 			} finally {
 				this.publishLoading = this.publishLoading.filter(id => id !== file.id)
 			}
@@ -1083,39 +1216,37 @@ export default {
 		async depublishFile(file) {
 			try {
 				this.depublishLoading.push(file.id)
-				
-				// You'll need to implement the actual depublish API call here
-				// This is a placeholder for the actual implementation
-				console.log('Depublishing single file:', file.name)
-				
-				// Refresh files list after successful operation
-				// You may need to call a refresh method here
-				
+
+				await objectStore.unpublishFile({
+					register: objectStore.objectItem['@self'].register,
+					schema: objectStore.objectItem['@self'].schema,
+					objectId: objectStore.objectItem.id,
+					filePath: file.title || file.name || file.path,
+				})
+
+				// Files list is automatically refreshed by the store method
 			} catch (error) {
-				console.error('Error depublishing file:', error)
+				// eslint-disable-next-line no-console
+				console.error('Failed to depublish file:', error)
 			} finally {
 				this.depublishLoading = this.depublishLoading.filter(id => id !== file.id)
 			}
 		},
 		async deleteFile(file) {
-			const confirmed = confirm(`Are you sure you want to delete "${file.name}"? This action cannot be undone.`)
-			if (!confirmed) return
-
 			try {
 				this.fileIdsLoading.push(file.id)
-				
-				// You'll need to implement the actual delete API call here
-				// This is a placeholder for the actual implementation
-				console.log('Deleting single file:', file.name)
-				
-				// Remove from selection if it was selected
-				this.selectedAttachments = this.selectedAttachments.filter(id => id !== file.id)
-				
-				// Refresh files list after successful operation
-				// You may need to call a refresh method here
-				
+
+				await objectStore.deleteFile({
+					register: objectStore.objectItem['@self'].register,
+					schema: objectStore.objectItem['@self'].schema,
+					objectId: objectStore.objectItem.id,
+					filePath: file.title || file.name || file.path,
+				})
+
+				// Files list is automatically refreshed by the store method
 			} catch (error) {
-				console.error('Error deleting file:', error)
+				// eslint-disable-next-line no-console
+				console.error('Failed to delete file:', error)
 			} finally {
 				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
 			}
@@ -1123,8 +1254,106 @@ export default {
 		editFileLabels(file) {
 			// You'll need to implement the labels editing functionality
 			// This could open a modal or inline editor for file labels
+			// eslint-disable-next-line no-console
 			console.log('Editing labels for file:', file.name)
 			// Placeholder for labels editing implementation
+		},
+		getPropertyValidationClass(key, value) {
+			// Skip @self as it's metadata
+			if (key === '@self') {
+				return ''
+			}
+
+			// Check if property exists in schema
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			if (!schemaProperty) {
+				// Property not defined in schema - warning (yellow)
+				return 'property-warning'
+			}
+
+			// Property exists in schema, validate the value
+			if (this.isValidPropertyValue(key, value, schemaProperty)) {
+				// Valid property - success (green)
+				return 'property-valid'
+			} else {
+				// Invalid property - error (red)
+				return 'property-invalid'
+			}
+		},
+		isValidPropertyValue(key, value, schemaProperty) {
+			// Handle null/undefined values
+			if (value === null || value === undefined || value === '') {
+				// Check if property is required
+				const isRequired = this.currentSchema?.required?.includes(key) || schemaProperty.required
+				return !isRequired // Valid if not required, invalid if required
+			}
+
+			// Validate based on schema type
+			switch (schemaProperty.type) {
+			case 'string':
+				if (typeof value !== 'string') return false
+				// Check format constraints
+				if (schemaProperty.format === 'date-time') {
+					return this.isValidDate(value)
+				}
+				// Check const constraint
+				if (schemaProperty.const && value !== schemaProperty.const) {
+					return false
+				}
+				return true
+
+			case 'number':
+				return typeof value === 'number' && !isNaN(value)
+
+			case 'boolean':
+				return typeof value === 'boolean'
+
+			case 'array':
+				return Array.isArray(value)
+
+			case 'object':
+				return typeof value === 'object' && value !== null && !Array.isArray(value)
+
+			default:
+				return true // Unknown type, assume valid
+			}
+		},
+		getPropertyErrorMessage(key, value) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			if (!schemaProperty) {
+				return `Property '${key}' is not defined in the schema`
+			}
+
+			// Check if required but empty
+			const isRequired = this.currentSchema?.required?.includes(key) || schemaProperty.required
+			if ((value === null || value === undefined || value === '') && isRequired) {
+				return `Required property '${key}' is missing or empty`
+			}
+
+			// Check type mismatch
+			const expectedType = schemaProperty.type
+			const actualType = Array.isArray(value) ? 'array' : typeof value
+
+			if (expectedType !== actualType) {
+				return `Property '${key}' should be ${expectedType} but is ${actualType}`
+			}
+
+			// Check format constraints
+			if (schemaProperty.format === 'date-time' && !this.isValidDate(value)) {
+				return `Property '${key}' should be a valid date-time format`
+			}
+
+			// Check const constraint
+			if (schemaProperty.const && value !== schemaProperty.const) {
+				return `Property '${key}' should be '${schemaProperty.const}' but is '${value}'`
+			}
+
+			return `Property '${key}' has an invalid value`
+		},
+		getPropertyWarningMessage(key, value) {
+			return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 		},
 	},
 }
@@ -1529,5 +1758,55 @@ export default {
 }
 .codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
 	color: #623907;
+}
+
+/* Property validation indicators */
+.property-valid {
+	border-left: 4px solid var(--color-success) !important;
+}
+
+.property-invalid {
+	border-left: 4px solid var(--color-error) !important;
+}
+
+.property-warning {
+	border-left: 4px solid var(--color-warning) !important;
+}
+
+.prop-cell {
+	width: 30%;
+	font-weight: 600;
+	border-left: 3px solid var(--color-primary);
+}
+
+.prop-cell-content {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.validation-icon {
+	flex-shrink: 0;
+}
+
+.validation-icon.error-icon {
+	color: var(--color-error);
+}
+
+.validation-icon.warning-icon {
+	color: var(--color-warning);
+}
+
+.value-cell {
+	width: 70%;
+	word-break: break-word;
+	border-radius: 4px;
+}
+
+/* Override the default border for validated properties */
+.property-valid .prop-cell,
+.property-invalid .prop-cell,
+.property-warning .prop-cell {
+	border-left: none;
 }
 </style>

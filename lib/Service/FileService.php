@@ -397,8 +397,6 @@ class FileService
                 ['message' => $e->getMessage(), 'exception' => $e]
             );
 
-			vaR_dump($e->getMessage());
-
             return null;
         }
     }
@@ -1671,7 +1669,7 @@ class FileService
      * Retrieves all available tags in the system.
      *
      * This method fetches all tags that are visible and assignable by users
-     * from the system tag manager.
+     * from the system tag manager, and filters out any tags that start with 'object:'.
      *
      * @throws \Exception If there's an error retrieving the tags
      *
@@ -1687,10 +1685,15 @@ class FileService
             // Get all tags that are visible and assignable by users
             $tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
 
-            // Extract just the tag names
-            $tagNames = array_map(static function ($tag) {
-                return $tag->getName();
-            }, $tags);
+            // Extract just the tag names and filter out those starting with 'object:'
+            $tagNames = array_filter(
+                array_map(static function ($tag) {
+                    return $tag->getName();
+                }, $tags),
+                static function ($tagName) {
+                    return !str_starts_with($tagName, 'object:');
+                }
+            );
 
             // Return sorted array of tag names
             sort($tagNames);

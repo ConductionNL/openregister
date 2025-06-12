@@ -59,6 +59,7 @@ return [
 		['name' => 'files#index', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET'],
         ['name' => 'files#show', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'GET'],
 		['name' => 'files#create', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST'],
+		['name' => 'files#save', 'url' => 'api/objects/{register}/{schema}/{id}/files/save', 'verb' => 'POST'],
 		['name' => 'files#createMultipart', 'url' => 'api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST'],	
 		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'PUT'],
 		['name' => 'files#delete', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'DELETE'],
