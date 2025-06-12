@@ -967,6 +967,95 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		/**
+		 * Publish an object with optional date
+		 * @param {object} params - Publish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string|null} params.publishedDate - Optional published date (ISO string)
+		 * @return {Promise} API response
+		 */
+		async publishObject({ register, schema, objectId, publishedDate = null }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Missing required parameters for object publish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/publish`
+
+			try {
+				const body = publishedDate ? { date: publishedDate } : {}
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to publish object: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Update the current object item if it matches
+				if (this.objectItem && this.objectItem['@self'].id === objectId) {
+					this.objectItem['@self'].published = data.published || new Date().toISOString()
+					this.objectItem['@self'].depublished = null
+				}
+
+				// Refresh object list to update the display
+				await this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error publishing object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Depublish an object with optional date
+		 * @param {object} params - Depublish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string|null} params.depublishedDate - Optional depublished date (ISO string)
+		 * @return {Promise} API response
+		 */
+		async depublishObject({ register, schema, objectId, depublishedDate = null }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Missing required parameters for object depublish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/depublish`
+
+			try {
+				const body = depublishedDate ? { date: depublishedDate } : {}
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to depublish object: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Update the current object item if it matches
+				if (this.objectItem && this.objectItem['@self'].id === objectId) {
+					this.objectItem['@self'].depublished = data.depublished || new Date().toISOString()
+				}
+
+				// Refresh object list to update the display
+				await this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error depublishing object:', error)
+				throw error
+			}
+		},
+		/**
 		 * Publish a file for an object
 		 * @param {object} params - Publish parameters
 		 * @param {string|number} params.register - Register ID
