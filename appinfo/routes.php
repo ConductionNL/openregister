@@ -26,7 +26,7 @@ return [
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         ['name' => 'objects#import', 'url' => '/api/objects/{register}/{schema}/import', 'verb' => 'POST'],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT'],
+        ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#destroy', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         // Relations        
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -60,7 +60,7 @@ return [
         ['name' => 'files#show', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'GET'],
 		['name' => 'files#create', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST'],
 		['name' => 'files#createMultipart', 'url' => 'api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST'],	
-		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'POST'],
+		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'PUT'],
 		['name' => 'files#delete', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'DELETE'],
 		['name' => 'files#publish', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}/publish', 'verb' => 'POST'],
 		['name' => 'files#depublish', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}/depublish', 'verb' => 'POST'],	

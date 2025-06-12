@@ -377,7 +377,7 @@ class FilesController extends Controller
             $data = $this->request->getParams();
             // Ensure tags is set to empty array if not provided
             $tags   = $data['tags'] ?? [];
-            $result = $this->fileService->updateFile($filePath, $data['content'], $tags);
+            $result = $this->fileService->updateFile($filePath, $data['content'], $tags, $this->objectService->getObject());
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(
@@ -410,10 +410,10 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->deleteFile($filePath);
+            $result = $this->fileService->deleteFile($filePath, $this->objectService->getObject());
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(
@@ -447,10 +447,10 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->publishFile($object, $filePath);
+            $result = $this->fileService->publishFile($this->objectService->getObject(), $filePath);
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(
@@ -484,10 +484,10 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->unpublishFile($object, $filePath);
+            $result = $this->fileService->unpublishFile($this->objectService->getObject(), $filePath);
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(
