@@ -297,13 +297,14 @@ class ConfigurationService
 
             // Get and export schemas associated with this register.
             $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
-            $idsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
+            $schemaIdsAndSlugsMap = $this->schemaMapper->getIdToSlugMap();
+            $registerIdsAndSlugsMap = $this->registerMapper->getIdToSlugMap();
 
             foreach ($schemas as $schema) {
                 // Store schema in map by ID for reference.
                 $this->schemasMap[$schema->getId()] = $schema;
 
-                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema, $idsAndSlugsMap);
+                $openApiSpec['components']['schemas'][$schema->getSlug()] = $this->exportSchema($schema, $schemaIdsAndSlugsMap, $registerIdsAndSlugsMap);
                 $openApiSpec['components']['registers'][$register->getSlug()]['schemas'][] = $schema->getSlug();
             }
 
@@ -369,7 +370,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI schema specification
      */
-    private function exportSchema(Schema $schema, array $idsAndSlugsMap): array
+    private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $registerIdsAndSlugsMap): array
     {
         // Use jsonSerialize to get the JSON representation of the schema.
         $schemaArray = $schema->jsonSerialize();
@@ -380,15 +381,28 @@ class ConfigurationService
         foreach ($schemaArray['properties'] as &$property) {
             if (isset($property['$ref']) === true) {
                 $schemaId = $this->getLastNumericSegment(url: $property['$ref']);
-                if (isset($idsAndSlugsMap[$schemaId]) === true) {
-                    $property['$ref'] = $idsAndSlugsMap[$schemaId];
+                if (isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
+                    $property['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
                 }
             }
 
             if (isset($property['items']['$ref']) === true) {
                 $schemaId = $this->getLastNumericSegment(url: $property['items']['$ref']);
-                if (isset($idsAndSlugsMap[$schemaId]) === true) {
-                    $property['items']['$ref'] = $idsAndSlugsMap[$schemaId];
+                if (isset($schemaIdsAndSlugsMap[$schemaId]) === true) {
+                    $property['items']['$ref'] = $schemaIdsAndSlugsMap[$schemaId];
+                }
+            }
+            if (isset($property['register']) === true) {
+                $registerId = $this->getLastNumericSegment(url: $property['register']);
+                if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
+                    $property['register'] = $registerIdsAndSlugsMap[$registerId];
+                }
+            }
+
+            if (isset($property['items']['register']) === true) {
+                $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
+                if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
+                    $property['items']['register'] = $registerIdsAndSlugsMap[$registerId];
                 }
             }
         }
@@ -877,6 +891,20 @@ class ConfigurationService
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
                         } elseif (isset($this->schemasMap[$property['items']['$ref']]) === true) {
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
+                        }
+                    }
+                    if (isset($property['register']) === true) {
+                        if (isset($slugsAndIdsMap[$property['register']]) === true) {
+                            $property['register'] = $slugsAndIdsMap[$property['register']];
+                        } elseif (isset($this->registersMap[$property['register']]) === true) {
+                            $property['register'] = $this->registersMap[$property['register']]->getId();
+                        }
+                    }
+                    if (isset($property['items']['register']) === true) {
+                        if (isset($slugsAndIdsMap[$property['items']['register']]) === true) {
+                            $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
+                        } elseif (isset($this->registersMap[$property['items']['register']]) === true) {
+                            $property['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
                 }
