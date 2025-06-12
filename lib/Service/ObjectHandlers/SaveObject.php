@@ -205,7 +205,7 @@ class SaveObject
                 continue;
             }
 
-            $this->cascadeSingleObject($objectEntity, $definition, $data[$property]);
+            $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $data[$property]);
 			unset($data[$property]);
 		}
 
@@ -215,6 +215,7 @@ class SaveObject
             }
 
             $this->cascadeMultipleObjects($objectEntity, $definition, $data[$property]);
+            $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
 			unset($data[$property]);
 		}
 
@@ -236,8 +237,12 @@ class SaveObject
 			$property['items']['inversedBy'] = $property['inversedBy'];
 		}
 
+		if (isset($property['register']) === true) {
+			$property['items']['register'] = $property['register'];
+		}
+
 		$propData = array_map(function(array $object) use ($objectEntity, $property) {
-			$this->cascadeSingleObject($objectEntity, $property['items'], $object);
+			$this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
 			return $object;
 		}, $propData);
 
@@ -248,7 +253,10 @@ class SaveObject
 		$objectId = $objectEntity->getUuid();
 
 		$object[$definition['inversedBy']] = $objectId;
-		$this->saveObject($objectEntity->getRegister(), $definition['$ref'], $object, $object['id'] ?? $object['@self']['id'] ?? null);
+        $register = $definition['register'] ?? $objectEntity->getRegister();
+        $uuid = $object['id'] ?? $object['@self']['id'] ?? null;
+
+		$this->saveObject(register: $register, schema: $definition['$ref'], data: $object, uuid: $uuid);
 	}
 
 
@@ -276,25 +284,28 @@ class SaveObject
 
         // Set schema ID based on input type.
         $schemaId = null;
-        if ($schema instanceof Schema) {
+        if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
         } else {
             $schemaId = $schema;
-            $schema = $this->schemaMapper->find($schema);
+            $schema = $this->schemaMapper->find(id: $schema);
         }
 
-        // Find register by schema
-        // @todo this will cause saving in unspecified register if a schema is configured in multiple registers
-        $registerId = $this->registerMapper->getFirstRegisterWithSchema((int) $schemaId);
-        $register = $this->registerMapper->find($registerId);
+        $registerId = null;
+        if ($register instanceof Register === true) {
+            $registerId = $register->getId();
+        } else {
+            $registerId = $register;
+            $register = $this->registerMapper->find(id: $register);
+        }
 
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
             try {
-                $existingObject = $this->objectEntityMapper->find($uuid);
-				$data = $this->cascadeObjects($existingObject, $schema, $data);
-				$data = $this->setDefaultValues($existingObject, $schema, $data);
-                return $this->updateObject($register, $schema, $data, $existingObject);
+                $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
+				$data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
+				$data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
+                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject);
             } catch (\Exception $e) {
                 // Object not found, proceed with creating new object.
             }
