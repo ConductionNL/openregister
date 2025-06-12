@@ -1225,22 +1225,59 @@ class FileService
                     $fileDeleted = true;
                 } else {
                     // If we received a string path, locate the file first then delete it
-                    // @todo: this can delete any file, we might want to check if the file is in the object folder first
+                    // Clean and decode the file path
+                    $originalFilePath = $file;
                     $filePath = trim(string: $file, characters: '/');
+                    $filePath = urldecode($filePath);
                     $deletedFilePath = $filePath;
 
-                    $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+                    $this->logger->info("deleteFile: Original file path received: '$originalFilePath'");
+                    $this->logger->info("deleteFile: After trim and decode: '$filePath'");
 
-                    // Check if file exists and delete it if it does.
-                    try {
-                        $fileNode = $userFolder->get(path: $filePath);
-                        $this->logger->info("Deleting file at path: $filePath");
-                        $fileNode->delete();
-                        $fileDeleted = true;
-                    } catch (NotFoundException) {
-                        // File does not exist.
-                        $this->logger->warning("File $filePath does not exist.");
-                        $fileDeleted = false;
+                    // If object is provided, try to find the file in the object folder first
+                    if ($object !== null) {
+                        try {
+                            $objectFolder = $this->getObjectFolder(
+                                objectEntity: $object,
+                                register: $object->getRegister(),
+                                schema: $object->getSchema()
+                            );
+                            
+                            if ($objectFolder) {
+                                $this->logger->info("deleteFile: Object folder path: " . $objectFolder->getPath());
+                                
+                                // Try to get the file from object folder
+                                try {
+                                    $fileNode = $objectFolder->get($filePath);
+                                    $this->logger->info("deleteFile: Found file in object folder: " . $fileNode->getName());
+                                    $fileNode->delete();
+                                    $fileDeleted = true;
+                                } catch (NotFoundException) {
+                                    $this->logger->warning("deleteFile: File $filePath not found in object folder.");
+                                    $fileDeleted = false;
+                                }
+                            }
+                        } catch (Exception $e) {
+                            $this->logger->error("deleteFile: Error accessing object folder: " . $e->getMessage());
+                        }
+                    }
+
+                    // If object wasn't provided or file wasn't found in object folder, try user folder
+                    if (!$fileDeleted) {
+                        $this->logger->info("deleteFile: Trying user folder approach...");
+                        $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+
+                        // Check if file exists and delete it if it does.
+                        try {
+                            $fileNode = $userFolder->get(path: $filePath);
+                            $this->logger->info("deleteFile: Found file in user folder at path: $filePath");
+                            $fileNode->delete();
+                            $fileDeleted = true;
+                        } catch (NotFoundException) {
+                            // File does not exist.
+                            $this->logger->warning("deleteFile: File $filePath does not exist in user folder either.");
+                            $fileDeleted = false;
+                        }
                     }
                 }
 
@@ -1719,24 +1756,72 @@ class FileService
      */
     public function publishFile(ObjectEntity | string $object, string $filePath): File
     {
-        // If string ID provided, try to find the object entity
-        if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
-        }
+        return $this->executeWithFileUserContext(function () use ($object, $filePath): File {
+            // If string ID provided, try to find the object entity
+            if (is_string($object) === true) {
+                $object = $this->objectEntityMapper->find($object);
+            }
 
-        // Get the file node
-        $fullPath = $this->getObjectFilePath($object, $filePath);
-        $file = $this->getNode($fullPath);
+            // Debug logging - original file path
+            $originalFilePath = $filePath;
+            $this->logger->info("publishFile: Original file path received: '$originalFilePath'");
 
-        // Verify file exists and is a File instance
-        if (!$file instanceof File) {
-            throw new Exception('File not found.');
-        }
+            // Clean and decode the file path
+            $filePath = trim(string: $filePath, characters: '/');
+            $this->logger->info("publishFile: After trim: '$filePath'");
+            
+            $filePath = urldecode($filePath);
+            $this->logger->info("publishFile: After urldecode: '$filePath'");
 
-        // Create share link for the file
-        $this->createShareLink(path: $file->getPath());
+            // Get the object folder (this is where the files actually are)
+            $objectFolder = $this->getObjectFolder(
+                objectEntity: $object,
+                register: $object->getRegister(),
+                schema: $object->getSchema()
+            );
+            
+            if (!$objectFolder) {
+                $this->logger->error("publishFile: Could not get object folder for object: " . $object->getId());
+                throw new Exception('Object folder not found.');
+            }
+            
+            $this->logger->info("publishFile: Object folder path: " . $objectFolder->getPath());
+            
+            // Debug: List all files in the object folder
+            try {
+                $objectFiles = $objectFolder->getDirectoryListing();
+                $objectFileNames = array_map(function($file) { return $file->getName(); }, $objectFiles);
+                $this->logger->info("publishFile: Files in object folder: " . json_encode($objectFileNames));
+            } catch (Exception $e) {
+                $this->logger->error("publishFile: Error listing object folder contents: " . $e->getMessage());
+            }
+            
+            try {
+                $this->logger->info("publishFile: Attempting to get file '$filePath' from object folder");
+                $file = $objectFolder->get($filePath);
+                $this->logger->info("publishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
+            } catch (NotFoundException $e) {
+                $this->logger->error("publishFile: File '$filePath' not found in object folder. NotFoundException: " . $e->getMessage());
+                throw new Exception('File not found.');
+            } catch (Exception $e) {
+                $this->logger->error("publishFile: Unexpected error getting file from object folder: " . $e->getMessage());
+                throw new Exception('File not found.');
+            }
 
-        return $file;
+            // Verify file exists and is a File instance
+            if (!$file instanceof File) {
+                $this->logger->error("publishFile: Found node is not a File instance, it's a: " . get_class($file));
+                throw new Exception('File not found.');
+            }
+
+            $this->logger->info("publishFile: Creating share link for file: " . $file->getPath());
+
+            // Create share link for the file
+            $this->createShareLink(path: $file->getPath());
+
+            $this->logger->info("publishFile: Successfully published file: " . $file->getName());
+            return $file;
+        });
     }
 
     /**
@@ -1756,24 +1841,72 @@ class FileService
      */
     public function unpublishFile(ObjectEntity | string $object, string $filePath): File
     {
-        // If string ID provided, try to find the object entity
-        if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
-        }
+        return $this->executeWithFileUserContext(function () use ($object, $filePath): File {
+            // If string ID provided, try to find the object entity
+            if (is_string($object) === true) {
+                $object = $this->objectEntityMapper->find($object);
+            }
 
-        // Get the file node
-        $fullPath = $this->getObjectFilePath($object, $filePath);
-        $file = $this->getNode($fullPath);
+            // Debug logging - original file path
+            $originalFilePath = $filePath;
+            $this->logger->info("unpublishFile: Original file path received: '$originalFilePath'");
 
-        // Verify file exists and is a File instance
-        if (!$file instanceof File) {
-            throw new Exception('File not found.');
-        }
+            // Clean and decode the file path
+            $filePath = trim(string: $filePath, characters: '/');
+            $this->logger->info("unpublishFile: After trim: '$filePath'");
+            
+            $filePath = urldecode($filePath);
+            $this->logger->info("unpublishFile: After urldecode: '$filePath'");
 
-        // Remove all share links from the file
-        $this->deleteShareLinks(file: $file);
+            // Get the object folder (this is where the files actually are)
+            $objectFolder = $this->getObjectFolder(
+                objectEntity: $object,
+                register: $object->getRegister(),
+                schema: $object->getSchema()
+            );
+            
+            if (!$objectFolder) {
+                $this->logger->error("unpublishFile: Could not get object folder for object: " . $object->getId());
+                throw new Exception('Object folder not found.');
+            }
+            
+            $this->logger->info("unpublishFile: Object folder path: " . $objectFolder->getPath());
+            
+            // Debug: List all files in the object folder
+            try {
+                $objectFiles = $objectFolder->getDirectoryListing();
+                $objectFileNames = array_map(function($file) { return $file->getName(); }, $objectFiles);
+                $this->logger->info("unpublishFile: Files in object folder: " . json_encode($objectFileNames));
+            } catch (Exception $e) {
+                $this->logger->error("unpublishFile: Error listing object folder contents: " . $e->getMessage());
+            }
+            
+            try {
+                $this->logger->info("unpublishFile: Attempting to get file '$filePath' from object folder");
+                $file = $objectFolder->get($filePath);
+                $this->logger->info("unpublishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
+            } catch (NotFoundException $e) {
+                $this->logger->error("unpublishFile: File '$filePath' not found in object folder. NotFoundException: " . $e->getMessage());
+                throw new Exception('File not found.');
+            } catch (Exception $e) {
+                $this->logger->error("unpublishFile: Unexpected error getting file from object folder: " . $e->getMessage());
+                throw new Exception('File not found.');
+            }
 
-        return $file;
+            // Verify file exists and is a File instance
+            if (!$file instanceof File) {
+                $this->logger->error("unpublishFile: Found node is not a File instance, it's a: " . get_class($file));
+                throw new Exception('File not found.');
+            }
+
+            $this->logger->info("unpublishFile: Removing share links for file: " . $file->getPath());
+
+            // Remove all share links from the file
+            $this->deleteShareLinks(file: $file);
+
+            $this->logger->info("unpublishFile: Successfully unpublished file: " . $file->getName());
+            return $file;
+        });
     }
 
     /**
