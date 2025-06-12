@@ -264,6 +264,16 @@ class RenderObject
     }//end clearCache()
 
 
+	/**
+	 * Add formatted files to the files array in the entity.
+	 *
+	 * @param ObjectEntity $object The entity to add the files to
+	 *
+	 * @return ObjectEntity The updated object
+	 *
+	 * @throws \OCP\Files\InvalidPathException
+	 * @throws \OCP\Files\NotFoundException
+	 */
 	private function renderFiles (ObjectEntity $object) : ObjectEntity
 	{
 		$files = $this->fileService->getFiles(object: $object, sharedFilesOnly: true);
