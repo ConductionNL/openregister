@@ -67,6 +67,7 @@ use OCP\Share\IManager;
 use OCP\Share\IShare;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
+use OCP\SystemTag\TagNotFoundException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -316,7 +317,7 @@ class FileService
      * @phpstan-return Node|null
      */
     public function createObjectFolder(
-        ObjectEntity $objectEntity,
+        ObjectEntity | string $objectEntity,
         Register | int | null $register = null,
         Schema | int | null $schema = null,
         ?string $folderPath = null
@@ -364,7 +365,7 @@ class FileService
      * @phpstan-return Node|null
      */
     public function getObjectFolder(
-        ObjectEntity $objectEntity,
+        ObjectEntity | string $objectEntity,
         Register | int | null $register = null,
         Schema | int | null $schema = null
     ): ?Node {
@@ -396,6 +397,8 @@ class FileService
                 ['message' => $e->getMessage(), 'exception' => $e]
             );
 
+			vaR_dump($e->getMessage());
+
             return null;
         }
     }
@@ -418,7 +421,7 @@ class FileService
      * @phpstan-return string
      */
     private function getObjectFolderPath(
-        ObjectEntity $objectEntity,
+        ObjectEntity | string $objectEntity,
         Register | int | null $register = null,
         Schema | int | null $schema = null
     ): string {
@@ -438,12 +441,14 @@ class FileService
         }
 
         // If Schema is not provided, try to get it from the Object Entity
-        if ($schema === null) {
+        if ($schema === null && $objectEntity instanceof ObjectEntity === true) {
             $schema = $this->schemaMapper->find($objectEntity->getSchema());
             if ($register === null) {
                 $register = $this->registerMapper->find($objectEntity->getRegister());
             }
-        }
+        } else if ($schema === null) {
+			throw new Exception(message: 'Could not deduce register and schema from object uuid');
+		}
 
         // Generate the folder path components
         $registerFolderName = $this->getRegisterFolderName($register);
@@ -468,8 +473,12 @@ class FileService
      * @psalm-suppress PossiblyNullReference
      * @phpstan-return string
      */
-    private function getObjectFolderName(ObjectEntity $objectEntity): string
+    private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
+		if (is_string($objectEntity) === true) {
+			return $objectEntity;
+		}
+
         return $objectEntity->getUuid() ?? (string) $objectEntity->getId();
     }
 
@@ -573,19 +582,19 @@ class FileService
     {
         // Store the current user for restoration later
         $originalUser = $this->userSession->getUser();
-        
+
         try {
             // Get the OpenRegister user
             $openRegisterUser = $this->getUser();
-            
+
             // Switch to the OpenRegister user context
             $this->userSession->setUser($openRegisterUser);
-            
+
             $this->logger->debug(
-                'Switched to OpenRegister user for file operations. Original user: {originalUser}', 
+                'Switched to OpenRegister user for file operations. Original user: {originalUser}',
                 ['originalUser' => $originalUser ? $originalUser->getUID() : 'anonymous']
             );
-            
+
             return $originalUser;
         } catch (Exception $e) {
             $this->logger->error('Failed to switch to file operation user: ' . $e->getMessage());
@@ -612,7 +621,7 @@ class FileService
             if ($originalUser !== null) {
                 $this->userSession->setUser($originalUser);
                 $this->logger->debug(
-                    'Switched back to original user: {originalUser}', 
+                    'Switched back to original user: {originalUser}',
                     ['originalUser' => $originalUser->getUID()]
                 );
             } else {
@@ -639,7 +648,7 @@ class FileService
      * @return mixed The return value from the callable
      *
      * @throws Exception If user switching fails or the callable throws
-     * 
+     *
      * @todo Optimaly speaking, we should not need to use this method at all. So its here for a "now" solution. but should be removed for other solutions in the future.
      *
      * @psalm-template T
@@ -652,17 +661,17 @@ class FileService
     private function executeWithFileUserContext(callable $operation): mixed
     {
         $originalUser = null;
-        
+
         try {
             // Switch to file operation user
             $originalUser = $this->switchToFileOperationUser();
-            
+
             // Execute the operation
             $result = $operation();
-            
+
             // Switch back to original user
             $this->switchBackToOriginalUser($originalUser);
-            
+
             return $result;
         } catch (Exception $e) {
             // Ensure we always switch back, even if operation fails
@@ -1039,10 +1048,10 @@ class FileService
         foreach ($shares as $share) {
             try {
                 $this->shareManager->deleteShare($share);
-                $this->logger->info("Successfully deleted share for path: {$share->getPath()}.");
+                $this->logger->info("Successfully deleted share for path: {$share->getNode()->getPath()}.");
             } catch (Exception $e) {
-                $this->logger->error("Failed to delete share for path {$share->getPath()}: ".$e->getMessage());
-                throw new Exception("Failed to delete share for path {$share->getPath()}: ".$e->getMessage());
+                $this->logger->error("Failed to delete share for path {$share->getNode()->getPath()}: ".$e->getMessage());
+                throw new Exception("Failed to delete share for path {$share->getNode()->getPath()}: ".$e->getMessage());
             }
         }
 
@@ -1133,7 +1142,7 @@ class FileService
             // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
             $this->logger->info("updateFile: After trim: '$filePath'");
-            
+
             $filePath = urldecode($filePath);
             $this->logger->info("updateFile: After urldecode: '$filePath'");
 
@@ -1147,10 +1156,10 @@ class FileService
                         register: $object->getRegister(),
                         schema: $object->getSchema()
                     );
-                    
-                    if ($objectFolder) {
+
+                    if ($objectFolder !== null) {
                         $this->logger->info("updateFile: Object folder path: " . $objectFolder->getPath());
-                        
+
                         // Try to get the file from object folder
                         try {
                             $file = $objectFolder->get($filePath);
@@ -1192,7 +1201,7 @@ class FileService
             }
 
             // Update tags if provided
-            if (!empty($tags)) {
+            if (empty($tags) === false) {
                 // Get existing object tags to preserve them
                 $existingTags = $this->getFileTags(fileId: $file->getId());
                 $objectTags = array_filter($existingTags, static function (string $tag): bool {
@@ -1278,10 +1287,10 @@ class FileService
                                 register: $object->getRegister(),
                                 schema: $object->getSchema()
                             );
-                            
-                            if ($objectFolder) {
+
+                            if ($objectFolder !== null) {
                                 $this->logger->info("deleteFile: Object folder path: " . $objectFolder->getPath());
-                                
+
                                 // Try to get the file from object folder
                                 try {
                                     $fileNode = $objectFolder->get($filePath);
@@ -1299,7 +1308,7 @@ class FileService
                     }
 
                     // If object wasn't provided or file wasn't found in object folder, try user folder
-                    if (!$fileDeleted) {
+                    if ($fileDeleted === false) {
                         $this->logger->info("deleteFile: Trying user folder approach...");
                         $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
 
@@ -1357,7 +1366,7 @@ class FileService
         try {
             // Get the current files array from the object
             $objectFiles = $object->getFiles() ?? [];
-            
+
             if (empty($objectFiles)) {
                 $this->logger->debug("Object {$object->getId()} has no files array to update");
                 return;
@@ -1377,14 +1386,14 @@ class FileService
                 if (is_array($fileEntry)) {
                     // Check various possible path fields in the file entry
                     $pathFields = ['path', 'title', 'name', 'filename', 'accessUrl', 'downloadUrl'];
-                    
+
                     foreach ($pathFields as $field) {
                         if (isset($fileEntry[$field])) {
                             $entryPath = $fileEntry[$field];
                             $entryFileName = basename($entryPath);
-                            
+
                             // Check if this entry references the deleted file
-                            if ($entryPath === $deletedFilePath || 
+                            if ($entryPath === $deletedFilePath ||
                                 $entryFileName === $deletedFileName ||
                                 str_ends_with($entryPath, $deletedFilePath)) {
                                 $shouldKeep = false;
@@ -1396,7 +1405,7 @@ class FileService
                 } else if (is_string($fileEntry)) {
                     // Handle simple string entries
                     $entryFileName = basename($fileEntry);
-                    if ($fileEntry === $deletedFilePath || 
+                    if ($fileEntry === $deletedFilePath ||
                         $entryFileName === $deletedFileName ||
                         str_ends_with($fileEntry, $deletedFilePath)) {
                         $shouldKeep = false;
@@ -1413,9 +1422,9 @@ class FileService
             if (count($updatedFiles) < $originalCount) {
                 $removedCount = $originalCount - count($updatedFiles);
                 $this->logger->info("Removed $removedCount file reference(s) from object {$object->getId()}");
-                
-                $object->setFiles($updatedFiles);
-                $this->objectEntityMapper->update($object);
+
+//                $object->setFiles($updatedFiles);
+//                $this->objectEntityMapper->update($object);
             } else {
                 $this->logger->debug("No file references found to remove from object {$object->getId()}");
             }
@@ -1453,8 +1462,8 @@ class FileService
             }
 
             try {
-                $tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
-            } catch (Exception) {
+				$tag = $this->systemTagManager->getTag(tagName: $tagName, userVisible: true, userAssignable: true);
+			} catch (Exception $exception) {
                 $tag = $this->systemTagManager->createTag(tagName: $tagName, userVisible: true, userAssignable: true);
             }
 
@@ -1463,7 +1472,8 @@ class FileService
 
         // Only assign new tags if we have any.
         if (empty($newTagIds) === false) {
-            $this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $newTagIds);
+				$newTagIds = array_unique($newTagIds);
+				$this->systemTagMapper->assignTags(objId: $fileId, objectType: $this::FILE_TAG_TYPE, tagIds: $newTagIds);
         }
 
         // Find tags that exist in old tags but not in new tags (tags to be removed).
@@ -1494,8 +1504,12 @@ class FileService
      * @psalm-return string
      * @phpstan-return string
      */
-    private function generateObjectTag(ObjectEntity $objectEntity): string
+    private function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
+		if($objectEntity instanceof ObjectEntity === false) {
+			return 'object:'.$objectEntity;
+		}
+
         // Use UUID if available, otherwise fall back to the numeric ID
         $identifier = $objectEntity->getUuid() ?? (string) $objectEntity->getId();
         return 'object:' . $identifier;
@@ -1521,16 +1535,16 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null): File
     {
-        return $this->executeWithFileUserContext(function () use ($objectEntity, $fileName, $content, $share, $tags): File {
-            try {
-                // Create new file in the folder
-                $folder = $this->getObjectFolder(
-                    objectEntity: $objectEntity,
-                    register: $objectEntity->getRegister(),
-                    schema: $objectEntity->getSchema()
-                );
+        return $this->executeWithFileUserContext(function () use ($objectEntity, $fileName, $content, $share, $tags, $register, $schema): File {
+			try {
+				// Create new file in the folder
+				$folder = $this->getObjectFolder(
+					objectEntity: $objectEntity,
+					register: $objectEntity instanceof ObjectEntity === true ? $objectEntity->getRegister() : $register,
+					schema: $objectEntity instanceof ObjectEntity === true ? $objectEntity->getSchema() : $schema
+				);
 
                 // Check if the content is base64 encoded and decode it if necessary
                 if (base64_encode(base64_decode($content, true)) === $content) {
@@ -1545,8 +1559,8 @@ class FileService
                 /**
                  * @var File $file
                  */
-                $file = $folder->newFile($fileName);            
-                
+                $file = $folder->newFile($fileName);
+
                 // Write content to the file
                 $file->putContent($content);
 
@@ -1565,12 +1579,12 @@ class FileService
                 }
 
                 //@TODO: This sets the file array of an object, but we should check why this array is not added elsewhere
-                $objectFiles = $objectEntity->getFiles();
-
-                $objectFiles[] = $this->formatFile($file);
-                $objectEntity->setFiles($objectFiles);
-
-                $this->objectEntityMapper->update($objectEntity);
+//                $objectFiles = $objectEntity->getFiles();
+//
+//                $objectFiles[] = $this->formatFile($file);
+//                $objectEntity->setFiles($objectFiles);
+//
+//                $this->objectEntityMapper->update($objectEntity);
 
                 return $file;
 
@@ -1805,7 +1819,7 @@ class FileService
             // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
             $this->logger->info("publishFile: After trim: '$filePath'");
-            
+
             $filePath = urldecode($filePath);
             $this->logger->info("publishFile: After urldecode: '$filePath'");
 
@@ -1815,14 +1829,14 @@ class FileService
                 register: $object->getRegister(),
                 schema: $object->getSchema()
             );
-            
-            if (!$objectFolder) {
+
+            if ($objectFolder === false) {
                 $this->logger->error("publishFile: Could not get object folder for object: " . $object->getId());
                 throw new Exception('Object folder not found.');
             }
-            
+
             $this->logger->info("publishFile: Object folder path: " . $objectFolder->getPath());
-            
+
             // Debug: List all files in the object folder
             try {
                 $objectFiles = $objectFolder->getDirectoryListing();
@@ -1831,7 +1845,7 @@ class FileService
             } catch (Exception $e) {
                 $this->logger->error("publishFile: Error listing object folder contents: " . $e->getMessage());
             }
-            
+
             try {
                 $this->logger->info("publishFile: Attempting to get file '$filePath' from object folder");
                 $file = $objectFolder->get($filePath);
@@ -1845,7 +1859,7 @@ class FileService
             }
 
             // Verify file exists and is a File instance
-            if (!$file instanceof File) {
+            if ($file instanceof File === false) {
                 $this->logger->error("publishFile: Found node is not a File instance, it's a: " . get_class($file));
                 throw new Exception('File not found.');
             }
@@ -1890,7 +1904,7 @@ class FileService
             // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
             $this->logger->info("unpublishFile: After trim: '$filePath'");
-            
+
             $filePath = urldecode($filePath);
             $this->logger->info("unpublishFile: After urldecode: '$filePath'");
 
@@ -1900,14 +1914,14 @@ class FileService
                 register: $object->getRegister(),
                 schema: $object->getSchema()
             );
-            
-            if (!$objectFolder) {
+
+            if ($objectFolder === false) {
                 $this->logger->error("unpublishFile: Could not get object folder for object: " . $object->getId());
                 throw new Exception('Object folder not found.');
             }
-            
+
             $this->logger->info("unpublishFile: Object folder path: " . $objectFolder->getPath());
-            
+
             // Debug: List all files in the object folder
             try {
                 $objectFiles = $objectFolder->getDirectoryListing();
@@ -1916,7 +1930,7 @@ class FileService
             } catch (Exception $e) {
                 $this->logger->error("unpublishFile: Error listing object folder contents: " . $e->getMessage());
             }
-            
+
             try {
                 $this->logger->info("unpublishFile: Attempting to get file '$filePath' from object folder");
                 $file = $objectFolder->get($filePath);
@@ -1930,7 +1944,7 @@ class FileService
             }
 
             // Verify file exists and is a File instance
-            if (!$file instanceof File) {
+            if ($file instanceof File === false) {
                 $this->logger->error("unpublishFile: Found node is not a File instance, it's a: " . get_class($file));
                 throw new Exception('File not found.');
             }
