@@ -1048,10 +1048,10 @@ class FileService
         foreach ($shares as $share) {
             try {
                 $this->shareManager->deleteShare($share);
-                $this->logger->info("Successfully deleted share for path: {$share->getPath()}.");
+                $this->logger->info("Successfully deleted share for path: {$share->getNode()->getPath()}.");
             } catch (Exception $e) {
-                $this->logger->error("Failed to delete share for path {$share->getPath()}: ".$e->getMessage());
-                throw new Exception("Failed to delete share for path {$share->getPath()}: ".$e->getMessage());
+                $this->logger->error("Failed to delete share for path {$share->getNode()->getPath()}: ".$e->getMessage());
+                throw new Exception("Failed to delete share for path {$share->getNode()->getPath()}: ".$e->getMessage());
             }
         }
 
@@ -1142,7 +1142,7 @@ class FileService
             // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
             $this->logger->info("updateFile: After trim: '$filePath'");
-            
+
             $filePath = urldecode($filePath);
             $this->logger->info("updateFile: After urldecode: '$filePath'");
 
@@ -1156,10 +1156,10 @@ class FileService
                         register: $object->getRegister(),
                         schema: $object->getSchema()
                     );
-                    
+
                     if ($objectFolder !== null) {
                         $this->logger->info("updateFile: Object folder path: " . $objectFolder->getPath());
-                        
+
                         // Try to get the file from object folder
                         try {
                             $file = $objectFolder->get($filePath);
@@ -1287,10 +1287,10 @@ class FileService
                                 register: $object->getRegister(),
                                 schema: $object->getSchema()
                             );
-                            
+
                             if ($objectFolder !== null) {
                                 $this->logger->info("deleteFile: Object folder path: " . $objectFolder->getPath());
-                                
+
                                 // Try to get the file from object folder
                                 try {
                                     $fileNode = $objectFolder->get($filePath);
@@ -1819,7 +1819,7 @@ class FileService
             // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
             $this->logger->info("publishFile: After trim: '$filePath'");
-            
+
             $filePath = urldecode($filePath);
             $this->logger->info("publishFile: After urldecode: '$filePath'");
 
@@ -1829,14 +1829,14 @@ class FileService
                 register: $object->getRegister(),
                 schema: $object->getSchema()
             );
-            
+
             if ($objectFolder === false) {
                 $this->logger->error("publishFile: Could not get object folder for object: " . $object->getId());
                 throw new Exception('Object folder not found.');
             }
-            
+
             $this->logger->info("publishFile: Object folder path: " . $objectFolder->getPath());
-            
+
             // Debug: List all files in the object folder
             try {
                 $objectFiles = $objectFolder->getDirectoryListing();
@@ -1845,7 +1845,7 @@ class FileService
             } catch (Exception $e) {
                 $this->logger->error("publishFile: Error listing object folder contents: " . $e->getMessage());
             }
-            
+
             try {
                 $this->logger->info("publishFile: Attempting to get file '$filePath' from object folder");
                 $file = $objectFolder->get($filePath);
@@ -1904,7 +1904,7 @@ class FileService
             // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
             $this->logger->info("unpublishFile: After trim: '$filePath'");
-            
+
             $filePath = urldecode($filePath);
             $this->logger->info("unpublishFile: After urldecode: '$filePath'");
 
@@ -1914,14 +1914,14 @@ class FileService
                 register: $object->getRegister(),
                 schema: $object->getSchema()
             );
-            
+
             if ($objectFolder === false) {
                 $this->logger->error("unpublishFile: Could not get object folder for object: " . $object->getId());
                 throw new Exception('Object folder not found.');
             }
-            
+
             $this->logger->info("unpublishFile: Object folder path: " . $objectFolder->getPath());
-            
+
             // Debug: List all files in the object folder
             try {
                 $objectFiles = $objectFolder->getDirectoryListing();
@@ -1930,7 +1930,7 @@ class FileService
             } catch (Exception $e) {
                 $this->logger->error("unpublishFile: Error listing object folder contents: " . $e->getMessage());
             }
-            
+
             try {
                 $this->logger->info("unpublishFile: Attempting to get file '$filePath' from object folder");
                 $file = $objectFolder->get($filePath);
