@@ -264,6 +264,27 @@ class RenderObject
     }//end clearCache()
 
 
+	/**
+	 * Add formatted files to the files array in the entity.
+	 *
+	 * @param ObjectEntity $object The entity to add the files to
+	 *
+	 * @return ObjectEntity The updated object
+	 *
+	 * @throws \OCP\Files\InvalidPathException
+	 * @throws \OCP\Files\NotFoundException
+	 */
+	private function renderFiles (ObjectEntity $object) : ObjectEntity
+	{
+		$files = $this->fileService->getFiles(object: $object, sharedFilesOnly: true);
+
+		$renderedFiles = $this->fileService->formatFiles($files)['results'];
+
+		$object->setFiles($renderedFiles);
+
+		return $object;
+	}
+
     /**
      * Renders an entity with optional extensions and filters.
      *
@@ -315,6 +336,8 @@ class RenderObject
             }
         }
 
+		$entity = $this->renderFiles($entity);
+
         // Convert extend to an array if it's a string.
         if (is_string($extend) === true) {
             $extend = explode(',', $extend);
@@ -363,6 +386,8 @@ class RenderObject
                 $objects
             );
         }
+
+
 
         // Handle extensions if depth limit not reached.
         if (empty($extend) === false && $depth < 10) {

@@ -55,6 +55,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					type="text"
 					label="Property name of inversed relation"
 					:value.sync="properties.inversedBy" />
+				<NcInputField :disabled="loading"
+					type="text"
+					label="Register of schema referenced"
+					:value.sync="properties.register" />
 			</div>
 
 			<!-- File configuration -->
@@ -319,6 +323,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						type="text"
 						label="Property name of inversed relation"
 						:value.sync="properties.items.inversedBy" />
+					<NcInputField :disabled="loading"
+						type="text"
+						label="Register of schema referenced to"
+						:value.sync="properties.items.register" />
 					<NcCheckboxRadioSwitch
 						:disabled="loading"
 						:checked.sync="properties.items.cascadeDelete">
