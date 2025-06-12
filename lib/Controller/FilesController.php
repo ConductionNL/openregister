@@ -377,7 +377,7 @@ class FilesController extends Controller
             $data = $this->request->getParams();
             // Ensure tags is set to empty array if not provided
             $tags   = $data['tags'] ?? [];
-            $result = $this->fileService->updateFile($filePath, $data['content'], $tags);
+            $result = $this->fileService->updateFile($filePath, $data['content'], $tags, $this->objectService->getObject());
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(

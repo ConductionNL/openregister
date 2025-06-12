@@ -60,7 +60,7 @@ return [
         ['name' => 'files#show', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'GET'],
 		['name' => 'files#create', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST'],
 		['name' => 'files#createMultipart', 'url' => 'api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST'],	
-		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'POST'],
+		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'PUT'],
 		['name' => 'files#delete', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'DELETE'],
 		['name' => 'files#publish', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}/publish', 'verb' => 'POST'],
 		['name' => 'files#depublish', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}/depublish', 'verb' => 'POST'],	

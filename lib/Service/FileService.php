@@ -1111,9 +1111,10 @@ class FileService
      * This method updates the content and/or tags of an existing file. When updating tags,
      * it preserves any existing 'object:' tags while replacing other user-defined tags.
      *
-     * @param string $filePath The path (from root) where to save the file, including filename and extension
-     * @param mixed  $content  Optional content of the file. If null, only metadata like tags will be updated
-     * @param array  $tags     Optional array of tags to attach to the file (excluding object tags which are preserved)
+     * @param string             $filePath The path (from root) where to save the file, including filename and extension
+     * @param mixed              $content  Optional content of the file. If null, only metadata like tags will be updated
+     * @param array              $tags     Optional array of tags to attach to the file (excluding object tags which are preserved)
+     * @param ObjectEntity|null  $object   Optional object entity to search in object folder first
      *
      * @throws Exception If the file doesn't exist or if file operations fail
      *
@@ -1122,55 +1123,90 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function updateFile(string $filePath, mixed $content=null, array $tags=[]): File
+    public function updateFile(string $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object = null): File
     {
-        return $this->executeWithFileUserContext(function () use ($filePath, $content, $tags): File {
-            // @todo: this can update any file, we might want to check if the file is in the object folder first
+        return $this->executeWithFileUserContext(function () use ($filePath, $content, $tags, $object): File {
+            // Debug logging - original file path
+            $originalFilePath = $filePath;
+            $this->logger->info("updateFile: Original file path received: '$originalFilePath'");
+
+            // Clean and decode the file path
             $filePath = trim(string: $filePath, characters: '/');
+            $this->logger->info("updateFile: After trim: '$filePath'");
+            
+            $filePath = urldecode($filePath);
+            $this->logger->info("updateFile: After urldecode: '$filePath'");
 
-            try {
-                $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+            $file = null;
 
-                // Check if file exists and update it if it does.
+            // If object is provided, try to find the file in the object folder first
+            if ($object !== null) {
                 try {
-                    try {
-                        $file = $userFolder->get(path: $filePath);
-
-                        // If content is not null, update the file content
-                        if ($content !== null) {
-                            try {
-                                $file->putContent(data: $content);
-                            } catch (NotPermittedException $e) {
-                                $this->logger->error("Can't write content to file: ".$e->getMessage());
-                                throw new Exception("Can't write content to file: ".$e->getMessage());
-                            }
+                    $objectFolder = $this->getObjectFolder(
+                        objectEntity: $object,
+                        register: $object->getRegister(),
+                        schema: $object->getSchema()
+                    );
+                    
+                    if ($objectFolder) {
+                        $this->logger->info("updateFile: Object folder path: " . $objectFolder->getPath());
+                        
+                        // Try to get the file from object folder
+                        try {
+                            $file = $objectFolder->get($filePath);
+                            $this->logger->info("updateFile: Found file in object folder: " . $file->getName());
+                        } catch (NotFoundException) {
+                            $this->logger->warning("updateFile: File $filePath not found in object folder.");
                         }
-
-                        // Get existing object tags to preserve them
-                        $existingTags = $this->getFileTags(fileId: $file->getId());
-                        $objectTags = array_filter($existingTags, static function (string $tag): bool {
-                            return str_starts_with($tag, 'object:');
-                        });
-
-                        // Combine object tags with new tags, avoiding duplicates
-                        $allTags = array_unique(array_merge($objectTags, $tags));
-
-                        $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
-
-                        return $file;
-                    } catch (NotFoundException $e) {
-                        // File does not exist.
-                        $this->logger->warning("File $filePath does not exist.");
-                        throw new Exception("File $filePath does not exist");
                     }
-                } catch (NotPermittedException | InvalidPathException $e) {
-                    $this->logger->error("Can't update file $filePath: ".$e->getMessage());
-                    throw new Exception("Can't update file $filePath");
+                } catch (Exception $e) {
+                    $this->logger->error("updateFile: Error accessing object folder: " . $e->getMessage());
                 }
-            } catch (NotPermittedException $e) {
-                $this->logger->error("Can't update file $filePath: ".$e->getMessage());
-                throw new Exception("Can't update file $filePath");
             }
+
+            // If object wasn't provided or file wasn't found in object folder, try user folder
+            if ($file === null) {
+                $this->logger->info("updateFile: Trying user folder approach...");
+                try {
+                    $userFolder = $this->rootFolder->getUserFolder($this->getUser()->getUID());
+                    $file = $userFolder->get(path: $filePath);
+                    $this->logger->info("updateFile: Found file in user folder at path: $filePath");
+                } catch (NotFoundException $e) {
+                    $this->logger->error("updateFile: File $filePath not found in user folder either.");
+                    throw new Exception("File $filePath does not exist");
+                } catch (NotPermittedException | InvalidPathException $e) {
+                    $this->logger->error("updateFile: Can't access file $filePath: ".$e->getMessage());
+                    throw new Exception("Can't access file $filePath: ".$e->getMessage());
+                }
+            }
+
+            // Update the file content if provided
+            if ($content !== null) {
+                try {
+                    $file->putContent(data: $content);
+                    $this->logger->info("updateFile: Successfully updated file content: " . $file->getName());
+                } catch (NotPermittedException $e) {
+                    $this->logger->error("updateFile: Can't write content to file: ".$e->getMessage());
+                    throw new Exception("Can't write content to file: ".$e->getMessage());
+                }
+            }
+
+            // Update tags if provided
+            if (!empty($tags)) {
+                // Get existing object tags to preserve them
+                $existingTags = $this->getFileTags(fileId: $file->getId());
+                $objectTags = array_filter($existingTags, static function (string $tag): bool {
+                    return str_starts_with($tag, 'object:');
+                });
+
+                // Combine object tags with new tags, avoiding duplicates
+                $allTags = array_unique(array_merge($objectTags, $tags));
+
+                $this->attachTagsToFile(fileId: $file->getId(), tags: $allTags);
+                $this->logger->info("updateFile: Successfully updated file tags: " . $file->getName());
+            }
+
+            return $file;
         });
     }//end updateFile()
 
