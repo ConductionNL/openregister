@@ -1,0 +1,141 @@
+{
+	"or": [
+		{
+			"and": [
+				{ "==": [{ "var": "_parameters.brondatumArchiefprocedure.afleidingswijze" }, "afgehandeld"] },
+				{
+					"some": [
+						[
+							{ "var": "_parameters.brondatumArchiefprocedure.datumkenmerk" },
+							{ "var": "_parameters.brondatumArchiefprocedure.einddatumBekend" },
+							{ "var": "_parameters.brondatumArchiefprocedure.objecttype" },
+							{ "var": "_parameters.brondatumArchiefprocedure.registratie" },
+							{ "var": "_parameters.brondatumArchiefprocedure.procestermijn" }
+						],
+						{ "!!": { "var": "" } }
+					]
+				}
+			]
+		},
+		{
+			"and": [
+				{ "==": [{ "var": "_parameters.brondatumArchiefprocedure.afleidingswijze" }, "termijn"] },
+				{
+					"and": [
+						{
+							"some": [
+								[
+									{ "var": "_parameters.brondatumArchiefprocedure.datumkenmerk" },
+									{ "var": "_parameters.brondatumArchiefprocedure.einddatumBekend" },
+									{ "var": "_parameters.brondatumArchiefprocedure.objecttype" },
+									{ "var": "_parameters.brondatumArchiefprocedure.registratie" }
+								],
+								{ "!!": { "var": "" } }
+							]
+						},
+						{
+							"!": { "var": "_parameters.brondatumArchiefprocedure.procestermijn" }
+						}
+					]
+				}
+			]
+		},
+		{
+			"and": [
+				{ "==": [{ "var": "_parameters.brondatumArchiefprocedure.afleidingswijze" }, "ander_datumkenmerk"] },
+				{
+					"and": [
+						{
+							"none": [
+								[
+									{ "var": "_parameters.brondatumArchiefprocedure.datumkenmerk" },
+									{ "var": "_parameters.brondatumArchiefprocedure.objecttype" },
+									{ "var": "_parameters.brondatumArchiefprocedure.registratie" }
+								],
+								{ "!!": { "var": "" } }
+							]
+						},
+						{
+							"!!": { "var": "_parameters.brondatumArchiefprocedure.procestermijn" }
+						}
+					]
+				}
+			]
+		},
+		{
+			"and": [
+				{
+					"in": [
+						{ "var": "_parameters.brondatumArchiefprocedure.afleidingswijze" },
+						[
+							"ingangsdatum_besluit",
+							"vervaldatum_besluit",
+							"hoofdzaak",
+							"gerelateerde_zaak"
+						]
+					]
+				},
+				{
+					"some": [
+						[
+							{ "var": "_parameters.brondatumArchiefprocedure.datumkenmerk" },
+							{ "var": "_parameters.brondatumArchiefprocedure.objecttype" },
+							{ "var": "_parameters.brondatumArchiefprocedure.registratie" },
+							{ "var": "_parameters.brondatumArchiefprocedure.procestermijn" }
+						],
+						{ "!!": { "var": "" } }
+					]
+				}
+			]
+		},
+		{
+			"and": [
+				{ "==": [{ "var": "_parameters.brondatumArchiefprocedure.afleidingswijze" }, "eigenschap"] },
+				{
+					"and": [
+						{
+							"!": { "var": "_parameters.brondatumArchiefprocedure.datumkenmerk" }
+						},
+						{
+							"some": [
+								[
+									{ "var": "_parameters.brondatumArchiefprocedure.objecttype" },
+									{ "var": "_parameters.brondatumArchiefprocedure.registratie" },
+									{ "var": "_parameters.brondatumArchiefprocedure.procestermijn" }
+								],
+								{ "!!": { "var": "" } }
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"and": [
+				{ "==": [{ "var": "_parameters.brondatumArchiefprocedure.afleidingswijze" }, "zaakobject"] },
+				{
+					"and": [
+						{
+							"none": [
+								[
+									{ "var": "_parameters.brondatumArchiefprocedure.datumkenmerk" },
+									{ "var": "_parameters.brondatumArchiefprocedure.objecttype" }
+								],
+								{ "!!": { "var": "" } }
+							]
+						},
+						{
+							"some": [
+								[
+									{ "var": "_parameters.brondatumArchiefprocedure.registratie" },
+									{ "var": "_parameters.brondatumArchiefprocedure.procestermijn" }
+								],
+								{ "!!": { "var": "" } }
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}
