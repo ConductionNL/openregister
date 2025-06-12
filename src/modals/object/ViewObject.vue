@@ -83,23 +83,23 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div class="tabContainer">
 					<BTabs v-model="activeTab" content-class="mt-3" justified>
 						<BTab title="Properties" active>
-							<div class="search-list-table">
-								<table class="table">
+							<div class="viewTableContainer">
+								<table class="viewTable">
 									<thead>
-										<tr class="table-row">
-											<th>Property</th>
-											<th>Value</th>
+										<tr class="viewTableRow">
+											<th class="tableColumnConstrained">Property</th>
+											<th class="tableColumnExpanded">Value</th>
 										</tr>
 									</thead>
 									<tbody>
 										<tr
 											v-for="([key, value]) in objectProperties"
 											:key="key"
-											class="table-row">
-											<td class="prop-cell">
+											class="viewTableRow">
+											<td class="tableColumnConstrained prop-cell">
 												{{ key }}
 											</td>
-											<td class="value-cell">
+											<td class="tableColumnExpanded value-cell">
 												<pre
 													v-if="typeof value === 'object' && value !== null"
 													class="json-value">{{ formatValue(value) }}</pre>
@@ -131,14 +131,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div class="tabContainer">
 								<BTabs v-model="editorTab" content-class="mt-3" justified>
 									<BTab title="Form Editor" active>
-										<div v-if="currentSchema" class="form-editor">
+										<div v-if="currentSchema && currentSchema.properties" class="form-editor">
 											<NcNoteCard v-if="success" type="success" class="note-card">
 												<p>Object successfully modified</p>
 											</NcNoteCard>
 											<div v-for="(value, key) in currentSchema.properties"
 												:key="key"
 												class="form-field">
-												<div v-if="value.type === 'string'" class="field-label-row">
+												<div v-if="value && value.type === 'string'" class="field-label-row">
 													<NcTextField
 														v-model="formData[key] "
 														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
@@ -155,21 +155,21 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													</NcButton>
 												</div>
 
-												<NcCheckboxRadioSwitch v-else-if="value.type === 'boolean'"
+												<NcCheckboxRadioSwitch v-else-if="value && value.type === 'boolean'"
 													v-model="formData[key]"
 													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
 													type="switch" />
-												<NcTextField v-else-if="value.type === 'number'"
+												<NcTextField v-else-if="value && value.type === 'number'"
 													v-model.number="formData[key]"
 													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
 													type="number" />
 
-												<template v-else-if="value.type === 'array'">
+												<template v-else-if="value && value.type === 'array'">
 													<label class="field-label">
 														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
 													</label>
 													<ul class="array-editor">
-														<li v-for="(item, i) in value" :key="i">
+														<li v-for="(item, i) in formData[key] || []" :key="i">
 															<NcTextField v-model="formData[key][i]"
 																class="array-item-input" />
 															<NcButton size="small"
@@ -189,7 +189,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													</NcButton>
 												</template>
 
-												<template v-else-if="value.type === 'object' && value !== null">
+												<template v-else-if="value && value.type === 'object' && value !== null">
 													<label class="field-label">
 														{{ objectStore.enabledColumns.find(c => c.key === key)?.label || key }}
 													</label>
@@ -202,7 +202,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														@update:model-value="val => updateObjectField(key, val)" />
 												</template>
 
-												<NcTextField v-else-if="value === null"
+												<NcTextField v-else
 													v-model="formData[key]"
 													:label="objectStore.enabledColumns.find(c => c.key === key)?.label || key"
 													:placeholder="key"
@@ -210,7 +210,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 											</div>
 										</div>
 										<NcEmptyContent v-else>
-											Please select a schema to edit the object
+											<template v-if="!currentSchema">
+												Please select a schema to edit the object
+											</template>
+											<template v-else>
+												This schema has no properties defined for editing
+											</template>
 										</NcEmptyContent>
 									</BTab>
 									<BTab title="JSON Editor">
@@ -354,33 +359,63 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							</NcNoteCard>
 						</BTab>
 						<BTab title="Files">
-							<div v-if="objectStore.files?.results?.length > 0" class="search-list-table">
-								<table class="table">
+							<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
+								<table class="viewTable">
 									<thead>
-										<tr class="table-row">
-											<th />
-											<th>Name</th>
-											<th>Size</th>
-											<th>Type</th>
-											<th>Labels</th>
-											<th>Actions</th>
+										<tr class="viewTableRow">
+											<th class="tableColumnCheckbox">
+												<NcCheckboxRadioSwitch
+													:checked="allFilesSelected"
+													:indeterminate="someFilesSelected"
+													@update:checked="toggleSelectAllFiles" />
+											</th>
+											<th class="tableColumnExpanded">Name</th>
+											<th class="tableColumnConstrained">Size</th>
+											<th class="tableColumnConstrained">Type</th>
+											<th class="tableColumnConstrained">Labels</th>
+											<th class="tableColumnActions">
+												<NcActions v-if="selectedAttachments.length > 0" force-menu>
+													<template #icon>
+														<DotsHorizontal :size="20" />
+													</template>
+													<NcActionButton close-after-click @click="publishSelectedFiles">
+														<template #icon>
+															<FileOutline :size="20" />
+														</template>
+														Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
+													</NcActionButton>
+													<NcActionButton close-after-click @click="depublishSelectedFiles">
+														<template #icon>
+															<LockOutline :size="20" />
+														</template>
+														Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
+													</NcActionButton>
+													<NcActionButton close-after-click type="error" @click="deleteSelectedFiles">
+														<template #icon>
+															<Delete :size="20" />
+														</template>
+														Delete {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
+													</NcActionButton>
+												</NcActions>
+												<span v-else>Actions</span>
+											</th>
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="(attachment, i) in objectStore.files.results"
-											:key="`${attachment}${i}`"
+										<tr v-for="(attachment, i) in paginatedFiles"
+											:key="`${attachment.id}${i}`"
 											:class="{ 'active': activeAttachment === attachment.id }"
-											class="table-row"
+											class="viewTableRow"
 											@click="() => {
 												if (activeAttachment === attachment.id) activeAttachment = null
 												else activeAttachment = attachment.id
 											}">
-											<td>
+											<td class="tableColumnCheckbox">
 												<NcCheckboxRadioSwitch
 													:checked="selectedAttachments.includes(attachment.id)"
-													@update:checked="toggleSelection(attachment)" />
+													@update:checked="(checked) => toggleFileSelection(attachment.id, checked)" />
 											</td>
-											<td class="table-row-title">
+											<td class="tableColumnExpanded table-row-title">
 												<!-- Show lock icon if file is not shared -->
 												<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
 													v-tooltip="'Not shared'"
@@ -390,22 +425,57 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												<FileOutline v-else class="publishedIcon" :size="20" />
 												{{ attachment.name ?? attachment?.title }}
 											</td>
-											<td>{{ formatFileSize(attachment?.size) }}</td>
-											<td>{{ attachment?.type || 'No type' }}</td>
-											<td>
+											<td class="tableColumnConstrained">{{ formatFileSize(attachment?.size) }}</td>
+											<td class="tableColumnConstrained">{{ attachment?.type || 'No type' }}</td>
+											<td class="tableColumnConstrained">
 												<div class="fileLabelsContainer">
 													<NcCounterBubble v-for="label of attachment.labels" :key="label">
 														{{ label }}
 													</NcCounterBubble>
 												</div>
 											</td>
-											<td>
-												<NcButton @click="openFile(attachment)">
-													<template #icon>
-														<OpenInNew :size="20" />
-													</template>
-													View file
-												</NcButton>
+											<td class="tableColumnActions">
+												<NcActions>
+													<NcActionButton close-after-click @click="openFile(attachment)">
+														<template #icon>
+															<OpenInNew :size="20" />
+														</template>
+														View
+													</NcActionButton>
+													<NcActionButton close-after-click @click="editFileLabels(attachment)">
+														<template #icon>
+															<Tag :size="20" />
+														</template>
+														Labels
+													</NcActionButton>
+													<NcActionButton 
+														v-if="!attachment.accessUrl && !attachment.downloadUrl"
+														close-after-click 
+														@click="publishFile(attachment)">
+														<template #icon>
+															<FileOutline :size="20" />
+														</template>
+														Publish
+													</NcActionButton>
+													<NcActionButton 
+														v-else
+														close-after-click 
+														@click="depublishFile(attachment)">
+														<template #icon>
+															<LockOutline :size="20" />
+														</template>
+														Depublish
+													</NcActionButton>
+													<NcActionButton 
+														close-after-click 
+														type="error"
+														@click="deleteFile(attachment)">
+														<template #icon>
+															<Delete :size="20" />
+														</template>
+														Delete
+													</NcActionButton>
+												</NcActions>
 											</td>
 										</tr>
 									</tbody>
@@ -414,77 +484,25 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<NcNoteCard v-else type="info">
 								<p>No files have been attached to this object</p>
 							</NcNoteCard>
+
+							<!-- Files Pagination -->
+							<PaginationComponent
+								v-if="objectStore.files?.results?.length > filesPerPage"
+								:current-page="filesCurrentPage"
+								:total-pages="filesTotalPages"
+								:total-items="objectStore.files?.results?.length || 0"
+								:current-page-size="filesPerPage"
+								:min-items-to-show="5"
+								@page-changed="onFilesPageChanged"
+								@page-size-changed="onFilesPageSizeChanged" />
 						</BTab>
-						<BTab title="Audit Trails">
-							<div v-if="objectStore.auditTrails.results?.length" class="search-list-table">
-								<table class="table">
-									<thead>
-										<tr class="table-row">
-											<th>Date</th>
-											<th>User</th>
-											<th>Action</th>
-											<th>Changes</th>
-											<th>Actions</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(auditTrail, key) in objectStore.auditTrails.results"
-											:key="key"
-											class="table-row">
-											<td>{{ new Date(auditTrail.created).toLocaleString() }}</td>
-											<td>{{ auditTrail.userName }}</td>
-											<td>{{ auditTrail.action }}</td>
-											<td>{{ Object.keys(auditTrail.changed).length }}</td>
-											<td>
-												<NcButton @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
-													<template #icon>
-														<Eye :size="20" />
-													</template>
-													View details
-												</NcButton>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-							<NcNoteCard v-else type="info">
-								<p>No audit trails found for this object</p>
-							</NcNoteCard>
-						</BTab>
+
 					</BTabs>
 				</div>
 			</div>
 		</div>
 
 		<template #actions>
-			<NcActions
-				v-if="objectStore.files?.results?.length > 0 && tabOptions[activeTab] === 'Files'"
-				:primary="true"
-				:menu-name="loading ? 'Laden...' : 'Acties'"
-				class="checkboxListActionButton"
-				:inline="0"
-				title="Acties die je kan uitvoeren op deze publicatie">
-				<template #icon>
-					<span>
-						<DotsHorizontal v-if="!loading" :size="20" />
-						<NcLoadingIcon v-if="loading" :size="20" appearance="dark" />
-					</span>
-				</template>
-				<NcActionButton close-after-click :disabled="!filesHasPublished" @click="selectAllAttachments('published')">
-					<template #icon>
-						<SelectAllIcon v-if="!allPublishedSelected" :size="20" />
-						<SelectRemove v-else :size="20" />
-					</template>
-					{{ !allPublishedSelected ? "Selecteer" : "Deselecteer" }} alle gepubliceerde bijlagen
-				</NcActionButton>
-				<NcActionButton close-after-click :disabled="!filesHasUnpublished" @click="selectAllAttachments('unpublished')">
-					<template #icon>
-						<SelectAllIcon v-if="!allUnpublishedSelected" :size="20" />
-						<SelectRemove v-else :size="20" />
-					</template>
-					{{ !allUnpublishedSelected ? "Selecteer" : "Deselecteer" }} alle ongepubliceerde bijlagen
-				</NcActionButton>
-			</NcActions>
 			<NcButton v-if="activeTab !== 2" @click="activeTab = 2">
 				<template #icon>
 					<Pencil :size="20" />
@@ -502,6 +520,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<Upload :size="20" />
 				</template>
 				Add File
+			</NcButton>
+			<NcButton @click="viewAuditTrails">
+				<template #icon>
+					<TextBoxOutline :size="20" />
+				</template>
+				Audit Trails
 			</NcButton>
 			<NcButton type="primary" @click="closeModal">
 				<template #icon>
@@ -542,10 +566,11 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 
-import SelectAllIcon from 'vue-material-design-icons/SelectAll.vue'
-import SelectRemove from 'vue-material-design-icons/SelectRemove.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import Tag from 'vue-material-design-icons/Tag.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+
+import PaginationComponent from '../../components/PaginationComponent.vue'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -573,10 +598,10 @@ export default {
 		Plus,
 		Delete,
 		ContentSave,
-		SelectAllIcon,
-		SelectRemove,
+		TextBoxOutline,
+		Tag,
 		DotsHorizontal,
-		NcLoadingIcon,
+		PaginationComponent,
 	},
 	data() {
 		return {
@@ -593,11 +618,13 @@ export default {
 			editorTab: 0,
 			activeTab: 0,
 			objectEditors: {},
-			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files', 'Audit Trails'],
+			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
 			publishLoading: [],
 			depublishLoading: [],
 			fileIdsLoading: [],
+			filesCurrentPage: 1,
+			filesPerPage: 10,
 		}
 	},
 	computed: {
@@ -660,6 +687,22 @@ export default {
 		},
 		filesHasUnpublished() {
 			return objectStore.files.results?.some(item => !item.published)
+		},
+		paginatedFiles() {
+			const files = objectStore.files?.results || []
+			const start = (this.filesCurrentPage - 1) * this.filesPerPage
+			const end = start + this.filesPerPage
+			return files.slice(start, end)
+		},
+		filesTotalPages() {
+			const totalFiles = objectStore.files?.results?.length || 0
+			return Math.ceil(totalFiles / this.filesPerPage)
+		},
+		allFilesSelected() {
+			return this.paginatedFiles.length > 0 && this.paginatedFiles.every(file => this.selectedAttachments.includes(file.id))
+		},
+		someFilesSelected() {
+			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
 	},
 	watch: {
@@ -753,41 +796,7 @@ export default {
 		formatValue(val) {
 			return JSON.stringify(val, null, 2)
 		},
-		toggleSelection(attachment) {
-			const numericId = Number(attachment.id)
-			if (this.selectedAttachments.includes(numericId)) {
-				this.selectedAttachments = this.selectedAttachments.filter(itemId => itemId !== numericId)
-			} else {
-				this.selectedAttachments.push(numericId)
-			}
-		},
-		selectAllAttachments(mode) {
-			if (mode === 'published') {
-				const publishedIds = objectStore.files.results
-					?.filter(item => item.published)
-					.map(item => Number(item.id)) || []
 
-				const allSelected = publishedIds.length > 0 && publishedIds.every(id => this.selectedAttachments.includes(id))
-
-				if (!allSelected) {
-					this.selectedAttachments = Array.from(new Set([...this.selectedAttachments, ...publishedIds]))
-				} else {
-					this.selectedAttachments = this.selectedAttachments.filter(id => !publishedIds.includes(id))
-				}
-			} else if (mode === 'unpublished') {
-				const unpublishedIds = objectStore.files.results
-					?.filter(item => !item.published)
-					.map(item => Number(item.id)) || []
-
-				const allSelected = unpublishedIds.length > 0 && unpublishedIds.every(id => this.selectedAttachments.includes(id))
-
-				if (!allSelected) {
-					this.selectedAttachments = Array.from(new Set([...this.selectedAttachments, ...unpublishedIds]))
-				} else {
-					this.selectedAttachments = this.selectedAttachments.filter(id => !unpublishedIds.includes(id))
-				}
-			}
-		},
 		getTheme,
 		async copyToClipboard(text) {
 			try {
@@ -907,8 +916,17 @@ export default {
 		toDisplay(v) { return v === null ? '' : v },
 		toPayload(v) { return v === '' ? null : v },
 
-		addArrayItem(key) { this.formData[key].push('') },
-		removeArrayItem(key, i) { this.formData[key].splice(i, 1) },
+		addArrayItem(key) { 
+			if (!this.formData[key] || !Array.isArray(this.formData[key])) {
+				this.formData[key] = []
+			}
+			this.formData[key].push('') 
+		},
+		removeArrayItem(key, i) { 
+			if (this.formData[key] && Array.isArray(this.formData[key])) {
+				this.formData[key].splice(i, 1) 
+			}
+		},
 		updateObjectField(key, val) {
 			this.objectEditors[key] = val
 			try {
@@ -916,6 +934,197 @@ export default {
 			} catch (e) {
 				console.error('Invalid JSON format:', e)
 			}
+		},
+		toggleSelectAllFiles(checked) {
+			if (checked) {
+				// Add all current page files to selection
+				this.paginatedFiles.forEach(file => {
+					if (!this.selectedAttachments.includes(file.id)) {
+						this.selectedAttachments.push(file.id)
+					}
+				})
+			} else {
+				// Remove all current page files from selection
+				const currentPageIds = this.paginatedFiles.map(file => file.id)
+				this.selectedAttachments = this.selectedAttachments.filter(id => !currentPageIds.includes(id))
+			}
+		},
+		toggleFileSelection(fileId, checked) {
+			if (checked) {
+				if (!this.selectedAttachments.includes(fileId)) {
+					this.selectedAttachments.push(fileId)
+				}
+			} else {
+				this.selectedAttachments = this.selectedAttachments.filter(id => id !== fileId)
+			}
+		},
+		onFilesPageChanged(page) {
+			this.filesCurrentPage = page
+		},
+		onFilesPageSizeChanged(pageSize) {
+			this.filesPerPage = pageSize
+			this.filesCurrentPage = 1
+		},
+		viewAuditTrails() {
+			// Close the current modal and navigate to audit trails
+			this.closeModal()
+			navigationStore.setSelected('auditTrails')
+		},
+		async publishSelectedFiles() {
+			if (this.selectedAttachments.length === 0) return
+
+			try {
+				this.publishLoading = [...this.selectedAttachments]
+				
+				// Get the selected files
+				const selectedFiles = objectStore.files.results.filter(file => 
+					this.selectedAttachments.includes(file.id)
+				)
+
+				// Publish each file
+				for (const file of selectedFiles) {
+					// You'll need to implement the actual publish API call here
+					// This is a placeholder for the actual implementation
+					console.log('Publishing file:', file.name)
+				}
+
+				// Clear selection after successful operation
+				this.selectedAttachments = []
+				
+				// Refresh files list
+				// You may need to call a refresh method here
+				
+			} catch (error) {
+				console.error('Error publishing files:', error)
+			} finally {
+				this.publishLoading = []
+			}
+		},
+		async depublishSelectedFiles() {
+			if (this.selectedAttachments.length === 0) return
+
+			try {
+				this.depublishLoading = [...this.selectedAttachments]
+				
+				// Get the selected files
+				const selectedFiles = objectStore.files.results.filter(file => 
+					this.selectedAttachments.includes(file.id)
+				)
+
+				// Depublish each file
+				for (const file of selectedFiles) {
+					// You'll need to implement the actual depublish API call here
+					// This is a placeholder for the actual implementation
+					console.log('Depublishing file:', file.name)
+				}
+
+				// Clear selection after successful operation
+				this.selectedAttachments = []
+				
+				// Refresh files list
+				// You may need to call a refresh method here
+				
+			} catch (error) {
+				console.error('Error depublishing files:', error)
+			} finally {
+				this.depublishLoading = []
+			}
+		},
+		async deleteSelectedFiles() {
+			if (this.selectedAttachments.length === 0) return
+
+			const confirmed = confirm(`Are you sure you want to delete ${this.selectedAttachments.length} file${this.selectedAttachments.length > 1 ? 's' : ''}? This action cannot be undone.`)
+			if (!confirmed) return
+
+			try {
+				this.fileIdsLoading = [...this.selectedAttachments]
+				
+				// Get the selected files
+				const selectedFiles = objectStore.files.results.filter(file => 
+					this.selectedAttachments.includes(file.id)
+				)
+
+				// Delete each file
+				for (const file of selectedFiles) {
+					// You'll need to implement the actual delete API call here
+					// This is a placeholder for the actual implementation
+					console.log('Deleting file:', file.name)
+				}
+
+				// Clear selection after successful operation
+				this.selectedAttachments = []
+				
+				// Refresh files list
+				// You may need to call a refresh method here
+				
+			} catch (error) {
+				console.error('Error deleting files:', error)
+			} finally {
+				this.fileIdsLoading = []
+			}
+		},
+		async publishFile(file) {
+			try {
+				this.publishLoading.push(file.id)
+				
+				// You'll need to implement the actual publish API call here
+				// This is a placeholder for the actual implementation
+				console.log('Publishing single file:', file.name)
+				
+				// Refresh files list after successful operation
+				// You may need to call a refresh method here
+				
+			} catch (error) {
+				console.error('Error publishing file:', error)
+			} finally {
+				this.publishLoading = this.publishLoading.filter(id => id !== file.id)
+			}
+		},
+		async depublishFile(file) {
+			try {
+				this.depublishLoading.push(file.id)
+				
+				// You'll need to implement the actual depublish API call here
+				// This is a placeholder for the actual implementation
+				console.log('Depublishing single file:', file.name)
+				
+				// Refresh files list after successful operation
+				// You may need to call a refresh method here
+				
+			} catch (error) {
+				console.error('Error depublishing file:', error)
+			} finally {
+				this.depublishLoading = this.depublishLoading.filter(id => id !== file.id)
+			}
+		},
+		async deleteFile(file) {
+			const confirmed = confirm(`Are you sure you want to delete "${file.name}"? This action cannot be undone.`)
+			if (!confirmed) return
+
+			try {
+				this.fileIdsLoading.push(file.id)
+				
+				// You'll need to implement the actual delete API call here
+				// This is a placeholder for the actual implementation
+				console.log('Deleting single file:', file.name)
+				
+				// Remove from selection if it was selected
+				this.selectedAttachments = this.selectedAttachments.filter(id => id !== file.id)
+				
+				// Refresh files list after successful operation
+				// You may need to call a refresh method here
+				
+			} catch (error) {
+				console.error('Error deleting file:', error)
+			} finally {
+				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
+			}
+		},
+		editFileLabels(file) {
+			// You'll need to implement the labels editing functionality
+			// This could open a modal or inline editor for file labels
+			console.log('Editing labels for file:', file.name)
+			// Placeholder for labels editing implementation
 		},
 	},
 }
@@ -967,62 +1176,72 @@ export default {
 	color: var(--color-success);
 }
 
-/* Table styles */
-.search-list-table {
+/* Table styles matching AuditTrailIndex */
+.viewTableContainer {
 	overflow-x: auto;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	margin-bottom: 20px;
 }
 
-.table {
+.viewTable {
 	width: 100%;
 	border-collapse: collapse;
+	background-color: var(--color-main-background);
 }
 
-.table-row {
-	color: var(--color-main-text);
+.viewTableRow {
 	border-bottom: 1px solid var(--color-border);
+}
+
+.viewTableRow:hover {
 	background-color: var(--color-background-hover);
 }
 
-.table-row > td {
-	height: 55px;
-	padding: 0 10px;
-}
-
-.table-row > th {
-	padding: 0 10px;
-	background-color: var(--color-background-dark);
-	font-weight: bold;
-	text-align: left;
-}
-
-.table-row:hover {
-	background-color: var(--color-background-hover);
-}
-
-.table-row.active {
+.viewTableRow.active {
 	background-color: var(--color-primary-light);
+}
+
+.viewTableRow th {
+	background-color: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
+	font-weight: bold;
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.viewTableRow td {
+	padding: 12px;
+	vertical-align: middle;
+}
+
+.tableColumnCheckbox {
+	width: 50px;
+	text-align: center;
+}
+
+.tableColumnConstrained {
+	width: 150px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tableColumnExpanded {
+	width: auto;
+	min-width: 200px;
+}
+
+.tableColumnActions {
+	width: 100px;
+	text-align: center;
 }
 
 .table-row-title {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 1rem;
-	margin-top: 1rem;
-}
-
-.object-info {
-	margin-bottom: 1rem;
-}
-
-.object-info > div {
-	margin-bottom: 0.5rem;
 }
 
 .detail-grid {
@@ -1070,26 +1289,6 @@ export default {
 .detail-value-with-copy .detail-value {
 	flex: 1;
 	word-break: break-all;
-}
-
-.search-list-table {
-	overflow-x: auto;
-	border: 1px solid var(--color-border);
-	border-radius: 6px;
-	box-shadow: 0 2px 6px rgba(0,0,0,.08);
-}
-
-.table-row > th {
-	padding: 10px;
-	background: var(--color-primary-light);
-}
-
-.table tbody tr:nth-child(odd) {
-	background: var(--color-background-light);
-}
-
-.table tbody tr:hover {
-	background: var(--color-background-hover);
 }
 
 .prop-cell   {
