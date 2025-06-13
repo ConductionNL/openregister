@@ -479,8 +479,8 @@ class ObjectsController extends Controller
             $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
 
             // Verify that the object belongs to the specified register and schema.
-            if ($existingObject->getRegister() !== $resolvedRegisterId
-                || $existingObject->getSchema() !== $resolvedSchemaId
+            if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
+                || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
             ) {
                 return new JSONResponse(
                     ['error' => 'Object not found in specified register/schema'],
@@ -645,6 +645,11 @@ class ObjectsController extends Controller
             // If relations is empty, set objects to an empty array.
             $objects = [];
             $total   = 0;
+            $config = [
+                'limit' => 1,
+                'offset' => 0,
+                'page' => 1,
+            ];
         } else {
             // Get config and fetch objects
             $config = $this->getConfig($register, $schema, ids: $relations);
@@ -702,6 +707,11 @@ class ObjectsController extends Controller
             // If relations is empty, set objects to an empty array
             $objects = [];
             $total   = 0;
+            $config = [
+                'limit' => 1,
+                'offset' => 0,
+                'page' => 1,
+            ];
         } else {
             // Get config and fetch objects
             $config = $this->getConfig($register, $schema, $relations);

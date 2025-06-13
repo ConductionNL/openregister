@@ -301,11 +301,12 @@ class FileService
      *
      * This method creates a folder structure for an Object Entity within its parent
      * Schema and Register folders. It ensures the complete folder hierarchy exists.
+     * After creation, it sets the folder path on the ObjectEntity and persists it.
      *
-     * @param ObjectEntity      $objectEntity The Object Entity to create a folder for
-     * @param Register|int|null $register    Optional Register entity or ID
-     * @param Schema|int|null   $schema      Optional Schema entity or ID
-     * @param string|null       $folderPath  Optional custom folder path
+     * @param ObjectEntity|string $objectEntity The Object Entity to create a folder for
+     * @param Register|int|null  $register     Optional Register entity or ID
+     * @param Schema|int|null    $schema       Optional Schema entity or ID
+     * @param string|null        $folderPath   Optional custom folder path
      *
      * @return Node|null The created folder Node or null if creation fails
      *
@@ -330,11 +331,18 @@ class FileService
                 schema: $schema
             );
 
-            // Create the folder structure
-            $this->createFolder(folderPath: $path);
+            // Create the folder structure and get the Node
+            $node = $this->createFolder(folderPath: $path);
+
+            // If the objectEntity is an ObjectEntity instance, set the folder property to the node id (fileid) and persist
+            if ($objectEntity instanceof \OCA\OpenRegister\Db\ObjectEntity && $node !== null) {
+                // The node id is the fileid in the filecache table
+                $objectEntity->setFolder((string) $node->getId());
+                $this->objectEntityMapper->update($objectEntity);
+            }
 
             // Return the folder node
-            return $this->getNode(path: $path);
+            return $node;
         } catch (Exception $e) {
             // Log the error and return null
             $this->logger->error(
@@ -1273,11 +1281,11 @@ class FileService
      *
      * @throws Exception If creating the folder is not permitted
      *
-     * @return bool True if successfully created a new folder, false if folder already exists
+     * @return Node|null The Node object for the folder (existing or newly created), or null on failure
      */
-    public function createFolder(string $folderPath): bool
+    public function createFolder(string $folderPath): ?Node
     {
-        return $this->executeWithFileUserContext(function () use ($folderPath): bool {
+        return $this->executeWithFileUserContext(function () use ($folderPath): ?Node {
             $folderPath = trim(string: $folderPath, characters: '/');
 
             // Get the current user.
@@ -1306,15 +1314,16 @@ class FileService
                 }
 
                 try {
-                    $userFolder->get(path: $folderPath);
+                    // Try to get the folder if it already exists
+                    $node = $userFolder->get(path: $folderPath);
+                    $this->logger->info("This folder already exists: $folderPath");
+                    return $node;
                 } catch (NotFoundException) {
-                    $userFolder->newFolder(path: $folderPath);
-                    return true;
+                    // Folder does not exist, create it
+                    $node = $userFolder->newFolder(path: $folderPath);
+                    $this->logger->info("Created folder: $folderPath");
+                    return $node;
                 }
-
-                // Folder already exists.
-                $this->logger->info("This folder already exists: $folderPath");
-                return false;
             } catch (NotPermittedException $e) {
                 $this->logger->error("Can't create folder $folderPath: ".$e->getMessage());
                 throw new Exception("Can't create folder $folderPath");
