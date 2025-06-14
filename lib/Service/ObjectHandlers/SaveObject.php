@@ -224,7 +224,6 @@ class SaveObject
                 continue;
             }
 
-            $this->cascadeMultipleObjects($objectEntity, $definition, $data[$property]);
             $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
 			unset($data[$property]);
 		}
