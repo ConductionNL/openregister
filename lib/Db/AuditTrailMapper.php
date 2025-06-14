@@ -257,6 +257,11 @@ class AuditTrailMapper extends QBMapper
             $auditTrail->setUuid(Uuid::v4());
         }
 
+        // Set default expiration date if not provided (30 days from now)
+        if ($auditTrail->getExpires() === null) {
+            $auditTrail->setExpires(new \DateTime('+30 days'));
+        }
+
         $auditTrail->setSize(strlen(serialize( $object))); // Set the size to the byte size of the serialized object.
 
         return $this->insert(entity: $auditTrail);
@@ -348,6 +353,9 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
         $auditTrail->setSize(strlen(serialize($objectEntity->jsonSerialize()))); // Set the size to the byte size of the serialized object
+
+        // Set default expiration date (30 days from now)
+        $auditTrail->setExpires(new \DateTime('+30 days'));
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
@@ -925,5 +933,48 @@ class AuditTrailMapper extends QBMapper
             ];
         }
     }
+
+
+    /**
+     * Clear expired logs from the database
+     *
+     * This method deletes all audit trail logs that have expired (i.e., their 'expires' date is earlier than the current date and time)
+     * and have the 'expires' column set. This helps maintain database performance by removing old log entries that are no longer needed.
+     *
+     * @return bool True if any logs were deleted, false otherwise
+     *
+     * @throws \Exception Database operation exceptions
+     *
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    public function clearLogs(): bool
+    {
+        try {
+            // Get the query builder for database operations
+            $qb = $this->db->getQueryBuilder();
+
+            // Build the delete query to remove expired audit trail logs that have the 'expires' column set
+            $qb->delete('openregister_audit_trails')
+               ->where($qb->expr()->isNotNull('expires'))
+               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+
+            // Execute the query and get the number of affected rows
+            $result = $qb->executeStatement();
+
+            // Return true if any rows were affected (i.e., any logs were deleted)
+            return $result > 0;
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \OC::$server->getLogger()->error('Failed to clear expired audit trail logs: ' . $e->getMessage(), [
+                'app' => 'openregister',
+                'exception' => $e
+            ]);
+            
+            // Re-throw the exception so the caller knows something went wrong
+            throw $e;
+        }
+
+    }//end clearLogs()
 
 }//end class

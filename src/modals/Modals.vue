@@ -27,7 +27,10 @@ import { navigationStore } from '../store/store.js'
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
+		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
 		<UploadFiles />
+		<ViewSource />
+		<ViewConfiguration />
 	</div>
 </template>
 
@@ -55,6 +58,9 @@ import LockObject from './object/LockObject.vue'
 import ViewObject from './object/ViewObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
 import UploadFiles from './file/UploadFiles.vue'
+import MassDeleteObject from './object/MassDeleteObject.vue'
+import ViewSource from './source/ViewSource.vue'
+import ViewConfiguration from './configuration/ViewConfiguration.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -81,6 +87,9 @@ export default {
 		ViewObject,
 		DownloadObject,
 		UploadFiles,
+		MassDeleteObject,
+		ViewSource,
+		ViewConfiguration,
 	},
 }
 </script>

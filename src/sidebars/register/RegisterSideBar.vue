@@ -138,7 +138,7 @@ import { registerStore, dashboardStore, navigationStore } from '../../store/stor
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
-								<NcActionButton close-after-click  @click="editSchema(schema)">
+								<NcActionButton close-after-click @click="editSchema(schema)">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>

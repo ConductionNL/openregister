@@ -1,105 +1,125 @@
 <script setup>
 import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
 	<NcAppContent>
-		<div class="container">
+		<div class="viewContainer">
 			<!-- Header -->
-			<div class="header">
-				<h1>{{ t('openregister', 'Soft Deleted Items') }}</h1>
+			<div class="viewHeader">
+				<h1 class="viewHeaderTitleIndented">
+					{{ t('openregister', 'Soft Deleted Items') }}
+				</h1>
 				<p>{{ t('openregister', 'Manage and restore soft deleted items from your registers') }}</p>
 			</div>
 
 			<!-- Actions Bar -->
-			<div v-if="selectedItems.length > 0" class="selection-header">
-				<h3 class="selection-title">
-					{{ t('openregister', '{count} items selected', { count: selectedItems.length }) }}
-				</h3>
-			</div>
-
-			<div class="actions-bar">
-				<div class="actions">
-					<NcButton
-						v-if="selectedItems.length > 0"
-						type="primary"
-						@click="bulkRestore">
-						<template #icon>
-							<Restore :size="20" />
-						</template>
-						{{ t('openregister', 'Restore Selected') }}
-					</NcButton>
-					<NcButton
-						v-if="selectedItems.length > 0"
-						type="error"
-						@click="bulkDelete">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Permanently Delete Selected') }}
-					</NcButton>
-					<NcButton @click="refreshItems">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+			<div class="viewActionsBar">
+				<div class="viewInfo">
+					<span class="viewTotalCount">
+						{{ t('openregister', 'Showing {showing} of {total} deleted items', { showing: paginatedItems.length, total: deletedStore.deletedPagination.total }) }}
+					</span>
+					<span v-if="selectedItems.length > 0" class="viewIndicator">
+						({{ t('openregister', '{count} selected', { count: selectedItems.length }) }})
+					</span>
+				</div>
+				<div class="viewActions">
+					<NcActions
+						:force-name="true"
+						:inline="selectedItems.length > 0 ? 3 : 1"
+						menu-name="Actions">
+						<NcActionButton
+							v-if="selectedItems.length > 0"
+							type="primary"
+							close-after-click
+							@click="bulkRestore">
+							<template #icon>
+								<Restore :size="20" />
+							</template>
+							{{ t('openregister', 'Restore ({count})', { count: selectedItems.length }) }}
+						</NcActionButton>
+						<NcActionButton
+							v-if="selectedItems.length > 0"
+							type="error"
+							close-after-click
+							@click="bulkDelete">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							{{ t('openregister', 'Purge ({count})', { count: selectedItems.length }) }}
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="refreshItems">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							{{ t('openregister', 'Refresh') }}
+						</NcActionButton>
+					</NcActions>
 				</div>
 			</div>
 
 			<!-- Items Table -->
-			<div v-if="deletedStore.deletedLoading" class="loading">
-				<NcLoadingIcon :size="64" />
-				<p>{{ t('openregister', 'Loading deleted items...') }}</p>
-			</div>
-
-			<NcEmptyContent v-else-if="!filteredItems.length"
-				:name="t('openregister', 'No deleted items found')"
-				:description="t('openregister', 'There are no deleted items matching your current filters.')">
+			<NcEmptyContent v-if="deletedStore.deletedLoading || !filteredItems.length"
+				:name="emptyContentName"
+				:description="emptyContentDescription">
 				<template #icon>
-					<DeleteEmpty />
+					<NcLoadingIcon v-if="deletedStore.deletedLoading" />
+					<DeleteEmpty v-else />
 				</template>
 			</NcEmptyContent>
 
-			<div v-else class="table-container">
-				<table class="items-table">
+			<div v-else class="viewTableContainer">
+				<table class="viewTable itemsTable">
 					<thead>
 						<tr>
-							<th class="checkbox-column">
+							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:checked="allSelected"
 									:indeterminate="someSelected"
 									@update:checked="toggleSelectAll" />
 							</th>
 							<th>{{ t('openregister', 'Title') }}</th>
-							<th>{{ t('openregister', 'Register') }}</th>
-							<th>{{ t('openregister', 'Schema') }}</th>
+							<th class="tableColumnConstrained">
+								{{ t('openregister', 'Register') }}
+							</th>
+							<th class="tableColumnConstrained">
+								{{ t('openregister', 'Schema') }}
+							</th>
 							<th>{{ t('openregister', 'Deleted Date') }}</th>
 							<th>{{ t('openregister', 'Deleted By') }}</th>
 							<th>{{ t('openregister', 'Purge Date') }}</th>
-							<th>{{ t('openregister', 'Actions') }}</th>
+							<th class="tableColumnActions">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr v-for="item in paginatedItems"
 							:key="item.id"
-							class="item-row"
-							:class="{ selected: selectedItems.includes(item.id) }">
-							<td class="checkbox-column">
+							class="viewTableRow itemRow"
+							:class="{ viewTableRowSelected: selectedItems.includes(item.id) }">
+							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:checked="selectedItems.includes(item.id)"
 									@update:checked="(checked) => toggleItemSelection(item.id, checked)" />
 							</td>
-							<td class="title-column">
-								<div class="title-content">
+							<td class="tableColumnTitle">
+								<div class="titleContent">
 									<strong>{{ getItemTitle(item) }}</strong>
-									<span v-if="getItemDescription(item)" class="description">{{ getItemDescription(item) }}</span>
+									<span v-if="getItemDescription(item)" class="textDescription textEllipsis">{{ getItemDescription(item) }}</span>
 								</div>
 							</td>
-							<td>{{ getRegisterName(item['@self']?.register) }}</td>
-							<td>{{ getSchemaName(item['@self']?.schema) }}</td>
+							<td class="tableColumnConstrained">
+								{{ getRegisterName(item['@self']?.register) }}
+							</td>
+							<td class="tableColumnConstrained">
+								{{ getSchemaName(item['@self']?.schema) }}
+							</td>
 							<td>
-								<NcDateTime v-if="item['@self']?.deleted?.deleted" :timestamp="new Date(item['@self'].deleted.deleted)" :ignore-seconds="true" />
+								<span v-if="item['@self']?.deleted?.deleted">{{ formatPurgeDate(item['@self'].deleted.deleted) }}</span>
 								<span v-else>{{ t('openregister', 'Unknown') }}</span>
 							</td>
 							<td>{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}</td>
@@ -107,7 +127,7 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 								<span v-if="item['@self']?.deleted?.purgeDate">{{ formatPurgeDate(item['@self'].deleted.purgeDate) }}</span>
 								<span v-else>{{ t('openregister', 'No purge date set') }}</span>
 							</td>
-							<td class="actions-column">
+							<td class="tableColumnActions">
 								<NcActions>
 									<NcActionButton close-after-click @click="restoreItem(item)">
 										<template #icon>
@@ -129,36 +149,15 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 			</div>
 
 			<!-- Pagination -->
-			<div v-if="totalPages > 1" class="pagination">
-				<NcButton
-					:disabled="currentPage === 1"
-					@click="changePage(1)">
-					{{ t('openregister', 'First') }}
-				</NcButton>
-				<NcButton
-					:disabled="currentPage === 1"
-					@click="changePage(currentPage - 1)">
-					{{ t('openregister', 'Previous') }}
-				</NcButton>
-				<span class="page-info">
-					{{ t('openregister', 'Page {current} of {total}', { current: currentPage, total: totalPages }) }}
-				</span>
-				<NcButton
-					:disabled="currentPage === totalPages"
-					@click="changePage(currentPage + 1)">
-					{{ t('openregister', 'Next') }}
-				</NcButton>
-				<NcButton
-					:disabled="currentPage === totalPages"
-					@click="changePage(totalPages)">
-					{{ t('openregister', 'Last') }}
-				</NcButton>
-			</div>
+			<PaginationComponent
+				:current-page="currentPage"
+				:total-pages="totalPages"
+				:total-items="deletedStore.deletedPagination.total"
+				:current-page-size="deletedStore.deletedPagination.limit || 20"
+				:min-items-to-show="10"
+				@page-changed="onPageChanged"
+				@page-size-changed="onPageSizeChanged" />
 		</div>
-
-		<!-- Deletion Dialogs -->
-		<PermanentlyDeleteObject />
-		<PermanentlyDeleteMultiple />
 	</NcAppContent>
 </template>
 
@@ -166,40 +165,32 @@ import { deletedStore, registerStore, schemaStore, navigationStore } from '../..
 import {
 	NcAppContent,
 	NcEmptyContent,
-	NcButton,
 	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
 	NcActions,
 	NcActionButton,
-	NcDateTime,
 } from '@nextcloud/vue'
 import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 
-// Import deletion dialogs
-import PermanentlyDeleteObject from '../../modals/deleted/PermanentlyDeleteObject.vue'
-import PermanentlyDeleteMultiple from '../../modals/deleted/PermanentlyDeleteMultiple.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'DeletedIndex',
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
-		NcDateTime,
 		DeleteEmpty,
 		Restore,
 		Delete,
 		Refresh,
-		// Deletion dialogs
-		PermanentlyDeleteObject,
-		PermanentlyDeleteMultiple,
+		PaginationComponent,
 	},
 	data() {
 		return {
@@ -226,6 +217,22 @@ export default {
 		},
 		someSelected() {
 			return this.selectedItems.length > 0 && !this.allSelected
+		},
+		emptyContentName() {
+			if (deletedStore.deletedLoading) {
+				return t('openregister', 'Loading deleted items...')
+			} else if (!this.filteredItems.length) {
+				return t('openregister', 'No deleted items found')
+			}
+			return ''
+		},
+		emptyContentDescription() {
+			if (deletedStore.deletedLoading) {
+				return t('openregister', 'Please wait while we fetch your deleted items.')
+			} else if (!this.filteredItems.length) {
+				return t('openregister', 'There are no deleted items matching your current filters.')
+			}
+			return ''
 		},
 	},
 	watch: {
@@ -508,17 +515,37 @@ export default {
 			// TODO: Implement export functionality for deleted items
 		},
 		/**
-		 * Change page
+		 * Handle page change from pagination component
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 */
-		async changePage(page) {
+		async onPageChanged(page) {
 			try {
-				await deletedStore.fetchDeleted({ page })
+				await deletedStore.fetchDeleted({
+					page,
+					limit: deletedStore.deletedPagination.limit,
+				})
 				// Clear selection when page changes
 				this.selectedItems = []
 			} catch (error) {
 				// Handle error silently
+			}
+		},
+		/**
+		 * Handle page size change from pagination component
+		 * @param {number} pageSize - The new page size
+		 * @return {Promise<void>}
+		 */
+		async onPageSizeChanged(pageSize) {
+			try {
+				await deletedStore.fetchDeleted({
+					page: 1,
+					limit: pageSize,
+				})
+				// Clear selection when page size changes
+				this.selectedItems = []
+			} catch (error) {
+				console.error('Error changing page size:', error)
 			}
 		},
 		/**
@@ -552,148 +579,11 @@ export default {
 
 			return `${year}:${month}:${day} ${hours}:${minutes}`
 		},
+		formatBytes,
 	},
 }
 </script>
 
 <style scoped>
-.container {
-	padding: 20px;
-	max-width: 100%;
-}
-
-.header {
-	margin-bottom: 30px;
-}
-
-.header h1 {
-	margin: 0 0 10px 0;
-	font-size: 2rem;
-	font-weight: 300;
-}
-
-.header p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.selection-header {
-	margin-bottom: 20px;
-	padding: 10px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.selection-title {
-	margin: 0;
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.actions-bar {
-	display: flex;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 10px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.actions {
-	display: flex;
-	align-items: center;
-	gap: 15px;
-	margin-left: auto;
-}
-
-.loading {
-	text-align: center;
-	padding: 50px;
-}
-
-.loading p {
-	margin-top: 20px;
-	color: var(--color-text-maxcontrast);
-}
-
-.table-container {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 2px 4px var(--color-box-shadow);
-}
-
-.items-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.items-table th,
-.items-table td {
-	padding: 12px;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.items-table th {
-	background: var(--color-background-hover);
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.checkbox-column {
-	width: 50px;
-	text-align: center;
-}
-
-.title-column {
-	min-width: 200px;
-	max-width: 250px;
-}
-
-.title-content {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.description {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
-
-.actions-column {
-	width: 120px;
-	text-align: center;
-}
-
-.item-row:hover {
-	background: var(--color-background-hover);
-}
-
-.item-row.selected {
-	background: var(--color-primary-light);
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 20px;
-	margin-top: 30px;
-	padding: 20px;
-}
-
-.page-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9rem;
-}
-
-/* Responsive table adjustments */
-@media (max-width: 1200px) {
-	.title-column {
-		min-width: 150px;
-		max-width: 200px;
-	}
-}
+/* No component-specific styles needed - all styles are now generic in main.css */
 </style>
