@@ -13,8 +13,10 @@ import { navigationStore } from '../store/store.js'
 			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 			<SchemaDetails v-if="navigationStore.selected === 'schemaDetails'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
-			<SearchIndex v-if="navigationStore.selected === 'search'" />
+			<SearchIndex v-if="navigationStore.selected === 'tableSearch'" />
 			<ConfigurationsIndex v-if="navigationStore.selected === 'configurations'" />
+			<DeletedIndex v-if="navigationStore.selected === 'deleted'" />
+			<AuditTrailIndex v-if="navigationStore.selected === 'auditTrails'" />
 		</template>
 	</NcAppContent>
 </template>
@@ -30,6 +32,9 @@ import ObjectsIndex from './object/ObjectsIndex.vue'
 import SearchIndex from './search/SearchIndex.vue'
 import ConfigurationsIndex from './configuration/ConfigurationsIndex.vue'
 import RegisterDetail from './register/RegisterDetail.vue'
+import DeletedIndex from './deleted/DeletedIndex.vue'
+import AuditTrailIndex from './logs/AuditTrailIndex.vue'
+
 export default {
 	name: 'Views',
 	components: {
@@ -43,6 +48,8 @@ export default {
 		SearchIndex,
 		ConfigurationsIndex,
 		RegisterDetail,
+		DeletedIndex,
+		AuditTrailIndex,
 	},
 }
 </script>

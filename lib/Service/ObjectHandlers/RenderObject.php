@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\ObjectHandlers;
 use Adbar\Dot;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -36,6 +37,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -79,18 +82,24 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param IURLGenerator      $urlGenerator       URL generator service.
-     * @param FileService        $fileService        File service for managing files.
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for database operations.
-     * @param RegisterMapper     $registerMapper     Register mapper for database operations.
-     * @param SchemaMapper       $schemaMapper       Schema mapper for database operations.
+     * @param IURLGenerator           $urlGenerator         URL generator service.
+     * @param FileMapper              $fileMapper           File mapper for database operations.
+     * @param FileService             $fileService          File service for managing files.
+     * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper for database operations.
+     * @param RegisterMapper          $registerMapper       Register mapper for database operations.
+     * @param SchemaMapper            $schemaMapper         Schema mapper for database operations.
+     * @param ISystemTagManager       $systemTagManager     System tag manager for file tags.
+     * @param ISystemTagObjectMapper  $systemTagMapper      System tag object mapper for file tags.
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
+        private readonly FileMapper $fileMapper,
         private readonly FileService $fileService,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+        private readonly ISystemTagManager $systemTagManager,
+        private readonly ISystemTagObjectMapper $systemTagMapper
     ) {
 
     }//end __construct()
@@ -264,6 +273,113 @@ class RenderObject
     }//end clearCache()
 
 
+	/**
+	 * Add formatted files to the files array in the entity using FileMapper.
+	 *
+	 * This method retrieves files for an object using the FileMapper's getFilesForObject method,
+	 * which handles both folder property lookup and UUID-based fallback search.
+	 * The retrieved files are then formatted to match the FileService->formatFile() structure.
+	 * Share information is now included directly from the FileMapper database query.
+	 *
+	 * @param ObjectEntity $object The entity to add the files to
+	 *
+	 * @return ObjectEntity The updated object with files information
+	 *
+	 * @throws \RuntimeException If multiple nodes are found for the object's uuid
+	 */
+	private function renderFiles(ObjectEntity $object): ObjectEntity
+	{
+		// Use FileMapper to get files for the object (handles folder property and UUID fallback)
+		$fileRecords = $this->fileMapper->getFilesForObject($object);
+
+		// If no files found, set empty array and return
+		if (empty($fileRecords)) {
+			$object->setFiles([]);
+			return $object;
+		}
+
+		// Format the files to match FileService->formatFile() structure
+		$formattedFiles = [];
+		foreach ($fileRecords as $fileRecord) {
+			// Get file tags using our local getFileTags method
+			$labels = $this->getFileTags((string) $fileRecord['fileid']);
+
+			// Create formatted file metadata matching FileService->formatFile() structure
+			// Share information is now included directly from FileMapper
+			$formattedFile = [
+				'id'          => (string) $fileRecord['fileid'],
+				'path'        => $fileRecord['path'],
+				'title'       => $fileRecord['name'],
+				'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+				'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+				'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+				'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+				'size'        => (int) $fileRecord['size'],
+				'hash'        => $fileRecord['etag'] ?? '',
+				'published'   => $fileRecord['published'] ?? null,
+				'modified'    => isset($fileRecord['mtime']) ? 
+					(new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+				'labels'      => $labels,
+			];
+
+			$formattedFiles[] = $formattedFile;
+		}
+
+		// Set the formatted files on the object
+		$object->setFiles($formattedFiles);
+
+		return $object;
+	}
+
+	/**
+	 * Get the tags associated with a file.
+	 *
+	 * This method implements the same logic as FileService->getFileTags() to retrieve
+	 * tags associated with a file by its ID. It filters out internal 'object:' tags.
+	 *
+	 * @param string $fileId The ID of the file
+	 *
+	 * @return array<int, string> The list of tags associated with the file (excluding object: tags)
+	 *
+	 * @phpstan-return array<int, string>
+	 * @psalm-return array<int, string>
+	 */
+	private function getFileTags(string $fileId): array
+	{
+		// File tag type constant (same as in FileService)
+		$fileTagType = 'files';
+
+		// Get tag IDs for the file
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(
+			objIds: [$fileId],
+			objectType: $fileTagType
+		);
+
+		// Check if file has any tags
+		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+			return [];
+		}
+
+		// Get the actual tag objects by their IDs
+		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+
+		// Extract tag names from tag objects and filter out 'object:' tags
+		$tagNames = array_filter(
+			array_map(static function ($tag) {
+				return $tag->getName();
+			}, $tags),
+			static function ($tagName) {
+				// Filter out internal object tags
+				return !str_starts_with($tagName, 'object:');
+			}
+		);
+
+		// Return array of filtered tag names
+		return array_values($tagNames);
+	}
+
+
+
     /**
      * Renders an entity with optional extensions and filters.
      *
@@ -293,6 +409,7 @@ class RenderObject
         ?array $schemas=[],
         ?array $objects=[]
     ): ObjectEntity {
+
         // Add preloaded registers to the global cache.
         if (empty($registers) === false) {
             foreach ($registers as $id => $register) {
@@ -313,6 +430,8 @@ class RenderObject
                 $this->objectsCache[$id] = $object;
             }
         }
+
+		$entity = $this->renderFiles($entity);
 
         // Convert extend to an array if it's a string.
         if (is_string($extend) === true) {
@@ -362,6 +481,8 @@ class RenderObject
                 $objects
             );
         }
+
+
 
         // Handle extensions if depth limit not reached.
         if (empty($extend) === false && $depth < 10) {
@@ -475,6 +596,7 @@ class RenderObject
 
             $value = $data->get(key: $key);
 
+
             // Make sure arrays are arrays.
             if ($value instanceof Dot) {
                 $value = $value->jsonSerialize();
@@ -496,7 +618,8 @@ class RenderObject
                         );
 
                 $renderedValue = array_map(
-                        function (string | int $identifier) use ($depth, $keyExtends) {
+                        function (string | int | array $identifier) use ($depth, $keyExtends) {
+
                             $object = $this->getObject(id: $identifier);
                             if ($object === null) {
                                 $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
@@ -534,6 +657,15 @@ class RenderObject
                     continue;
                 }
 
+
+				if(filter_var($value, FILTER_VALIDATE_URL) !== false) {
+					$path = parse_url($value, PHP_URL_PATH);
+					$pathExploded = explode('/', $path);
+
+					$value = end($pathExploded);
+				}
+
+
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {
@@ -547,11 +679,13 @@ class RenderObject
                 }
 
                 if (is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1))->jsonSerialize();
+                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize());
                 } else {
-                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1))->jsonSerialize();
+                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1)->jsonSerialize());
                 }
+
             }//end if
+
         }//end foreach
 
         return $data->jsonSerialize();
@@ -702,8 +836,8 @@ class RenderObject
                             return false;
                         }//end if
 
-                        return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === (int) $object->getSchema();
-                    }
+						return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId == $object->getSchema();
+					}
                     ));
 
             $inversedUuids = array_map(

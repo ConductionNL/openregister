@@ -17,37 +17,48 @@ describe('Object Entity', () => {
 		const partialData: TObject = {
 			'@self': {
 				id: '',
+				uuid: 'test-uuid',
 				uri: 'test-uri',
+				version: null,
 				register: 'test-register',
 				schema: 'test-schema',
-				relations: '',
-				files: '',
-				folder: '',
-				updated: '',
-				created: '',
+				schemaVersion: null,
+				relations: null,
+				files: null,
+				folder: null,
+				textRepresentation: null,
 				locked: null,
-				owner: '',
-				organisation: null,
+				owner: null,
+				authorization: null,
 				application: null,
-				version: null,
+				organisation: null,
+				validation: null,
 				deleted: null,
 				geo: null,
 				retention: null,
+				size: null,
+				updated: '2023-01-01T00:00:00Z',
+				created: '2023-01-01T00:00:00Z',
+				published: null,
+				depublished: null,
 			},
 		}
 		const object = new ObjectEntity(partialData)
 
 		expect(object).toBeInstanceOf(Object)
 		expect(object['@self'].id).toBe('')
+		expect(object['@self'].uuid).toBe('test-uuid')
 		expect(object['@self'].uri).toBe('test-uri')
 		expect(object['@self'].register).toBe('test-register')
 		expect(object['@self'].schema).toBe('test-schema')
-		expect(object['@self'].relations).toBe('')
-		expect(object['@self'].files).toBe('')
-		expect(object['@self'].updated).toBe('')
-		expect(object['@self'].created).toBe('')
+		expect(object['@self'].relations).toBe(null)
+		expect(object['@self'].files).toBe(null)
+		expect(object['@self'].updated).toBe('2023-01-01T00:00:00Z')
+		expect(object['@self'].created).toBe('2023-01-01T00:00:00Z')
+		expect(object['@self'].published).toBe(null)
+		expect(object['@self'].depublished).toBe(null)
 		expect(object['@self'].locked).toBe(null)
-		expect(object['@self'].owner).toBe('')
+		expect(object['@self'].owner).toBe(null)
 		expect(object.validate().success).toBe(true)
 	})
 
@@ -102,9 +113,17 @@ describe('Object Entity', () => {
 	it('should handle null values in @self properly', () => {
 		const mockData = mockObjectData()[0]
 		mockData['@self'].locked = null
+		mockData['@self'].published = null
+		mockData['@self'].depublished = null
+		mockData['@self'].validation = null
+		mockData['@self'].authorization = null
 		const object = new ObjectEntity(mockData)
 
 		expect(object['@self'].locked).toBeNull()
+		expect(object['@self'].published).toBeNull()
+		expect(object['@self'].depublished).toBeNull()
+		expect(object['@self'].validation).toBeNull()
+		expect(object['@self'].authorization).toBeNull()
 		expect(object.validate().success).toBe(true)
 	})
 
@@ -112,28 +131,39 @@ describe('Object Entity', () => {
 		const minimalData: TObject = {
 			'@self': {
 				id: '',
+				uuid: 'test-uuid',
 				uri: 'test-uri',
+				version: null,
 				register: 'test-register',
 				schema: 'test-schema',
-				relations: '',
-				files: '',
-				folder: '',
-				updated: '',
-				created: '',
+				schemaVersion: null,
+				relations: null,
+				files: null,
+				folder: null,
+				textRepresentation: null,
 				locked: null,
-				owner: '',
-				organisation: null,
+				owner: null,
+				authorization: null,
 				application: null,
-				version: null,
+				organisation: null,
+				validation: null,
 				deleted: null,
 				geo: null,
 				retention: null,
+				size: null,
+				updated: '2023-01-01T00:00:00Z',
+				created: '2023-01-01T00:00:00Z',
+				published: null,
+				depublished: null,
 			},
 		}
 		const object = new ObjectEntity(minimalData)
 
 		expect(object['@self'].id).toBe('')
-		expect(object['@self'].folder).toBe('')
+		expect(object['@self'].folder).toBe(null)
+		expect(object['@self'].published).toBe(null)
+		expect(object['@self'].depublished).toBe(null)
+		expect(object['@self'].validation).toBe(null)
 		expect(object.validate().success).toBe(true)
 	})
 })
