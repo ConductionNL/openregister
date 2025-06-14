@@ -804,6 +804,200 @@ class ObjectService
     }//end getMapper()
 
 
+    /**
+     * Search objects using clean query structure
+     *
+     * This method provides a cleaner search interface that uses the new searchObjects
+     * method from ObjectEntityMapper with proper query structure. It automatically
+     * handles metadata filters, object field searches, and search options.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _limit: Maximum results to return
+     *                     - _offset: Results to skip (pagination)
+     *                     - _order: Sorting criteria
+     *                     - _search: Full-text search term
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array<int, ObjectEntity> An array of ObjectEntity objects matching the criteria
+     */
+    public function searchObjects(array $query = []): array
+    {
+        // Use the new searchObjects method from ObjectEntityMapper
+        $objects = $this->objectEntityMapper->searchObjects($query);
+
+        // Get unique register and schema IDs from the results for rendering context
+        $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
+        $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
+
+        // Load registers and schemas for rendering if needed
+        $registers = null;
+        $schemas = null;
+
+        if (!empty($registerIds)) {
+            $registerEntities = $this->registerMapper->findMultiple(ids: $registerIds);
+            $registers = array_combine(array_map(fn($register) => $register->getId(), $registerEntities), $registerEntities);
+        }
+
+        if (!empty($schemaIds)) {
+            $schemaEntities = $this->schemaMapper->findMultiple(ids: $schemaIds);
+            $schemas = array_combine(array_map(fn($schema) => $schema->getId(), $schemaEntities), $schemaEntities);
+        }
+
+        // Extract extend configuration from query if present
+        $extend = $query['_extend'] ?? [];
+        if (is_string($extend)) {
+            $extend = array_map('trim', explode(',', $extend));
+        }
+
+        // Extract fields configuration from query if present
+        $fields = $query['_fields'] ?? null;
+        if (is_string($fields)) {
+            $fields = array_map('trim', explode(',', $fields));
+        }
+
+        // Extract filter configuration from query if present
+        $filter = $query['_filter'] ?? $query['_unset'] ?? null;
+        if (is_string($filter)) {
+            $filter = array_map('trim', explode(',', $filter));
+        }
+
+        // Render each object through the render handler
+        foreach ($objects as $key => $object) {
+            $objects[$key] = $this->renderHandler->renderEntity(
+                entity: $object,
+                extend: $extend,
+                filter: $filter,
+                fields: $fields,
+                registers: $registers,
+                schemas: $schemas
+            );
+        }
+
+        return $objects;
+
+    }//end searchObjects()
+
+
+    /**
+     * Count objects using clean query structure
+     *
+     * This method provides a count interface that mirrors the searchObjects functionality
+     * but returns only the count of matching objects. It uses the same query structure
+     * as searchObjects but falls back to the existing countAll method.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *                     - _search: Full-text search term
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return int The number of objects matching the criteria
+     */
+    public function countObjects(array $query = []): int
+    {
+        // Extract metadata filters from @self
+        $metadataFilters = $query['@self'] ?? [];
+        $register = $metadataFilters['register'] ?? null;
+        $schema = $metadataFilters['schema'] ?? null;
+
+        // Extract options
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published = $query['_published'] ?? false;
+        $search = $query['_search'] ?? null;
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // Use the existing countAll method with the processed parameters
+        return $this->objectEntityMapper->countAll(
+            filters: $cleanQuery,
+            search: $search,
+            ids: null,
+            uses: null,
+            includeDeleted: $includeDeleted,
+            register: $register,
+            schema: $schema,
+            published: $published
+        );
+
+    }//end countObjects()
+
+
+    /**
+     * Get facets for objects using clean query structure
+     *
+     * This method provides facets for objects that match the search query structure.
+     * It uses the same query structure as searchObjects but returns facet information.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _search: Full-text search term
+     *                     - _queries: Specific fields to include in facets
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array The facets for objects matching the criteria
+     */
+    public function getFacetsForObjects(array $query = []): array
+    {
+        // Extract metadata filters from @self
+        $metadataFilters = $query['@self'] ?? [];
+        $register = $metadataFilters['register'] ?? null;
+        $schema = $metadataFilters['schema'] ?? null;
+
+        // Extract search term
+        $search = $query['_search'] ?? null;
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // Add register and schema to the clean query if provided
+        if ($register !== null) {
+            $cleanQuery['register'] = $register;
+        }
+        if ($schema !== null) {
+            $cleanQuery['schema'] = $schema;
+        }
+
+        // Add queries field if provided
+        if (isset($query['_queries'])) {
+            $cleanQuery['_queries'] = $query['_queries'];
+        }
+
+        // Use the existing getFacets method
+        return $this->objectEntityMapper->getFacets(
+            filters: $cleanQuery,
+            search: $search
+        );
+
+    }//end getFacetsForObjects()
+
+
     // From this point on only deprecated functions for backwards compatibility with OpenConnector. To remove after OpenConnector refactor.
 
 
