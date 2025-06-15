@@ -395,4 +395,250 @@ class MetaDataFacetHandler
 
     }//end getFieldLabel()
 
+
+    /**
+     * Get facetable metadata fields with their types and available options
+     *
+     * This method analyzes the database schema and data to determine which metadata
+     * fields can be used for faceting and what types of facets are appropriate.
+     *
+     * @param array $baseQuery Base query filters to apply for context
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Facetable metadata fields with their configuration
+     */
+    public function getFacetableFields(array $baseQuery = []): array
+    {
+        $facetableFields = [];
+
+        // Define predefined metadata fields with their types and descriptions
+        $metadataFields = [
+            'register' => [
+                'type' => 'categorical',
+                'description' => 'Register that contains the object',
+                'facet_types' => ['terms'],
+                'has_labels' => true
+            ],
+            'schema' => [
+                'type' => 'categorical', 
+                'description' => 'Schema that defines the object structure',
+                'facet_types' => ['terms'],
+                'has_labels' => true
+            ],
+            'uuid' => [
+                'type' => 'identifier',
+                'description' => 'Unique identifier of the object',
+                'facet_types' => ['terms'],
+                'has_labels' => false
+            ],
+            'owner' => [
+                'type' => 'categorical',
+                'description' => 'User who owns the object',
+                'facet_types' => ['terms'],
+                'has_labels' => false
+            ],
+            'organisation' => [
+                'type' => 'categorical',
+                'description' => 'Organisation associated with the object',
+                'facet_types' => ['terms'],
+                'has_labels' => false
+            ],
+            'application' => [
+                'type' => 'categorical',
+                'description' => 'Application that created the object',
+                'facet_types' => ['terms'],
+                'has_labels' => false
+            ],
+            'created' => [
+                'type' => 'date',
+                'description' => 'Date and time when the object was created',
+                'facet_types' => ['date_histogram', 'range'],
+                'intervals' => ['day', 'week', 'month', 'year'],
+                'has_labels' => false
+            ],
+            'updated' => [
+                'type' => 'date',
+                'description' => 'Date and time when the object was last updated',
+                'facet_types' => ['date_histogram', 'range'],
+                'intervals' => ['day', 'week', 'month', 'year'],
+                'has_labels' => false
+            ],
+            'published' => [
+                'type' => 'date',
+                'description' => 'Date and time when the object was published',
+                'facet_types' => ['date_histogram', 'range'],
+                'intervals' => ['day', 'week', 'month', 'year'],
+                'has_labels' => false
+            ],
+            'depublished' => [
+                'type' => 'date',
+                'description' => 'Date and time when the object was depublished',
+                'facet_types' => ['date_histogram', 'range'],
+                'intervals' => ['day', 'week', 'month', 'year'],
+                'has_labels' => false
+            ]
+        ];
+
+        // Check which fields actually have data in the database
+        foreach ($metadataFields as $field => $config) {
+            if ($this->hasFieldData($field, $baseQuery)) {
+                $fieldConfig = $config;
+                
+                // Add sample values for categorical fields
+                if ($config['type'] === 'categorical') {
+                    $fieldConfig['sample_values'] = $this->getSampleValues($field, $baseQuery, 10);
+                }
+                
+                // Add date range for date fields
+                if ($config['type'] === 'date') {
+                    $dateRange = $this->getDateRange($field, $baseQuery);
+                    if ($dateRange !== null) {
+                        $fieldConfig['date_range'] = $dateRange;
+                    }
+                }
+                
+                $facetableFields[$field] = $fieldConfig;
+            }
+        }
+
+        return $facetableFields;
+
+    }//end getFacetableFields()
+
+
+    /**
+     * Check if a metadata field has data in the database
+     *
+     * @param string $field     The field name to check
+     * @param array  $baseQuery Base query filters to apply
+     *
+     * @phpstan-param string $field
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return bool True if the field has non-null data
+     */
+    private function hasFieldData(string $field, array $baseQuery): bool
+    {
+        $queryBuilder = $this->db->getQueryBuilder();
+        
+        $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
+            ->from('openregister_objects')
+            ->where($queryBuilder->expr()->isNotNull($field));
+
+        // Apply base filters
+        $this->applyBaseFilters($queryBuilder, $baseQuery);
+
+        $result = $queryBuilder->executeQuery();
+        $count = (int) $result->fetchOne();
+
+        return $count > 0;
+
+    }//end hasFieldData()
+
+
+    /**
+     * Get sample values for a categorical field
+     *
+     * @param string $field     The field name
+     * @param array  $baseQuery Base query filters to apply
+     * @param int    $limit     Maximum number of sample values to return
+     *
+     * @phpstan-param string $field
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $limit
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $limit
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Sample values with their counts
+     */
+    private function getSampleValues(string $field, array $baseQuery, int $limit): array
+    {
+        $queryBuilder = $this->db->getQueryBuilder();
+        
+        $queryBuilder->select($field)
+            ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
+            ->from('openregister_objects')
+            ->where($queryBuilder->expr()->isNotNull($field))
+            ->groupBy($field)
+            ->orderBy('count', 'DESC')
+            ->setMaxResults($limit);
+
+        // Apply base filters
+        $this->applyBaseFilters($queryBuilder, $baseQuery);
+
+        $result = $queryBuilder->executeQuery();
+        $samples = [];
+
+        while ($row = $result->fetch()) {
+            $value = $row[$field];
+            $label = $this->getFieldLabel($field, $value);
+            
+            $samples[] = [
+                'value' => $value,
+                'label' => $label,
+                'count' => (int) $row['count']
+            ];
+        }
+
+        return $samples;
+
+    }//end getSampleValues()
+
+
+    /**
+     * Get date range for a date field
+     *
+     * @param string $field     The field name
+     * @param array  $baseQuery Base query filters to apply
+     *
+     * @phpstan-param string $field
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array|null Date range with min and max values, or null if no data
+     */
+    private function getDateRange(string $field, array $baseQuery): ?array
+    {
+        $queryBuilder = $this->db->getQueryBuilder();
+        
+        $queryBuilder->selectAlias($queryBuilder->createFunction("MIN($field)"), 'min_date')
+            ->selectAlias($queryBuilder->createFunction("MAX($field)"), 'max_date')
+            ->from('openregister_objects')
+            ->where($queryBuilder->expr()->isNotNull($field));
+
+        // Apply base filters
+        $this->applyBaseFilters($queryBuilder, $baseQuery);
+
+        $result = $queryBuilder->executeQuery();
+        $row = $result->fetch();
+
+        if ($row && $row['min_date'] && $row['max_date']) {
+            return [
+                'min' => $row['min_date'],
+                'max' => $row['max_date']
+            ];
+        }
+
+        return null;
+
+    }//end getDateRange()
+
 }//end class 

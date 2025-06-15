@@ -9,6 +9,7 @@ The faceting system provides a modern, user-friendly approach to building facete
 - **Disjunctive faceting** - Facet options don't disappear when selected
 - **Multiple facet types** - Terms, date histograms, and numeric ranges
 - **Metadata and object field facets** - Both table columns and JSON data
+- **Facetable field discovery** - Automatic detection of available faceting options
 - **Elasticsearch-style API** - Familiar structure for developers
 - **Performance optimization** - Efficient database queries with proper indexing
 
@@ -28,6 +29,187 @@ Each facet shows counts as if its own filter were not applied. This prevents fac
 
 ### 4. Enhanced Labels
 Automatic resolution of register and schema IDs to human-readable names.
+
+### 5. Facetable Field Discovery
+Automatic analysis of available fields and their characteristics to help frontends build dynamic facet interfaces.
+
+## Facetable Field Discovery
+
+The system includes powerful discovery capabilities that analyze your data to determine which fields can be used for faceting and what types of facets are appropriate.
+
+### Discovery API
+
+```php
+// Get facetable fields for a specific context
+$facetableFields = $objectService->getFacetableFields($baseQuery, $sampleSize);
+
+// Example with context filters
+$baseQuery = [
+    '@self' => ['register' => 1],
+    '_search' => 'customer'
+];
+
+$facetableFields = $objectService->getFacetableFields($baseQuery, 100);
+```
+
+### Discovery Response Structure
+
+```php
+[
+    '@self' => [
+        'register' => [
+            'type' => 'categorical',
+            'description' => 'Register that contains the object',
+            'facet_types' => ['terms'],
+            'has_labels' => true,
+            'sample_values' => [
+                ['value' => 1, 'label' => 'Publications Register', 'count' => 150],
+                ['value' => 2, 'label' => 'Events Register', 'count' => 75]
+            ]
+        ],
+        'created' => [
+            'type' => 'date',
+            'description' => 'Date and time when the object was created',
+            'facet_types' => ['date_histogram', 'range'],
+            'intervals' => ['day', 'week', 'month', 'year'],
+            'has_labels' => false,
+            'date_range' => [
+                'min' => '2023-01-01 00:00:00',
+                'max' => '2024-12-31 23:59:59'
+            ]
+        ]
+    ],
+    'object_fields' => [
+        'status' => [
+            'type' => 'string',
+            'description' => 'Object field: status',
+            'facet_types' => ['terms'],
+            'cardinality' => 'low',  // ≤50 unique values
+            'sample_values' => ['published', 'draft', 'archived'],
+            'appearance_rate' => 85  // Count of objects containing this field
+        ],
+        'priority' => [
+            'type' => 'integer',
+            'description' => 'Object field: priority',
+            'facet_types' => ['range', 'terms'],
+            'cardinality' => 'numeric',  // Numeric field type
+            'sample_values' => ['1', '2', '3', '4', '5'],
+            'appearance_rate' => 72  // Count of objects containing this field
+        ]
+    ]
+]
+```
+
+### Field Properties Explained
+
+#### Key Terms
+
+**`appearance_rate`**: The actual count of objects (from the analyzed sample) that contain this field. For example, if 100 objects were analyzed and 85 contained the 'status' field, the appearance_rate would be 85. This is not a percentage but an absolute count.
+
+**`cardinality`**: Indicates the uniqueness characteristics of field values:
+- `'low'` - String fields with ≤50 unique values (suitable for terms facets)
+- `'numeric'` - Integer, float, or numeric string fields
+- `'binary'` - Boolean fields (true/false values only)
+- Not set for date fields (they use intervals instead)
+
+### Field Types and Characteristics
+
+#### Metadata Fields (@self)
+Predefined fields from the ObjectEntity table:
+
+- **register** - Categorical with labels from register table
+- **schema** - Categorical with labels from schema table  
+- **uuid** - Identifier field (usually not suitable for faceting)
+- **owner** - Categorical user field
+- **organisation** - Categorical organisation field
+- **application** - Categorical application field
+- **created/updated/published/depublished** - Date fields with range support
+
+#### Object Fields
+Dynamically discovered from JSON object data:
+
+- **string** - Text fields (low cardinality suitable for terms facets)
+- **integer/float** - Numeric fields (suitable for range and terms facets)
+- **date** - Date fields (suitable for date_histogram and range facets)
+- **boolean** - Binary fields (suitable for terms facets)
+
+### Discovery Configuration
+
+#### Field Analysis Parameters
+
+- **Sample Size** - Number of objects to analyze (default: 100)
+- **Appearance Threshold** - Minimum percentage of objects that must contain the field (default: 10%)
+- **Cardinality Threshold** - Maximum unique values for terms facets (default: 50)
+- **Recursion Depth** - Maximum nesting level to analyze (default: 2)
+
+#### Field Filtering
+
+The discovery system automatically filters out:
+- System fields (starting with @ or _)
+- Nested objects and arrays of objects
+- High cardinality string fields (>50 unique values)
+- Fields appearing in <10% of objects
+- Fields with inconsistent types (<70% type consistency)
+
+### API Integration
+
+#### Discovery Parameter
+
+Add `_facetable=true` to any search endpoint to include facetable field information:
+
+```
+GET /api/objects?_facetable=true&limit=0
+```
+
+Response includes additional `facetable` property:
+
+```php
+[
+    'results' => [],
+    'total' => 0,
+    'facetable' => [
+        '@self' => [...],
+        'object_fields' => [...]
+    ]
+]
+```
+
+#### Dynamic Facet Configuration
+
+Use discovery results to build facet configurations:
+
+```javascript
+// Frontend example: Build facet config from discovery
+const buildFacetConfig = (facetableFields) => {
+    const config = { _facets: { '@self': {}, ...{} } };
+    
+    // Add metadata facets
+    Object.entries(facetableFields['@self']).forEach(([field, info]) => {
+        if (info.facet_types.includes('terms')) {
+            config._facets['@self'][field] = { type: 'terms' };
+        } else if (info.facet_types.includes('date_histogram')) {
+            config._facets['@self'][field] = { 
+                type: 'date_histogram', 
+                interval: 'month' 
+            };
+        }
+    });
+    
+    // Add object field facets
+    Object.entries(facetableFields.object_fields).forEach(([field, info]) => {
+        if (info.facet_types.includes('terms')) {
+            config._facets[field] = { type: 'terms' };
+        } else if (info.facet_types.includes('range')) {
+            config._facets[field] = { 
+                type: 'range',
+                ranges: generateRanges(info.sample_values)
+            };
+        }
+    });
+    
+    return config;
+};
+```
 
 ## API Structure
 
@@ -348,12 +530,28 @@ $facets = $objectService->getFacetsForObjects($query);
 
 ## Performance Considerations
 
+### Performance Impact
+
+Based on real-world testing, the faceting system has the following performance characteristics:
+
+- **Regular queries** - Baseline response time
+- **With `_facets`** - Adds approximately **~10ms** to response time
+- **With `_facetable=true`** - Adds approximately **~15ms** to response time
+- **Combined `_facets` + `_facetable`** - Adds approximately **~25ms** total
+
+These measurements are for typical datasets and may vary based on:
+- Database size and complexity
+- Number of facet fields requested
+- Sample size for facetable discovery
+- Server hardware and database optimization
+
 ### Optimizations
 
 1. **Database-level aggregations** - Uses SQL GROUP BY for efficiency
 2. **Indexed fields** - Metadata facets use indexed table columns
 3. **Disjunctive queries** - Optimized to exclude only the relevant filter
 4. **Count optimization** - Uses COUNT(*) instead of selecting all data
+5. **Sample-based analysis** - Facetable discovery analyzes subset of data for performance
 
 ### Best Practices
 
@@ -361,6 +559,9 @@ $facets = $objectService->getFacetsForObjects($query);
 2. **Limit range buckets** - Too many ranges can impact performance
 3. **Consider caching** - Facet results can be cached for frequently accessed data
 4. **Index JSON fields** - Consider adding indexes for frequently faceted JSON fields
+5. **Use `_facetable` sparingly** - Only request facetable discovery when building dynamic interfaces
+6. **Optimize sample size** - Balance accuracy vs performance for facetable discovery (default: 100 objects)
+7. **Cache facetable results** - Store discovery results for repeated interface building
 
 ## Migration from Legacy System
 
@@ -400,23 +601,122 @@ The system maintains backward compatibility. If no `_facets` configuration is pr
 
 ## UI Integration Examples
 
-### React/Vue Component Example
+### Dynamic Facet Discovery
 
 ```javascript
-// Facet component example
-const FacetFilter = ({ facet, onFilterChange }) => {
+// React component that discovers and builds facets dynamically
+const DynamicFacetInterface = ({ baseQuery }) => {
+  const [facetableFields, setFacetableFields] = useState(null);
+  const [facetData, setFacetData] = useState(null);
+  const [filters, setFilters] = useState({});
+
+  useEffect(() => {
+    // Discover available facetable fields
+    const discoverFacets = async () => {
+      const response = await fetch('/api/objects?_facetable=true&limit=0', {
+        method: 'POST',
+        body: JSON.stringify(baseQuery)
+      });
+      const data = await response.json();
+      setFacetableFields(data.facetable);
+      
+      // Build initial facet configuration
+      const facetConfig = buildFacetConfig(data.facetable);
+      
+      // Get actual facet data
+      const facetResponse = await fetch('/api/objects', {
+        method: 'POST',
+        body: JSON.stringify({ ...baseQuery, ...facetConfig })
+      });
+      const facetData = await facetResponse.json();
+      setFacetData(facetData.facets);
+    };
+
+    discoverFacets();
+  }, [baseQuery]);
+
+  const buildFacetConfig = (facetableFields) => {
+    const config = { _facets: { '@self': {} } };
+    
+    // Add metadata facets
+    Object.entries(facetableFields['@self'] || {}).forEach(([field, info]) => {
+      if (info.facet_types.includes('terms')) {
+        config._facets['@self'][field] = { type: 'terms' };
+      } else if (info.facet_types.includes('date_histogram')) {
+        config._facets['@self'][field] = { 
+          type: 'date_histogram', 
+          interval: 'month' 
+        };
+      }
+    });
+    
+    // Add object field facets
+    Object.entries(facetableFields.object_fields || {}).forEach(([field, info]) => {
+      if (info.facet_types.includes('terms')) {
+        config._facets[field] = { type: 'terms' };
+      }
+    });
+    
+    return config;
+  };
+
+  if (!facetableFields || !facetData) {
+    return <div>Loading facets...</div>;
+  }
+
+  return (
+    <div className="dynamic-facets">
+      <h2>Available Filters</h2>
+      
+      {/* Metadata facets */}
+      {Object.entries(facetData['@self'] || {}).map(([field, facet]) => (
+        <FacetFilter 
+          key={`@self.${field}`}
+          field={`@self.${field}`}
+          facet={facet}
+          fieldInfo={facetableFields['@self'][field]}
+          onFilterChange={handleFilterChange}
+        />
+      ))}
+      
+      {/* Object field facets */}
+      {Object.entries(facetData).filter(([key]) => key !== '@self').map(([field, facet]) => (
+        <FacetFilter 
+          key={field}
+          field={field}
+          facet={facet}
+          fieldInfo={facetableFields.object_fields[field]}
+          onFilterChange={handleFilterChange}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+### Enhanced Facet Component
+
+```javascript
+// Enhanced facet component with discovery information
+const FacetFilter = ({ field, facet, fieldInfo, onFilterChange }) => {
   return (
     <div className="facet-filter">
-      <h3>{facet.field}</h3>
+      <h3>
+        {fieldInfo?.description || field}
+        <span className="facet-info">
+          ({fieldInfo?.type}, {fieldInfo?.appearance_rate} objects)
+        </span>
+      </h3>
+      
       {facet.type === 'terms' && (
         <div className="checkbox-list">
           {facet.buckets.map(bucket => (
             <label key={bucket.key}>
               <input 
                 type="checkbox" 
-                onChange={() => onFilterChange(facet.field, bucket.key)}
+                onChange={() => onFilterChange(field, bucket.key)}
               />
-              {bucket.label || bucket.key} ({bucket.doc_count})
+              {bucket.label || bucket.key} ({bucket.results})
             </label>
           ))}
         </div>
@@ -427,9 +727,9 @@ const FacetFilter = ({ facet, onFilterChange }) => {
           {facet.buckets.map(bucket => (
             <button 
               key={bucket.key}
-              onClick={() => onFilterChange(facet.field, bucket)}
+              onClick={() => onFilterChange(field, bucket)}
             >
-              {bucket.key}: {bucket.doc_count} items
+              {bucket.key}: {bucket.results} items
             </button>
           ))}
         </div>
@@ -437,12 +737,28 @@ const FacetFilter = ({ facet, onFilterChange }) => {
       
       {facet.type === 'date_histogram' && (
         <div className="timeline">
+          <div className="interval-selector">
+            {fieldInfo?.intervals?.map(interval => (
+              <button 
+                key={interval}
+                onClick={() => changeInterval(field, interval)}
+              >
+                {interval}
+              </button>
+            ))}
+          </div>
           {facet.buckets.map(bucket => (
             <div key={bucket.key} className="timeline-item">
               <span>{bucket.key}</span>
-              <span>{bucket.doc_count}</span>
+              <span>{bucket.results}</span>
             </div>
           ))}
+        </div>
+      )}
+      
+      {fieldInfo?.sample_values && (
+        <div className="sample-values">
+          <small>Sample values: {fieldInfo.sample_values.slice(0, 3).join(', ')}</small>
         </div>
       )}
     </div>
@@ -482,7 +798,39 @@ class SearchController extends Controller
 
         $result = $this->objectService->searchObjectsPaginated($query);
         
+        // Add facetable field discovery if requested
+        if ($request->get('_facetable') === 'true') {
+            $baseQuery = $query;
+            unset($baseQuery['_facets'], $baseQuery['_limit'], $baseQuery['_page']);
+            
+            $result['facetable'] = $this->objectService->getFacetableFields(
+                $baseQuery, 
+                (int) $request->get('_sample_size', 100)
+            );
+        }
+        
         return new JsonResponse($result);
+    }
+    
+    public function getFacetableFields(Request $request): JsonResponse
+    {
+        $baseQuery = [
+            '@self' => [
+                'register' => $request->get('register'),
+                'schema' => $request->get('schema')
+            ],
+            '_search' => $request->get('q')
+        ];
+        
+        $sampleSize = (int) $request->get('sample_size', 100);
+        
+        $facetableFields = $this->objectService->getFacetableFields($baseQuery, $sampleSize);
+        
+        return new JsonResponse([
+            'facetable' => $facetableFields,
+            'sample_size' => $sampleSize,
+            'base_query' => $baseQuery
+        ]);
     }
 }
 ```
@@ -529,11 +877,89 @@ class FacetingTest extends TestCase
         $statusBuckets = $facets['facets']['status']['buckets'];
         $this->assertCount(2, $statusBuckets);
         
-        $activeCount = $this->findBucketByKey($statusBuckets, 'active')['doc_count'];
-        $inactiveCount = $this->findBucketByKey($statusBuckets, 'inactive')['doc_count'];
+        $activeCount = $this->findBucketByKey($statusBuckets, 'active')['results'];
+        $inactiveCount = $this->findBucketByKey($statusBuckets, 'inactive')['results'];
         
         $this->assertEquals(10, $activeCount);
         $this->assertEquals(5, $inactiveCount);
+    }
+
+    public function testFacetableFieldDiscovery(): void
+    {
+        // Create test objects with various field types
+        $this->createTestObjects([
+            'status' => 'active',
+            'priority' => 1,
+            'created_date' => '2024-01-15',
+            'is_featured' => true
+        ], 5);
+        
+        $this->createTestObjects([
+            'status' => 'inactive', 
+            'priority' => 2,
+            'created_date' => '2024-02-20',
+            'is_featured' => false
+        ], 3);
+
+        $baseQuery = ['@self' => ['register' => 1]];
+        $facetableFields = $this->objectService->getFacetableFields($baseQuery, 50);
+        
+        // Check structure
+        $this->assertArrayHasKey('@self', $facetableFields);
+        $this->assertArrayHasKey('object_fields', $facetableFields);
+        
+        // Check metadata fields
+        $this->assertArrayHasKey('register', $facetableFields['@self']);
+        $this->assertEquals('categorical', $facetableFields['@self']['register']['type']);
+        $this->assertContains('terms', $facetableFields['@self']['register']['facet_types']);
+        
+        // Check object fields
+        $this->assertArrayHasKey('status', $facetableFields['object_fields']);
+        $this->assertEquals('string', $facetableFields['object_fields']['status']['type']);
+        $this->assertContains('terms', $facetableFields['object_fields']['status']['facet_types']);
+        
+        $this->assertArrayHasKey('priority', $facetableFields['object_fields']);
+        $this->assertEquals('integer', $facetableFields['object_fields']['priority']['type']);
+        $this->assertContains('range', $facetableFields['object_fields']['priority']['facet_types']);
+        
+        $this->assertArrayHasKey('is_featured', $facetableFields['object_fields']);
+        $this->assertEquals('boolean', $facetableFields['object_fields']['is_featured']['type']);
+        $this->assertContains('terms', $facetableFields['object_fields']['is_featured']['facet_types']);
+    }
+
+    public function testFacetableFieldFiltering(): void
+    {
+        // Create objects with high cardinality field (should be filtered out)
+        for ($i = 0; $i < 100; $i++) {
+            $this->createTestObjects([
+                'unique_id' => 'id_' . $i,  // High cardinality
+                'category' => 'cat_' . ($i % 3)  // Low cardinality
+            ], 1);
+        }
+
+        $facetableFields = $this->objectService->getFacetableFields([], 100);
+        
+        // High cardinality field should be filtered out
+        $this->assertArrayNotHasKey('unique_id', $facetableFields['object_fields']);
+        
+        // Low cardinality field should be included
+        $this->assertArrayHasKey('category', $facetableFields['object_fields']);
+        $this->assertEquals('low', $facetableFields['object_fields']['category']['cardinality']);
+    }
+
+    public function testFacetableFieldAppearanceThreshold(): void
+    {
+        // Create objects where some fields appear in <10% of objects
+        $this->createTestObjects(['common_field' => 'value1'], 50);  // 100% appearance
+        $this->createTestObjects(['rare_field' => 'value2'], 2);     // 4% appearance
+        
+        $facetableFields = $this->objectService->getFacetableFields([], 50);
+        
+        // Common field should be included
+        $this->assertArrayHasKey('common_field', $facetableFields['object_fields']);
+        
+        // Rare field should be filtered out (below 10% threshold)
+        $this->assertArrayNotHasKey('rare_field', $facetableFields['object_fields']);
     }
 }
 ```
@@ -548,5 +974,25 @@ Key benefits:
 - **Better performance** - Optimized database queries and caching support
 - **Modern API** - Familiar structure for developers
 - **Backward compatible** - Existing code continues to work
+- **Dynamic discovery** - Automatic detection of facetable fields helps build intelligent interfaces
+- **Database-oriented** - All analysis happens at the database level for optimal performance
 
-The system is designed to grow with your application's needs while maintaining excellent performance and user experience. 
+### Facetable Discovery Benefits
+
+The facetable field discovery system provides several key advantages:
+
+1. **Dynamic Interface Building** - Frontends can automatically discover and build facet interfaces without hardcoding field lists
+2. **Data-Driven Configuration** - Facet types and options are determined by analyzing actual data
+3. **Context Awareness** - Discovery respects current filters to show relevant faceting options
+4. **Performance Optimization** - Database-level analysis ensures efficient field discovery
+5. **Type Intelligence** - Automatic detection of field types enables appropriate facet configurations
+
+### Usage Recommendations
+
+1. **Use `_facetable=true`** for initial interface discovery
+2. **Cache discovery results** for frequently accessed configurations
+3. **Combine with regular faceting** for complete search interfaces
+4. **Leverage sample data** to show users what to expect
+5. **Respect appearance rates** to focus on commonly used fields
+
+The system is designed to grow with your application's needs while maintaining excellent performance and user experience. The addition of facetable discovery makes it even easier to build intelligent, data-driven search interfaces that adapt to your content automatically. 

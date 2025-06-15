@@ -407,4 +407,457 @@ class MariaDbFacetHandler
 
     }//end generateRangeKey()
 
+
+    /**
+     * Get facetable object fields by analyzing JSON data in the database
+     *
+     * This method analyzes the JSON object data to determine which fields
+     * can be used for faceting and what types of facets are appropriate.
+     * It samples objects to determine field types and characteristics.
+     *
+     * @param array $baseQuery Base query filters to apply for context
+     * @param int   $sampleSize Maximum number of objects to analyze (default: 100)
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $sampleSize
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $sampleSize
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Facetable object fields with their configuration
+     */
+    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
+    {
+        // Get sample objects to analyze
+        $sampleObjects = $this->getSampleObjects($baseQuery, $sampleSize);
+        
+        if (empty($sampleObjects)) {
+            return [];
+        }
+
+        // Analyze fields across all sample objects
+        $fieldAnalysis = [];
+        
+        foreach ($sampleObjects as $objectData) {
+            $this->analyzeObjectFields($objectData, $fieldAnalysis);
+        }
+
+        // Convert analysis to facetable field configuration
+        $facetableFields = [];
+        
+        foreach ($fieldAnalysis as $fieldPath => $analysis) {
+            // Only include fields that appear in at least 10% of objects
+            $appearanceRate = $analysis['count'] / count($sampleObjects);
+            if ($appearanceRate >= 0.1) {
+                $fieldConfig = $this->determineFieldConfiguration($fieldPath, $analysis);
+                if ($fieldConfig !== null) {
+                    $facetableFields[$fieldPath] = $fieldConfig;
+                }
+            }
+        }
+
+        return $facetableFields;
+
+    }//end getFacetableFields()
+
+
+    /**
+     * Get sample objects for field analysis
+     *
+     * @param array $baseQuery  Base query filters to apply
+     * @param int   $sampleSize Maximum number of objects to sample
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $sampleSize
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $sampleSize
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Array of object data for analysis
+     */
+    private function getSampleObjects(array $baseQuery, int $sampleSize): array
+    {
+        $queryBuilder = $this->db->getQueryBuilder();
+        
+        $queryBuilder->select('object')
+            ->from('openregister_objects')
+            ->where($queryBuilder->expr()->isNotNull('object'))
+            ->setMaxResults($sampleSize);
+
+        // Apply base filters
+        $this->applyBaseFilters($queryBuilder, $baseQuery);
+
+        $result = $queryBuilder->executeQuery();
+        $objects = [];
+
+        while ($row = $result->fetch()) {
+            $objectData = json_decode($row['object'], true);
+            if (is_array($objectData)) {
+                $objects[] = $objectData;
+            }
+        }
+
+        return $objects;
+
+    }//end getSampleObjects()
+
+
+    /**
+     * Analyze fields in an object recursively
+     *
+     * @param array  $objectData    The object data to analyze
+     * @param array  &$fieldAnalysis Reference to field analysis array
+     * @param string $prefix        Current field path prefix
+     * @param int    $depth         Current recursion depth
+     *
+     * @phpstan-param array<string, mixed> $objectData
+     * @phpstan-param array<string, mixed> $fieldAnalysis
+     * @phpstan-param string $prefix
+     * @phpstan-param int $depth
+     *
+     * @psalm-param array<string, mixed> $objectData
+     * @psalm-param array<string, mixed> $fieldAnalysis
+     * @psalm-param string $prefix
+     * @psalm-param int $depth
+     *
+     * @return void
+     */
+    private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix = '', int $depth = 0): void
+    {
+        // Limit recursion depth to avoid infinite loops and performance issues
+        if ($depth > 2) {
+            return;
+        }
+
+        foreach ($objectData as $key => $value) {
+            $fieldPath = $prefix === '' ? $key : $prefix . '.' . $key;
+            
+            // Skip system fields
+            if (str_starts_with($key, '@') || str_starts_with($key, '_')) {
+                continue;
+            }
+
+            // Initialize field analysis if not exists
+            if (!isset($fieldAnalysis[$fieldPath])) {
+                $fieldAnalysis[$fieldPath] = [
+                    'count' => 0,
+                    'types' => [],
+                    'sample_values' => [],
+                    'is_array' => false,
+                    'is_nested' => false,
+                    'unique_values' => 0
+                ];
+            }
+
+            $fieldAnalysis[$fieldPath]['count']++;
+
+            // Analyze value type and characteristics
+            if (is_array($value)) {
+                $fieldAnalysis[$fieldPath]['is_array'] = true;
+                
+                // Check if it's an array of objects (nested structure)
+                if (!empty($value) && is_array($value[0])) {
+                    $fieldAnalysis[$fieldPath]['is_nested'] = true;
+                    // Recursively analyze nested objects
+                    if (is_array($value[0])) {
+                        $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
+                    }
+                } else {
+                    // Array of simple values
+                    foreach ($value as $item) {
+                        $this->recordValueType($fieldAnalysis[$fieldPath], $item);
+                        $this->recordSampleValue($fieldAnalysis[$fieldPath], $item);
+                    }
+                }
+            } else if (is_object($value) || (is_array($value) && !empty($value))) {
+                $fieldAnalysis[$fieldPath]['is_nested'] = true;
+                // Recursively analyze nested object
+                if (is_array($value)) {
+                    $this->analyzeObjectFields($value, $fieldAnalysis, $fieldPath, $depth + 1);
+                }
+            } else {
+                // Simple value
+                $this->recordValueType($fieldAnalysis[$fieldPath], $value);
+                $this->recordSampleValue($fieldAnalysis[$fieldPath], $value);
+            }
+        }
+
+    }//end analyzeObjectFields()
+
+
+    /**
+     * Record the type of a value in field analysis
+     *
+     * @param array &$fieldAnalysis Reference to field analysis data
+     * @param mixed $value          The value to analyze
+     *
+     * @phpstan-param array<string, mixed> $fieldAnalysis
+     * @phpstan-param mixed $value
+     *
+     * @psalm-param array<string, mixed> $fieldAnalysis
+     * @psalm-param mixed $value
+     *
+     * @return void
+     */
+    private function recordValueType(array &$fieldAnalysis, mixed $value): void
+    {
+        $type = $this->determineValueType($value);
+        
+        if (!isset($fieldAnalysis['types'][$type])) {
+            $fieldAnalysis['types'][$type] = 0;
+        }
+        $fieldAnalysis['types'][$type]++;
+
+    }//end recordValueType()
+
+
+    /**
+     * Record a sample value in field analysis
+     *
+     * @param array &$fieldAnalysis Reference to field analysis data
+     * @param mixed $value          The value to record
+     *
+     * @phpstan-param array<string, mixed> $fieldAnalysis
+     * @phpstan-param mixed $value
+     *
+     * @psalm-param array<string, mixed> $fieldAnalysis
+     * @psalm-param mixed $value
+     *
+     * @return void
+     */
+    private function recordSampleValue(array &$fieldAnalysis, mixed $value): void
+    {
+        // Convert value to string for storage
+        $stringValue = $this->valueToString($value);
+        
+        if (!in_array($stringValue, $fieldAnalysis['sample_values']) && count($fieldAnalysis['sample_values']) < 20) {
+            $fieldAnalysis['sample_values'][] = $stringValue;
+        }
+
+    }//end recordSampleValue()
+
+
+    /**
+     * Determine the type of a value
+     *
+     * @param mixed $value The value to analyze
+     *
+     * @phpstan-param mixed $value
+     *
+     * @psalm-param mixed $value
+     *
+     * @return string The determined type
+     */
+    private function determineValueType(mixed $value): string
+    {
+        if ($value === null) {
+            return 'null';
+        }
+        
+        if (is_bool($value)) {
+            return 'boolean';
+        }
+        
+        if (is_int($value)) {
+            return 'integer';
+        }
+        
+        if (is_float($value)) {
+            return 'float';
+        }
+        
+        if (is_string($value)) {
+            // Check if it looks like a date
+            if ($this->looksLikeDate($value)) {
+                return 'date';
+            }
+            
+            // Check if it's numeric
+            if (is_numeric($value)) {
+                return 'numeric_string';
+            }
+            
+            return 'string';
+        }
+        
+        return 'unknown';
+
+    }//end determineValueType()
+
+
+    /**
+     * Check if a string value looks like a date
+     *
+     * @param string $value The string to check
+     *
+     * @phpstan-param string $value
+     *
+     * @psalm-param string $value
+     *
+     * @return bool True if it looks like a date
+     */
+    private function looksLikeDate(string $value): bool
+    {
+        // Common date patterns
+        $datePatterns = [
+            '/^\d{4}-\d{2}-\d{2}$/',                    // YYYY-MM-DD
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',  // ISO 8601
+            '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/',  // YYYY-MM-DD HH:MM:SS
+            '/^\d{2}\/\d{2}\/\d{4}$/',                 // MM/DD/YYYY
+            '/^\d{2}-\d{2}-\d{4}$/',                   // MM-DD-YYYY
+        ];
+
+        foreach ($datePatterns as $pattern) {
+            if (preg_match($pattern, $value)) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end looksLikeDate()
+
+
+    /**
+     * Convert a value to string representation
+     *
+     * @param mixed $value The value to convert
+     *
+     * @phpstan-param mixed $value
+     *
+     * @psalm-param mixed $value
+     *
+     * @return string String representation of the value
+     */
+    private function valueToString(mixed $value): string
+    {
+        if ($value === null) {
+            return 'null';
+        }
+        
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value);
+        }
+        
+        return (string) $value;
+
+    }//end valueToString()
+
+
+    /**
+     * Determine field configuration based on analysis
+     *
+     * @param string $fieldPath The field path
+     * @param array  $analysis  The field analysis data
+     *
+     * @phpstan-param string $fieldPath
+     * @phpstan-param array<string, mixed> $analysis
+     *
+     * @psalm-param string $fieldPath
+     * @psalm-param array<string, mixed> $analysis
+     *
+     * @return array|null Field configuration or null if not suitable for faceting
+     */
+    private function determineFieldConfiguration(string $fieldPath, array $analysis): ?array
+    {
+        // Skip nested objects and arrays of objects
+        if ($analysis['is_nested']) {
+            return null;
+        }
+
+        // Determine primary type
+        $primaryType = $this->getPrimaryType($analysis['types']);
+        
+        if ($primaryType === null) {
+            return null;
+        }
+
+        $config = [
+            'type' => $primaryType,
+            'description' => "Object field: $fieldPath",
+            'sample_values' => array_slice($analysis['sample_values'], 0, 10),
+            'appearance_rate' => $analysis['count']
+        ];
+
+        // Configure facet types based on field type
+        switch ($primaryType) {
+            case 'string':
+                $uniqueValueCount = count($analysis['sample_values']);
+                if ($uniqueValueCount <= 50) {
+                    // Low cardinality - good for terms facet
+                    $config['facet_types'] = ['terms'];
+                    $config['cardinality'] = 'low';
+                } else {
+                    // High cardinality - not suitable for faceting
+                    return null;
+                }
+                break;
+                
+            case 'integer':
+            case 'float':
+            case 'numeric_string':
+                $config['facet_types'] = ['range', 'terms'];
+                $config['cardinality'] = 'numeric';
+                break;
+                
+            case 'date':
+                $config['facet_types'] = ['date_histogram', 'range'];
+                $config['intervals'] = ['day', 'week', 'month', 'year'];
+                break;
+                
+            case 'boolean':
+                $config['facet_types'] = ['terms'];
+                $config['cardinality'] = 'binary';
+                break;
+                
+            default:
+                return null;
+        }
+
+        return $config;
+
+    }//end determineFieldConfiguration()
+
+
+    /**
+     * Get the primary type from type analysis
+     *
+     * @param array $types Type counts from analysis
+     *
+     * @phpstan-param array<string, int> $types
+     *
+     * @psalm-param array<string, int> $types
+     *
+     * @return string|null The primary type or null if no clear primary type
+     */
+    private function getPrimaryType(array $types): ?string
+    {
+        if (empty($types)) {
+            return null;
+        }
+
+        // Sort by count descending
+        arsort($types);
+        
+        $totalCount = array_sum($types);
+        $primaryType = array_key_first($types);
+        $primaryCount = $types[$primaryType];
+        
+        // Primary type should represent at least 70% of values
+        if ($primaryCount / $totalCount >= 0.7) {
+            return $primaryType;
+        }
+
+        return null;
+
+    }//end getPrimaryType()
+
 }//end class 

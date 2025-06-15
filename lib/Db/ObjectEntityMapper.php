@@ -1854,4 +1854,46 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getSimpleFacets()
 
+
+    /**
+     * Get facetable fields for discovery
+     *
+     * This method combines metadata and object field discovery to provide
+     * a comprehensive list of fields that can be used for faceting.
+     * It helps frontends understand what faceting options are available.
+     *
+     * @param array $baseQuery Base query filters to apply for context
+     * @param int   $sampleSize Maximum number of objects to analyze for object fields
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $sampleSize
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $sampleSize
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Comprehensive facetable field information
+     */
+    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
+    {
+        $facetableFields = [
+            '@self' => [],
+            'object_fields' => []
+        ];
+
+        // Get metadata facetable fields if handler is available
+        if ($this->metaDataFacetHandler !== null) {
+            $facetableFields['@self'] = $this->metaDataFacetHandler->getFacetableFields($baseQuery);
+        }
+
+        // Get object field facetable fields if handler is available
+        if ($this->mariaDbFacetHandler !== null) {
+            $facetableFields['object_fields'] = $this->mariaDbFacetHandler->getFacetableFields($baseQuery, $sampleSize);
+        }
+
+        return $facetableFields;
+
+    }//end getFacetableFields()
+
 }//end class
