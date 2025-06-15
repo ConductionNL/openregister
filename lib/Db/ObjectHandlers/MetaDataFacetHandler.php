@@ -59,7 +59,7 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet data with buckets containing key, doc_count, and label
+     * @return array Terms facet data with buckets containing key, results, and label
      */
     public function getTermsFacet(string $field, array $baseQuery = []): array
     {
@@ -70,7 +70,7 @@ class MetaDataFacetHandler
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field))
             ->groupBy($field)
-            ->orderBy('doc_count', 'DESC');
+            ->orderBy('doc_count', 'DESC'); // Note: Still using doc_count in ORDER BY as it's the SQL alias
 
         // Apply base filters (this would be implemented to apply the base query filters)
         $this->applyBaseFilters($queryBuilder, $baseQuery);
@@ -84,7 +84,7 @@ class MetaDataFacetHandler
             
             $buckets[] = [
                 'key' => $key,
-                'doc_count' => (int) $row['doc_count'],
+                'results' => (int) $row['doc_count'],
                 'label' => $label
             ];
         }
@@ -144,7 +144,7 @@ class MetaDataFacetHandler
         while ($row = $result->fetch()) {
             $buckets[] = [
                 'key' => $row['date_key'],
-                'doc_count' => (int) $row['doc_count']
+                'results' => (int) $row['doc_count']
             ];
         }
 
@@ -208,7 +208,7 @@ class MetaDataFacetHandler
 
             $bucket = [
                 'key' => $key,
-                'doc_count' => $count
+                'results' => $count
             ];
 
             if (isset($range['from'])) {

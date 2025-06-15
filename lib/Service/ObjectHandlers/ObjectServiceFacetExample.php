@@ -487,7 +487,7 @@ class ObjectServiceFacetExample
             return [
                 'value' => $bucket['key'],
                 'label' => $bucket['label'] ?? $bucket['key'],
-                'count' => $bucket['doc_count'],
+                'count' => $bucket['results'],
                 'from' => $bucket['from'] ?? null,
                 'to' => $bucket['to'] ?? null
             ];
