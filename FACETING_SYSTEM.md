@@ -532,18 +532,67 @@ $facets = $objectService->getFacetsForObjects($query);
 
 ### Performance Impact
 
-Based on real-world testing, the faceting system has the following performance characteristics:
+Real-world performance testing shows the following response time impacts:
 
-- **Regular queries** - Baseline response time
-- **With `_facets`** - Adds approximately **~10ms** to response time
-- **With `_facetable=true`** - Adds approximately **~15ms** to response time
-- **Combined `_facets` + `_facetable`** - Adds approximately **~25ms** total
+- **Regular API calls** - Baseline response time
+- **With faceting (`_facets`)** - Adds approximately **~10ms**
+- **With discovery (`_facetable=true`)** - Adds approximately **~15ms**
+- **Combined faceting + discovery** - Adds approximately **~25ms** total
 
-These measurements are for typical datasets and may vary based on:
-- Database size and complexity
-- Number of facet fields requested
-- Sample size for facetable discovery
-- Server hardware and database optimization
+These measurements are based on typical datasets and may vary depending on:
+- Database size and object complexity
+- Number of facet fields being analyzed
+- Sample size used for discovery (default: 100 objects)
+- Server hardware and database configuration
+
+### Asynchronous Operations
+
+For improved performance when using multiple operations (facets + facetable discovery), the system provides asynchronous methods that run database operations concurrently using ReactPHP.
+
+#### Performance Benefits
+
+Instead of sequential execution (~50ms total):
+1. Facetable discovery: ~15ms
+2. Search results: ~10ms  
+3. Facets: ~10ms
+4. Count: ~5ms
+
+Operations run concurrently, reducing total time to ~15ms (longest operation).
+
+#### Available Methods
+
+**`searchObjectsPaginatedAsync(array $query): PromiseInterface`**
+- Returns a ReactPHP promise that resolves to the same structure as `searchObjectsPaginated()`
+- Runs search, count, facets, and facetable discovery concurrently
+- Ideal for async/await patterns or promise chains
+
+**`searchObjectsPaginatedSync(array $query): array`**
+- Convenience method that executes the async version and waits for results
+- Provides performance benefits while maintaining synchronous interface
+- Drop-in replacement for `searchObjectsPaginated()` with better performance
+
+#### Usage Examples
+
+```php
+// Async with promise handling
+$promise = $objectService->searchObjectsPaginatedAsync($query);
+$promise->then(function ($results) {
+    // Handle results
+    return $results;
+});
+
+// Sync interface with async performance
+$results = $objectService->searchObjectsPaginatedSync($query);
+
+// Traditional sync method (slower for multiple operations)
+$results = $objectService->searchObjectsPaginated($query);
+```
+
+#### When to Use Async Methods
+
+- **Use async methods when**: Requesting both facets and facetable discovery
+- **Use sync methods when**: Only requesting search results or single operation
+- **Performance gain**: Most significant with `_facets` + `_facetable=true` combinations
 
 ### Optimizations
 

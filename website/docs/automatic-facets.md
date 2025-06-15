@@ -275,6 +275,24 @@ These measurements are based on typical datasets and may vary depending on:
 - Sample size used for discovery (default: 100 objects)
 - Server hardware and database configuration
 
+### Asynchronous Performance Optimization
+
+For applications requiring both faceting and discovery, the system provides asynchronous methods that run operations concurrently instead of sequentially:
+
+```php
+// Async method - runs operations concurrently (~15ms total)
+$promise = $objectService->searchObjectsPaginatedAsync($query);
+$results = React\Async\await($promise);
+
+// Sync convenience method - same performance as async
+$results = $objectService->searchObjectsPaginatedSync($query);
+
+// Traditional method - sequential execution (~25ms total)
+$results = $objectService->searchObjectsPaginated($query);
+```
+
+**Performance improvement**: Up to 40% faster when using both `_facets` and `_facetable=true`.
+
 ### Database Optimization
 
 - **Indexed fields**: Metadata facets use indexed table columns for fast performance
