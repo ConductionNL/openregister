@@ -890,9 +890,9 @@ class ObjectService
     /**
      * Count objects using clean query structure
      *
-     * This method provides a count interface that mirrors the searchObjects functionality
-     * but returns only the count of matching objects. It uses the same query structure
-     * as searchObjects but falls back to the existing countAll method.
+     * This method provides an optimized count interface that mirrors the searchObjects 
+     * functionality but returns only the count of matching objects. It uses the new
+     * countSearchObjects method which is optimized for counting operations.
      *
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
@@ -909,32 +909,74 @@ class ObjectService
      *
      * @return int The number of objects matching the criteria
      */
-    public function countObjects(array $query = []): int
+    public function countSearchObjects(array $query = []): int
     {
-        // Extract metadata filters from @self
-        $metadataFilters = $query['@self'] ?? [];
+        // Use the new optimized countSearchObjects method from ObjectEntityMapper
+        return $this->objectEntityMapper->countSearchObjects($query);
+
+    }//end countSearchObjects()
+
+
+    /**
+     * Count objects using legacy configuration structure
+     *
+     * This method maintains backward compatibility with the existing count functionality.
+     * For new code, prefer using countSearchObjects() with the clean query structure.
+     *
+     * @param array $config Configuration array containing:
+     *                      - filters: Filter criteria
+     *                      - search: Search term
+     *                      - ids: Array of IDs or UUIDs to filter by
+     *                      - uses: Filter by object usage
+     *                      - published: Only published objects
+     *
+     * @phpstan-param array<string, mixed> $config
+     *
+     * @psalm-param array<string, mixed> $config
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return int The number of objects matching the criteria
+     */
+    public function countObjects(array $config = []): int
+    {
+        // Extract metadata filters from @self if present (for compatibility)
+        $metadataFilters = $config['@self'] ?? [];
         $register = $metadataFilters['register'] ?? null;
         $schema = $metadataFilters['schema'] ?? null;
 
         // Extract options
-        $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published = $query['_published'] ?? false;
-        $search = $query['_search'] ?? null;
+        $includeDeleted = $config['_includeDeleted'] ?? false;
+        $published = $config['_published'] ?? $config['published'] ?? false;
+        $search = $config['_search'] ?? $config['search'] ?? null;
+        $ids = $config['_ids'] ?? $config['ids'] ?? null;
+        $uses = $config['_uses'] ?? $config['uses'] ?? null;
 
         // Clean the query: remove @self and all properties prefixed with _
-        $cleanQuery = array_filter($query, function($key) {
+        $cleanQuery = array_filter($config, function($key) {
             return $key !== '@self' && str_starts_with($key, '_') === false;
         }, ARRAY_FILTER_USE_KEY);
 
-        // Use the existing countAll method with the processed parameters
+        // Remove system parameters
+        unset($cleanQuery['published'], $cleanQuery['search'], $cleanQuery['ids'], $cleanQuery['uses']);
+
+        // Add register and schema to filters if provided
+        if ($register !== null) {
+            $cleanQuery['register'] = $register;
+        }
+        if ($schema !== null) {
+            $cleanQuery['schema'] = $schema;
+        }
+
+        // Use the existing countAll method for legacy compatibility
         return $this->objectEntityMapper->countAll(
             filters: $cleanQuery,
             search: $search,
-            ids: null,
-            uses: null,
+            ids: $ids,
+            uses: $uses,
             includeDeleted: $includeDeleted,
-            register: $register,
-            schema: $schema,
+            register: null, // Already added to filters above
+            schema: null,   // Already added to filters above
             published: $published
         );
 
@@ -996,6 +1038,102 @@ class ObjectService
         );
 
     }//end getFacetsForObjects()
+
+
+    /**
+     * Search objects with pagination, count, and facets in a single call
+     *
+     * This method provides a complete paginated search interface that combines
+     * searchObjects, countSearchObjects, and getFacetsForObjects into a single
+     * convenient method. It returns all the data needed for pagination and filtering.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _limit: Maximum results to return
+     *                     - _offset: Results to skip (pagination)
+     *                     - _page: Page number (alternative to offset)
+     *                     - _order: Sorting criteria
+     *                     - _search: Full-text search term
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *                     - _extend: Properties to extend
+     *                     - _fields: Fields to include
+     *                     - _filter/_unset: Fields to exclude
+     *                     - _queries: Specific fields for facets
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array<string, mixed> Array containing:
+     *                              - results: Array of rendered ObjectEntity objects
+     *                              - total: Total number of matching objects
+     *                              - page: Current page number
+     *                              - pages: Total number of pages
+     *                              - limit: Items per page
+     *                              - offset: Current offset
+     *                              - facets: Facet information for filtering
+     */
+    public function searchObjectsPaginated(array $query = []): array
+    {
+        // Extract pagination parameters
+        $limit = $query['_limit'] ?? 20;
+        $offset = $query['_offset'] ?? null;
+        $page = $query['_page'] ?? null;
+
+        // Calculate offset from page if provided
+        if ($page !== null && $offset === null) {
+            $page = max(1, (int) $page); // Ensure page is at least 1
+            $offset = ($page - 1) * $limit;
+        }
+
+        // Calculate page from offset if not provided
+        if ($page === null && $offset !== null) {
+            $page = floor($offset / $limit) + 1;
+        }
+
+        // Default values
+        $page = $page ?? 1;
+        $offset = $offset ?? 0;
+        $limit = max(1, (int) $limit); // Ensure limit is at least 1
+
+        // Update query with calculated pagination values
+        $paginatedQuery = array_merge($query, [
+            '_limit' => $limit,
+            '_offset' => $offset,
+        ]);
+
+        // Remove page parameter from the query as we use offset internally
+        unset($paginatedQuery['_page']);
+
+        // Get the search results
+        $results = $this->searchObjects($paginatedQuery);
+
+        // Get total count (without pagination)
+        $countQuery = $query; // Use original query without pagination
+        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+        $total = $this->countSearchObjects($countQuery);
+
+        // Get facets (without pagination)
+        $facets = $this->getFacetsForObjects($countQuery);
+
+        // Calculate total pages
+        $pages = max(1, ceil($total / $limit));
+
+        return [
+            'results' => $results,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'limit' => $limit,
+            'offset' => $offset,
+            'facets' => $facets,
+        ];
+
+    }//end searchObjectsPaginated()
 
 
     // From this point on only deprecated functions for backwards compatibility with OpenConnector. To remove after OpenConnector refactor.

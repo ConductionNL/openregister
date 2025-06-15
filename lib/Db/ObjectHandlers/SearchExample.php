@@ -364,8 +364,10 @@ class SearchExample
 
         // $results = $objectService->searchObjects($complexQuery);
 
-        // Example 3: Count objects using same query structure
-        // $total = $objectService->countObjects($complexQuery);
+        // Example 3: Count objects using same query structure (optimized)
+        // $total = $objectService->countSearchObjects($complexQuery);
+        // This uses the new countSearchObjects method which is optimized for counting
+        // and doesn't fetch actual data, just returns the count
 
         // Example 4: Get facets using same query structure  
         // $facets = $objectService->getFacetsForObjects($complexQuery);
@@ -373,6 +375,146 @@ class SearchExample
         // This provides a much cleaner interface than the old findAll method
         // and makes the code more testable and maintainable.
 
+        // Example 5: Performance comparison - Old vs New count methods
+        // 
+        // OLD WAY (less efficient):
+        // $config = ['filters' => ['register' => 1], 'search' => 'test'];
+        // $total = $objectService->count($config); // Uses countAll method
+        //
+        // NEW WAY (optimized):
+        // $query = ['@self' => ['register' => 1], '_search' => 'test'];
+        // $total = $objectService->countSearchObjects($query); // Uses countSearchObjects method
+        //
+        // The new method is optimized because:
+        // - Uses COUNT(*) instead of selecting all data
+        // - Applies the same filters as searchObjects for consistency
+        // - Skips unnecessary sorting operations
+        // - Better performance on large datasets
+
     }//end exampleObjectServiceSearch()
+
+
+    /**
+     * Example 10: Testing the count functionality
+     *
+     * This example demonstrates how to test that the count method returns
+     * the correct number of objects for a given query.
+     *
+     * @return void
+     */
+    public function exampleCountTesting(): void
+    {
+        // This example would typically be used in unit tests
+
+        // Test query
+        $testQuery = [
+            '@self' => [
+                'register' => 1,
+                'schema' => 2,
+            ],
+            'status' => 'active',
+            '_published' => true,
+        ];
+
+        // Using ObjectService (recommended for application code)
+        // $objectService = $this->container->get(ObjectService::class);
+        // $objects = $objectService->searchObjects($testQuery);
+        // $count = $objectService->countSearchObjects($testQuery);
+        // 
+        // // Verify that count matches actual results
+        // assert(count($objects) === $count, 'Count should match actual results');
+
+        // Using ObjectEntityMapper directly (for testing internal logic)
+        // $mapper = $this->container->get(ObjectEntityMapper::class);
+        // $objects = $mapper->searchObjects($testQuery);
+        // $count = $mapper->countSearchObjects($testQuery);
+        //
+        // // Verify that count matches actual results
+        // assert(count($objects) === $count, 'Count should match actual results');
+
+        // Test with pagination
+        $paginatedQuery = array_merge($testQuery, [
+            '_limit' => 10,
+            '_offset' => 0,
+        ]);
+
+        // $paginatedObjects = $objectService->searchObjects($paginatedQuery);
+        // $totalCount = $objectService->countSearchObjects($testQuery); // Note: no pagination for count
+        //
+        // // Verify pagination works correctly
+        // assert(count($paginatedObjects) <= 10, 'Should return max 10 objects');
+        // assert($totalCount >= count($paginatedObjects), 'Total count should be >= paginated results');
+
+    }//end exampleCountTesting()
+
+
+    /**
+     * Example 11: Using the consolidated paginated search method
+     *
+     * This example demonstrates how to use the searchObjectsPaginated method
+     * which combines search, count, and facets into a single convenient call.
+     *
+     * @return void
+     */
+    public function examplePaginatedSearch(): void
+    {
+        // This example shows the new consolidated approach
+
+        // Complex search query with pagination
+        $query = [
+            '@self' => [
+                'register' => [1, 2, 3],
+                'schema' => 2,
+                'organisation' => 'IS NOT NULL',
+            ],
+            'name' => 'John',
+            'status' => ['active', 'pending'],
+            'address.city' => 'Amsterdam',
+            '_search' => 'important customer',
+            '_order' => [
+                '@self.created' => 'DESC',
+                'priority' => 'ASC'
+            ],
+            '_limit' => 25,
+            '_page' => 2,  // Can use page instead of offset
+            '_published' => true,
+            '_extend' => ['@self.register', '@self.schema'],
+            '_fields' => ['name', 'email', 'status'],
+            '_queries' => ['status', 'priority'], // For facets
+        ];
+
+        // OLD WAY (multiple calls):
+        // $objects = $objectService->searchObjects($query);
+        // $total = $objectService->countSearchObjects($query);
+        // $facets = $objectService->getFacetsForObjects($query);
+        // $pages = ceil($total / $query['_limit']);
+        // // Manual pagination calculation...
+
+        // NEW WAY (single call):
+        // $result = $objectService->searchObjectsPaginated($query);
+        //
+        // Result contains everything needed:
+        // $result = [
+        //     'results' => [...],    // Rendered ObjectEntity objects
+        //     'total' => 150,        // Total matching objects
+        //     'page' => 2,           // Current page
+        //     'pages' => 6,          // Total pages
+        //     'limit' => 25,         // Items per page
+        //     'offset' => 25,        // Current offset
+        //     'facets' => [...]      // Facet data for filtering
+        // ];
+
+        // Benefits of the new approach:
+        // 1. Single method call instead of 3 separate calls
+        // 2. Automatic pagination calculation
+        // 3. Consistent query structure across all operations
+        // 4. Optimized database queries (count uses COUNT(*))
+        // 5. Less code duplication in services
+        // 6. Built-in page/offset conversion
+
+        // Usage in controllers/services:
+        // return new JSONResponse($objectService->searchObjectsPaginated($query));
+
+    }//end examplePaginatedSearch()
 
 }//end class 

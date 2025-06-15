@@ -561,6 +561,7 @@ class ObjectEntityMapper extends QBMapper
             return $key !== '@self' && str_starts_with($key, '_') === false;
         }, ARRAY_FILTER_USE_KEY);
 
+
         // If search handler is not available, fall back to the original findAll method
         if ($this->searchHandler === null) {
             return $this->findAll(
@@ -639,6 +640,113 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities($queryBuilder);
 
     }//end searchObjects()
+
+
+    /**
+     * Count objects using clean query structure (optimized for pagination)
+     *
+     * This method provides an optimized count query that mirrors the searchObjects
+     * functionality but returns only the count of matching objects. It uses the same
+     * query structure and filters as searchObjects but performs a COUNT(*) operation
+     * instead of selecting all data.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _search: Full-text search term
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return int The number of objects matching the criteria
+     */
+    public function countSearchObjects(array $query = []): int
+    {
+        // Extract options from query (prefixed with _)
+        $search = $query['_search'] ?? null;
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published = $query['_published'] ?? false;
+
+        // Extract metadata from @self
+        $metadataFilters = [];
+        $register = null;
+        $schema = null;
+        
+        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
+            $metadataFilters = $query['@self'];
+            
+            // Process register: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['register']) === true) {
+                $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
+                // Remove from metadataFilters as we'll handle it separately
+                unset($metadataFilters['register']);
+            }
+            
+            // Process schema: convert objects to IDs and handle arrays  
+            if (isset($metadataFilters['schema']) === true) {
+                $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
+                // Remove from metadataFilters as we'll handle it separately
+                unset($metadataFilters['schema']);
+            }
+        }
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // If search handler is not available, fall back to the original countAll method
+        if ($this->searchHandler === null) {
+            return $this->countAll(
+                filters: $cleanQuery,
+                search: $search,
+                ids: null,
+                uses: null,
+                includeDeleted: $includeDeleted,
+                register: $register,
+                schema: $schema,
+                published: $published
+            );
+        }
+
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Build base count query - use COUNT(*) instead of selecting all columns
+        $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
+            ->from('openregister_objects');
+
+        // Handle basic filters (same as searchObjects)
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+
+        // Use cleaned query as object filters
+        $objectFilters = $cleanQuery;
+
+        // Apply metadata filters (register, schema, etc.)
+        if (empty($metadataFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
+        }
+
+        // Apply object field filters (JSON searches)
+        if (empty($objectFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
+        }
+
+        // Apply full-text search if provided
+        if ($search !== null && trim($search) !== '') {
+            $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
+        }
+
+        // Note: We don't apply sorting for count queries as it's not needed and would be inefficient
+
+        $result = $queryBuilder->executeQuery();
+        return (int) $result->fetchOne();
+
+    }//end countSearchObjects()
 
 
     /**
