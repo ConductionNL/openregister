@@ -766,10 +766,28 @@ class ObjectService
             $pages = 1;
         }
 
-        $facets = $this->objectEntityMapper->getFacets(
-            filters: $filters,
-            search: $search
-        );
+        // Use new faceting system with basic configuration
+        $facetQuery = [
+            '@self' => array_intersect_key($filters, array_flip(['register', 'schema'])),
+            '_search' => $search,
+            '_facets' => [
+                '@self' => [
+                    'register' => ['type' => 'terms'],
+                    'schema' => ['type' => 'terms']
+                ]
+            ]
+        ];
+        
+        // Add object field filters to facet query
+        $objectFilters = array_diff_key($filters, array_flip(['register', 'schema', 'extend', 'limit', 'offset', 'order', 'page']));
+        foreach ($objectFilters as $key => $value) {
+            if (!str_starts_with($key, '_')) {
+                $facetQuery[$key] = $value;
+                $facetQuery['_facets'][$key] = ['type' => 'terms'];
+            }
+        }
+        
+        $facets = $this->getFacetsForObjects($facetQuery);
 
         return [
             'results' => $objects,
@@ -997,13 +1015,13 @@ class ObjectService
      * Get facets for objects using clean query structure
      *
      * This method provides facets for objects that match the search query structure.
-     * It uses the same query structure as searchObjects but returns facet information.
+     * It uses the new faceting system exclusively and requires _facets configuration.
      *
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
      *                     - Direct keys: Object field filters for JSON data
      *                     - _search: Full-text search term
-     *                     - _queries: Specific fields to include in facets
+     *                     - _facets: Facet configuration (required)
      *
      * @phpstan-param array<string, mixed> $query
      *
@@ -1015,47 +1033,122 @@ class ObjectService
      */
     public function getFacetsForObjects(array $query = []): array
     {
-        // Extract metadata filters from @self
-        $metadataFilters = $query['@self'] ?? [];
-        $register = $metadataFilters['register'] ?? null;
-        $schema = $metadataFilters['schema'] ?? null;
-
-        // Extract search term
-        $search = $query['_search'] ?? null;
-
-        // Clean the query: remove @self and all properties prefixed with _
-        $cleanQuery = array_filter($query, function($key) {
-            return $key !== '@self' && str_starts_with($key, '_') === false;
-        }, ARRAY_FILTER_USE_KEY);
-
-        // Add register and schema to the clean query if provided
-        if ($register !== null) {
-            $cleanQuery['register'] = $register;
-        }
-        if ($schema !== null) {
-            $cleanQuery['schema'] = $schema;
-        }
-
-        // Add queries field if provided
-        if (isset($query['_queries'])) {
-            $cleanQuery['_queries'] = $query['_queries'];
-        }
-
-        // Use the existing getFacets method
-        return $this->objectEntityMapper->getFacets(
-            filters: $cleanQuery,
-            search: $search
-        );
+        // Always use the new comprehensive faceting system via ObjectEntityMapper
+        $result = $this->objectEntityMapper->getSimpleFacets($query);
+        
+        // Load register and schema context for enhanced metadata
+        $this->loadRegistersAndSchemas($query);
+        
+        return $result;
 
     }//end getFacetsForObjects()
+
+
+    /**
+     * Load registers and schemas for enhanced metadata context
+     *
+     * This method loads register and schema objects based on the query filters
+     * to provide enhanced context for faceting and rendering.
+     *
+     * @param array $query The search query array
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @return void
+     */
+    private function loadRegistersAndSchemas(array $query): void
+    {
+        // Load register context if specified
+        if (isset($query['@self']['register'])) {
+            $registerValue = $query['@self']['register'];
+            if (!is_array($registerValue) && $this->currentRegister === null) {
+                try {
+                    $this->setRegister($registerValue);
+                } catch (\Exception $e) {
+                    // Ignore errors in context loading
+                }
+            }
+        }
+
+        // Load schema context if specified
+        if (isset($query['@self']['schema'])) {
+            $schemaValue = $query['@self']['schema'];
+            if (!is_array($schemaValue) && $this->currentSchema === null) {
+                try {
+                    $this->setSchema($schemaValue);
+                } catch (\Exception $e) {
+                    // Ignore errors in context loading
+                }
+            }
+        }
+
+    }//end loadRegistersAndSchemas()
 
 
     /**
      * Search objects with pagination, count, and facets in a single call
      *
      * This method provides a complete paginated search interface that combines
-     * searchObjects, countSearchObjects, and getFacetsForObjects into a single
+     * searchObjects, countSearchObjects, and comprehensive faceting into a single
      * convenient method. It returns all the data needed for pagination and filtering.
+     *
+     * ## Faceting Support
+     * 
+     * This method includes comprehensive Elasticsearch-style faceting exclusively through
+     * the new facet handlers. The legacy faceting system has been discontinued.
+     * Facets provide aggregated data for filtering and analytics.
+     *
+     * ### Facet Configuration
+     * 
+     * Add facet configuration using the `_facets` parameter:
+     * 
+     * ```php
+     * $query = [
+     *     // Regular search filters
+     *     '@self' => ['register' => 1],
+     *     'status' => 'active',
+     *     '_search' => 'customer',
+     *     
+     *     // Facet configuration
+     *     '_facets' => [
+     *         // Metadata facets (table columns)
+     *         '@self' => [
+     *             'register' => ['type' => 'terms'],
+     *             'schema' => ['type' => 'terms'],
+     *             'created' => [
+     *                 'type' => 'date_histogram',
+     *                 'interval' => 'month'
+     *             ]
+     *         ],
+     *         
+     *         // Object field facets (JSON data)
+     *         'status' => ['type' => 'terms'],
+     *         'priority' => ['type' => 'terms'],
+     *         'price' => [
+     *             'type' => 'range',
+     *             'ranges' => [
+     *                 ['to' => 100],
+     *                 ['from' => 100, 'to' => 500],
+     *                 ['from' => 500]
+     *             ]
+     *         ]
+     *     ]
+     * ];
+     * ```
+     *
+     * ### Supported Facet Types
+     * 
+     * - **terms**: Categorical data with unique values and counts
+     * - **date_histogram**: Time-based data with configurable intervals (day, week, month, year)
+     * - **range**: Numeric data with custom range buckets
+     *
+     * ### Disjunctive Faceting
+     * 
+     * Facets use disjunctive logic, meaning each facet shows counts as if its own
+     * filter were not applied. This prevents facet options from disappearing when
+     * selected, providing a better user experience.
      *
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
@@ -1067,10 +1160,12 @@ class ObjectService
      *                     - _search: Full-text search term
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
+     *                     - _ids: Array of IDs/UUIDs to filter by
+     *                     - _facets: Facet configuration for aggregations
      *                     - _extend: Properties to extend
      *                     - _fields: Fields to include
      *                     - _filter/_unset: Fields to exclude
-     *                     - _queries: Specific fields for facets
+     *                     - _queries: Specific fields for legacy facets
      *
      * @phpstan-param array<string, mixed> $query
      *
@@ -1085,7 +1180,9 @@ class ObjectService
      *                              - pages: Total number of pages
      *                              - limit: Items per page
      *                              - offset: Current offset
-     *                              - facets: Facet information for filtering
+     *                              - facets: Comprehensive facet data with counts and metadata
+     *                              - next: URL for next page (if available)
+     *                              - prev: URL for previous page (if available)
      */
     public function searchObjectsPaginated(array $query = []): array
     {
@@ -1128,7 +1225,7 @@ class ObjectService
         $total = $this->countSearchObjects($countQuery);
 
         // Get facets (without pagination)
-         $facets = []; //@todo $this->getFacetsForObjects($countQuery);
+        $facets = $this->getFacetsForObjects($countQuery);
 
         // Calculate total pages
         $pages = max(1, ceil($total / $limit));
@@ -1267,14 +1364,34 @@ class ObjectService
      *
      * @return array The facets
      *
-     * @deprecated This can now be done using the facets field in the findAll-function
+     * @deprecated Use getFacetsForObjects() with _facets configuration instead
      */
     public function getFacets(array $filters=[], ?string $search=null): array
     {
-        $filters['register'] = $this->getRegister();
-        $filters['schema']   = $this->getSchema();
+        // Convert to new faceting system
+        $query = [
+            '@self' => [
+                'register' => $this->getRegister(),
+                'schema' => $this->getSchema()
+            ],
+            '_search' => $search,
+            '_facets' => [
+                '@self' => [
+                    'register' => ['type' => 'terms'],
+                    'schema' => ['type' => 'terms']
+                ]
+            ]
+        ];
+        
+        // Add object field filters and create basic facet config
+        foreach ($filters as $key => $value) {
+            if (!in_array($key, ['register', 'schema']) && !str_starts_with($key, '_')) {
+                $query[$key] = $value;
+                $query['_facets'][$key] = ['type' => 'terms'];
+            }
+        }
 
-        return $this->objectEntityMapper->getFacets($filters, $search);
+        return $this->getFacetsForObjects($query);
 
     }//end getFacets()
 

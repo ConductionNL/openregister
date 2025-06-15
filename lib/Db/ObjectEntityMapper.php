@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Db;
 
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\ObjectHandlers\MariaDbSearchHandler;
+use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
+use OCA\OpenRegister\Db\ObjectHandlers\MariaDbFacetHandler;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
@@ -73,6 +75,20 @@ class ObjectEntityMapper extends QBMapper
      */
     private ?MariaDbSearchHandler $searchHandler = null;
 
+    /**
+     * Metadata facet handler instance
+     *
+     * @var MetaDataFacetHandler|null
+     */
+    private ?MetaDataFacetHandler $metaDataFacetHandler = null;
+
+    /**
+     * MariaDB facet handler instance
+     *
+     * @var MariaDbFacetHandler|null
+     */
+    private ?MariaDbFacetHandler $mariaDbFacetHandler = null;
+
     public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
     public const DEFAULT_LOCK_DURATION = 3600;
@@ -97,6 +113,8 @@ class ObjectEntityMapper extends QBMapper
         if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
             $this->databaseJsonService = $mySQLJsonService;
             $this->searchHandler = new MariaDbSearchHandler();
+            $this->metaDataFacetHandler = new MetaDataFacetHandler($db);
+            $this->mariaDbFacetHandler = new MariaDbFacetHandler($db);
         }
 
         $this->eventDispatcher = $eventDispatcher;
@@ -1252,7 +1270,11 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Gets the facets for the objects
+     * Gets the facets for the objects (LEGACY METHOD - DO NOT USE DIRECTLY)
+     *
+     * @deprecated This method is legacy and should not be used directly.
+     *             Use getSimpleFacets() with _facets configuration instead.
+     *             This method remains only for internal compatibility.
      *
      * @param array       $filters The filters to apply
      * @param string|null $search  The search string to apply
@@ -1751,5 +1773,85 @@ class ObjectEntityMapper extends QBMapper
         }//end try
 
     }//end getSizeDistributionChartData()
+
+
+    /**
+     * Get simple facets using the new handlers
+     *
+     * This method provides a simple interface to the new facet handlers.
+     * It supports basic terms facets for both metadata and object fields.
+     *
+     * @param array $query The search query array containing filters and facet configuration
+     *                     - _facets: Simple facet configuration
+     *                       - @self: Metadata field facets
+     *                       - Direct keys: Object field facets
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Simple facet data using the new handlers
+     */
+    public function getSimpleFacets(array $query = []): array
+    {
+        // Check if handlers are available
+        if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
+            return ['facets' => []];
+        }
+
+        // Extract facet configuration
+        $facetConfig = $query['_facets'] ?? [];
+        if (empty($facetConfig)) {
+            return ['facets' => []];
+        }
+
+        // Extract base query (without facet config)
+        $baseQuery = $query;
+        unset($baseQuery['_facets']);
+
+        $facets = [];
+
+        // Process metadata facets (@self)
+        if (isset($facetConfig['@self']) && is_array($facetConfig['@self'])) {
+            $facets['@self'] = [];
+            foreach ($facetConfig['@self'] as $field => $config) {
+                $type = $config['type'] ?? 'terms';
+                
+                if ($type === 'terms') {
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getTermsFacet($field, $baseQuery);
+                } else if ($type === 'date_histogram') {
+                    $interval = $config['interval'] ?? 'month';
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+                } else if ($type === 'range') {
+                    $ranges = $config['ranges'] ?? [];
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+                }
+            }
+        }
+
+        // Process object field facets
+        $objectFacetConfig = array_filter($facetConfig, function($key) {
+            return $key !== '@self';
+        }, ARRAY_FILTER_USE_KEY);
+
+        foreach ($objectFacetConfig as $field => $config) {
+            $type = $config['type'] ?? 'terms';
+            
+            if ($type === 'terms') {
+                $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
+            } else if ($type === 'date_histogram') {
+                $interval = $config['interval'] ?? 'month';
+                $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+            } else if ($type === 'range') {
+                $ranges = $config['ranges'] ?? [];
+                $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+            }
+        }
+
+        return ['facets' => $facets];
+
+    }//end getSimpleFacets()
 
 }//end class
