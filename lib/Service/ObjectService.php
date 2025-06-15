@@ -820,6 +820,8 @@ class ObjectService
      *                     - _search: Full-text search term
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
+     *                     - _ids: Array of IDs/UUIDs to filter by
+     *                     - _count: Return count instead of objects (boolean)
      *
      * @phpstan-param array<string, mixed> $query
      *
@@ -827,12 +829,20 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array<int, ObjectEntity> An array of ObjectEntity objects matching the criteria
+     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = []): array
+    public function searchObjects(array $query = []): array|int
     {
         // Use the new searchObjects method from ObjectEntityMapper
-        $objects = $this->objectEntityMapper->searchObjects($query);
+        $result = $this->objectEntityMapper->searchObjects($query);
+
+        // If _count option was used, return the integer count directly
+        if (isset($query['_count']) && $query['_count'] === true) {
+            return $result;
+        }
+
+        // For regular search results, proceed with rendering
+        $objects = $result;
 
         // Get unique register and schema IDs from the results for rendering context
         $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
@@ -1118,7 +1128,7 @@ class ObjectService
         $total = $this->countSearchObjects($countQuery);
 
         // Get facets (without pagination)
-        $facets = []; //@todo $this->getFacetsForObjects($countQuery);
+         $facets = []; //@todo $this->getFacetsForObjects($countQuery);
 
         // Calculate total pages
         $pages = max(1, ceil($total / $limit));

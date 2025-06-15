@@ -473,6 +473,24 @@ class ObjectEntityMapper extends QBMapper
      * '_published' => true
      * ```
      *
+     * ### `_ids` (array|null)
+     * Filter objects by specific IDs or UUIDs
+     * Searches both the 'id' column (integer) and 'uuid' column (string)
+     * ```php
+     * '_ids' => [1, 2, 3]                           // Filter by IDs
+     * '_ids' => ['uuid1', 'uuid2', 'uuid3']         // Filter by UUIDs
+     * '_ids' => [1, 'uuid2', 3, 'uuid4']            // Mixed IDs and UUIDs
+     * ```
+     *
+     * ### `_count` (bool)
+     * Return only the count of matching objects instead of the objects themselves
+     * When true, returns an integer count instead of an array of ObjectEntity objects
+     * Optimized for performance using COUNT(*) instead of selecting all data
+     * ```php
+     * '_count' => true                               // Returns integer count
+     * '_count' => false                              // Returns ObjectEntity array (default)
+     * ```
+     *
      * ## Complete Query Examples
      *
      * **Basic metadata search:**
@@ -497,6 +515,7 @@ class ObjectEntityMapper extends QBMapper
      *     'status' => ['active', 'pending'],   // Multiple statuses
      *     'address.city' => 'Amsterdam',       // Nested field
      *     '_search' => 'important customer',   // Full-text search
+     *     '_ids' => [1, 'uuid-123', 5],        // Specific IDs/UUIDs
      *     '_order' => [
      *         '@self.created' => 'DESC',       // Newest first
      *         'priority' => 'ASC'              // Then by priority
@@ -505,6 +524,22 @@ class ObjectEntityMapper extends QBMapper
      *     '_offset' => 50,
      *     '_published' => true                 // Only published
      * ];
+     * ```
+     *
+     * **Count query (same filters, optimized for counting):**
+     * ```php
+     * $countQuery = [
+     *     '@self' => [
+     *         'register' => [1, 2, 3],        // Same filters as above
+     *         'organisation' => 'IS NOT NULL'
+     *     ],
+     *     'name' => 'John',
+     *     'status' => ['active', 'pending'],
+     *     '_search' => 'important customer',
+     *     '_published' => true,
+     *     '_count' => true                     // Returns integer count instead of objects
+     * ];
+     * // Note: _limit, _offset, _order are ignored for count queries
      * ```
      *
      * ## Performance Notes
@@ -522,9 +557,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array<int, ObjectEntity> An array of ObjectEntity objects matching the criteria
+     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = []): array {
+    public function searchObjects(array $query = []): array|int {
         // Extract options from query (prefixed with _)
         $limit = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
@@ -532,6 +567,8 @@ class ObjectEntityMapper extends QBMapper
         $search = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
+        $ids = $query['_ids'] ?? null;
+        $count = $query['_count'] ?? false;
 
         // Extract metadata from @self
         $metadataFilters = [];
@@ -562,14 +599,28 @@ class ObjectEntityMapper extends QBMapper
         }, ARRAY_FILTER_USE_KEY);
 
 
-        // If search handler is not available, fall back to the original findAll method
+        // If search handler is not available, fall back to the original methods
         if ($this->searchHandler === null) {
+            if ($count === true) {
+                return $this->countAll(
+                    filters: $cleanQuery,
+                    search: $search,
+                    ids: $ids,
+                    uses: null,
+                    includeDeleted: $includeDeleted,
+                    register: $register,
+                    schema: $schema,
+                    published: $published
+                );
+            }
+            
             return $this->findAll(
                 limit: $limit,
                 offset: $offset,
                 filters: $cleanQuery,
                 sort: $order,
                 search: $search,
+                ids: $ids,
                 includeDeleted: $includeDeleted,
                 register: $register,
                 schema: $schema,
@@ -579,14 +630,29 @@ class ObjectEntityMapper extends QBMapper
 
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build base query
-        $queryBuilder->select('*')
-            ->from('openregister_objects')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset);
+        // Build base query - different for count vs search
+        if ($count === true) {
+            // For count queries, use COUNT(*) and skip pagination
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
+                ->from('openregister_objects');
+        } else {
+            // For search queries, select all columns and apply pagination
+            $queryBuilder->select('*')
+                ->from('openregister_objects')
+                ->setMaxResults($limit)
+                ->setFirstResult($offset);
+        }
 
         // Handle basic filters
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+
+        // Handle filtering by IDs/UUIDs if provided
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $queryBuilder->expr()->orX();
+            $orX->add($queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $queryBuilder->andWhere($orX);
+        }
 
         // Use cleaned query as object filters
         $objectFilters = $cleanQuery;
@@ -606,8 +672,8 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
         }
 
-        // Apply ordering
-        if (empty($order) === false) {
+        // Apply ordering (skip for count queries as it's not needed and would be inefficient)
+        if ($count === false && empty($order) === false) {
             $metadataSort = [];
             $objectSort = [];
 
@@ -637,7 +703,13 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        return $this->findEntities($queryBuilder);
+        // Return appropriate result based on count flag
+        if ($count === true) {
+            $result = $queryBuilder->executeQuery();
+            return (int) $result->fetchOne();
+        } else {
+            return $this->findEntities($queryBuilder);
+        }
 
     }//end searchObjects()
 
@@ -656,6 +728,7 @@ class ObjectEntityMapper extends QBMapper
      *                     - _search: Full-text search term
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
+     *                     - _ids: Array of IDs/UUIDs to filter by
      *
      * @phpstan-param array<string, mixed> $query
      *
@@ -671,6 +744,7 @@ class ObjectEntityMapper extends QBMapper
         $search = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
+        $ids = $query['_ids'] ?? null;
 
         // Extract metadata from @self
         $metadataFilters = [];
@@ -705,7 +779,7 @@ class ObjectEntityMapper extends QBMapper
             return $this->countAll(
                 filters: $cleanQuery,
                 search: $search,
-                ids: null,
+                ids: $ids,
                 uses: null,
                 includeDeleted: $includeDeleted,
                 register: $register,
@@ -722,6 +796,14 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle basic filters (same as searchObjects)
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+
+        // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $queryBuilder->expr()->orX();
+            $orX->add($queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $queryBuilder->andWhere($orX);
+        }
 
         // Use cleaned query as object filters
         $objectFilters = $cleanQuery;

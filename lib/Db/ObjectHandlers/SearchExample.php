@@ -316,7 +316,154 @@ class SearchExample
 
 
     /**
-     * Example 9: Using ObjectService wrapper for clean search interface
+     * Example 12: Search by specific IDs or UUIDs
+     *
+     * Filter objects by an array of specific IDs or UUIDs
+     *
+     * @return array Example query structure
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    public static function idFilterSearch(): array
+    {
+        return [
+            '@self' => [
+                'register' => 1,
+            ],
+            '_ids'    => [1, 2, 3],  // Filter by specific IDs
+            '_limit'  => 10,
+            '_offset' => 0,
+        ];
+
+    }//end idFilterSearch()
+
+
+    /**
+     * Example 13: Search by UUIDs
+     *
+     * Filter objects by an array of UUIDs
+     *
+     * @return array Example query structure
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    public static function uuidFilterSearch(): array
+    {
+        return [
+            '_ids' => [
+                'uuid-123-456-789',
+                'uuid-987-654-321',
+                'uuid-111-222-333',
+            ],
+            '_order'  => [
+                '@self.created' => 'DESC',
+            ],
+            '_limit'  => 5,
+            '_offset' => 0,
+        ];
+
+    }//end uuidFilterSearch()
+
+
+    /**
+     * Example 14: Mixed IDs and UUIDs search
+     *
+     * Filter objects by a mix of IDs and UUIDs
+     *
+     * @return array Example query structure
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    public static function mixedIdUuidSearch(): array
+    {
+        return [
+            '@self' => [
+                'register' => [1, 2],
+            ],
+            'status'  => 'active',
+            '_ids'    => [
+                1,                      // Integer ID
+                'uuid-123-456-789',     // UUID string
+                5,                      // Another integer ID
+                'uuid-987-654-321',     // Another UUID string
+            ],
+            '_search' => 'important',
+            '_limit'  => 20,
+            '_offset' => 0,
+        ];
+
+    }//end mixedIdUuidSearch()
+
+
+    /**
+     * Example 15: Count query using _count option
+     *
+     * Get count of matching objects using the same query structure as search
+     *
+     * @return array Example query structure
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    public static function countQuery(): array
+    {
+        return [
+            '@self' => [
+                'register' => [1, 2, 3],
+                'organisation' => 'IS NOT NULL',
+            ],
+            'status'      => ['active', 'pending'],
+            'priority'    => 'high',
+            '_search'     => 'important customer',
+            '_published'  => true,
+            '_count'      => true,  // Returns integer count instead of objects
+            // Note: _limit, _offset, _order are ignored for count queries
+        ];
+
+    }//end countQuery()
+
+
+    /**
+     * Example 16: Comparing search and count with same filters
+     *
+     * Demonstrate how to use the same query for both search and count
+     *
+     * @return array Example showing both search and count queries
+     * @phpstan-return array<string, array<string, mixed>>
+     * @psalm-return array<string, array<string, mixed>>
+     */
+    public static function searchAndCountComparison(): array
+    {
+        $baseQuery = [
+            '@self' => [
+                'register' => 1,
+                'schema' => 2,
+            ],
+            'name'        => 'John',
+            'status'      => 'active',
+            '_search'     => 'customer',
+            '_published'  => true,
+        ];
+
+        return [
+            'search' => array_merge($baseQuery, [
+                '_limit'  => 10,
+                '_offset' => 0,
+                '_order'  => [
+                    '@self.created' => 'DESC',
+                    'priority'      => 'ASC',
+                ],
+            ]),
+            'count' => array_merge($baseQuery, [
+                '_count' => true,
+                // Pagination and sorting options are ignored for count
+            ]),
+        ];
+
+    }//end searchAndCountComparison()
+
+
+    /**
+     * Example 17: Using ObjectService wrapper for clean search interface
      *
      * This example demonstrates how to use the ObjectService searchObjects wrapper
      * which provides a cleaner interface and automatically handles rendering.
@@ -372,33 +519,69 @@ class SearchExample
         // Example 4: Get facets using same query structure  
         // $facets = $objectService->getFacetsForObjects($complexQuery);
 
+        // Example 5: Search by specific IDs or UUIDs
+        $idQuery = [
+            '@self' => [
+                'register' => 1,
+            ],
+            '_ids' => [1, 'uuid-123-456', 5, 'uuid-789-012'],  // Mix of IDs and UUIDs
+            '_order' => [
+                '@self.created' => 'DESC',
+            ],
+        ];
+        // $specificObjects = $objectService->searchObjects($idQuery);
+        // This will return only objects with IDs 1, 5 or UUIDs 'uuid-123-456', 'uuid-789-012'
+
+        // Example 6: Count using the same method with _count option
+        $countQuery = [
+            '@self' => [
+                'register' => [1, 2, 3],
+                'organisation' => 'IS NOT NULL',
+            ],
+            'status' => ['active', 'pending'],
+            '_search' => 'important customer',
+            '_published' => true,
+            '_count' => true,  // Returns integer count instead of objects
+        ];
+        // $totalCount = $objectService->searchObjects($countQuery);
+        // This returns an integer count using the same method and query structure
+
         // This provides a much cleaner interface than the old findAll method
         // and makes the code more testable and maintainable.
 
-        // Example 5: Performance comparison - Old vs New count methods
+        // Example 7: Performance comparison - Old vs New count methods
         // 
-        // OLD WAY (less efficient):
+        // OLD WAY (multiple methods, less efficient):
         // $config = ['filters' => ['register' => 1], 'search' => 'test'];
-        // $total = $objectService->count($config); // Uses countAll method
+        // $objects = $objectService->searchObjects($searchQuery);
+        // $total = $objectService->count($config); // Separate method call
         //
-        // NEW WAY (optimized):
-        // $query = ['@self' => ['register' => 1], '_search' => 'test'];
-        // $total = $objectService->countSearchObjects($query); // Uses countSearchObjects method
+        // NEW WAY (unified method, optimized):
+        // $searchQuery = ['@self' => ['register' => 1], '_search' => 'test'];
+        // $objects = $objectService->searchObjects($searchQuery);
+        // $total = $objectService->searchObjects(array_merge($searchQuery, ['_count' => true]));
         //
-        // The new method is optimized because:
-        // - Uses COUNT(*) instead of selecting all data
-        // - Applies the same filters as searchObjects for consistency
-        // - Skips unnecessary sorting operations
+        // EVEN BETTER (can use same base query):
+        // $baseQuery = ['@self' => ['register' => 1], '_search' => 'test'];
+        // $objects = $objectService->searchObjects(array_merge($baseQuery, ['_limit' => 10]));
+        // $total = $objectService->searchObjects(array_merge($baseQuery, ['_count' => true]));
+        //
+        // Benefits of the unified approach:
+        // - Single method for both search and count
+        // - Uses COUNT(*) instead of selecting all data for counts
+        // - Applies identical filters for consistency
+        // - Skips unnecessary sorting operations for counts
         // - Better performance on large datasets
+        // - Less code duplication
 
     }//end exampleObjectServiceSearch()
 
 
     /**
-     * Example 10: Testing the count functionality
+     * Example 18: Testing the unified count functionality
      *
-     * This example demonstrates how to test that the count method returns
-     * the correct number of objects for a given query.
+     * This example demonstrates how to test the new unified searchObjects method
+     * with the _count option for both search and count operations.
      *
      * @return void
      */
@@ -406,8 +589,8 @@ class SearchExample
     {
         // This example would typically be used in unit tests
 
-        // Test query
-        $testQuery = [
+        // Base test query
+        $baseQuery = [
             '@self' => [
                 'register' => 1,
                 'schema' => 2,
@@ -416,43 +599,60 @@ class SearchExample
             '_published' => true,
         ];
 
-        // Using ObjectService (recommended for application code)
+        // Using ObjectService with unified searchObjects method
         // $objectService = $this->container->get(ObjectService::class);
-        // $objects = $objectService->searchObjects($testQuery);
-        // $count = $objectService->countSearchObjects($testQuery);
+        
+        // Get objects
+        // $objects = $objectService->searchObjects($baseQuery);
+        
+        // Get count using same method with _count option
+        // $count = $objectService->searchObjects(array_merge($baseQuery, ['_count' => true]));
         // 
-        // // Verify that count matches actual results
+        // // Verify that count matches actual results (when no pagination)
         // assert(count($objects) === $count, 'Count should match actual results');
 
         // Using ObjectEntityMapper directly (for testing internal logic)
         // $mapper = $this->container->get(ObjectEntityMapper::class);
-        // $objects = $mapper->searchObjects($testQuery);
-        // $count = $mapper->countSearchObjects($testQuery);
+        // $objects = $mapper->searchObjects($baseQuery);
+        // $count = $mapper->searchObjects(array_merge($baseQuery, ['_count' => true]));
         //
         // // Verify that count matches actual results
         // assert(count($objects) === $count, 'Count should match actual results');
 
         // Test with pagination
-        $paginatedQuery = array_merge($testQuery, [
+        $searchQuery = array_merge($baseQuery, [
             '_limit' => 10,
             '_offset' => 0,
         ]);
+        
+        $countQuery = array_merge($baseQuery, [
+            '_count' => true,
+            // Note: pagination options are ignored for count queries
+        ]);
 
-        // $paginatedObjects = $objectService->searchObjects($paginatedQuery);
-        // $totalCount = $objectService->countSearchObjects($testQuery); // Note: no pagination for count
+        // $paginatedObjects = $objectService->searchObjects($searchQuery);
+        // $totalCount = $objectService->searchObjects($countQuery);
         //
         // // Verify pagination works correctly
         // assert(count($paginatedObjects) <= 10, 'Should return max 10 objects');
         // assert($totalCount >= count($paginatedObjects), 'Total count should be >= paginated results');
 
+        // Test type safety
+        // $searchResult = $objectService->searchObjects($baseQuery);
+        // $countResult = $objectService->searchObjects(array_merge($baseQuery, ['_count' => true]));
+        //
+        // assert(is_array($searchResult), 'Search should return array');
+        // assert(is_int($countResult), 'Count should return integer');
+
     }//end exampleCountTesting()
 
 
     /**
-     * Example 11: Using the consolidated paginated search method
+     * Example 19: Using the consolidated paginated search method
      *
      * This example demonstrates how to use the searchObjectsPaginated method
      * which combines search, count, and facets into a single convenient call.
+     * It also shows how the new _count option provides an alternative approach.
      *
      * @return void
      */
@@ -514,6 +714,28 @@ class SearchExample
 
         // Usage in controllers/services:
         // return new JSONResponse($objectService->searchObjectsPaginated($query));
+
+        // ALTERNATIVE: Using the new unified searchObjects with _count option
+        // This approach gives you more control and uses a single method:
+        
+        // $searchQuery = array_merge($query, ['_limit' => 25, '_page' => 2]);
+        // $countQuery = array_merge($query, ['_count' => true]);
+        // 
+        // $objects = $objectService->searchObjects($searchQuery);
+        // $total = $objectService->searchObjects($countQuery);
+        // $pages = ceil($total / 25);
+        // 
+        // $result = [
+        //     'results' => $objects,
+        //     'total' => $total,
+        //     'page' => 2,
+        //     'pages' => $pages,
+        //     'limit' => 25
+        // ];
+
+        // Both approaches are valid:
+        // - searchObjectsPaginated(): More convenient, single call
+        // - searchObjects() with _count: More flexible, unified method
 
     }//end examplePaginatedSearch()
 
