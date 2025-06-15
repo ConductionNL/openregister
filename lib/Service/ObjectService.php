@@ -1118,12 +1118,13 @@ class ObjectService
         $total = $this->countSearchObjects($countQuery);
 
         // Get facets (without pagination)
-        $facets = $this->getFacetsForObjects($countQuery);
+        $facets = []; //@todo $this->getFacetsForObjects($countQuery);
 
         // Calculate total pages
         $pages = max(1, ceil($total / $limit));
-
-        return [
+        
+        // Initialize the results array with pagination information
+        $paginatedResults = [
             'results' => $results,
             'total' => $total,
             'page' => $page,
@@ -1132,6 +1133,33 @@ class ObjectService
             'offset' => $offset,
             'facets' => $facets,
         ];
+
+        // Add next/prev page URLs if applicable
+        $currentUrl = $_SERVER['REQUEST_URI'];
+
+        // Add next page link if there are more pages
+        if ($page < $pages) {
+            $nextPage = ($page + 1);
+            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
+            if (strpos($nextUrl, 'page=') === false) {
+                $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'page='.$nextPage;
+            }
+
+            $paginatedResults['next'] = $nextUrl;
+        }
+
+        // Add previous page link if not on first page
+        if ($page > 1) {
+            $prevPage = ($page - 1);
+            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
+            if (strpos($prevUrl, 'page=') === false) {
+                $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'page='.$prevPage;
+            }
+
+            $paginatedResults['prev'] = $prevUrl;
+        }
+
+        return $paginatedResults;
 
     }//end searchObjectsPaginated()
 
