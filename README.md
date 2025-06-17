@@ -119,4 +119,3 @@ This project is licensed under the EUPL License - see the [LICENSE](LICENSE) fil
 ## Contact
 
 For more information, please contact [info@conduction.nl](mailto:info@conduction.nl).
-
