@@ -397,8 +397,6 @@ class FileService
                 ['message' => $e->getMessage(), 'exception' => $e]
             );
 
-			vaR_dump($e->getMessage());
-
             return null;
         }
     }
