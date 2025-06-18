@@ -351,24 +351,6 @@ class RenderObject
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
 
-        // Convert extend to an array if it's a string.
-        if (is_array($extend) === true && in_array('all', $extend, true)) {
-            $id = $objectData['id'] ?? null;
-            $originId = $objectData['originId'] ?? null;
-
-            foreach ($objectData as $key => $value) {
-                if (in_array($key, ['id', 'originId'], true)) {
-                    continue;
-                }
-
-                if ($value !== $id && $value !== $originId) {
-                    $extend[] = $key;
-                }
-            }
-        } elseif (is_string($extend) === true) {
-            $extend = explode(',', $extend);
-        }
-
 
         // Apply field filtering if specified.
         if (empty($fields) === false) {
@@ -411,7 +393,23 @@ class RenderObject
             );
         }
 
+        // Convert extend to an array if it's a string.
+        if (is_array($extend) === true && in_array('all', $extend, true)) {
+            $id = $objectData['id'] ?? null;
+            $originId = $objectData['originId'] ?? null;
 
+            foreach ($objectData as $key => $value) {
+                if (in_array($key, ['id', 'originId'], true)) {
+                    continue;
+                }
+
+                if ($value !== $id && $value !== $originId) {
+                    $extend[] = $key;
+                }
+            }
+        } elseif (is_string($extend) === true) {
+            $extend = explode(',', $extend);
+        }
 
         // Handle extensions if depth limit not reached.
         if (empty($extend) === false && $depth < 10) {
