@@ -854,19 +854,17 @@ class ObjectService
     /**
      * Renders the rendered object.
      *
-     * @param array      $entity The entity to be rendered
+     * @param ObjectEntity      $entity The entity to be rendered
      * @param array|null $extend Optional array to extend the entity
      * @param int|null   $depth  Optional depth for rendering
      * @param array|null $filter Optional filters to apply
      * @param array|null $fields Optional fields to include
      *
-     * @return array The rendered entity
-     *
-     * @deprecated As the ObjectService always returns the rendered object, input = output.
+     * @return array The rendered entity.
      */
-    public function renderEntity(array $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[]): array
+    public function renderEntity(ObjectEntity $entity, ?array $extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[]): array
     {
-        return $entity;
+        return $this->renderHandler->renderEntity(entity: $entity, extend: $extend, depth: $depth, filter: $filter, fields: $fields)->jsonSerialize();
 
     }//end renderEntity()
 

@@ -15,13 +15,13 @@ import { sourceStore, navigationStore, registerStore } from '../../store/store.j
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton @click="navigationStore.setModal('editSource')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('editSource')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton @click="navigationStore.setDialog('deleteSource')">
+						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteSource')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -56,14 +56,16 @@ import { sourceStore, navigationStore, registerStore } from '../../store/store.j
 										{{ register.description }}
 									</template>
 									<template #actions>
-										<NcActionButton :aria-label="`Go to register '${register.title}'`"
+										<NcActionButton close-after-click
+											:aria-label="`Go to register '${register.title}'`"
 											@click="registerStore.setRegisterItem(register); navigationStore.setSelected('registers')">
 											<template #icon>
 												<EyeArrowRight :size="20" />
 											</template>
 											View
 										</NcActionButton>
-										<NcActionButton :aria-label="`Edit '${register.title}'`"
+										<NcActionButton close-after-click
+											:aria-label="`Edit '${register.title}'`"
 											@click="registerStore.setRegisterItem(register); navigationStore.setModal('editRegister')">
 											<template #icon>
 												<Pencil :size="20" />

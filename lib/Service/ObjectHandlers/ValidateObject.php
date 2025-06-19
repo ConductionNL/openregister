@@ -94,7 +94,7 @@ class ValidateObject
      */
     public function validateObject(
         array $object,
-        Schema | int | null $schema=null,
+        Schema | int | string | null $schema=null,
         object $schemaObject=new stdClass(),
         int $depth=0
     ): ValidationResult {
@@ -103,7 +103,7 @@ class ValidateObject
         if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if (is_int($schema) === true) {
+            } else if (is_int($schema) === true || is_string($schema) === true) {
                 $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
             }
         }
