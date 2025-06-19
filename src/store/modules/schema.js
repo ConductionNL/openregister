@@ -27,11 +27,14 @@ export const useSchemaStore = defineStore('schema', {
 			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
 		setSchemaList(schemas) {
-			// Ensure showProperties is reactive and default false for each schema
-			this.schemaList = schemas.map(schema => ({
-				...schema,
-				showProperties: typeof schema.showProperties === 'boolean' ? schema.showProperties : false,
-			}))
+			this.schemaList = schemas.map(schema => {
+				const existing = this.schemaList.find(item => item.id === schema.id) || {}
+				return {
+					...schema,
+					// keep previously toggled value if available, otherwise default false
+					showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
+				}
+			})
 			console.log('Schema list set to ' + schemas.length + ' items')
 		},
 		/**
