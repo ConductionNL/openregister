@@ -22,35 +22,30 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 				<div class="filterGroup">
 					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
 					<NcSelect
+						id="registerSelect"
+						v-bind="registerOptions"
 						:model-value="selectedRegisterValue"
-						:options="registerOptions"
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
+						@update:model-value="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
 					<NcSelect
+						id="schemaSelect"
+						v-bind="schemaOptions"
 						:model-value="selectedSchemaValue"
-						:options="schemaOptions"
 						:placeholder="t('openregister', 'All schemas')"
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
+						@update:model-value="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="deletedBySelect">{{ t('openregister', 'Deleted By') }}</label>
 					<NcSelect
+						id="deletedBySelect"
 						v-model="selectedDeletedBy"
 						:options="userOptions"
 						:placeholder="t('openregister', 'Any user')"
@@ -82,54 +77,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="actions-tab" :name="t('openregister', 'Bulk Actions')" :order="2">
-			<template #icon>
-				<PlaylistCheck :size="20" />
-			</template>
-
-			<!-- Bulk Actions Section -->
-			<div class="actionsSection">
-				<h3>{{ t('openregister', 'Bulk Operations') }}</h3>
-				<div class="actionGroup">
-					<NcButton
-						type="primary"
-						:disabled="selectedCount === 0"
-						@click="bulkRestore">
-						<template #icon>
-							<Restore :size="20" />
-						</template>
-						{{ t('openregister', 'Restore Selected ({count})', { count: selectedCount }) }}
-					</NcButton>
-				</div>
-				<div class="actionGroup">
-					<NcButton
-						type="error"
-						:disabled="selectedCount === 0"
-						@click="bulkDelete">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Permanently Delete Selected ({count})', { count: selectedCount }) }}
-					</NcButton>
-				</div>
-				<div class="actionGroup">
-					<NcButton
-						:disabled="filteredCount === 0"
-						@click="exportFiltered">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Export Filtered Items') }}
-					</NcButton>
-				</div>
-			</div>
-
-			<NcNoteCard type="warning" class="action-hint">
-				{{ t('openregister', 'Permanent deletion cannot be undone. Please be careful with bulk operations.') }}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="3">
+		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
@@ -214,17 +162,12 @@ import {
 	NcAppSidebarTab,
 	NcSelect,
 	NcNoteCard,
-	NcButton,
 	NcListItem,
 	NcDateTimePickerNative,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import PlaylistCheck from 'vue-material-design-icons/PlaylistCheck.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
-import Restore from 'vue-material-design-icons/Restore.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 
 export default {
@@ -234,16 +177,11 @@ export default {
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcButton,
 		NcListItem,
 		NcDateTimePickerNative,
 		NcLoadingIcon,
 		FilterOutline,
-		PlaylistCheck,
 		ChartLine,
-		Restore,
-		Delete,
-		Download,
 		AccountCircle,
 	},
 	data() {
@@ -252,43 +190,62 @@ export default {
 			selectedDeletedBy: null,
 			dateFrom: null,
 			dateTo: null,
-			selectedCount: 0,
 			filteredCount: 0,
 		}
 	},
 	computed: {
 		registerOptions() {
-			if (!registerStore.registerList || !registerStore.registerList.length) {
-				return []
+			return {
+				options: registerStore.registerList.map(register => ({
+					value: register.id,
+					label: register.title,
+					title: register.title,
+					register,
+				})),
+				reduce: option => option.register,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.register && option.register.title) || option.label || ''
+				},
 			}
-			return registerStore.registerList.map(register => ({
-				label: register.title || `Register ${register.id}`,
-				value: register.id,
-			}))
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem || !schemaStore.schemaList || !schemaStore.schemaList.length) {
-				return []
+			if (!registerStore.registerItem) return { options: [] }
+
+			return {
+				options: schemaStore.schemaList
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
+					.map(schema => ({
+						value: schema.id,
+						label: schema.title,
+						title: schema.title,
+						schema,
+					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
 			}
-			return schemaStore.schemaList
-				.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
-				.map(schema => ({
-					label: schema.title || `Schema ${schema.id}`,
-					value: schema.id,
-				}))
 		},
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
+			const register = registerStore.registerItem
 			return {
-				label: registerStore.registerItem.title || `Register ${registerStore.registerItem.id}`,
-				value: registerStore.registerItem.id,
+				value: register.id,
+				label: register.title,
+				title: register.title,
+				register,
 			}
 		},
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
 			return {
-				label: schemaStore.schemaItem.title || `Schema ${schemaStore.schemaItem.id}`,
-				value: schemaStore.schemaItem.id,
+				value: schema.id,
+				label: schema.title,
+				title: schema.title,
+				schema,
 			}
 		},
 		userOptions() {
@@ -330,18 +287,12 @@ export default {
 		await this.loadStatistics()
 		await this.loadTopDeleters()
 
-		// Listen for selection count updates
-		this.$root.$on('deleted-selection-count', (count) => {
-			this.selectedCount = count
-		})
-
 		// Listen for filtered count updates
 		this.$root.$on('deleted-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 	},
 	beforeDestroy() {
-		this.$root.$off('deleted-selection-count')
 		this.$root.$off('deleted-filtered-count')
 	},
 	methods: {
@@ -358,27 +309,6 @@ export default {
 				dateTo: this.dateTo || null,
 			}
 			this.$root.$emit('deleted-filters-changed', filters)
-		},
-		/**
-		 * Execute bulk restore operation
-		 * @return {void}
-		 */
-		bulkRestore() {
-			this.$root.$emit('deleted-bulk-restore')
-		},
-		/**
-		 * Execute bulk delete operation
-		 * @return {void}
-		 */
-		bulkDelete() {
-			this.$root.$emit('deleted-bulk-delete')
-		},
-		/**
-		 * Export filtered items
-		 * @return {void}
-		 */
-		exportFiltered() {
-			this.$root.$emit('deleted-export-filtered')
 		},
 		/**
 		 * Load deletion statistics
@@ -404,25 +334,21 @@ export default {
 		},
 		/**
 		 * Handle register change
-		 * @param {object} value - The selected register value
+		 * @param {object} register - The selected register object
 		 * @return {void}
 		 */
-		handleRegisterChange(value) {
-			// Find the actual register object
-			const register = registerStore.registerList.find(r => r.id === value?.value)
-			registerStore.setRegisterItem(register || null)
+		handleRegisterChange(register) {
+			registerStore.setRegisterItem(register)
 			schemaStore.setSchemaItem(null) // Clear schema when register changes
 			this.applyFilters()
 		},
 		/**
 		 * Handle schema change
-		 * @param {object} value - The selected schema value
+		 * @param {object} schema - The selected schema object
 		 * @return {void}
 		 */
-		handleSchemaChange(value) {
-			// Find the actual schema object
-			const schema = schemaStore.schemaList.find(s => s.id === value?.value)
-			schemaStore.setSchemaItem(schema || null)
+		handleSchemaChange(schema) {
+			schemaStore.setSchemaItem(schema)
 			this.applyFilters()
 		},
 	},
@@ -431,20 +357,17 @@ export default {
 
 <style scoped>
 .filterSection,
-.actionsSection,
 .statsSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
 .filterSection:last-child,
-.actionsSection:last-child,
 .statsSection:last-child {
 	border-bottom: none;
 }
 
 .filterSection h3,
-.actionsSection h3,
 .statsSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
@@ -466,13 +389,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
-
-.filter-hint,
-.action-hint {
+.filter-hint {
 	margin: 8px 16px;
 }
 

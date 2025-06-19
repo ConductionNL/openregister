@@ -21,6 +21,9 @@
 namespace OCA\OpenRegister\Db;
 
 use Doctrine\DBAL\Platforms\MySQLPlatform;
+use OCA\OpenRegister\Db\ObjectHandlers\MariaDbSearchHandler;
+use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
+use OCA\OpenRegister\Db\ObjectHandlers\MariaDbFacetHandler;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
@@ -65,6 +68,27 @@ class ObjectEntityMapper extends QBMapper
      */
     private IUserSession $userSession;
 
+    /**
+     * MariaDB search handler instance
+     *
+     * @var MariaDbSearchHandler|null
+     */
+    private ?MariaDbSearchHandler $searchHandler = null;
+
+    /**
+     * Metadata facet handler instance
+     *
+     * @var MetaDataFacetHandler|null
+     */
+    private ?MetaDataFacetHandler $metaDataFacetHandler = null;
+
+    /**
+     * MariaDB facet handler instance
+     *
+     * @var MariaDbFacetHandler|null
+     */
+    private ?MariaDbFacetHandler $mariaDbFacetHandler = null;
+
     public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
     public const DEFAULT_LOCK_DURATION = 3600;
@@ -88,6 +112,9 @@ class ObjectEntityMapper extends QBMapper
 
         if ($db->getDatabasePlatform() instanceof MySQLPlatform === true) {
             $this->databaseJsonService = $mySQLJsonService;
+            $this->searchHandler = new MariaDbSearchHandler();
+            $this->metaDataFacetHandler = new MetaDataFacetHandler($db);
+            $this->mariaDbFacetHandler = new MariaDbFacetHandler($db);
         }
 
         $this->eventDispatcher = $eventDispatcher;
@@ -346,6 +373,637 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+
+    /**
+     * Search objects using a clean query structure
+     *
+     * This method provides a cleaner alternative to findAll with better separation
+     * of metadata and object field searches. It uses a single array parameter that
+     * contains all search criteria, filters, and options organized by purpose.
+     *
+     * ## Query Structure Overview
+     * 
+     * The query array is organized into three main categories:
+     * 1. **Metadata filters** - Via `@self` key for database table columns
+     * 2. **Object field filters** - Direct keys for JSON object data searches  
+     * 3. **Search options** - Underscore-prefixed keys for pagination, sorting, etc.
+     *
+     * ## Metadata Filters (@self)
+     * 
+     * Metadata filters target database table columns and are specified under the `@self` key:
+     * 
+     * **Supported metadata fields:**
+     * - `register` - Filter by register ID(s), objects, or mixed arrays
+     * - `schema` - Filter by schema ID(s), objects, or mixed arrays  
+     * - `uuid` - Filter by UUID(s)
+     * - `owner` - Filter by owner user ID(s)
+     * - `organisation` - Filter by organisation name(s)
+     * - `application` - Filter by application name(s)
+     * - `created` - Filter by creation date(s)
+     * - `updated` - Filter by update date(s)
+     *
+     * **Value types supported:**
+     * - Single values: `'register' => 1` or `'register' => $registerObject`
+     * - Arrays: `'register' => [1, 2, 3]` or `'register' => [$reg1, $reg2]`
+     * - Mixed arrays: `'register' => [1, '2', $registerObject]`
+     * - Objects: Automatically converted using `getId()` method
+     * - Null checks: `'owner' => 'IS NULL'` or `'owner' => 'IS NOT NULL'`
+     *
+     * **Examples:**
+     * ```php
+     * '@self' => [
+     *     'register' => 1,                    // Single register ID
+     *     'schema' => [2, 3],                 // Multiple schema IDs
+     *     'owner' => 'IS NOT NULL',           // Has an owner
+     *     'organisation' => ['org1', 'org2']  // Multiple organisations
+     * ]
+     * ```
+     *
+     * ## Object Field Filters
+     * 
+     * Object field filters search within the JSON `object` column data.
+     * These are specified as direct keys in the query array (not under `@self`).
+     *
+     * **Supported patterns:**
+     * - Simple fields: `'name' => 'John Doe'`
+     * - Nested fields: `'address.city' => 'Amsterdam'` (dot notation)
+     * - Array values: `'status' => ['active', 'pending']` (one-of search)
+     * - Null checks: `'description' => 'IS NULL'`
+     *
+     * **Examples:**
+     * ```php
+     * 'name' => 'John Doe',               // Exact match
+     * 'age' => 25,                        // Numeric value
+     * 'address.city' => 'Amsterdam',      // Nested field
+     * 'tags' => ['vip', 'customer'],      // Array search (OR)
+     * 'archived' => 'IS NULL'             // Not archived
+     * ```
+     *
+     * ## Search Options (Underscore-Prefixed)
+     * 
+     * Search options control pagination, sorting, and special behaviors.
+     * All options are prefixed with underscore (`_`) to distinguish them from filters.
+     *
+     * **Available options:**
+     * 
+     * ### `_limit` (int|null)
+     * Maximum number of results to return
+     * ```php
+     * '_limit' => 50
+     * ```
+     *
+     * ### `_offset` (int|null)  
+     * Number of results to skip (for pagination)
+     * ```php
+     * '_offset' => 100
+     * ```
+     *
+     * ### `_order` (array)
+     * Sorting criteria with field => direction mapping
+     * - Metadata fields: Use `@self.fieldname` syntax
+     * - Object fields: Use direct field names (supports dot notation)
+     * - Direction: 'ASC' or 'DESC' (case-insensitive)
+     * ```php
+     * '_order' => [
+     *     '@self.created' => 'DESC',   // Sort by creation date
+     *     'name' => 'ASC',             // Then by object name
+     *     'priority' => 'DESC'         // Then by priority
+     * ]
+     * ```
+     *
+     * ### `_search` (string|null)
+     * Full-text search within JSON object data
+     * ```php
+     * '_search' => 'customer service important'
+     * ```
+     *
+     * ### `_includeDeleted` (bool)
+     * Whether to include soft-deleted objects (default: false)
+     * ```php
+     * '_includeDeleted' => true
+     * ```
+     *
+     * ### `_published` (bool)
+     * Filter for currently published objects only
+     * Checks: published <= now AND (depublished IS NULL OR depublished > now)
+     * ```php
+     * '_published' => true
+     * ```
+     *
+     * ### `_ids` (array|null)
+     * Filter objects by specific IDs or UUIDs
+     * Searches both the 'id' column (integer) and 'uuid' column (string)
+     * ```php
+     * '_ids' => [1, 2, 3]                           // Filter by IDs
+     * '_ids' => ['uuid1', 'uuid2', 'uuid3']         // Filter by UUIDs
+     * '_ids' => [1, 'uuid2', 3, 'uuid4']            // Mixed IDs and UUIDs
+     * ```
+     *
+     * ### `_count` (bool)
+     * Return only the count of matching objects instead of the objects themselves
+     * When true, returns an integer count instead of an array of ObjectEntity objects
+     * Optimized for performance using COUNT(*) instead of selecting all data
+     * ```php
+     * '_count' => true                               // Returns integer count
+     * '_count' => false                              // Returns ObjectEntity array (default)
+     * ```
+     *
+     * ## Complete Query Examples
+     *
+     * **Basic metadata search:**
+     * ```php
+     * $query = [
+     *     '@self' => [
+     *         'register' => 1,
+     *         'owner' => 'user123'
+     *     ]
+     * ];
+     * ```
+     *
+     * **Complex mixed search:**
+     * ```php
+     * $query = [
+     *     '@self' => [
+     *         'register' => [1, 2, 3],        // Multiple registers
+     *         'schema' => $schemaObject,       // Schema object
+     *         'organisation' => 'IS NOT NULL' // Has organisation
+     *     ],
+     *     'name' => 'John',                    // Object field search
+     *     'status' => ['active', 'pending'],   // Multiple statuses
+     *     'address.city' => 'Amsterdam',       // Nested field
+     *     '_search' => 'important customer',   // Full-text search
+     *     '_ids' => [1, 'uuid-123', 5],        // Specific IDs/UUIDs
+     *     '_order' => [
+     *         '@self.created' => 'DESC',       // Newest first
+     *         'priority' => 'ASC'              // Then by priority
+     *     ],
+     *     '_limit' => 25,                      // Pagination
+     *     '_offset' => 50,
+     *     '_published' => true                 // Only published
+     * ];
+     * ```
+     *
+     * **Count query (same filters, optimized for counting):**
+     * ```php
+     * $countQuery = [
+     *     '@self' => [
+     *         'register' => [1, 2, 3],        // Same filters as above
+     *         'organisation' => 'IS NOT NULL'
+     *     ],
+     *     'name' => 'John',
+     *     'status' => ['active', 'pending'],
+     *     '_search' => 'important customer',
+     *     '_published' => true,
+     *     '_count' => true                     // Returns integer count instead of objects
+     * ];
+     * // Note: _limit, _offset, _order are ignored for count queries
+     * ```
+     *
+     * ## Performance Notes
+     * 
+     * - Metadata filters are indexed and perform better than object field filters
+     * - Use metadata filters when possible for better performance
+     * - Full-text search (`_search`) is optimized but can be slower on large datasets
+     * - Consider pagination (`_limit`/`_offset`) for large result sets
+     *
+     * @param array $query The search query array containing filters and options
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     */
+    public function searchObjects(array $query = []): array|int {
+        // Extract options from query (prefixed with _)
+        $limit = $query['_limit'] ?? null;
+        $offset = $query['_offset'] ?? null;
+        $order = $query['_order'] ?? [];
+        $search = $query['_search'] ?? null;
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published = $query['_published'] ?? false;
+        $ids = $query['_ids'] ?? null;
+        $count = $query['_count'] ?? false;
+
+        // Extract metadata from @self
+        $metadataFilters = [];
+        $register = null;
+        $schema = null;
+        
+        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
+            $metadataFilters = $query['@self'];
+            
+            // Process register: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['register']) === true) {
+                $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
+                // Remove from metadataFilters as we'll handle it separately
+                unset($metadataFilters['register']);
+            }
+            
+            // Process schema: convert objects to IDs and handle arrays  
+            if (isset($metadataFilters['schema']) === true) {
+                $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
+                // Remove from metadataFilters as we'll handle it separately
+                unset($metadataFilters['schema']);
+            }
+        }
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+
+        // If search handler is not available, fall back to the original methods
+        if ($this->searchHandler === null) {
+            if ($count === true) {
+                return $this->countAll(
+                    filters: $cleanQuery,
+                    search: $search,
+                    ids: $ids,
+                    uses: null,
+                    includeDeleted: $includeDeleted,
+                    register: $register,
+                    schema: $schema,
+                    published: $published
+                );
+            }
+            
+            return $this->findAll(
+                limit: $limit,
+                offset: $offset,
+                filters: $cleanQuery,
+                sort: $order,
+                search: $search,
+                ids: $ids,
+                includeDeleted: $includeDeleted,
+                register: $register,
+                schema: $schema,
+                published: $published
+            );
+        }
+
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Build base query - different for count vs search
+        if ($count === true) {
+            // For count queries, use COUNT(*) and skip pagination
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
+                ->from('openregister_objects');
+        } else {
+            // For search queries, select all columns and apply pagination
+            $queryBuilder->select('*')
+                ->from('openregister_objects')
+                ->setMaxResults($limit)
+                ->setFirstResult($offset);
+        }
+
+        // Handle basic filters
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+
+        // Handle filtering by IDs/UUIDs if provided
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $queryBuilder->expr()->orX();
+            $orX->add($queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $queryBuilder->andWhere($orX);
+        }
+
+        // Use cleaned query as object filters
+        $objectFilters = $cleanQuery;
+
+        // Apply metadata filters (register, schema, etc.)
+        if (empty($metadataFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
+        }
+
+        // Apply object field filters (JSON searches)
+        if (empty($objectFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
+        }
+
+        // Apply full-text search if provided
+        if ($search !== null && trim($search) !== '') {
+            $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
+        }
+
+        // Apply ordering (skip for count queries as it's not needed and would be inefficient)
+        if ($count === false && empty($order) === false) {
+            $metadataSort = [];
+            $objectSort = [];
+
+            foreach ($order as $field => $direction) {
+                if (str_starts_with($field, '@self.') === true) {
+                    // Remove @self. prefix for metadata sorting
+                    $metadataField = str_replace('@self.', '', $field);
+                    $metadataSort[$metadataField] = $direction;
+                } else {
+                    // Object field sorting
+                    $objectSort[$field] = $direction;
+                }
+            }
+
+            // Apply metadata sorting (standard SQL fields)
+            foreach ($metadataSort as $field => $direction) {
+                $direction = strtoupper($direction);
+                if (in_array($direction, ['ASC', 'DESC']) === false) {
+                    $direction = 'ASC';
+                }
+                $queryBuilder->addOrderBy($field, $direction);
+            }
+
+            // Apply object field sorting (JSON fields)
+            if (empty($objectSort) === false) {
+                $queryBuilder = $this->searchHandler->applySorting($queryBuilder, $objectSort);
+            }
+        }
+
+        // Return appropriate result based on count flag
+        if ($count === true) {
+            $result = $queryBuilder->executeQuery();
+            return (int) $result->fetchOne();
+        } else {
+            return $this->findEntities($queryBuilder);
+        }
+
+    }//end searchObjects()
+
+
+    /**
+     * Count objects using clean query structure (optimized for pagination)
+     *
+     * This method provides an optimized count query that mirrors the searchObjects
+     * functionality but returns only the count of matching objects. It uses the same
+     * query structure and filters as searchObjects but performs a COUNT(*) operation
+     * instead of selecting all data.
+     *
+     * @param array $query The search query array containing filters and options
+     *                     - @self: Metadata filters (register, schema, uuid, etc.)
+     *                     - Direct keys: Object field filters for JSON data
+     *                     - _search: Full-text search term
+     *                     - _includeDeleted: Include soft-deleted objects
+     *                     - _published: Only published objects
+     *                     - _ids: Array of IDs/UUIDs to filter by
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return int The number of objects matching the criteria
+     */
+    public function countSearchObjects(array $query = []): int
+    {
+        // Extract options from query (prefixed with _)
+        $search = $query['_search'] ?? null;
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published = $query['_published'] ?? false;
+        $ids = $query['_ids'] ?? null;
+
+        // Extract metadata from @self
+        $metadataFilters = [];
+        $register = null;
+        $schema = null;
+        
+        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
+            $metadataFilters = $query['@self'];
+            
+            // Process register: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['register']) === true) {
+                $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
+                // Remove from metadataFilters as we'll handle it separately
+                unset($metadataFilters['register']);
+            }
+            
+            // Process schema: convert objects to IDs and handle arrays  
+            if (isset($metadataFilters['schema']) === true) {
+                $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
+                // Remove from metadataFilters as we'll handle it separately
+                unset($metadataFilters['schema']);
+            }
+        }
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // If search handler is not available, fall back to the original countAll method
+        if ($this->searchHandler === null) {
+            return $this->countAll(
+                filters: $cleanQuery,
+                search: $search,
+                ids: $ids,
+                uses: null,
+                includeDeleted: $includeDeleted,
+                register: $register,
+                schema: $schema,
+                published: $published
+            );
+        }
+
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Build base count query - use COUNT(*) instead of selecting all columns
+        $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
+            ->from('openregister_objects');
+
+        // Handle basic filters (same as searchObjects)
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+
+        // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $queryBuilder->expr()->orX();
+            $orX->add($queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $queryBuilder->andWhere($orX);
+        }
+
+        // Use cleaned query as object filters
+        $objectFilters = $cleanQuery;
+
+        // Apply metadata filters (register, schema, etc.)
+        if (empty($metadataFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
+        }
+
+        // Apply object field filters (JSON searches)
+        if (empty($objectFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
+        }
+
+        // Apply full-text search if provided
+        if ($search !== null && trim($search) !== '') {
+            $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
+        }
+
+        // Note: We don't apply sorting for count queries as it's not needed and would be inefficient
+
+        $result = $queryBuilder->executeQuery();
+        return (int) $result->fetchOne();
+
+    }//end countSearchObjects()
+
+
+    /**
+     * Apply basic filters to the query builder
+     *
+     * Handles common filters like deleted, published, register, and schema.
+     *
+     * @param IQueryBuilder     $queryBuilder   The query builder to modify
+     * @param bool              $includeDeleted Whether to include deleted objects
+     * @param bool|null         $published      If true, only return currently published objects
+     * @param mixed             $register       Optional register(s) to filter by (single/array, string/int/object)
+     * @param mixed             $schema         Optional schema(s) to filter by (single/array, string/int/object)
+     *
+     * @phpstan-param IQueryBuilder $queryBuilder
+     * @phpstan-param bool $includeDeleted
+     * @phpstan-param bool|null $published
+     * @phpstan-param mixed $register
+     * @phpstan-param mixed $schema
+     *
+     * @psalm-param IQueryBuilder $queryBuilder
+     * @psalm-param bool $includeDeleted
+     * @psalm-param bool|null $published
+     * @psalm-param mixed $register
+     * @psalm-param mixed $schema
+     *
+     * @return void
+     */
+    private function applyBasicFilters(
+        IQueryBuilder $queryBuilder,
+        bool $includeDeleted,
+        ?bool $published,
+        mixed $register,
+        mixed $schema
+    ): void {
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+        if ($includeDeleted === false) {
+            $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
+        }
+
+        // If published filter is set, only include objects that are currently published
+        if ($published === true) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->andX(
+                    $queryBuilder->expr()->isNotNull('published'),
+                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
+                    $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull('depublished'),
+                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
+                    )
+                )
+            );
+        }
+
+        // Add register filter if provided
+        if ($register !== null) {
+            if (is_array($register) === true) {
+                // Handle array of register IDs
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->in('register', $queryBuilder->createNamedParameter($register, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+                );
+            } else if (is_object($register) === true && method_exists($register, 'getId') === true) {
+                // Handle single register object
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
+                );
+            } else {
+                // Handle single register ID (string/int)
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($register, IQueryBuilder::PARAM_INT))
+                );
+            }
+        }
+
+        // Add schema filter if provided
+        if ($schema !== null) {
+            if (is_array($schema) === true) {
+                // Handle array of schema IDs
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->in('schema', $queryBuilder->createNamedParameter($schema, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+                );
+            } else if (is_object($schema) === true && method_exists($schema, 'getId') === true) {
+                // Handle single schema object
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
+                );
+            } else {
+                // Handle single schema ID (string/int)
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($schema, IQueryBuilder::PARAM_INT))
+                );
+            }
+        }
+
+    }//end applyBasicFilters()
+
+
+    /**
+     * Process register or schema values to handle objects and arrays
+     *
+     * Converts objects to IDs using getId() method and handles both single values and arrays.
+     *
+     * @param mixed  $value The register or schema value (string, object, or array)
+     * @param string $type  The type ('register' or 'schema') for error reporting
+     *
+     * @phpstan-param mixed $value
+     * @phpstan-param string $type
+     *
+     * @psalm-param mixed $value
+     * @psalm-param string $type
+     *
+     * @return Register|Schema|array|null The processed value
+     */
+    private function processRegisterSchemaValue(mixed $value, string $type): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        // Handle arrays
+        if (is_array($value) === true) {
+            $processedValues = [];
+            foreach ($value as $item) {
+                if (is_object($item) === true && method_exists($item, 'getId') === true) {
+                    // Convert object to ID
+                    $processedValues[] = $item->getId();
+                } else if (is_string($item) === true || is_int($item) === true) {
+                    // Keep string/int values as-is
+                    $processedValues[] = $item;
+                } else {
+                    // Invalid value type, skip it
+                    continue;
+                }
+            }
+            return empty($processedValues) === false ? $processedValues : null;
+        }
+
+        // Handle single values
+        if (is_object($value) === true) {
+            if (method_exists($value, 'getId') === true) {
+                // Return the object itself for the basic filter logic to handle
+                return $value;
+            } else {
+                // Invalid object type
+                return null;
+            }
+        }
+
+        // Handle string/int values
+        if (is_string($value) === true || is_int($value) === true) {
+            return $value;
+        }
+
+        // Invalid value type
+        return null;
+
+    }//end processRegisterSchemaValue()
 
 
     /**
@@ -612,7 +1270,11 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Gets the facets for the objects
+     * Gets the facets for the objects (LEGACY METHOD - DO NOT USE DIRECTLY)
+     *
+     * @deprecated This method is legacy and should not be used directly.
+     *             Use getSimpleFacets() with _facets configuration instead.
+     *             This method remains only for internal compatibility.
      *
      * @param array       $filters The filters to apply
      * @param string|null $search  The search string to apply
@@ -1111,5 +1773,127 @@ class ObjectEntityMapper extends QBMapper
         }//end try
 
     }//end getSizeDistributionChartData()
+
+
+    /**
+     * Get simple facets using the new handlers
+     *
+     * This method provides a simple interface to the new facet handlers.
+     * It supports basic terms facets for both metadata and object fields.
+     *
+     * @param array $query The search query array containing filters and facet configuration
+     *                     - _facets: Simple facet configuration
+     *                       - @self: Metadata field facets
+     *                       - Direct keys: Object field facets
+     *
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Simple facet data using the new handlers
+     */
+    public function getSimpleFacets(array $query = []): array
+    {
+        // Check if handlers are available
+        if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
+            return ['facets' => []];
+        }
+
+        // Extract facet configuration
+        $facetConfig = $query['_facets'] ?? [];
+        if (empty($facetConfig)) {
+            return ['facets' => []];
+        }
+
+        // Extract base query (without facet config)
+        $baseQuery = $query;
+        unset($baseQuery['_facets']);
+
+        $facets = [];
+
+        // Process metadata facets (@self)
+        if (isset($facetConfig['@self']) && is_array($facetConfig['@self'])) {
+            $facets['@self'] = [];
+            foreach ($facetConfig['@self'] as $field => $config) {
+                $type = $config['type'] ?? 'terms';
+                
+                if ($type === 'terms') {
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getTermsFacet($field, $baseQuery);
+                } else if ($type === 'date_histogram') {
+                    $interval = $config['interval'] ?? 'month';
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+                } else if ($type === 'range') {
+                    $ranges = $config['ranges'] ?? [];
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+                }
+            }
+        }
+
+        // Process object field facets
+        $objectFacetConfig = array_filter($facetConfig, function($key) {
+            return $key !== '@self';
+        }, ARRAY_FILTER_USE_KEY);
+
+        foreach ($objectFacetConfig as $field => $config) {
+            $type = $config['type'] ?? 'terms';
+            
+            if ($type === 'terms') {
+                $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
+            } else if ($type === 'date_histogram') {
+                $interval = $config['interval'] ?? 'month';
+                $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+            } else if ($type === 'range') {
+                $ranges = $config['ranges'] ?? [];
+                $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+            }
+        }
+
+        return ['facets' => $facets];
+
+    }//end getSimpleFacets()
+
+
+    /**
+     * Get facetable fields for discovery
+     *
+     * This method combines metadata and object field discovery to provide
+     * a comprehensive list of fields that can be used for faceting.
+     * It helps frontends understand what faceting options are available.
+     *
+     * @param array $baseQuery Base query filters to apply for context
+     * @param int   $sampleSize Maximum number of objects to analyze for object fields
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $sampleSize
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $sampleSize
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Comprehensive facetable field information
+     */
+    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
+    {
+        $facetableFields = [
+            '@self' => [],
+            'object_fields' => []
+        ];
+
+        // Get metadata facetable fields if handler is available
+        if ($this->metaDataFacetHandler !== null) {
+            $facetableFields['@self'] = $this->metaDataFacetHandler->getFacetableFields($baseQuery);
+        }
+
+        // Get object field facetable fields if handler is available
+        if ($this->mariaDbFacetHandler !== null) {
+            $facetableFields['object_fields'] = $this->mariaDbFacetHandler->getFacetableFields($baseQuery, $sampleSize);
+        }
+
+        return $facetableFields;
+
+    }//end getFacetableFields()
 
 }//end class

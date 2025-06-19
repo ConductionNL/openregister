@@ -301,11 +301,12 @@ class FileService
      *
      * This method creates a folder structure for an Object Entity within its parent
      * Schema and Register folders. It ensures the complete folder hierarchy exists.
+     * After creation, it sets the folder path on the ObjectEntity and persists it.
      *
-     * @param ObjectEntity      $objectEntity The Object Entity to create a folder for
-     * @param Register|int|null $register    Optional Register entity or ID
-     * @param Schema|int|null   $schema      Optional Schema entity or ID
-     * @param string|null       $folderPath  Optional custom folder path
+     * @param ObjectEntity|string $objectEntity The Object Entity to create a folder for
+     * @param Register|int|null  $register     Optional Register entity or ID
+     * @param Schema|int|null    $schema       Optional Schema entity or ID
+     * @param string|null        $folderPath   Optional custom folder path
      *
      * @return Node|null The created folder Node or null if creation fails
      *
@@ -330,11 +331,18 @@ class FileService
                 schema: $schema
             );
 
-            // Create the folder structure
-            $this->createFolder(folderPath: $path);
+            // Create the folder structure and get the Node
+            $node = $this->createFolder(folderPath: $path);
+
+            // If the objectEntity is an ObjectEntity instance, set the folder property to the node id (fileid) and persist
+            if ($objectEntity instanceof \OCA\OpenRegister\Db\ObjectEntity && $node !== null) {
+                // The node id is the fileid in the filecache table
+                $objectEntity->setFolder((string) $node->getId());
+                $this->objectEntityMapper->update($objectEntity);
+            }
 
             // Return the folder node
-            return $this->getNode(path: $path);
+            return $node;
         } catch (Exception $e) {
             // Log the error and return null
             $this->logger->error(
@@ -730,8 +738,14 @@ class FileService
         ];
 
         // Process labels that contain ':' to add as separate metadata fields.
+        // Exclude labels starting with 'object:' as they are internal system labels.
         $remainingLabels = [];
         foreach ($metadata['labels'] as $label) {
+            // Skip internal object labels - these should not be exposed in the API
+            if (str_starts_with($label, 'object:')) {
+                continue;
+            }
+
             if (strpos($label, ':') !== false) {
                 list($key, $value) = explode(':', $label, 2);
                 $key = trim($key);
@@ -758,7 +772,7 @@ class FileService
             }
         }
 
-        // Update labels array to only contain non-processed labels.
+        // Update labels array to only contain non-processed, non-internal labels.
         $metadata['labels'] = $remainingLabels;
 
         return $metadata;
@@ -771,7 +785,21 @@ class FileService
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
      * @param Node[] $files         Array of Node files to format
-     * @param array  $requestParams Optional request parameters
+     * @param array  $requestParams Optional request parameters including filters:
+     *     _hasLabels: bool,
+     *     _noLabels: bool,
+     *     labels: string|array,
+     *     extension: string,
+     *     extensions: array,
+     *     minSize: int,
+     *     maxSize: int,
+     *     title: string,
+     *     search: string,
+     *     limit: int,
+     *     offset: int,
+     *     order: string|array,
+     *     page: int,
+     *     extend: string|array
      *
      * @throws InvalidPathException
      * @throws NotFoundException
@@ -785,7 +813,7 @@ class FileService
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
-        // Extract specific parameters.
+        // Extract pagination parameters
         $limit = $requestParams['limit'] ?? $requestParams['_limit'] ?? 20;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? 0;
         $order = $requestParams['order'] ?? $requestParams['_order'] ?? [];
@@ -798,7 +826,7 @@ class FileService
             $offset = $limit * ($page - 1);
         }
 
-        // Ensure order and extend are arrays.
+        // Ensure order and extend are arrays
         if (is_string($order) === true) {
             $order = array_map('trim', explode(',', $order));
         }
@@ -806,45 +834,235 @@ class FileService
             $extend = array_map('trim', explode(',', $extend));
         }
 
-        // Remove unnecessary parameters from filters.
-        $filters = $requestParams;
-        unset($filters['_route']); // TODO: Investigate why this is here and if it's needed.
-        unset(
-            $filters['_extend'],
-            $filters['_limit'],
-            $filters['_offset'],
-            $filters['_order'],
-            $filters['_page'],
-            $filters['_search'],
-            $filters['extend'],
-            $filters['limit'],
-            $filters['offset'],
-            $filters['order'],
-            $filters['page']
-        );
+        // Extract filter parameters
+        $filters = $this->extractFilterParameters($requestParams);
 
+        // Format ALL files first (before filtering and pagination)
         $formattedFiles = [];
-
-        // Counts total before slicing.
-        $total = count($files);
-
-        // Apply offset and limit to files array if specified.
-        $files = array_slice($files, $offset, $limit);
-
         foreach ($files as $file) {
             $formattedFiles[] = $this->formatFile($file);
         }
 
-        // @todo search.
-        $pages = $limit !== null ? ceil($total / $limit) : 1;
+        // Apply filters to formatted files
+        $filteredFiles = $this->applyFileFilters($formattedFiles, $filters);
+
+        // Count total after filtering but before pagination
+        $totalFiltered = count($filteredFiles);
+
+        // Apply pagination to filtered results
+        $paginatedFiles = array_slice($filteredFiles, $offset, $limit);
+
+        // Calculate pages based on filtered total
+        $pages = $limit !== null ? ceil($totalFiltered / $limit) : 1;
 
         return [
-            'results' => $formattedFiles,
-            'total'   => $total,
+            'results' => $paginatedFiles,
+            'total'   => $totalFiltered,
             'page'    => $page ?? 1,
             'pages'   => $pages,
         ];
     }//end formatFiles()
+
+    /**
+     * Extract and normalize filter parameters from request parameters.
+     *
+     * This method extracts filter-specific parameters from the request, excluding
+     * pagination and other control parameters. It normalizes string parameters
+     * to arrays where appropriate for consistent filtering logic.
+     *
+     * @param array $requestParams The request parameters array
+     *
+     * @return array{
+     *     _hasLabels?: bool,
+     *     _noLabels?: bool,
+     *     labels?: array<string>,
+     *     extension?: string,
+     *     extensions?: array<string>,
+     *     minSize?: int,
+     *     maxSize?: int,
+     *     title?: string,
+     *     search?: string
+     * } Normalized filter parameters
+     *
+     * @psalm-param array<string, mixed> $requestParams
+     * @phpstan-param array<string, mixed> $requestParams
+     */
+    private function extractFilterParameters(array $requestParams): array
+    {
+        $filters = [];
+
+        // Labels filtering (business logic filters prefixed with underscore)
+        if (isset($requestParams['_hasLabels'])) {
+            $filters['_hasLabels'] = (bool) $requestParams['_hasLabels'];
+        }
+
+        if (isset($requestParams['_noLabels'])) {
+            $filters['_noLabels'] = (bool) $requestParams['_noLabels'];
+        }
+
+        if (isset($requestParams['labels'])) {
+            $labels = $requestParams['labels'];
+            if (is_string($labels)) {
+                $filters['labels'] = array_map('trim', explode(',', $labels));
+            } else if (is_array($labels)) {
+                $filters['labels'] = $labels;
+            }
+        }
+
+        // Extension filtering
+        if (isset($requestParams['extension'])) {
+            $filters['extension'] = trim($requestParams['extension']);
+        }
+
+        if (isset($requestParams['extensions'])) {
+            $extensions = $requestParams['extensions'];
+            if (is_string($extensions)) {
+                $filters['extensions'] = array_map('trim', explode(',', $extensions));
+            } else if (is_array($extensions)) {
+                $filters['extensions'] = $extensions;
+            }
+        }
+
+        // Size filtering
+        if (isset($requestParams['minSize'])) {
+            $filters['minSize'] = (int) $requestParams['minSize'];
+        }
+
+        if (isset($requestParams['maxSize'])) {
+            $filters['maxSize'] = (int) $requestParams['maxSize'];
+        }
+
+        // Title/search filtering
+        if (isset($requestParams['title'])) {
+            $filters['title'] = trim($requestParams['title']);
+        }
+
+        if (isset($requestParams['search']) || isset($requestParams['_search'])) {
+            $filters['search'] = trim($requestParams['search'] ?? $requestParams['_search']);
+        }
+
+        return $filters;
+    }//end extractFilterParameters()
+
+    /**
+     * Apply filters to an array of formatted file metadata.
+     *
+     * This method applies various filters to the formatted file metadata based on
+     * the provided filter parameters. Filters are applied in sequence and files
+     * must match ALL specified criteria to be included in the results.
+     *
+     * @param array $formattedFiles Array of formatted file metadata
+     * @param array $filters        Filter parameters to apply
+     *
+     * @return array Filtered array of file metadata
+     *
+     * @psalm-param array<int, array<string, mixed>> $formattedFiles
+     * @phpstan-param array<int, array<string, mixed>> $formattedFiles
+     * @psalm-param array<string, mixed> $filters
+     * @phpstan-param array<string, mixed> $filters
+     * @psalm-return array<int, array<string, mixed>>
+     * @phpstan-return array<int, array<string, mixed>>
+     */
+    private function applyFileFilters(array $formattedFiles, array $filters): array
+    {
+        if (empty($filters)) {
+            return $formattedFiles;
+        }
+
+        return array_filter($formattedFiles, function (array $file) use ($filters): bool {
+            // Filter by label presence (business logic filter)
+            if (isset($filters['_hasLabels'])) {
+                $hasLabels = !empty($file['labels']);
+                if ($filters['_hasLabels'] !== $hasLabels) {
+                    return false;
+                }
+            }
+
+            // Filter for files without labels (business logic filter)
+            if (isset($filters['_noLabels']) && $filters['_noLabels'] === true) {
+                $hasLabels = !empty($file['labels']);
+                if ($hasLabels) {
+                    return false;
+                }
+            }
+
+            // Filter by specific labels
+            if (isset($filters['labels']) && !empty($filters['labels'])) {
+                $fileLabels = $file['labels'] ?? [];
+                $hasMatchingLabel = false;
+
+                foreach ($filters['labels'] as $requiredLabel) {
+                    if (in_array($requiredLabel, $fileLabels, true)) {
+                        $hasMatchingLabel = true;
+                        break;
+                    }
+                }
+
+                if (!$hasMatchingLabel) {
+                    return false;
+                }
+            }
+
+            // Filter by single extension
+            if (isset($filters['extension'])) {
+                $fileExtension = $file['extension'] ?? '';
+                if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
+                    return false;
+                }
+            }
+
+            // Filter by multiple extensions
+            if (isset($filters['extensions']) && !empty($filters['extensions'])) {
+                $fileExtension = $file['extension'] ?? '';
+                $hasMatchingExtension = false;
+
+                foreach ($filters['extensions'] as $allowedExtension) {
+                    if (strcasecmp($fileExtension, $allowedExtension) === 0) {
+                        $hasMatchingExtension = true;
+                        break;
+                    }
+                }
+
+                if (!$hasMatchingExtension) {
+                    return false;
+                }
+            }
+
+            // Filter by file size range
+            if (isset($filters['minSize'])) {
+                $fileSize = $file['size'] ?? 0;
+                if ($fileSize < $filters['minSize']) {
+                    return false;
+                }
+            }
+
+            if (isset($filters['maxSize'])) {
+                $fileSize = $file['size'] ?? 0;
+                if ($fileSize > $filters['maxSize']) {
+                    return false;
+                }
+            }
+
+            // Filter by title/filename content
+            if (isset($filters['title']) && !empty($filters['title'])) {
+                $fileTitle = $file['title'] ?? '';
+                if (stripos($fileTitle, $filters['title']) === false) {
+                    return false;
+                }
+            }
+
+            // Filter by search term (searches in title)
+            if (isset($filters['search']) && !empty($filters['search'])) {
+                $fileTitle = $file['title'] ?? '';
+                if (stripos($fileTitle, $filters['search']) === false) {
+                    return false;
+                }
+            }
+
+            // File passed all filters
+            return true;
+        });
+    }//end applyFileFilters()
 
     /**
      * Get the tags associated with a file.
@@ -1063,11 +1281,11 @@ class FileService
      *
      * @throws Exception If creating the folder is not permitted
      *
-     * @return bool True if successfully created a new folder, false if folder already exists
+     * @return Node|null The Node object for the folder (existing or newly created), or null on failure
      */
-    public function createFolder(string $folderPath): bool
+    public function createFolder(string $folderPath): ?Node
     {
-        return $this->executeWithFileUserContext(function () use ($folderPath): bool {
+        return $this->executeWithFileUserContext(function () use ($folderPath): ?Node {
             $folderPath = trim(string: $folderPath, characters: '/');
 
             // Get the current user.
@@ -1096,15 +1314,16 @@ class FileService
                 }
 
                 try {
-                    $userFolder->get(path: $folderPath);
+                    // Try to get the folder if it already exists
+                    $node = $userFolder->get(path: $folderPath);
+                    $this->logger->info("This folder already exists: $folderPath");
+                    return $node;
                 } catch (NotFoundException) {
-                    $userFolder->newFolder(path: $folderPath);
-                    return true;
+                    // Folder does not exist, create it
+                    $node = $userFolder->newFolder(path: $folderPath);
+                    $this->logger->info("Created folder: $folderPath");
+                    return $node;
                 }
-
-                // Folder already exists.
-                $this->logger->info("This folder already exists: $folderPath");
-                return false;
             } catch (NotPermittedException $e) {
                 $this->logger->error("Can't create folder $folderPath: ".$e->getMessage());
                 throw new Exception("Can't create folder $folderPath");
@@ -1669,7 +1888,7 @@ class FileService
      * Retrieves all available tags in the system.
      *
      * This method fetches all tags that are visible and assignable by users
-     * from the system tag manager.
+     * from the system tag manager, and filters out any tags that start with 'object:'.
      *
      * @throws \Exception If there's an error retrieving the tags
      *
@@ -1685,10 +1904,15 @@ class FileService
             // Get all tags that are visible and assignable by users
             $tags = $this->systemTagManager->getAllTags(visibilityFilter: true);
 
-            // Extract just the tag names
-            $tagNames = array_map(static function ($tag) {
-                return $tag->getName();
-            }, $tags);
+            // Extract just the tag names and filter out those starting with 'object:'
+            $tagNames = array_filter(
+                array_map(static function ($tag) {
+                    return $tag->getName();
+                }, $tags),
+                static function ($tagName) {
+                    return !str_starts_with($tagName, 'object:');
+                }
+            );
 
             // Return sorted array of tag names
             sort($tagNames);
@@ -1956,6 +2180,180 @@ class FileService
             return $file;
         });
     }
+
+    /**
+     * Create a ZIP archive containing all files for a specific object.
+     *
+     * This method retrieves all files associated with an object and creates a ZIP archive
+     * containing all the files. The ZIP file is created in the system's temporary directory
+     * and can be downloaded by the client.
+     *
+     * @param ObjectEntity|string $object The object entity or object UUID/ID
+     * @param string|null        $zipName Optional custom name for the ZIP file
+     *
+     * @throws Exception If ZIP creation fails or object not found
+     * @throws NotFoundException If the object folder is not found
+     * @throws NotPermittedException If file access is not permitted
+     *
+     * @return array{
+     *     path: string,
+     *     filename: string,
+     *     size: int,
+     *     mimeType: string
+     * } Information about the created ZIP file
+     *
+     * @psalm-return array{path: string, filename: string, size: int, mimeType: string}
+     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
+     */
+    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
+    {
+        return $this->executeWithFileUserContext(function () use ($object, $zipName): array {
+            // If string ID provided, try to find the object entity
+            if (is_string($object) === true) {
+                try {
+                    $object = $this->objectEntityMapper->find($object);
+                } catch (Exception $e) {
+                    throw new Exception("Object not found: " . $e->getMessage());
+                }
+            }
+
+            $this->logger->info("Creating ZIP archive for object: " . $object->getId());
+
+            // Check if ZipArchive extension is available
+            if (class_exists('ZipArchive') === false) {
+                throw new Exception('PHP ZipArchive extension is not available');
+            }
+
+            // Get all files for the object
+            $files = $this->getFiles($object);
+
+            if (empty($files) === true) {
+                throw new Exception('No files found for this object');
+            }
+
+            $this->logger->info("Found " . count($files) . " files for object " . $object->getId());
+
+            // Generate ZIP filename
+            if ($zipName === null) {
+                $objectIdentifier = $object->getUuid() ?? (string) $object->getId();
+                $zipName = 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
+            } else if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
+                $zipName .= '.zip';
+            }
+
+            // Create temporary file for the ZIP
+            $tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+
+            // Create new ZIP archive
+            $zip = new \ZipArchive();
+            $result = $zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+            if ($result !== true) {
+                throw new Exception("Cannot create ZIP file: " . $this->getZipErrorMessage($result));
+            }
+
+            $addedFiles = 0;
+            $skippedFiles = 0;
+
+            // Add each file to the ZIP archive
+            foreach ($files as $file) {
+                try {
+                    if ($file instanceof \OCP\Files\File === false) {
+                        $this->logger->warning("Skipping non-file node: " . $file->getName());
+                        $skippedFiles++;
+                        continue;
+                    }
+
+                    // Get file content
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+
+                    // Add file to ZIP with its original name
+                    $added = $zip->addFromString($fileName, $fileContent);
+
+                    if ($added === false) {
+                        $this->logger->error("Failed to add file to ZIP: " . $fileName);
+                        $skippedFiles++;
+                        continue;
+                    }
+
+                    $addedFiles++;
+                    $this->logger->debug("Added file to ZIP: " . $fileName);
+
+                } catch (Exception $e) {
+                    $this->logger->error("Error processing file " . $file->getName() . ": " . $e->getMessage());
+                    $skippedFiles++;
+                    continue;
+                }
+            }
+
+            // Close the ZIP archive
+            $closeResult = $zip->close();
+            if ($closeResult === false) {
+                throw new Exception("Failed to finalize ZIP archive");
+            }
+
+            $this->logger->info("ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files");
+
+            // Check if ZIP file was created successfully
+            if (file_exists($tempZipPath) === false) {
+                throw new Exception("ZIP file was not created successfully");
+            }
+
+            $fileSize = filesize($tempZipPath);
+            if ($fileSize === false) {
+                throw new Exception("Cannot determine ZIP file size");
+            }
+
+            return [
+                'path' => $tempZipPath,
+                'filename' => $zipName,
+                'size' => $fileSize,
+                'mimeType' => 'application/zip'
+            ];
+        });
+    }//end createObjectFilesZip()
+
+    /**
+     * Get a human-readable error message for ZipArchive error codes.
+     *
+     * @param int $errorCode The ZipArchive error code
+     *
+     * @return string Human-readable error message
+     *
+     * @psalm-return string
+     * @phpstan-return string
+     */
+    private function getZipErrorMessage(int $errorCode): string
+    {
+        return match ($errorCode) {
+            \ZipArchive::ER_OK => 'No error',
+            \ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
+            \ZipArchive::ER_RENAME => 'Renaming temporary file failed',
+            \ZipArchive::ER_CLOSE => 'Closing zip archive failed',
+            \ZipArchive::ER_SEEK => 'Seek error',
+            \ZipArchive::ER_READ => 'Read error',
+            \ZipArchive::ER_WRITE => 'Write error',
+            \ZipArchive::ER_CRC => 'CRC error',
+            \ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
+            \ZipArchive::ER_NOENT => 'No such file',
+            \ZipArchive::ER_EXISTS => 'File already exists',
+            \ZipArchive::ER_OPEN => 'Can\'t open file',
+            \ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
+            \ZipArchive::ER_ZLIB => 'Zlib error',
+            \ZipArchive::ER_MEMORY => 'Memory allocation failure',
+            \ZipArchive::ER_CHANGED => 'Entry has been changed',
+            \ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
+            \ZipArchive::ER_EOF => 'Premature EOF',
+            \ZipArchive::ER_INVAL => 'Invalid argument',
+            \ZipArchive::ER_NOZIP => 'Not a zip archive',
+            \ZipArchive::ER_INTERNAL => 'Internal error',
+            \ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+            \ZipArchive::ER_REMOVE => 'Can\'t remove file',
+            \ZipArchive::ER_DELETED => 'Entry has been deleted',
+            default => "Unknown error code: $errorCode"
+        };
+    }//end getZipErrorMessage()
 
     /**
      * Find all files tagged with a specific object identifier.
