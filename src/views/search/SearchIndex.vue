@@ -91,10 +91,31 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 											@update:checked="objectStore.toggleSelectAllObjects" />
 									</th>
 									<th v-for="(column, index) in objectStore.enabledColumns"
-										:key="`header-${column.id || column.key || `col-${index}`}`">
-										<span class="stickyHeader columnTitle" :title="column.description">
-											{{ column.label }}
-										</span>
+										:key="`header-${column.id || column.key || `col-${index}`}`"
+										class="sortableColumn">
+										<div class="columnHeader">
+											<span class="stickyHeader columnTitle" :title="column.description">
+												{{ column.label }}
+											</span>
+											<div v-if="isColumnSortable(column)" class="sortControls">
+												<NcButton
+													type="tertiary"
+													:class="{ active: getSortDirection(column) === 'ASC' }"
+													@click="handleSort(column, 'ASC')">
+													<template #icon>
+														<SortAscending :size="16" />
+													</template>
+												</NcButton>
+												<NcButton
+													type="tertiary"
+													:class="{ active: getSortDirection(column) === 'DESC' }"
+													@click="handleSort(column, 'DESC')">
+													<template #icon>
+														<SortDescending :size="16" />
+													</template>
+												</NcButton>
+											</div>
+										</div>
 									</th>
 									<th class="tableColumnActions columnTitle">
 										{{ t('openregister', 'Actions') }}
@@ -181,7 +202,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 </template>
 
 <script>
-import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
+import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble, NcButton } from '@nextcloud/vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
 import formatBytes from '../../services/formatBytes.js'
@@ -192,6 +213,8 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import SortAscending from 'vue-material-design-icons/SortAscending.vue'
+import SortDescending from 'vue-material-design-icons/SortDescending.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -213,6 +236,9 @@ export default {
 		Refresh,
 		PaginationComponent,
 		FileTreeOutline,
+		SortAscending,
+		SortDescending,
+		NcButton,
 	},
 	data() {
 		return {
@@ -361,6 +387,47 @@ export default {
 		},
 		getValidISOstring,
 		formatBytes,
+		isColumnSortable(column) {
+			if (column.id?.startsWith('meta_')) {
+				const metaKey = column.id.replace('meta_', '')
+				const metaField = objectStore.metadata[metaKey]
+				return metaField?.sortable === true
+			} else {
+				// Property columns are generally sortable
+				return true
+			}
+		},
+		getSortDirection(column) {
+			const sortKey = this.getSortKey(column)
+			return objectStore.ordering[sortKey] || null
+		},
+		getSortKey(column) {
+			if (column.id?.startsWith('meta_')) {
+				const metaKey = column.id.replace('meta_', '')
+				return `@self.${metaKey}`
+			} else {
+				return column.key
+			}
+		},
+		handleSort(column, direction) {
+			const sortKey = this.getSortKey(column)
+			const currentDirection = objectStore.ordering[sortKey]
+
+			// Clear all other sorting first (single column sort)
+			objectStore.clearOrdering()
+
+			// Toggle or set the direction
+			if (currentDirection === direction) {
+				// If clicking the same direction, remove sorting
+				objectStore.setOrdering(sortKey, null)
+			} else {
+				// Set new direction
+				objectStore.setOrdering(sortKey, direction)
+			}
+
+			// Refresh the list with new sorting
+			objectStore.refreshObjectList()
+		},
 	},
 }
 </script>
@@ -420,6 +487,48 @@ input[type="checkbox"] {
 .stickyHeader {
     position: sticky;
     left: 0;
+}
+
+/* Sorting styles */
+.sortableColumn {
+	position: relative;
+}
+
+.columnHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.sortControls {
+	display: flex;
+	gap: 2px;
+	opacity: 0.6;
+	transition: opacity 0.2s ease;
+}
+
+.sortableColumn:hover .sortControls {
+	opacity: 1;
+}
+
+.sortControls .button-vue {
+	min-height: 24px;
+	min-width: 24px;
+	padding: 2px;
+}
+
+.sortControls .button-vue.active {
+	background-color: var(--color-primary-element);
+	color: var(--color-primary-text);
+}
+
+.sortControls .button-vue:hover {
+	background-color: var(--color-background-hover);
+}
+
+.sortControls .button-vue.active:hover {
+	background-color: var(--color-primary-element-hover);
 }
 
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */

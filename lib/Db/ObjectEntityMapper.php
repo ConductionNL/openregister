@@ -1803,7 +1803,15 @@ class ObjectEntityMapper extends QBMapper
 
         // Extract facet configuration
         $facetConfig = $query['_facets'] ?? [];
-        if (empty($facetConfig)) {
+        
+        // Handle case where _facets is a string 'true' instead of an array
+        if (is_string($facetConfig) && ($facetConfig === 'true' || $facetConfig === '1')) {
+            // When _facets=true, return empty facets structure for now
+            // In the future, this could auto-discover available facets
+            return ['facets' => []];
+        }
+        
+        if (empty($facetConfig) || !is_array($facetConfig)) {
             return ['facets' => []];
         }
 
