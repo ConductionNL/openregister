@@ -270,12 +270,11 @@ class ObjectsController extends Controller
 
     }//end getConfig()
 
-
     /**
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
-     * It supports filtering, sorting, and pagination through query parameters.
+     * It supports filtering, sorting, faceting, and pagination through query parameters.
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
@@ -289,32 +288,27 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Get config and fetch objects.
-        $config = $this->getConfig($register, $schema);
+        // Set the schema and register context to the object service
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
 
-        $objectService->setRegister($register)->setSchema($schema);
+        // Get all request parameters for the search query
+        $searchQuery = $this->request->getParams();
 
-        // @TODO dit moet netter
-        foreach ($config['filters'] as $key => $filter) {
-            switch ($key) {
-                case 'register':
-                    $config['filters'][$key] = $objectService->getRegister();
-                    break;
-                case 'schema':
-                    $config['filters'][$key] = $objectService->getSchema();
-                    break;
-                default:
-                    break;
-            }
+        // Clean up route-specific parameters
+        unset($searchQuery['_route']);
+
+        // Ensure the register and schema are set in the query
+        if (!isset($searchQuery['@self'])) {
+            $searchQuery['@self'] = [];
         }
+        $searchQuery['@self']['register'] = $objectService->getRegister(); // Use resolved register ID
+        $searchQuery['@self']['schema'] = $objectService->getSchema();     // Use resolved schema ID
+        
+        // Use the new searchObjectsPaginated method which includes faceting support
+        $result = $objectService->searchObjectsPaginated($searchQuery);
 
-        $objects = $objectService->findAll($config);
-
-        // Get total count for pagination.
-        // $total = $objectService->count($config['filters'], $config['search']);
-        $total = $objectService->count($config);
-        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
-
+        return new JSONResponse($result);
     }//end index()
 
 

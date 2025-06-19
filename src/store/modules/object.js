@@ -52,6 +52,19 @@ export const useObjectStore = defineStore('object', {
 			offset: 0,
 		},
 		filters: {},
+		facets: {},
+		facetable: {},
+		ordering: {},
+		activeFacets: {},
+		lastApiCall: {
+			url: '',
+			method: 'GET',
+			params: {},
+			headers: {},
+			response: null,
+			timestamp: null,
+			duration: 0,
+		},
 		pagination: {
 			total: 0,
 			page: 1,
@@ -65,121 +78,141 @@ export const useObjectStore = defineStore('object', {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true, // Enabled by default
+				enabled: true,
+				sortable: true,
 			},
 			uri: {
 				label: 'URI',
 				key: 'uri',
 				description: 'Uniform resource identifier',
 				enabled: false,
+				sortable: true,
 			},
 			version: {
 				label: 'Version',
 				key: 'version',
 				description: 'Version number of the object',
 				enabled: false,
+				sortable: true,
 			},
 			register: {
 				label: 'Register',
 				key: 'register',
 				description: 'Register the object belongs to',
 				enabled: false,
+				sortable: true,
 			},
 			schema: {
 				label: 'Schema',
 				key: 'schema',
 				description: 'Schema the object follows',
 				enabled: false,
+				sortable: true,
 			},
 			files: {
 				label: 'Files',
 				key: 'files',
 				description: 'Attached files count',
-				enabled: true, // Enabled by default
+				enabled: true,
+				sortable: false,
 			},
 			locked: {
 				label: 'Locked',
 				key: 'locked',
 				description: 'Lock status of the object',
 				enabled: false,
+				sortable: true,
 			},
 			organization: {
 				label: 'Organization',
 				key: 'organization',
 				description: 'Organization that created the object',
 				enabled: false,
+				sortable: true,
 			},
 			validation: {
 				label: 'Validation',
 				key: 'validation',
 				description: 'Validation status of the object',
 				enabled: false,
+				sortable: true,
 			},
 			owner: {
 				label: 'Owner',
 				key: 'owner',
 				description: 'Owner of the object',
 				enabled: false,
+				sortable: true,
 			},
 			application: {
 				label: 'Application',
 				key: 'application',
 				description: 'Application that created the object',
 				enabled: false,
+				sortable: true,
 			},
 			folder: {
 				label: 'Folder',
 				key: 'folder',
 				description: 'Storage folder location',
 				enabled: false,
+				sortable: true,
 			},
 			geo: {
 				label: 'Geo',
 				key: 'geo',
 				description: 'Geographical location of the object',
 				enabled: false,
+				sortable: false,
 			},
 			retention: {
 				label: 'Retention',
 				key: 'retention',
 				description: 'Retention status of the object',
 				enabled: false,
+				sortable: true,
 			},
 			size: {
 				label: 'Size',
 				key: 'size',
 				description: 'Size of the object',
 				enabled: false,
+				sortable: true,
 			},
 			published: {
 				label: 'Published',
 				key: 'published',
 				description: 'Published status of the object',
 				enabled: false,
+				sortable: true,
 			},
 			depublished: {
 				label: 'Depublished',
 				key: 'depublished',
 				description: 'Depublished status of the object',
 				enabled: false,
+				sortable: true,
 			},
 			deleted: {
 				label: 'Deleted',
 				key: 'deleted',
 				description: 'Deleted status of the object',
 				enabled: false,
+				sortable: true,
 			},
 			created: {
 				label: 'Created',
 				key: 'created',
 				description: 'Creation date and time',
-				enabled: true, // Enabled by default
+				enabled: true,
+				sortable: true,
 			},
 			updated: {
 				label: 'Updated',
 				key: 'updated',
 				description: 'Last update date and time',
-				enabled: true, // Enabled by default
+				enabled: true,
+				sortable: true,
 			},
 		},
 		properties: {}, // Will be populated based on schema
@@ -314,8 +347,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {void}
 		 */
 		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters)
+			this.filters = filters
 		},
 		async refreshObjectList(options = {}) {
 			const registerStore = useRegisterStore()
@@ -328,25 +360,66 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('Register and schema are required')
 			}
 
-			let endpoint = this._buildObjectPath({
-				register,
-				schema,
-			})
+			const startTime = performance.now()
+			let endpoint = this._buildObjectPath({ register, schema })
 
 			const params = []
+			const requestParams = {}
 
-			// Handle filters as an object
+			// Handle filters
 			Object.entries(this.filters).forEach(([key, value]) => {
 				if (value !== undefined && value !== '') {
 					params.push(`${key}=${encodeURIComponent(value)}`)
+					requestParams[key] = value
 				}
 			})
 
+			// Handle active facets
+			Object.entries(this.activeFacets).forEach(([field, values]) => {
+				if (values.length > 0) {
+					if (field.startsWith('@self.')) {
+						// Metadata facet
+						const metaField = field.replace('@self.', '')
+						params.push(`@self[${metaField}]=${values.map(v => encodeURIComponent(v)).join(',')}`)
+						requestParams[`@self[${metaField}]`] = values
+					} else {
+						// Object field facet
+						params.push(`${field}=${values.map(v => encodeURIComponent(v)).join(',')}`)
+						requestParams[field] = values
+					}
+				}
+			})
+
+			// Handle ordering
+			if (Object.keys(this.ordering).length > 0) {
+				const orderParams = []
+				Object.entries(this.ordering).forEach(([field, direction]) => {
+					orderParams.push(`${encodeURIComponent(field)}=${encodeURIComponent(direction)}`)
+				})
+				params.push(`_order[${orderParams.join('&_order[')}`)
+				requestParams._order = this.ordering
+			}
+
+			// Handle pagination
 			if (options.limit || this.pagination.limit) {
-				params.push('_limit=' + (options.limit || this.pagination.limit))
+				const limit = options.limit || this.pagination.limit
+				params.push('_limit=' + limit)
+				requestParams._limit = limit
 			}
 			if (options.page || this.pagination.page) {
-				params.push('_page=' + (options.page || this.pagination.page))
+				const page = options.page || this.pagination.page
+				params.push('_page=' + page)
+				requestParams._page = page
+			}
+
+			// Enable facets
+			params.push('_facets=true')
+			requestParams._facets = true
+
+			// Enable facetable discovery if we don't have it yet
+			if (Object.keys(this.facetable).length === 0) {
+				params.push('_facetable=true')
+				requestParams._facetable = true
 			}
 
 			if (params.length > 0) {
@@ -354,9 +427,39 @@ export const useObjectStore = defineStore('object', {
 			}
 
 			try {
-				const response = await fetch(endpoint)
+				const response = await fetch(endpoint, {
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+					},
+				})
 				const data = await response.json()
+
+				const endTime = performance.now()
+
+				// Track API call for developer tab
+				this.setLastApiCall({
+					url: endpoint,
+					method: 'GET',
+					params: requestParams,
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+					},
+					response: data,
+					duration: Math.round(endTime - startTime),
+				})
+
 				this.setObjectList(data)
+
+				// Store facets and facetable data
+				if (data.facets) {
+					this.setFacets(data.facets)
+				}
+				if (data.facetable) {
+					this.setFacetable(data.facetable)
+				}
+
 				return { response, data }
 			} catch (err) {
 				console.error(err)
@@ -1157,6 +1260,45 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		// New actions for faceting and ordering
+		setFacets(facets) {
+			this.facets = facets || {}
+		},
+		setFacetable(facetable) {
+			this.facetable = facetable || {}
+		},
+		setOrdering(field, direction) {
+			if (direction === null) {
+				delete this.ordering[field]
+			} else {
+				this.ordering[field] = direction
+			}
+		},
+		clearOrdering() {
+			this.ordering = {}
+		},
+		setActiveFacet(field, value, active = true) {
+			if (!this.activeFacets[field]) {
+				this.activeFacets[field] = []
+			}
+			if (active && !this.activeFacets[field].includes(value)) {
+				this.activeFacets[field].push(value)
+			} else if (!active) {
+				this.activeFacets[field] = this.activeFacets[field].filter(v => v !== value)
+				if (this.activeFacets[field].length === 0) {
+					delete this.activeFacets[field]
+				}
+			}
+		},
+		clearActiveFacets() {
+			this.activeFacets = {}
+		},
+		setLastApiCall(apiCall) {
+			this.lastApiCall = {
+				...apiCall,
+				timestamp: new Date().toISOString(),
+			}
+		},
 	},
 	getters: {
 		isAllSelected() {
@@ -1212,10 +1354,57 @@ export const useObjectStore = defineStore('object', {
 		// Combined enabled columns in the desired order
 		enabledColumns() {
 			return [
-				...this.enabledIdentifierMetadata, // ID/UUID first
-				...this.enabledProperties, // Then properties
-				...this.enabledOtherMetadata, // Then other metadata
+				...this.enabledIdentifierMetadata,
+				...this.enabledProperties,
+				...this.enabledOtherMetadata,
 			]
+		},
+		// New getters for faceting and ordering
+		availableFacetFields() {
+			const facetFields = []
+
+			// Add metadata facets
+			Object.entries(this.facets).forEach(([field, facetData]) => {
+				if (field.startsWith('@self.')) {
+					const metaKey = field.replace('@self.', '')
+					const metaField = this.metadata[metaKey] || this.metadata[metaKey.replace('meta_', '')]
+					if (metaField) {
+						facetFields.push({
+							key: field,
+							label: metaField.label,
+							type: 'metadata',
+							values: facetData,
+						})
+					}
+				} else {
+					// Object field facets
+					const property = this.properties[field]
+					facetFields.push({
+						key: field,
+						label: property?.label || field,
+						type: 'property',
+						values: facetData,
+					})
+				}
+			})
+
+			return facetFields
+		},
+
+		currentOrdering() {
+			return this.ordering
+		},
+
+		currentActiveFacets() {
+			return this.activeFacets
+		},
+
+		apiCallForDeveloper() {
+			if (!this.lastApiCall.url) return null
+
+			return {
+				...this.lastApiCall,
+			}
 		},
 	},
 })
