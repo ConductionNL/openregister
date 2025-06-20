@@ -3,8 +3,8 @@ name: Release Workflow
 on:
   push:
     branches:
-      - master
       - main
+      - master
   workflow_dispatch:
     inputs:
       version:
