@@ -1,0 +1,46 @@
+# {{ project.name }}
+
+{{ project.description }}
+
+{% if project.namespace.classes %}
+## Classes
+
+{% for class in project.namespace.classes %}
+### {{ class.name }}
+
+{{ class.summary }}
+
+{% if class.description %}
+{{ class.description|raw }}
+{% endif %}
+
+{% if class.methods %}
+#### Methods
+
+{% for method in class.methods %}
+##### `{{ method.name }}`
+
+{% if method.summary %}
+{{ method.summary }}
+{% endif %}
+
+{% if method.description %}
+{{ method.description|raw }}
+{% endif %}
+
+{% if method.parameters %}
+Parameters:
+{% for parameter in method.parameters %}
+- `{{ parameter.name }}` ({{ parameter.type }}): {{ parameter.description }}
+{% endfor %}
+{% endif %}
+
+{% if method.return %}
+Returns: {{ method.return.type }}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% endif %} 

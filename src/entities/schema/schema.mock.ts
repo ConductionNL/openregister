@@ -16,6 +16,21 @@ export const mockSchemaData = (): TSchema[] => [
 		archive: [],
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
+		slug: 'character-schema',
+		hardValidation: false,
+		maxDepth: 2,
+		stats: {
+			objects: {
+				total: 10,
+				size: 2048,
+				invalid: 1,
+				deleted: 0,
+				locked: 0,
+				published: 9,
+			},
+			logs: { total: 2, size: 512 },
+			files: { total: 1, size: 128 },
+		},
 	},
 	{
 		id: '9012a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
@@ -31,6 +46,21 @@ export const mockSchemaData = (): TSchema[] => [
 		archive: [],
 		updated: new Date().toISOString(),
 		created: new Date().toISOString(),
+		slug: 'item-schema',
+		hardValidation: true,
+		maxDepth: 1,
+		stats: {
+			objects: {
+				total: 5,
+				size: 1024,
+				invalid: 0,
+				deleted: 0,
+				locked: 0,
+				published: 5,
+			},
+			logs: { total: 1, size: 256 },
+			files: { total: 0, size: 0 },
+		},
 	},
 ]
 

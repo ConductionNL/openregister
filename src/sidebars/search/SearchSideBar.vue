@@ -1,58 +1,61 @@
 <script setup>
-import { objectStore, registerStore, schemaStore } from '../../store/store.js'
-import { AppInstallService } from '../../services/appInstallService.js'
-import { computed, ref, onMounted, watch } from 'vue'
+import { navigationStore, objectStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppSidebar
 		ref="sidebar"
+		v-model="activeTab"
 		name="Object selection"
 		subtitle="Select register and schema"
-		subname="Within the federative network">
-		<NcAppSidebarTab id="search-tab" name="Selection" :order="1">
+		subname="Within the federative network"
+		:open="navigationStore.sidebarState.search"
+		@update:open="(e) => navigationStore.setSidebarState('search', e)">
+		<NcAppSidebarTab id="filters-tab" name="Filters" :order="1">
 			<template #icon>
-				<Magnify :size="20" />
+				<FilterOutline :size="20" />
 			</template>
 
-			<!-- Search Section -->
-			<div class="section">
-				<h3 class="section-title">
-					Search
-				</h3>
-				<NcSelect v-bind="registerOptions"
-					:model-value="selectedRegisterValue"
-					input-label="Register"
-					:loading="registerLoading"
-					:disabled="registerLoading"
-					placeholder="Select a register"
-					@update:model-value="selectedRegisterValue = $event" />
-
-				<NcSelect v-bind="schemaOptions"
-					:model-value="selectedSchemaValue"
-					input-label="Schema"
-					:loading="schemaLoading"
-					:disabled="!selectedRegister || schemaLoading"
-					@update:model-value="selectedSchemaValue = $event" />
-
-				<NcTextField
-					v-model="searchQuery"
-					label="Search objects"
-					type="search"
-					:disabled="!selectedRegister || !selectedSchema"
-					placeholder="Type to search..."
-					class="search-input"
-					@update:modelValue="handleSearch" />
-
-				<NcNoteCard type="info" class="column-hint">
-					You can customize visible columns in the
-					<NcButton type="tertiary"
-						class="inline-button"
-						@click="$refs.sidebar.showTab('columns-tab')">
-						Columns tab
-					</NcButton>
-				</NcNoteCard>
+			<!-- Filter Section -->
+			<div class="filterSection">
+				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
+				<div class="filterGroup">
+					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+					<NcSelect v-bind="registerOptions"
+						id="registerSelect"
+						:model-value="selectedRegisterValue"
+						input-label="Register"
+						:loading="registerLoading"
+						:disabled="registerLoading"
+						placeholder="Select a register"
+						@update:model-value="handleRegisterChange" />
+				</div>
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<NcSelect v-bind="schemaOptions"
+						id="schemaSelect"
+						:model-value="selectedSchemaValue"
+						input-label="Schema"
+						:loading="schemaLoading"
+						:disabled="!registerStore.registerItem || schemaLoading"
+						placeholder="Select a schema"
+						@update:model-value="handleSchemaChange" />
+				</div>
+				<div class="filterGroup">
+					<NcTextField
+						v-model="searchQuery"
+						label="Search objects"
+						type="search"
+						:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+						placeholder="Type to search..."
+						class="search-input"
+						@update:modelValue="handleSearch" />
+				</div>
 			</div>
+
+			<NcNoteCard type="info" class="column-hint">
+				You can customize visible columns in the Columns tab
+			</NcNoteCard>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
@@ -103,90 +106,79 @@ import { computed, ref, onMounted, watch } from 'vue'
 				</div>
 			</div>
 		</NcAppSidebarTab>
+
+		<template #secondary-actions>
+			<NcActionButton close-after-click
+				:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+				@click="openAddObjectModal">
+				<template #icon>
+					<Plus :size="20" />
+				</template>
+				Add
+			</NcActionButton>
+			<NcActionButton close-after-click
+				:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
+				@click="refreshObjects">
+				<template #icon>
+					<Refresh :size="20" />
+				</template>
+				Refresh
+			</NcActionButton>
+			<NcActionButton close-after-click :disabled="!objectStore.selectedObjects?.length" @click="() => navigationStore.setDialog('massDeleteObject')">
+				<template #icon>
+					<Delete :size="20" />
+				</template>
+				Delete {{ objectStore.selectedObjects?.length }} {{ objectStore.selectedObjects?.length > 1 ? 'objects' : 'object' }}
+			</NcActionButton>
+			<NcActionButton close-after-click
+				:disabled="!registerStore.registerItem"
+				@click="openEditRegisterModal">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				Edit Register
+			</NcActionButton>
+			<NcActionButton close-after-click
+				:disabled="!schemaStore.schemaItem"
+				@click="openEditSchemaModal">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				Edit Schema
+			</NcActionButton>
+			<NcActionButton close-after-click disabled>
+				<template #icon>
+					<Upload :size="20" />
+				</template>
+				Upload
+			</NcActionButton>
+			<NcActionButton close-after-click disabled>
+				<template #icon>
+					<Download :size="20" />
+				</template>
+				Download
+			</NcActionButton>
+			<NcActionButton close-after-click disabled>
+				<template #icon>
+					<FileMoveOutline :size="20" />
+				</template>
+				Move
+			</NcActionButton>
+		</template>
 	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcButton, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField, NcActionButton } from '@nextcloud/vue'
+import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
-
-// Add search input ref and debounce function
-const searchQuery = ref('')
-let searchTimeout = null
-
-// Debounced search function
-const handleSearch = (value) => {
-	if (searchTimeout) {
-		clearTimeout(searchTimeout)
-	}
-
-	searchTimeout = setTimeout(() => {
-		// Update the filters object with the search query
-		objectStore.setFilters({
-			_search: value || '', // Set as object property instead of array
-		})
-
-		// Only refresh if we have both register and schema selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
-			objectStore.refreshObjectList({
-				register: registerStore.registerItem.id,
-				schema: schemaStore.schemaItem.id,
-			})
-		}
-	}, 1000) // 3 second delay
-}
-
-// Computed properties to handle the false values
-const selectedRegisterValue = computed({
-	get: () => {
-		if (!registerStore.registerItem) return null
-		// Return in the same format as the options
-		return {
-			value: registerStore.registerItem,
-			label: registerStore.registerItem.title,
-		}
-	},
-	set: (value) => {
-		registerStore.setRegisterItem(value?.value || null)
-	},
-})
-
-const selectedSchemaValue = computed({
-	get: () => {
-		if (!schemaStore.schemaItem) return null
-		// Return in the same format as the options
-		return {
-			value: schemaStore.schemaItem,
-			label: schemaStore.schemaItem.title,
-		}
-	},
-	set: (value) => {
-		schemaStore.setSchemaItem(value?.value || null)
-	},
-})
-
-// Initialize column filters when component mounts
-onMounted(() => {
-	objectStore.initializeColumnFilters()
-})
-
-const metadataColumns = computed(() => {
-	return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-		id,
-		...meta,
-	}))
-})
-
-// Watch for schema changes to initialize properties
-watch(() => schemaStore.schemaItem, (newSchema) => {
-	if (newSchema) {
-		objectStore.initializeProperties(newSchema)
-	} else {
-		objectStore.properties = {}
-		objectStore.initializeColumnFilters()
-	}
-}, { immediate: true })
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import FileMoveOutline from 'vue-material-design-icons/FileMoveOutline.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -194,52 +186,77 @@ export default {
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
-		NcButton,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcTextField,
-		// Icons
-		Magnify,
+		NcActionButton,
+		FilterOutline,
 		FormatColumns,
 	},
 	data() {
 		return {
 			registerLoading: false,
 			schemaLoading: false,
-			appInstallService: new AppInstallService(),
-			openConnectorInstalled: true,
-			openConnectorInstallError: false,
+			ignoreNextPageWatch: false,
+			searchQuery: '',
+			activeTab: 'filters-tab',
+			searchTimeout: null,
 		}
 	},
 	computed: {
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
-					value: register, // The full object goes in value
+					value: register.id,
 					label: register.title,
+					title: register.title,
+					register,
 				})),
+				reduce: option => option.register,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.register && option.register.title) || option.label || ''
+				},
 			}
 		},
 		schemaOptions() {
-			const fullSelectedRegister = registerStore.registerList.find(
-				register => register.id === (this.selectedRegister?.id || Symbol('no selected register')),
-			)
-			if (!fullSelectedRegister) return { options: [] }
+			if (!registerStore.registerItem) return { options: [] }
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => fullSelectedRegister.schemas.includes(schema.id))
+					.filter(schema => registerStore.registerItem.schemas.includes(schema.id))
 					.map(schema => ({
-						value: schema, // The full object goes in value
+						value: schema.id,
 						label: schema.title,
+						title: schema.title,
+						schema,
 					})),
+				reduce: option => option.schema,
+				label: 'title',
+				getOptionLabel: option => {
+					return option.title || (option.schema && option.schema.title) || option.label || ''
+				},
 			}
 		},
-		selectedRegister() {
-			return registerStore.registerItem || false
+		selectedRegisterValue() {
+			if (!registerStore.registerItem) return null
+			const register = registerStore.registerItem
+			return {
+				value: register.id,
+				label: register.title,
+				title: register.title,
+				register,
+			}
 		},
-		selectedSchema() {
-			return schemaStore.schemaItem || false
+		selectedSchemaValue() {
+			if (!schemaStore.schemaItem) return null
+			const schema = schemaStore.schemaItem
+			return {
+				value: schema.id,
+				label: schema.title,
+				title: schema.title,
+				schema,
+			}
 		},
 		metadataColumns() {
 			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
@@ -249,62 +266,96 @@ export default {
 		},
 	},
 	watch: {
-		selectedRegister(newValue) {
-			if (!newValue) {
-				schemaStore.setSchemaItem(false)
+		searchQuery(value) {
+			if (this.searchTimeout) {
+				clearTimeout(this.searchTimeout)
 			}
-		},
-		selectedSchema(newValue) {
-			if (newValue) {
-				objectStore.setPagination(1)
-				this.ignoreNextPageWatch = true
-
-				objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
+			this.searchTimeout = setTimeout(() => {
+				objectStore.setFilters({
+					_search: value || '',
 				})
-
-				const unwatch = this.$watch(
-					() => objectStore.loading,
-					(newVal) => {
-						if (newVal === false) {
-							this.ignoreNextPageWatch = false
-							unwatch()
-						}
-					},
-				)
-			}
+				if (registerStore.registerItem && schemaStore.schemaItem) {
+					objectStore.refreshObjectList({
+						register: registerStore.registerItem.id,
+						schema: schemaStore.schemaItem.id,
+					})
+				}
+			}, 1000)
+		},
+		// Watch for schema changes to initialize properties
+		// Use immediate: true equivalent in mounted
+		// This watcher will update properties when schema changes
+		'$root.schemaStore.schemaItem': {
+			handler(newSchema) {
+				if (newSchema) {
+					objectStore.initializeProperties(newSchema)
+				} else {
+					objectStore.properties = {}
+					objectStore.initializeColumnFilters()
+				}
+			},
+			deep: true,
 		},
 	},
 	mounted() {
+		objectStore.initializeColumnFilters()
 		this.registerLoading = true
 		this.schemaLoading = true
 
-		registerStore.refreshRegisterList()
-			.finally(() => (this.registerLoading = false))
+		// Only load lists if they're empty
+		if (!registerStore.registerList.length) {
+			registerStore.refreshRegisterList()
+				.finally(() => (this.registerLoading = false))
+		} else {
+			this.registerLoading = false
+		}
 
-		schemaStore.refreshSchemaList()
-			.finally(() => (this.schemaLoading = false))
+		if (!schemaStore.schemaList.length) {
+			schemaStore.refreshSchemaList()
+				.finally(() => (this.schemaLoading = false))
+		} else {
+			this.schemaLoading = false
+		}
 
-		this.initAppInstallService()
+		// Load objects if register and schema are already selected
+		if (registerStore.registerItem && schemaStore.schemaItem) {
+			objectStore.refreshObjectList()
+		}
 	},
 	methods: {
-		async initAppInstallService() {
-			await this.appInstallService.init()
-			this.openConnectorInstalled = await this.appInstallService.isAppInstalled('openconnector')
+		handleRegisterChange(option) {
+			registerStore.setRegisterItem(option)
+			schemaStore.setSchemaItem(null)
 		},
-		async installApp(appId) {
-			try {
-				await this.appInstallService.forceInstallApp(appId)
-				this.openConnectorInstalled = true
-			} catch (error) {
-				if (error.status === 403 && error.data?.message === 'Password confirmation is required') {
-					console.error('Password confirmation needed before installing apps')
-				} else {
-					console.error('Failed to install app:', error)
-				}
-				this.openConnectorInstallError = true
+		async handleSchemaChange(option) {
+			schemaStore.setSchemaItem(option)
+			if (option) {
+				objectStore.initializeProperties(option)
+				objectStore.refreshObjectList()
 			}
+		},
+		handleSearch() {
+			if (registerStore.registerItem && schemaStore.schemaItem) {
+				objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+					search: this.searchQuery,
+				})
+			}
+		},
+		openAddObjectModal() {
+			objectStore.setObjectItem(null) // Clear any existing object
+			navigationStore.setModal('editObject')
+		},
+		openEditRegisterModal() {
+			navigationStore.setModal('editRegister')
+		},
+		openEditSchemaModal() {
+			navigationStore.setModal('editSchema')
+		},
+
+		async refreshObjects() {
+			await objectStore.refreshObjectList()
 		},
 	},
 }
@@ -383,5 +434,30 @@ export default {
 
 .inline-button:hover {
 	text-decoration: none;
+}
+
+.filterSection {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--color-border);
+
+	h3 {
+		margin: 0;
+		font-size: 1.1em;
+		color: var(--color-main-text);
+	}
+}
+
+.filterGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	label {
+		font-size: 0.9em;
+		color: var(--color-text-maxcontrast);
+	}
 }
 </style>

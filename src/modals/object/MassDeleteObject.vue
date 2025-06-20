@@ -1,16 +1,17 @@
 <script setup>
-import { objectStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog name="Delete Object"
+		:can-close="false"
 		size="normal">
 		<p v-if="success === null">
-			Do you want to permanently delete <b>{{ selectedObjects.length }}</b> {{ selectedObjects.length > 1 ? 'objects' : 'object' }}? This action cannot be undone.
+			Do you want to permanently delete <b>{{ objectStore.selectedObjects.length }}</b> {{ objectStore.selectedObjects.length > 1 ? 'objects' : 'object' }}? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Object{{ selectedObjects.length > 1 ? 's' : '' }} successfully deleted</p>
+			<p>Object{{ objectStore.selectedObjects.length > 1 ? 's' : '' }} successfully deleted</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -59,12 +60,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
-	props: {
-		selectedObjects: {
-			type: Array,
-			required: true,
-		},
-	},
+
 	data() {
 		return {
 			success: null,
@@ -78,20 +74,25 @@ export default {
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
 			this.startClosing = true
-			this.$emit('close-modal')
+			navigationStore.setDialog(false)
 		},
 		async deleteObject() {
 			this.loading = true
 
-			objectStore.massDeleteObject(this.selectedObjects)
+			objectStore.massDeleteObject(objectStore.selectedObjects)
 				.then((result) => {
 					this.result = result
 					this.success = result.successfulIds.length > 0
 					this.error = result.failedIds.length > 0
-					result.successfulIds.length > 0 && (this.closeModalTimeout = setTimeout(() => {
-						this.closeDialog()
-						this.$emit('success', this.result)
-					}, 2000))
+					if (result.successfulIds.length > 0) {
+						// Clear selected objects and refresh the object list
+						objectStore.selectedObjects = []
+						objectStore.refreshObjectList()
+
+						this.closeModalTimeout = setTimeout(() => {
+							this.closeDialog()
+						}, 2000)
+					}
 				}).catch((error) => {
 					this.success = false
 					this.error = error.message || 'An error occurred while deleting the object'

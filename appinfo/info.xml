@@ -36,13 +36,19 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
         <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
     </documentation>
+
     <dependencies>
         <php min-version="8.0" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="30"/>
+        <nextcloud min-version="28" max-version="32"/>
     </dependencies>
+
+	<background-jobs>
+		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
+	</background-jobs>
+
     <navigations>
         <navigation>
             <id>openregister</id>
