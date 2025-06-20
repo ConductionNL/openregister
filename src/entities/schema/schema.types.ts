@@ -9,4 +9,25 @@ export type TSchema = {
     archive: Record<string, any>
     updated: string;
     created: string;
+    slug: string; // Slug for the schema
+    hardValidation: boolean; // Whether hard validation is enabled
+    maxDepth: number; // Maximum depth of the schema
+    stats?: {
+        objects: {
+            total: number
+            size: number
+            invalid: number
+            deleted: number
+            locked: number
+            published: number
+        },
+        logs: {
+            total: number
+            size: number
+        },
+        files: {
+            total: number
+            size: number
+        }
+    }
 }

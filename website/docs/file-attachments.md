@@ -38,5 +38,3 @@ If you want to have the administrator users to have access to the folder where f
 Under no circumstances you should add files in an Open Registers folder if the Open Registers is not shown in your file app natively. This would trigger that the file is created in your own user folder, making reconciling the shared folder and your user folder quite difficult.
 ## Related Features
 
-- [Content Search](content-search.md) - Search file contents
-- [Object Relations](object-relations.md) - Link files to objects 

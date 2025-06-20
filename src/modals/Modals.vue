@@ -6,8 +6,13 @@ import { navigationStore } from '../store/store.js'
 	<!-- Placeholder Div -->
 	<div>
 		<EditRegister />
-		<UploadRegister />
+		<ImportRegister />
+		<ExportRegister />
 		<DeleteRegister />
+		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
+		<DeleteConfiguration />
+		<ImportConfiguration />
+		<ExportConfiguration />
 		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<DeleteSchema />
 		<UploadSchema />
@@ -22,13 +27,22 @@ import { navigationStore } from '../store/store.js'
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
+		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
+		<UploadFiles />
+		<ViewSource />
+		<ViewConfiguration />
 	</div>
 </template>
 
 <script>
 import EditRegister from './register/EditRegister.vue'
+import ImportRegister from './register/ImportRegister.vue'
+import ExportRegister from './register/ExportRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
-import UploadRegister from './register/UploadRegister.vue'
+import EditConfiguration from './configuration/EditConfiguration.vue'
+import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
+import ImportConfiguration from './configuration/ImportConfiguration.vue'
+import ExportConfiguration from './configuration/ExportConfiguration.vue'
 import EditSchema from './schema/EditSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import UploadSchema from './schema/UploadSchema.vue'
@@ -43,13 +57,21 @@ import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 import LockObject from './object/LockObject.vue'
 import ViewObject from './object/ViewObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
-
+import UploadFiles from './file/UploadFiles.vue'
+import MassDeleteObject from './object/MassDeleteObject.vue'
+import ViewSource from './source/ViewSource.vue'
+import ViewConfiguration from './configuration/ViewConfiguration.vue'
 export default {
 	name: 'Modals',
 	components: {
 		EditRegister,
+		ImportRegister,
+		ExportRegister,
 		DeleteRegister,
-		UploadRegister,
+		EditConfiguration,
+		DeleteConfiguration,
+		ImportConfiguration,
+		ExportConfiguration,
 		EditSchema,
 		DeleteSchema,
 		UploadSchema,
@@ -62,6 +84,12 @@ export default {
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,
+		ViewObject,
+		DownloadObject,
+		UploadFiles,
+		MassDeleteObject,
+		ViewSource,
+		ViewConfiguration,
 	},
 }
 </script>

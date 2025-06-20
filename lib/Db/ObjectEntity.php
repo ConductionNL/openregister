@@ -1,11 +1,30 @@
 <?php
+/**
+ * OpenRegister Object Entity
+ *
+ * This file contains the class for handling object entity related operations
+ * in the OpenRegister application.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
 
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\Entity;
+use OC\Files\Node\File;
 use OCP\IUserSession;
 
 /**
@@ -16,368 +35,666 @@ use OCP\IUserSession;
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
-	protected ?string $uuid = null;
-	protected ?string $uri = null;
-	protected ?string $version = null;
-	protected ?string $register = null;
-	protected ?string $schema = null;
-	protected ?array $object = [];
-	protected ?array $files = []; // array of file ids that are related to this object
-	protected ?array $relations = []; // array of object ids that this object is related to
-	protected ?string $textRepresentation = null;
-	protected ?array $locked = null; // Contains the locked object if the object is locked
-	protected ?string $owner = null; // The Nextcloud user that owns this object
-	protected ?array $authorization = []; // JSON object describing authorizations
-	protected ?string $folder = null; // The folder path where this object is stored
-	protected ?string $application = null; // The application name
-	protected ?string $organisation = null; // The organisation name
-	protected ?array $validation = []; // array describing validation results
-	protected ?array $deleted = []; // array describing deletion details
-	protected ?array $geo = []; // array describing deletion details
-	protected ?array $retention = []; // array describing deletion details
-	protected ?DateTime $updated = null;
-	protected ?DateTime $created = null;
 
-	/**
-	 * Initialize the entity and define field types
-	 */
-	public function __construct() {
-		$this->addType(fieldName:'uuid', type: 'string');
-		$this->addType(fieldName:'uri', type: 'string');
-		$this->addType(fieldName:'version', type: 'string');
-		$this->addType(fieldName:'register', type: 'string');
-		$this->addType(fieldName:'schema', type: 'string');
-		$this->addType(fieldName:'object', type: 'json');
-		$this->addType(fieldName:'files', type: 'json');
-		$this->addType(fieldName:'relations', type: 'json');
-		$this->addType(fieldName:'textRepresentation', type: 'text');
-		$this->addType(fieldName:'locked', type: 'json');
-		$this->addType(fieldName:'owner', type: 'string');
-		$this->addType(fieldName:'authorization', type: 'json');
-		$this->addType(fieldName:'folder', type: 'string');
-		$this->addType(fieldName:'application', type: 'string');
-		$this->addType(fieldName:'organisation', type: 'string');
-		$this->addType(fieldName:'validation', type: 'json');
-		$this->addType(fieldName:'deleted', type: 'json');
-		$this->addType(fieldName:'geo', type: 'json');
-		$this->addType(fieldName:'retention', type: 'json');
-		$this->addType(fieldName:'updated', type: 'datetime');
-		$this->addType(fieldName:'created', type: 'datetime');
-	}
+    /**
+     * Unique identifier for the object.
+     *
+     * @var string|null Unique identifier for the object
+     */
+    protected ?string $uuid = null;
 
-	/**
-	 * Get the object data
-	 *
-	 * @return array The object data or empty array if null
-	 */
-	public function getObject(): array
-	{
-		return $this->object ?? [];
-	}
+    /**
+     * URI of the object.
+     *
+     * @var string|null URI of the object
+     */
+    protected ?string $uri = null;
 
-	/**
-	 * Get the files data
-	 *
-	 * @return array The files data or empty array if null
-	 */
-	public function getFiles(): array
-	{
-		return $this->files ?? [];
-	}
+    /**
+     * Version of the object.
+     *
+     * @var string|null Version of the object
+     */
+    protected ?string $version = null;
 
-	/**
-	 * Get the relations data
-	 *
-	 * @return array The relations data or empty array if null
-	 */
-	public function getRelations(): array
-	{
-		return $this->relations ?? [];
-	}
+    /**
+     * Register associated with the object.
+     *
+     * @var string|null Register associated with the object
+     */
+    protected ?string $register = null;
 
-	/**
-	 * Get the locked data
-	 *
-	 * @return array The locked data or empty array if null
-	 */
-	public function getlocked(): ?array
-	{
-		return $this->locked;
-	}
+    /**
+     * Schema associated with the object.
+     *
+     * @var string|null Schema associated with the object
+     */
+    protected ?string $schema = null;
 
-	/**
-	 * Get the authorization data
-	 *
-	 * @return array The authorization data or empty array if null
-	 */
-	public function getAuthorization(): ?array
-	{
-		return $this->authorization;
-	}
+    /**
+     * Object data stored as an array.
+     *
+     * @var array|null Object data
+     */
+    protected ?array $object = [];
 
-	/**
-	 * Get the deleted data
-	 *
-	 * @return array The deleted data or null if not deleted
-	 */
-	public function getDeleted(): ?array
-	{
-		return $this->deleted;
-	}
+    /**
+     * Files associated with the object.
+     *
+     * @var array|null Files associated with the object
+     */
+    protected ?array $files = [];
 
-	/**
-	 * Get the deleted data
-	 *
-	 * @return array The deleted data or null if not deleted
-	 */
-	public function getValidation(): ?array
-	{
-		return $this->validation;
-	}
+    /**
+     * Relations to other objects stored as an array of file IDs.
+     *
+     * @var array|null Array of file IDs that are related to this object
+     */
+    protected ?array $relations = [];
+
+    /**
+     * Text representation of the object.
+     *
+     * @var string|null Text representation of the object
+     */
+    protected ?string $textRepresentation = null;
+
+    /**
+     * Lock information for the object if locked.
+     *
+     * @var array|null Contains the locked object if the object is locked
+     */
+    protected ?array $locked = null;
+
+    /**
+     * The owner of this object.
+     *
+     * @var string|null The Nextcloud user that owns this object
+     */
+    protected ?string $owner = null;
+
+    /**
+     * Authorization details for the object.
+     *
+     * @var array|null JSON object describing authorizations
+     */
+    protected ?array $authorization = [];
+
+    /**
+     * Folder path where the object is stored.
+     *
+     * @var string|null The folder path where this object is stored
+     */
+    protected ?string $folder = null;
+
+    /**
+     * Application name associated with the object.
+     *
+     * @var string|null The application name
+     */
+    protected ?string $application = null;
+
+    /**
+     * Organisation name associated with the object.
+     *
+     * @var string|null The organisation name
+     */
+    protected ?string $organisation = null;
+
+    /**
+     * Validation results for the object.
+     *
+     * @var array|null Array describing validation results
+     */
+    protected ?array $validation = [];
+
+    /**
+     * Deletion details if the object is deleted.
+     *
+     * @var array|null Array describing deletion details
+     */
+    protected ?array $deleted = [];
+
+    /**
+     * Geographical details for the object.
+     *
+     * @var array|null Array describing geographical details
+     */
+    protected ?array $geo = [];
+
+    /**
+     * Retention details for the object.
+     *
+     * @var array|null Array describing retention details
+     */
+    protected ?array $retention = [];
+
+    /**
+     * Size of the object in byte.
+     *
+     * @var string|null Size of the object
+     */
+    protected ?string $size = null;
+
+    /**
+     * Version of the schema when this object was created
+     *
+     * @var string|null Version of the schema when this object was created
+     */
+    protected ?string $schemaVersion = null;
+
+    /**
+     * Last update timestamp.
+     *
+     * @var DateTime|null Last update timestamp
+     */
+    protected ?DateTime $updated = null;
+
+    /**
+     * Creation timestamp.
+     *
+     * @var DateTime|null Creation timestamp
+     */
+    protected ?DateTime $created = null;
+
+    /**
+     * Published timestamp.
+     *
+     * @var DateTime|null Published timestamp
+     */
+    protected ?DateTime $published = null;
+
+    /**
+     * Published timestamp.
+     *
+     * @var DateTime|null Depublished timestamp
+     */
+    protected ?DateTime $depublished = null;
+
+    /**
+     * Last log entry related to this object (not persisted, runtime only)
+     *
+     * @var array|null
+     * @phpstan-var array<string, mixed>|null
+     * @psalm-var array<string, mixed>|null
+     */
+    private ?array $lastLog = null;
 
 
+    /**
+     * Initialize the entity and define field types
+     */
+    public function __construct(
+	)
+    {
+        $this->addType(fieldName:'uuid', type: 'string');
+        $this->addType(fieldName:'uri', type: 'string');
+        $this->addType(fieldName:'version', type: 'string');
+        $this->addType(fieldName:'register', type: 'string');
+        $this->addType(fieldName:'schema', type: 'string');
+        $this->addType(fieldName:'object', type: 'json');
+        $this->addType(fieldName:'files', type: 'json');
+        $this->addType(fieldName:'relations', type: 'json');
+        $this->addType(fieldName:'textRepresentation', type: 'text');
+        $this->addType(fieldName:'locked', type: 'json');
+        $this->addType(fieldName:'owner', type: 'string');
+        $this->addType(fieldName:'authorization', type: 'json');
+        $this->addType(fieldName:'folder', type: 'string');
+        $this->addType(fieldName:'application', type: 'string');
+        $this->addType(fieldName:'organisation', type: 'string');
+        $this->addType(fieldName:'validation', type: 'json');
+        $this->addType(fieldName:'deleted', type: 'json');
+        $this->addType(fieldName:'geo', type: 'json');
+        $this->addType(fieldName:'retention', type: 'json');
+        $this->addType(fieldName:'size', type: 'string');
+        $this->addType(fieldName:'schemaVersion', type: 'string');
+        $this->addType(fieldName:'updated', type: 'datetime');
+        $this->addType(fieldName:'created', type: 'datetime');
+        $this->addType(fieldName:'published', type: 'datetime');
+        $this->addType(fieldName:'depublished', type: 'datetime');
 
-	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return array List of field names that are JSON type
-	 */
-	public function getJsonFields(): array
-	{
-		return array_keys(
-			array_filter($this->getFieldTypes(), function ($field) {
-				return $field === 'json';
-			})
-		);
-	}
+    }//end __construct()
 
-	/**
-	 * Hydrate the entity from an array of data
-	 *
-	 * @param array $object Array of data to hydrate the entity with
-	 * @return self Returns the hydrated entity
-	 */
-	public function hydrate(array $object): self
-	{
-		$jsonFields = $this->getJsonFields();
 
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
+    /**
+     * Get the object data and set the 'id' to the 'uuid'
+     *
+     * @return array The object data with 'id' set to 'uuid', or empty array if null
+     */
+    public function getObject(): array
+    {
+        // Initialize the object data with an empty array if null
+        $objectData = $this->object ?? [];
 
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
+        // Ensure 'id' is the first field by setting it before merging with object data
+        $objectData = array_merge(['id' => $this->uuid], $objectData);
 
-			$method = 'set'.ucfirst($key);
+        return $objectData;
 
-			try {
-				$this->$method($value);
-			} catch (Exception $exception) {
-			}
-		}
+    }//end getObject()
 
-		return $this;
-	}
 
-	/**
-	 * Serialize the entity to JSON format
-	 *
-	 * Creates a metadata array containing object properties except sensitive fields.
-	 * Filters out 'object', 'textRepresentation' and 'authorization' fields and
-	 * stores remaining properties under '@self' key for API responses.
-	 *
-	 * @return array Serialized object data
-	 */
-	public function jsonSerialize(): array
-	{
-		// Backwards compatibility for old objects
-		$object = $this->object;
-		$object['@self'] = $this->getObjectArray();
-		$object['@self']['id'] = $this->getUuid();
-		$object['id'] = $this->getUuid();
-		
-		// lets merge and return
-		return $object;
-	}
+    /**
+     * Get the files data
+     *
+     * @return array The files data or empty array if null
+     */
+    public function getFiles(): array
+    {
+		return ($this->files ?? []);
 
-	/**
-	 * Get array representation of all object properties
-	 *
-	 * @return array Array containing all object properties
-	 */
-	public function getObjectArray(): array
-	{
-		return [
-			'id' => $this->id,
-			'uri' => $this->uri,
-			'version'     => $this->version,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'files' => $this->files,
-			'relations' => $this->relations,
-			'locked' => $this->locked,
-			'owner' => $this->owner,
-			'folder' => $this->folder,
-			'application' => $this->application,
-			'organisation' => $this->organisation,
-			'validation' => $this->validation,
-			'geo' => $this->geo,
-			'retention' => $this->retention,
-			'updated' => isset($this->updated) ? $this->updated->format('c') : null,
-			'created' => isset($this->created) ? $this->created->format('c') : null,
-			'deleted' => $this->deleted,
-		];
-	}
+    }//end getFiles()
 
-	/**
-	 * Lock the object for a specific duration
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string|null $process Optional process identifier
-	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
-	 * @return bool True if lock was successful
-	 * @throws Exception If object is already locked by another user
-	 */
-	public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
-	{
-		$currentUser = $userSession->getUser();
-		if (!$currentUser) {
-			throw new Exception('No user logged in');
-		}
 
-		$userId = $currentUser->getUID();
-		$now = new \DateTime();
+    /**
+     * Get the relations data
+     *
+     * @return array The relations data or empty array if null
+     */
+    public function getRelations(): array
+    {
+        return ($this->relations ?? []);
 
-		// If already locked, check if it's the same user and not expired
-		if ($this->isLocked()) {
-			$lock = $this->locked;
+    }//end getRelations()
 
-			// If locked by different user
-			if ($lock['user'] !== $userId) {
-				throw new Exception('Object is locked by another user');
-			}
 
-			// If same user, extend the lock
-			$expirationDate = new \DateTime($lock['expiration']);
-			$newExpiration = clone $now;
-			$newExpiration->add(new \DateInterval('PT' . $duration . 'S'));
+    /**
+     * Get the locked data
+     *
+     * @return array The locked data or empty array if null
+     */
+    public function getlocked(): ?array
+    {
+        return $this->locked;
 
-			$this->locked = [
-				'user' => $userId,
-				'process' => $process ?? $lock['process'],
-				'created' => $lock['created'],
-				'duration' => $duration,
-				'expiration' => $newExpiration->format('c')
-			];
-		} else {
-			// Create new lock
-			$expiration = clone $now;
-			$expiration->add(new \DateInterval('PT' . $duration . 'S'));
+    }//end getlocked()
 
-			$this->locked = [
-				'user' => $userId,
-				'process' => $process,
-				'created' => $now->format('c'),
-				'duration' => $duration,
-				'expiration' => $expiration->format('c')
-			];
-		}
 
-		return true;
-	}
+    /**
+     * Get the authorization data
+     *
+     * @return array The authorization data or empty array if null
+     */
+    public function getAuthorization(): ?array
+    {
+        return $this->authorization;
 
-	/**
-	 * Unlock the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @return bool True if unlock was successful
-	 * @throws Exception If object is locked by another user
-	 */
-	public function unlock(IUserSession $userSession): bool
-	{
-		if (!$this->isLocked()) {
-			return true;
-		}
+    }//end getAuthorization()
 
-		$currentUser = $userSession->getUser();
-		if (!$currentUser) {
-			throw new Exception('No user logged in');
-		}
 
-		$userId = $currentUser->getUID();
+    /**
+     * Get the deleted data
+     *
+     * @return array The deleted data or null if not deleted
+     */
+    public function getDeleted(): ?array
+    {
+        return $this->deleted;
 
-		// Check if locked by different user
-		if ($this->locked['user'] !== $userId) {
-			throw new Exception('Object is locked by another user');
-		}
+    }//end getDeleted()
 
-		$this->locked = null;
-		return true;
-	}
 
-	/**
-	 * Check if the object is currently locked
-	 *
-	 * @return bool True if object is locked and lock hasn't expired
-	 */
-	public function isLocked(): bool
-	{
-		if (!$this->locked) {
-			return false;
-		}
+    /**
+     * Get the deleted data
+     *
+     * @return array The deleted data or null if not deleted
+     */
+    public function getValidation(): ?array
+    {
+        return $this->validation;
 
-		// Check if lock has expired
-		$now = new \DateTime();
-		$expiration = new \DateTime($this->locked['expiration']);
+    }//end getValidation()
 
-		return $now < $expiration;
-	}
 
-	/**
-	 * Get lock information
-	 *
-	 * @return array|null Lock information or null if not locked
-	 */
-	public function getLockInfo(): ?array
-	{
-		if (!$this->isLocked()) {
-			return null;
-		}
+    /**
+     * Get array of field names that are JSON type
+     *
+     * @return array List of field names that are JSON type
+     */
+    public function getJsonFields(): array
+    {
+        return array_keys(
+            array_filter(
+                $this->getFieldTypes(),
+                function ($field) {
+                    return $field === 'json';
+                }
+            )
+        );
 
-		return $this->locked;
-	}
+    }//end getJsonFields()
 
-	/**
-	 * Delete the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string $deletedReason Reason for deletion
-	 * @param int $retentionPeriod Retention period in days (default: 30 days)
-	 * @return bool True if delete was successful
-	 * @throws Exception If no user is logged in
-	 */
-	public function delete(IUserSession $userSession, string $deletedReason, int $retentionPeriod = 30): bool
-	{
-		$currentUser = $userSession->getUser();
-		if ($currentUser === null) {
-			throw new Exception('No user logged in');
-		}
 
-		$userId = $currentUser->getUID();
-		$now = new \DateTime();
-		$purgeDate = clone $now;
-		$purgeDate->add(new \DateInterval('P' . $retentionPeriod . 'D'));
+    /**
+     * Hydrate the entity from an array of data
+     *
+     * @param array $object Array of data to hydrate the entity with
+     *
+     * @return self Returns the hydrated entity
+     */
+    public function hydrate(array $object): self
+    {
+        $jsonFields = $this->getJsonFields();
 
-		$this->deleted = [
-			'deleted' => $now->format('c'),
-			'deletedBy' => $userId,
-			'deletedReason' => $deletedReason,
-			'retentionPeriod' => $retentionPeriod,
-			'purgeDate' => $purgeDate->format('c')
-		];
+        if (isset($object['metadata']) === false) {
+            $object['metadata'] = [];
+        }
 
-		return true;
-	}
-}
+        foreach ($object as $key => $value) {
+            if (in_array($key, $jsonFields) === true && $value === []) {
+                $value = null;
+            }
+
+            $method = 'set'.ucfirst($key);
+
+            try {
+                $this->$method($value);
+            } catch (Exception $exception) {
+                // Silently ignore invalid properties.
+            }
+        }
+
+        return $this;
+
+    }//end hydrate()
+
+
+    /**
+     * Serialize the entity to JSON format
+     *
+     * Creates a metadata array containing object properties except sensitive fields.
+     * Filters out 'object', 'textRepresentation' and 'authorization' fields and
+     * stores remaining properties under '@self' key for API responses.
+     *
+     * @return array Serialized object data
+     */
+    public function jsonSerialize(): array
+    {
+        // Backwards compatibility for old objects.
+        $object = $this->object ?? []; // Default to an empty array if $this->object is null.
+        $object['@self'] = $this->getObjectArray($object);
+
+        // Let's merge and return.
+        return $object;
+
+    }//end jsonSerialize()
+
+
+    /**
+     * Get array representation of all object properties
+     *
+     * @return array Array containing all object properties
+     */
+    public function getObjectArray(array $object=[]): array
+    {
+        // Initialize the object array with default properties.
+        $objectArray = [
+            'id'            => $this->uuid,
+            'uri'           => $this->uri,
+            'version'       => $this->version,
+            'register'      => $this->register,
+            'schema'        => $this->schema,
+            'schemaVersion' => $this->schemaVersion,
+            'files'         => $this->files,
+            'relations'     => $this->relations,
+            'locked'        => $this->locked,
+            'owner'         => $this->owner,
+            'folder'        => $this->folder,
+            'application'   => $this->application,
+            'organisation'  => $this->organisation,
+            'validation'    => $this->validation,
+            'geo'           => $this->geo,
+            'retention'     => $this->retention,
+            'size'          => $this->size,
+            'updated'       => $this->getFormattedDate($this->updated),
+            'created'       => $this->getFormattedDate($this->created),
+            'published'     => $this->getFormattedDate($this->published),
+            'depublished'   => $this->getFormattedDate($this->depublished),
+            'deleted'       => $this->deleted,
+        ];
+
+        // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
+        if (isset($object['@self']) === true && is_array($object['@self']) === true) {
+            $self = $object['@self'];
+
+            // Use the '@self' values if they are arrays.
+            if (isset($self['register']) === true && is_array($self['register']) === true) {
+                $objectArray['register'] = $self['register'];
+            }
+
+            if (isset($self['schema']) === true && is_array($self['schema']) === true) {
+                $objectArray['schema'] = $self['schema'];
+            }
+
+            if (isset($self['owner']) === true && is_array($self['owner']) === true) {
+                $objectArray['owner'] = $self['owner'];
+            }
+
+            if (isset($self['organisation']) === true && is_array($self['organisation']) === true) {
+                $objectArray['organisation'] = $self['organisation'];
+            }
+
+            if (isset($self['application']) === true && is_array($self['application']) === true) {
+                $objectArray['application'] = $self['application'];
+            }
+        }//end if
+
+        return $objectArray;
+
+    }//end getObjectArray()
+
+
+    /**
+     * Format DateTime object to ISO 8601 string or return null
+     *
+     * @param DateTime|null $date The date to format
+     *
+     * @return string|null The formatted date or null
+     */
+    private function getFormattedDate(?DateTime $date): ?string
+    {
+        if ($date === null) {
+            return null;
+        }
+
+        return $date->format('c');
+
+    }//end getFormattedDate()
+
+
+    /**
+     * Lock the object for a specific duration
+     *
+     * @param IUserSession $userSession Current user session
+     * @param string|null  $process     Optional process identifier
+     * @param int|null     $duration    Lock duration in seconds (default: 1 hour)
+     *
+     * @throws Exception If object is already locked by another user
+     *
+     * @return bool True if lock was successful
+     */
+    public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
+    {
+        $currentUser = $userSession->getUser();
+        if ($currentUser === null) {
+            throw new Exception('No user logged in');
+        }
+
+        $userId = $currentUser->getUID();
+        $now    = new \DateTime();
+
+        // If already locked, check if it's the same user and not expired.
+        if ($this->isLocked() === true) {
+            $lock = $this->setLocked();
+
+            // If locked by different user.
+            if ($lock['user'] !== $userId) {
+                throw new Exception('Object is locked by another user');
+            }
+
+            // If same user, extend the lock.
+            $expirationDate = new \DateTime($lock['expiration']);
+            $newExpiration  = clone $now;
+            $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
+
+            $this->setLocked([
+                'user'       => $userId,
+                'process'    => ($process ?? $lock['process']),
+                'created'    => $lock['created'],
+                'duration'   => $duration,
+                'expiration' => $newExpiration->format('c'),
+            ]);
+        } else {
+            // Create new lock.
+            $expiration = clone $now;
+            $expiration->add(new \DateInterval('PT'.$duration.'S'));
+
+            $this->setLocked([
+                'user'       => $userId,
+                'process'    => $process,
+                'created'    => $now->format('c'),
+                'duration'   => $duration,
+                'expiration' => $expiration->format('c'),
+            ]);
+        }//end if
+
+        return true;
+
+    }//end lock()
+
+
+    /**
+     * Unlock the object
+     *
+     * @param IUserSession $userSession Current user session
+     *
+     * @throws Exception If object is locked by another user
+     *
+     * @return bool True if unlock was successful
+     */
+    public function unlock(IUserSession $userSession): bool
+    {
+        if ($this->isLocked() === false) {
+            return true;
+        }
+
+        $currentUser = $userSession->getUser();
+        if ($currentUser === null) {
+            throw new Exception('No user logged in');
+        }
+
+        $userId = $currentUser->getUID();
+
+        // Check if locked by different user.
+        if ($this->locked['user'] !== $userId) {
+            throw new Exception('Object is locked by another user');
+        }
+
+        $this->setLocked(null);
+        return true;
+
+    }//end unlock()
+
+
+    /**
+     * Check if the object is currently locked
+     *
+     * @return bool True if object is locked and lock hasn't expired
+     */
+    public function isLocked(): bool
+    {
+        if ($this->locked === null) {
+            return false;
+        }
+
+        // Check if lock has expired.
+        $now        = new \DateTime();
+        $expiration = new \DateTime($this->locked['expiration']);
+
+        return $now < $expiration;
+
+    }//end isLocked()
+
+
+    /**
+     * Get lock information
+     *
+     * @return array|null Lock information or null if not locked
+     */
+    public function getLockInfo(): ?array
+    {
+        if ($this->isLocked() === false) {
+            return null;
+        }
+
+        return $this->locked;
+
+    }//end getLockInfo()
+
+
+    /**
+     * Delete the object
+     *
+     * @param IUserSession $userSession     Current user session
+     * @param string       $deletedReason   Reason for deletion
+     * @param int          $retentionPeriod Retention period in days (default: 30 days)
+     *
+     * @throws Exception If no user is logged in
+     *
+     * @return self Returns the entity
+     */
+    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): self
+    {
+        $currentUser = $userSession->getUser();
+        if ($currentUser === null) {
+            throw new Exception('No user logged in');
+        }
+
+        $userId    = $currentUser->getUID();
+        $now       = new \DateTime();
+        $purgeDate = clone $now;
+        // $purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
+        $purgeDate->add(new \DateInterval('P31D'));
+
+        $this->setDeleted(
+                [
+                    'deleted'         => $now->format('c'),
+                    'deletedBy'       => $userId,
+                    'deletedReason'   => $deletedReason,
+                    'retentionPeriod' => $retentionPeriod,
+                    'purgeDate'       => $purgeDate->format('c'),
+                ]
+                );
+
+        return $this;
+
+    }//end delete()
+
+
+    /**
+     * Get the last log entry for this object (runtime only)
+     *
+     * @return array|null The last log entry or null if not set
+     * @phpstan-return array<string, mixed>|null
+     * @psalm-return array<string, mixed>|null
+     */
+    public function getLastLog(): ?array
+    {
+        return $this->lastLog;
+    }
+
+    /**
+     * Set the last log entry for this object (runtime only)
+     *
+     * @param array|null $log The log entry to set
+     * @phpstan-param array<string, mixed>|null $log
+     * @psalm-param array<string, mixed>|null $log
+     *
+     * @return void
+     */
+    public function setLastLog(?array $log = null): void
+    {
+        $this->lastLog = $log;
+    }
+
+}//end class
