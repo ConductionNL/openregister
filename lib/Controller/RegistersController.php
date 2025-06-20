@@ -21,8 +21,9 @@ namespace OCA\OpenRegister\Controller;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
@@ -77,7 +78,7 @@ class RegistersController extends Controller
      *
      * @param string               $appName              The name of the app
      * @param IRequest             $request              The request object
-     * @param RegisterMapper       $registerMapper       The register mapper
+     * @param RegisterService      $registerService      The register service
      * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
      * @param UploadService        $uploadService        The upload service
      * @param ConfigurationService $configurationService The configuration service
@@ -90,7 +91,7 @@ class RegistersController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly RegisterMapper $registerMapper,
+        private readonly RegisterService $registerService,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
         ConfigurationService $configurationService,
@@ -154,7 +155,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $registers    = $this->registerMapper->findAll(null, null, $filters, [], [], []);
+        $registers    = $this->registerService->findAll(null, null, $filters, [], [], []);
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
         // If '@self.stats' is requested, attach statistics to each register
         if (in_array('@self.stats', $extend, true)) {
@@ -189,7 +190,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $register    = $this->registerMapper->find($id, []);
+        $register    = $this->registerService->find($id, []);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register
         if (in_array('@self.stats', $extend, true)) {
@@ -234,7 +235,7 @@ class RegistersController extends Controller
         }
 
         // Create a new register from the data.
-        return new JSONResponse($this->registerMapper->createFromArray(object: $data));
+        return new JSONResponse($this->registerService->createFromArray($data));
 
     }//end create()
 
@@ -270,7 +271,7 @@ class RegistersController extends Controller
         }
 
         // Update the register with the provided data.
-        return new JSONResponse($this->registerMapper->updateFromArray(id: (int) $id, object: $data));
+        return new JSONResponse($this->registerService->updateFromArray((int) $id, $data));
 
     }//end update()
 
@@ -293,7 +294,8 @@ class RegistersController extends Controller
     public function destroy(int $id): JSONResponse
     {
         // Find the register by ID and delete it.
-        $this->registerMapper->delete($this->registerMapper->find((int) $id));
+        $register = $this->registerService->find((int) $id);
+        $this->registerService->delete($register);
 
         // Return an empty response.
         return new JSONResponse([]);
@@ -344,7 +346,7 @@ class RegistersController extends Controller
             // Get export format from query parameter
             $format = $this->request->getParam('format', 'configuration');
             $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
-            $register = $this->registerMapper->find($id);
+            $register = $this->registerService->find($id);
 
             switch ($format) {
                 case 'excel':
@@ -415,7 +417,7 @@ class RegistersController extends Controller
             // Get includeObjects parameter for all types
             $includeObjects = filter_var($this->request->getParam('includeObjects', false), FILTER_VALIDATE_BOOLEAN);
             // Find the register
-            $register = $this->registerMapper->find($id);
+            $register = $this->registerService->find($id);
             // Handle different import types
             switch ($type) {
                 case 'excel':
@@ -478,7 +480,7 @@ class RegistersController extends Controller
                         }
 
                         // Get existing schemas
-                        $register = $this->registerMapper->find($id);
+                        $register = $this->registerService->find($id);
                         $registerSchemas = $register->getSchemas();
 
                         // Merge new with existing
@@ -486,7 +488,8 @@ class RegistersController extends Controller
                         $mergedSchemaArray = array_keys(array_flip($mergedSchemaArray));
 
                         $register->setSchemas($mergedSchemaArray);
-                        $this->registerMapper->update($register);
+                        // Update through service instead of direct mapper call
+                        $this->registerService->updateFromArray($id, $register->jsonSerialize());
                     }
                     break;
             }
