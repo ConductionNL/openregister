@@ -151,7 +151,40 @@ class FileService
     ) {
     }//end __construct()
 
+    /**
+     * Clean and extract filename from a file path that may contain folder ID prefixes.
+     *
+     * This utility method handles the common pattern of cleaning file paths and extracting
+     * just the filename from paths that might be in formats like:
+     * - "filename.ext" -> "filename.ext"
+     * - "8010/filename.ext" -> "filename.ext" 
+     * - "/path/to/filename.ext" -> "filename.ext"
+     *
+     * @param string $filePath The file path to process
+     * 
+     * @return array{cleanPath: string, fileName: string} Array containing the cleaned path and extracted filename
+     *
+     * @psalm-return array{cleanPath: string, fileName: string}
+     * @phpstan-return array{cleanPath: string, fileName: string}
+     */
+    private function extractFileNameFromPath(string $filePath): array
+    {
+        // Clean and decode the file path
+        $cleanPath = trim(string: $filePath, characters: '/');
+        $cleanPath = urldecode($cleanPath);
 
+        // Extract just the filename if the path contains a folder ID prefix (like "8010/filename.ext")
+        $fileName = $cleanPath;
+        if (str_contains($cleanPath, '/')) {
+            $pathParts = explode('/', $cleanPath);
+            $fileName = end($pathParts);
+        }
+
+        return [
+            'cleanPath' => $cleanPath,
+            'fileName' => $fileName
+        ];
+    }//end extractFileNameFromPath()
 
     /**
      * Creates a new version of a file if the object is updated.
@@ -1677,12 +1710,15 @@ class FileService
         $originalFilePath = $filePath;
         $this->logger->info("updateFile: Original file path received: '$originalFilePath'");
 
-        // Clean and decode the file path
-        $filePath = trim(string: $filePath, characters: '/');
-        $this->logger->info("updateFile: After trim: '$filePath'");
-
-        $filePath = urldecode($filePath);
-        $this->logger->info("updateFile: After urldecode: '$filePath'");
+        // Clean file path and extract filename using utility method
+        $pathInfo = $this->extractFileNameFromPath($filePath);
+        $filePath = $pathInfo['cleanPath'];
+        $fileName = $pathInfo['fileName'];
+        
+        $this->logger->info("updateFile: After cleaning: '$filePath'");
+        if ($fileName !== $filePath) {
+            $this->logger->info("updateFile: Extracted filename from path: '$fileName' (from '$filePath')");
+        }
 
         $file = null;
 
@@ -1693,30 +1729,73 @@ class FileService
 
                 if ($objectFolder !== null) {
                     $this->logger->info("updateFile: Object folder path: " . $objectFolder->getPath());
+                    $this->logger->info("updateFile: Object folder ID: " . $objectFolder->getId());
 
-                    // Try to get the file from object folder
+                    // List all files in the object folder for debugging
                     try {
-                        $file = $objectFolder->get($filePath);
-                        $this->logger->info("updateFile: Found file in object folder: " . $file->getName());
-                    } catch (NotFoundException) {
-                        $this->logger->warning("updateFile: File $filePath not found in object folder.");
+                        $folderFiles = $objectFolder->getDirectoryListing();
+                        $fileNames = array_map(fn($f) => $f->getName(), $folderFiles);
+                        $this->logger->info("updateFile: Files in object folder: " . implode(', ', $fileNames));
+                    } catch (Exception $e) {
+                        $this->logger->warning("updateFile: Could not list folder contents: " . $e->getMessage());
                     }
+
+                    // Try to get the file from object folder using just the filename
+                    try {
+                        $file = $objectFolder->get($fileName);
+                        $this->logger->info("updateFile: Found file in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
+                    } catch (NotFoundException) {
+                        $this->logger->warning("updateFile: File '$fileName' not found in object folder.");
+                        
+                        // Also try with the full path in case it's nested
+                        try {
+                            $file = $objectFolder->get($filePath);
+                            $this->logger->info("updateFile: Found file using full path in object folder: " . $file->getName());
+                        } catch (NotFoundException) {
+                            $this->logger->warning("updateFile: File '$filePath' also not found with full path in object folder.");
+                        }
+                    }
+                } else {
+                    $this->logger->warning("updateFile: Could not get object folder for object ID: " . $object->getId());
                 }
             } catch (Exception $e) {
                 $this->logger->error("updateFile: Error accessing object folder: " . $e->getMessage());
             }
+        } else {
+            $this->logger->info("updateFile: No object provided, will search in user folder");
         }
 
         // If object wasn't provided or file wasn't found in object folder, try user folder
         if ($file === null) {
-            $this->logger->info("updateFile: Trying user folder approach...");
+            $this->logger->info("updateFile: Trying user folder approach with path: '$filePath'");
             try {
                 $userFolder = $this->getOpenRegisterUserFolder();
                 $file = $userFolder->get(path: $filePath);
-                $this->logger->info("updateFile: Found file in user folder at path: $filePath");
+                $this->logger->info("updateFile: Found file in user folder at path: $filePath (ID: " . $file->getId() . ")");
             } catch (NotFoundException $e) {
                 $this->logger->error("updateFile: File $filePath not found in user folder either.");
-                throw new Exception("File $filePath does not exist");
+                
+                // Try to find the file by ID if the path starts with a number
+                if (preg_match('/^(\d+)\//', $filePath, $matches)) {
+                    $fileId = (int) $matches[1];
+                    $this->logger->info("updateFile: Attempting to find file by ID: $fileId");
+                    
+                    try {
+                        $nodes = $userFolder->getById($fileId);
+                        if (!empty($nodes)) {
+                            $file = $nodes[0];
+                            $this->logger->info("updateFile: Found file by ID $fileId: " . $file->getName() . " at path: " . $file->getPath());
+                        } else {
+                            $this->logger->warning("updateFile: No file found with ID: $fileId");
+                        }
+                    } catch (Exception $e) {
+                        $this->logger->error("updateFile: Error finding file by ID $fileId: " . $e->getMessage());
+                    }
+                }
+                
+                if ($file === null) {
+                    throw new Exception("File $filePath does not exist");
+                }
             } catch (NotPermittedException | InvalidPathException $e) {
                 $this->logger->error("updateFile: Can't access file $filePath: ".$e->getMessage());
                 throw new Exception("Can't access file $filePath: ".$e->getMessage());
@@ -1805,14 +1884,19 @@ class FileService
                 $fileDeleted = true;
             } else {
                 // If we received a string path, locate the file first then delete it
-                // Clean and decode the file path
                 $originalFilePath = $file;
-                $filePath = trim(string: $file, characters: '/');
-                $filePath = urldecode($filePath);
+                $this->logger->info("deleteFile: Original file path received: '$originalFilePath'");
+
+                // Clean file path and extract filename using utility method
+                $pathInfo = $this->extractFileNameFromPath($file);
+                $filePath = $pathInfo['cleanPath'];
+                $fileName = $pathInfo['fileName'];
                 $deletedFilePath = $filePath;
 
-                $this->logger->info("deleteFile: Original file path received: '$originalFilePath'");
-                $this->logger->info("deleteFile: After trim and decode: '$filePath'");
+                $this->logger->info("deleteFile: After cleaning: '$filePath'");
+                if ($fileName !== $filePath) {
+                    $this->logger->info("deleteFile: Extracted filename from path: '$fileName' (from '$filePath')");
+                }
 
                 // If object is provided, try to find the file in the object folder first
                 if ($object !== null) {
@@ -1821,37 +1905,82 @@ class FileService
 
                         if ($objectFolder !== null) {
                             $this->logger->info("deleteFile: Object folder path: " . $objectFolder->getPath());
+                            $this->logger->info("deleteFile: Object folder ID: " . $objectFolder->getId());
 
-                            // Try to get the file from object folder
+                            // List all files in the object folder for debugging
                             try {
-                                $fileNode = $objectFolder->get($filePath);
-                                $this->logger->info("deleteFile: Found file in object folder: " . $fileNode->getName());
+                                $folderFiles = $objectFolder->getDirectoryListing();
+                                $fileNames = array_map(fn($f) => $f->getName(), $folderFiles);
+                                $this->logger->info("deleteFile: Files in object folder: " . implode(', ', $fileNames));
+                            } catch (Exception $e) {
+                                $this->logger->warning("deleteFile: Could not list folder contents: " . $e->getMessage());
+                            }
+
+                            // Try to get the file from object folder using just the filename
+                            try {
+                                $fileNode = $objectFolder->get($fileName);
+                                $this->logger->info("deleteFile: Found file in object folder: " . $fileNode->getName() . " (ID: " . $fileNode->getId() . ")");
                                 $fileNode->delete();
                                 $fileDeleted = true;
                             } catch (NotFoundException) {
-                                $this->logger->warning("deleteFile: File $filePath not found in object folder.");
-                                $fileDeleted = false;
+                                $this->logger->warning("deleteFile: File '$fileName' not found in object folder.");
+                                
+                                // Also try with the full path in case it's nested
+                                try {
+                                    $fileNode = $objectFolder->get($filePath);
+                                    $this->logger->info("deleteFile: Found file using full path in object folder: " . $fileNode->getName());
+                                    $fileNode->delete();
+                                    $fileDeleted = true;
+                                } catch (NotFoundException) {
+                                    $this->logger->warning("deleteFile: File '$filePath' also not found with full path in object folder.");
+                                    $fileDeleted = false;
+                                }
                             }
+                        } else {
+                            $this->logger->warning("deleteFile: Could not get object folder for object ID: " . $object->getId());
                         }
                     } catch (Exception $e) {
                         $this->logger->error("deleteFile: Error accessing object folder: " . $e->getMessage());
                     }
+                } else {
+                    $this->logger->info("deleteFile: No object provided, will search in user folder");
                 }
 
                 // If object wasn't provided or file wasn't found in object folder, try user folder
                 if ($fileDeleted === false) {
-                    $this->logger->info("deleteFile: Trying user folder approach...");
+                    $this->logger->info("deleteFile: Trying user folder approach with path: '$filePath'");
                     $userFolder = $this->getOpenRegisterUserFolder();
 
                     // Check if file exists and delete it if it does.
                     try {
                         $fileNode = $userFolder->get(path: $filePath);
-                        $this->logger->info("deleteFile: Found file in user folder at path: $filePath");
+                        $this->logger->info("deleteFile: Found file in user folder at path: $filePath (ID: " . $fileNode->getId() . ")");
                         $fileNode->delete();
                         $fileDeleted = true;
                     } catch (NotFoundException) {
                         // File does not exist.
                         $this->logger->warning("deleteFile: File $filePath does not exist in user folder either.");
+                        
+                        // Try to find the file by ID if the path starts with a number
+                        if (preg_match('/^(\d+)\//', $filePath, $matches)) {
+                            $fileId = (int) $matches[1];
+                            $this->logger->info("deleteFile: Attempting to find file by ID: $fileId");
+                            
+                            try {
+                                $nodes = $userFolder->getById($fileId);
+                                if (!empty($nodes)) {
+                                    $fileNode = $nodes[0];
+                                    $this->logger->info("deleteFile: Found file by ID $fileId: " . $fileNode->getName() . " at path: " . $fileNode->getPath());
+                                    $fileNode->delete();
+                                    $fileDeleted = true;
+                                } else {
+                                    $this->logger->warning("deleteFile: No file found with ID: $fileId");
+                                }
+                            } catch (Exception $e) {
+                                $this->logger->error("deleteFile: Error finding file by ID $fileId: " . $e->getMessage());
+                            }
+                        }
+                        
                         $fileDeleted = false;
                     }
                 }
@@ -2167,14 +2296,12 @@ class FileService
                 // File exists, update it
                 $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
 
-                // Get the full path for the updateFile method
-                $fullPath = $this->getObjectFilePath($objectEntity, $fileName);
-
-                // Update the existing file
+                // Update the existing file - pass the object so updateFile can find it in the object folder
                 return $this->updateFile(
-                    filePath: $fullPath,
+                    filePath: $fileName,  // Just pass the filename, not the full path
                     content: $content,
-                    tags: $tags
+                    tags: $tags,
+                    object: $objectEntity  // Pass the object so updateFile can locate the file
                 );
             } else {
                 // File doesn't exist, create it
@@ -2289,15 +2416,28 @@ class FileService
             $object = $this->objectEntityMapper->find($object);
         }
 
+        // Clean file path and extract filename using utility method
+        $originalFilePath = $filePath;
+        $pathInfo = $this->extractFileNameFromPath($filePath);
+        $filePath = $pathInfo['cleanPath'];
+        $fileName = $pathInfo['fileName'];
+
         // Use the new ID-based folder approach
         $folder = $this->getObjectFolder($object);
 
         // Check if folder exists and get the file
         if ($folder instanceof Folder === true) {
             try {
-                return $folder->get($filePath);
+                // First try with just the filename
+                return $folder->get($fileName);
             } catch (NotFoundException) {
-                return null;
+                try {
+                    // If that fails, try with the full path
+                    return $folder->get($filePath);
+                } catch (NotFoundException) {
+                    // File not found
+                    return null;
+                }
             }
         }
 
@@ -2330,12 +2470,15 @@ class FileService
         $originalFilePath = $filePath;
         $this->logger->info("publishFile: Original file path received: '$originalFilePath'");
 
-        // Clean and decode the file path
-        $filePath = trim(string: $filePath, characters: '/');
-        $this->logger->info("publishFile: After trim: '$filePath'");
-
-        $filePath = urldecode($filePath);
-        $this->logger->info("publishFile: After urldecode: '$filePath'");
+        // Clean file path and extract filename using utility method
+        $pathInfo = $this->extractFileNameFromPath($filePath);
+        $filePath = $pathInfo['cleanPath'];
+        $fileName = $pathInfo['fileName'];
+        
+        $this->logger->info("publishFile: After cleaning: '$filePath'");
+        if ($fileName !== $filePath) {
+            $this->logger->info("publishFile: Extracted filename from path: '$fileName' (from '$filePath')");
+        }
 
         // Get the object folder (this is where the files actually are)
         $objectFolder = $this->getObjectFolder($object);
@@ -2357,12 +2500,19 @@ class FileService
         }
 
         try {
-            $this->logger->info("publishFile: Attempting to get file '$filePath' from object folder");
-            $file = $objectFolder->get($filePath);
+            $this->logger->info("publishFile: Attempting to get file '$fileName' from object folder");
+            $file = $objectFolder->get($fileName);
             $this->logger->info("publishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
         } catch (NotFoundException $e) {
-            $this->logger->error("publishFile: File '$filePath' not found in object folder. NotFoundException: " . $e->getMessage());
-            throw new Exception('File not found.');
+            // Try with full path if filename didn't work
+            try {
+                $this->logger->info("publishFile: Attempting to get file '$filePath' (full path) from object folder");
+                $file = $objectFolder->get($filePath);
+                $this->logger->info("publishFile: Successfully found file using full path: " . $file->getName() . " at " . $file->getPath());
+            } catch (NotFoundException $e2) {
+                $this->logger->error("publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: " . $e2->getMessage());
+                throw new Exception('File not found.');
+            }
         } catch (Exception $e) {
             $this->logger->error("publishFile: Unexpected error getting file from object folder: " . $e->getMessage());
             throw new Exception('File not found.');
@@ -2409,12 +2559,15 @@ class FileService
         $originalFilePath = $filePath;
         $this->logger->info("unpublishFile: Original file path received: '$originalFilePath'");
 
-        // Clean and decode the file path
-        $filePath = trim(string: $filePath, characters: '/');
-        $this->logger->info("unpublishFile: After trim: '$filePath'");
-
-        $filePath = urldecode($filePath);
-        $this->logger->info("unpublishFile: After urldecode: '$filePath'");
+        // Clean file path and extract filename using utility method
+        $pathInfo = $this->extractFileNameFromPath($filePath);
+        $filePath = $pathInfo['cleanPath'];
+        $fileName = $pathInfo['fileName'];
+        
+        $this->logger->info("unpublishFile: After cleaning: '$filePath'");
+        if ($fileName !== $filePath) {
+            $this->logger->info("unpublishFile: Extracted filename from path: '$fileName' (from '$filePath')");
+        }
 
         // Get the object folder (this is where the files actually are)
         $objectFolder = $this->getObjectFolder($object);
@@ -2436,12 +2589,19 @@ class FileService
         }
 
         try {
-            $this->logger->info("unpublishFile: Attempting to get file '$filePath' from object folder");
-            $file = $objectFolder->get($filePath);
+            $this->logger->info("unpublishFile: Attempting to get file '$fileName' from object folder");
+            $file = $objectFolder->get($fileName);
             $this->logger->info("unpublishFile: Successfully found file: " . $file->getName() . " at " . $file->getPath());
         } catch (NotFoundException $e) {
-            $this->logger->error("unpublishFile: File '$filePath' not found in object folder. NotFoundException: " . $e->getMessage());
-            throw new Exception('File not found.');
+            // Try with full path if filename didn't work
+            try {
+                $this->logger->info("unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
+                $file = $objectFolder->get($filePath);
+                $this->logger->info("unpublishFile: Successfully found file using full path: " . $file->getName() . " at " . $file->getPath());
+            } catch (NotFoundException $e2) {
+                $this->logger->error("unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: " . $e2->getMessage());
+                throw new Exception('File not found.');
+            }
         } catch (Exception $e) {
             $this->logger->error("unpublishFile: Unexpected error getting file from object folder: " . $e->getMessage());
             throw new Exception('File not found.');
@@ -2689,6 +2849,205 @@ class FileService
             throw new \Exception('Failed to find files by object ID: ' . $e->getMessage());
         }
     }//end findFilesByObjectId()
+
+    /**
+     * Debug method to find a file by its ID anywhere in the OpenRegister folder structure
+     *
+     * @param int $fileId The file ID to search for
+     *
+     * @return array|null File information or null if not found
+     */
+    public function debugFindFileById(int $fileId): ?array
+    {
+        try {
+            $userFolder = $this->getOpenRegisterUserFolder();
+            $nodes = $userFolder->getById($fileId);
+            
+            if (empty($nodes)) {
+                $this->logger->info("debugFindFileById: No file found with ID: $fileId");
+                return null;
+            }
+            
+            $file = $nodes[0];
+            $fileInfo = [
+                'id' => $file->getId(),
+                'name' => $file->getName(),
+                'path' => $file->getPath(),
+                'type' => $file->getType(),
+                'mimetype' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'parent_id' => $file->getParent()->getId(),
+                'parent_path' => $file->getParent()->getPath(),
+            ];
+            
+            $this->logger->info("debugFindFileById: Found file with ID $fileId: " . json_encode($fileInfo));
+            return $fileInfo;
+            
+        } catch (Exception $e) {
+            $this->logger->error("debugFindFileById: Error finding file by ID $fileId: " . $e->getMessage());
+            return null;
+        }
+    }//end debugFindFileById()
+
+    /**
+     * Debug method to list all files in an object's folder
+     *
+     * @param ObjectEntity $object The object to list files for
+     *
+     * @return array List of file information
+     */
+    public function debugListObjectFiles(ObjectEntity $object): array
+    {
+        try {
+            $objectFolder = $this->getObjectFolder($object);
+            
+            if ($objectFolder === null) {
+                $this->logger->warning("debugListObjectFiles: Could not get object folder for object ID: " . $object->getId());
+                return [];
+            }
+            
+            $files = $objectFolder->getDirectoryListing();
+            $fileList = [];
+            
+            foreach ($files as $file) {
+                $fileInfo = [
+                    'id' => $file->getId(),
+                    'name' => $file->getName(),
+                    'path' => $file->getPath(),
+                    'type' => $file->getType(),
+                    'mimetype' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ];
+                $fileList[] = $fileInfo;
+            }
+            
+            $this->logger->info("debugListObjectFiles: Object " . $object->getId() . " folder contains " . count($fileList) . " files: " . json_encode($fileList));
+            return $fileList;
+            
+        } catch (Exception $e) {
+            $this->logger->error("debugListObjectFiles: Error listing files for object " . $object->getId() . ": " . $e->getMessage());
+            return [];
+        }
+    }//end debugListObjectFiles()
+
+    /**
+     * Test method to verify file ID lookup functionality
+     * This method can be called to test if files can be found by ID
+     *
+     * @param int $fileId The file ID to test lookup for
+     * @param ObjectEntity|null $object Optional object to test object folder lookup
+     *
+     * @return array Test results
+     */
+    public function testFileLookup(int $fileId, ?ObjectEntity $object = null): array
+    {
+        $results = [
+            'file_id' => $fileId,
+            'object_id' => $object ? $object->getId() : null,
+            'tests' => []
+        ];
+
+        // Test 1: Find file by ID in OpenRegister folder
+        $this->logger->info("testFileLookup: Testing file ID lookup for file $fileId");
+        $fileInfo = $this->debugFindFileById($fileId);
+        $results['tests']['find_by_id'] = [
+            'success' => $fileInfo !== null,
+            'file_info' => $fileInfo
+        ];
+
+        // Test 2: If object provided, test object folder listing
+        if ($object !== null) {
+            $this->logger->info("testFileLookup: Testing object folder listing for object " . $object->getId());
+            $objectFiles = $this->debugListObjectFiles($object);
+            $results['tests']['object_folder_listing'] = [
+                'success' => !empty($objectFiles),
+                'file_count' => count($objectFiles),
+                'files' => $objectFiles
+            ];
+
+            // Test 3: Check if the file ID is in the object's folder
+            $fileInObjectFolder = false;
+            foreach ($objectFiles as $file) {
+                if ($file['id'] === $fileId) {
+                    $fileInObjectFolder = true;
+                    break;
+                }
+            }
+            $results['tests']['file_in_object_folder'] = [
+                'success' => $fileInObjectFolder,
+                'message' => $fileInObjectFolder ? "File $fileId found in object folder" : "File $fileId NOT found in object folder"
+            ];
+        }
+
+        // Test 4: Test updateFile with file ID path format
+        if ($fileInfo !== null) {
+            $testPath = $fileId . '/' . $fileInfo['name'];
+            $this->logger->info("testFileLookup: Testing updateFile with path: $testPath");
+            
+            try {
+                // Don't actually update, just test the lookup logic
+                $userFolder = $this->getOpenRegisterUserFolder();
+                
+                // Simulate the updateFile logic
+                $fileName = $fileInfo['name'];
+                $foundByFilename = false;
+                $foundByPath = false;
+                $foundById = false;
+
+                // Test object folder lookup if object provided
+                if ($object !== null) {
+                    try {
+                        $objectFolder = $this->getObjectFolder($object);
+                        if ($objectFolder !== null) {
+                            try {
+                                $file = $objectFolder->get($fileName);
+                                $foundByFilename = true;
+                            } catch (\Exception $e) {
+                                // Not found by filename
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Object folder error
+                    }
+                }
+
+                // Test user folder path lookup
+                try {
+                    $file = $userFolder->get($testPath);
+                    $foundByPath = true;
+                } catch (\Exception $e) {
+                    // Not found by path
+                }
+
+                // Test user folder ID lookup
+                try {
+                    $nodes = $userFolder->getById($fileId);
+                    if (!empty($nodes)) {
+                        $foundById = true;
+                    }
+                } catch (\Exception $e) {
+                    // Not found by ID
+                }
+
+                $results['tests']['updateFile_simulation'] = [
+                    'test_path' => $testPath,
+                    'found_by_filename_in_object_folder' => $foundByFilename,
+                    'found_by_path_in_user_folder' => $foundByPath,
+                    'found_by_id_in_user_folder' => $foundById,
+                    'success' => $foundByFilename || $foundByPath || $foundById
+                ];
+
+            } catch (\Exception $e) {
+                $results['tests']['updateFile_simulation'] = [
+                    'error' => $e->getMessage(),
+                    'success' => false
+                ];
+            }
+        }
+
+        $this->logger->info("testFileLookup: Test results: " . json_encode($results));
+        return $results;
+    }//end testFileLookup()
 
 }//end class
 
