@@ -26,6 +26,7 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -88,6 +89,7 @@ class ObjectService
      * @param RegisterMapper     $registerMapper     Mapper for register operations.
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
+     * @param FileService        $fileService        Service for file operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -99,10 +101,51 @@ class ObjectService
         private readonly DepublishObject $depublishHandler,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly FileService $fileService
     ) {
 
     }//end __construct()
+
+    /**
+     * Ensure folder exists for an ObjectEntity.
+     *
+     * This method checks if the object has a valid folder ID and creates one if needed.
+     * It handles legacy cases where the folder property might be null, empty, or a string path.
+     *
+     * @param ObjectEntity $entity The object entity to ensure folder for
+     *
+     * @return void
+     *
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    public function ensureObjectFolderExists(ObjectEntity $entity): void
+    {
+        $folderProperty = $entity->getFolder();
+        
+        // Check if folder needs to be created (null, empty string, or legacy string path)
+        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
+            try {
+                // Create folder and get the folder node
+                $folderNode = $this->fileService->createEntityFolder($entity);
+                
+                if ($folderNode !== null) {
+                    // Update the entity with the folder ID
+                    $entity->setFolder($folderNode->getId());
+                    
+                    // Save the entity with the new folder ID
+                    $this->objectEntityMapper->update($entity);
+                }
+            } catch (\Exception $e) {
+                // Log the error but don't fail the object creation/update
+                // The object can still function without a folder
+                error_log("Failed to create folder for object {$entity->getId()}: " . $e->getMessage());
+            }
+        }
+    }//end ensureObjectFolderExists()
+
+
 
     /**
      * Get ValidateHandler
@@ -293,6 +336,9 @@ class ObjectService
             $object
         );
 
+        // Ensure folder exists for the saved object
+        $this->ensureObjectFolderExists($savedObject);
+
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $savedObject,
@@ -362,6 +408,9 @@ class ObjectService
             data: $object,
             uuid: $id
         );
+
+        // Ensure folder exists for the saved object
+        $this->ensureObjectFolderExists($savedObject);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -609,6 +658,9 @@ class ObjectService
             $object,
             $uuid
         );
+
+        // Ensure folder exists for the saved object
+        $this->ensureObjectFolderExists($savedObject);
 
         // Determine if register and schema should be passed to renderEntity.
         if (isset($config['filters']['register']) === true) {
