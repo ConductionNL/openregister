@@ -1841,47 +1841,49 @@ class FileService
      */
     public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
     {
-        try {
-            // Check if the file already exists for this object
-            $existingFile = $this->getFile(
-                object: $objectEntity,
-                filePath: $fileName
-            );
-
-            if ($existingFile !== null) {
-                // File exists, update it
-                $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
-
-                // Get the full path for the updateFile method
-                $fullPath = $this->getObjectFilePath($objectEntity, $fileName);
-
-                // Update the existing file
-                return $this->updateFile(
-                    filePath: $fullPath,
-                    content: $content,
-                    tags: $tags
+        return $this->executeWithFileUserContext(function () use ($objectEntity, $fileName, $content, $share, $tags): File {
+			try {
+                // Check if the file already exists for this object
+                $existingFile = $this->getFile(
+                    object: $objectEntity,
+                    filePath: $fileName
                 );
-            } else {
-                // File doesn't exist, create it
-                $this->logger->info("File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
 
-                return $this->addFile(
-                    objectEntity: $objectEntity,
-                    fileName: $fileName,
-                    content: $content,
-                    share: $share,
-                    tags: $tags
-                );
+                if ($existingFile !== null) {
+                    // File exists, update it
+                    $this->logger->info("File $fileName already exists for object {$objectEntity->getId()}, updating...");
+
+                    // Get the full path for the updateFile method
+                    $fullPath = $this->getObjectFilePath($objectEntity, $fileName);
+
+                    // Update the existing file
+                    return $this->updateFile(
+                        filePath: $fullPath,
+                        content: $content,
+                        tags: $tags
+                    );
+                } else {
+                    // File doesn't exist, create it
+                    $this->logger->info("File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
+
+                    return $this->addFile(
+                        objectEntity: $objectEntity,
+                        fileName: $fileName,
+                        content: $content,
+                        share: $share,
+                        tags: $tags
+                    );
+                }
+            } catch (NotPermittedException $e) {
+                // Log permission error and rethrow exception
+                $this->logger->error("Permission denied saving file $fileName: ".$e->getMessage());
+                throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
+            } catch (\Exception $e) {
+                // Log general error and rethrow exception
+                $this->logger->error("Failed to save file $fileName: ".$e->getMessage());
+                throw new \Exception("Failed to save file $fileName: ".$e->getMessage());
             }
-        } catch (NotPermittedException $e) {
-            // Log permission error and rethrow exception
-            $this->logger->error("Permission denied saving file $fileName: ".$e->getMessage());
-            throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
-        } catch (\Exception $e) {
-            // Log general error and rethrow exception
-            $this->logger->error("Failed to save file $fileName: ".$e->getMessage());
-            throw new \Exception("Failed to save file $fileName: ".$e->getMessage());
-        }
+        });
     }//end saveFile()
 
     /**
