@@ -306,6 +306,10 @@ class SaveObject
         array $data,
         ?string $uuid=null
     ): ObjectEntity {
+
+		if (isset($data['@self']) && is_array($data['@self'])) {
+			$selfData = $data['@self'];
+		}
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
@@ -346,10 +350,8 @@ class SaveObject
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
 
-
         // Check if '@self' metadata exists and contains published/depublished properties
-        if (isset($data['@self']) && is_array($data['@self'])) {
-            $selfData = $data['@self'];
+		if (isset($selfData) === true) {
 
             // Extract and set published property if present
             if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
