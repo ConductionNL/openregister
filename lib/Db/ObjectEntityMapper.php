@@ -68,6 +68,8 @@ class ObjectEntityMapper extends QBMapper
      */
     private IUserSession $userSession;
 
+
+
     /**
      * MariaDB search handler instance
      *
@@ -92,6 +94,8 @@ class ObjectEntityMapper extends QBMapper
     public const MAIN_FILTERS = ['register', 'schema', 'uuid', 'created', 'updated'];
 
     public const DEFAULT_LOCK_DURATION = 3600;
+
+
 
 
     /**
@@ -1150,6 +1154,7 @@ class ObjectEntityMapper extends QBMapper
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
+        
         // Dispatch creation event.
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
