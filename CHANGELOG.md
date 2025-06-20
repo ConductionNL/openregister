@@ -1,3 +1,8 @@
+# Version: 0.2.2
+
+* [#447](https://github.com/ConductionNL/openregister/pull/447): Upped version to 0.2 and update release workflow
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
