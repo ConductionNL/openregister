@@ -21,6 +21,7 @@ import { navigationStore } from '../store/store.js'
 		<EditSource />
 		<DeleteSource />
 		<EditObject v-if="navigationStore.modal === 'editObject'" />
+		<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
 		<DeleteObject />
 		<LockObject />
 		<ViewObject />
@@ -51,6 +52,7 @@ import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
 import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditObject from './object/EditObject.vue'
+import MergeObject from './object/MergeObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
@@ -80,6 +82,7 @@ export default {
 		EditSource,
 		DeleteSource,
 		EditObject,
+		MergeObject,
 		DeleteObject,
 		UploadObject,
 		ViewObjectAuditTrail,

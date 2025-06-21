@@ -1031,6 +1031,73 @@ class ObjectsController extends Controller
     }
 
     /**
+     * Merge two objects
+     *
+     * This method merges object A into object B within the same register and schema.
+     * It handles merging of properties, files, and relations based on user preferences.
+     *
+     * @param string        $id            The ID of object A (source object to merge from)
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the merge result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function merge(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
+        try {
+            // Get merge parameters from request
+            $requestParams = $this->request->getParams();
+            $targetObjectId = $requestParams['targetObjectId'] ?? null;
+            $mergedData = $requestParams['mergedData'] ?? [];
+            $fileAction = $requestParams['fileAction'] ?? 'transfer'; // 'transfer' or 'delete'
+            $relationAction = $requestParams['relationAction'] ?? 'transfer'; // 'transfer' or 'drop'
+
+            // Validate required parameters
+            if ($targetObjectId === null) {
+                return new JSONResponse(['error' => 'Target object ID is required'], 400);
+            }
+
+            if (empty($mergedData)) {
+                return new JSONResponse(['error' => 'Merged data is required'], 400);
+            }
+
+            // Perform the merge operation
+            $mergeResult = $objectService->mergeObjects(
+                sourceObjectId: $id,
+                targetObjectId: $targetObjectId,
+                mergedData: $mergedData,
+                fileAction: $fileAction,
+                relationAction: $relationAction
+            );
+
+            return new JSONResponse($mergeResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to merge objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end merge()
+
+
+    /**
      * Download all files of an object as a ZIP archive
      *
      * This method creates a ZIP file containing all files associated with a specific object

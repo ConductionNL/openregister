@@ -149,6 +149,12 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 												</template>
 												Edit
 											</NcActionButton>
+											<NcActionButton close-after-click @click="mergeObject(result)">
+												<template #icon>
+													<Merge :size="20" />
+												</template>
+												Merge
+											</NcActionButton>
 											<NcActionButton close-after-click @click="deleteObject(result)">
 												<template #icon>
 													<Delete :size="20" />
@@ -192,6 +198,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -213,6 +220,7 @@ export default {
 		Refresh,
 		PaginationComponent,
 		FileTreeOutline,
+		Merge,
 	},
 	data() {
 		return {
@@ -358,6 +366,11 @@ export default {
 			objectStore.refreshObjectList()
 			// Clear selection after refresh
 			objectStore.selectedObjects = []
+		},
+		mergeObject(sourceObject) {
+			// Set the source object for merging and open the merge modal
+			objectStore.setObjectItem(sourceObject)
+			navigationStore.setModal('mergeObject')
 		},
 		getValidISOstring,
 		formatBytes,
