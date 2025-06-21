@@ -1963,8 +1963,7 @@ class ObjectService
             $mergeReport['actions']['references'] = $updatedReferences;
 
             // Delete source object (soft delete)
-            $userId = $this->userSession->getUser() ? $this->userSession->getUser()->getUID() : 'system';
-            $sourceObject->delete($userId, 'Merged into object ' . $targetObject->getUuid());
+            $sourceObject->delete($this->userSession, 'Merged into object ' . $targetObject->getUuid());
             $this->objectEntityMapper->update($sourceObject);
 
             // Set success and add merged object to report
@@ -2005,15 +2004,33 @@ class ObjectService
             $this->ensureObjectFolderExists($targetObject);
 
             // Get files from source folder
-            $sourceFiles = $this->fileService->getEntityFiles($sourceObject);
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
             
             foreach ($sourceFiles as $file) {
                 try {
-                    // Move file to target folder
-                    $this->fileService->moveFileToEntity($file, $targetObject);
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    // Get file content and create new file in target object
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+                    
+                    // Create new file in target object folder
+                    $this->fileService->addFile(
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
+                        content: $fileContent,
+                        share: false,
+                        tags: []
+                    );
+                    
+                    // Delete original file from source
+                    $this->fileService->deleteFile($file, $sourceObject);
                     
                     $result['files'][] = [
-                        'name' => $file->getName(),
+                        'name' => $fileName,
                         'action' => 'transferred',
                         'success' => true
                     ];
@@ -2057,15 +2074,22 @@ class ObjectService
 
         try {
             // Get files from source folder
-            $sourceFiles = $this->fileService->getEntityFiles($sourceObject);
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
             
             foreach ($sourceFiles as $file) {
                 try {
-                    // Delete the file
-                    $file->delete();
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    $fileName = $file->getName();
+                    
+                    // Delete the file using FileService
+                    $this->fileService->deleteFile($file, $sourceObject);
                     
                     $result['files'][] = [
-                        'name' => $file->getName(),
+                        'name' => $fileName,
                         'action' => 'deleted',
                         'success' => true
                     ];

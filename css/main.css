@@ -672,6 +672,21 @@
   background-color: var(--color-border);
 }
 
+/* Generic table row selection styles */
+.table-row-selected {
+  background-color: var(--color-primary-light) !important;
+  border-left: 3px solid var(--color-primary) !important;
+}
+
+.table-row-selectable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-row-selectable:hover {
+  background-color: var(--color-background-hover);
+}
+
 /* Detail Grid - Common component for showing register/schema info */
 .detail-grid {
 	display: grid;
