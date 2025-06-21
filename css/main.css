@@ -672,6 +672,38 @@
   background-color: var(--color-border);
 }
 
+/* Detail Grid - Common component for showing register/schema info */
+.detail-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin: 20px 0;
+	max-width: 100%;
+}
+
+.detail-item {
+	display: flex;
+	flex-direction: column;
+	padding: 12px;
+	background-color: var(--color-background-hover);
+	border-radius: 4px;
+	border-left: 3px solid var(--color-primary);
+}
+
+.detail-item.empty-value {
+	border-left-color: var(--color-warning);
+}
+
+.detail-label {
+	font-weight: bold;
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 4px;
+}
+
+.detail-value {
+	word-break: break-word;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 1200px) {
   .tableColumnTitle {
