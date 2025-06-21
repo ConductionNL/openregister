@@ -22,6 +22,7 @@ import { navigationStore } from '../store/store.js'
 		<DeleteSource />
 		<EditObject v-if="navigationStore.modal === 'editObject'" />
 		<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
+		<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
 		<DeleteObject />
 		<LockObject />
 		<ViewObject />
@@ -53,6 +54,7 @@ import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditObject from './object/EditObject.vue'
 import MergeObject from './object/MergeObject.vue'
+import MigrationObject from './object/MigrationObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
@@ -83,6 +85,7 @@ export default {
 		DeleteSource,
 		EditObject,
 		MergeObject,
+		MigrationObject,
 		DeleteObject,
 		UploadObject,
 		ViewObjectAuditTrail,

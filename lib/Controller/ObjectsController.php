@@ -1098,6 +1098,73 @@ class ObjectsController extends Controller
 
 
     /**
+     * Migrate objects between registers and/or schemas
+     *
+     * This method migrates multiple objects from one register/schema combination
+     * to another register/schema combination with property mapping.
+     *
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the migration result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function migrate(ObjectService $objectService): JSONResponse
+    {
+        try {
+            // Get migration parameters from request
+            $requestParams = $this->request->getParams();
+            $sourceRegister = $requestParams['sourceRegister'] ?? null;
+            $sourceSchema = $requestParams['sourceSchema'] ?? null;
+            $targetRegister = $requestParams['targetRegister'] ?? null;
+            $targetSchema = $requestParams['targetSchema'] ?? null;
+            $objectIds = $requestParams['objects'] ?? [];
+            $propertyMappings = $requestParams['propertyMappings'] ?? [];
+
+            // Validate required parameters
+            if ($sourceRegister === null || $sourceSchema === null) {
+                return new JSONResponse(['error' => 'Source register and schema are required'], 400);
+            }
+
+            if ($targetRegister === null || $targetSchema === null) {
+                return new JSONResponse(['error' => 'Target register and schema are required'], 400);
+            }
+
+            if (empty($objectIds)) {
+                return new JSONResponse(['error' => 'At least one object ID is required'], 400);
+            }
+
+            if (empty($propertyMappings)) {
+                return new JSONResponse(['error' => 'Property mappings are required'], 400);
+            }
+
+            // Perform the migration operation
+            $migrationResult = $objectService->migrateObjects(
+                sourceRegister: $sourceRegister,
+                sourceSchema: $sourceSchema,
+                targetRegister: $targetRegister,
+                targetSchema: $targetSchema,
+                objectIds: $objectIds,
+                propertyMappings: $propertyMappings
+            );
+
+            return new JSONResponse($migrationResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Register or schema not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to migrate objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end migrate()
+
+
+    /**
      * Download all files of an object as a ZIP archive
      *
      * This method creates a ZIP file containing all files associated with a specific object

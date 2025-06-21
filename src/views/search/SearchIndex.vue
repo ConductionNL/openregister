@@ -31,8 +31,17 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				<div class="viewActions">
 					<NcActions
 						:force-name="true"
-						:inline="objectStore.selectedObjects.length > 0 ? 3 : 2"
+						:inline="objectStore.selectedObjects.length > 0 ? 4 : 2"
 						menu-name="Actions">
+						<NcActionButton
+							v-if="objectStore.selectedObjects.length > 0"
+							close-after-click
+							@click="migrateObjects">
+							<template #icon>
+								<DatabaseExport :size="20" />
+							</template>
+							Migrate ({{ objectStore.selectedObjects.length }})
+						</NcActionButton>
 						<NcActionButton
 							v-if="objectStore.selectedObjects.length > 0"
 							close-after-click
@@ -200,6 +209,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -222,6 +232,7 @@ export default {
 		PaginationComponent,
 		FileTreeOutline,
 		Merge,
+		DatabaseExport,
 	},
 	data() {
 		return {
@@ -356,6 +367,25 @@ export default {
 
 			// Set the dialog to mass delete
 			navigationStore.setDialog('massDeleteObject')
+		},
+		migrateObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for migration
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					id: obj['@self'].id,
+					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
+					register: obj['@self'].register,
+					schema: obj['@self'].schema,
+				}))
+
+			// Store selected objects in the object store for the migration modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the migration modal
+			navigationStore.setModal('migrationObject')
 		},
 		addObject() {
 			// Clear any existing object and open the add object modal
