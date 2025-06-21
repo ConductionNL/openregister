@@ -1,79 +1,29 @@
-<script setup>
-import { deletedStore, navigationStore } from '../../store/store.js'
-</script>
-
-<template>
-	<NcDialog v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
-		:name="t('openregister', 'Permanently Delete Multiple Objects')"
-		size="normal"
-		:can-close="false">
-		<p v-if="success === null">
-			{{ t('openregister', 'Do you want to permanently delete {count} selected objects? This action cannot be undone.', { count: objectsToDelete.length }) }}
-		</p>
-
-		<div v-if="success === null && objectsToDelete.length > 0" class="objects-info">
-			<p><strong>{{ t('openregister', 'Objects to be permanently deleted:') }}</strong></p>
-			<div class="objects-list">
-				<div v-for="obj in objectsToDelete.slice(0, 5)" :key="obj.id" class="object-item">
-					<span class="object-title">{{ getObjectTitle(obj) }}</span>
-					<span class="object-id">{{ obj.id }}</span>
-				</div>
-				<div v-if="objectsToDelete.length > 5" class="more-objects">
-					{{ t('openregister', '... and {count} more objects', { count: objectsToDelete.length - 5 }) }}
-				</div>
-			</div>
-		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ successMessage }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				type="error"
-				@click="permanentlyDeleteMultiple()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Permanently Delete All') }}
-			</NcButton>
-		</template>
-	</NcDialog>
-</template>
-
 <script>
+import { deletedStore, navigationStore } from '../../store/store.js'
 import {
 	NcButton,
 	NcDialog,
+	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 
 export default {
 	name: 'PermanentlyDeleteMultiple',
 	components: {
 		NcDialog,
 		NcButton,
+		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
 		TrashCanOutline,
 		Cancel,
+		Close,
 	},
 	data() {
 		return {
@@ -82,28 +32,54 @@ export default {
 			loading: false,
 			error: false,
 			closeModalTimeout: null,
+			selectedObjects: [],
 		}
 	},
 	computed: {
 		objectsToDelete() {
-			if (navigationStore.dialog === 'permanentlyDeleteMultiple') {
-				const data = navigationStore.getTransferData() || []
-				return data
-			}
-			return []
+			return this.selectedObjects
+		},
+		/**
+		 * Check if dialog is open
+		 * @return {boolean}
+		 */
+		isDialogOpen() {
+			return navigationStore.dialog === 'permanentlyDeleteMultiple'
 		},
 	},
 	watch: {
-		'navigationStore.dialog'(newValue, oldValue) {
-			if (newValue === 'permanentlyDeleteMultiple' && oldValue !== 'permanentlyDeleteMultiple') {
-				// Dialog opened - computed property will handle data retrieval
+		isDialogOpen(newValue, oldValue) {
+			if (newValue && !oldValue) {
+				this.initializeSelection()
 			}
 		},
 	},
 	mounted() {
-		// Component mounted - data handled by computed property
+		this.initializeSelection()
 	},
 	methods: {
+		/**
+		 * Initialize selection from transfer data
+		 * @return {void}
+		 */
+		initializeSelection() {
+			const data = navigationStore.getTransferData() || []
+			this.selectedObjects = Array.isArray(data) ? data : []
+			if (this.selectedObjects.length === 0) {
+				this.closeDialog()
+			}
+		},
+		/**
+		 * Remove object from selection
+		 * @param {string} objectId - ID of object to remove
+		 * @return {void}
+		 */
+		removeObject(objectId) {
+			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
+			if (this.selectedObjects.length === 0) {
+				this.closeDialog()
+			}
+		},
 		/**
 		 * Close the dialog and reset state
 		 * @return {void}
@@ -173,54 +149,125 @@ export default {
 }
 </script>
 
+<template>
+	<NcDialog v-if="isDialogOpen"
+		:name="`Permanently delete ${objectsToDelete.length} object${objectsToDelete.length !== 1 ? 's' : ''}`"
+		size="normal"
+		:can-close="false">
+		<!-- Object Selection Review -->
+		<div v-if="success === null" class="delete-step">
+			<h3 class="step-title">
+				Confirm Permanent Object Deletion
+			</h3>
+
+			<NcNoteCard type="warning">
+				Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.
+			</NcNoteCard>
+
+			<div class="selected-objects-container">
+				<h4>Selected Objects ({{ objectsToDelete.length }})</h4>
+
+				<div v-if="objectsToDelete.length" class="selected-objects-list">
+					<div v-for="obj in objectsToDelete"
+						:key="obj.id"
+						class="selected-object-item">
+						<div class="object-info">
+							<strong>{{ getObjectTitle(obj) }}</strong>
+							<p class="object-id">
+								ID: {{ obj.id }}
+							</p>
+						</div>
+						<NcButton type="tertiary"
+							:aria-label="`Remove ${getObjectTitle(obj)}`"
+							@click="removeObject(obj.id)">
+							<template #icon>
+								<Close :size="20" />
+							</template>
+						</NcButton>
+					</div>
+				</div>
+
+				<NcEmptyContent v-else name="No objects selected">
+					<template #description>
+						No objects are currently selected for permanent deletion.
+					</template>
+				</NcEmptyContent>
+			</div>
+		</div>
+
+		<NcNoteCard v-if="success" type="success">
+			<p>{{ successMessage }}</p>
+		</NcNoteCard>
+		<NcNoteCard v-if="error" type="error">
+			<p>{{ error }}</p>
+		</NcNoteCard>
+
+		<template #actions>
+			<NcButton @click="closeDialog">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
+			</NcButton>
+			<NcButton
+				v-if="success === null"
+				:disabled="loading || objectsToDelete.length === 0"
+				type="error"
+				@click="permanentlyDeleteMultiple()">
+				<template #icon>
+					<NcLoadingIcon v-if="loading" :size="20" />
+					<TrashCanOutline v-if="!loading" :size="20" />
+				</template>
+				{{ t('openregister', 'Permanently Delete All') }}
+			</NcButton>
+		</template>
+	</NcDialog>
+</template>
+
 <style scoped>
-.objects-info {
-	background: var(--color-background-hover);
-	padding: 16px;
-	border-radius: var(--border-radius);
-	margin: 16px 0;
+.delete-step {
+	padding: 0;
 }
 
-.objects-info p {
-	margin: 8px 0;
+.step-title {
+	margin-top: 0 !important;
+	margin-bottom: 16px;
+	color: var(--color-main-text);
 }
 
-.objects-list {
-	max-height: 200px;
+.selected-objects-container {
+	margin: 20px 0;
+}
+
+.selected-objects-list {
+	max-height: 300px;
 	overflow-y: auto;
-	margin-top: 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
 }
 
-.object-item {
+.selected-object-item {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 8px 0;
+	padding: 12px;
 	border-bottom: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
 }
 
-.object-item:last-child {
+.selected-object-item:last-child {
 	border-bottom: none;
 }
 
-.object-title {
-	font-weight: 500;
-	flex: 1;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	margin-right: 12px;
+.object-info strong {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--color-main-text);
 }
 
 .object-id {
-	font-family: monospace;
+	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
-
-.more-objects {
-	padding: 8px 0;
-	color: var(--color-text-maxcontrast);
-	font-style: italic;
+	margin: 0;
 }
 </style>
