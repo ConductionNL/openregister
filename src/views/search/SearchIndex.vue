@@ -104,7 +104,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							<tbody>
 								<tr v-for="result in objectStore.objectList.results"
 									:key="result['@self'].id || result.id"
-									class="viewTableRow">
+									class="viewTableRow table-row-selectable"
+									:class="{ 'table-row-selected': objectStore.selectedObjects.includes(result['@self'].id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="objectStore.selectedObjects.includes(result['@self'].id)"

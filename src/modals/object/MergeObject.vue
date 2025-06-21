@@ -18,110 +18,112 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</div>
 		</div>
 
-		<!-- Information about merge restrictions -->
-		<NcNoteCard type="info">
+		<!-- Information about merge restrictions (only show if not completed) -->
+		<NcNoteCard v-if="step !== 3" type="info">
 			Objects can only be merged if they belong to the same register and schema.
 			If you want to merge objects from different schemas or registers, you need to migrate them first.
 		</NcNoteCard>
 
-		<!-- Dialog Content Wrapper -->
-		<div class="dialog-content">
-			<!-- Step 1: Select Target Object -->
-			<div v-if="step === 1" class="merge-step">
-				<h3>Select Target Object</h3>
-				<p>Select the object to merge <strong>{{ sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong> into:</p>
+		<!-- Step 1: Select Target Object -->
+		<div v-if="step === 1" class="merge-step step-1">
+			<h3 class="step-title">
+				Select Target Object
+			</h3>
+			<p>Select the object to merge <strong>{{ sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong> into:</p>
 
-				<div class="search-container">
-					<NcTextField
-						v-model="searchTerm"
-						label="Search objects"
-						placeholder="Type to search for objects..."
-						@input="searchObjects" />
-				</div>
-
-				<div v-if="loading" class="loading-container">
-					<NcLoadingIcon :size="32" />
-					<p>Loading objects...</p>
-				</div>
-
-				<div v-else-if="availableObjects.length" class="object-list">
-					<div v-for="obj in availableObjects"
-						:key="obj['@self'].id"
-						class="object-item"
-						:class="{ selected: selectedTargetObject?.['@self']?.id === obj['@self'].id }"
-						@click="selectTargetObject(obj)">
-						<div class="object-info">
-							<strong>{{ obj['@self'].title || obj.name || obj.title || obj['@self'].id }}</strong>
-							<p class="object-id">
-								ID: {{ obj['@self'].id }}
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else-if="!loading" name="No objects found">
-					<template #description>
-						{{ searchTerm ? 'No objects match your search criteria' : 'No objects available for merging' }}
-					</template>
-				</NcEmptyContent>
+			<div class="search-container">
+				<NcTextField
+					v-model="searchTerm"
+					label="Search objects"
+					placeholder="Type to search for objects..."
+					@input="searchObjects" />
 			</div>
 
-			<!-- Step 2: Merge Configuration -->
-			<div v-if="step === 2" class="merge-step">
-				<h3>Configure Merge</h3>
-				<p>
-					Merging <strong>{{ sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong>
-					into <strong>{{ selectedTargetObject?.['@self']?.title || selectedTargetObject?.['@self']?.id }}</strong>
-				</p>
+			<div v-if="loading" class="loading-container">
+				<NcLoadingIcon :size="32" />
+				<p>Loading objects...</p>
+			</div>
 
-				<!-- Property Comparison Table -->
-				<div class="merge-table-container">
-					<table class="merge-table">
-						<thead>
-							<tr>
-								<th>Property</th>
-								<th>Source</th>
-								<th>Target</th>
-								<th>Result Value</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="property in mergeableProperties" :key="property">
-								<td class="property-name">
-									{{ property }}
-								</td>
-								<td class="source-value">
-									{{ displayValue(sourceObject[property]) }}
-								</td>
-								<td class="target-value">
-									{{ displayValue(selectedTargetObject[property]) }}
-								</td>
-								<td class="merge-target">
-									<template v-if="property === 'id'">
-										<span class="fixed-value">{{ selectedTargetObject[property] }} (Target ID)</span>
-									</template>
-									<template v-else>
-										<NcSelect
-											v-model="mergedData[property]"
-											:options="getMergeOptions(property)"
-											label="label"
-											track-by="value"
-											:placeholder="'Choose value for ' + property" />
-										<NcTextField
-											v-if="mergedData[property] === 'custom'"
-											v-model="customValues[property]"
-											:placeholder="'Enter custom value for ' + property"
-											class="custom-input" />
-									</template>
-								</td>
-							</tr>
-						</tbody>
-					</table>
+			<div v-else-if="availableObjects.length" class="object-list">
+				<div v-for="obj in availableObjects"
+					:key="obj['@self'].id"
+					class="object-item table-row-selectable"
+					:class="{ 'table-row-selected': selectedTargetObject?.['@self']?.id === obj['@self'].id }"
+					@click="selectTargetObject(obj)">
+					<div class="object-info">
+						<strong>{{ obj['@self'].title || obj.name || obj.title || obj['@self'].id }}</strong>
+						<p class="object-id">
+							ID: {{ obj['@self'].id }}
+						</p>
+					</div>
 				</div>
+			</div>
 
-				<!-- File Handling Options -->
-				<div class="options-section">
-					<h4>Files attached to source object:</h4>
+			<NcEmptyContent v-else-if="!loading" name="No objects found">
+				<template #description>
+					{{ searchTerm ? 'No objects match your search criteria' : 'No objects available for merging' }}
+				</template>
+			</NcEmptyContent>
+		</div>
+
+		<!-- Step 2: Merge Configuration -->
+		<div v-if="step === 2" class="merge-step">
+			<h3>Configure Merge</h3>
+			<p>
+				Merging <strong>{{ sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong>
+				into <strong>{{ selectedTargetObject?.['@self']?.title || selectedTargetObject?.['@self']?.id }}</strong>
+			</p>
+
+			<!-- Property Comparison Table -->
+			<div class="merge-table-container">
+				<table class="merge-table">
+					<thead>
+						<tr>
+							<th>Property</th>
+							<th>Source</th>
+							<th>Target</th>
+							<th>Result Value</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="property in mergeableProperties" :key="property">
+							<td class="property-name">
+								{{ property }}
+							</td>
+							<td class="source-value" :title="displayValue(sourceObject[property], 1000)">
+								{{ displayValue(sourceObject[property], 40) }}
+							</td>
+							<td class="target-value" :title="displayValue(selectedTargetObject[property], 1000)">
+								{{ displayValue(selectedTargetObject[property], 40) }}
+							</td>
+							<td class="merge-target">
+								<template v-if="property === 'id'">
+									<span class="fixed-value">{{ selectedTargetObject[property] }} (Target ID)</span>
+								</template>
+								<template v-else>
+									<NcSelect
+										v-model="mergedData[property]"
+										:options="getMergeOptions(property)"
+										label="label"
+										track-by="value"
+										:placeholder="'Choose value for ' + property" />
+									<NcTextField
+										v-if="mergedData[property] === 'custom'"
+										v-model="customValues[property]"
+										:placeholder="'Enter custom value for ' + property"
+										class="custom-input" />
+								</template>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- File Handling Options -->
+			<div class="options-section">
+				<h4>Files attached to source object: ({{ sourceFiles.length }})</h4>
+
+				<div class="radio-options">
 					<NcCheckboxRadioSwitch
 						v-model="fileAction"
 						value="transfer"
@@ -138,9 +140,47 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</NcCheckboxRadioSwitch>
 				</div>
 
-				<!-- Relation Handling Options -->
-				<div class="options-section">
-					<h4>Relations of source object:</h4>
+				<div class="table-toggle">
+					<NcButton type="tertiary" @click="toggleFileList">
+						{{ showFileList ? 'Hide Files' : 'View Files' }}
+						<template #icon>
+							<ChevronUp v-if="showFileList" :size="20" />
+							<ChevronDown v-else :size="20" />
+						</template>
+					</NcButton>
+				</div>
+
+				<div v-if="showFileList && sourceFiles.length" class="file-list">
+					<table class="file-table">
+						<thead>
+							<tr>
+								<th>Filename</th>
+								<th>Size</th>
+								<th>Type</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="file in sourceFiles" :key="file.name || file.filename">
+								<td :title="file.name || file.filename">
+									{{ truncateText(file.name || file.filename, 40) }}
+								</td>
+								<td>{{ formatFileSize(file.size) }}</td>
+								<td>{{ getFileType(file.name || file.filename) }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div v-else-if="showFileList && !sourceFiles.length" class="no-files">
+					<p>No files attached to source object</p>
+				</div>
+			</div>
+
+			<!-- Relation Handling Options -->
+			<div class="options-section">
+				<h4>Relations to source object: ({{ sourceRelations.length }})</h4>
+
+				<div class="radio-options">
 					<NcCheckboxRadioSwitch
 						v-model="relationAction"
 						value="transfer"
@@ -156,84 +196,144 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						Drop relations
 					</NcCheckboxRadioSwitch>
 				</div>
+
+				<div class="table-toggle">
+					<NcButton type="tertiary" @click="toggleRelationList">
+						{{ showRelationList ? 'Hide Relations' : 'View Relations' }}
+						<template #icon>
+							<ChevronUp v-if="showRelationList" :size="20" />
+							<ChevronDown v-else :size="20" />
+						</template>
+					</NcButton>
+				</div>
+
+				<div v-if="showRelationList && sourceRelations.length" class="relation-list">
+					<table class="relation-table">
+						<thead>
+							<tr>
+								<th>Related Object</th>
+								<th>Relation Type</th>
+								<th>Register/Schema</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="relation in sourceRelations" :key="relation.id">
+								<td :title="relation.title || relation.name || relation.id">
+									{{ truncateText(relation.title || relation.name || relation.id, 40) }}
+								</td>
+								<td>{{ relation.relationType || 'Related' }}</td>
+								<td :title="(relation.register || 'N/A') + ' / ' + (relation.schema || 'N/A')">
+									{{ truncateText((relation.register || 'N/A') + ' / ' + (relation.schema || 'N/A'), 30) }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div v-else-if="showRelationList && !sourceRelations.length" class="no-relations">
+					<p>No relations to source object</p>
+				</div>
 			</div>
+		</div>
 
-			<!-- Step 3: Merge Report -->
-			<div v-if="step === 3" class="merge-step">
-				<h3>Merge Report</h3>
+		<!-- Step 3: Merge Report -->
+		<div v-if="step === 3" class="merge-step">
+			<h3 class="report-title">
+				Merge Report
+			</h3>
 
-				<NcNoteCard v-if="mergeResult?.success" type="success">
-					<p>Objects successfully merged!</p>
-				</NcNoteCard>
-				<NcNoteCard v-if="mergeResult && !mergeResult.success" type="error">
-					<p>Merge failed. Please check the details below.</p>
-				</NcNoteCard>
+			<NcNoteCard v-if="mergeResult?.success" type="success">
+				<p>Objects successfully merged!</p>
+			</NcNoteCard>
+			<NcNoteCard v-if="mergeResult && !mergeResult.success" type="error">
+				<p>Merge failed. Please check the details below.</p>
+			</NcNoteCard>
 
-				<div v-if="mergeResult" class="merge-report">
-					<!-- Statistics -->
-					<div class="report-section">
-						<h4>Statistics</h4>
-						<ul>
-							<li>Properties changed: {{ mergeResult.statistics?.propertiesChanged || 0 }}</li>
-							<li>Files transferred: {{ mergeResult.statistics?.filesTransferred || 0 }}</li>
-							<li>Files deleted: {{ mergeResult.statistics?.filesDeleted || 0 }}</li>
-							<li>Relations transferred: {{ mergeResult.statistics?.relationsTransferred || 0 }}</li>
-							<li>Relations dropped: {{ mergeResult.statistics?.relationsDropped || 0 }}</li>
-							<li>References updated: {{ mergeResult.statistics?.referencesUpdated || 0 }}</li>
-						</ul>
+			<div v-if="mergeResult" class="merge-report">
+				<!-- Object Information -->
+				<div class="report-section">
+					<h4>Merge Summary</h4>
+					<div class="object-info">
+						<div class="object-detail">
+							<strong>Target Object (Result):</strong>
+							<div class="object-meta">
+								<span class="object-id">ID: {{ selectedTargetObject?.['@self']?.id || selectedTargetObject?.id }}</span>
+								<span class="object-title">{{ selectedTargetObject?.['@self']?.title || selectedTargetObject?.title || 'Untitled' }}</span>
+							</div>
+						</div>
+						<div class="object-detail">
+							<strong>Source Object:</strong>
+							<div class="object-meta">
+								<span class="object-id">ID: {{ sourceObject?.['@self']?.id || sourceObject?.id }}</span>
+								<span class="object-title">{{ sourceObject?.['@self']?.title || sourceObject?.title || 'Untitled' }}</span>
+								<span class="object-status deleted">Status: Deleted</span>
+							</div>
+						</div>
 					</div>
+				</div>
+				<!-- Statistics -->
+				<div class="report-section">
+					<h4>Statistics</h4>
+					<ul>
+						<li>Properties changed: {{ mergeResult.statistics?.propertiesChanged || 0 }}</li>
+						<li>Files transferred: {{ mergeResult.statistics?.filesTransferred || 0 }}</li>
+						<li>Files deleted: {{ mergeResult.statistics?.filesDeleted || 0 }}</li>
+						<li>Relations transferred: {{ mergeResult.statistics?.relationsTransferred || 0 }}</li>
+						<li>Relations dropped: {{ mergeResult.statistics?.relationsDropped || 0 }}</li>
+						<li>References updated: {{ mergeResult.statistics?.referencesUpdated || 0 }}</li>
+					</ul>
+				</div>
 
-					<!-- Changed Properties -->
-					<div v-if="mergeResult.actions?.properties?.length" class="report-section">
-						<h4>Changed Properties</h4>
-						<table class="report-table">
-							<thead>
-								<tr>
-									<th>Property</th>
-									<th>Old Value</th>
-									<th>New Value</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="change in mergeResult.actions.properties" :key="change.property">
-									<td>{{ change.property }}</td>
-									<td>{{ displayValue(change.oldValue) }}</td>
-									<td>{{ displayValue(change.newValue) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+				<!-- Changed Properties -->
+				<div v-if="mergeResult.actions?.properties?.length" class="report-section">
+					<h4>Changed Properties</h4>
+					<table class="report-table">
+						<thead>
+							<tr>
+								<th>Property</th>
+								<th>Old Value</th>
+								<th>New Value</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="change in mergeResult.actions.properties" :key="change.property">
+								<td>{{ change.property }}</td>
+								<td>{{ displayValue(change.oldValue) }}</td>
+								<td>{{ displayValue(change.newValue) }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 
-					<!-- File Actions -->
-					<div v-if="mergeResult.actions?.files?.length" class="report-section">
-						<h4>File Actions</h4>
-						<ul>
-							<li v-for="fileAction in mergeResult.actions.files" :key="fileAction.name">
-								{{ fileAction.name }}: {{ fileAction.action }}
-								<span v-if="!fileAction.success" class="error-text"> (Failed: {{ fileAction.error }})</span>
-							</li>
-						</ul>
-					</div>
+				<!-- File Actions -->
+				<div v-if="mergeResult.actions?.files?.length" class="report-section">
+					<h4>File Actions</h4>
+					<ul>
+						<li v-for="fileAction in mergeResult.actions.files" :key="fileAction.name">
+							{{ fileAction.name }}: {{ fileAction.action }}
+							<span v-if="!fileAction.success" class="error-text"> (Failed: {{ fileAction.error }})</span>
+						</li>
+					</ul>
+				</div>
 
-					<!-- Warnings -->
-					<div v-if="mergeResult.warnings?.length" class="report-section">
-						<h4>Warnings</h4>
-						<ul>
-							<li v-for="warning in mergeResult.warnings" :key="warning" class="warning-text">
-								{{ warning }}
-							</li>
-						</ul>
-					</div>
+				<!-- Warnings -->
+				<div v-if="mergeResult.warnings?.length" class="report-section">
+					<h4>Warnings</h4>
+					<ul>
+						<li v-for="warning in mergeResult.warnings" :key="warning" class="warning-text">
+							{{ warning }}
+						</li>
+					</ul>
+				</div>
 
-					<!-- Errors -->
-					<div v-if="mergeResult.errors?.length" class="report-section">
-						<h4>Errors</h4>
-						<ul>
-							<li v-for="error in mergeResult.errors" :key="error" class="error-text">
-								{{ error }}
-							</li>
-						</ul>
-					</div>
+				<!-- Errors -->
+				<div v-if="mergeResult.errors?.length" class="report-section">
+					<h4>Errors</h4>
+					<ul>
+						<li v-for="error in mergeResult.errors" :key="error" class="error-text">
+							{{ error }}
+						</li>
+					</ul>
 				</div>
 			</div>
 		</div>
@@ -244,6 +344,15 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<Cancel :size="20" />
 				</template>
 				{{ step === 3 ? 'Close' : 'Cancel' }}
+			</NcButton>
+
+			<NcButton v-if="step === 3 && mergeResult?.success"
+				type="secondary"
+				@click="viewMergedObject">
+				<template #icon>
+					<Eye :size="20" />
+				</template>
+				View Object
 			</NcButton>
 
 			<NcButton v-if="step === 1"
@@ -296,6 +405,9 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 
 export default {
 	name: 'MergeObject',
@@ -312,6 +424,9 @@ export default {
 		ArrowRight,
 		ArrowLeft,
 		Merge,
+		Eye,
+		ChevronDown,
+		ChevronUp,
 	},
 
 	data() {
@@ -326,6 +441,10 @@ export default {
 			fileAction: 'transfer',
 			relationAction: 'transfer',
 			mergeResult: null,
+			showFileList: true,
+			showRelationList: true,
+			sourceFiles: [],
+			sourceRelations: [],
 		}
 	},
 	computed: {
@@ -355,6 +474,7 @@ export default {
 				this.closeModal()
 				return
 			}
+			this.loadSourceData()
 			this.searchObjects()
 		},
 		async searchObjects() {
@@ -443,16 +563,29 @@ export default {
 
 			return options
 		},
-		displayValue(value) {
+		displayValue(value, maxLength = 100) {
 			if (value === null || value === undefined) {
 				return 'N/A'
 			}
 
+			let displayText = ''
 			if (typeof value === 'object') {
-				return JSON.stringify(value, null, 2)
+				displayText = JSON.stringify(value, null, 2)
+			} else {
+				displayText = String(value)
 			}
 
-			return String(value)
+			// Truncate if too long
+			if (displayText.length > maxLength) {
+				return displayText.substring(0, maxLength) + '...'
+			}
+
+			return displayText
+		},
+		truncateText(text, maxLength) {
+			if (!text) return ''
+			if (text.length <= maxLength) return text
+			return text.substring(0, maxLength) + '...'
 		},
 		async performMerge() {
 			if (!this.canMerge) {
@@ -505,6 +638,68 @@ export default {
 				this.loading = false
 			}
 		},
+		viewMergedObject() {
+			// Navigate to the merged object in view mode
+			if (this.selectedTargetObject) {
+				objectStore.setObjectItem(this.selectedTargetObject)
+				navigationStore.setModal('viewObject')
+			}
+		},
+		toggleFileList() {
+			this.showFileList = !this.showFileList
+		},
+		toggleRelationList() {
+			this.showRelationList = !this.showRelationList
+		},
+		formatFileSize(bytes) {
+			if (!bytes) return 'N/A'
+			const sizes = ['Bytes', 'KB', 'MB', 'GB']
+			const i = Math.floor(Math.log(bytes) / Math.log(1024))
+			return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
+		},
+		getFileType(filename) {
+			if (!filename) return 'Unknown'
+			const ext = filename.split('.').pop()?.toLowerCase()
+			const types = {
+				pdf: 'PDF',
+				doc: 'Word',
+				docx: 'Word',
+				xls: 'Excel',
+				xlsx: 'Excel',
+				ppt: 'PowerPoint',
+				pptx: 'PowerPoint',
+				txt: 'Text',
+				jpg: 'Image',
+				jpeg: 'Image',
+				png: 'Image',
+				gif: 'Image',
+				zip: 'Archive',
+				rar: 'Archive',
+			}
+			return types[ext] || ext?.toUpperCase() || 'Unknown'
+		},
+		async loadSourceData() {
+			// Load files and relations for the source object
+			if (!this.sourceObject) return
+
+			try {
+				// Load files - check if sourceObject has attachments property
+				if (this.sourceObject.attachments && Array.isArray(this.sourceObject.attachments)) {
+					this.sourceFiles = this.sourceObject.attachments
+				} else {
+					this.sourceFiles = []
+				}
+
+				// Load relations - this would need to be implemented based on your API
+				// For now, we'll use a placeholder
+				this.sourceRelations = []
+
+			} catch (error) {
+				console.error('Error loading source data:', error)
+				this.sourceFiles = []
+				this.sourceRelations = []
+			}
+		},
 		closeModal() {
 			navigationStore.setModal(false)
 		},
@@ -513,12 +708,24 @@ export default {
 </script>
 
 <style scoped>
-.dialog-content {
-	padding: 0 16px;
+.merge-step {
+	padding: 0;
 }
 
-.merge-step {
-	padding: 20px 0;
+.step-1 {
+	padding-top: 0 !important;
+}
+
+.step-title {
+	margin-top: 0 !important;
+	margin-bottom: 16px;
+	color: var(--color-main-text);
+}
+
+.report-title {
+	margin-top: 0 !important;
+	margin-bottom: 16px;
+	color: var(--color-main-text);
 }
 
 .merge-step h3 {
@@ -552,15 +759,6 @@ export default {
 	transition: background-color 0.2s;
 }
 
-.object-item:hover {
-	background-color: var(--color-background-hover);
-}
-
-.object-item.selected {
-	background-color: var(--color-primary-light);
-	border-left: 3px solid var(--color-primary);
-}
-
 .object-item:last-child {
 	border-bottom: none;
 }
@@ -587,6 +785,7 @@ export default {
 .merge-table {
 	width: 100%;
 	border-collapse: collapse;
+	table-layout: fixed;
 }
 
 .merge-table th,
@@ -594,6 +793,9 @@ export default {
 	padding: 12px;
 	text-align: left;
 	border-bottom: 1px solid var(--color-border);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .merge-table th {
@@ -605,6 +807,7 @@ export default {
 .property-name {
 	font-weight: bold;
 	color: var(--color-main-text);
+	width: 15%;
 	min-width: 120px;
 }
 
@@ -613,11 +816,13 @@ export default {
 	background-color: var(--color-background-hover);
 	font-family: monospace;
 	font-size: 0.9em;
+	width: 25%;
 	max-width: 200px;
-	word-break: break-word;
+	cursor: help;
 }
 
 .merge-target {
+	width: 35%;
 	min-width: 200px;
 }
 
@@ -642,15 +847,132 @@ export default {
 	color: var(--color-main-text);
 }
 
+.radio-options {
+	margin-bottom: 16px;
+}
+
+.table-toggle {
+	margin-bottom: 12px;
+	display: flex;
+	justify-content: flex-start;
+}
+
+.file-list, .relation-list {
+	margin: 12px 0;
+	max-height: 300px;
+	overflow-y: auto;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+}
+
+.file-table, .relation-table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+.file-table th, .file-table td,
+.relation-table th, .relation-table td {
+	padding: 8px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.file-table th:nth-child(1), .file-table td:nth-child(1) {
+	width: 60%;
+}
+
+.file-table th:nth-child(2), .file-table td:nth-child(2) {
+	width: 20%;
+}
+
+.file-table th:nth-child(3), .file-table td:nth-child(3) {
+	width: 20%;
+}
+
+.relation-table th:nth-child(1), .relation-table td:nth-child(1) {
+	width: 50%;
+}
+
+.relation-table th:nth-child(2), .relation-table td:nth-child(2) {
+	width: 25%;
+}
+
+.relation-table th:nth-child(3), .relation-table td:nth-child(3) {
+	width: 25%;
+}
+
+.file-table th, .relation-table th {
+	background-color: var(--color-background-dark);
+	font-weight: bold;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+
+.file-table tbody tr:hover,
+.relation-table tbody tr:hover {
+	background-color: var(--color-background-hover);
+}
+
+.no-files, .no-relations {
+	padding: 20px;
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
 .merge-report {
-	margin-top: 20px;
+	margin-top: 16px;
 }
 
 .report-section {
-	margin-bottom: 24px;
+	margin-bottom: 20px;
 	padding: 16px;
 	background-color: var(--color-background-hover);
 	border-radius: 4px;
+}
+
+.object-info {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.object-detail {
+	padding: 12px;
+	background-color: var(--color-background-dark);
+	border-radius: 4px;
+}
+
+.object-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 8px;
+}
+
+.object-id {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	font-family: monospace;
+}
+
+.object-title {
+	color: var(--color-main-text);
+	font-weight: 500;
+}
+
+.object-status {
+	font-size: 0.9em;
+	font-weight: bold;
+}
+
+.object-status.deleted {
+	color: var(--color-error);
 }
 
 .report-section h4 {
