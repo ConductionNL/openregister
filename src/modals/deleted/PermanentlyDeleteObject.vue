@@ -4,22 +4,39 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'permanentlyDeleteObject'"
-		:name="t('openregister', 'Permanently Delete Object')"
+		:name="`Permanently delete 1 object`"
 		size="normal"
 		:can-close="false">
-		<p v-if="success === null">
-			{{ t('openregister', 'Do you want to permanently delete this object? This action cannot be undone.') }}
-		</p>
+		<!-- Object Selection Review -->
+		<div v-if="success === null" class="delete-step">
+			<h3 class="step-title">
+				Confirm Permanent Object Deletion
+			</h3>
 
-		<div v-if="success === null && objectToDelete" class="object-info">
-			<p><strong>{{ t('openregister', 'Title:') }}</strong> {{ getObjectTitle(objectToDelete) }}</p>
-			<p><strong>{{ t('openregister', 'ID:') }}</strong> {{ objectToDelete.id }}</p>
-			<p v-if="objectToDelete['@self']?.register">
-				<strong>{{ t('openregister', 'Register:') }}</strong> {{ getRegisterName(objectToDelete['@self'].register) }}
-			</p>
-			<p v-if="objectToDelete['@self']?.schema">
-				<strong>{{ t('openregister', 'Schema:') }}</strong> {{ getSchemaName(objectToDelete['@self'].schema) }}
-			</p>
+			<NcNoteCard type="warning">
+				Review the selected object below. This action cannot be undone.
+			</NcNoteCard>
+
+			<div v-if="objectToDelete" class="selected-objects-container">
+				<h4>Selected Object (1)</h4>
+
+				<div class="selected-objects-list">
+					<div class="selected-object-item">
+						<div class="object-info">
+							<strong>{{ getObjectTitle(objectToDelete) }}</strong>
+							<p class="object-id">
+								ID: {{ objectToDelete.id }}
+							</p>
+							<p v-if="objectToDelete['@self']?.register" class="object-meta">
+								Register: {{ getRegisterName(objectToDelete['@self'].register) }}
+							</p>
+							<p v-if="objectToDelete['@self']?.schema" class="object-meta">
+								Schema: {{ getSchemaName(objectToDelete['@self'].schema) }}
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -176,14 +193,39 @@ export default {
 </script>
 
 <style scoped>
-.object-info {
-	background: var(--color-background-hover);
-	padding: 16px;
-	border-radius: var(--border-radius);
-	margin: 16px 0;
+.delete-step {
+	padding: 0;
 }
 
-.object-info p {
-	margin: 8px 0;
+.step-title {
+	margin-top: 0 !important;
+	margin-bottom: 16px;
+	color: var(--color-main-text);
+}
+
+.selected-objects-container {
+	margin: 20px 0;
+}
+
+.selected-objects-list {
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+}
+
+.selected-object-item {
+	padding: 12px;
+	background-color: var(--color-background-hover);
+}
+
+.object-info strong {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--color-main-text);
+}
+
+.object-id, .object-meta {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	margin: 4px 0;
 }
 </style>

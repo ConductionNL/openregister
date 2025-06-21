@@ -25,30 +25,41 @@ import formatBytes from '../../services/formatBytes.js'
 					</span>
 				</div>
 				<div class="viewActions">
+					<!-- Mass Actions Dropdown -->
 					<NcActions
 						:force-name="true"
-						:inline="selectedItems.length > 0 ? 3 : 1"
-						menu-name="Actions">
+						:disabled="selectedItems.length === 0"
+						:title="selectedItems.length === 0 ? 'Select one or more objects to use mass actions' : `Mass actions (${selectedItems.length} selected)`"
+						:menu-name="`Mass Actions (${selectedItems.length})`">
+						<template #icon>
+							<FormatListChecks :size="20" />
+						</template>
 						<NcActionButton
-							v-if="selectedItems.length > 0"
+							:disabled="selectedItems.length === 0"
 							type="primary"
 							close-after-click
 							@click="bulkRestore">
 							<template #icon>
 								<Restore :size="20" />
 							</template>
-							{{ t('openregister', 'Restore ({count})', { count: selectedItems.length }) }}
+							Restore
 						</NcActionButton>
 						<NcActionButton
-							v-if="selectedItems.length > 0"
-							type="error"
+							:disabled="selectedItems.length === 0"
 							close-after-click
 							@click="bulkDelete">
 							<template #icon>
 								<Delete :size="20" />
 							</template>
-							{{ t('openregister', 'Purge ({count})', { count: selectedItems.length }) }}
+							Purge
 						</NcActionButton>
+					</NcActions>
+
+					<!-- Regular Actions -->
+					<NcActions
+						:force-name="true"
+						:inline="1"
+						menu-name="Actions">
 						<NcActionButton
 							close-after-click
 							@click="refreshItems">
@@ -99,8 +110,9 @@ import formatBytes from '../../services/formatBytes.js'
 					<tbody>
 						<tr v-for="item in paginatedItems"
 							:key="item.id"
-							class="viewTableRow itemRow"
-							:class="{ viewTableRowSelected: selectedItems.includes(item.id) }">
+							class="viewTableRow itemRow table-row-selectable"
+							:class="{ 'viewTableRowSelected table-row-selected': selectedItems.includes(item.id) }"
+							@click="handleRowClick(item.id, $event)">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:checked="selectedItems.includes(item.id)"
@@ -174,6 +186,7 @@ import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -190,6 +203,7 @@ export default {
 		Restore,
 		Delete,
 		Refresh,
+		FormatListChecks,
 		PaginationComponent,
 	},
 	data() {
@@ -259,6 +273,7 @@ export default {
 		// Listen for deletion events from modals
 		this.$root.$on('deleted-object-permanently-deleted', this.handleObjectDeleted)
 		this.$root.$on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
+		this.$root.$on('deleted-objects-restored', this.handleObjectsRestored)
 	},
 	beforeDestroy() {
 		this.$root.$off('deleted-filters-changed')
@@ -267,6 +282,7 @@ export default {
 		this.$root.$off('deleted-export-filtered')
 		this.$root.$off('deleted-object-permanently-deleted')
 		this.$root.$off('deleted-objects-permanently-deleted')
+		this.$root.$off('deleted-objects-restored')
 	},
 	methods: {
 		/**
@@ -421,20 +437,18 @@ export default {
 			}
 		},
 		/**
-		 * Restore selected items
-		 * @return {Promise<void>}
+		 * Restore selected items using dialog
+		 * @return {void}
 		 */
-		async bulkRestore() {
+		bulkRestore() {
 			if (this.selectedItems.length === 0) return
 
-			try {
-				await deletedStore.restoreMultiple(this.selectedItems)
-				this.selectedItems = []
-				// Refresh the list
-				await this.loadItems()
-			} catch (error) {
-				console.error('Error restoring items:', error)
-			}
+			// Get selected objects data
+			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
+
+			// Set transfer data and open dialog
+			navigationStore.setTransferData(selectedObjects)
+			navigationStore.setDialog('restoreMultiple')
 		},
 		/**
 		 * Permanently delete selected items using dialog
@@ -507,6 +521,23 @@ export default {
 			await this.loadItems()
 		},
 		/**
+		 * Handle multiple objects restoration event
+		 * @param {Array<string>} objectIds - IDs of restored objects
+		 * @return {Promise<void>}
+		 */
+		async handleObjectsRestored(objectIds) {
+			// Remove from selection if they were selected
+			objectIds.forEach(id => {
+				const index = this.selectedItems.indexOf(id)
+				if (index > -1) {
+					this.selectedItems.splice(index, 1)
+				}
+			})
+
+			// Refresh the list
+			await this.loadItems()
+		},
+		/**
 		 * Export filtered items with specified options
 		 * @param {object} options - Export options
 		 * @return {void}
@@ -565,6 +596,35 @@ export default {
 			this.$root.$emit('deleted-filtered-count', this.filteredItems.length)
 		},
 		/**
+		 * Handle row click for selection
+		 * @param {string} id - Item ID
+		 * @param {Event} event - Click event
+		 * @return {void}
+		 */
+		handleRowClick(id, event) {
+			// Don't select if clicking on the checkbox, actions button, or inside actions menu
+			if (event.target.closest('.tableColumnCheckbox')
+				|| event.target.closest('.tableColumnActions')
+				|| event.target.closest('.actionsButton')) {
+				return
+			}
+
+			// Toggle selection on row click
+			this.handleSelectItem(id)
+		},
+		/**
+		 * Handle item selection toggle
+		 * @param {string} id - Item ID
+		 * @return {void}
+		 */
+		handleSelectItem(id) {
+			if (this.selectedItems.includes(id)) {
+				this.selectedItems = this.selectedItems.filter(item => item !== id)
+			} else {
+				this.selectedItems.push(id)
+			}
+		},
+		/**
 		 * Format purge date in ISO format yyyy:mm:dd hh:mm
 		 * @param {string} timestamp - The purge date timestamp
 		 * @return {string} Formatted purge date
@@ -585,5 +645,23 @@ export default {
 </script>
 
 <style scoped>
-/* No component-specific styles needed - all styles are now generic in main.css */
+/* Row selection styling */
+.table-row-selectable {
+	cursor: pointer;
+}
+
+.table-row-selectable:hover {
+	background-color: var(--color-background-hover);
+}
+
+.table-row-selected {
+	background-color: var(--color-primary-light) !important;
+}
+
+/* Actions button styling */
+.actionsButton > div > button {
+    margin-top: 0px !important;
+    margin-right: 0px !important;
+    padding-right: 0px !important;
+}
 </style>
