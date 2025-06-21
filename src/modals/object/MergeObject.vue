@@ -80,9 +80,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<thead>
 							<tr>
 								<th>Property</th>
-								<th>Source (A)</th>
-								<th>Merge Target</th>
-								<th>Target (B)</th>
+								<th>Source</th>
+								<th>Target</th>
+								<th>Result Value</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -93,16 +93,26 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<td class="source-value">
 									{{ displayValue(sourceObject[property]) }}
 								</td>
-								<td class="merge-target">
-									<NcSelect
-										v-model="mergedData[property]"
-										:options="getMergeOptions(property)"
-										label="label"
-										track-by="value"
-										:placeholder="'Choose value for ' + property" />
-								</td>
 								<td class="target-value">
 									{{ displayValue(selectedTargetObject[property]) }}
+								</td>
+								<td class="merge-target">
+									<template v-if="property === 'id'">
+										<span class="fixed-value">{{ selectedTargetObject[property] }} (Target ID)</span>
+									</template>
+									<template v-else>
+										<NcSelect
+											v-model="mergedData[property]"
+											:options="getMergeOptions(property)"
+											label="label"
+											track-by="value"
+											:placeholder="'Choose value for ' + property" />
+										<NcTextField
+											v-if="mergedData[property] === 'custom'"
+											v-model="customValues[property]"
+											:placeholder="'Enter custom value for ' + property"
+											class="custom-input" />
+									</template>
 								</td>
 							</tr>
 						</tbody>
@@ -312,6 +322,7 @@ export default {
 			availableObjects: [],
 			selectedTargetObject: null,
 			mergedData: {},
+			customValues: {},
 			fileAction: 'transfer',
 			relationAction: 'transfer',
 			mergeResult: null,
@@ -353,7 +364,7 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch(`/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`)
+				const response = await fetch(`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`)
 				const data = await response.json()
 
 				// Filter out the source object
@@ -382,27 +393,53 @@ export default {
 		initializeMergeData() {
 			// Initialize merge data with default values
 			this.mergedData = {}
+			this.customValues = {}
+
 			this.mergeableProperties.forEach(property => {
-				// Default to target object value if it exists, otherwise source value
-				this.mergedData[property] = this.selectedTargetObject[property] ?? this.sourceObject[property]
+				if (property === 'id') {
+					// ID always uses target value
+					this.mergedData[property] = this.selectedTargetObject[property]
+				} else {
+					// Default selection logic:
+					// 1. Target value if it exists
+					// 2. Source value if target doesn't exist but source does
+					// 3. 'custom' if neither exists
+					const targetValue = this.selectedTargetObject[property]
+					const sourceValue = this.sourceObject[property]
+
+					if (targetValue !== undefined && targetValue !== null && targetValue !== '') {
+						this.mergedData[property] = targetValue
+					} else if (sourceValue !== undefined && sourceValue !== null && sourceValue !== '') {
+						this.mergedData[property] = sourceValue
+					} else {
+						this.mergedData[property] = 'custom'
+						this.customValues[property] = ''
+					}
+				}
 			})
 		},
 		getMergeOptions(property) {
 			const options = []
 
-			if (this.sourceObject[property] !== undefined) {
+			if (this.sourceObject[property] !== undefined && this.sourceObject[property] !== null && this.sourceObject[property] !== '') {
 				options.push({
 					label: `From Source: ${this.displayValue(this.sourceObject[property])}`,
 					value: this.sourceObject[property],
 				})
 			}
 
-			if (this.selectedTargetObject[property] !== undefined) {
+			if (this.selectedTargetObject[property] !== undefined && this.selectedTargetObject[property] !== null && this.selectedTargetObject[property] !== '') {
 				options.push({
 					label: `From Target: ${this.displayValue(this.selectedTargetObject[property])}`,
 					value: this.selectedTargetObject[property],
 				})
 			}
+
+			// Always add the custom option
+			options.push({
+				label: 'Other/Custom',
+				value: 'custom',
+			})
 
 			return options
 		},
@@ -424,14 +461,24 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch(`/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}/${this.sourceObject['@self'].id}/merge`, {
+				// Prepare merged data with custom values resolved
+				const finalMergedData = {}
+				Object.keys(this.mergedData).forEach(property => {
+					if (this.mergedData[property] === 'custom') {
+						finalMergedData[property] = this.customValues[property] || ''
+					} else {
+						finalMergedData[property] = this.mergedData[property]
+					}
+				})
+
+				const response = await fetch(`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}/${this.sourceObject['@self'].id}/merge`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
 					body: JSON.stringify({
 						targetObjectId: this.selectedTargetObject['@self'].id,
-						mergedData: this.mergedData,
+						mergedData: finalMergedData,
 						fileAction: this.fileAction,
 						relationAction: this.relationAction,
 					}),
@@ -572,6 +619,15 @@ export default {
 
 .merge-target {
 	min-width: 200px;
+}
+
+.fixed-value {
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+
+.custom-input {
+	margin-top: 8px;
 }
 
 .options-section {
