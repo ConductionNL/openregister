@@ -29,28 +29,40 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					</span>
 				</div>
 				<div class="viewActions">
+					<!-- Mass Actions Dropdown -->
 					<NcActions
 						:force-name="true"
-						:inline="objectStore.selectedObjects.length > 0 ? 4 : 2"
-						menu-name="Actions">
+						:disabled="objectStore.selectedObjects.length === 0"
+						:title="objectStore.selectedObjects.length === 0 ? 'Select one or more objects to use mass actions' : `Mass actions (${objectStore.selectedObjects.length} selected)`"
+						:menu-name="`Mass Actions (${objectStore.selectedObjects.length})`">
+						<template #icon>
+							<FormatListChecks :size="20" />
+						</template>
 						<NcActionButton
-							v-if="objectStore.selectedObjects.length > 0"
+							:disabled="objectStore.selectedObjects.length === 0"
 							close-after-click
 							@click="migrateObjects">
 							<template #icon>
 								<DatabaseExport :size="20" />
 							</template>
-							Migrate ({{ objectStore.selectedObjects.length }})
+							Migrate
 						</NcActionButton>
 						<NcActionButton
-							v-if="objectStore.selectedObjects.length > 0"
+							:disabled="objectStore.selectedObjects.length === 0"
 							close-after-click
 							@click="bulkDeleteObjects">
 							<template #icon>
 								<Delete :size="20" />
 							</template>
-							Delete ({{ objectStore.selectedObjects.length }})
+							Delete
 						</NcActionButton>
+					</NcActions>
+
+					<!-- Regular Actions -->
+					<NcActions
+						:force-name="true"
+						:inline="2"
+						menu-name="Actions">
 						<NcActionButton
 							:primary="true"
 							close-after-click
@@ -114,7 +126,8 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 								<tr v-for="result in objectStore.objectList.results"
 									:key="result['@self'].id || result.id"
 									class="viewTableRow table-row-selectable"
-									:class="{ 'table-row-selected': objectStore.selectedObjects.includes(result['@self'].id) }">
+									:class="{ 'table-row-selected': objectStore.selectedObjects.includes(result['@self'].id) }"
+									@click="handleRowClick(result['@self'].id, $event)">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="objectStore.selectedObjects.includes(result['@self'].id)"
@@ -210,6 +223,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -233,6 +247,7 @@ export default {
 		FileTreeOutline,
 		Merge,
 		DatabaseExport,
+		FormatListChecks,
 	},
 	data() {
 		return {
@@ -362,8 +377,32 @@ export default {
 				objectStore.selectedObjects.push(id)
 			}
 		},
+		handleRowClick(id, event) {
+			// Don't select if clicking on the checkbox, actions button, or inside actions menu
+			if (event.target.closest('.tableColumnCheckbox')
+				|| event.target.closest('.tableColumnActions')
+				|| event.target.closest('.actionsButton')) {
+				return
+			}
+
+			// Toggle selection on row click
+			this.handleSelectObject(id)
+		},
 		bulkDeleteObjects() {
 			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for deletion
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					id: obj['@self'].id,
+					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
+					register: obj['@self'].register,
+					schema: obj['@self'].schema,
+				}))
+
+			// Store selected objects in the object store for the deletion modal
+			objectStore.selectedObjects = selectedObjectsData
 
 			// Set the dialog to mass delete
 			navigationStore.setDialog('massDeleteObject')
@@ -469,5 +508,18 @@ input[type="checkbox"] {
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */
 .sidebar-closed {
 	margin-right: 45px;
+}
+
+/* Row selection styling */
+.table-row-selectable {
+	cursor: pointer;
+}
+
+.table-row-selectable:hover {
+	background-color: var(--color-background-hover);
+}
+
+.table-row-selected {
+	background-color: var(--color-primary-light) !important;
 }
 </style>
