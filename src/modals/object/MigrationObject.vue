@@ -3,7 +3,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 </script>
 
 <template>
-	<NcDialog name="Migrate Objects"
+	<NcDialog :name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		size="large"
 		:can-close="false">
 		<!-- Source and Target Information -->
@@ -12,11 +12,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<h4>Source</h4>
 				<div class="info-card">
 					<div class="card-item">
-						<span class="card-label">Register:</span>
+						<div class="card-label-with-icon">
+							<DatabaseOutline :size="16" />
+							<span class="card-label">Register:</span>
+						</div>
 						<span class="card-value">{{ registerStore.registerItem?.title || registerStore.registerItem?.id }}</span>
 					</div>
 					<div class="card-item">
-						<span class="card-label">Schema:</span>
+						<div class="card-label-with-icon">
+							<FileTreeOutline :size="16" />
+							<span class="card-label">Schema:</span>
+						</div>
 						<span class="card-value">{{ schemaStore.schemaItem?.title || schemaStore.schemaItem?.id }}</span>
 					</div>
 				</div>
@@ -26,15 +32,21 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				→
 			</div>
 
-			<div class="target-info">
+			<div class="source-info">
 				<h4>Target</h4>
 				<div class="info-card">
 					<div class="card-item">
-						<span class="card-label">Register:</span>
+						<div class="card-label-with-icon">
+							<DatabaseOutline :size="16" />
+							<span class="card-label">Register:</span>
+						</div>
 						<span class="card-value">{{ targetRegister?.title || 'Not selected' }}</span>
 					</div>
 					<div class="card-item">
-						<span class="card-label">Schema:</span>
+						<div class="card-label-with-icon">
+							<FileTreeOutline :size="16" />
+							<span class="card-label">Schema:</span>
+						</div>
 						<span class="card-value">{{ targetSchema?.title || 'Not selected' }}</span>
 					</div>
 				</div>
@@ -325,6 +337,8 @@ import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 
 export default {
 	name: 'MigrationObject',
@@ -340,6 +354,8 @@ export default {
 		ArrowLeft,
 		Close,
 		DatabaseExport,
+		DatabaseOutline,
+		FileTreeOutline,
 	},
 
 	data() {
@@ -597,18 +613,6 @@ export default {
 
 .selection-section h4 {
 	margin-bottom: 8px;
-	color: var(--color-main-text);
-}
-
-.target-info {
-	margin: 20px 0;
-	padding: 16px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-}
-
-.target-info h4 {
-	margin-bottom: 12px;
 	color: var(--color-main-text);
 }
 
@@ -879,6 +883,12 @@ export default {
 
 .card-item:last-child {
 	border-bottom: none;
+}
+
+.card-label-with-icon {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .card-label {
