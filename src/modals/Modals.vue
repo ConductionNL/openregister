@@ -31,6 +31,7 @@ import { navigationStore } from '../store/store.js'
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
 		<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
+		<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
 		<UploadFiles />
 		<ViewSource />
 		<ViewConfiguration />
@@ -65,6 +66,7 @@ import DownloadObject from './object/DownloadObject.vue'
 import UploadFiles from './file/UploadFiles.vue'
 import MassDeleteObject from './object/MassDeleteObject.vue'
 import RestoreMultiple from './deleted/RestoreMultiple.vue'
+import PurgeMultiple from './deleted/PurgeMultiple.vue'
 import ViewSource from './source/ViewSource.vue'
 import ViewConfiguration from './configuration/ViewConfiguration.vue'
 export default {
@@ -97,6 +99,7 @@ export default {
 		UploadFiles,
 		MassDeleteObject,
 		RestoreMultiple,
+		PurgeMultiple,
 		ViewSource,
 		ViewConfiguration,
 	},

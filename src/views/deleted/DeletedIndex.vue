@@ -271,7 +271,6 @@ export default {
 		this.$root.$on('deleted-export-filtered', this.exportFiltered)
 
 		// Listen for deletion events from modals
-		this.$root.$on('deleted-object-permanently-deleted', this.handleObjectDeleted)
 		this.$root.$on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
 		this.$root.$on('deleted-objects-restored', this.handleObjectsRestored)
 	},
@@ -280,7 +279,6 @@ export default {
 		this.$root.$off('deleted-bulk-restore')
 		this.$root.$off('deleted-bulk-delete')
 		this.$root.$off('deleted-export-filtered')
-		this.$root.$off('deleted-object-permanently-deleted')
 		this.$root.$off('deleted-objects-permanently-deleted')
 		this.$root.$off('deleted-objects-restored')
 	},
@@ -465,18 +463,14 @@ export default {
 			navigationStore.setDialog('permanentlyDeleteMultiple')
 		},
 		/**
-		 * Restore individual item
+		 * Restore individual item using dialog
 		 * @param {object} item - Item to restore
-		 * @return {Promise<void>}
+		 * @return {void}
 		 */
-		async restoreItem(item) {
-			try {
-				await deletedStore.restoreDeleted(item.id)
-				// Refresh the list
-				await this.loadItems()
-			} catch (error) {
-				console.error('Error restoring item:', error)
-			}
+		restoreItem(item) {
+			// Set transfer data as array with single item and open dialog
+			navigationStore.setTransferData([item])
+			navigationStore.setDialog('restoreMultiple')
 		},
 		/**
 		 * Permanently delete individual item using dialog
@@ -484,25 +478,11 @@ export default {
 		 * @return {void}
 		 */
 		permanentlyDelete(item) {
-			// Set transfer data and open dialog
-			navigationStore.setTransferData(item)
-			navigationStore.setDialog('permanentlyDeleteObject')
+			// Set transfer data as array with single item and open dialog
+			navigationStore.setTransferData([item])
+			navigationStore.setDialog('permanentlyDeleteMultiple')
 		},
-		/**
-		 * Handle single object deletion event
-		 * @param {string} objectId - ID of deleted object
-		 * @return {Promise<void>}
-		 */
-		async handleObjectDeleted(objectId) {
-			// Remove from selection if it was selected
-			const index = this.selectedItems.indexOf(objectId)
-			if (index > -1) {
-				this.selectedItems.splice(index, 1)
-			}
 
-			// Refresh the list
-			await this.loadItems()
-		},
 		/**
 		 * Handle multiple objects deletion event
 		 * @param {Array<string>} objectIds - IDs of deleted objects
