@@ -171,9 +171,18 @@ class Schema extends Entity implements JsonSerializable
     protected ?DateTime $deleted = null;
 
     /**
-     * Configuration of the schema
+     * Configuration of the schema.
      *
-     * @var array|null Configuration of the schema
+     * This array can hold various configuration options for the schema.
+     * Currently supported options:
+     * - 'objectNameField': (string) A dot-notation path to the field within an object's data that should be used as its name.
+     *   Example: 'person.firstName'
+     * - 'objectDescriptionField': (string) A dot-notation path to the field for the object's description.
+     *   Example: 'case.summary'
+     *
+     * @var array|null
+     * @phpstan-var array<string, mixed>|null
+     * @psalm-var array<string, mixed>|null
      */
     protected ?array $configuration = null;
 
@@ -184,6 +193,33 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?string $icon = null;
 
+    /**
+     * Whether this schema is immutable (cannot be changed after creation)
+     *
+     * @var boolean
+     */
+    protected bool $immutable = false;
+
+    /**
+     * An array defining group-based permissions for CRUD actions.
+     * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
+     * and the values are arrays of group IDs that are permitted to perform that action.
+     * If an action is not present as a key, or its value is an empty array,
+     * it is assumed that all users have permission for that action.
+     *
+     * Example:
+     * [
+     *   'create' => ['group-admin', 'group-editors'],
+     *   'read'   => ['group-viewers'],
+     *   'update' => ['group-editors'],
+     *   'delete' => ['group-admin']
+     * ]
+     *
+     * @var array|null
+     * @phpstan-var array<string, array<string>>|null
+     * @psalm-var array<string, list<string>>|null
+     */
+    protected ?array $groups = [];
 
     /**
      * Constructor for the Schema class
@@ -204,16 +240,17 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'archive', type: 'json');
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
+        $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
-        // @todo this is being missed used so needs a refactor, sub onjects should be based on schema property config.
         $this->addType(fieldName: 'owner', type: 'string');
         $this->addType(fieldName: 'application', type: 'string');
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'array');
+        $this->addType(fieldName: 'groups', type: 'json');
 
     }//end __construct()
 
@@ -395,6 +432,7 @@ class Schema extends Entity implements JsonSerializable
             'archive'        => $this->archive,
             'source'         => $this->source,
             'hardValidation' => $this->hardValidation,
+            'immutable'      => $this->immutable,
         // @todo: should be refactored to strict
             'updated'        => $updated,
             'created'        => $created,
@@ -402,6 +440,7 @@ class Schema extends Entity implements JsonSerializable
             'owner'          => $this->owner,
             'application'    => $this->application,
             'organisation'   => $this->organisation,
+            'groups'         => $this->groups,
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
             'configuration'  => $this->configuration,
