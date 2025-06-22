@@ -134,8 +134,8 @@ export default {
 		 * @return {void}
 		 */
 		initializeSelection() {
-			const data = navigationStore.getTransferData() || []
-			this.selectedObjects = Array.isArray(data) ? data : []
+			const data = deletedStore.selectedForBulkAction || []
+			this.selectedObjects.splice(0, this.selectedObjects.length, ...data)
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
 			}
@@ -157,7 +157,7 @@ export default {
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
-			navigationStore.clearTransferData()
+			deletedStore.clearSelectedForBulkAction()
 			clearTimeout(this.closeModalTimeout)
 			this.success = null
 			this.successMessage = ''
