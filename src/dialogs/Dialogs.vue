@@ -5,8 +5,7 @@
 		<AuditTrailDetails />
 		<AuditTrailChanges />
 		<ClearAuditTrails />
-		<PermanentlyDeleteObject />
-		<PermanentlyDeleteMultiple />
+		<PurgeMultiple />
 	</div>
 </template>
 
@@ -15,8 +14,7 @@ import DeleteAuditTrail from '../modals/logs/DeleteAuditTrail.vue'
 import AuditTrailDetails from '../modals/logs/AuditTrailDetails.vue'
 import AuditTrailChanges from '../modals/logs/AuditTrailChanges.vue'
 import ClearAuditTrails from '../modals/logs/ClearAuditTrails.vue'
-import PermanentlyDeleteObject from '../modals/deleted/PermanentlyDeleteObject.vue'
-import PermanentlyDeleteMultiple from '../modals/deleted/PermanentlyDeleteMultiple.vue'
+import PurgeMultiple from '../modals/deleted/PurgeMultiple.vue'
 
 export default {
 	name: 'Dialogs',
@@ -25,8 +23,7 @@ export default {
 		AuditTrailDetails,
 		AuditTrailChanges,
 		ClearAuditTrails,
-		PermanentlyDeleteObject,
-		PermanentlyDeleteMultiple,
+		PurgeMultiple,
 	},
 }
 </script>
