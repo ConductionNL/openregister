@@ -36,7 +36,6 @@ import formatBytes from '../../services/formatBytes.js'
 						</template>
 						<NcActionButton
 							:disabled="selectedItems.length === 0"
-							type="primary"
 							close-after-click
 							@click="bulkRestore">
 							<template #icon>
@@ -444,8 +443,8 @@ export default {
 			// Get selected objects data
 			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
 
-			// Set transfer data and open dialog
-			navigationStore.setTransferData(selectedObjects)
+			// Set data in deletedStore and open dialog
+			deletedStore.setSelectedForBulkAction(selectedObjects)
 			navigationStore.setDialog('restoreMultiple')
 		},
 		/**
@@ -458,8 +457,8 @@ export default {
 			// Get selected objects data
 			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
 
-			// Set transfer data and open dialog
-			navigationStore.setTransferData(selectedObjects)
+			// Set data in deletedStore and open dialog
+			deletedStore.setSelectedForBulkAction(selectedObjects)
 			navigationStore.setDialog('permanentlyDeleteMultiple')
 		},
 		/**
@@ -469,7 +468,7 @@ export default {
 		 */
 		restoreItem(item) {
 			// Set transfer data as array with single item and open dialog
-			navigationStore.setTransferData([item])
+			deletedStore.setSelectedForBulkAction([item])
 			navigationStore.setDialog('restoreMultiple')
 		},
 		/**
@@ -479,7 +478,7 @@ export default {
 		 */
 		permanentlyDelete(item) {
 			// Set transfer data as array with single item and open dialog
-			navigationStore.setTransferData([item])
+			deletedStore.setSelectedForBulkAction([item])
 			navigationStore.setDialog('permanentlyDeleteMultiple')
 		},
 

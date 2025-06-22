@@ -5,7 +5,6 @@
 		<AuditTrailDetails />
 		<AuditTrailChanges />
 		<ClearAuditTrails />
-		<PurgeMultiple />
 	</div>
 </template>
 
@@ -14,7 +13,6 @@ import DeleteAuditTrail from '../modals/logs/DeleteAuditTrail.vue'
 import AuditTrailDetails from '../modals/logs/AuditTrailDetails.vue'
 import AuditTrailChanges from '../modals/logs/AuditTrailChanges.vue'
 import ClearAuditTrails from '../modals/logs/ClearAuditTrails.vue'
-import PurgeMultiple from '../modals/deleted/PurgeMultiple.vue'
 
 export default {
 	name: 'Dialogs',
@@ -23,7 +21,6 @@ export default {
 		AuditTrailDetails,
 		AuditTrailChanges,
 		ClearAuditTrails,
-		PurgeMultiple,
 	},
 }
 </script>
