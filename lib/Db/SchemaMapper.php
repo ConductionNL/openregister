@@ -53,32 +53,22 @@ class SchemaMapper extends QBMapper
      */
     private $validator;
 
-    /**
-     * The object entity mapper instance
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
 
     /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection                  $db                 The database connection
-     * @param IEventDispatcher               $eventDispatcher    The event dispatcher
-     * @param SchemaPropertyValidatorService $validator          The schema property validator
-     * @param ObjectEntityMapper             $objectEntityMapper The object entity mapper
+     * @param IDBConnection                  $db              The database connection
+     * @param IEventDispatcher               $eventDispatcher The event dispatcher
+     * @param SchemaPropertyValidatorService $validator       The schema property validator
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator,
-        ObjectEntityMapper $objectEntityMapper
+        SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher    = $eventDispatcher;
         $this->validator          = $validator;
-        $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
 

@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { schemaStore, navigationStore, groupStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -14,27 +14,77 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<div v-if="createAnother || !success" class="formContainer">
-			<NcTextField :disabled="loading"
-				label="Title *"
-				:value.sync="schemaItem.title" />
-			<NcTextArea :disabled="loading"
-				label="Description"
-				:value.sync="schemaItem.description" />
-			<NcTextArea :disabled="loading"
-				label="Summary"
-				:value.sync="schemaItem.summary" />
-			<NcTextField :disabled="loading"
-				label="Slug"
-				:value.sync="schemaItem.slug" />
-			<NcCheckboxRadioSwitch
-				:disabled="loading"
-				:checked.sync="schemaItem.hardValidation">
-				Hard Validation
-			</NcCheckboxRadioSwitch>
-			<NcTextField :disabled="loading"
-				label="Max Depth"
-				type="number"
-				:value.sync="schemaItem.maxDepth" />
+			<BTabs v-model="activeTab" content-class="mt-3" justified>
+				<BTab title="Properties" active>
+					<div class="form-editor">
+						<NcTextField :disabled="loading"
+							label="Title *"
+							:value.sync="schemaItem.title" />
+						<NcTextArea :disabled="loading"
+							label="Description"
+							:value.sync="schemaItem.description" />
+						<NcTextArea :disabled="loading"
+							label="Summary"
+							:value.sync="schemaItem.summary" />
+						<NcTextField :disabled="loading"
+							label="Slug"
+							:value.sync="schemaItem.slug" />
+						<NcCheckboxRadioSwitch
+							:disabled="loading"
+							:checked.sync="schemaItem.hardValidation">
+							Hard Validation
+						</NcCheckboxRadioSwitch>
+						<NcTextField :disabled="loading"
+							label="Max Depth"
+							type="number"
+							:value.sync="schemaItem.maxDepth" />
+					</div>
+				</BTab>
+				<BTab title="Configuration">
+					<div class="form-editor">
+						<NcCheckboxRadioSwitch
+							:disabled="loading"
+							:checked.sync="schemaItem.immutable">
+							Immutable
+						</NcCheckboxRadioSwitch>
+						<NcSelect :disabled="loading"
+							label="Object Name Field"
+							:value.sync="schemaItem.configuration.objectNameField"
+							:options="propertyOptions"
+							placeholder="Select a property" />
+						<NcSelect :disabled="loading"
+							label="Object Description Field"
+							:value.sync="schemaItem.configuration.objectDescriptionField"
+							:options="propertyOptions"
+							placeholder="Select a property" />
+					</div>
+				</BTab>
+				<BTab title="Security">
+					<div class="form-editor">
+						<p>Define group-based permissions for this schema. If no group is selected for an action, all users will have permission.</p>
+						<NcSelectTags
+							label="Create"
+							:value.sync="schemaItem.groups.create"
+							:options="groupOptions"
+							placeholder="Select groups for create access" />
+						<NcSelectTags
+							label="Read"
+							:value.sync="schemaItem.groups.read"
+							:options="groupOptions"
+							placeholder="Select groups for read access" />
+						<NcSelectTags
+							label="Update"
+							:value.sync="schemaItem.groups.update"
+							:options="groupOptions"
+							placeholder="Select groups for update access" />
+						<NcSelectTags
+							label="Delete"
+							:value.sync="schemaItem.groups.delete"
+							:options="groupOptions"
+							placeholder="Select groups for delete access" />
+					</div>
+				</BTab>
+			</BTabs>
 			<NcCheckboxRadioSwitch
 				v-if="!schemaStore.schemaItem?.id"
 				:disabled="loading"
@@ -74,7 +124,10 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcSelectTags,
 } from '@nextcloud/vue'
+import { BTabs, BTab } from 'bootstrap-vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -90,6 +143,10 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
+		NcSelect,
+		NcSelectTags,
+		BTabs,
+		BTab,
 		// Icons
 		ContentSaveOutline,
 		Cancel,
@@ -97,6 +154,7 @@ export default {
 	},
 	data() {
 		return {
+			activeTab: 0,
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -104,7 +162,18 @@ export default {
 				summary: '',
 				slug: '',
 				hardValidation: false,
+				immutable: false,
 				maxDepth: 0,
+				configuration: {
+					objectNameField: '',
+					objectDescriptionField: '',
+				},
+				groups: {
+					create: [],
+					read: [],
+					update: [],
+					delete: [],
+				},
 			},
 			createAnother: false,
 			success: false,
@@ -115,6 +184,24 @@ export default {
 	},
 	mounted() {
 		this.initializeSchemaItem()
+		groupStore.fetchGroups()
+	},
+	computed: {
+		propertyOptions() {
+			if (!schemaStore.schemaItem?.properties) {
+				return []
+			}
+			return Object.keys(schemaStore.schemaItem.properties).map(prop => ({
+				value: prop,
+				label: schemaStore.schemaItem.properties[prop].title || prop,
+			}))
+		},
+		groupOptions() {
+			return groupStore.groups.map(group => ({
+				value: group.id,
+				label: group.name,
+			}))
+		},
 	},
 	methods: {
 		initializeSchemaItem() {
@@ -126,7 +213,18 @@ export default {
 					summary: schemaStore.schemaItem.summary || '',
 					slug: schemaStore.schemaItem.slug || '',
 					hardValidation: schemaStore.schemaItem.hardValidation || false,
+					immutable: schemaStore.schemaItem.immutable || false,
 					maxDepth: schemaStore.schemaItem.maxDepth || 0,
+					configuration: {
+						objectNameField: schemaStore.schemaItem.configuration?.objectNameField || '',
+						objectDescriptionField: schemaStore.schemaItem.configuration?.objectDescriptionField || '',
+					},
+					groups: {
+						create: schemaStore.schemaItem.groups?.create || [],
+						read: schemaStore.schemaItem.groups?.read || [],
+						update: schemaStore.schemaItem.groups?.update || [],
+						delete: schemaStore.schemaItem.groups?.delete || [],
+					},
 				}
 			}
 		},
@@ -154,7 +252,18 @@ export default {
 							summary: '',
 							slug: '',
 							hardValidation: false,
+							immutable: false,
 							maxDepth: 0,
+							configuration: {
+								objectNameField: '',
+								objectDescriptionField: '',
+							},
+							groups: {
+								create: [],
+								read: [],
+								update: [],
+								delete: [],
+							},
 						}
 					}, 500)
 
@@ -181,3 +290,44 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+/* Add tab container styles */
+.tabContainer {
+	margin-top: 20px;
+}
+
+/* Style the tabs to match ViewObject */
+:deep(.nav-tabs) {
+	border-bottom: 1px solid var(--color-border);
+	margin-bottom: 15px;
+}
+
+:deep(.nav-tabs .nav-link) {
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--color-text-maxcontrast);
+	padding: 8px 16px;
+}
+
+:deep(.nav-tabs .nav-link.active) {
+	color: var(--color-main-text);
+	border-bottom: 2px solid var(--color-primary);
+	background-color: transparent;
+}
+
+:deep(.nav-tabs .nav-link:hover) {
+	border-bottom: 2px solid var(--color-border);
+}
+
+:deep(.tab-content) {
+	padding-top: 16px;
+}
+
+/* Form editor specific styles */
+.form-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+</style>
