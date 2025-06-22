@@ -4,7 +4,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
-		:name="`Permanently delete ${objectsToDelete.length} object${objectsToDelete.length !== 1 ? 's' : ''}`"
+		:name="`Purge ${objectsToDelete.length} object${objectsToDelete.length !== 1 ? 's' : ''} from database`"
 		size="normal"
 		:can-close="false">
 		<!-- Object Selection Review -->
@@ -71,7 +71,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
 				</template>
-				{{ t('openregister', 'Permanently Delete All') }}
+				{{ t('openregister', 'Purge') }}
 			</NcButton>
 		</template>
 	</NcDialog>
