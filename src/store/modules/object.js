@@ -1157,6 +1157,55 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Merge two objects within the same register and schema
+		 * @param {object} params - Merge parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.sourceObjectId - Source object ID (object to merge from)
+		 * @param {string|number} params.target - Target object ID (object to merge into)
+		 * @param {object} params.object - Merged object data (without id)
+		 * @param {string} params.fileAction - File action: 'transfer' or 'delete'
+		 * @param {string} params.relationAction - Relation action: 'transfer' or 'drop'
+		 * @return {Promise} API response with merge result
+		 */
+		async mergeObjects({ register, schema, sourceObjectId, target, object, fileAction = 'transfer', relationAction = 'transfer' }) {
+			if (!register || !schema || !sourceObjectId || !target || !object) {
+				throw new Error('Missing required parameters for object merge')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${sourceObjectId}/merge`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						target,
+						object,
+						fileAction,
+						relationAction,
+					}),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `Failed to merge objects: ${response.statusText}`)
+				}
+
+				const data = await response.json()
+
+				// Refresh object list after merge
+				await this.refreshObjectList({ register, schema })
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error merging objects:', error)
+				throw error
+			}
+		},
 	},
 	getters: {
 		isAllSelected() {

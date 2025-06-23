@@ -180,7 +180,7 @@ export const useSchemaStore = defineStore('schema', {
 			if (!cleaned.configuration) {
 				cleaned.configuration = {
 					objectNameField: '',
-					objectDescriptionField: ''
+					objectDescriptionField: '',
 				}
 			}
 

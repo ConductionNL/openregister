@@ -1207,7 +1207,23 @@ class ObjectEntityMapper extends QBMapper
      */
     public function update(Entity $entity, bool $includeDeleted = false): Entity
     {
-        $oldObject = $this->find($entity->getId(), null, null, $includeDeleted);
+        // For ObjectEntity, we need to find by the internal database ID, not UUID
+        // The getId() method returns the database primary key
+        error_log("ObjectEntityMapper->update() called with entity ID: " . ($entity->getId() ?? 'NULL'));
+        error_log("ObjectEntityMapper->update() entity type: " . get_class($entity));
+        
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
+        
+        if (!$includeDeleted) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+        
+        error_log("ObjectEntityMapper->update() about to execute findEntity with internal ID");
+        $oldObject = $this->findEntity($qb);
+        error_log("ObjectEntityMapper->update() successfully found old object for update");
 
         // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
