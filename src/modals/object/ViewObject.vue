@@ -490,7 +490,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														:size="20" />
 													<!-- Show published icon if file is shared -->
 													<FileOutline v-else class="publishedIcon" :size="20" />
-													{{ attachment.name ?? attachment?.title }}
+													{{ truncateFileName(attachment.name ?? attachment?.title) }}
 												</td>
 												<td class="tableColumnConstrained">
 													{{ formatFileSize(attachment?.size) }}
@@ -1010,6 +1010,16 @@ export default {
 			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
 			if (i === 0) return bytes + ' ' + sizes[i]
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		},
+		/**
+		 * Truncate file name to prevent dialog alignment issues
+		 * @param {string} fileName - The file name to truncate
+		 * @return {string} The truncated file name (22 chars + ... if longer than 25)
+		 */
+		truncateFileName(fileName) {
+			if (!fileName) return ''
+			if (fileName.length <= 25) return fileName
+			return fileName.substring(0, 22) + '...'
 		},
 		isValidDate(value) {
 			if (!value) return false
