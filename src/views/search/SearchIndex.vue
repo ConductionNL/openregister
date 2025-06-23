@@ -29,19 +29,40 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					</span>
 				</div>
 				<div class="viewActions">
+					<!-- Mass Actions Dropdown -->
 					<NcActions
 						:force-name="true"
-						:inline="objectStore.selectedObjects.length > 0 ? 3 : 2"
-						menu-name="Actions">
+						:disabled="objectStore.selectedObjects.length === 0"
+						:title="objectStore.selectedObjects.length === 0 ? 'Select one or more objects to use mass actions' : `Mass actions (${objectStore.selectedObjects.length} selected)`"
+						:menu-name="`Mass Actions (${objectStore.selectedObjects.length})`">
+						<template #icon>
+							<FormatListChecks :size="20" />
+						</template>
 						<NcActionButton
-							v-if="objectStore.selectedObjects.length > 0"
+							:disabled="objectStore.selectedObjects.length === 0"
+							close-after-click
+							@click="migrateObjects">
+							<template #icon>
+								<DatabaseExport :size="20" />
+							</template>
+							Migrate
+						</NcActionButton>
+						<NcActionButton
+							:disabled="objectStore.selectedObjects.length === 0"
 							close-after-click
 							@click="bulkDeleteObjects">
 							<template #icon>
 								<Delete :size="20" />
 							</template>
-							Delete ({{ objectStore.selectedObjects.length }})
+							Delete
 						</NcActionButton>
+					</NcActions>
+
+					<!-- Regular Actions -->
+					<NcActions
+						:force-name="true"
+						:inline="2"
+						menu-name="Actions">
 						<NcActionButton
 							:primary="true"
 							close-after-click
@@ -86,8 +107,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="objectStore.isAllSelected"
-											type="checkbox"
-											class="cursor-pointer"
 											@update:checked="objectStore.toggleSelectAllObjects" />
 									</th>
 									<th v-for="(column, index) in objectStore.enabledColumns"
@@ -104,12 +123,12 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							<tbody>
 								<tr v-for="result in objectStore.objectList.results"
 									:key="result['@self'].id || result.id"
-									class="viewTableRow">
+									class="viewTableRow table-row-selectable"
+									:class="{ 'table-row-selected': objectStore.selectedObjects.includes(result['@self'].id) }"
+									@click="handleRowClick(result['@self'].id, $event)">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="objectStore.selectedObjects.includes(result['@self'].id)"
-											type="checkbox"
-											class="cursor-pointer"
 											@update:checked="handleSelectObject(result['@self'].id)" />
 									</td>
 									<td v-for="(column, index) in objectStore.enabledColumns"
@@ -148,6 +167,12 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 													<Pencil :size="20" />
 												</template>
 												Edit
+											</NcActionButton>
+											<NcActionButton close-after-click @click="mergeObject(result)">
+												<template #icon>
+													<Merge :size="20" />
+												</template>
+												Merge
 											</NcActionButton>
 											<NcActionButton close-after-click @click="deleteObject(result)">
 												<template #icon>
@@ -192,6 +217,9 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
+import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -213,6 +241,9 @@ export default {
 		Refresh,
 		PaginationComponent,
 		FileTreeOutline,
+		Merge,
+		DatabaseExport,
+		FormatListChecks,
 	},
 	data() {
 		return {
@@ -342,11 +373,54 @@ export default {
 				objectStore.selectedObjects.push(id)
 			}
 		},
+		handleRowClick(id, event) {
+			// Don't select if clicking on the checkbox, actions button, or inside actions menu
+			if (event.target.closest('.tableColumnCheckbox')
+				|| event.target.closest('.tableColumnActions')
+				|| event.target.closest('.actionsButton')) {
+				return
+			}
+
+			// Toggle selection on row click
+			this.handleSelectObject(id)
+		},
 		bulkDeleteObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
+			// Prepare selected objects data for deletion
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					id: obj['@self'].id,
+					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
+					register: obj['@self'].register,
+					schema: obj['@self'].schema,
+				}))
+
+			// Store selected objects in the object store for the deletion modal
+			objectStore.selectedObjects = selectedObjectsData
+
 			// Set the dialog to mass delete
 			navigationStore.setDialog('massDeleteObject')
+		},
+		migrateObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for migration
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					id: obj['@self'].id,
+					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
+					register: obj['@self'].register,
+					schema: obj['@self'].schema,
+				}))
+
+			// Store selected objects in the object store for the migration modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the migration modal
+			navigationStore.setModal('migrationObject')
 		},
 		addObject() {
 			// Clear any existing object and open the add object modal
@@ -358,6 +432,11 @@ export default {
 			objectStore.refreshObjectList()
 			// Clear selection after refresh
 			objectStore.selectedObjects = []
+		},
+		mergeObject(sourceObject) {
+			// Set the source object for merging and open the merge modal
+			objectStore.setObjectItem(sourceObject)
+			navigationStore.setModal('mergeObject')
 		},
 		getValidISOstring,
 		formatBytes,
@@ -378,6 +457,22 @@ export default {
 :deep(.notecard) {
     margin-left: 15px;
     margin-right: 15px;
+}
+
+/* Fix checkbox layout in table */
+.tableColumnCheckbox {
+	padding: 8px !important;
+}
+
+.tableColumnCheckbox :deep(.checkbox-radio-switch) {
+	margin: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.tableColumnCheckbox :deep(.checkbox-radio-switch__content) {
+	margin: 0;
 }
 
 .searchListHeader {
@@ -425,5 +520,18 @@ input[type="checkbox"] {
 /* So that the actions menu is not overlapped by the sidebar button when it is closed */
 .sidebar-closed {
 	margin-right: 45px;
+}
+
+/* Row selection styling */
+.table-row-selectable {
+	cursor: pointer;
+}
+
+.table-row-selectable:hover {
+	background-color: var(--color-background-hover);
+}
+
+.table-row-selected {
+	background-color: var(--color-primary-light) !important;
 }
 </style>

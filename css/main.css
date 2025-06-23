@@ -317,11 +317,22 @@
   grid-template-columns: 1fr 1fr;
 }
 
+.publishedIcon,
 .publishedIcon > svg {
+  color: var(--color-success);
   fill: var(--color-success);
 }
+
+.warningIcon,
 .warningIcon > svg {
+  color: var(--color-warning);
   fill: var(--color-warning);
+}
+
+.notSharedIcon,
+.notSharedIcon > svg {
+  color: var(--color-text-maxcontrast);
+  fill: var(--color-text-maxcontrast);
 }
 
 .tabPagination {
@@ -452,17 +463,30 @@
   gap: 15px;
 }
 
-/* Table Styling */
+/* ========================================
+   TABLE STYLING
+   ======================================== */
+
+/* Enhanced Table Container */
 .viewTableContainer {
   background: var(--color-main-background);
   border-radius: var(--border-radius);
   overflow: hidden;
   box-shadow: 0 2px 4px var(--color-box-shadow);
+  border: 1px solid var(--color-border);
+  margin-bottom: 20px;
+}
+
+/* Scrollable Table Container */
+.viewTableContainer.scrollable {
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .viewTable {
   width: 100%;
   border-collapse: collapse;
+  background-color: var(--color-main-background);
 }
 
 .viewTable th,
@@ -470,20 +494,53 @@
   padding: 12px;
   text-align: left;
   border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
 }
 
 .viewTable th {
   background: var(--color-background-hover);
   font-weight: 500;
   color: var(--color-text-maxcontrast);
+  background-color: var(--color-background-dark);
+}
+
+/* Table Row States */
+.viewTableRow {
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .viewTableRow:hover {
   background: var(--color-background-hover);
 }
 
+.viewTableRow.active,
 .viewTableRowSelected {
   background: var(--color-primary-light);
+}
+
+.viewTable tbody tr.selected-row {
+  background-color: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary);
+}
+
+.viewTable tbody tr.selected-row:hover {
+  background-color: var(--color-primary-light);
+}
+
+.viewTable tbody tr.modified-row {
+  background-color: var(--color-warning-light);
+  border-left: 3px solid var(--color-warning);
+}
+
+.viewTable tbody tr.modified-row:hover {
+  background-color: var(--color-warning-light);
+}
+
+.viewTable tbody tr.modified-row.selected-row {
+  background-color: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary);
 }
 
 /* Table Column Types */
@@ -499,10 +556,16 @@
 }
 
 .tableColumnConstrained {
+  width: 150px;
   max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tableColumnExpanded {
+  width: auto;
+  min-width: 200px;
 }
 
 .tableColumnTitle {
@@ -510,6 +573,59 @@
   max-width: 200px;
   word-wrap: break-word;
   overflow: hidden;
+}
+
+/* Property-specific Table Cells */
+.prop-cell {
+  width: 30%;
+  font-weight: 600;
+  border-left: 3px solid var(--color-primary);
+}
+
+.prop-cell-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.value-cell {
+  width: 70%;
+  word-break: break-word;
+  border-radius: 4px;
+}
+
+.table-row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Inline Editing Styles */
+.viewTable td span {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s ease;
+}
+
+.viewTable td span:hover {
+  background-color: var(--color-background-hover);
+}
+
+.viewTable .nc-text-field,
+.viewTable .nc-select {
+  width: 100%;
+}
+
+/* Small form controls for inline editing */
+.viewTable :deep(.nc-text-field--small input) {
+  padding: 4px 8px;
+  font-size: 0.9em;
+}
+
+.viewTable :deep(.nc-select--small .vs__dropdown-toggle) {
+  padding: 2px 4px;
+  min-height: 32px;
 }
 
 /* Title Content Layout */
@@ -672,11 +788,561 @@
   background-color: var(--color-border);
 }
 
-/* Responsive Adjustments */
+/* Generic table row selection styles */
+.table-row-selected {
+  background-color: var(--color-primary-light) !important;
+  border-left: 3px solid var(--color-primary) !important;
+}
+
+.table-row-selectable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-row-selectable:hover {
+  background-color: var(--color-background-hover);
+}
+
+/* ========================================
+   MODAL AND DIALOG COMPONENTS
+   ======================================== */
+
+/* Modal Container Styling */
+.modal-container:has(.viewObjectDialog) {
+	width: 1000px !important;
+}
+
+/* Ensure nested modals appear above main modal */
+.modal-container:has([data-v-*] .modal-content) {
+	z-index: 10001 !important;
+}
+
+/* Modal Actions */
+:deep(.modal-container .modal-actions) {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+}
+
+.create-another-checkbox {
+	margin-right: auto;
+}
+
+/* ========================================
+   DETAIL GRID COMPONENTS
+   ======================================== */
+
+/* Detail Grid - Common component for showing register/schema info */
+.detail-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 20px;
+	margin-bottom: 20px;
+	padding: 0 20px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.detail-item {
+	display: flex;
+	flex-direction: column;
+	padding: 15px;
+	background-color: var(--color-background-soft);
+	border-radius: var(--border-radius);
+	border-left: 3px solid var(--color-primary);
+	box-shadow: 0 1px 3px var(--color-box-shadow);
+	transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.detail-item:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 2px 6px var(--color-box-shadow);
+}
+
+.detail-item.empty-value {
+	border-left-color: var(--color-warning);
+	background-color: var(--color-background-hover);
+}
+
+.detail-label {
+	font-weight: bold;
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 5px;
+	font-size: 0.9em;
+}
+
+.detail-value {
+	word-break: break-word;
+	color: var(--color-text-default);
+	line-height: 1.4;
+}
+
+/* ID Card Specific Styling */
+.id-card {
+	background-color: var(--color-background-hover);
+	border-left-color: var(--color-primary-element);
+}
+
+.id-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+	margin-bottom: 5px;
+}
+
+.id-card .detail-value {
+	word-break: break-all;
+	margin-top: 4px;
+	font-family: monospace;
+	font-size: 0.9em;
+	background-color: var(--color-background-dark);
+	padding: 4px 6px;
+	border-radius: 3px;
+}
+
+.uuid-value {
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+	font-family: monospace;
+	margin-top: 4px;
+	display: block;
+	background-color: var(--color-background-dark);
+	padding: 4px 6px;
+	border-radius: 3px;
+}
+
+.copy-button {
+	height: 30px;
+	flex-shrink: 0;
+	margin-top: 5px;
+}
+
+.detail-value-with-copy {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	justify-content: space-between;
+}
+
+.detail-value-with-copy .detail-value {
+	flex: 1;
+	word-break: break-all;
+}
+
+/* ========================================
+   TAB COMPONENTS
+   ======================================== */
+
+.tabContainer {
+  margin-top: 20px;
+}
+
+/* Bootstrap Vue Tab Styling */
+:deep(.nav-tabs) {
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 15px;
+}
+
+:deep(.nav-tabs .nav-link) {
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-maxcontrast);
+  padding: 8px 16px;
+}
+
+:deep(.nav-tabs .nav-link.active) {
+  color: var(--color-main-text);
+  border-bottom: 2px solid var(--color-primary);
+  background-color: transparent;
+}
+
+:deep(.nav-tabs .nav-link:hover) {
+  border-bottom: 2px solid var(--color-border);
+}
+
+:deep(.tab-content) {
+  padding: 16px;
+  background-color: var(--color-main-background);
+}
+
+/* ========================================
+   FORM COMPONENTS
+   ======================================== */
+
+/* Form Editor Layout */
+.form-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* Array Editor */
+.array-editor {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 6px;
+}
+
+.array-editor li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* ========================================
+   VALIDATION AND PROPERTY INDICATORS
+   ======================================== */
+
+/* Property Validation States */
+.property-valid {
+  border-left: 4px solid var(--color-success) !important;
+}
+
+.property-invalid {
+  border-left: 4px solid var(--color-error) !important;
+}
+
+.property-warning {
+  border-left: 4px solid var(--color-warning) !important;
+}
+
+/* Override default borders for validated properties */
+.property-valid .prop-cell,
+.property-invalid .prop-cell,
+.property-warning .prop-cell {
+  border-left: none;
+}
+
+/* Validation Icons */
+.validation-icon {
+  flex-shrink: 0;
+}
+
+.validation-icon.error-icon {
+  color: var(--color-error);
+}
+
+.validation-icon.warning-icon {
+  color: var(--color-warning);
+}
+
+.warning-icon {
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+/* Warning Messages */
+.properties-warning {
+  margin-top: 15px;
+}
+
+/* ========================================
+   CHIPS AND TAGS
+   ======================================== */
+
+/* Property Name with Chips */
+.name-with-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.property-name {
+  font-weight: 500;
+}
+
+.inline-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Nextcloud-style Chips */
+.property-chip {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.7em;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.chip-primary {
+  background-color: var(--color-primary-element-light);
+  color: var(--color-primary-element-text);
+}
+
+.chip-secondary {
+  background-color: var(--color-background-dark);
+  color: var(--color-text-maxcontrast);
+  border: 1px solid var(--color-border);
+}
+
+.chip-warning {
+  background-color: var(--color-warning);
+  color: var(--color-main-background);
+}
+
+.chip-success {
+  background-color: var(--color-success);
+  color: var(--color-main-background);
+}
+
+/* Enum Chips */
+.enum-section {
+  padding: 8px 16px;
+}
+
+.enum-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  max-width: 250px;
+}
+
+.enum-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-text);
+  border-radius: 12px;
+  font-size: 0.8em;
+  gap: 4px;
+}
+
+.enum-remove {
+  background: none;
+  border: none;
+  color: var(--color-primary-text);
+  cursor: pointer;
+  font-size: 1.2em;
+  line-height: 1;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.enum-remove:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* File Labels */
+.fileLabelsContainer {
+  display: inline-flex;
+  gap: 3px;
+}
+
+/* ========================================
+   INPUT AND CONTAINER STYLING
+   ======================================== */
+
+/* Name Input Containers */
+.name-input-container,
+.name-display-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* JSON Value Display */
+.json-value {
+  background: var(--color-background-dark);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 6px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .875rem;
+  line-height: 1.35;
+}
+
+/* ========================================
+   CODEMIRROR STYLING
+   ======================================== */
+
+/* JSON Editor */
+.json-editor {
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+
+.json-editor label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+/* CodeMirror Container */
+.codeMirrorContainer {
+  margin-block-start: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.codeMirrorContainer :deep(.cm-editor) {
+  height: 100%;
+  outline: none !important;
+}
+
+.codeMirrorContainer :deep(.cm-scroller) {
+  overflow: auto;
+}
+
+.codeMirrorContainer :deep(.cm-content) {
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+/* Light/Dark Mode Borders */
+.codeMirrorContainer.light > .vue-codemirror {
+  border: 1px dotted silver;
+}
+
+.codeMirrorContainer.dark > .vue-codemirror {
+  border: 1px dotted grey;
+}
+
+/* Dark Mode Specific Styles */
+.codeMirrorContainer.dark :deep(.cm-editor) {
+  background-color: var(--color-background-darker);
+}
+
+.codeMirrorContainer.light :deep(.cm-editor) {
+  background-color: var(--color-background-hover);
+}
+
+/* CodeMirror Syntax Highlighting */
+/* String values */
+.codeMirrorContainer.light :deep(.ͼe) {
+  color: #448c27;
+}
+.codeMirrorContainer.dark :deep(.ͼe) {
+  color: #88c379;
+}
+
+/* Boolean values */
+.codeMirrorContainer.light :deep(.ͼc) {
+  color: #221199;
+}
+.codeMirrorContainer.dark :deep(.ͼc) {
+  color: #8d64f7;
+}
+
+/* Null values */
+.codeMirrorContainer.light :deep(.ͼb) {
+  color: #770088;
+}
+.codeMirrorContainer.dark :deep(.ͼb) {
+  color: #be55cd;
+}
+
+/* Number values */
+.codeMirrorContainer.light :deep(.ͼd) {
+  color: #d19a66;
+}
+.codeMirrorContainer.dark :deep(.ͼd) {
+  color: #9d6c3a;
+}
+
+/* Text cursor */
+.codeMirrorContainer :deep(.cm-content) * {
+  cursor: text !important;
+}
+
+/* Selection colors */
+.codeMirrorContainer.light :deep(.cm-line)::selection,
+.codeMirrorContainer.light :deep(.cm-line) ::selection {
+  background-color: #d7eaff !important;
+  color: black;
+}
+.codeMirrorContainer.dark :deep(.cm-line)::selection,
+.codeMirrorContainer.dark :deep(.cm-line) ::selection {
+  background-color: #8fb3e6 !important;
+  color: black;
+}
+
+/* Format JSON Button */
+.format-json-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translateY(100%);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.error-message {
+  position: absolute;
+  bottom: 0;
+  right: 50%;
+  transform: translateY(100%) translateX(50%);
+  color: var(--color-error);
+  font-size: 0.8rem;
+  padding-top: 0.25rem;
+}
+
+/* ========================================
+   NEXTCLOUD ACTION INPUTS
+   ======================================== */
+
+/* Hide arrow icons and fix spacing in NcActionInput */
+:deep(.action-input__icon-wrapper) {
+  display: none !important;
+}
+
+/* Adjust input padding when icon wrapper is hidden */
+:deep(.action-input .action-input__text-label) {
+  padding-left: 16px !important;
+}
+
+:deep(.action-input input) {
+  padding-left: 16px !important;
+}
+
+:deep(.action-input .vs__dropdown-toggle) {
+  padding-left: 16px !important;
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
 @media (max-width: 1200px) {
   .tableColumnTitle {
     min-width: 150px;
     max-width: 200px;
+  }
+  
+  .detail-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
   }
 }
 
@@ -696,5 +1362,15 @@
   
   .viewPaginationNumbers {
     gap: 3px;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+    padding: 0 10px;
+    gap: 15px;
+  }
+  
+  .viewTableContainer.scrollable {
+    max-height: 300px;
   }
 }

@@ -132,8 +132,8 @@ export const useSchemaStore = defineStore('schema', {
 				: `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
 			const method = isNewSchema ? 'POST' : 'PUT'
 
-			schemaItem.updated = new Date().toISOString()
-			delete schemaItem.version
+			// Clean the schema data before sending
+			const cleanedSchema = this.cleanSchemaForSave(schemaItem)
 
 			const response = await fetch(
 				endpoint,
@@ -142,7 +142,7 @@ export const useSchemaStore = defineStore('schema', {
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify(schemaItem),
+					body: JSON.stringify(cleanedSchema),
 				},
 			)
 
@@ -163,6 +163,41 @@ export const useSchemaStore = defineStore('schema', {
 
 			return { response, data }
 
+		},
+		// Clean schema data for saving - remove read-only fields and fix structure
+		cleanSchemaForSave(schemaItem) {
+			const cleaned = { ...schemaItem }
+
+			// Remove read-only/calculated fields that should not be sent to the server
+			delete cleaned.updated
+			delete cleaned.created
+			delete cleaned.stats
+			delete cleaned.archive
+			delete cleaned.version // Backend determines version
+
+			// Keep configuration object intact - backend should handle it
+			// Ensure configuration object exists with default values if not present
+			if (!cleaned.configuration) {
+				cleaned.configuration = {
+					objectNameField: '',
+					objectDescriptionField: '',
+				}
+			}
+
+			// Convert required array to individual property required fields
+			if (cleaned.required && Array.isArray(cleaned.required) && cleaned.properties) {
+				// Set required: true on properties that are in the required array
+				cleaned.required.forEach(propertyName => {
+					if (cleaned.properties[propertyName]) {
+						cleaned.properties[propertyName].required = true
+					}
+				})
+
+				// Remove the top-level required array since we don't follow JSON Schema standard
+				delete cleaned.required
+			}
+
+			return cleaned
 		},
 		// Create or save a schema from store
 		async uploadSchema(schema) {
