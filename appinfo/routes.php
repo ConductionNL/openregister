@@ -28,6 +28,9 @@ return [
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#destroy', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#merge', 'url' => '/api/objects/{register}/{schema}/{id}/merge', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#migrate', 'url' => '/api/migrate', 'verb' => 'POST'],
+        ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Relations        
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#uses', 'url' => '/api/objects/{register}/{schema}/{id}/uses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -59,6 +62,7 @@ return [
 		['name' => 'files#index', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET'],
         ['name' => 'files#show', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'GET'],
 		['name' => 'files#create', 'url' => 'api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST'],
+		['name' => 'files#save', 'url' => 'api/objects/{register}/{schema}/{id}/files/save', 'verb' => 'POST'],
 		['name' => 'files#createMultipart', 'url' => 'api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST'],	
 		['name' => 'files#update', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'PUT'],
 		['name' => 'files#delete', 'url' => 'api/objects/{register}/{schema}/{id}/files/{filePath}', 'verb' => 'DELETE'],

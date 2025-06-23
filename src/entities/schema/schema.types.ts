@@ -10,6 +10,10 @@ export type TSchema = {
     updated: string;
     created: string;
     slug: string; // Slug for the schema
+    configuration?: {
+        objectNameField?: string; // Field to use as object name
+        objectDescriptionField?: string; // Field to use as object description
+    }
     hardValidation: boolean; // Whether hard validation is enabled
     maxDepth: number; // Maximum depth of the schema
     stats?: {

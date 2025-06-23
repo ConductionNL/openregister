@@ -1,50 +1,70 @@
 <script setup>
 import { auditTrailStore, navigationStore } from '../../store/store.js'
+import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
 	<NcAppContent>
-		<div class="container">
+		<div class="viewContainer">
 			<!-- Header -->
-			<div class="header">
-				<h1>{{ t('openregister', 'Audit Trails') }}</h1>
+			<div class="viewHeader">
+				<h1 class="viewHeaderTitleIndented">
+					{{ t('openregister', 'Audit Trails') }}
+				</h1>
 				<p>{{ t('openregister', 'View and analyze system audit trails with advanced filtering capabilities') }}</p>
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="actions-bar">
-				<div class="audit-trail-info">
-					<span class="total-count">
-						{{ t('openregister', '{count} audit trail entries', { count: auditTrailStore.auditTrailCount }) }}
+			<div class="viewActionsBar">
+				<div class="viewInfo">
+					<!-- Display pagination info: showing current page items out of total items -->
+					<span class="viewTotalCount">
+						{{ t('openregister', 'Showing {showing} of {total} audit trail entries', { showing: paginatedAuditTrails.length, total: auditTrailStore.auditTrailPagination.total || 0 }) }}
 					</span>
-					<span v-if="hasActiveFilters" class="filter-indicator">
+					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
 					</span>
+					<span v-if="selectedAuditTrails.length > 0" class="viewIndicator">
+						({{ t('openregister', '{count} selected', { count: selectedAuditTrails.length }) }})
+					</span>
 				</div>
-				<div class="actions">
-					<NcButton @click="exportAuditTrails">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Export') }}
-					</NcButton>
-					<NcButton @click="clearAuditTrails">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Clear Filtered') }}
-					</NcButton>
-					<NcButton @click="refreshAuditTrails">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+				<div class="viewActions">
+					<NcActions
+						:force-name="true"
+						:inline="selectedAuditTrails.length > 0 ? 3 : 2"
+						menu-name="Actions">
+						<NcActionButton
+							v-if="selectedAuditTrails.length > 0"
+							type="error"
+							close-after-click
+							@click="bulkDeleteAuditTrails">
+							<template #icon>
+								<Delete :size="20" />
+							</template>
+							{{ t('openregister', 'Delete ({count})', { count: selectedAuditTrails.length }) }}
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="exportAuditTrails">
+							<template #icon>
+								<Download :size="20" />
+							</template>
+							{{ t('openregister', 'Export') }}
+						</NcActionButton>
+						<NcActionButton
+							close-after-click
+							@click="refreshAuditTrails">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							{{ t('openregister', 'Refresh') }}
+						</NcActionButton>
+					</NcActions>
 				</div>
 			</div>
 
 			<!-- Audit Trails Table -->
-			<div v-if="auditTrailStore.isLoading" class="loading">
+			<div v-if="auditTrailStore.auditTrailLoading" class="viewLoading">
 				<NcLoadingIcon :size="64" />
 				<p>{{ t('openregister', 'Loading audit trails...') }}</p>
 			</div>
@@ -57,32 +77,38 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				</template>
 			</NcEmptyContent>
 
-			<div v-else class="table-container">
-				<table class="audit-trails-table">
+			<div v-else class="viewTableContainer">
+				<table class="viewTable auditTrailsTable">
 					<thead>
 						<tr>
-							<th class="action-column">
+							<th class="tableColumnCheckbox">
+								<NcCheckboxRadioSwitch
+									:checked="allSelected"
+									:indeterminate="someSelected"
+									@update:checked="toggleSelectAll" />
+							</th>
+							<th class="actionColumn">
 								{{ t('openregister', 'Action') }}
 							</th>
-							<th class="timestamp-column">
+							<th class="timestampColumn">
 								{{ t('openregister', 'Timestamp') }}
 							</th>
-							<th class="object-column">
+							<th class="tableColumnConstrained">
 								{{ t('openregister', 'Object ID') }}
 							</th>
-							<th class="register-column">
+							<th class="tableColumnConstrained">
 								{{ t('openregister', 'Register ID') }}
 							</th>
-							<th class="user-column">
+							<th class="tableColumnConstrained">
 								{{ t('openregister', 'User') }}
 							</th>
-							<th class="schema-column">
+							<th class="tableColumnConstrained">
 								{{ t('openregister', 'Schema ID') }}
 							</th>
-							<th class="size-column">
+							<th class="sizeColumn">
 								{{ t('openregister', 'Size') }}
 							</th>
-							<th class="actions-column">
+							<th class="tableColumnActions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
@@ -90,10 +116,15 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					<tbody>
 						<tr v-for="auditTrail in paginatedAuditTrails"
 							:key="auditTrail.id"
-							class="audit-trail-row"
+							class="viewTableRow auditTrailRow"
 							:class="`action-${auditTrail.action}`">
-							<td class="action-column">
-								<span class="action-badge" :class="`action-${auditTrail.action}`">
+							<td class="tableColumnCheckbox">
+								<NcCheckboxRadioSwitch
+									:checked="selectedAuditTrails.includes(auditTrail.id)"
+									@update:checked="(checked) => toggleAuditTrailSelection(auditTrail.id, checked)" />
+							</td>
+							<td class="actionColumn">
+								<span class="actionBadge" :class="`action-${auditTrail.action}`">
 									<Plus v-if="auditTrail.action === 'create'" :size="16" />
 									<Pencil v-else-if="auditTrail.action === 'update'" :size="16" />
 									<Delete v-else-if="auditTrail.action === 'delete'" :size="16" />
@@ -101,25 +132,25 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 									{{ auditTrail.action ? auditTrail.action.toUpperCase() : 'NO ACTION' }}
 								</span>
 							</td>
-							<td class="timestamp-column">
+							<td class="timestampColumn">
 								<NcDateTime :timestamp="new Date(auditTrail.created)" :ignore-seconds="false" />
 							</td>
-							<td class="object-column">
+							<td class="tableColumnConstrained">
 								{{ auditTrail.object || '-' }}
 							</td>
-							<td class="register-column">
+							<td class="tableColumnConstrained">
 								{{ auditTrail.register || '-' }}
 							</td>
-							<td class="user-column">
+							<td class="tableColumnConstrained">
 								{{ auditTrail.userName || auditTrail.user || '-' }}
 							</td>
-							<td class="schema-column">
+							<td class="tableColumnConstrained">
 								{{ auditTrail.schema || '-' }}
 							</td>
-							<td class="size-column">
-								{{ auditTrail.size || '-' }}
+							<td class="sizeColumn">
+								{{ formatBytes(auditTrail.size) }}
 							</td>
-							<td class="actions-column">
+							<td class="tableColumnActions">
 								<NcActions>
 									<NcActionButton close-after-click @click="viewDetails(auditTrail)">
 										<template #icon>
@@ -127,7 +158,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 										</template>
 										{{ t('openregister', 'View Details') }}
 									</NcActionButton>
-									<NcActionButton v-if="auditTrail.changed && (Array.isArray(auditTrail.changed) ? auditTrail.changed.length > 0 : Object.keys(auditTrail.changed).length > 0)" close-after-click @click="viewChanges(auditTrail)">
+									<NcActionButton v-if="hasChanges(auditTrail)" close-after-click @click="viewChanges(auditTrail)">
 										<template #icon>
 											<CompareHorizontal :size="20" />
 										</template>
@@ -135,12 +166,12 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 									</NcActionButton>
 									<NcActionButton close-after-click @click="copyData(auditTrail)">
 										<template #icon>
-											<Check v-if="copyStates[auditTrail.id]" :size="20" class="copy-success-icon" />
+											<Check v-if="copyStates[auditTrail.id]" :size="20" class="copySuccessIcon" />
 											<ContentCopy v-else :size="20" />
 										</template>
 										{{ copyStates[auditTrail.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
 									</NcActionButton>
-									<NcActionButton close-after-click class="delete-action" @click="deleteAuditTrail(auditTrail)">
+									<NcActionButton close-after-click class="deleteAction" @click="deleteAuditTrail(auditTrail)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
@@ -154,41 +185,15 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Pagination -->
-			<div v-if="auditTrailStore.pagination.pages > 1" class="pagination">
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === 1"
-					@click="goToPage(1)">
-					{{ t('openregister', 'First') }}
-				</NcButton>
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === 1"
-					@click="goToPage(auditTrailStore.pagination.page - 1)">
-					{{ t('openregister', 'Previous') }}
-				</NcButton>
-				<span class="page-info">
-					{{ t('openregister', 'Page {current} of {total}', {
-						current: auditTrailStore.pagination.page,
-						total: auditTrailStore.pagination.pages
-					}) }}
-				</span>
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === auditTrailStore.pagination.pages"
-					@click="goToPage(auditTrailStore.pagination.page + 1)">
-					{{ t('openregister', 'Next') }}
-				</NcButton>
-				<NcButton
-					:disabled="auditTrailStore.pagination.page === auditTrailStore.pagination.pages"
-					@click="goToPage(auditTrailStore.pagination.pages)">
-					{{ t('openregister', 'Last') }}
-				</NcButton>
-			</div>
+			<PaginationComponent
+				:current-page="auditTrailStore.auditTrailPagination.page || 1"
+				:total-pages="auditTrailStore.auditTrailPagination.pages || 1"
+				:total-items="auditTrailStore.auditTrailPagination.total || 0"
+				:current-page-size="auditTrailStore.auditTrailPagination.limit || 50"
+				:min-items-to-show="10"
+				@page-changed="onPageChanged"
+				@page-size-changed="onPageSizeChanged" />
 		</div>
-
-		<!-- Import the new modals -->
-		<DeleteAuditTrail />
-		<AuditTrailDetails />
-		<AuditTrailChanges />
-		<ClearAuditTrails />
 	</NcAppContent>
 </template>
 
@@ -196,11 +201,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 import {
 	NcAppContent,
 	NcEmptyContent,
-	NcButton,
 	NcLoadingIcon,
 	NcActions,
 	NcActionButton,
 	NcDateTime,
+	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -213,22 +218,18 @@ import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
 
-// Import the new modals
-import DeleteAuditTrail from '../../modals/logs/DeleteAuditTrail.vue'
-import AuditTrailDetails from '../../modals/logs/AuditTrailDetails.vue'
-import AuditTrailChanges from '../../modals/logs/AuditTrailChanges.vue'
-import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'AuditTrailIndex',
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcButton,
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
 		NcDateTime,
+		NcCheckboxRadioSwitch,
 		TextBoxOutline,
 		Download,
 		Delete,
@@ -239,52 +240,70 @@ export default {
 		CompareHorizontal,
 		ContentCopy,
 		Check,
-		// Modal components
-		DeleteAuditTrail,
-		AuditTrailDetails,
-		AuditTrailChanges,
-		ClearAuditTrails,
+		PaginationComponent,
 	},
 	data() {
 		return {
 			itemsPerPage: 50,
 			copyStates: {}, // Track copy state for each audit trail
+			selectedAuditTrails: [],
 		}
 	},
 	computed: {
 		hasActiveFilters() {
-			return Object.keys(auditTrailStore.filters || {}).some(key =>
-				auditTrailStore.filters[key] !== null
-				&& auditTrailStore.filters[key] !== undefined
-				&& auditTrailStore.filters[key] !== '',
+			return Object.keys(auditTrailStore.auditTrailFilters || {}).some(key =>
+				auditTrailStore.auditTrailFilters[key] !== null
+				&& auditTrailStore.auditTrailFilters[key] !== undefined
+				&& auditTrailStore.auditTrailFilters[key] !== '',
 			)
 		},
 		paginatedAuditTrails() {
-			// The store handles pagination, so we return the full list
-			return auditTrailStore.auditTrailList
+			// Ensure we always return a clean array
+			try {
+				return Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList : []
+			} catch (error) {
+				console.error('Error accessing auditTrailList:', error)
+				return []
+			}
+		},
+		allSelected() {
+			return this.paginatedAuditTrails.length > 0 && this.paginatedAuditTrails.every(auditTrail => this.selectedAuditTrails.includes(auditTrail.id))
+		},
+		someSelected() {
+			return this.selectedAuditTrails.length > 0 && !this.allSelected
 		},
 	},
 	watch: {
-		'auditTrailStore.auditTrailList'() {
-			this.updateCounts()
+		paginatedAuditTrails: {
+			handler() {
+				this.$nextTick(() => {
+					this.updateCounts()
+				})
+			},
+			deep: false,
 		},
 	},
 	mounted() {
-		this.loadAuditTrails()
+		// Initialize with safe defaults
+		try {
+			this.loadAuditTrails()
+		} catch (error) {
+			console.error('Error in mounted loadAuditTrails:', error)
+		}
 
 		// Listen for filter changes from sidebar
 		this.$root.$on('audit-trail-filters-changed', this.handleFiltersChanged)
 		this.$root.$on('audit-trail-export', this.handleExport)
-		this.$root.$on('audit-trail-clear-filtered', this.clearAuditTrails)
 		this.$root.$on('audit-trail-refresh', this.refreshAuditTrails)
 
-		// Emit counts to sidebar
-		this.updateCounts()
+		// Emit counts to sidebar with delay to ensure store is ready
+		this.$nextTick(() => {
+			this.updateCounts()
+		})
 	},
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filters-changed')
 		this.$root.$off('audit-trail-export')
-		this.$root.$off('audit-trail-clear-filtered')
 		this.$root.$off('audit-trail-refresh')
 	},
 	methods: {
@@ -306,7 +325,7 @@ export default {
 		 * @return {void}
 		 */
 		handleFiltersChanged(filters) {
-			auditTrailStore.setFilters(filters)
+			auditTrailStore.setAuditTrailFilters(filters)
 			// Refresh with new filters
 			this.loadAuditTrails()
 		},
@@ -317,18 +336,6 @@ export default {
 		 */
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
-		},
-		/**
-		 * Go to specific page
-		 * @param {number} page - Page number
-		 * @return {Promise<void>}
-		 */
-		async goToPage(page) {
-			try {
-				await auditTrailStore.refreshAuditTrailList({ page })
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
 		},
 		/**
 		 * View detailed information for an audit trail entry
@@ -454,50 +461,6 @@ export default {
 			}
 		},
 		/**
-		 * Clear filtered audit trails
-		 * @return {Promise<void>}
-		 */
-		async clearAuditTrails() {
-			if (!confirm(this.t('openregister', 'Are you sure you want to clear the filtered audit trails? This action cannot be undone.'))) {
-				return
-			}
-
-			try {
-				// Build query parameters for deletion
-				const params = new URLSearchParams()
-
-				// Add current filters to determine which logs to delete
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
-						if (value !== null && value !== undefined && value !== '') {
-							params.append(key, value)
-						}
-					})
-				}
-
-				// Make the API request
-				const response = await fetch(`/index.php/apps/openregister/api/audit-trails?${params.toString()}`, {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				})
-
-				const result = await response.json()
-
-				if (result.success) {
-					OC.Notification.showSuccess(result.message || this.t('openregister', 'Audit trails cleared successfully'))
-					// Refresh the list
-					await this.loadAuditTrails()
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
-			} catch (error) {
-				console.error('Error clearing audit trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error clearing audit trails: {error}', { error: error.message }))
-			}
-		},
-		/**
 		 * Delete a single audit trail using the new modal
 		 * @param {object} auditTrail - Audit trail to delete
 		 * @return {void}
@@ -520,168 +483,160 @@ export default {
 		 * @return {void}
 		 */
 		updateCounts() {
-			this.$root.$emit('audit-trail-filtered-count', auditTrailStore.auditTrailCount)
+			try {
+				const count = Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList.length : 0
+				this.$root.$emit('audit-trail-filtered-count', count)
+			} catch (error) {
+				console.error('Error updating counts:', error)
+				this.$root.$emit('audit-trail-filtered-count', 0)
+			}
+		},
+		/**
+		 * Handle page change from pagination component
+		 * @param {number} page - The page number to change to
+		 * @return {Promise<void>}
+		 */
+		async onPageChanged(page) {
+			try {
+				await auditTrailStore.fetchAuditTrails({
+					page,
+					limit: auditTrailStore.auditTrailPagination.limit,
+				})
+				// Clear selection when page changes
+				this.selectedAuditTrails = []
+			} catch (error) {
+				console.error('Error loading page:', error)
+			}
+		},
+		/**
+		 * Handle page size change from pagination component
+		 * @param {number} pageSize - The new page size
+		 * @return {Promise<void>}
+		 */
+		async onPageSizeChanged(pageSize) {
+			try {
+				await auditTrailStore.fetchAuditTrails({
+					page: 1,
+					limit: pageSize,
+				})
+				// Clear selection when page size changes
+				this.selectedAuditTrails = []
+			} catch (error) {
+				console.error('Error changing page size:', error)
+			}
+		},
+		/**
+		 * Check if audit trail has changes
+		 * @param {object} auditTrail - The audit trail item
+		 * @return {boolean} Whether the audit trail has changes
+		 */
+		hasChanges(auditTrail) {
+			try {
+				if (!auditTrail || !auditTrail.changed) return false
+
+				if (Array.isArray(auditTrail.changed)) {
+					return auditTrail.changed.length > 0
+				}
+
+				if (typeof auditTrail.changed === 'object') {
+					return Object.keys(auditTrail.changed).length > 0
+				}
+
+				return false
+			} catch (error) {
+				console.error('Error checking changes:', error)
+				return false
+			}
+		},
+		formatBytes,
+		toggleSelectAll(checked) {
+			if (checked) {
+				this.selectedAuditTrails = this.paginatedAuditTrails.map(auditTrail => auditTrail.id)
+			} else {
+				this.selectedAuditTrails = []
+			}
+		},
+		toggleAuditTrailSelection(id, checked) {
+			if (checked) {
+				this.selectedAuditTrails.push(id)
+			} else {
+				this.selectedAuditTrails = this.selectedAuditTrails.filter(i => i !== id)
+			}
+		},
+		/**
+		 * Delete selected audit trails using bulk operation
+		 * @return {Promise<void>}
+		 */
+		async bulkDeleteAuditTrails() {
+			if (this.selectedAuditTrails.length === 0) return
+
+			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected audit trails? This action cannot be undone.'))) {
+				return
+			}
+
+			try {
+				// Make the API request to delete selected audit trails
+				const response = await fetch('/index.php/apps/openregister/api/audit-trails/bulk-delete', {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ ids: this.selectedAuditTrails }),
+				})
+
+				const result = await response.json()
+
+				if (result.success) {
+					OC.Notification.showSuccess(result.message || this.t('openregister', 'Selected audit trails deleted successfully'))
+					// Clear selection
+					this.selectedAuditTrails = []
+					// Refresh the list
+					await this.loadAuditTrails()
+				} else {
+					throw new Error(result.error || 'Deletion failed')
+				}
+			} catch (error) {
+				console.error('Error deleting audit trails:', error)
+				OC.Notification.showError(this.t('openregister', 'Error deleting audit trails: {error}', { error: error.message }))
+			}
 		},
 	},
 }
 </script>
 
 <style scoped>
-.container {
-	padding: 20px;
-	max-width: 100%;
-}
-
-.header {
-	margin-bottom: 30px;
-}
-
-.header h1 {
-	margin: 0 0 10px 0;
-	font-size: 2rem;
-	font-weight: 300;
-}
-
-.header p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.actions-bar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 10px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.audit-trail-info {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-
-.total-count {
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.filter-indicator {
-	font-size: 0.9em;
-	color: var(--color-primary);
-}
-
-.actions {
-	display: flex;
-	gap: 10px;
-}
-
-.loading {
-	text-align: center;
-	padding: 50px;
-}
-
-.loading p {
-	margin-top: 20px;
-	color: var(--color-text-maxcontrast);
-}
-
-.table-container {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 2px 4px var(--color-box-shadow);
-}
-
-.audit-trails-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.audit-trails-table th,
-.audit-trails-table td {
-	padding: 12px;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.audit-trails-table th {
-	background: var(--color-background-hover);
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.action-column {
+/* Specific column widths for audit trail table */
+.actionColumn {
 	width: 100px;
 }
 
-.timestamp-column {
+.timestampColumn {
 	width: 180px;
 }
 
-.object-column {
-	width: 150px;
-}
-
-.register-column {
-	width: 150px;
-}
-
-.user-column {
-	width: 120px;
-}
-
-.schema-column {
-	width: 150px;
-}
-
-.size-column {
+.sizeColumn {
 	width: 100px;
 }
 
-.actions-column {
-	width: 100px;
-	text-align: center;
-}
-
-.audit-trail-row:hover {
-	background: var(--color-background-hover);
-}
-
-.audit-trail-row.action-create {
+/* Action-specific row styling */
+.viewTableRow.action-create {
 	border-left: 4px solid var(--color-info);
 }
 
-.audit-trail-row.action-update {
+.viewTableRow.action-update {
 	border-left: 4px solid var(--color-warning);
 }
 
-.audit-trail-row.action-delete {
+.viewTableRow.action-delete {
 	border-left: 4px solid var(--color-error);
 }
 
-.audit-trail-row.action-read {
+.viewTableRow.action-read {
 	border-left: 4px solid var(--color-text-maxcontrast);
 }
 
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 20px;
-	margin-top: 30px;
-	padding: 20px;
-}
-
-.page-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9rem;
-}
-
-/* Log level chip styling */
-.action-badge {
+/* Action badge styling */
+.actionBadge {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
@@ -693,47 +648,45 @@ export default {
 	background: var(--color-text-maxcontrast);
 }
 
-.action-badge.action-create {
+.actionBadge.action-create {
 	background: var(--color-success);
 	color: white;
 }
 
-.action-badge.action-update {
+.actionBadge.action-update {
 	background: var(--color-warning);
 	color: white;
 }
 
-.action-badge.action-delete {
+.actionBadge.action-delete {
 	background: var(--color-error);
 	color: white;
 }
 
-.action-badge.action-read {
+.actionBadge.action-read {
 	background: var(--color-info);
 	color: white;
 }
 
-/* Add some spacing between select inputs */
+/* Component-specific styling */
 :deep(.v-select) {
 	margin-bottom: 8px;
 }
 
-/* Delete action styling */
-:deep(.delete-action) {
+:deep(.deleteAction) {
 	color: var(--color-error) !important;
 }
 
-:deep(.delete-action:hover) {
+:deep(.deleteAction:hover) {
 	background-color: var(--color-error) !important;
 	color: var(--color-main-background) !important;
 }
 
-/* Copy success feedback styling */
-.copy-success-icon {
+.copySuccessIcon {
 	color: var(--color-success) !important;
 }
 
-:deep(.copy-success-icon) {
+:deep(.copySuccessIcon) {
 	animation: copySuccess 0.3s ease-in-out;
 }
 

@@ -40,16 +40,31 @@ export const useDeletedStore = defineStore('deleted', {
 		// Filters
 		deletedFilters: {},
 		deletedSearch: '',
+		selectedForBulkAction: [],
 	}),
 
 	actions: {
+		/**
+		 * Set items for bulk action
+		 * @param {Array} items - The items to set for bulk action
+		 */
+		setSelectedForBulkAction(items) {
+			this.selectedForBulkAction = items
+		},
+
+		/**
+		 * Clear items for bulk action
+		 */
+		clearSelectedForBulkAction() {
+			this.selectedForBulkAction = []
+		},
+
 		/**
 		 * Set deleted list
 		 * @param {Array} deletedList - The deleted list to set
 		 */
 		setDeletedList(deletedList) {
 			this.deletedList = deletedList
-			console.info('Deleted list set to:', deletedList)
 		},
 
 		/**
@@ -58,7 +73,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		setDeletedItem(deletedItem) {
 			this.deletedItem = deletedItem
-			console.info('Deleted item set to:', deletedItem)
 		},
 
 		/**
@@ -70,7 +84,6 @@ export const useDeletedStore = defineStore('deleted', {
 				...this.deletedPagination,
 				...pagination,
 			}
-			console.info('Deleted pagination set to:', this.deletedPagination)
 		},
 
 		/**
@@ -82,7 +95,6 @@ export const useDeletedStore = defineStore('deleted', {
 				...this.statistics,
 				...stats,
 			}
-			console.info('Statistics set to:', this.statistics)
 		},
 
 		/**
@@ -91,7 +103,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		setTopDeleters(deleters) {
 			this.topDeleters = deleters
-			console.info('Top deleters set to:', deleters)
 		},
 
 		/**
@@ -100,7 +111,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		setDeletedFilters(filters) {
 			this.deletedFilters = filters
-			console.info('Deleted filters set to:', filters)
 		},
 
 		/**
@@ -109,7 +119,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		setDeletedSearch(search) {
 			this.deletedSearch = search
-			console.info('Deleted search set to:', search)
 		},
 
 		/**
@@ -121,8 +130,6 @@ export const useDeletedStore = defineStore('deleted', {
 			this.deletedLoading = true
 
 			try {
-				console.info('Fetching deleted objects with options:', options)
-
 				// Build query parameters
 				const params = new URLSearchParams()
 
@@ -153,7 +160,6 @@ export const useDeletedStore = defineStore('deleted', {
 				}
 
 				const url = `${apiUrl}/deleted?${params.toString()}`
-				console.info('Fetching from URL:', url)
 
 				const response = await fetch(url, {
 					method: 'GET',
@@ -164,7 +170,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Deleted fetch response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch deleted objects')
@@ -197,8 +202,6 @@ export const useDeletedStore = defineStore('deleted', {
 			this.statisticsLoading = true
 
 			try {
-				console.info('Fetching deleted statistics')
-
 				const response = await fetch(`${apiUrl}/deleted/statistics`, {
 					method: 'GET',
 					headers: {
@@ -208,7 +211,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Statistics response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch statistics')
@@ -232,8 +234,6 @@ export const useDeletedStore = defineStore('deleted', {
 			this.topDeletersLoading = true
 
 			try {
-				console.info('Fetching top deleters')
-
 				const response = await fetch(`${apiUrl}/deleted/top-deleters`, {
 					method: 'GET',
 					headers: {
@@ -243,7 +243,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Top deleters response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch top deleters')
@@ -266,8 +265,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async restoreDeleted(id) {
 			try {
-				console.info('Restoring deleted object:', id)
-
 				const response = await fetch(`${apiUrl}/deleted/${id}/restore`, {
 					method: 'POST',
 					headers: {
@@ -277,7 +274,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Restore response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to restore object')
@@ -300,8 +296,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async restoreMultiple(ids) {
 			try {
-				console.info('Restoring multiple objects:', ids)
-
 				const response = await fetch(`${apiUrl}/deleted/restore`, {
 					method: 'POST',
 					headers: {
@@ -312,7 +306,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Bulk restore response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to restore objects')
@@ -335,8 +328,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async permanentlyDelete(id) {
 			try {
-				console.info('Permanently deleting object:', id)
-
 				const response = await fetch(`${apiUrl}/deleted/${id}`, {
 					method: 'DELETE',
 					headers: {
@@ -346,7 +337,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Permanent delete response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to permanently delete object')
@@ -369,8 +359,6 @@ export const useDeletedStore = defineStore('deleted', {
 		 */
 		async permanentlyDeleteMultiple(ids) {
 			try {
-				console.info('Permanently deleting multiple objects:', ids)
-
 				const response = await fetch(`${apiUrl}/deleted`, {
 					method: 'DELETE',
 					headers: {
@@ -381,7 +369,6 @@ export const useDeletedStore = defineStore('deleted', {
 				})
 
 				const data = await response.json()
-				console.info('Bulk permanent delete response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to permanently delete objects')
@@ -430,6 +417,7 @@ export const useDeletedStore = defineStore('deleted', {
 			this.topDeleters = []
 			this.deletedFilters = {}
 			this.deletedSearch = ''
+			this.selectedForBulkAction = []
 			console.info('Deleted store cleared')
 		},
 	},

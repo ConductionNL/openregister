@@ -59,6 +59,13 @@ class RegisterMapper extends QBMapper
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
 
+    /**
+     * The file service instance
+     *
+     * @var FileService
+     */
+    private FileService $fileService;
+
 
     /**
      * Constructor for RegisterMapper
@@ -82,6 +89,8 @@ class RegisterMapper extends QBMapper
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
+
+
 
 
     /**

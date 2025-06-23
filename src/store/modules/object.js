@@ -966,6 +966,197 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Publish an object with optional date
+		 * @param {object} params - Publish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string|null} params.publishedDate - Optional published date (ISO string)
+		 * @return {Promise} API response
+		 */
+		async publishObject({ register, schema, objectId, publishedDate = null }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Missing required parameters for object publish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/publish`
+
+			try {
+				const body = publishedDate ? { date: publishedDate } : {}
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to publish object: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Update the current object item if it matches
+				if (this.objectItem && this.objectItem['@self'].id === objectId) {
+					this.objectItem['@self'].published = data.published || new Date().toISOString()
+					this.objectItem['@self'].depublished = null
+				}
+
+				// Refresh object list to update the display
+				await this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error publishing object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Depublish an object with optional date
+		 * @param {object} params - Depublish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string|null} params.depublishedDate - Optional depublished date (ISO string)
+		 * @return {Promise} API response
+		 */
+		async depublishObject({ register, schema, objectId, depublishedDate = null }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Missing required parameters for object depublish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/depublish`
+
+			try {
+				const body = depublishedDate ? { date: depublishedDate } : {}
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to depublish object: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Update the current object item if it matches
+				if (this.objectItem && this.objectItem['@self'].id === objectId) {
+					this.objectItem['@self'].depublished = data.depublished || new Date().toISOString()
+				}
+
+				// Refresh object list to update the display
+				await this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error depublishing object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Publish a file for an object
+		 * @param {object} params - Publish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string} params.filePath - Path to the file to publish
+		 * @return {Promise} API response
+		 */
+		async publishFile({ register, schema, objectId, filePath }) {
+			if (!register || !schema || !objectId || !filePath) {
+				throw new Error('Missing required parameters for file publish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}/publish`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to publish file: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Refresh files list after publishing
+				await this.getFiles(this.objectItem)
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error publishing file:', error)
+				throw error
+			}
+		},
+		/**
+		 * Unpublish a file for an object
+		 * @param {object} params - Unpublish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string} params.filePath - Path to the file to unpublish
+		 * @return {Promise} API response
+		 */
+		async unpublishFile({ register, schema, objectId, filePath }) {
+			if (!register || !schema || !objectId || !filePath) {
+				throw new Error('Missing required parameters for file unpublish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}/depublish`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to unpublish file: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Refresh files list after unpublishing
+				await this.getFiles(this.objectItem)
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error unpublishing file:', error)
+				throw error
+			}
+		},
+		/**
+		 * Delete a file from an object
+		 * @param {object} params - Delete parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string} params.filePath - Path to the file to delete
+		 * @return {Promise} API response
+		 */
+		async deleteFile({ register, schema, objectId, filePath }) {
+			if (!register || !schema || !objectId || !filePath) {
+				throw new Error('Missing required parameters for file delete')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'DELETE',
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to delete file: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Refresh files list after deletion
+				await this.getFiles(this.objectItem)
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error deleting file:', error)
+				throw error
+			}
+		},
 	},
 	getters: {
 		isAllSelected() {

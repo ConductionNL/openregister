@@ -93,13 +93,6 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $relations = [];
 
     /**
-     * Text representation of the object.
-     *
-     * @var string|null Text representation of the object
-     */
-    protected ?string $textRepresentation = null;
-
-    /**
      * Lock information for the object if locked.
      *
      * @var array|null Contains the locked object if the object is locked
@@ -220,6 +213,40 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     private ?array $lastLog = null;
 
+    /**
+     * Name of the object.
+     *
+     * @var string|null Name of the object
+     */
+    protected ?string $name = null;
+
+    /**
+     * Description of the object.
+     *
+     * @var string|null Description of the object
+     */
+    protected ?string $description = null;
+
+    /**
+     * An array defining group-based permissions for CRUD actions.
+     * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
+     * and the values are arrays of group IDs that are permitted to perform that action.
+     * If an action is not present as a key, or its value is an empty array,
+     * it is assumed that all users have permission for that action.
+     *
+     * Example:
+     * [
+     *   'create' => ['group-admin', 'group-editors'],
+     *   'read'   => ['group-viewers'],
+     *   'update' => ['group-editors'],
+     *   'delete' => ['group-admin']
+     * ]
+     *
+     * @var array|null
+     * @phpstan-var array<string, array<string>>|null
+     * @psalm-var array<string, list<string>>|null
+     */
+    protected ?array $groups = [];
 
     /**
      * Initialize the entity and define field types
@@ -235,7 +262,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'object', type: 'json');
         $this->addType(fieldName:'files', type: 'json');
         $this->addType(fieldName:'relations', type: 'json');
-        $this->addType(fieldName:'textRepresentation', type: 'text');
         $this->addType(fieldName:'locked', type: 'json');
         $this->addType(fieldName:'owner', type: 'string');
         $this->addType(fieldName:'authorization', type: 'json');
@@ -248,10 +274,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'retention', type: 'json');
         $this->addType(fieldName:'size', type: 'string');
         $this->addType(fieldName:'schemaVersion', type: 'string');
+        $this->addType(fieldName:'name', type: 'string');
+        $this->addType(fieldName:'description', type: 'string');
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
         $this->addType(fieldName:'published', type: 'datetime');
         $this->addType(fieldName:'depublished', type: 'datetime');
+        $this->addType('groups', 'json');
 
     }//end __construct()
 
@@ -402,18 +431,21 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON format
      *
-     * Creates a metadata array containing object properties except sensitive fields.
-     * Filters out 'object', 'textRepresentation' and 'authorization' fields and
-     * stores remaining properties under '@self' key for API responses.
+     * Merges the object's own data with a '@self' key containing metadata.
+     * Ensures that if a name is not set, the UUID is used as a fallback.
      *
      * @return array Serialized object data
      */
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object = $this->object ?? []; // Default to an empty array if $this->object is null.
+        $object = ($this->object ?? []); // Default to an empty array if $this->object is null.
         $object['@self'] = $this->getObjectArray($object);
-
+        
+        // Check if name is empty and set uuid as fallback
+        if (empty($object['@self']['name'])) {
+            $object['@self']['name'] = $this->uuid;
+        }
         // Let's merge and return.
         return $object;
 
@@ -430,6 +462,8 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Initialize the object array with default properties.
         $objectArray = [
             'id'            => $this->uuid,
+            'name'          => $this->name ?? $this->uuid,
+            'description'   => $this->description ?? $this->id,
             'uri'           => $this->uri,
             'version'       => $this->version,
             'register'      => $this->register,
@@ -439,9 +473,11 @@ class ObjectEntity extends Entity implements JsonSerializable
             'relations'     => $this->relations,
             'locked'        => $this->locked,
             'owner'         => $this->owner,
+            'organisation'  => $this->organisation,
+            'groups'        => $this->groups,
+            'authorization' => $this->authorization,
             'folder'        => $this->folder,
             'application'   => $this->application,
-            'organisation'  => $this->organisation,
             'validation'    => $this->validation,
             'geo'           => $this->geo,
             'retention'     => $this->retention,
