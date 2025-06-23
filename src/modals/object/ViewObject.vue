@@ -430,12 +430,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</th>
 												<th class="tableColumnActions">
 													<NcActions
-														force-menu
-														:disabled="selectedAttachments.length === 0">
+														:force-name="true"
+														:disabled="selectedAttachments.length === 0"
+														:title="selectedAttachments.length === 0 ? 'Select one or more files to use mass actions' : `Mass actions (${selectedAttachments.length} selected)`"
+														:menu-name="`Mass Actions (${selectedAttachments.length})`">
 														<template #icon>
-															<DotsHorizontal :size="20" />
+															<FormatListChecks :size="20" />
 														</template>
-														Bulk Actions
 														<NcActionButton
 															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="publishSelectedFiles">
@@ -709,7 +710,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Alert from 'vue-material-design-icons/Alert.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
@@ -746,7 +747,7 @@ export default {
 		ContentSave,
 		TextBoxOutline,
 		Tag,
-		DotsHorizontal,
+		FormatListChecks,
 		Alert,
 		AlertCircle,
 		Publish,

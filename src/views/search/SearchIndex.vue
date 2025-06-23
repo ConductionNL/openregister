@@ -107,8 +107,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="objectStore.isAllSelected"
-											type="checkbox"
-											class="cursor-pointer"
 											@update:checked="objectStore.toggleSelectAllObjects" />
 									</th>
 									<th v-for="(column, index) in objectStore.enabledColumns"
@@ -131,8 +129,6 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="objectStore.selectedObjects.includes(result['@self'].id)"
-											type="checkbox"
-											class="cursor-pointer"
 											@update:checked="handleSelectObject(result['@self'].id)" />
 									</td>
 									<td v-for="(column, index) in objectStore.enabledColumns"
@@ -461,6 +457,22 @@ export default {
 :deep(.notecard) {
     margin-left: 15px;
     margin-right: 15px;
+}
+
+/* Fix checkbox layout in table */
+.tableColumnCheckbox {
+	padding: 8px !important;
+}
+
+.tableColumnCheckbox :deep(.checkbox-radio-switch) {
+	margin: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.tableColumnCheckbox :deep(.checkbox-radio-switch__content) {
+	margin: 0;
 }
 
 .searchListHeader {
