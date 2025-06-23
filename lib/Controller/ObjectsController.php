@@ -1120,7 +1120,7 @@ class ObjectsController extends Controller
             $targetRegister = $requestParams['targetRegister'] ?? null;
             $targetSchema = $requestParams['targetSchema'] ?? null;
             $objectIds = $requestParams['objects'] ?? [];
-            $propertyMappings = $requestParams['propertyMappings'] ?? [];
+            $mapping = $requestParams['mapping'] ?? [];
 
             // Validate required parameters
             if ($sourceRegister === null || $sourceSchema === null) {
@@ -1135,8 +1135,8 @@ class ObjectsController extends Controller
                 return new JSONResponse(['error' => 'At least one object ID is required'], 400);
             }
 
-            if (empty($propertyMappings)) {
-                return new JSONResponse(['error' => 'Property mappings are required'], 400);
+            if (empty($mapping)) {
+                return new JSONResponse(['error' => 'Property mapping is required'], 400);
             }
 
             // Perform the migration operation
@@ -1146,7 +1146,7 @@ class ObjectsController extends Controller
                 targetRegister: $targetRegister,
                 targetSchema: $targetSchema,
                 objectIds: $objectIds,
-                propertyMappings: $propertyMappings
+                mapping: $mapping
             );
 
             return new JSONResponse($migrationResult);

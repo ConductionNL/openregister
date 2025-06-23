@@ -2124,7 +2124,7 @@ class ObjectService
      * @param string|int $targetRegister    The target register ID or slug
      * @param string|int $targetSchema      The target schema ID or slug
      * @param array      $objectIds         Array of object IDs to migrate
-     * @param array      $propertyMappings  Property mapping configuration
+     * @param array      $mapping           Simple mapping where keys are target properties, values are source properties
      *
      * @return array Migration result with statistics and details
      *
@@ -2140,7 +2140,7 @@ class ObjectService
         string|int $targetRegister,
         string|int $targetSchema,
         array $objectIds,
-        array $propertyMappings
+        array $mapping
     ): array {
         // Initialize migration report
         $migrationReport = [
@@ -2201,8 +2201,8 @@ class ObjectService
                     // Get source object data
                     $sourceData = $sourceObject->getObject();
                     
-                    // Map properties according to mapping configuration
-                    $mappedData = $this->mapObjectProperties($sourceData, $propertyMappings);
+                    // Map properties according to mapping configuration  
+                    $mappedData = $this->mapObjectProperties($sourceData, $mapping);
                     $migrationReport['statistics']['propertiesMapped'] += count($mappedData);
                     $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
 
@@ -2258,27 +2258,30 @@ class ObjectService
 
 
     /**
-     * Map object properties according to property mapping configuration
+     * Map object properties using simple mapping configuration
      *
-     * @param array $sourceData       The source object data
-     * @param array $propertyMappings The property mapping configuration
+     * Maps properties from source object data to target object data using a simple mapping array.
+     * The mapping array has target properties as keys and source properties as values.
+     * Only properties that exist in the source data and are mapped will be included.
      *
-     * @return array The mapped object data
+     * @param array $sourceData The source object data
+     * @param array $mapping    Simple mapping array where:
+     *                          - Keys are target property names
+     *                          - Values are source property names
+     *                          Example: ['targetProp' => 'sourceProp', 'Test' => 'titel']
+     *
+     * @return array The mapped object data containing only the mapped properties
      *
      * @phpstan-return array<string, mixed>
      * @psalm-return array<string, mixed>
      */
-    private function mapObjectProperties(array $sourceData, array $propertyMappings): array
+    private function mapObjectProperties(array $sourceData, array $mapping): array
     {
         $mappedData = [];
 
-        foreach ($propertyMappings as $sourceProperty => $targetProperty) {
-            // Skip if target property is null (do not map)
-            if ($targetProperty === null) {
-                continue;
-            }
-
-            // Map the property if it exists in source data
+        // Simple mapping: keys are target properties, values are source properties
+        foreach ($mapping as $targetProperty => $sourceProperty) {
+            // Only map if the source property exists in the source data
             if (array_key_exists($sourceProperty, $sourceData)) {
                 $mappedData[$targetProperty] = $sourceData[$sourceProperty];
             }
