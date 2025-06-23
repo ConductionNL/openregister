@@ -2176,12 +2176,20 @@ class ObjectService
                 throw new DoesNotExistException('One or more registers/schemas not found');
             }
 
-            // Set source context
-            $this->setRegister($sourceRegisterEntity);
-            $this->setSchema($sourceSchemaEntity);
+            // Get all source objects at once using ObjectEntityMapper
+            $sourceObjects = $this->objectEntityMapper->findMultiple($objectIds);
 
-            // Process each object
-            foreach ($objectIds as $objectId) {
+            
+            // Keep track of remaining object IDs to find which ones weren't found
+            $remainingObjectIds = $objectIds;
+
+            // Set target context for saving
+            $this->setRegister($targetRegisterEntity);
+            $this->setSchema($targetSchemaEntity);
+
+            // Process each found source object
+            foreach ($sourceObjects as $sourceObject) {
+                $objectId = $sourceObject->getUuid();
                 $objectDetail = [
                     'objectId' => $objectId,
                     'objectTitle' => null,
@@ -2189,54 +2197,99 @@ class ObjectService
                     'error' => null
                 ];
 
+                // Remove this object from the remaining list (it was found) - do this BEFORE try-catch
+                $remainingObjectIds = array_filter($remainingObjectIds, function($id) use ($sourceObject) {
+                    return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
+                });
+
                 try {
-                    // Find the source object
-                    $sourceObject = $this->find($objectId);
-                    if (!$sourceObject) {
-                        throw new DoesNotExistException("Object with ID {$objectId} not found");
+
+                    $objectDetail['objectTitle'] =  $sourceObject->getName() ?? $sourceObject->getUuid();
+
+                    // Verify the source object belongs to the expected register/schema (cast to int for comparison)
+                    if ((int)$sourceObject->getRegister() !== (int)$sourceRegister || 
+                    (int)$sourceObject->getSchema() !== (int)$sourceSchema) {
+                        $actualRegister = $sourceObject->getRegister();
+                        $actualSchema = $sourceObject->getSchema();
+                        throw new \InvalidArgumentException(
+                            "Object {$objectId} does not belong to the specified source register/schema. " .
+                            "Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. " .
+                            "Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                        );
                     }
 
-                    $objectDetail['objectTitle'] = $sourceObject->getTitle() ?? $sourceObject->getUuid();
-
-                    // Get source object data
+                    // Get source object data (the JSON object property)
                     $sourceData = $sourceObject->getObject();
-                    
+
                     // Map properties according to mapping configuration  
                     $mappedData = $this->mapObjectProperties($sourceData, $mapping);
                     $migrationReport['statistics']['propertiesMapped'] += count($mappedData);
                     $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
 
-                    // Set target context for creating new object
-                    $this->setRegister($targetRegisterEntity);
-                    $this->setSchema($targetSchemaEntity);
+                    // Log the mapping result for debugging
+                    error_log("Migration mapping for object {$objectId}: " . json_encode([
+                        'sourceData' => $sourceData,
+                        'mapping' => $mapping,
+                        'mappedData' => $mappedData
+                    ]));
 
-                    // Create new object in target register/schema
-                    $newObject = $this->createFromArray($mappedData);
+                    // Store original files and relations before altering the object
+                    $originalFiles = $sourceObject->getFolder();
+                    $originalRelations = $sourceObject->getRelations();
+                    
+                    // Alter the existing object to migrate it to the target register/schema
+                    $sourceObject->setRegister($targetRegisterEntity->getId());
+                    
+                    $sourceObject->setSchema($targetSchemaEntity->getId());
+                    
+                    $sourceObject->setObject($mappedData);
+                    
+                    // Update the object using the mapper
+                    $savedObject = $this->objectEntityMapper->update($sourceObject);
 
-                    // Handle file migration (copy files to new object)
-                    $this->migrateObjectFiles($sourceObject, $newObject);
+                    // Log the save response for debugging
+                    error_log("Migration save response for object {$objectId}: " . json_encode($savedObject->jsonSerialize()));
 
-                    // Handle relations migration (update relations to point to new object)
-                    $this->migrateObjectRelations($sourceObject, $newObject);
+                    // Handle file migration (files should already be attached to the object)
+                    if ($originalFiles !== null) {
+                        // Files are already associated with this object, no migration needed
+                        error_log("Files preserved for migrated object {$objectId}");
+                    }
 
-                    // Mark source object as migrated (soft delete with migration note)
-                    $sourceObject->delete(
-                        $this->userSession, 
-                        "Migrated to {$targetRegisterEntity->getTitle()}/{$targetSchemaEntity->getTitle()} as {$newObject->getUuid()}"
-                    );
-                    $this->objectEntityMapper->update($sourceObject);
+                    // Handle relations migration (relations are already on the object)
+                    if (!empty($originalRelations)) {
+                        // Relations are preserved on the object, no additional migration needed
+                        error_log("Relations preserved for migrated object {$objectId}");
+                    }
 
                     $objectDetail['success'] = true;
-                    $objectDetail['newObjectId'] = $newObject->getUuid();
+                    $objectDetail['newObjectId'] = $savedObject->getUuid(); // Same UUID, but migrated
                     $migrationReport['statistics']['objectsMigrated']++;
 
                 } catch (\Exception $e) {
                     $objectDetail['error'] = $e->getMessage();
                     $migrationReport['statistics']['objectsFailed']++;
                     $migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
+                    
+                    // Log the full exception for debugging
+                    error_log("Migration error for object {$objectId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
                 }
 
                 $migrationReport['details'][] = $objectDetail;
+            }
+
+            // Handle objects that weren't found
+            foreach ($remainingObjectIds as $notFoundId) {
+                $objectDetail = [
+                    'objectId' => $notFoundId,
+                    'objectTitle' => null,
+                    'success' => false,
+                    'error' => "Object with ID {$notFoundId} not found"
+                ];
+                
+                $migrationReport['details'][] = $objectDetail;
+                $migrationReport['statistics']['objectsFailed']++;
+                $migrationReport['errors'][] = "Failed to migrate object {$notFoundId}: Object not found";
             }
 
             // Set overall success if at least one object was migrated
@@ -2249,6 +2302,7 @@ class ObjectService
 
         } catch (\Exception $e) {
             $migrationReport['errors'][] = $e->getMessage();
+            error_log("Migration process error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             throw $e;
         }
 
