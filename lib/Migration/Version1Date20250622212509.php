@@ -51,6 +51,12 @@ class Version1Date20250622212509 extends SimpleMigrationStep
                 'default' => false,
             ]);
         }
+        if (!$table->hasColumn('configuration')) {
+            $table->addColumn('configuration', Types::JSON, [
+                'notnull' => false,
+            ]);
+        }
+        
 
         $table = $schema->getTable('openregister_registers');
         if (!$table->hasColumn('groups')) {
