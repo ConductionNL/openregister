@@ -624,6 +624,22 @@ export default {
 </script>
 
 <style scoped>
+/* Fix checkbox layout in table */
+.tableColumnCheckbox {
+	padding: 8px !important;
+}
+
+.tableColumnCheckbox :deep(.checkbox-radio-switch) {
+	margin: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.tableColumnCheckbox :deep(.checkbox-radio-switch__content) {
+	margin: 0;
+}
+
 /* Row selection styling */
 .table-row-selectable {
 	cursor: pointer;
