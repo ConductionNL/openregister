@@ -233,6 +233,58 @@ class SchemaMapper extends QBMapper
             $schema->setVersion('0.0.1');
         }
 
+        $properties             = ($schema->getProperties() ?? []);
+        $propertyKeys           = array_keys($properties);
+        $configuration          = $schema->getConfiguration() ?? [];
+        $objectNameField        = $configuration['objectNameField'] ?? '';
+        $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
+
+        // If an object name field is provided, it must exist in the properties
+        if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
+        }
+
+        // If an object description field is provided, it must exist in the properties
+        if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
+        }
+
+        // If the object name field is empty, try to find a logical key
+        if (empty($objectNameField) === true) {
+            $nameKeys = [
+                'name',
+                'naam',
+                'title',
+                'titel',
+            ];
+            foreach ($nameKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectNameField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
+        }
+
+        // If the object description field is empty, try to find a logical key
+        if (empty($objectDescriptionField) === true) {
+            $descriptionKeys = [
+                'description',
+                'beschrijving',
+                'omschrijving',
+                'summary',
+            ];
+            foreach ($descriptionKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectDescriptionField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
+        }
+
     }//end cleanObject()
 
 

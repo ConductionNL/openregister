@@ -209,7 +209,7 @@ import formatBytes from '../../services/formatBytes.js'
 									</thead>
 									<tbody>
 										<tr v-for="(property, key) in sortedProperties(schema)" :key="key">
-											<td>{{ key }}</td>
+											<td>{{ key }} <span v-if="isPropertyRequired(schema, key)" class="required-indicator">({{ t('openregister', 'required') }})</span></td>
 											<td>{{ property.type }}</td>
 											<td>
 												<NcActions :primary="false">
@@ -359,7 +359,7 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -392,6 +392,7 @@ export default {
 		ListIcon,
 		Plus,
 		PaginationComponent,
+		NcButton,
 	},
 	data() {
 		return {
@@ -434,6 +435,9 @@ export default {
 		},
 	},
 	methods: {
+		isPropertyRequired(schema, key) {
+			return schema.required && schema.required.includes(key)
+		},
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedSchemas = schemaStore.schemaList.map(schema => schema.id)
@@ -459,5 +463,10 @@ export default {
 }
 </script>
 <style scoped lang="scss">
+.required-indicator {
+	color: var(--color-warning-dark);
+	font-size: 0.8em;
+	margin-left: 4px;
+}
 /* No component-specific table styles needed - all styles are now generic in main.css */
 </style>

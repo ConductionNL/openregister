@@ -14,9 +14,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 <template>
 	<div>
 		<NcDialog v-if="navigationStore.modal === 'viewObject'"
-			:name="'View Object (' + objectStore.objectItem.title + ')'"
+			:name="'View Object (' + (objectStore.objectItem.name || objectStore.objectItem.id) + ')'"
 			size="large"
-			:can-close="false">
+			:can-close="true"
+			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
 				<!-- Metadata Display -->
 				<div class="detail-grid">
@@ -436,7 +437,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</template>
 														Bulk Actions
 														<NcActionButton
-															close-after-click
 															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="publishSelectedFiles">
 															<template #icon>
@@ -446,7 +446,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="depublishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="depublishSelectedFiles">
 															<template #icon>
@@ -456,7 +455,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
 															@click="deleteSelectedFiles">
 															<template #icon>
@@ -508,13 +506,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</td>
 												<td class="tableColumnActions">
 													<NcActions>
-														<NcActionButton close-after-click @click="openFile(attachment)">
+														<NcActionButton @click="openFile(attachment)">
 															<template #icon>
 																<OpenInNew :size="20" />
 															</template>
 															View
 														</NcActionButton>
-														<NcActionButton close-after-click @click="editFileLabels(attachment)">
+														<NcActionButton @click="editFileLabels(attachment)">
 															<template #icon>
 																<Tag :size="20" />
 															</template>
@@ -522,7 +520,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</NcActionButton>
 														<NcActionButton
 															v-if="!attachment.accessUrl && !attachment.downloadUrl"
-															close-after-click
 															:disabled="publishLoading.includes(attachment.id)"
 															@click="publishFile(attachment)">
 															<template #icon>
@@ -533,7 +530,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</NcActionButton>
 														<NcActionButton
 															v-else
-															close-after-click
 															:disabled="depublishLoading.includes(attachment.id)"
 															@click="depublishFile(attachment)">
 															<template #icon>
@@ -543,7 +539,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Depublish
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="fileIdsLoading.includes(attachment.id)"
 															@click="deleteFile(attachment)">
 															<template #icon>
@@ -589,7 +584,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<template #icon>
 						<ContentSave :size="20" />
 					</template>
-					Save
+					{{ isUpdated ? 'Saving...' : 'Save' }}
 				</NcButton>
 				<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 					<template #icon>
@@ -641,7 +636,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isPublishing" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					Save
+					{{ isPublishing ? 'Publishing...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -675,7 +670,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isDepublishing" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					Save
+					{{ isDepublishing ? 'Depublishing...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -960,10 +955,37 @@ export default {
 			this.schemaTitle = schema?.title || 'Not set'
 		},
 		closeModal() {
-			navigationStore.setModal(null)
+			// Clear state first
 			this.isUpdated = false
 			this.registerTitle = ''
 			this.schemaTitle = ''
+			this.activeTab = 0
+			this.editorTab = 0
+			this.selectedAttachments = []
+			this.activeAttachment = null
+			this.success = null
+			this.error = null
+			this.isCopied = false
+
+			// Clear publish/depublish modal states
+			this.showPublishModal = false
+			this.showDepublishModal = false
+			this.publishDate = null
+			this.depublishDate = null
+			this.isPublishing = false
+			this.isDepublishing = false
+
+			// Clear any timeouts
+			clearTimeout(this.closeModalTimeout)
+
+			// Close modal and dialog
+			navigationStore.setModal(null)
+			navigationStore.setDialog(null)
+		},
+		handleDialogClose(isOpen) {
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 		/**
 		 * Open a file in the Nextcloud Files app
