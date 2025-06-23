@@ -443,6 +443,157 @@ The system only logs read actions when accessing individual objects (e.g., GET /
    
 <ApiSchema id="open-register" example   pointer="#/components/schemas/AuditTrail" />
 
+## Object Merging
+
+Object merging allows you to combine two objects within the same register and schema, consolidating their data, files, and relationships into a single object. This feature is particularly useful for:
+
+- Deduplicating similar objects
+- Consolidating data from multiple sources
+- Merging objects that represent the same entity but were created separately
+- Cleaning up data by combining related objects
+
+### Prerequisites
+
+Before you can merge objects, the following conditions must be met:
+
+1. **Same Register and Schema**: Both objects must belong to the same register and conform to the same schema
+2. **Objects Exist**: Both source and target objects must exist and be accessible
+3. **No Migration Required**: If objects are from different schemas or registers, you must migrate them first
+
+### How to Merge Objects
+
+#### Step 1: Initiate Merge
+1. Navigate to the object list for your register and schema
+2. Select the source object (the object you want to merge from)
+3. Click the 'Merge' action button from the object actions menu
+4. This opens the merge dialog
+
+#### Step 2: Select Target Object
+1. The merge dialog shows the current register and schema information
+2. Use the search field to find the target object (the object you want to merge into)
+3. Type to search through available objects by name, title, or ID
+4. Click on the target object to select it
+5. Click 'Next' to proceed to the merge configuration
+
+#### Step 3: Configure Merge Settings
+
+The merge configuration screen shows a detailed comparison table with four columns:
+
+- **Property**: The property name from the schema
+- **Source**: The value from the source object
+- **Target**: The value from the target object  
+- **Result Value**: A dropdown to choose the final value
+
+##### Property Selection Options
+
+For each property, you can choose from:
+
+1. **From Source**: Use the value from the source object
+2. **From Target**: Use the value from the target object
+3. **Other/Custom**: Enter a custom value using the text input that appears
+
+**Special Handling**:
+- **ID Property**: Always uses the target object's ID (not selectable)
+- **Smart Defaults**: The system automatically selects the best default value:
+  - Target value if it exists
+  - Source value if target is empty but source has a value
+  - Custom input if both are empty
+
+##### File Handling
+
+Choose how to handle files attached to the source object:
+
+- **Transfer to target object's folder**: Move all files to the target object
+- **Delete files**: Remove all files from the source object
+
+##### Relationship Handling
+
+Choose how to handle relationships of the source object:
+
+- **Transfer to target object**: Update all relationships to point to the target object
+- **Drop relations**: Remove all relationships from the source object
+
+#### Step 4: Review and Execute
+
+1. Review your merge configuration
+2. Click 'Merge Objects' to execute the merge
+3. The system will process the merge and show a detailed report
+
+#### Step 5: Merge Report
+
+After the merge completes, you'll see a comprehensive report showing:
+
+##### Statistics
+- Properties changed
+- Files transferred or deleted
+- Relations transferred or dropped
+- References updated (other objects that pointed to the source)
+
+##### Detailed Actions
+- **Changed Properties**: Shows old and new values for each modified property
+- **File Actions**: Lists each file and what action was taken
+- **Warnings**: Any issues encountered during the merge
+- **Errors**: Any failures that occurred
+
+### What Happens During a Merge
+
+The merge process performs the following actions:
+
+1. **Property Merging**: Updates the target object with the selected values from the configuration
+2. **File Operations**: Transfers or deletes files based on your selection
+3. **Relationship Updates**: Updates or drops relationships based on your selection
+4. **Reference Updates**: Finds all other objects that reference the source object and updates them to reference the target instead
+5. **Source Object Deletion**: Soft-deletes the source object with an audit trail
+6. **Audit Logging**: Records the entire merge operation for compliance and tracking
+
+### Best Practices
+
+1. **Review Carefully**: Always review the merge configuration before executing
+2. **Backup Important Data**: Consider exporting objects before major merge operations
+3. **Test First**: Try merging with test data to understand the process
+4. **Documentation**: Document the reason for merging in your workflow
+5. **Cleanup**: Regularly review and merge duplicate objects to maintain data quality
+
+### API Integration
+
+The merge functionality is also available via API for programmatic integration:
+
+```
+POST /api/objects/{register}/{schema}/{sourceId}/merge
+```
+
+Request body:
+```json
+{
+  "targetObjectId": "target-object-id",
+  "mergedData": {
+    "property1": "selected-value",
+    "property2": "custom-value"
+  },
+  "fileAction": "transfer", // or "delete"
+  "relationAction": "transfer" // or "drop"
+}
+```
+
+For detailed API documentation, refer to the [API documentation for object merging](https://openregisters.app/api#tag/objects/operation/mergeObjects).
+
+### Error Handling
+
+Common errors and their solutions:
+
+- **Objects not in same register/schema**: Migrate objects first
+- **Target object not found**: Verify the target object exists and is accessible
+- **Permission denied**: Ensure you have write access to both objects
+- **Validation errors**: Check that merged data conforms to the schema
+- **File operation failures**: Verify file permissions and storage availability
+
+### Migration vs. Merging
+
+- **Migration**: Moves objects between different schemas or registers
+- **Merging**: Combines objects within the same schema and register
+
+If you need to combine objects from different schemas or registers, you must first migrate them to the same schema and register, then perform the merge.
+
 ## Delete Protection for Registers and Schemas
 
 Open Register now prevents the deletion of a register or schema if there are still objects attached to it. This ensures data integrity and prevents accidental loss of related data.

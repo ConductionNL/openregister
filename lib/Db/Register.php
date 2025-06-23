@@ -139,6 +139,27 @@ class Register extends Entity implements JsonSerializable
     protected ?array $authorization = [];
 
     /**
+     * An array defining group-based permissions for CRUD actions.
+     * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
+     * and the values are arrays of group IDs that are permitted to perform that action.
+     * If an action is not present as a key, or its value is an empty array,
+     * it is assumed that all users have permission for that action.
+     *
+     * Example:
+     * [
+     *   'create' => ['group-admin', 'group-editors'],
+     *   'read'   => ['group-viewers'],
+     *   'update' => ['group-editors'],
+     *   'delete' => ['group-admin']
+     * ]
+     *
+     * @var array|null
+     * @phpstan-var array<string, array<string>>|null
+     * @psalm-var array<string, list<string>>|null
+     */
+    protected ?array $groups = [];
+
+    /**
      * Deletion timestamp
      *
      * @var DateTime|null Deletion timestamp
@@ -168,6 +189,7 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'application', type: 'string');
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
 
     }//end __construct()
@@ -283,6 +305,7 @@ class Register extends Entity implements JsonSerializable
             'application'   => $this->application,
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
+            'groups'        => $this->groups,
             'deleted'       => $deleted,
         ];
 

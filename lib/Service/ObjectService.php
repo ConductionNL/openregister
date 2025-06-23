@@ -44,6 +44,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
+use OCP\IUserSession;
 
 /**
  * Service class for managing objects in the OpenRegister application.
@@ -90,6 +91,7 @@ class ObjectService
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
      * @param FileService        $fileService        Service for file operations.
+     * @param IUserSession       $userSession        User session for getting current user.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -102,7 +104,8 @@ class ObjectService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileService $fileService
+        private readonly FileService $fileService,
+        private readonly IUserSession $userSession
     ) {
 
     }//end __construct()
@@ -1769,5 +1772,744 @@ class ObjectService
 	{
 		return $this->objectEntityMapper->unlockObject(identifier: $identifier);
 	}
+
+
+    /**
+     * Merge two objects within the same register and schema
+     *
+     * This method merges a source object into a target object, handling properties,
+     * files, and relations according to the specified actions. The source object
+     * is deleted after successful merge.
+     *
+     * @param string $sourceObjectId The ID/UUID of the source object (object A)
+     * @param array $mergeData Merge request data containing:
+     *                        - target: Target object ID (object to merge into)
+     *                        - object: Merged object data (without id)
+     *                        - fileAction: File action ('transfer' or 'delete')
+     *                        - relationAction: Relation action ('transfer' or 'drop')
+     *
+     * @return array The merge report containing results and statistics
+     *
+     * @throws DoesNotExistException If either object doesn't exist
+     * @throws \InvalidArgumentException If objects are not in the same register/schema or required data is missing
+     * @throws \Exception If there's an error during the merge process
+     *
+     * @phpstan-param array<string, mixed> $mergeData
+     * @phpstan-return array<string, mixed>
+     * @psalm-param array<string, mixed> $mergeData
+     * @psalm-return array<string, mixed>
+     */
+    public function mergeObjects(string $sourceObjectId, array $mergeData): array {
+        // Extract parameters from merge data
+        $targetObjectId = $mergeData['target'] ?? null;
+        $mergedData = $mergeData['object'] ?? [];
+        $fileAction = $mergeData['fileAction'] ?? 'transfer';
+        $relationAction = $mergeData['relationAction'] ?? 'transfer';
+
+        // Add comprehensive logging
+        error_log("=== MERGE OBJECTS DEBUG START ===");
+        error_log("Source Object ID: " . $sourceObjectId);
+        error_log("Target Object ID: " . ($targetObjectId ?? 'NULL'));
+        error_log("Current Register: " . ($this->currentRegister ? $this->currentRegister->getId() : 'NULL'));
+        error_log("Current Schema: " . ($this->currentSchema ? $this->currentSchema->getId() : 'NULL'));
+        error_log("Merge Data: " . json_encode($mergeData));
+        error_log("File Action: " . $fileAction);
+        error_log("Relation Action: " . $relationAction);
+
+        if (!$targetObjectId) {
+            error_log("ERROR: Target object ID is required");
+            throw new \InvalidArgumentException('Target object ID is required');
+        }
+        
+        // Initialize merge report
+        $mergeReport = [
+            'success' => false,
+            'sourceObject' => null,
+            'targetObject' => null,
+            'mergedObject' => null,
+            'actions' => [
+                'properties' => [],
+                'files' => [],
+                'relations' => [],
+                'references' => []
+            ],
+            'statistics' => [
+                'propertiesChanged' => 0,
+                'filesTransferred' => 0,
+                'filesDeleted' => 0,
+                'relationsTransferred' => 0,
+                'relationsDropped' => 0,
+                'referencesUpdated' => 0
+            ],
+            'warnings' => [],
+            'errors' => []
+        ];
+
+        try {
+            // Log before attempting to find objects
+            error_log("Attempting to find source object with ID: " . $sourceObjectId);
+            error_log("Using register: " . ($this->currentRegister ? $this->currentRegister->getId() : 'NULL'));
+            error_log("Using schema: " . ($this->currentSchema ? $this->currentSchema->getId() : 'NULL'));
+            
+            // Fetch both objects directly from mapper for updating (not rendered)
+            error_log("Using ObjectEntityMapper to find raw objects for updating");
+            
+            try {
+                $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
+                error_log("Source object found via mapper: " . ($sourceObject ? 'YES' : 'NO'));
+                if ($sourceObject) {
+                    error_log("Source object internal ID: " . ($sourceObject->getId() ?? 'NULL'));
+                    error_log("Source object UUID: " . $sourceObject->getUuid());
+                    error_log("Source object register: " . $sourceObject->getRegister());
+                    error_log("Source object schema: " . $sourceObject->getSchema());
+                }
+            } catch (\Exception $e) {
+                error_log("Error finding source object via mapper: " . $e->getMessage());
+                $sourceObject = null;
+            }
+            
+            try {
+                $targetObject = $this->objectEntityMapper->find($targetObjectId);
+                error_log("Target object found via mapper: " . ($targetObject ? 'YES' : 'NO'));
+                if ($targetObject) {
+                    error_log("Target object internal ID: " . ($targetObject->getId() ?? 'NULL'));
+                    error_log("Target object UUID: " . $targetObject->getUuid());
+                    error_log("Target object register: " . $targetObject->getRegister());
+                    error_log("Target object schema: " . $targetObject->getSchema());
+                }
+            } catch (\Exception $e) {
+                error_log("Error finding target object via mapper: " . $e->getMessage());
+                $targetObject = null;
+            }
+
+            if ($sourceObject === null) {
+                error_log("ERROR: Source object not found");
+                throw new DoesNotExistException('Source object not found');
+            }
+
+            if ($targetObject === null) {
+                error_log("ERROR: Target object not found");
+                throw new DoesNotExistException('Target object not found');
+            }
+
+            // Store original objects in report
+            $mergeReport['sourceObject'] = $sourceObject->jsonSerialize();
+            $mergeReport['targetObject'] = $targetObject->jsonSerialize();
+
+            // Validate objects are in same register and schema
+            if ($sourceObject->getRegister() !== $targetObject->getRegister()) {
+                throw new \InvalidArgumentException('Objects must be in the same register');
+            }
+
+            if ($sourceObject->getSchema() !== $targetObject->getSchema()) {
+                throw new \InvalidArgumentException('Objects must conform to the same schema');
+            }
+
+            // Merge properties
+            $targetObjectData = $targetObject->getObject();
+            $changedProperties = [];
+
+            foreach ($mergedData as $property => $value) {
+                $oldValue = $targetObjectData[$property] ?? null;
+                
+                if ($oldValue !== $value) {
+                    $targetObjectData[$property] = $value;
+                    $changedProperties[] = [
+                        'property' => $property,
+                        'oldValue' => $oldValue,
+                        'newValue' => $value
+                    ];
+                    $mergeReport['statistics']['propertiesChanged']++;
+                }
+            }
+
+            $mergeReport['actions']['properties'] = $changedProperties;
+
+            // Handle files
+            if ($fileAction === 'transfer' && $sourceObject->getFolder() !== null) {
+                try {
+                    $fileResult = $this->transferObjectFiles($sourceObject, $targetObject);
+                    $mergeReport['actions']['files'] = $fileResult['files'];
+                    $mergeReport['statistics']['filesTransferred'] = $fileResult['transferred'];
+                    
+                    if (!empty($fileResult['errors'])) {
+                        $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
+                    }
+                } catch (\Exception $e) {
+                    $mergeReport['warnings'][] = 'Failed to transfer files: ' . $e->getMessage();
+                }
+            } elseif ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+                try {
+                    $deleteResult = $this->deleteObjectFiles($sourceObject);
+                    $mergeReport['actions']['files'] = $deleteResult['files'];
+                    $mergeReport['statistics']['filesDeleted'] = $deleteResult['deleted'];
+                    
+                    if (!empty($deleteResult['errors'])) {
+                        $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
+                    }
+                } catch (\Exception $e) {
+                    $mergeReport['warnings'][] = 'Failed to delete files: ' . $e->getMessage();
+                }
+            }
+
+            // Handle relations
+            if ($relationAction === 'transfer') {
+                $sourceRelations = $sourceObject->getRelations();
+                $targetRelations = $targetObject->getRelations();
+                
+                $transferredRelations = [];
+                foreach ($sourceRelations as $relation) {
+                    if (!in_array($relation, $targetRelations)) {
+                        $targetRelations[] = $relation;
+                        $transferredRelations[] = $relation;
+                        $mergeReport['statistics']['relationsTransferred']++;
+                    }
+                }
+                
+                $targetObject->setRelations($targetRelations);
+                $mergeReport['actions']['relations'] = [
+                    'action' => 'transferred',
+                    'relations' => $transferredRelations
+                ];
+            } else {
+                $mergeReport['actions']['relations'] = [
+                    'action' => 'dropped',
+                    'relations' => $sourceObject->getRelations()
+                ];
+                $mergeReport['statistics']['relationsDropped'] = count($sourceObject->getRelations());
+            }
+
+            // Update target object with merged data
+            error_log("About to update target object");
+            error_log("Target object internal ID: " . ($targetObject->getId() ?? 'NULL'));
+            error_log("Target object UUID: " . $targetObject->getUuid());
+            error_log("Target object data before update: " . json_encode($targetObject->getObject()));
+            
+            $targetObject->setObject($targetObjectData);
+            
+            error_log("Target object data after merge: " . json_encode($targetObject->getObject()));
+            error_log("Calling objectEntityMapper->update()");
+            
+            $updatedObject = $this->objectEntityMapper->update($targetObject);
+            
+            error_log("Update completed successfully");
+
+            // Update references to source object
+            $referencingObjects = $this->findByRelations($sourceObject->getUuid());
+            $updatedReferences = [];
+
+            foreach ($referencingObjects as $referencingObject) {
+                $relations = $referencingObject->getRelations();
+                $updated = false;
+
+                for ($i = 0; $i < count($relations); $i++) {
+                    if ($relations[$i] === $sourceObject->getUuid()) {
+                        $relations[$i] = $targetObject->getUuid();
+                        $updated = true;
+                        $mergeReport['statistics']['referencesUpdated']++;
+                    }
+                }
+
+                if ($updated) {
+                    $referencingObject->setRelations($relations);
+                    $this->objectEntityMapper->update($referencingObject);
+                    $updatedReferences[] = [
+                        'objectId' => $referencingObject->getUuid(),
+                        'title' => $referencingObject->getTitle() ?? $referencingObject->getUuid()
+                    ];
+                }
+            }
+
+            $mergeReport['actions']['references'] = $updatedReferences;
+
+            // Soft delete source object using the entity's delete method
+            $sourceObject->delete($this->userSession, 'Merged into object ' . $targetObject->getUuid());
+            $this->objectEntityMapper->update($sourceObject);
+
+            // Set success and add merged object to report
+            $mergeReport['success'] = true;
+            $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
+            
+            error_log("Merge completed successfully");
+            error_log("=== MERGE OBJECTS DEBUG END ===");
+
+        } catch (\Exception $e) {
+            error_log("ERROR in merge process: " . $e->getMessage());
+            error_log("Exception type: " . get_class($e));
+            error_log("Stack trace: " . $e->getTraceAsString());
+            error_log("=== MERGE OBJECTS DEBUG END (WITH ERROR) ===");
+            $mergeReport['errors'][] = $e->getMessage();
+            throw $e;
+        }
+
+        return $mergeReport;
+
+    }//end mergeObjects()
+
+
+    /**
+     * Transfer files from source object to target object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     * @param ObjectEntity $targetObject The target object
+     *
+     * @return array Result of file transfer operation
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
+    {
+        $result = [
+            'files' => [],
+            'transferred' => 0,
+            'errors' => []
+        ];
+
+        try {
+            // Ensure target object has a folder
+            $this->ensureObjectFolderExists($targetObject);
+
+            // Get files from source folder
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+            
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    // Get file content and create new file in target object
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+                    
+                    // Create new file in target object folder
+                    $this->fileService->addFile(
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
+                        content: $fileContent,
+                        share: false,
+                        tags: []
+                    );
+                    
+                    // Delete original file from source
+                    $this->fileService->deleteFile($file, $sourceObject);
+                    
+                    $result['files'][] = [
+                        'name' => $fileName,
+                        'action' => 'transferred',
+                        'success' => true
+                    ];
+                    $result['transferred']++;
+                } catch (\Exception $e) {
+                    $result['files'][] = [
+                        'name' => $file->getName(),
+                        'action' => 'transfer_failed',
+                        'success' => false,
+                        'error' => $e->getMessage()
+                    ];
+                    $result['errors'][] = 'Failed to transfer file ' . $file->getName() . ': ' . $e->getMessage();
+                }
+            }
+        } catch (\Exception $e) {
+            $result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+        }
+
+        return $result;
+
+    }//end transferObjectFiles()
+
+
+    /**
+     * Delete files from source object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     *
+     * @return array Result of file deletion operation
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    private function deleteObjectFiles(ObjectEntity $sourceObject): array
+    {
+        $result = [
+            'files' => [],
+            'deleted' => 0,
+            'errors' => []
+        ];
+
+        try {
+            // Get files from source folder
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+            
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    $fileName = $file->getName();
+                    
+                    // Delete the file using FileService
+                    $this->fileService->deleteFile($file, $sourceObject);
+                    
+                    $result['files'][] = [
+                        'name' => $fileName,
+                        'action' => 'deleted',
+                        'success' => true
+                    ];
+                    $result['deleted']++;
+                } catch (\Exception $e) {
+                    $result['files'][] = [
+                        'name' => $file->getName(),
+                        'action' => 'delete_failed',
+                        'success' => false,
+                        'error' => $e->getMessage()
+                    ];
+                    $result['errors'][] = 'Failed to delete file ' . $file->getName() . ': ' . $e->getMessage();
+                }
+            }
+        } catch (\Exception $e) {
+            $result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+        }
+
+        return $result;
+
+    }//end deleteObjectFiles()
+
+
+    /**
+     * Migrate objects between registers and/or schemas
+     *
+     * This method migrates multiple objects from one register/schema combination
+     * to another register/schema combination with property mapping.
+     *
+     * @param string|int $sourceRegister    The source register ID or slug
+     * @param string|int $sourceSchema      The source schema ID or slug  
+     * @param string|int $targetRegister    The target register ID or slug
+     * @param string|int $targetSchema      The target schema ID or slug
+     * @param array      $objectIds         Array of object IDs to migrate
+     * @param array      $mapping           Simple mapping where keys are target properties, values are source properties
+     *
+     * @return array Migration result with statistics and details
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     *
+     * @throws DoesNotExistException If register or schema not found
+     * @throws \InvalidArgumentException If invalid parameters provided
+     */
+    public function migrateObjects(
+        string|int $sourceRegister,
+        string|int $sourceSchema,
+        string|int $targetRegister,
+        string|int $targetSchema,
+        array $objectIds,
+        array $mapping
+    ): array {
+        // Initialize migration report
+        $migrationReport = [
+            'success' => false,
+            'statistics' => [
+                'objectsMigrated' => 0,
+                'objectsFailed' => 0,
+                'propertiesMapped' => 0,
+                'propertiesDiscarded' => 0,
+            ],
+            'details' => [],
+            'warnings' => [],
+            'errors' => []
+        ];
+
+        try {
+            // Load source and target registers/schemas
+            $sourceRegisterEntity = is_string($sourceRegister) || is_int($sourceRegister) 
+                ? $this->registerMapper->find($sourceRegister) 
+                : $sourceRegister;
+            $sourceSchemaEntity = is_string($sourceSchema) || is_int($sourceSchema) 
+                ? $this->schemaMapper->find($sourceSchema) 
+                : $sourceSchema;
+            $targetRegisterEntity = is_string($targetRegister) || is_int($targetRegister) 
+                ? $this->registerMapper->find($targetRegister) 
+                : $targetRegister;
+            $targetSchemaEntity = is_string($targetSchema) || is_int($targetSchema) 
+                ? $this->schemaMapper->find($targetSchema) 
+                : $targetSchema;
+
+            // Validate entities exist
+            if (!$sourceRegisterEntity || !$sourceSchemaEntity || !$targetRegisterEntity || !$targetSchemaEntity) {
+                throw new DoesNotExistException('One or more registers/schemas not found');
+            }
+
+            // Get all source objects at once using ObjectEntityMapper
+            $sourceObjects = $this->objectEntityMapper->findMultiple($objectIds);
+
+            
+            // Keep track of remaining object IDs to find which ones weren't found
+            $remainingObjectIds = $objectIds;
+
+            // Set target context for saving
+            $this->setRegister($targetRegisterEntity);
+            $this->setSchema($targetSchemaEntity);
+
+            // Process each found source object
+            foreach ($sourceObjects as $sourceObject) {
+                $objectId = $sourceObject->getUuid();
+                $objectDetail = [
+                    'objectId' => $objectId,
+                    'objectTitle' => null,
+                    'success' => false,
+                    'error' => null
+                ];
+
+                // Remove this object from the remaining list (it was found) - do this BEFORE try-catch
+                $remainingObjectIds = array_filter($remainingObjectIds, function($id) use ($sourceObject) {
+                    return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
+                });
+
+                try {
+
+                    $objectDetail['objectTitle'] =  $sourceObject->getName() ?? $sourceObject->getUuid();
+
+                    // Verify the source object belongs to the expected register/schema (cast to int for comparison)
+                    if ((int)$sourceObject->getRegister() !== (int)$sourceRegister || 
+                    (int)$sourceObject->getSchema() !== (int)$sourceSchema) {
+                        $actualRegister = $sourceObject->getRegister();
+                        $actualSchema = $sourceObject->getSchema();
+                        throw new \InvalidArgumentException(
+                            "Object {$objectId} does not belong to the specified source register/schema. " .
+                            "Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. " .
+                            "Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                        );
+                    }
+
+                    // Get source object data (the JSON object property)
+                    $sourceData = $sourceObject->getObject();
+
+                    // Map properties according to mapping configuration  
+                    $mappedData = $this->mapObjectProperties($sourceData, $mapping);
+                    $migrationReport['statistics']['propertiesMapped'] += count($mappedData);
+                    $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
+
+                    // Log the mapping result for debugging
+                    error_log("Migration mapping for object {$objectId}: " . json_encode([
+                        'sourceData' => $sourceData,
+                        'mapping' => $mapping,
+                        'mappedData' => $mappedData
+                    ]));
+
+                    // Store original files and relations before altering the object
+                    $originalFiles = $sourceObject->getFolder();
+                    $originalRelations = $sourceObject->getRelations();
+                    
+                    // Alter the existing object to migrate it to the target register/schema
+                    $sourceObject->setRegister($targetRegisterEntity->getId());
+                    
+                    $sourceObject->setSchema($targetSchemaEntity->getId());
+                    
+                    $sourceObject->setObject($mappedData);
+                    
+                    // Update the object using the mapper
+                    $savedObject = $this->objectEntityMapper->update($sourceObject);
+
+                    // Log the save response for debugging
+                    error_log("Migration save response for object {$objectId}: " . json_encode($savedObject->jsonSerialize()));
+
+                    // Handle file migration (files should already be attached to the object)
+                    if ($originalFiles !== null) {
+                        // Files are already associated with this object, no migration needed
+                        error_log("Files preserved for migrated object {$objectId}");
+                    }
+
+                    // Handle relations migration (relations are already on the object)
+                    if (!empty($originalRelations)) {
+                        // Relations are preserved on the object, no additional migration needed
+                        error_log("Relations preserved for migrated object {$objectId}");
+                    }
+
+                    $objectDetail['success'] = true;
+                    $objectDetail['newObjectId'] = $savedObject->getUuid(); // Same UUID, but migrated
+                    $migrationReport['statistics']['objectsMigrated']++;
+
+                } catch (\Exception $e) {
+                    $objectDetail['error'] = $e->getMessage();
+                    $migrationReport['statistics']['objectsFailed']++;
+                    $migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
+                    
+                    // Log the full exception for debugging
+                    error_log("Migration error for object {$objectId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+                }
+
+                $migrationReport['details'][] = $objectDetail;
+            }
+
+            // Handle objects that weren't found
+            foreach ($remainingObjectIds as $notFoundId) {
+                $objectDetail = [
+                    'objectId' => $notFoundId,
+                    'objectTitle' => null,
+                    'success' => false,
+                    'error' => "Object with ID {$notFoundId} not found"
+                ];
+                
+                $migrationReport['details'][] = $objectDetail;
+                $migrationReport['statistics']['objectsFailed']++;
+                $migrationReport['errors'][] = "Failed to migrate object {$notFoundId}: Object not found";
+            }
+
+            // Set overall success if at least one object was migrated
+            $migrationReport['success'] = $migrationReport['statistics']['objectsMigrated'] > 0;
+
+            // Add warnings if some objects failed
+            if ($migrationReport['statistics']['objectsFailed'] > 0) {
+                $migrationReport['warnings'][] = "Some objects failed to migrate. Check details for specific errors.";
+            }
+
+        } catch (\Exception $e) {
+            $migrationReport['errors'][] = $e->getMessage();
+            error_log("Migration process error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            throw $e;
+        }
+
+        return $migrationReport;
+
+    }//end migrateObjects()
+
+
+    /**
+     * Map object properties using simple mapping configuration
+     *
+     * Maps properties from source object data to target object data using a simple mapping array.
+     * The mapping array has target properties as keys and source properties as values.
+     * Only properties that exist in the source data and are mapped will be included.
+     *
+     * @param array $sourceData The source object data
+     * @param array $mapping    Simple mapping array where:
+     *                          - Keys are target property names
+     *                          - Values are source property names
+     *                          Example: ['targetProp' => 'sourceProp', 'Test' => 'titel']
+     *
+     * @return array The mapped object data containing only the mapped properties
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    private function mapObjectProperties(array $sourceData, array $mapping): array
+    {
+        $mappedData = [];
+
+        // Simple mapping: keys are target properties, values are source properties
+        foreach ($mapping as $targetProperty => $sourceProperty) {
+            // Only map if the source property exists in the source data
+            if (array_key_exists($sourceProperty, $sourceData)) {
+                $mappedData[$targetProperty] = $sourceData[$sourceProperty];
+            }
+        }
+
+        return $mappedData;
+
+    }//end mapObjectProperties()
+
+
+    /**
+     * Migrate files from source object to target object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     * @param ObjectEntity $targetObject The target object
+     *
+     * @return void
+     *
+     * @phpstan-return void
+     * @psalm-return void
+     */
+    private function migrateObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): void
+    {
+        try {
+            // Ensure target object has a folder
+            $this->ensureObjectFolderExists($targetObject);
+
+            // Get files from source folder
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+            
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    // Copy file content to target object (don't delete from source yet)
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+                    
+                    // Create copy of file in target object folder
+                    $this->fileService->addFile(
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
+                        content: $fileContent,
+                        share: false,
+                        tags: []
+                    );
+                } catch (\Exception $e) {
+                    // Log error but continue with other files
+                    error_log("Failed to migrate file {$file->getName()}: " . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the migration
+            error_log("Failed to migrate files for object {$sourceObject->getUuid()}: " . $e->getMessage());
+        }
+
+    }//end migrateObjectFiles()
+
+
+    /**
+     * Migrate relations from source object to target object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     * @param ObjectEntity $targetObject The target object
+     *
+     * @return void
+     *
+     * @phpstan-return void
+     * @psalm-return void
+     */
+    private function migrateObjectRelations(ObjectEntity $sourceObject, ObjectEntity $targetObject): void
+    {
+        try {
+            // Copy relations from source to target
+            $sourceRelations = $sourceObject->getRelations();
+            if (!empty($sourceRelations)) {
+                $targetObject->setRelations($sourceRelations);
+                $this->objectEntityMapper->update($targetObject);
+            }
+
+            // Update references to source object to point to target object
+            $referencingObjects = $this->findByRelations($sourceObject->getUuid());
+
+            foreach ($referencingObjects as $referencingObject) {
+                $relations = $referencingObject->getRelations();
+                $updated = false;
+
+                for ($i = 0; $i < count($relations); $i++) {
+                    if ($relations[$i] === $sourceObject->getUuid()) {
+                        $relations[$i] = $targetObject->getUuid();
+                        $updated = true;
+                    }
+                }
+
+                if ($updated) {
+                    $referencingObject->setRelations($relations);
+                    $this->objectEntityMapper->update($referencingObject);
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the migration
+            error_log("Failed to migrate relations for object {$sourceObject->getUuid()}: " . $e->getMessage());
+        }
+
+    }//end migrateObjectRelations()
 
 }//end class

@@ -434,6 +434,219 @@ If discovery results seem incorrect:
 3. **Verify field names** - Case sensitivity and special characters matter
 4. **Analyze sample data** - Check if sample is representative
 
+## Metadata Faceting
+
+Metadata facets allow you to aggregate and filter by database table columns (metadata) rather than JSON object field data. These are accessed via the '@self' key in facet configurations and typically perform better than object field facets since they use indexed database columns.
+
+### Basic Metadata Facet Structure
+
+Metadata facets are configured under the '@self' key:
+
+```json
+{
+  '_facets': {
+    '@self': {
+      'fieldname': {
+        'type': 'facet_type',
+        'options': 'value'
+      }
+    }
+  }
+}
+```
+
+### Metadata Facet Types
+
+#### Terms Facets
+Returns unique values and their counts for categorical data.
+
+**Example - Register Terms Facet:**
+```json
+{
+  '_facets': {
+    '@self': {
+      'register': {
+        'type': 'terms'
+      }
+    }
+  }
+}
+```
+
+**URL Example:**
+```
+/api/objects?_facets[@self][register][type]=terms
+```
+
+#### Date Histogram Facets
+Groups date fields by time intervals with customizable periods.
+
+**Example - Publications by Year:**
+```json
+{
+  '_facets': {
+    '@self': {
+      'published': {
+        'type': 'date_histogram',
+        'interval': 'year'
+      }
+    }
+  }
+}
+```
+
+**URL Example:**
+```
+/api/publications?_facets[@self][published][type]=date_histogram&_facets[@self][published][interval]=year
+```
+
+**Available Intervals:**
+- 'day' - Daily grouping (YYYY-MM-DD)
+- 'week' - Weekly grouping (YYYY-WW)  
+- 'month' - Monthly grouping (YYYY-MM)
+- 'year' - Yearly grouping (YYYY)
+
+#### Range Facets
+Creates custom numeric or date ranges with specified boundaries.
+
+**Example - Creation Date Ranges:**
+```json
+{
+  '_facets': {
+    '@self': {
+      'created': {
+        'type': 'range',
+        'ranges': [
+          {'to': '2023-01-01', 'key': 'Before 2023'},
+          {'from': '2023-01-01', 'to': '2024-01-01', 'key': '2023'},
+          {'from': '2024-01-01', 'key': '2024 and later'}
+        ]
+      }
+    }
+  }
+}
+```
+
+### Metadata Fields Reference
+
+| Field | Type | Description | Facet Types | Notes |
+|-------|------|-------------|-------------|--------|
+| 'register' | Integer | Register ID | terms, range | References register table |
+| 'schema' | Integer | Schema ID | terms, range | References schema table |
+| 'uuid' | String | Unique identifier | terms | Usually not suitable for faceting |
+| 'owner' | String | Owner user ID | terms | User who owns the object |
+| 'organisation' | String | Organisation name | terms | Organisation context |
+| 'application' | String | Application name | terms | Application context |
+| 'created' | DateTime | Creation timestamp | date_histogram, range | ISO 8601 format |
+| 'updated' | DateTime | Last update timestamp | date_histogram, range | ISO 8601 format |
+| 'published' | DateTime | Publication date | date_histogram, range | When object was published |
+| 'depublished' | DateTime | Depublication date | date_histogram, range | When object was unpublished |
+
+### Practical Metadata Examples
+
+#### Example 1: Publications by Year with Register Filter
+```json
+{
+  '@self': {
+    'register': 1
+  },
+  '_facets': {
+    '@self': {
+      'published': {
+        'type': 'date_histogram',
+        'interval': 'year'
+      }
+    }
+  }
+}
+```
+
+#### Example 2: Multiple Metadata Facets
+```json
+{
+  '_facets': {
+    '@self': {
+      'register': {
+        'type': 'terms'
+      },
+      'schema': {
+        'type': 'terms'  
+      },
+      'created': {
+        'type': 'date_histogram',
+        'interval': 'month'
+      }
+    }
+  }
+}
+```
+
+#### Example 3: Organisation Activity Ranges
+```json
+{
+  '_facets': {
+    '@self': {
+      'organisation': {
+        'type': 'terms'
+      },
+      'updated': {
+        'type': 'range',
+        'ranges': [
+          {'from': '2024-01-01', 'key': 'Recent'},
+          {'to': '2024-01-01', 'key': 'Older'}
+        ]
+      }
+    }
+  }
+}
+```
+
+### URL Encoding Examples
+
+**Simple Terms Facet:**
+```
+/api/objects?_facets[@self][register][type]=terms
+```
+
+**Date Histogram (URL Encoded):**
+```
+/api/objects?_facets%5B@self%5D%5Bpublished%5D%5Btype%5D=date_histogram&_facets%5B@self%5D%5Bpublished%5D%5Binterval%5D=year
+```
+
+**Multiple Facets:**
+```
+/api/objects?_facets[@self][register][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month
+```
+
+### Metadata Facet Performance
+
+- Metadata facets are indexed and perform better than object field facets
+- Date histogram facets on 'created' and 'updated' are optimized
+- Terms facets work best on low-cardinality fields like 'register', 'schema', 'organisation'
+- Avoid terms facets on high-cardinality fields like 'uuid'
+- Range facets allow custom grouping without performance penalties
+
+### Metadata Response Format
+
+Metadata facets return results under the '@self' key:
+
+```json
+{
+  'facets': {
+    '@self': {
+      'published': {
+        'type': 'date_histogram',
+        'interval': 'year',
+        'buckets': [
+          {'key': '2023', 'results': 15},
+          {'key': '2024', 'results': 28}
+        ]
+      }
+    }
+  }
+}
+```
+
 ## Related Documentation
 
 - [FACETING_SYSTEM.md](../../FACETING_SYSTEM.md) - Complete faceting system documentation

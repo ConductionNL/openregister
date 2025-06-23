@@ -14,9 +14,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 <template>
 	<div>
 		<NcDialog v-if="navigationStore.modal === 'viewObject'"
-			:name="'View Object (' + objectStore.objectItem.title + ')'"
+			:name="'View Object (' + (objectStore.objectItem.name || objectStore.objectItem.id) + ')'"
 			size="large"
-			:can-close="false">
+			:can-close="true"
+			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
 				<!-- Metadata Display -->
 				<div class="detail-grid">
@@ -429,14 +430,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</th>
 												<th class="tableColumnActions">
 													<NcActions
-														force-menu
-														:disabled="selectedAttachments.length === 0">
+														:force-name="true"
+														:disabled="selectedAttachments.length === 0"
+														:title="selectedAttachments.length === 0 ? 'Select one or more files to use mass actions' : `Mass actions (${selectedAttachments.length} selected)`"
+														:menu-name="`Mass Actions (${selectedAttachments.length})`">
 														<template #icon>
-															<DotsHorizontal :size="20" />
+															<FormatListChecks :size="20" />
 														</template>
-														Bulk Actions
 														<NcActionButton
-															close-after-click
 															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="publishSelectedFiles">
 															<template #icon>
@@ -446,7 +447,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="depublishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="depublishSelectedFiles">
 															<template #icon>
@@ -456,7 +456,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
 															@click="deleteSelectedFiles">
 															<template #icon>
@@ -491,7 +490,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														:size="20" />
 													<!-- Show published icon if file is shared -->
 													<FileOutline v-else class="publishedIcon" :size="20" />
-													{{ attachment.name ?? attachment?.title }}
+													{{ truncateFileName(attachment.name ?? attachment?.title) }}
 												</td>
 												<td class="tableColumnConstrained">
 													{{ formatFileSize(attachment?.size) }}
@@ -508,13 +507,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</td>
 												<td class="tableColumnActions">
 													<NcActions>
-														<NcActionButton close-after-click @click="openFile(attachment)">
+														<NcActionButton @click="openFile(attachment)">
 															<template #icon>
 																<OpenInNew :size="20" />
 															</template>
 															View
 														</NcActionButton>
-														<NcActionButton close-after-click @click="editFileLabels(attachment)">
+														<NcActionButton @click="editFileLabels(attachment)">
 															<template #icon>
 																<Tag :size="20" />
 															</template>
@@ -522,7 +521,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</NcActionButton>
 														<NcActionButton
 															v-if="!attachment.accessUrl && !attachment.downloadUrl"
-															close-after-click
 															:disabled="publishLoading.includes(attachment.id)"
 															@click="publishFile(attachment)">
 															<template #icon>
@@ -533,7 +531,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</NcActionButton>
 														<NcActionButton
 															v-else
-															close-after-click
 															:disabled="depublishLoading.includes(attachment.id)"
 															@click="depublishFile(attachment)">
 															<template #icon>
@@ -543,7 +540,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Depublish
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="fileIdsLoading.includes(attachment.id)"
 															@click="deleteFile(attachment)">
 															<template #icon>
@@ -589,7 +585,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<template #icon>
 						<ContentSave :size="20" />
 					</template>
-					Save
+					{{ isUpdated ? 'Saving...' : 'Save' }}
 				</NcButton>
 				<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 					<template #icon>
@@ -641,7 +637,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isPublishing" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					Save
+					{{ isPublishing ? 'Publishing...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -675,7 +671,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isDepublishing" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					Save
+					{{ isDepublishing ? 'Depublishing...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -714,7 +710,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Alert from 'vue-material-design-icons/Alert.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
@@ -751,7 +747,7 @@ export default {
 		ContentSave,
 		TextBoxOutline,
 		Tag,
-		DotsHorizontal,
+		FormatListChecks,
 		Alert,
 		AlertCircle,
 		Publish,
@@ -960,10 +956,37 @@ export default {
 			this.schemaTitle = schema?.title || 'Not set'
 		},
 		closeModal() {
-			navigationStore.setModal(null)
+			// Clear state first
 			this.isUpdated = false
 			this.registerTitle = ''
 			this.schemaTitle = ''
+			this.activeTab = 0
+			this.editorTab = 0
+			this.selectedAttachments = []
+			this.activeAttachment = null
+			this.success = null
+			this.error = null
+			this.isCopied = false
+
+			// Clear publish/depublish modal states
+			this.showPublishModal = false
+			this.showDepublishModal = false
+			this.publishDate = null
+			this.depublishDate = null
+			this.isPublishing = false
+			this.isDepublishing = false
+
+			// Clear any timeouts
+			clearTimeout(this.closeModalTimeout)
+
+			// Close modal and dialog
+			navigationStore.setModal(null)
+			navigationStore.setDialog(null)
+		},
+		handleDialogClose(isOpen) {
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 		/**
 		 * Open a file in the Nextcloud Files app
@@ -987,6 +1010,16 @@ export default {
 			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
 			if (i === 0) return bytes + ' ' + sizes[i]
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		},
+		/**
+		 * Truncate file name to prevent dialog alignment issues
+		 * @param {string} fileName - The file name to truncate
+		 * @return {string} The truncated file name (22 chars + ... if longer than 25)
+		 */
+		truncateFileName(fileName) {
+			if (!fileName) return ''
+			if (fileName.length <= 25) return fileName
+			return fileName.substring(0, 22) + '...'
 		},
 		isValidDate(value) {
 			if (!value) return false
@@ -1591,207 +1624,11 @@ export default {
 }
 </script>
 
-<style>
-.modal-container:has(.viewObjectDialog) {
-	width: 1000px !important;
-}
-
-/* Ensure publish/depublish modals appear above the main modal */
-.modal-container:has([data-v-*] .modal-content) {
-	z-index: 10001 !important;
-}
-</style>
-
 <style scoped>
-.json-editor {
-    position: relative;
-	margin-bottom: 2.5rem;
-}
-
-.json-editor label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: bold;
-}
-
-/* CodeMirror */
-.codeMirrorContainer {
-	margin-block-start: 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-}
-
-.codeMirrorContainer :deep(.cm-editor) {
-	height: 100%;
-}
-
-.codeMirrorContainer :deep(.cm-scroller) {
-	overflow: auto;
-}
-
-.fileLabelsContainer {
-	display: inline-flex;
-	gap: 3px;
-}
-
-.warningIcon {
-	color: var(--color-warning);
-}
-
-.publishedIcon {
-	color: var(--color-success);
-}
-
-/* Table styles matching AuditTrailIndex */
-.viewTableContainer {
-	overflow-x: auto;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	margin-bottom: 20px;
-}
-
-.viewTable {
-	width: 100%;
-	border-collapse: collapse;
-	background-color: var(--color-main-background);
-}
-
-.viewTableRow {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.viewTableRow:hover {
-	background-color: var(--color-background-hover);
-}
-
-.viewTableRow.active {
-	background-color: var(--color-primary-light);
-}
-
-.viewTableRow th {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-	font-weight: bold;
-	padding: 12px;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.viewTableRow td {
-	padding: 12px;
-	vertical-align: middle;
-}
-
-.tableColumnCheckbox {
-	width: 50px;
-	text-align: center;
-}
-
-.tableColumnConstrained {
-	width: 150px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.tableColumnExpanded {
-	width: auto;
-	min-width: 200px;
-}
-
+/* ViewObject-specific overrides only */
 .tableColumnActions {
 	width: 100px;
 	text-align: center;
-}
-
-.table-row-title {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-
-.detail-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive columns */
-	gap: 16px;
-	margin-bottom: 20px; /* Remove auto, use 0 for left/right */
-	padding: 0 20px; /* Add horizontal padding to match modal */
-	width: 100%;
-	box-sizing: border-box;
-}
-
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	padding: 12px;  /* Slightly increased padding */
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-	border-left: 3px solid var(--color-primary);
-}
-
-.id-card-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 4px;
-}
-
-.id-card .detail-value {
-	word-break: break-all;
-	margin-top: 4px;
-}
-
-.copy-button {
-	flex-shrink: 0;
-}
-
-.detail-value-with-copy {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	justify-content: space-between;
-}
-
-.detail-value-with-copy .detail-value {
-	flex: 1;
-	word-break: break-all;
-}
-
-.prop-cell   {
-	width: 30%;
-	font-weight: 600;
-	border-left: 3px solid var(--color-primary);
-}
-.value-cell  {
-	width: 70%;
-	word-break: break-word;
-	border-radius: 4px;
-}
-
-.json-value {
-	background: var(--color-background-dark);
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-	padding: 6px 8px;
-	margin: 6px;
-	white-space: pre-wrap;
-	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-	font-size: .875rem;
-	line-height: 1.35;
-}
-
-.detail-item.empty-value {
-	border-left-color: var(--color-warning);
-}
-
-.detail-label {
-	font-weight: bold;
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 4px;
-}
-
-.detail-value {
-	word-break: break-word;
 }
 
 /* Remove the old section container and metadata styles */
@@ -1801,249 +1638,5 @@ export default {
 .label,
 .value {
 	display: none;
-}
-
-.format-json-button {
-	position: absolute;
-	bottom: 0;
-	right: 0;
-	transform: translateY(100%);
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-}
-
-.copy-button {
-	margin-top: 5px;
-}
-
-.error-message {
-	position: absolute;
-	bottom: 0;
-	right: 50%;
-	transform: translateY(100%) translateX(50%);
-	color: var(--color-error);
-	font-size: 0.8rem;
-	padding-top: 0.25rem;
-}
-
-/* Dark mode specific styles */
-.codeMirrorContainer.dark :deep(.cm-editor) {
-	background-color: var(--color-background-darker);
-}
-
-.codeMirrorContainer.light :deep(.cm-editor) {
-	background-color: var(--color-background-hover);
-}
-
-/* Add tab container styles */
-.tabContainer {
-	margin-top: 20px;
-}
-
-/* Style the tabs to match ViewObject */
-:deep(.nav-tabs) {
-	border-bottom: 1px solid var(--color-border);
-	margin-bottom: 15px;
-}
-
-:deep(.nav-tabs .nav-link) {
-	border: none;
-	border-bottom: 2px solid transparent;
-	color: var(--color-text-maxcontrast);
-	padding: 8px 16px;
-}
-
-:deep(.nav-tabs .nav-link.active) {
-	color: var(--color-main-text);
-	border-bottom: 2px solid var(--color-primary);
-	background-color: transparent;
-}
-
-:deep(.nav-tabs .nav-link:hover) {
-	border-bottom: 2px solid var(--color-border);
-}
-
-:deep(.tab-content) {
-	padding: 16px;
-	background-color: var(--color-main-background);
-}
-
-/* Form editor specific styles */
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px;
-}
-
-.field-label-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.array-editor {
-  list-style: none;
-  padding-left: 0;
-  margin-bottom: 6px;
-}
-.array-editor li {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-/* CodeMirror */
-.codeMirrorContainer {
-	margin-block-start: 6px;
-}
-
-.codeMirrorContainer :deep(.cm-content) {
-	border-radius: 0 !important;
-	border: none !important;
-}
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
-
-/* value text color */
-/* string */
-.codeMirrorContainer.light :deep(.ͼe) {
-	color: #448c27;
-}
-.codeMirrorContainer.dark :deep(.ͼe) {
-	color: #88c379;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.ͼc) {
-	color: #221199;
-}
-.codeMirrorContainer.dark :deep(.ͼc) {
-	color: #8d64f7;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.ͼb) {
-	color: #770088;
-}
-.codeMirrorContainer.dark :deep(.ͼb) {
-	color: #be55cd;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-    color: black;
-}
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-    color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-    color: #2d770f;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-    color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
-}
-
-/* Property validation indicators */
-.property-valid {
-	border-left: 4px solid var(--color-success) !important;
-}
-
-.property-invalid {
-	border-left: 4px solid var(--color-error) !important;
-}
-
-.property-warning {
-	border-left: 4px solid var(--color-warning) !important;
-}
-
-.prop-cell {
-	width: 30%;
-	font-weight: 600;
-	border-left: 3px solid var(--color-primary);
-}
-
-.prop-cell-content {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.validation-icon {
-	flex-shrink: 0;
-}
-
-.validation-icon.error-icon {
-	color: var(--color-error);
-}
-
-.validation-icon.warning-icon {
-	color: var(--color-warning);
-}
-
-.value-cell {
-	width: 70%;
-	word-break: break-word;
-	border-radius: 4px;
-}
-
-/* Override the default border for validated properties */
-.property-valid .prop-cell,
-.property-invalid .prop-cell,
-.property-warning .prop-cell {
-	border-left: none;
 }
 </style>

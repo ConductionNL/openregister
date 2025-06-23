@@ -68,6 +68,13 @@ class ObjectEntityMapper extends QBMapper
      */
     private IUserSession $userSession;
 
+    /**
+     * Schema mapper instance
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
 
 
     /**
@@ -111,6 +118,7 @@ class ObjectEntityMapper extends QBMapper
         MySQLJsonService $mySQLJsonService,
         IEventDispatcher $eventDispatcher,
         IUserSession $userSession,
+        SchemaMapper $schemaMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
@@ -123,6 +131,7 @@ class ObjectEntityMapper extends QBMapper
 
         $this->eventDispatcher = $eventDispatcher;
         $this->userSession     = $userSession;
+        $this->schemaMapper    = $schemaMapper;
 
     }//end __construct()
 
@@ -370,9 +379,6 @@ class ObjectEntityMapper extends QBMapper
         } else {
             $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
         }
-
-
-        // var_dump($qb->getSQL());
 
         return $this->findEntities(query: $qb);
 
@@ -1127,8 +1133,6 @@ class ObjectEntityMapper extends QBMapper
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
 
-//        var_dump($qb->getSQL());
-
         $result = $qb->executeQuery();
 
         return $result->fetchAll()[0]['count'];
@@ -1151,6 +1155,7 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $this->hydrateNameAndDescription($entity);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
@@ -1202,12 +1207,29 @@ class ObjectEntityMapper extends QBMapper
      */
     public function update(Entity $entity, bool $includeDeleted = false): Entity
     {
-        $oldObject = $this->find($entity->getId(), null, null, $includeDeleted);
+        // For ObjectEntity, we need to find by the internal database ID, not UUID
+        // The getId() method returns the database primary key
+        error_log("ObjectEntityMapper->update() called with entity ID: " . ($entity->getId() ?? 'NULL'));
+        error_log("ObjectEntityMapper->update() entity type: " . get_class($entity));
+        
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
+        
+        if (!$includeDeleted) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+        
+        error_log("ObjectEntityMapper->update() about to execute findEntity with internal ID");
+        $oldObject = $this->findEntity($qb);
+        error_log("ObjectEntityMapper->update() successfully found old object for update");
 
         // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $this->hydrateNameAndDescription($entity);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::update($entity);
@@ -1900,5 +1922,70 @@ class ObjectEntityMapper extends QBMapper
         return $facetableFields;
 
     }//end getFacetableFields()
+
+
+    /**
+     * Hydrates the name and description of the entity from the object data based on schema configuration.
+     *
+     * @param ObjectEntity $entity The entity to hydrate.
+     *
+     * @return void
+     */
+    private function hydrateNameAndDescription(ObjectEntity &$entity): void
+    {
+        if (!$entity->getSchema()) {
+            return;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($entity->getSchema());
+        } catch (\Exception $e) {
+            // Schema not found, can't hydrate.
+            return;
+        }
+
+        $config     = $schema->getConfiguration();
+        $objectData = $entity->getObject();
+
+        if (isset($config['objectNameField']) === true) {
+            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
+            if ($name !== null) {
+                $entity->setName($name);
+            }
+        }
+
+        if (isset($config['objectDescriptionField']) === true) {
+            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
+            if ($description !== null) {
+                $entity->setDescription($description);
+            }
+        }
+
+    }//end hydrateNameAndDescription()
+
+
+    /**
+     * Gets a value from a nested array using a dot-notation path.
+     *
+     * @param array  $data The array to search in.
+     * @param string $path The dot-notation path.
+     *
+     * @return string|null The value if found and is a string, otherwise null.
+     */
+    private function getValueFromPath(array $data, string $path): ?string
+    {
+        $keys  = explode('.', $path);
+        $value = $data;
+        foreach ($keys as $key) {
+            if (is_array($value) === false || isset($value[$key]) === false) {
+                return null;
+            }
+
+            $value = $value[$key];
+        }
+
+        return is_string($value) ? $value : null;
+
+    }//end getValueFromPath()
 
 }//end class

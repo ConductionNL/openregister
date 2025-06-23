@@ -1031,6 +1031,150 @@ class ObjectsController extends Controller
     }
 
     /**
+     * Merge two objects
+     *
+     * This method merges object A into object B within the same register and schema.
+     * It handles merging of properties, files, and relations based on user preferences.
+     *
+     * @param string        $id            The ID of object A (source object to merge from)
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the merge result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function merge(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
+        try {
+            // Get merge data from request body
+            $requestParams = $this->request->getParams();
+            
+            // Add logging to controller
+            error_log("=== MERGE CONTROLLER DEBUG START ===");
+            error_log("Source object ID from URL: " . $id);
+            error_log("Register from URL: " . $register);
+            error_log("Schema from URL: " . $schema);
+            error_log("Request params: " . json_encode($requestParams));
+            
+            // Validate required parameters
+            if (!isset($requestParams['target'])) {
+                error_log("ERROR: Target object ID missing from request");
+                return new JSONResponse(['error' => 'Target object ID is required'], 400);
+            }
+
+            if (!isset($requestParams['object']) || empty($requestParams['object'])) {
+                error_log("ERROR: Object data missing from request");
+                return new JSONResponse(['error' => 'Object data is required'], 400);
+            }
+
+            error_log("About to call objectService->mergeObjects()");
+            // Perform the merge operation with the new payload structure
+            $mergeResult = $objectService->mergeObjects($id, $requestParams);
+
+            error_log("Merge operation completed successfully");
+            error_log("=== MERGE CONTROLLER DEBUG END ===");
+            return new JSONResponse($mergeResult);
+
+        } catch (DoesNotExistException $exception) {
+            error_log("CONTROLLER ERROR: DoesNotExistException - " . $exception->getMessage());
+            error_log("=== MERGE CONTROLLER DEBUG END (OBJECT NOT FOUND) ===");
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            error_log("CONTROLLER ERROR: InvalidArgumentException - " . $exception->getMessage());
+            error_log("=== MERGE CONTROLLER DEBUG END (INVALID ARGUMENT) ===");
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            error_log("CONTROLLER ERROR: General Exception - " . $exception->getMessage());
+            error_log("Exception type: " . get_class($exception));
+            error_log("Stack trace: " . $exception->getTraceAsString());
+            error_log("=== MERGE CONTROLLER DEBUG END (GENERAL ERROR) ===");
+            return new JSONResponse([
+                'error' => 'Failed to merge objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end merge()
+
+
+    /**
+     * Migrate objects between registers and/or schemas
+     *
+     * This method migrates multiple objects from one register/schema combination
+     * to another register/schema combination with property mapping.
+     *
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the migration result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function migrate(ObjectService $objectService): JSONResponse
+    {
+        try {
+            // Get migration parameters from request
+            $requestParams = $this->request->getParams();
+            $sourceRegister = $requestParams['sourceRegister'] ?? null;
+            $sourceSchema = $requestParams['sourceSchema'] ?? null;
+            $targetRegister = $requestParams['targetRegister'] ?? null;
+            $targetSchema = $requestParams['targetSchema'] ?? null;
+            $objectIds = $requestParams['objects'] ?? [];
+            $mapping = $requestParams['mapping'] ?? [];
+
+            // Validate required parameters
+            if ($sourceRegister === null || $sourceSchema === null) {
+                return new JSONResponse(['error' => 'Source register and schema are required'], 400);
+            }
+
+            if ($targetRegister === null || $targetSchema === null) {
+                return new JSONResponse(['error' => 'Target register and schema are required'], 400);
+            }
+
+            if (empty($objectIds)) {
+                return new JSONResponse(['error' => 'At least one object ID is required'], 400);
+            }
+
+            if (empty($mapping)) {
+                return new JSONResponse(['error' => 'Property mapping is required'], 400);
+            }
+
+            // Perform the migration operation
+            $migrationResult = $objectService->migrateObjects(
+                sourceRegister: $sourceRegister,
+                sourceSchema: $sourceSchema,
+                targetRegister: $targetRegister,
+                targetSchema: $targetSchema,
+                objectIds: $objectIds,
+                mapping: $mapping
+            );
+
+            return new JSONResponse($migrationResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Register or schema not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to migrate objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end migrate()
+
+
+    /**
      * Download all files of an object as a ZIP archive
      *
      * This method creates a ZIP file containing all files associated with a specific object
