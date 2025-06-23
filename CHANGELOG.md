@@ -1,3 +1,9 @@
+# Version: 0.1.62
+
+* [#306](https://github.com/ConductionNL/openregister/pull/306): Update info.xml to version 1.61
+* [#307](https://github.com/ConductionNL/openregister/pull/307): Development to main
+
+
 # Version: 0.1.2
 
 * [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
