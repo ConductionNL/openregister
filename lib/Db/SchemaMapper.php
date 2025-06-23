@@ -53,32 +53,22 @@ class SchemaMapper extends QBMapper
      */
     private $validator;
 
-    /**
-     * The object entity mapper instance
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
 
     /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection                  $db                 The database connection
-     * @param IEventDispatcher               $eventDispatcher    The event dispatcher
-     * @param SchemaPropertyValidatorService $validator          The schema property validator
-     * @param ObjectEntityMapper             $objectEntityMapper The object entity mapper
+     * @param IDBConnection                  $db              The database connection
+     * @param IEventDispatcher               $eventDispatcher The event dispatcher
+     * @param SchemaPropertyValidatorService $validator       The schema property validator
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator,
-        ObjectEntityMapper $objectEntityMapper
+        SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher    = $eventDispatcher;
         $this->validator          = $validator;
-        $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
 
@@ -241,6 +231,58 @@ class SchemaMapper extends QBMapper
         // Ensure the object has a version.
         if ($schema->getVersion() === null) {
             $schema->setVersion('0.0.1');
+        }
+
+        $properties             = ($schema->getProperties() ?? []);
+        $propertyKeys           = array_keys($properties);
+        $configuration          = $schema->getConfiguration() ?? [];
+        $objectNameField        = $configuration['objectNameField'] ?? '';
+        $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
+
+        // If an object name field is provided, it must exist in the properties
+        if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
+        }
+
+        // If an object description field is provided, it must exist in the properties
+        if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
+        }
+
+        // If the object name field is empty, try to find a logical key
+        if (empty($objectNameField) === true) {
+            $nameKeys = [
+                'name',
+                'naam',
+                'title',
+                'titel',
+            ];
+            foreach ($nameKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectNameField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
+        }
+
+        // If the object description field is empty, try to find a logical key
+        if (empty($objectDescriptionField) === true) {
+            $descriptionKeys = [
+                'description',
+                'beschrijving',
+                'omschrijving',
+                'summary',
+            ];
+            foreach ($descriptionKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectDescriptionField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
         }
 
     }//end cleanObject()

@@ -34,7 +34,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 
 			<!-- Stats Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'stats-tab'" class="chartsContainer">
+			<div v-else-if="registerStore.getActiveTab === 'stats-tab'" class="chartGrid">
 				<!-- Audit Trail Actions Chart -->
 				<div class="chartCard">
 					<h3>Audit Trail Actions</h3>
@@ -68,7 +68,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 			</div>
 
 			<!-- Schemas Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'schemas-tab'" class="schemaGrid">
+			<div v-else-if="registerStore.getActiveTab === 'schemas-tab'" class="cardGrid">
 				<div v-if="!register.schemas?.length" class="emptyContainer">
 					<NcEmptyContent
 						:title="t('openregister', 'No schemas found')"
@@ -80,9 +80,9 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 						</template>
 					</NcEmptyContent>
 				</div>
-				<div v-else class="schemaGrid">
-					<div v-for="schema in register.schemas" :key="schema.id" class="schemaCard">
-						<div class="schemaHeader">
+				<div v-else class="cardGrid">
+					<div v-for="schema in register.schemas" :key="schema.id" class="card">
+						<div class="cardHeader">
 							<h3>
 								<FileCodeOutline :size="20" />
 								{{ schema.title }}
@@ -99,7 +99,7 @@ import { dashboardStore, registerStore, navigationStore } from '../../store/stor
 								</NcActionButton>
 							</NcActions>
 						</div>
-						<div class="schemaStats">
+						<div class="statGrid">
 							<div class="statItem">
 								<span class="statLabel">{{ t('openregister', 'Total Objects') }}</span>
 								<span class="statValue">{{ schema.stats?.objects?.total || 0 }}</span>
@@ -304,7 +304,7 @@ export default {
 	padding-block: 40px;
 }
 
-.chartsContainer {
+.chartGrid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 20px;
@@ -325,13 +325,13 @@ export default {
 	}
 }
 
-.schemaGrid {
+.cardGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 	gap: 20px;
 }
 
-.schemaCard {
+.card {
 	background: var(--color-main-background);
 	border-radius: 8px;
 	padding: 20px;
@@ -339,7 +339,7 @@ export default {
 	border: 1px solid var(--color-border);
 }
 
-.schemaHeader {
+.cardHeader {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -354,7 +354,7 @@ export default {
 	}
 }
 
-.schemaStats {
+.statGrid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 12px;
@@ -378,8 +378,12 @@ export default {
 }
 
 @media screen and (max-width: 1024px) {
-	.chartsContainer {
+	.chartGrid {
 		grid-template-columns: 1fr;
 	}
+}
+
+.schemaChart {
+	margin-top: 16px;
 }
 </style>

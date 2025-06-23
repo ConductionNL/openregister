@@ -473,9 +473,14 @@ class ObjectsController extends Controller
         try {
             $existingObject = $this->objectService->find($id);
 
+            // Get the resolved register and schema IDs from the ObjectService
+            // This ensures proper handling of both numeric IDs and slug identifiers
+            $resolvedRegisterId = $objectService->getRegister(); // Returns the current register ID
+            $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
+
             // Verify that the object belongs to the specified register and schema.
-            if ((int) $existingObject->getRegister() !== (int) $register
-                || (int) $existingObject->getSchema() !== (int) $schema
+            if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
+                || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
             ) {
                 return new JSONResponse(
                     ['error' => 'Object not found in specified register/schema'],
@@ -640,6 +645,11 @@ class ObjectsController extends Controller
             // If relations is empty, set objects to an empty array.
             $objects = [];
             $total   = 0;
+            $config = [
+                'limit' => 1,
+                'offset' => 0,
+                'page' => 1,
+            ];
         } else {
             // Get config and fetch objects
             $config = $this->getConfig($register, $schema, ids: $relations);
@@ -697,6 +707,11 @@ class ObjectsController extends Controller
             // If relations is empty, set objects to an empty array
             $objects = [];
             $total   = 0;
+            $config = [
+                'limit' => 1,
+                'offset' => 0,
+                'page' => 1,
+            ];
         } else {
             // Get config and fetch objects
             $config = $this->getConfig($register, $schema, $relations);
@@ -1014,5 +1029,215 @@ class ObjectsController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
     }
+
+    /**
+     * Merge two objects
+     *
+     * This method merges object A into object B within the same register and schema.
+     * It handles merging of properties, files, and relations based on user preferences.
+     *
+     * @param string        $id            The ID of object A (source object to merge from)
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the merge result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function merge(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
+        try {
+            // Get merge parameters from request
+            $requestParams = $this->request->getParams();
+            $targetObjectId = $requestParams['targetObjectId'] ?? null;
+            $mergedData = $requestParams['mergedData'] ?? [];
+            $fileAction = $requestParams['fileAction'] ?? 'transfer'; // 'transfer' or 'delete'
+            $relationAction = $requestParams['relationAction'] ?? 'transfer'; // 'transfer' or 'drop'
+
+            // Validate required parameters
+            if ($targetObjectId === null) {
+                return new JSONResponse(['error' => 'Target object ID is required'], 400);
+            }
+
+            if (empty($mergedData)) {
+                return new JSONResponse(['error' => 'Merged data is required'], 400);
+            }
+
+            // Perform the merge operation
+            $mergeResult = $objectService->mergeObjects(
+                sourceObjectId: $id,
+                targetObjectId: $targetObjectId,
+                mergedData: $mergedData,
+                fileAction: $fileAction,
+                relationAction: $relationAction
+            );
+
+            return new JSONResponse($mergeResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to merge objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end merge()
+
+
+    /**
+     * Migrate objects between registers and/or schemas
+     *
+     * This method migrates multiple objects from one register/schema combination
+     * to another register/schema combination with property mapping.
+     *
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the migration result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function migrate(ObjectService $objectService): JSONResponse
+    {
+        try {
+            // Get migration parameters from request
+            $requestParams = $this->request->getParams();
+            $sourceRegister = $requestParams['sourceRegister'] ?? null;
+            $sourceSchema = $requestParams['sourceSchema'] ?? null;
+            $targetRegister = $requestParams['targetRegister'] ?? null;
+            $targetSchema = $requestParams['targetSchema'] ?? null;
+            $objectIds = $requestParams['objects'] ?? [];
+            $mapping = $requestParams['mapping'] ?? [];
+
+            // Validate required parameters
+            if ($sourceRegister === null || $sourceSchema === null) {
+                return new JSONResponse(['error' => 'Source register and schema are required'], 400);
+            }
+
+            if ($targetRegister === null || $targetSchema === null) {
+                return new JSONResponse(['error' => 'Target register and schema are required'], 400);
+            }
+
+            if (empty($objectIds)) {
+                return new JSONResponse(['error' => 'At least one object ID is required'], 400);
+            }
+
+            if (empty($mapping)) {
+                return new JSONResponse(['error' => 'Property mapping is required'], 400);
+            }
+
+            // Perform the migration operation
+            $migrationResult = $objectService->migrateObjects(
+                sourceRegister: $sourceRegister,
+                sourceSchema: $sourceSchema,
+                targetRegister: $targetRegister,
+                targetSchema: $targetSchema,
+                objectIds: $objectIds,
+                mapping: $mapping
+            );
+
+            return new JSONResponse($migrationResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Register or schema not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to migrate objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end migrate()
+
+
+    /**
+     * Download all files of an object as a ZIP archive
+     *
+     * This method creates a ZIP file containing all files associated with a specific object
+     * and returns it as a downloadable file. The ZIP file includes all files stored in the
+     * object's folder with their original names.
+     *
+     * @param string        $id            The identifier of the object to download files for
+     * @param string        $register      The register (identifier or slug) to search within
+     * @param string        $schema        The schema (identifier or slug) to search within
+     * @param ObjectService $objectService The object service for handling object operations
+     *
+     * @return DataDownloadResponse|JSONResponse ZIP file download response or error response
+     *
+     * @throws ContainerExceptionInterface If there's an issue with dependency injection
+     * @throws NotFoundExceptionInterface If the FileService dependency is not found
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function downloadFiles(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): DataDownloadResponse | JSONResponse {
+        try {
+            // Set the context for the object service
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
+
+            // Get the object to ensure it exists and we have access
+            $object = $objectService->find($id);
+
+            // Get the FileService from the container
+            /** @var FileService $fileService */
+            $fileService = $this->container->get(FileService::class);
+
+            // Optional: get custom filename from query parameters
+            $customFilename = $this->request->getParam('filename');
+
+            // Create the ZIP archive
+            $zipInfo = $fileService->createObjectFilesZip($object, $customFilename);
+
+            // Read the ZIP file content
+            $zipContent = file_get_contents($zipInfo['path']);
+            if ($zipContent === false) {
+                // Clean up temporary file
+                if (file_exists($zipInfo['path'])) {
+                    unlink($zipInfo['path']);
+                }
+                throw new \Exception('Failed to read ZIP file content');
+            }
+
+            // Clean up temporary file after reading
+            if (file_exists($zipInfo['path'])) {
+                unlink($zipInfo['path']);
+            }
+
+            // Return the ZIP file as a download response
+            return new DataDownloadResponse(
+                $zipContent,
+                $zipInfo['filename'],
+                $zipInfo['mimeType']
+            );
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to create ZIP file: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end downloadFiles()
 
 }//end class

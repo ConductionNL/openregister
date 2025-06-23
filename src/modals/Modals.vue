@@ -21,13 +21,20 @@ import { navigationStore } from '../store/store.js'
 		<EditSource />
 		<DeleteSource />
 		<EditObject v-if="navigationStore.modal === 'editObject'" />
+		<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
+		<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
 		<DeleteObject />
 		<LockObject />
 		<ViewObject />
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
+		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
+		<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
+		<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
 		<UploadFiles />
+		<ViewSource />
+		<ViewConfiguration />
 	</div>
 </template>
 
@@ -48,6 +55,8 @@ import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
 import EditSource from './source/EditSource.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditObject from './object/EditObject.vue'
+import MergeObject from './object/MergeObject.vue'
+import MigrationObject from './object/MigrationObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
@@ -55,6 +64,11 @@ import LockObject from './object/LockObject.vue'
 import ViewObject from './object/ViewObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
 import UploadFiles from './file/UploadFiles.vue'
+import MassDeleteObject from './object/MassDeleteObject.vue'
+import RestoreMultiple from './deleted/RestoreMultiple.vue'
+import PurgeMultiple from './deleted/PurgeMultiple.vue'
+import ViewSource from './source/ViewSource.vue'
+import ViewConfiguration from './configuration/ViewConfiguration.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -74,6 +88,8 @@ export default {
 		EditSource,
 		DeleteSource,
 		EditObject,
+		MergeObject,
+		MigrationObject,
 		DeleteObject,
 		UploadObject,
 		ViewObjectAuditTrail,
@@ -81,6 +97,11 @@ export default {
 		ViewObject,
 		DownloadObject,
 		UploadFiles,
+		MassDeleteObject,
+		RestoreMultiple,
+		PurgeMultiple,
+		ViewSource,
+		ViewConfiguration,
 	},
 }
 </script>

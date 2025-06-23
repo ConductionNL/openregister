@@ -1,288 +1,203 @@
 <script setup>
 import { auditTrailStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
-import DeleteAuditTrail from '../../modals/logs/DeleteAuditTrail.vue'
-import AuditTrailDetails from '../../modals/logs/AuditTrailDetails.vue'
-import AuditTrailChanges from '../../modals/logs/AuditTrailChanges.vue'
-import ClearAuditTrails from '../../modals/logs/ClearAuditTrails.vue'
+
 </script>
 
 <template>
-	<div class="audit-trail-sidebar-wrapper">
-		<NcAppSidebar
-			ref="sidebar"
-			v-model="activeTab"
-			:name="t('openregister', 'Audit Trail Management')"
-			:subtitle="t('openregister', 'Filter and manage audit trail entries')"
-			:subname="t('openregister', 'Export, view, or delete audit trails')"
-			:open="navigationStore.sidebarState.auditTrail"
-			@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
-			<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
-				<template #icon>
-					<FilterOutline :size="20" />
-				</template>
+	<NcAppSidebar
+		ref="sidebar"
+		v-model="activeTab"
+		:name="t('openregister', 'Audit Trail Management')"
+		:subtitle="t('openregister', 'Filter and manage audit trail entries')"
+		:subname="t('openregister', 'Export, view, or delete audit trails')"
+		:open="navigationStore.sidebarState.auditTrail"
+		@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
+		<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
+			<template #icon>
+				<FilterOutline :size="20" />
+			</template>
 
-				<!-- Filter Section -->
-				<div class="filterSection">
-					<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
-					<div class="filterGroup">
-						<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-						<NcSelect
-							:model-value="selectedRegisterValue"
-							:options="registerOptions.options"
-							:placeholder="t('openregister', 'All registers')"
-							:input-label="t('openregister', 'Register')"
-							:clearable="true"
-							:get-option-label="registerOptions.getOptionLabel"
-							:reduce="registerOptions.reduce"
-							@update:model-value="handleRegisterChange">
-							<template #option="{ option }">
-								{{ option.title || option.label }}
-							</template>
-						</NcSelect>
-					</div>
-					<div class="filterGroup">
-						<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-						<NcSelect
-							:model-value="selectedSchemaValue"
-							:options="schemaOptions.options"
-							:placeholder="t('openregister', 'All schemas')"
-							:input-label="t('openregister', 'Schema')"
-							:disabled="!registerStore.registerItem"
-							:clearable="true"
-							:get-option-label="schemaOptions.getOptionLabel"
-							:reduce="schemaOptions.reduce"
-							@update:model-value="handleSchemaChange">
-							<template #option="{ option }">
-								{{ option.title || option.label }}
-							</template>
-						</NcSelect>
-					</div>
-					<div class="filterGroup">
-						<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
-						<NcSelect
-							v-model="selectedActions"
-							:options="actionOptions"
-							:placeholder="t('openregister', 'All actions')"
-							:input-label="t('openregister', 'Actions')"
-							:multiple="true"
-							:clearable="true"
-							@input="applyFilters">
-							<template #option="{ option }">
-								{{ option.label }}
-							</template>
-						</NcSelect>
-					</div>
-					<div class="filterGroup">
-						<label for="userSelect">{{ t('openregister', 'Users') }}</label>
-						<NcSelect
-							v-model="selectedUsers"
-							:options="userOptions"
-							:placeholder="t('openregister', 'All users')"
-							:input-label="t('openregister', 'Users')"
-							:multiple="true"
-							:clearable="true"
-							@input="applyFilters">
-							<template #option="{ option }">
-								{{ option.label }}
-							</template>
-						</NcSelect>
-					</div>
-					<div class="filterGroup">
-						<label>{{ t('openregister', 'Date Range') }}</label>
-						<NcDateTimePickerNative
-							v-model="dateFrom"
-							:label="t('openregister', 'From date')"
-							type="datetime-local"
-							@input="applyFilters" />
-						<NcDateTimePickerNative
-							v-model="dateTo"
-							:label="t('openregister', 'To date')"
-							type="datetime-local"
-							@input="applyFilters" />
-					</div>
-					<div class="filterGroup">
-						<label for="objectFilter">{{ t('openregister', 'Object ID') }}</label>
-						<NcTextField
-							id="objectFilter"
-							v-model="objectFilter"
-							:label="t('openregister', 'Filter by object ID')"
-							:placeholder="t('openregister', 'Enter object ID')"
-							@update:value="handleObjectFilterChange" />
-					</div>
-					<div class="filterGroup">
-						<NcCheckboxRadioSwitch
-							v-model="showOnlyWithChanges"
-							@update:checked="applyFilters">
-							{{ t('openregister', 'Show only entries with changes') }}
-						</NcCheckboxRadioSwitch>
-					</div>
+			<!-- Filter Section -->
+			<div class="filterSection">
+				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
+				<div class="filterGroup">
+					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+					<NcSelect
+						id="registerSelect"
+						v-bind="registerOptions"
+						:model-value="selectedRegisterValue"
+						:placeholder="t('openregister', 'All registers')"
+						:input-label="t('openregister', 'Register')"
+						:clearable="true"
+						@update:model-value="handleRegisterChange" />
 				</div>
-
-				<div class="actionGroup">
-					<NcButton @click="clearFilters">
-						<template #icon>
-							<FilterOffOutline :size="20" />
+				<div class="filterGroup">
+					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<NcSelect
+						id="schemaSelect"
+						v-bind="schemaOptions"
+						:model-value="selectedSchemaValue"
+						:placeholder="t('openregister', 'All schemas')"
+						:input-label="t('openregister', 'Schema')"
+						:disabled="!registerStore.registerItem"
+						:clearable="true"
+						@update:model-value="handleSchemaChange" />
+				</div>
+				<div class="filterGroup">
+					<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
+					<NcSelect
+						id="actionSelect"
+						v-model="selectedActions"
+						:options="actionOptions"
+						:placeholder="t('openregister', 'All actions')"
+						:input-label="t('openregister', 'Actions')"
+						:multiple="true"
+						:clearable="true"
+						@input="applyFilters">
+						<template #option="{ option }">
+							{{ option.label }}
 						</template>
-						{{ t('openregister', 'Clear Filters') }}
-					</NcButton>
+					</NcSelect>
 				</div>
-
-				<NcNoteCard type="info" class="filter-hint">
-					{{ t('openregister', 'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.') }}
-				</NcNoteCard>
-			</NcAppSidebarTab>
-
-			<NcAppSidebarTab id="export-tab" :name="t('openregister', 'Export & Actions')" :order="2">
-				<template #icon>
-					<Download :size="20" />
-				</template>
-
-				<!-- Export Section -->
-				<div class="exportSection">
-					<h3>{{ t('openregister', 'Export Audit Trails') }}</h3>
-					<div class="exportGroup">
-						<label for="formatSelect">{{ t('openregister', 'Export Format') }}</label>
-						<NcSelect
-							v-model="exportFormat"
-							:options="exportFormatOptions"
-							:placeholder="t('openregister', 'Select format')"
-							:input-label="t('openregister', 'Export Format')"
-							:clearable="false">
-							<template #option="{ option }">
-								{{ option.label }}
-							</template>
-						</NcSelect>
-					</div>
-					<div class="exportGroup">
-						<NcCheckboxRadioSwitch v-model="includeChanges">
-							{{ t('openregister', 'Include change details') }}
-						</NcCheckboxRadioSwitch>
-					</div>
-					<div class="exportGroup">
-						<NcCheckboxRadioSwitch v-model="includeMetadata">
-							{{ t('openregister', 'Include metadata') }}
-						</NcCheckboxRadioSwitch>
-					</div>
-				</div>
-
-				<div class="actionGroup">
-					<NcButton
-						type="primary"
-						:disabled="filteredCount === 0"
-						@click="exportFilteredAuditTrails">
-						<template #icon>
-							<Download :size="20" />
+				<div class="filterGroup">
+					<label for="userSelect">{{ t('openregister', 'Users') }}</label>
+					<NcSelect
+						id="userSelect"
+						v-model="selectedUsers"
+						:options="userOptions"
+						:placeholder="t('openregister', 'All users')"
+						:input-label="t('openregister', 'Users')"
+						:multiple="true"
+						:clearable="true"
+						@input="applyFilters">
+						<template #option="{ option }">
+							{{ option.label }}
 						</template>
-						{{ t('openregister', 'Export Filtered ({count})', { count: filteredCount }) }}
-					</NcButton>
+					</NcSelect>
 				</div>
+				<div class="filterGroup">
+					<label>{{ t('openregister', 'Date Range') }}</label>
+					<NcDateTimePickerNative
+						v-model="dateFrom"
+						:label="t('openregister', 'From date')"
+						type="datetime-local"
+						@input="applyFilters" />
+					<NcDateTimePickerNative
+						v-model="dateTo"
+						:label="t('openregister', 'To date')"
+						type="datetime-local"
+						@input="applyFilters" />
+				</div>
+				<div class="filterGroup">
+					<label for="objectFilter">{{ t('openregister', 'Object ID') }}</label>
+					<NcTextField
+						id="objectFilter"
+						v-model="objectFilter"
+						:label="t('openregister', 'Filter by object ID')"
+						:placeholder="t('openregister', 'Enter object ID')"
+						@update:value="handleObjectFilterChange" />
+				</div>
+				<div class="filterGroup">
+					<NcCheckboxRadioSwitch
+						v-model="showOnlyWithChanges"
+						@update:checked="applyFilters">
+						{{ t('openregister', 'Show only entries with changes') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</div>
 
-				<!-- Bulk Actions Section -->
-				<div class="bulkActionsSection">
-					<h3>{{ t('openregister', 'Bulk Actions') }}</h3>
-					<div class="actionGroup">
-						<NcButton
-							type="error"
-							:disabled="filteredCount === 0"
-							@click="clearFilteredAuditTrails">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							{{ t('openregister', 'Clear Filtered Entries ({count})', { count: filteredCount }) }}
-						</NcButton>
+			<div class="actionGroup">
+				<NcButton @click="clearFilters">
+					<template #icon>
+						<FilterOffOutline :size="20" />
+					</template>
+					{{ t('openregister', 'Clear Filters') }}
+				</NcButton>
+			</div>
+
+			<NcNoteCard type="info" class="filter-hint">
+				{{ t('openregister', 'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.') }}
+			</NcNoteCard>
+		</NcAppSidebarTab>
+
+		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
+			<template #icon>
+				<ChartLine :size="20" />
+			</template>
+
+			<!-- Statistics Section -->
+			<div class="statsSection">
+				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
+				<div class="statCard">
+					<div class="statNumber">
+						{{ totalAuditTrails }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Total Audit Trails') }}
 					</div>
 				</div>
-
-				<NcNoteCard type="warning" class="export-hint">
-					{{ t('openregister', 'Exports include all filtered entries. Clearing entries will permanently delete them from the audit trail.') }}
-				</NcNoteCard>
-			</NcAppSidebarTab>
-
-			<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="3">
-				<template #icon>
-					<ChartLine :size="20" />
-				</template>
-
-				<!-- Statistics Section -->
-				<div class="statsSection">
-					<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalAuditTrails }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Audit Trails') }}
-						</div>
+				<div class="statCard">
+					<div class="statNumber">
+						{{ createCount }}
 					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ createCount }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Create Operations') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ updateCount }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Update Operations') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deleteCount }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Delete Operations') }}
-						</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Create Operations') }}
 					</div>
 				</div>
-
-				<!-- Action Distribution -->
-				<div class="actionDistribution">
-					<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-					<NcListItem v-for="(action, index) in actionDistribution"
-						:key="index"
-						:name="action.action"
-						:bold="false">
-						<template #icon>
-							<Pencil v-if="action.action === 'update'" :size="32" />
-							<Plus v-else-if="action.action === 'create'" :size="32" />
-							<Delete v-else-if="action.action === 'delete'" :size="32" />
-							<Eye v-else :size="32" />
-						</template>
-						<template #subname>
-							{{ t('openregister', '{count} entries', { count: action.count }) }}
-						</template>
-					</NcListItem>
+				<div class="statCard">
+					<div class="statNumber">
+						{{ updateCount }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Update Operations') }}
+					</div>
 				</div>
-
-				<!-- Top Objects -->
-				<div class="topObjects">
-					<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-					<NcListItem v-for="(object, index) in topObjects"
-						:key="index"
-						:name="object.name"
-						:bold="false">
-						<template #icon>
-							<CogOutline :size="32" />
-						</template>
-						<template #subname>
-							{{ t('openregister', '{count} entries', { count: object.count }) }}
-						</template>
-					</NcListItem>
+				<div class="statCard">
+					<div class="statNumber">
+						{{ deleteCount }}
+					</div>
+					<div class="statLabel">
+						{{ t('openregister', 'Delete Operations') }}
+					</div>
 				</div>
-			</NcAppSidebarTab>
-		</NcAppSidebar>
+			</div>
 
-		<!-- Import the new modals -->
-		<DeleteAuditTrail />
-		<AuditTrailDetails />
-		<AuditTrailChanges />
-		<ClearAuditTrails />
-	</div>
+			<!-- Action Distribution -->
+			<div class="actionDistribution">
+				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
+				<NcListItem v-for="(action, index) in actionDistribution"
+					:key="index"
+					:name="action.action"
+					:bold="false">
+					<template #icon>
+						<Pencil v-if="action.action === 'update'" :size="32" />
+						<Plus v-else-if="action.action === 'create'" :size="32" />
+						<Delete v-else-if="action.action === 'delete'" :size="32" />
+						<Eye v-else :size="32" />
+					</template>
+					<template #subname>
+						{{ t('openregister', '{count} entries', { count: action.count }) }}
+					</template>
+				</NcListItem>
+			</div>
+
+			<!-- Top Objects -->
+			<div class="topObjects">
+				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
+				<NcListItem v-for="(object, index) in topObjects"
+					:key="index"
+					:name="object.name"
+					:bold="false">
+					<template #icon>
+						<CogOutline :size="32" />
+					</template>
+					<template #subname>
+						{{ t('openregister', '{count} entries', { count: object.count }) }}
+					</template>
+				</NcListItem>
+			</div>
+		</NcAppSidebarTab>
+	</NcAppSidebar>
 </template>
 
 <script>
@@ -298,9 +213,7 @@ import {
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -320,18 +233,12 @@ export default {
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		FilterOutline,
-		Download,
 		ChartLine,
-		Delete,
 		CogOutline,
 		Plus,
 		Pencil,
 		Eye,
 		FilterOffOutline,
-		DeleteAuditTrail,
-		AuditTrailDetails,
-		AuditTrailChanges,
-		ClearAuditTrails,
 	},
 	data() {
 		return {
@@ -342,9 +249,6 @@ export default {
 			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
-			exportFormat: { label: 'CSV', value: 'csv' },
-			includeChanges: true,
-			includeMetadata: false,
 			filteredCount: 0,
 			totalAuditTrails: 0,
 			createCount: 0,
@@ -432,21 +336,15 @@ export default {
 			}
 		},
 		userOptions() {
-			if (!auditTrailStore.uniqueUsers || !auditTrailStore.uniqueUsers.length) {
+			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
 				return []
 			}
-			return auditTrailStore.uniqueUsers.map(user => ({
+			// Get unique users from audit trail list
+			const users = [...new Set(auditTrailStore.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
+			return users.map(user => ({
 				label: user,
 				value: user,
 			}))
-		},
-		exportFormatOptions() {
-			return [
-				{ label: 'CSV', value: 'csv' },
-				{ label: 'JSON', value: 'json' },
-				{ label: 'XML', value: 'xml' },
-				{ label: 'Plain Text', value: 'txt' },
-			]
 		},
 	},
 	watch: {
@@ -524,20 +422,26 @@ export default {
 			schemaStore.setSchemaItem(null)
 
 			// Clear store filters
-			auditTrailStore.setFilters({})
-
-			// Method 2: If the store has a clearFilters method, use it
-			if (typeof auditTrailStore.clearFilters === 'function') {
-				auditTrailStore.clearFilters()
-			}
-
-			// Method 3: Directly set filters to empty if accessible
-			if (auditTrailStore.filters) {
-				auditTrailStore.filters = {}
-			}
+			auditTrailStore.setAuditTrailFilters({})
 
 			// Refresh without applying filters through applyFilters (which might re-add them)
 			auditTrailStore.refreshAuditTrailList()
+		},
+		/**
+		 * Clear filters (alias for clearAllFilters for template compatibility)
+		 * @return {void}
+		 */
+		clearFilters() {
+			this.clearAllFilters()
+		},
+		/**
+		 * Handle object filter change with debouncing
+		 * @param {string} value - The filter value
+		 * @return {void}
+		 */
+		handleObjectFilterChange(value) {
+			this.objectFilter = value
+			this.debouncedApplyFilters()
 		},
 		/**
 		 * Apply filters and emit to parent components
@@ -593,7 +497,7 @@ export default {
 			}
 
 			// Set filters in store and refresh data
-			auditTrailStore.setFilters(filters)
+			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
 
 			// Also emit for legacy compatibility
@@ -623,103 +527,8 @@ export default {
 		 * @return {void}
 		 */
 		updateFilteredCount() {
-			this.filteredCount = auditTrailStore.auditTrailCount
-			this.totalAuditTrails = auditTrailStore.pagination.total || auditTrailStore.auditTrailCount
-		},
-		/**
-		 * Export audit trails with current filters
-		 * @return {Promise<void>}
-		 */
-		async exportFilteredAuditTrails() {
-			try {
-				// Build query parameters for export
-				const params = new URLSearchParams()
-
-				// Add current filters
-				const filters = auditTrailStore.auditTrailFilters
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						if (Array.isArray(value)) {
-							value.forEach(v => params.append(key, v))
-						} else {
-							params.append(key, value)
-						}
-					}
-				})
-
-				// Add format and options
-				params.append('format', this.exportFormat.value)
-				params.append('includeChanges', this.includeChanges.toString())
-				params.append('includeMetadata', this.includeMetadata.toString())
-
-				// Create download link
-				const url = `/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`
-
-				// Handle the download
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				if (response.ok) {
-					const result = await response.blob()
-
-					// Create download
-					const link = document.createElement('a')
-					link.href = URL.createObjectURL(result)
-					link.download = `audit-trails-${new Date().toISOString().split('T')[0]}.${this.exportFormat.value}`
-					document.body.appendChild(link)
-					link.click()
-					document.body.removeChild(link)
-					URL.revokeObjectURL(link.href)
-
-					navigationStore.setNotification({
-						type: 'success',
-						message: this.t('openregister', 'Audit trails exported successfully'),
-					})
-				} else {
-					throw new Error('Export failed')
-				}
-			} catch (error) {
-				navigationStore.setNotification({
-					type: 'error',
-					message: this.t('openregister', 'Failed to export audit trails'),
-				})
-			}
-		},
-		/**
-		 * Clear filtered audit trails
-		 * @return {void}
-		 */
-		clearFilteredAuditTrails() {
-			navigationStore.setDialog({
-				type: 'clearAuditTrails',
-				data: {
-					filters: auditTrailStore.auditTrailFilters,
-					count: this.filteredCount,
-				},
-			})
-		},
-		/**
-		 * Refresh audit trails
-		 * @return {Promise<void>}
-		 */
-		async refreshAuditTrails() {
-			try {
-				await auditTrailStore.refreshAuditTrailList()
-				this.updateFilteredCount()
-				navigationStore.setNotification({
-					type: 'success',
-					message: this.t('openregister', 'Audit trails refreshed'),
-				})
-			} catch (error) {
-				navigationStore.setNotification({
-					type: 'error',
-					message: this.t('openregister', 'Failed to refresh audit trails'),
-				})
-			}
+			this.filteredCount = auditTrailStore.auditTrailList.length
+			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
 		},
 		/**
 		 * Load statistics
@@ -792,23 +601,17 @@ export default {
 
 <style scoped>
 .filterSection,
-.exportSection,
-.actionsSection,
 .statsSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
 .filterSection:last-child,
-.exportSection:last-child,
-.actionsSection:last-child,
 .statsSection:last-child {
 	border-bottom: none;
 }
 
 .filterSection h3,
-.exportSection h3,
-.actionsSection h3,
 .statsSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
@@ -857,8 +660,7 @@ export default {
 	color: var(--color-info);
 }
 
-.filter-hint,
-.export-hint {
+.filter-hint {
 	margin: 8px 16px;
 }
 

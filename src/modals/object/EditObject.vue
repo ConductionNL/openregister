@@ -384,38 +384,6 @@ export default {
 	margin: 20px 0;
 }
 
-/* Update detail grid margins */
-.detail-grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 12px;
-	margin: 20px 0;
-	max-width: 100%;
-}
-
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	padding: 12px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-	border-left: 3px solid var(--color-primary);
-}
-
-.detail-item.empty-value {
-	border-left-color: var(--color-warning);
-}
-
-.detail-label {
-	font-weight: bold;
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 4px;
-}
-
-.detail-value {
-	word-break: break-word;
-}
-
 .edit-tabs {
 	margin-top: 20px;
 }

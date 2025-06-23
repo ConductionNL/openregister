@@ -29,31 +29,31 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton close-after-click  @click="navigationStore.setModal('editSchema')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('editSchema')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
+						<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
 							<template #icon>
 								<PlusCircleOutline />
 							</template>
 							Add Property
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="navigationStore.setModal('uploadSchema')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('uploadSchema')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
+						<NcActionButton close-after-click @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
 							<template #icon>
 								<Download :size="20" />
 							</template>
 							Download
 						</NcActionButton>
-						<NcActionButton close-after-click  @click="navigationStore.setDialog('deleteSchema')">
+						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -64,7 +64,7 @@ import { dashboardStore, schemaStore, navigationStore } from '../../store/store.
 			</span>
 			<div class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
-				<div class="chartsContainer">
+				<div class="chartGrid">
 					<!-- Audit Trail Actions Chart -->
 					<div class="chartCard">
 						<h3>Audit Trail Actions</h3>
@@ -231,7 +231,7 @@ export default {
 	padding-inline: 20px;
 }
 
-.chartsContainer {
+.chartGrid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 20px;
@@ -253,7 +253,7 @@ export default {
 }
 
 @media screen and (max-width: 1024px) {
-	.chartsContainer {
+	.chartGrid {
 		grid-template-columns: 1fr;
 	}
 }
