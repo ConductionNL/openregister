@@ -102,11 +102,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</template>
 								<template v-else>
 									<NcSelect
-										v-model="mergedData[property]"
+										v-model="propertySelections[property]"
 										:options="getMergeOptions(property)"
 										label="label"
 										track-by="value"
-										:placeholder="'Choose value for ' + property" />
+										:placeholder="'Choose value for ' + property"
+										@input="onPropertySelectionChange(property, $event)" />
 									<NcTextField
 										v-if="mergedData[property] === 'custom'"
 										v-model="customValues[property]"
@@ -309,9 +310,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div v-if="mergeResult.actions?.files?.length" class="report-section">
 					<h4>File Actions</h4>
 					<ul>
-						<li v-for="fileAction in mergeResult.actions.files" :key="fileAction.name">
-							{{ fileAction.name }}: {{ fileAction.action }}
-							<span v-if="!fileAction.success" class="error-text"> (Failed: {{ fileAction.error }})</span>
+						<li v-for="fileActionItem in mergeResult.actions.files" :key="fileActionItem.name">
+							{{ fileActionItem.name }}: {{ fileActionItem.action }}
+							<span v-if="!fileActionItem.success" class="error-text"> (Failed: {{ fileActionItem.error }})</span>
 						</li>
 					</ul>
 				</div>
@@ -438,6 +439,7 @@ export default {
 			selectedTargetObject: null,
 			mergedData: {},
 			customValues: {},
+			propertySelections: {}, // Intermediate values for NcSelect v-model
 			fileAction: 'transfer',
 			relationAction: 'transfer',
 			mergeResult: null,
@@ -514,6 +516,7 @@ export default {
 			// Initialize merge data with default values
 			this.mergedData = {}
 			this.customValues = {}
+			this.propertySelections = {}
 
 			this.mergeableProperties.forEach(property => {
 				if (property === 'id') {
@@ -527,16 +530,29 @@ export default {
 					const targetValue = this.selectedTargetObject[property]
 					const sourceValue = this.sourceObject[property]
 
+					let selectedValue
+					// Always store the actual value, never the option object
 					if (targetValue !== undefined && targetValue !== null && targetValue !== '') {
-						this.mergedData[property] = targetValue
+						selectedValue = targetValue
 					} else if (sourceValue !== undefined && sourceValue !== null && sourceValue !== '') {
-						this.mergedData[property] = sourceValue
+						selectedValue = sourceValue
 					} else {
-						this.mergedData[property] = 'custom'
+						selectedValue = 'custom'
 						this.customValues[property] = ''
 					}
+
+					this.mergedData[property] = selectedValue
+
+					// Set up the selection object for the dropdown
+					const options = this.getMergeOptions(property)
+					this.propertySelections[property] = options.find(opt => opt.value === selectedValue) || null
 				}
 			})
+
+			// eslint-disable-next-line no-console
+			console.log('Initial mergedData after setup:', this.mergedData)
+			// eslint-disable-next-line no-console
+			console.log('Initial propertySelections after setup:', this.propertySelections)
 		},
 		getMergeOptions(property) {
 			const options = []
@@ -562,6 +578,23 @@ export default {
 			})
 
 			return options
+		},
+
+		onPropertySelectionChange(property, selectedOption) {
+			// eslint-disable-next-line no-console
+			console.log('Property selection change:', property, selectedOption)
+			if (selectedOption && selectedOption.value !== undefined) {
+				// Always store the actual value, never the option object
+				this.mergedData[property] = selectedOption.value
+				this.propertySelections[property] = selectedOption
+				// eslint-disable-next-line no-console
+				console.log('Set mergedData[' + property + '] to:', selectedOption.value)
+
+				// Clear custom value if switching away from custom
+				if (selectedOption.value !== 'custom') {
+					this.customValues[property] = ''
+				}
+			}
 		},
 		displayValue(value, maxLength = 100) {
 			if (value === null || value === undefined) {
@@ -594,38 +627,48 @@ export default {
 
 			this.loading = true
 			try {
-				// Prepare merged data with custom values resolved
+				// Prepare merged data with custom values resolved - ensure no ID is included
 				const finalMergedData = {}
+				// eslint-disable-next-line no-console
+				console.log('Raw mergedData before processing:', this.mergedData)
+
 				Object.keys(this.mergedData).forEach(property => {
+					// Skip any ID-related properties
+					if (property === 'id' || property === '@self') {
+						return
+					}
+
 					if (this.mergedData[property] === 'custom') {
 						finalMergedData[property] = this.customValues[property] || ''
 					} else {
-						finalMergedData[property] = this.mergedData[property]
+						// Ensure we extract the actual value if it's an object with label/value structure
+						const value = this.mergedData[property]
+						if (value && typeof value === 'object' && value.value !== undefined) {
+							// eslint-disable-next-line no-console
+							console.log('Extracting value from object for', property, ':', value.value)
+							finalMergedData[property] = value.value
+						} else {
+							finalMergedData[property] = value
+						}
 					}
 				})
 
-				const response = await fetch(`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}/${this.sourceObject['@self'].id}/merge`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						targetObjectId: this.selectedTargetObject['@self'].id,
-						mergedData: finalMergedData,
-						fileAction: this.fileAction,
-						relationAction: this.relationAction,
-					}),
+				// eslint-disable-next-line no-console
+				console.log('Final merged data to send:', finalMergedData)
+
+				// Use the object store method for consistent API handling
+				const result = await objectStore.mergeObjects({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+					sourceObjectId: this.sourceObject['@self'].id,
+					target: this.selectedTargetObject['@self'].id,
+					object: finalMergedData,
+					fileAction: this.fileAction,
+					relationAction: this.relationAction,
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				this.mergeResult = await response.json()
+				this.mergeResult = result.data
 				this.step = 3
-
-				// Refresh the object list
-				objectStore.refreshObjectList()
 
 			} catch (error) {
 				console.error('Error performing merge:', error)

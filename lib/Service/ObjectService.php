@@ -1782,29 +1782,45 @@ class ObjectService
      * is deleted after successful merge.
      *
      * @param string $sourceObjectId The ID/UUID of the source object (object A)
-     * @param string $targetObjectId The ID/UUID of the target object (object B)
-     * @param array  $mergedData     The merged property data chosen by the user
-     * @param string $fileAction     Action for files: 'transfer' or 'delete'
-     * @param string $relationAction Action for relations: 'transfer' or 'drop'
+     * @param array $mergeData Merge request data containing:
+     *                        - target: Target object ID (object to merge into)
+     *                        - object: Merged object data (without id)
+     *                        - fileAction: File action ('transfer' or 'delete')
+     *                        - relationAction: Relation action ('transfer' or 'drop')
      *
      * @return array The merge report containing results and statistics
      *
      * @throws DoesNotExistException If either object doesn't exist
-     * @throws \InvalidArgumentException If objects are not in the same register/schema
+     * @throws \InvalidArgumentException If objects are not in the same register/schema or required data is missing
      * @throws \Exception If there's an error during the merge process
      *
-     * @phpstan-param array<string, mixed> $mergedData
+     * @phpstan-param array<string, mixed> $mergeData
      * @phpstan-return array<string, mixed>
-     * @psalm-param array<string, mixed> $mergedData
+     * @psalm-param array<string, mixed> $mergeData
      * @psalm-return array<string, mixed>
      */
-    public function mergeObjects(
-        string $sourceObjectId,
-        string $targetObjectId,
-        array $mergedData,
-        string $fileAction = 'transfer',
-        string $relationAction = 'transfer'
-    ): array {
+    public function mergeObjects(string $sourceObjectId, array $mergeData): array {
+        // Extract parameters from merge data
+        $targetObjectId = $mergeData['target'] ?? null;
+        $mergedData = $mergeData['object'] ?? [];
+        $fileAction = $mergeData['fileAction'] ?? 'transfer';
+        $relationAction = $mergeData['relationAction'] ?? 'transfer';
+
+        // Add comprehensive logging
+        error_log("=== MERGE OBJECTS DEBUG START ===");
+        error_log("Source Object ID: " . $sourceObjectId);
+        error_log("Target Object ID: " . ($targetObjectId ?? 'NULL'));
+        error_log("Current Register: " . ($this->currentRegister ? $this->currentRegister->getId() : 'NULL'));
+        error_log("Current Schema: " . ($this->currentSchema ? $this->currentSchema->getId() : 'NULL'));
+        error_log("Merge Data: " . json_encode($mergeData));
+        error_log("File Action: " . $fileAction);
+        error_log("Relation Action: " . $relationAction);
+
+        if (!$targetObjectId) {
+            error_log("ERROR: Target object ID is required");
+            throw new \InvalidArgumentException('Target object ID is required');
+        }
+        
         // Initialize merge report
         $mergeReport = [
             'success' => false,
@@ -1830,15 +1846,49 @@ class ObjectService
         ];
 
         try {
-            // Fetch both objects
-            $sourceObject = $this->find($sourceObjectId);
-            $targetObject = $this->find($targetObjectId);
+            // Log before attempting to find objects
+            error_log("Attempting to find source object with ID: " . $sourceObjectId);
+            error_log("Using register: " . ($this->currentRegister ? $this->currentRegister->getId() : 'NULL'));
+            error_log("Using schema: " . ($this->currentSchema ? $this->currentSchema->getId() : 'NULL'));
+            
+            // Fetch both objects directly from mapper for updating (not rendered)
+            error_log("Using ObjectEntityMapper to find raw objects for updating");
+            
+            try {
+                $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
+                error_log("Source object found via mapper: " . ($sourceObject ? 'YES' : 'NO'));
+                if ($sourceObject) {
+                    error_log("Source object internal ID: " . ($sourceObject->getId() ?? 'NULL'));
+                    error_log("Source object UUID: " . $sourceObject->getUuid());
+                    error_log("Source object register: " . $sourceObject->getRegister());
+                    error_log("Source object schema: " . $sourceObject->getSchema());
+                }
+            } catch (\Exception $e) {
+                error_log("Error finding source object via mapper: " . $e->getMessage());
+                $sourceObject = null;
+            }
+            
+            try {
+                $targetObject = $this->objectEntityMapper->find($targetObjectId);
+                error_log("Target object found via mapper: " . ($targetObject ? 'YES' : 'NO'));
+                if ($targetObject) {
+                    error_log("Target object internal ID: " . ($targetObject->getId() ?? 'NULL'));
+                    error_log("Target object UUID: " . $targetObject->getUuid());
+                    error_log("Target object register: " . $targetObject->getRegister());
+                    error_log("Target object schema: " . $targetObject->getSchema());
+                }
+            } catch (\Exception $e) {
+                error_log("Error finding target object via mapper: " . $e->getMessage());
+                $targetObject = null;
+            }
 
             if ($sourceObject === null) {
+                error_log("ERROR: Source object not found");
                 throw new DoesNotExistException('Source object not found');
             }
 
             if ($targetObject === null) {
+                error_log("ERROR: Target object not found");
                 throw new DoesNotExistException('Target object not found');
             }
 
@@ -1930,9 +1980,19 @@ class ObjectService
             }
 
             // Update target object with merged data
+            error_log("About to update target object");
+            error_log("Target object internal ID: " . ($targetObject->getId() ?? 'NULL'));
+            error_log("Target object UUID: " . $targetObject->getUuid());
+            error_log("Target object data before update: " . json_encode($targetObject->getObject()));
+            
             $targetObject->setObject($targetObjectData);
-            $targetObject->hydrate($targetObjectData);
+            
+            error_log("Target object data after merge: " . json_encode($targetObject->getObject()));
+            error_log("Calling objectEntityMapper->update()");
+            
             $updatedObject = $this->objectEntityMapper->update($targetObject);
+            
+            error_log("Update completed successfully");
 
             // Update references to source object
             $referencingObjects = $this->findByRelations($sourceObject->getUuid());
@@ -1962,15 +2022,22 @@ class ObjectService
 
             $mergeReport['actions']['references'] = $updatedReferences;
 
-            // Delete source object (soft delete)
+            // Soft delete source object using the entity's delete method
             $sourceObject->delete($this->userSession, 'Merged into object ' . $targetObject->getUuid());
             $this->objectEntityMapper->update($sourceObject);
 
             // Set success and add merged object to report
             $mergeReport['success'] = true;
             $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
+            
+            error_log("Merge completed successfully");
+            error_log("=== MERGE OBJECTS DEBUG END ===");
 
         } catch (\Exception $e) {
+            error_log("ERROR in merge process: " . $e->getMessage());
+            error_log("Exception type: " . get_class($e));
+            error_log("Stack trace: " . $e->getTraceAsString());
+            error_log("=== MERGE OBJECTS DEBUG END (WITH ERROR) ===");
             $mergeReport['errors'][] = $e->getMessage();
             throw $e;
         }

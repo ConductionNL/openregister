@@ -481,7 +481,7 @@ export default {
 
 				// Initialize property mappings
 				this.initializePropertyMappings()
-				
+
 				// Sync UI mappings
 				this.convertMappingToUI()
 			} catch (error) {
@@ -514,7 +514,7 @@ export default {
 				if (matchingTarget) {
 					// Simple mapping: target property as key, source property as value
 					this.mapping[matchingTarget.name] = sourceProp.name
-					
+
 					// Set up UI mapping
 					const targetOption = this.targetPropertyOptions.find(option => option.value === matchingTarget.name)
 					if (targetOption) {
@@ -579,7 +579,7 @@ export default {
 		convertUIToMapping() {
 			// Convert from UI format (source -> target option) to our format (target -> source)
 			this.mapping = {}
-			
+
 			for (const [sourceProp, targetOption] of Object.entries(this.uiMappings)) {
 				if (targetOption && targetOption.value) {
 					this.mapping[targetOption.value] = sourceProp
@@ -589,7 +589,7 @@ export default {
 		convertMappingToUI() {
 			// Convert from our format (target -> source) to UI format (source -> target option)
 			this.uiMappings = {}
-			
+
 			for (const [targetProp, sourceProp] of Object.entries(this.mapping)) {
 				const targetOption = this.targetPropertyOptions.find(option => option.value === targetProp)
 				if (targetOption) {
