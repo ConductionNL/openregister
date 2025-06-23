@@ -380,9 +380,6 @@ class ObjectEntityMapper extends QBMapper
             $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
         }
 
-
-        // var_dump($qb->getSQL());
-
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -1135,8 +1132,6 @@ class ObjectEntityMapper extends QBMapper
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
-
-//        var_dump($qb->getSQL());
 
         $result = $qb->executeQuery();
 
