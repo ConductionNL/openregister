@@ -162,12 +162,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						</div>
 						<div class="target-property">
 							<NcSelect
-								v-model="propertyMappings[sourceProperty.name]"
+								v-model="uiMappings[sourceProperty.name]"
 								:options="targetPropertyOptions"
 								label="label"
 								track-by="value"
 								:placeholder="'Map to target property...'"
-								:clearable="true" />
+								:clearable="true"
+								@update:model-value="updateMappingFromUI(sourceProperty.name)" />
 						</div>
 					</div>
 				</div>
@@ -369,7 +370,9 @@ export default {
 			targetSchema: null,
 			sourceProperties: [],
 			targetProperties: [],
-			propertyMappings: {},
+			mapping: {},
+			// Go-between variable for UI binding - maps source properties to selected target options
+			uiMappings: {},
 			migrationResult: null,
 		}
 	},
@@ -388,7 +391,9 @@ export default {
 			return options
 		},
 		canMigrate() {
-			return this.targetRegister && this.targetSchema && Object.keys(this.propertyMappings).length > 0
+			// Check if we have target register/schema and at least one property mapping
+			const hasValidMappings = Object.values(this.uiMappings).some(option => option && option.value)
+			return this.targetRegister && this.targetSchema && hasValidMappings
 		},
 	},
 	mounted() {
@@ -476,6 +481,9 @@ export default {
 
 				// Initialize property mappings
 				this.initializePropertyMappings()
+				
+				// Sync UI mappings
+				this.convertMappingToUI()
 			} catch (error) {
 				console.error('Error loading schema properties:', error)
 			}
@@ -495,7 +503,8 @@ export default {
 			return properties
 		},
 		initializePropertyMappings() {
-			this.propertyMappings = {}
+			this.mapping = {}
+			this.uiMappings = {}
 
 			// Auto-map properties with same names
 			this.sourceProperties.forEach(sourceProp => {
@@ -503,7 +512,14 @@ export default {
 					targetProp => targetProp.name === sourceProp.name,
 				)
 				if (matchingTarget) {
-					this.propertyMappings[sourceProp.name] = matchingTarget.name
+					// Simple mapping: target property as key, source property as value
+					this.mapping[matchingTarget.name] = sourceProp.name
+					
+					// Set up UI mapping
+					const targetOption = this.targetPropertyOptions.find(option => option.value === matchingTarget.name)
+					if (targetOption) {
+						this.uiMappings[sourceProp.name] = targetOption
+					}
 				}
 			})
 		},
@@ -511,6 +527,9 @@ export default {
 			if (!this.canMigrate) {
 				return
 			}
+
+			// Make sure our mapping is up to date before sending
+			this.convertUIToMapping()
 
 			this.loading = true
 			try {
@@ -525,7 +544,7 @@ export default {
 						targetRegister: this.targetRegister.id,
 						targetSchema: this.targetSchema.id,
 						objects: this.selectedObjects.map(obj => obj.id),
-						propertyMappings: this.propertyMappings,
+						mapping: this.mapping,
 					}),
 				})
 
@@ -552,6 +571,31 @@ export default {
 		},
 		closeModal() {
 			navigationStore.setModal(false)
+		},
+		updateMappingFromUI(sourceProperty) {
+			// Convert UI mappings to our simple mapping format
+			this.convertUIToMapping()
+		},
+		convertUIToMapping() {
+			// Convert from UI format (source -> target option) to our format (target -> source)
+			this.mapping = {}
+			
+			for (const [sourceProp, targetOption] of Object.entries(this.uiMappings)) {
+				if (targetOption && targetOption.value) {
+					this.mapping[targetOption.value] = sourceProp
+				}
+			}
+		},
+		convertMappingToUI() {
+			// Convert from our format (target -> source) to UI format (source -> target option)
+			this.uiMappings = {}
+			
+			for (const [targetProp, sourceProp] of Object.entries(this.mapping)) {
+				const targetOption = this.targetPropertyOptions.find(option => option.value === targetProp)
+				if (targetOption) {
+					this.uiMappings[sourceProp] = targetOption
+				}
+			}
 		},
 	},
 }
