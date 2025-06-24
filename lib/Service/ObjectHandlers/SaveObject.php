@@ -393,8 +393,8 @@ class SaveObject
         }
         $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(
             self::URL_PATH_IDENTIFIER, [
-                'register' => $register instanceof Register === true ? $register->getSlug() : $registerId,
-                'schema' => $schema instanceof Schema === true ? $schema->getSlug() : $schemaId,
+                'register' => $register instanceof Register === true && $schema->getSlug() !== null ? $register->getSlug() : $registerId,
+                'schema' => $schema instanceof Schema === true && $schema->getSlug() !== null ? $schema->getSlug() : $schemaId,
                 'id' => $objectEntity->getUuid()
             ]
         )));
