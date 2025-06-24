@@ -92,7 +92,7 @@ class DeleteObject
         // Delete associated files from storage.
         $files = $this->fileService->getFiles($objectEntity);
         foreach ($files as $file) {
-            $this->fileService->deleteFile($objectEntity, $file->getName());
+            $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
         }
 
         // Delete the object from database.
