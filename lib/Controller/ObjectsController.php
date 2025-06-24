@@ -533,6 +533,114 @@ class ObjectsController extends Controller
 
 
     /**
+     * Patches (partially updates) an existing object
+     *
+     * Takes the request data, merges it with the existing object data, validates it against 
+     * the schema, and updates the object in the database. Only the provided fields are updated,
+     * while other fields remain unchanged. Handles validation errors appropriately.
+     *
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param string        $id            The object ID or UUID
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the updated object
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function patch(
+        string $register,
+        string $schema,
+        string $id,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get patch data from request parameters.
+        $patchData = $this->request->getParams();
+
+        // Filter out special parameters and reserved fields.
+        // @todo shouldn't this be part of the object service?
+        $patchData = array_filter(
+            $patchData,
+            fn ($key) => !str_starts_with($key, '_')
+                && !str_starts_with($key, '@')
+                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Check if the object exists and can be updated.
+        // @todo shouldn't this be part of the object service?
+        try {
+            $existingObject = $this->objectService->find($id);
+
+            // Get the resolved register and schema IDs from the ObjectService
+            // This ensures proper handling of both numeric IDs and slug identifiers
+            $resolvedRegisterId = $objectService->getRegister(); // Returns the current register ID
+            $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
+
+            // Verify that the object belongs to the specified register and schema.
+            if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
+                || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
+            ) {
+                return new JSONResponse(
+                    ['error' => 'Object not found in specified register/schema'],
+                    404
+                );
+            }
+
+            // Check if the object is locked.
+            if ($existingObject->isLocked() === true
+                && $existingObject->getLockedBy() !== $this->container->get('userId')
+            ) {
+                // Return a "locked" error with the user who has the lock.
+                return new JSONResponse(
+                    [
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                        'lockedBy' => $existingObject->getLockedBy(),
+                    ],
+                    423
+                );
+            }
+
+            // Get the existing object data and merge with patch data
+            $existingData = $existingObject->getObject();
+            $mergedData = array_merge($existingData, $patchData);
+            $existingObject->setObject($mergedData);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Not Found'], 404);
+        } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
+            // If there's an issue getting the user ID, continue without the lock check.
+        }//end try
+
+        // Update the object with merged data.
+        try {
+            // Use the object service to validate and update the object.
+            $objectEntity = $objectService->saveObject($existingObject);
+
+            // Unlock the object after saving.
+            try {
+                $this->objectEntityMapper->unlockObject($objectEntity->getId());
+            } catch (\Exception $e) {
+                // Ignore unlock errors since the update was successful.
+            }
+
+            // Return the updated object as JSON.
+            return new JSONResponse($objectEntity->jsonSerialize());
+        } catch (ValidationException | CustomValidationException $exception) {
+            // Handle validation errors.
+            return $objectService->handleValidationException(exception: $exception);
+        }
+
+    }//end patch()
+
+
+    /**
      * Deletes an object
      *
      * This method deletes an object based on its ID.

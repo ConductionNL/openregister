@@ -617,9 +617,9 @@ class ObjectService
 
 
     /**
-     * Saves an object from an array.
+     * Saves an object from an array or ObjectEntity.
      *
-     * @param array                    $object   The object data to save.
+     * @param array|ObjectEntity       $object   The object data to save or ObjectEntity instance.
      * @param array|null               $extend   Properties to extend the object with.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
@@ -630,7 +630,7 @@ class ObjectService
      * @throws Exception If there is an error during save.
      */
     public function saveObject(
-        array $object,
+        array | ObjectEntity $object,
         ?array $extend=[],
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
@@ -644,6 +644,15 @@ class ObjectService
         // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
             $this->setSchema($schema);
+        }
+
+        // Handle ObjectEntity input - extract UUID and convert to array
+        if ($object instanceof ObjectEntity) {
+            // If no UUID was passed, use the UUID from the existing object
+            if ($uuid === null) {
+                $uuid = $object->getUuid();
+            }
+            $object = $object->getObject(); // Get the object data array
         }
 
         // Validate the object against the current schema only if hard validation is enabled.
