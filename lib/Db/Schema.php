@@ -257,7 +257,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
-        $this->addType(fieldName: 'configuration', type: 'array');
+        $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
 
     }//end __construct()
