@@ -56,6 +56,11 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 			<NcNoteCard type="info" class="column-hint">
 				You can customize visible columns in the Columns tab
 			</NcNoteCard>
+
+			<!-- Facets Section -->
+			<div class="filterSection">
+				<FacetComponent />
+			</div>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
@@ -179,6 +184,7 @@ import Download from 'vue-material-design-icons/Download.vue'
 import FileMoveOutline from 'vue-material-design-icons/FileMoveOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FacetComponent from '../../components/FacetComponent.vue'
 
 export default {
 	name: 'SearchSideBar',
@@ -192,6 +198,7 @@ export default {
 		NcActionButton,
 		FilterOutline,
 		FormatColumns,
+		FacetComponent,
 	},
 	data() {
 		return {
