@@ -233,6 +233,11 @@ class SchemaMapper extends QBMapper
             $schema->setVersion('0.0.1');
         }
 
+        // Ensure the object has a source set to 'internal' by default.
+        if ($schema->getSource() === null || $schema->getSource() === '') {
+            $schema->setSource('internal');
+        }
+
         $properties             = ($schema->getProperties() ?? []);
         $propertyKeys           = array_keys($properties);
         $configuration          = $schema->getConfiguration() ?? [];
