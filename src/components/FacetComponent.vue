@@ -108,6 +108,43 @@
 						</div>
 					</div>
 
+					<!-- Terms-based dropdowns for metadata fields (excluding id and uuid) -->
+					<div class="facet-dropdowns">
+						<div
+							v-for="(field, fieldName) in termsMetadataFields"
+							:key="`meta-dropdown-${fieldName}`"
+							class="facet-dropdown-item">
+							<label
+								class="facet-dropdown-label"
+								:title="field.description">
+								{{ capitalizeFieldName(fieldName) }}
+								<span v-if="field.appearance_rate" class="field-coverage">
+									({{ field.appearance_rate }}/{{ objectStore.objectList?.total || 0 }} objects)
+								</span>
+							</label>
+							<NcSelect
+								:model-value="getSelectedMetadataDropdownValues(fieldName)"
+								:options="getMetadataDropdownOptions(fieldName)"
+								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: capitalizeFieldName(fieldName) })"
+								:input-label="capitalizeFieldName(fieldName)"
+								:multiple="true"
+								:close-on-select="false"
+								:searchable="true"
+								:loading="objectStore.facetsLoading"
+								@update:model-value="updateMetadataDropdownSelection(fieldName, $event)">
+								<template #option="{ option }">
+									<div v-if="option" class="dropdown-option">
+										<span class="option-label">{{ option.label || option.value || '' }}</span>
+										<span v-if="option.count" class="option-count">({{ option.count }})</span>
+									</div>
+								</template>
+								<template #selected-option="{ option }">
+									<span v-if="option" class="selected-option">{{ option.label || option.value || '' }}</span>
+								</template>
+							</NcSelect>
+						</div>
+					</div>
+
 					<!-- Non-date metadata facets -->
 					<div v-if="Object.keys(nonDateMetadataFields).length > 0" class="facet-list">
 						<div
@@ -148,7 +185,7 @@
 								</span>
 							</label>
 							<NcSelect
-								:value="getSelectedDropdownValues(fieldName)"
+								:model-value="getSelectedDropdownValues(fieldName)"
 								:options="getDropdownOptions(fieldName)"
 								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: capitalizeFieldName(fieldName) })"
 								:input-label="capitalizeFieldName(fieldName)"
@@ -156,7 +193,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:value="updateDropdownSelection(fieldName, $event)">
+								@update:model-value="updateDropdownSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -273,8 +310,28 @@ export default {
 		nonDateMetadataFields() {
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
-				// Exclude date fields, id, and uuid
-				if (field.type !== 'date' && fieldName !== 'id' && fieldName !== 'uuid') {
+				// Exclude date fields, id, uuid, and terms-facetable fields
+				if (field.type !== 'date'
+					&& fieldName !== 'id'
+					&& fieldName !== 'uuid'
+					&& (!field.facet_types || !field.facet_types.includes('terms'))) {
+					fields[fieldName] = field
+				}
+			})
+			return fields
+		},
+		/**
+		 * Get metadata fields that support terms faceting (excluding id and uuid)
+		 * These will be shown as dropdowns
+		 */
+		termsMetadataFields() {
+			const fields = {}
+			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
+				// Include fields that support terms faceting (excluding id and uuid)
+				if (fieldName !== 'id'
+					&& fieldName !== 'uuid'
+					&& field.facet_types
+					&& field.facet_types.includes('terms')) {
 					fields[fieldName] = field
 				}
 			})
@@ -334,8 +391,9 @@ export default {
 			}
 		},
 		async clearAllFilters() {
-			// Clear all active facets
+			// Clear all active facets and filters
 			this.objectStore.setActiveFacets({})
+			this.objectStore.clearAllFilters()
 			await this.objectStore.refreshObjectList()
 		},
 		/**
@@ -400,31 +458,29 @@ export default {
 		 * @param fieldName
 		 */
 		getSelectedDropdownValues(fieldName) {
-			const activeFacetData = this.objectStore.activeFacets._facets?.[fieldName]
-			if (!activeFacetData) {
+			// Get selected values from active filters
+			const filterValues = this.objectStore.activeFilters[fieldName]
+			if (!filterValues || !Array.isArray(filterValues)) {
 				return []
 			}
 
-			// Extract selected values from the active facet configuration
+			// Convert filter values back to dropdown options
 			const options = this.getDropdownOptions(fieldName)
 			const selectedValues = []
 
-			// If we have terms configuration, extract the selected values
-			if (activeFacetData.type === 'terms' && activeFacetData.terms) {
-				activeFacetData.terms.forEach(term => {
-					const option = options.find(opt => opt.value === term)
-					if (option) {
-						selectedValues.push(option)
-					} else {
-						// Create option for values not in current options
-						selectedValues.push({
-							value: term,
-							label: term,
-							count: null,
-						})
-					}
-				})
-			}
+			filterValues.forEach(value => {
+				const option = options.find(opt => opt.value === value)
+				if (option) {
+					selectedValues.push(option)
+				} else {
+					// Create option for values not in current options
+					selectedValues.push({
+						value,
+						label: value,
+						count: null,
+					})
+				}
+			})
 
 			return selectedValues
 		},
@@ -438,38 +494,22 @@ export default {
 			console.log('updateDropdownSelection called:', { fieldName, selectedOptions })
 
 			try {
-				if (!selectedOptions || selectedOptions.length === 0) {
-					// eslint-disable-next-line no-console
-					console.log('Removing facet for field:', fieldName)
-					// Remove the facet by calling updateActiveFacet with enabled=false
-					await this.objectStore.updateActiveFacet(fieldName, 'terms', false)
-				} else {
-					// Build the terms facet configuration
-					const selectedValues = selectedOptions.map(option => option.value)
-					// eslint-disable-next-line no-console
-					console.log('Selected values:', selectedValues)
+				// Extract values from selected options
+				const selectedValues = selectedOptions && selectedOptions.length > 0
+					? selectedOptions.map(option => option.value).filter(value => value !== null && value !== undefined)
+					: []
 
-					// Get current active facets
-					const currentFacets = { ...this.objectStore.activeFacets }
+				// eslint-disable-next-line no-console
+				console.log('Selected values:', selectedValues)
 
-					// Ensure _facets structure exists
-					if (!currentFacets._facets) {
-						currentFacets._facets = {}
-					}
+				// Update the filter (not facet configuration)
+				this.objectStore.updateFilter(fieldName, selectedValues)
 
-					// Set the field facet configuration
-					currentFacets._facets[fieldName] = {
-						type: 'terms',
-						terms: selectedValues,
-					}
+				// eslint-disable-next-line no-console
+				console.log('Updated filters:', this.objectStore.activeFilters)
 
-					// eslint-disable-next-line no-console
-					console.log('Updated facets structure:', currentFacets)
-
-					// Update store and refresh
-					this.objectStore.setActiveFacets(currentFacets)
-					await this.objectStore.refreshObjectList()
-				}
+				// Refresh the object list to apply the filter
+				await this.objectStore.refreshObjectList()
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Error in updateDropdownSelection:', error)
@@ -648,265 +688,299 @@ export default {
 			this.objectStore.setActiveFacets(currentFacets)
 			await this.objectStore.refreshObjectList()
 		},
+		/**
+		 * Get dropdown options for a metadata field
+		 * Uses facet results if available, otherwise uses sample values
+		 * @param fieldName
+		 */
+		getMetadataDropdownOptions(fieldName) {
+			const options = []
+
+			// eslint-disable-next-line no-console
+			console.log('getMetadataDropdownOptions for:', fieldName)
+			// eslint-disable-next-line no-console
+			console.log('Available facets:', this.objectStore.currentFacets)
+
+			// First, try to get values from current facet results
+			const facetData = this.objectStore.currentFacets?.['@self']?.[fieldName]
+			// eslint-disable-next-line no-console
+			console.log('Facet data for', fieldName, ':', facetData)
+
+			if (facetData && facetData.buckets) {
+				facetData.buckets.forEach(bucket => {
+					if (bucket && bucket.key !== undefined) {
+						options.push({
+							value: bucket.key,
+							label: bucket.label || bucket.key,
+							count: bucket.results,
+						})
+					}
+				})
+				// eslint-disable-next-line no-console
+				console.log('Options from facet data:', options)
+			} else {
+				// Fallback to sample values from facetable fields
+				const fieldInfo = this.objectStore.availableMetadataFacets[fieldName]
+				// eslint-disable-next-line no-console
+				console.log('Field info for', fieldName, ':', fieldInfo)
+
+				if (fieldInfo && fieldInfo.sample_values) {
+					fieldInfo.sample_values.forEach(sampleValue => {
+						if (sampleValue !== null && sampleValue !== undefined) {
+							// Handle both string and object values
+							let value, label, count
+							if (typeof sampleValue === 'object' && sampleValue !== null && sampleValue.value !== undefined) {
+								value = sampleValue.value
+								label = sampleValue.label || sampleValue.value
+								count = sampleValue.count
+							} else {
+								value = String(sampleValue)
+								label = String(sampleValue)
+								count = null
+							}
+
+							// Avoid duplicates and ensure value is valid
+							if (value !== null && value !== undefined && !options.find(opt => opt.value === value)) {
+								options.push({ value, label, count })
+							}
+						}
+					})
+					// eslint-disable-next-line no-console
+					console.log('Options from sample values:', options)
+				}
+			}
+
+			// Filter out any invalid options and sort
+			const finalOptions = options
+				.filter(option => option && option.value !== null && option.value !== undefined)
+				.sort((a, b) => {
+					if (a.count && b.count) {
+						return b.count - a.count
+					}
+					return (a.label || '').localeCompare(b.label || '')
+				})
+
+			// eslint-disable-next-line no-console
+			console.log('Final options for', fieldName, ':', finalOptions)
+			return finalOptions
+		},
+		/**
+		 * Get currently selected values for a metadata dropdown
+		 * @param fieldName
+		 */
+		getSelectedMetadataDropdownValues(fieldName) {
+			// Metadata filters use @self. prefix
+			const metadataKey = `@self.${fieldName}`
+			const filterValues = this.objectStore.activeFilters[metadataKey]
+			if (!filterValues || !Array.isArray(filterValues)) {
+				return []
+			}
+
+			// Convert filter values back to dropdown options
+			const options = this.getMetadataDropdownOptions(fieldName)
+			const selectedValues = []
+
+			filterValues.forEach(value => {
+				const option = options.find(opt => opt.value === value)
+				if (option) {
+					selectedValues.push(option)
+				} else {
+					// Create option for values not in current options
+					selectedValues.push({
+						value,
+						label: value,
+						count: null,
+					})
+				}
+			})
+
+			return selectedValues
+		},
+		/**
+		 * Update metadata dropdown selection for a field
+		 * @param fieldName
+		 * @param selectedOptions
+		 */
+		async updateMetadataDropdownSelection(fieldName, selectedOptions) {
+			// eslint-disable-next-line no-console
+			console.log('updateMetadataDropdownSelection called:', { fieldName, selectedOptions })
+
+			try {
+				// Extract values from selected options
+				const selectedValues = selectedOptions && selectedOptions.length > 0
+					? selectedOptions.map(option => option.value).filter(value => value !== null && value !== undefined)
+					: []
+
+				// eslint-disable-next-line no-console
+				console.log('Selected metadata values:', selectedValues)
+
+				// Update the filter with @self. prefix for metadata fields
+				const metadataKey = `@self.${fieldName}`
+				this.objectStore.updateFilter(metadataKey, selectedValues)
+
+				// eslint-disable-next-line no-console
+				console.log('Updated filters:', this.objectStore.activeFilters)
+
+				// Refresh the object list to apply the filter
+				await this.objectStore.refreshObjectList()
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Error in updateMetadataDropdownSelection:', error)
+			}
+		},
 	},
 }
 </script>
 
 <style scoped>
-.facet-component {
-	padding: 12px 0;
+.facet-container {
+	padding: 16px;
 }
 
 .facet-loading {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 16px;
-	color: var(--color-text-maxcontrast);
-}
-
-.facet-title {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	margin: 0 0 16px 0;
-	padding: 0 16px;
+	text-align: center;
+	padding: 20px;
 }
 
 .facet-section {
 	margin-bottom: 24px;
-	border-bottom: 1px solid var(--color-border);
 	padding-bottom: 16px;
+	border-bottom: 1px solid var(--color-border);
 }
 
 .facet-section:last-child {
 	border-bottom: none;
 	margin-bottom: 0;
-	padding-bottom: 0;
 }
 
 .facet-section-title {
-	color: var(--color-text-maxcontrast);
-	font-size: 12px;
-	font-weight: bold;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-main-text);
 	margin: 0 0 12px 0;
-	padding: 0 16px;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
 }
 
 .facet-list {
-	padding: 0 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .facet-item {
-	margin-bottom: 12px;
-}
-
-.facet-info {
-	display: block;
-	color: var(--color-text-maxcontrast);
-	font-size: 11px;
-	margin-top: 4px;
-	margin-left: 28px;
-	line-height: 1.3;
-}
-
-/* Current Filters Section - At the top */
-.current-filters-section {
-	background-color: var(--color-background-hover);
-	border-radius: 8px;
-	padding: 16px;
-	margin: 0 16px 24px 16px;
-	border: 1px solid var(--color-border);
-}
-
-.current-filters-title {
-	color: var(--color-text-maxcontrast);
-	font-size: 12px;
-	font-weight: bold;
-	margin: 0 0 12px 0;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.active-filters {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
-}
-
-.active-filter-group {
-	background: var(--color-background-plain);
-	border-radius: 6px;
-	padding: 12px;
-	border: 1px solid var(--color-border-dark);
-}
-
-.active-filter-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 8px;
-}
-
-.active-filter-name {
-	font-weight: 600;
-	color: var(--color-main-text);
-	font-size: 13px;
-}
-
-.active-filter-values {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-}
-
-.active-filter-value {
-	background: var(--color-primary-light);
-	color: var(--color-primary-text);
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 11px;
-	display: flex;
-	align-items: center;
 	gap: 4px;
 }
 
-.value-count {
-	color: var(--color-text-maxcontrast);
-	font-weight: normal;
-}
-
-.filter-more {
-	color: var(--color-text-maxcontrast);
-	font-style: italic;
-	font-size: 11px;
-	padding: 4px 8px;
-	background: var(--color-background-dark);
-	border-radius: 12px;
-}
-
-.clear-filters {
-	display: flex;
-	justify-content: center;
-	padding-top: 8px;
-	border-top: 1px solid var(--color-border);
-}
-
-.no-active-filters {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	padding: 24px;
-}
-
-.no-filters-text {
-	color: var(--color-text-maxcontrast);
-	font-style: italic;
-	font-size: 13px;
-}
-
-/* Available Filters Section */
-.available-filters-section {
-	border-top: 2px solid var(--color-border);
-	padding-top: 16px;
-}
-
-/* Facet Date Ranges */
-.facet-date-ranges {
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.facet-date-item {
-	margin-bottom: 20px;
-}
-
-.facet-date-label {
-	display: block;
-	font-weight: 500;
-	color: var(--color-main-text);
-	margin-bottom: 8px;
-	font-size: 13px;
-	cursor: help;
-}
-
-.date-range-info {
-	color: var(--color-text-maxcontrast);
-	font-weight: normal;
-	font-size: 11px;
-}
-
-.date-range-inputs {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-}
-
-.date-separator {
+.facet-info {
 	color: var(--color-text-maxcontrast);
 	font-size: 12px;
-	white-space: nowrap;
+	margin-left: 24px;
 }
 
-/* Facet Dropdowns */
 .facet-dropdowns {
-	padding: 0 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 	margin-bottom: 16px;
 }
 
 .facet-dropdown-item {
-	margin-bottom: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .facet-dropdown-label {
-	display: block;
+	font-size: 14px;
 	font-weight: 500;
 	color: var(--color-main-text);
-	margin-bottom: 6px;
-	font-size: 13px;
+	cursor: help;
 }
 
 .field-coverage {
-	color: var(--color-text-maxcontrast);
+	font-size: 12px;
 	font-weight: normal;
-	font-size: 11px;
+	color: var(--color-text-maxcontrast);
 }
 
 .dropdown-option {
 	display: flex;
-	align-items: center;
 	justify-content: space-between;
+	align-items: center;
 	width: 100%;
 }
 
 .option-label {
 	flex: 1;
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	text-align: left;
 }
 
 .option-count {
+	font-size: 12px;
 	color: var(--color-text-maxcontrast);
-	font-size: 11px;
-	margin-left: 8px;
-	flex-shrink: 0;
+	background: var(--color-background-dark);
+	padding: 2px 6px;
+	border-radius: 12px;
+	min-width: 20px;
+	text-align: center;
 }
 
 .selected-option {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	font-weight: 500;
+}
+
+.date-range-container {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.date-range-item {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.date-range-label {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--color-main-text);
+	cursor: help;
+}
+
+.date-range-inputs {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.date-range-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.date-range-row label {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	min-width: 40px;
+}
+
+.date-range-context {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin-top: 4px;
 }
 
 .facet-empty {
-	padding: 16px;
 	text-align: center;
 	color: var(--color-text-maxcontrast);
+	padding: 20px;
 	font-style: italic;
 }
 </style>

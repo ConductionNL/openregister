@@ -53,28 +53,66 @@ Response includes facetable field metadata:
 
 ```json
 {
-  'results': [],
-  'total': 0,
-  'facetable': {
-    '@self': {
-      'register': {
-        'type': 'categorical',
-        'description': 'Register that contains the object',
-        'facet_types': ['terms'],
-        'has_labels': true,
-        'sample_values': [
-          {'value': 1, 'label': 'Publications Register', 'count': 150}
+  "results": [],
+  "total": 0,
+  "facets": {
+    "@self": {
+      "register": {
+        "type": "categorical",
+        "description": "Register that contains the object",
+        "facet_types": ["terms"],
+        "has_labels": true,
+        "sample_values": [
+          {"value": "1", "label": "Publications", "count": 45},
+          {"value": "2", "label": "Events", "count": 32}
+        ]
+      },
+      "created": {
+        "type": "date_histogram", 
+        "interval": "month",
+        "buckets": [
+          {"key": "2024-01", "results": 15},
+          {"key": "2024-02", "results": 28}
         ]
       }
     },
-    'object_fields': {
-      'status': {
-        'type': 'string',
-        'description': 'Object field: status',
-        'facet_types': ['terms'],
-        'cardinality': 'low',  // ≤50 unique values
-        'sample_values': ['published', 'draft', 'archived'],
-        'appearance_rate': 85  // Count of objects containing this field
+    "status": {
+      "type": "terms",
+      "buckets": [
+        {"key": "active", "results": 67},
+        {"key": "inactive", "results": 10}
+      ]
+    },
+    "priority": {
+      "type": "terms", 
+      "buckets": [
+        {"key": "high", "results": 23},
+        {"key": "medium", "results": 45},
+        {"key": "low", "results": 9}
+      ]
+    }
+  },
+  "facetable": {
+    "@self": {
+      "register": {
+        "type": "categorical",
+        "description": "Register that contains the object",
+        "facet_types": ["terms"],
+        "has_labels": true,
+        "sample_values": [
+          {"value": "1", "label": "Publications", "count": 45},
+          {"value": "2", "label": "Events", "count": 32}
+        ]
+      }
+    },
+    "object_fields": {
+      "status": {
+        "type": "string",
+        "description": "Object field: status", 
+        "facet_types": ["terms"],
+        "cardinality": "low",
+        "sample_values": ["active", "inactive", "pending"],
+        "appearance_rate": 77
       }
     }
   }

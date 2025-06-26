@@ -186,10 +186,12 @@ export const useObjectStore = defineStore('object', {
 		columnFilters: {}, // Will contain both metadata and property filters
 		loading: false,
 		// Facet-related state
-		facets: {}, // Current facet results
-		facetableFields: {}, // Available facetable fields for dynamic UI
-		activeFacets: {}, // Currently active/selected facets
-		facetsLoading: false, // Loading state for facets
+		facets: {},
+		facetableFields: {},
+		activeFacets: {},
+		facetsLoading: false,
+		// Add new filters state for selected filter values
+		activeFilters: {},
 	}),
 	actions: {
 		// Helper method to build endpoint path
@@ -346,6 +348,22 @@ export const useObjectStore = defineStore('object', {
 			Object.entries(this.filters).forEach(([key, value]) => {
 				if (value !== undefined && value !== '') {
 					params.push(`${key}=${encodeURIComponent(value)}`)
+				}
+			})
+
+			// Handle active filters (from facet selections)
+			Object.entries(this.activeFilters).forEach(([fieldName, values]) => {
+				if (values && Array.isArray(values) && values.length > 0) {
+					values.forEach(value => {
+						if (fieldName.startsWith('@self.')) {
+							// Handle metadata filters
+							const metadataField = fieldName.replace('@self.', '')
+							params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+						} else {
+							// Handle object field filters
+							params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+						}
+					})
 				}
 			})
 
@@ -1348,6 +1366,22 @@ export const useObjectStore = defineStore('object', {
 					}
 				})
 
+				// Handle active filters (from facet selections)
+				Object.entries(this.activeFilters).forEach(([fieldName, values]) => {
+					if (values && Array.isArray(values) && values.length > 0) {
+						values.forEach(value => {
+							if (fieldName.startsWith('@self.')) {
+								// Handle metadata filters
+								const metadataField = fieldName.replace('@self.', '')
+								params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+							} else {
+								// Handle object field filters
+								params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+							}
+						})
+					}
+				})
+
 				// Limit to 0 to only get facets, not objects
 				params.push('_limit=0')
 
@@ -1389,6 +1423,13 @@ export const useObjectStore = defineStore('object', {
 						created: { type: 'date_histogram', interval: 'month' },
 					},
 				}
+
+				// Add facets for object fields that support terms faceting
+				Object.entries(this.facetableFields?.object_fields || {}).forEach(([fieldName, field]) => {
+					if (fieldName !== 'id' && field.facet_types && field.facet_types.includes('terms')) {
+						config._facets[fieldName] = { type: 'terms' }
+					}
+				})
 			}
 
 			return config
@@ -1481,6 +1522,24 @@ export const useObjectStore = defineStore('object', {
 			// Get updated facets
 			await this.getFacets()
 		},
+		// Add methods to manage active filters
+		setActiveFilters(filters) {
+			this.activeFilters = filters
+		},
+		updateFilter(fieldName, values) {
+			if (!values || (Array.isArray(values) && values.length === 0)) {
+				// Remove filter if no values
+				if (this.activeFilters[fieldName]) {
+					delete this.activeFilters[fieldName]
+				}
+			} else {
+				// Set filter values
+				this.activeFilters[fieldName] = Array.isArray(values) ? values : [values]
+			}
+		},
+		clearAllFilters() {
+			this.activeFilters = {}
+		},
 	},
 	getters: {
 		isAllSelected() {
@@ -1562,6 +1621,13 @@ export const useObjectStore = defineStore('object', {
 		},
 		hasFacetableFields() {
 			return Object.keys(this.allAvailableFacets).length > 0
+		},
+		// Active filters getters
+		hasActiveFilters() {
+			return Object.keys(this.activeFilters).length > 0
+		},
+		activeFilterCount() {
+			return Object.values(this.activeFilters).reduce((total, values) => total + (Array.isArray(values) ? values.length : 0), 0)
 		},
 	},
 })
