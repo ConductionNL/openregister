@@ -185,6 +185,13 @@ export const useObjectStore = defineStore('object', {
 		properties: {}, // Will be populated based on schema
 		columnFilters: {}, // Will contain both metadata and property filters
 		loading: false,
+		// Facet-related state
+		facets: {},
+		facetableFields: {},
+		activeFacets: {},
+		facetsLoading: false,
+		// Add new filters state for selected filter values
+		activeFilters: {},
 	}),
 	actions: {
 		// Helper method to build endpoint path
@@ -328,6 +335,8 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('Register and schema are required')
 			}
 
+			this.loading = true
+
 			let endpoint = this._buildObjectPath({
 				register,
 				schema,
@@ -342,11 +351,39 @@ export const useObjectStore = defineStore('object', {
 				}
 			})
 
+			// Handle active filters (from facet selections)
+			Object.entries(this.activeFilters).forEach(([fieldName, values]) => {
+				if (values && Array.isArray(values) && values.length > 0) {
+					values.forEach(value => {
+						if (fieldName.startsWith('@self.')) {
+							// Handle metadata filters
+							const metadataField = fieldName.replace('@self.', '')
+							params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+						} else {
+							// Handle object field filters
+							params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+						}
+					})
+				}
+			})
+
 			if (options.limit || this.pagination.limit) {
 				params.push('_limit=' + (options.limit || this.pagination.limit))
 			}
 			if (options.page || this.pagination.page) {
 				params.push('_page=' + (options.page || this.pagination.page))
+			}
+
+			// Include facets and facetable fields if requested
+			if (options.includeFacets !== false) { // Default to true
+				// Request facetable fields discovery
+				params.push('_facetable=true')
+
+				// Add basic facet configuration
+				const facetConfiguration = this.buildFacetConfiguration()
+				if (facetConfiguration?._facets) {
+					this.addFacetParamsToUrl(params, facetConfiguration)
+				}
 			}
 
 			if (params.length > 0) {
@@ -356,11 +393,28 @@ export const useObjectStore = defineStore('object', {
 			try {
 				const response = await fetch(endpoint)
 				const data = await response.json()
+
+				// Set the object list
 				this.setObjectList(data)
+
+				// Set facets if included in response
+				if (data.facets) {
+					this.setFacets(data.facets)
+				}
+
+				// Set facetable fields if included in response
+				if (data.facetable) {
+					this.setFacetableFields(data.facetable)
+				}
+
 				return { response, data }
 			} catch (err) {
 				console.error(err)
+				this.setFacets({})
+				this.setFacetableFields({})
 				throw err
+			} finally {
+				this.loading = false
 			}
 		},
 		async getObject({ register, schema, objectId }) {
@@ -670,6 +724,10 @@ export const useObjectStore = defineStore('object', {
 		},
 		setSelectedObjects(objects) {
 			this.selectedObjects = objects
+		},
+		setSelectAllObjects() {
+			// Legacy method for compatibility - use toggleSelectAllObjects instead
+			this.toggleSelectAllObjects()
 		},
 		toggleSelectAllObjects() {
 			if (this.isAllSelected) {
@@ -1206,6 +1264,282 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		// Facet-related methods
+		setFacets(facets) {
+			this.facets = facets
+		},
+		setFacetableFields(facetableFields) {
+			this.facetableFields = facetableFields
+		},
+		setActiveFacets(activeFacets) {
+			this.activeFacets = activeFacets
+		},
+		setFacetsLoading(loading) {
+			this.facetsLoading = loading
+		},
+		/**
+		 * Get facetable fields for the current register and schema
+		 * This discovers what fields can be used for faceting
+		 * @param options
+		 */
+		async getFacetableFields(options = {}) {
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+
+			if (!register || !schema) {
+				console.warn('Register and schema are required for facetable fields discovery')
+				return
+			}
+
+			this.setFacetsLoading(true)
+
+			try {
+				let endpoint = this._buildObjectPath({ register, schema })
+
+				// Add facetable discovery parameter and limit to 0 for faster response
+				const params = ['_facetable=true', '_limit=0']
+
+				// Apply current filters for context-aware discovery
+				Object.entries(this.filters).forEach(([key, value]) => {
+					if (value !== undefined && value !== '') {
+						params.push(`${key}=${encodeURIComponent(value)}`)
+					}
+				})
+
+				endpoint += '?' + params.join('&')
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+
+				if (data.facetable) {
+					this.setFacetableFields(data.facetable)
+				}
+
+				return data.facetable
+			} catch (error) {
+				console.error('Error getting facetable fields:', error)
+				this.setFacetableFields({})
+				throw error
+			} finally {
+				this.setFacetsLoading(false)
+			}
+		},
+		/**
+		 * Get facets for the current search/filter context
+		 * This returns actual facet counts based on the current query
+		 * @param facetConfig
+		 * @param options
+		 */
+		async getFacets(facetConfig = null, options = {}) {
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+
+			if (!register || !schema) {
+				console.warn('Register and schema are required for facets')
+				return
+			}
+
+			this.setFacetsLoading(true)
+
+			try {
+				let endpoint = this._buildObjectPath({ register, schema })
+				const params = []
+
+				// Build facet configuration from active facets or provided config
+				const facetConfiguration = facetConfig || this.buildFacetConfiguration()
+
+				if (facetConfiguration && Object.keys(facetConfiguration).length > 0) {
+					// Add facet configuration as URL parameters
+					this.addFacetParamsToUrl(params, facetConfiguration)
+				}
+
+				// Apply current filters for context
+				Object.entries(this.filters).forEach(([key, value]) => {
+					if (value !== undefined && value !== '') {
+						params.push(`${key}=${encodeURIComponent(value)}`)
+					}
+				})
+
+				// Handle active filters (from facet selections)
+				Object.entries(this.activeFilters).forEach(([fieldName, values]) => {
+					if (values && Array.isArray(values) && values.length > 0) {
+						values.forEach(value => {
+							if (fieldName.startsWith('@self.')) {
+								// Handle metadata filters
+								const metadataField = fieldName.replace('@self.', '')
+								params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+							} else {
+								// Handle object field filters
+								params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+							}
+						})
+					}
+				})
+
+				// Limit to 0 to only get facets, not objects
+				params.push('_limit=0')
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+
+				if (data.facets) {
+					this.setFacets(data.facets)
+				}
+
+				return data.facets
+			} catch (error) {
+				console.error('Error getting facets:', error)
+				this.setFacets({})
+				throw error
+			} finally {
+				this.setFacetsLoading(false)
+			}
+		},
+		/**
+		 * Build facet configuration from currently active facets
+		 */
+		buildFacetConfiguration() {
+			const config = {}
+
+			// Build from active facets - this can be expanded based on UI needs
+			if (Object.keys(this.activeFacets).length > 0) {
+				config._facets = this.activeFacets
+			} else {
+				// Default facet configuration - basic terms facets for common fields
+				config._facets = {
+					'@self': {
+						register: { type: 'terms' },
+						schema: { type: 'terms' },
+						created: { type: 'date_histogram', interval: 'month' },
+					},
+				}
+
+				// Add facets for object fields that support terms faceting
+				Object.entries(this.facetableFields?.object_fields || {}).forEach(([fieldName, field]) => {
+					if (fieldName !== 'id' && field.facet_types && field.facet_types.includes('terms')) {
+						config._facets[fieldName] = { type: 'terms' }
+					}
+				})
+			}
+
+			return config
+		},
+		/**
+		 * Add facet parameters to URL params array
+		 * @param params
+		 * @param facetConfig
+		 */
+		addFacetParamsToUrl(params, facetConfig) {
+			if (facetConfig._facets) {
+				// Handle @self metadata facets
+				if (facetConfig._facets['@self']) {
+					Object.entries(facetConfig._facets['@self']).forEach(([field, config]) => {
+						params.push(`_facets[@self][${field}][type]=${config.type}`)
+						if (config.interval) {
+							params.push(`_facets[@self][${field}][interval]=${config.interval}`)
+						}
+						if (config.terms && Array.isArray(config.terms)) {
+							config.terms.forEach((term, index) => {
+								params.push(`_facets[@self][${field}][terms][${index}]=${encodeURIComponent(term)}`)
+							})
+						}
+						if (config.ranges) {
+							config.ranges.forEach((range, index) => {
+								if (range.from) params.push(`_facets[@self][${field}][ranges][${index}][from]=${range.from}`)
+								if (range.to) params.push(`_facets[@self][${field}][ranges][${index}][to]=${range.to}`)
+								if (range.key) params.push(`_facets[@self][${field}][ranges][${index}][key]=${range.key}`)
+							})
+						}
+					})
+				}
+
+				// Handle object field facets
+				Object.entries(facetConfig._facets).forEach(([field, config]) => {
+					if (field !== '@self') {
+						params.push(`_facets[${field}][type]=${config.type}`)
+						if (config.interval) {
+							params.push(`_facets[${field}][interval]=${config.interval}`)
+						}
+						if (config.terms && Array.isArray(config.terms)) {
+							config.terms.forEach((term, index) => {
+								params.push(`_facets[${field}][terms][${index}]=${encodeURIComponent(term)}`)
+							})
+						}
+						if (config.ranges) {
+							config.ranges.forEach((range, index) => {
+								if (range.from) params.push(`_facets[${field}][ranges][${index}][from]=${range.from}`)
+								if (range.to) params.push(`_facets[${field}][ranges][${index}][to]=${range.to}`)
+								if (range.key) params.push(`_facets[${field}][ranges][${index}][key]=${range.key}`)
+							})
+						}
+					}
+				})
+			}
+		},
+		/**
+		 * Update active facets and refresh data
+		 * @param field
+		 * @param facetType
+		 * @param enabled
+		 */
+		async updateActiveFacet(field, facetType, enabled = true) {
+			if (enabled) {
+				if (!this.activeFacets._facets) {
+					this.activeFacets._facets = {}
+				}
+
+				if (field.startsWith('@self.')) {
+					if (!this.activeFacets._facets['@self']) {
+						this.activeFacets._facets['@self'] = {}
+					}
+					const fieldName = field.replace('@self.', '')
+					this.activeFacets._facets['@self'][fieldName] = { type: facetType }
+				} else {
+					this.activeFacets._facets[field] = { type: facetType }
+				}
+			} else {
+				// Remove facet
+				if (field.startsWith('@self.')) {
+					const fieldName = field.replace('@self.', '')
+					if (this.activeFacets._facets?.['@self']) {
+						delete this.activeFacets._facets['@self'][fieldName]
+					}
+				} else if (this.activeFacets._facets) {
+					delete this.activeFacets._facets[field]
+				}
+			}
+
+			// Get updated facets
+			await this.getFacets()
+		},
+		// Add methods to manage active filters
+		setActiveFilters(filters) {
+			this.activeFilters = filters
+		},
+		updateFilter(fieldName, values) {
+			if (!values || (Array.isArray(values) && values.length === 0)) {
+				// Remove filter if no values
+				if (this.activeFilters[fieldName]) {
+					delete this.activeFilters[fieldName]
+				}
+			} else {
+				// Set filter values
+				this.activeFilters[fieldName] = Array.isArray(values) ? values : [values]
+			}
+		},
+		clearAllFilters() {
+			this.activeFilters = {}
+		},
 	},
 	getters: {
 		isAllSelected() {
@@ -1265,6 +1599,35 @@ export const useObjectStore = defineStore('object', {
 				...this.enabledProperties, // Then properties
 				...this.enabledOtherMetadata, // Then other metadata
 			]
+		},
+		// Facet-related getters
+		availableMetadataFacets() {
+			return this.facetableFields?.['@self'] || {}
+		},
+		availableObjectFieldFacets() {
+			return this.facetableFields?.object_fields || {}
+		},
+		allAvailableFacets() {
+			return {
+				...this.availableMetadataFacets,
+				...this.availableObjectFieldFacets,
+			}
+		},
+		currentFacets() {
+			return this.facets || {}
+		},
+		hasFacets() {
+			return Object.keys(this.currentFacets).length > 0
+		},
+		hasFacetableFields() {
+			return Object.keys(this.allAvailableFacets).length > 0
+		},
+		// Active filters getters
+		hasActiveFilters() {
+			return Object.keys(this.activeFilters).length > 0
+		},
+		activeFilterCount() {
+			return Object.values(this.activeFilters).reduce((total, values) => total + (Array.isArray(values) ? values.length : 0), 0)
 		},
 	},
 })
