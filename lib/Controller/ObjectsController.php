@@ -223,9 +223,9 @@ class ObjectsController extends Controller
      * This method builds a query structure compatible with the searchObjectsPaginated method
      * which supports faceting, facetable field discovery, and all other search features.
      *
-     * @param string|null $register Optional register identifier
-     * @param string|null $schema   Optional schema identifier
-     * @param array|null  $ids      Optional array of specific IDs to filter
+     * @param int|string|null $register Optional register identifier (should be resolved numeric ID)
+     * @param int|string|null $schema   Optional schema identifier (should be resolved numeric ID)
+     * @param array|null      $ids      Optional array of specific IDs to filter
      *
      * @return array Query array containing:
      *               - @self: Metadata filters (register, schema, etc.)
@@ -242,7 +242,7 @@ class ObjectsController extends Controller
      *               - _facetable: Include facetable field discovery
      *               - _ids: Specific IDs to filter
      */
-    private function buildSearchQuery(?string $register=null, ?string $schema=null, ?array $ids=null): array
+    private function buildSearchQuery(int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
     {
         $params = $this->request->getParams();
 
@@ -256,12 +256,12 @@ class ObjectsController extends Controller
         $metadataFields = ['register', 'schema', 'uuid', 'created', 'updated', 'published', 'depublished', 'deleted'];
         $query['@self'] = [];
         
-        // Add register and schema to @self if provided
+        // Add register and schema to @self if provided (ensure they are integers)
         if ($register !== null) {
-            $query['@self']['register'] = $register;
+            $query['@self']['register'] = (int) $register;
         }
         if ($schema !== null) {
-            $query['@self']['schema'] = $schema;
+            $query['@self']['schema'] = (int) $schema;
         }
 
         // Extract special underscore parameters
@@ -381,11 +381,17 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Build search query for faceting-enabled method
-        $query = $this->buildSearchQuery($register, $schema);
-
-        // Set register and schema context
+        // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
+        // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
+        // external frontend calls (/api/objects/petstore/dogs)
         $objectService->setRegister($register)->setSchema($schema);
+
+        // Get resolved numeric IDs for the search query
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId = $objectService->getSchema();
+
+        // Build search query with resolved numeric IDs
+        $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
 
         try {
             // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
