@@ -396,27 +396,11 @@ class ObjectsController extends Controller
             // Fallback to legacy method if something goes wrong
             error_log("Faceting-enabled search failed, falling back to legacy method: " . $e->getMessage());
             
-            // Get config and fetch objects using legacy method
-            $config = $this->getConfig($register, $schema);
-
-            // @TODO dit moet netter
-            foreach ($config['filters'] as $key => $filter) {
-                switch ($key) {
-                    case 'register':
-                        $config['filters'][$key] = $objectService->getRegister();
-                        break;
-                    case 'schema':
-                        $config['filters'][$key] = $objectService->getSchema();
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            $objects = $objectService->findAll($config);
-            $total = $objectService->count($config);
+            // Use findAllPaginated which now supports _facetable parameter
+            $requestParams = $this->request->getParams();
+            $result = $objectService->findAllPaginated($requestParams);
             
-            return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
+            return new JSONResponse($result);
         }
 
     }//end index()

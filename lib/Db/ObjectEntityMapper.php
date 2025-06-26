@@ -1824,13 +1824,13 @@ class ObjectEntityMapper extends QBMapper
     {
         // Check if handlers are available
         if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
-            return ['facets' => []];
+            return [];
         }
 
         // Extract facet configuration
         $facetConfig = $query['_facets'] ?? [];
         if (empty($facetConfig)) {
-            return ['facets' => []];
+            return [];
         }
 
         // Extract base query (without facet config)
@@ -1876,7 +1876,7 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        return ['facets' => $facets];
+        return $facets;
 
     }//end getSimpleFacets()
 
