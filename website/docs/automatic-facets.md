@@ -1016,3 +1016,42 @@ The FacetComponent can be extended or customized:
 ```
 
 This integration provides a solid foundation for building sophisticated search and filtering interfaces that automatically adapt to your data structure and content. 
+
+## API Endpoint Compatibility
+
+The OpenRegister API supports multiple ways to identify registers and schemas in endpoints:
+
+- **Numeric IDs**: `/api/objects/4/666` (used by Nextcloud UI)
+- **Slugs**: `/api/objects/petstore/dogs` (used by external frontends)  
+- **UUIDs**: `/api/objects/550e8400-e29b-41d4-a716-446655440000/6ba7b810-9dad-11d1-80b4-00c04fd430c8`
+
+### Controller Implementation Pattern
+
+All controller methods follow this critical pattern for proper register/schema resolution:
+
+```php
+public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
+{
+    // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
+    // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
+    // external frontend calls (/api/objects/petstore/dogs)
+    $objectService->setRegister($register)->setSchema($schema);
+
+    // Get resolved numeric IDs for the search query  
+    $resolvedRegisterId = $objectService->getRegister();
+    $resolvedSchemaId = $objectService->getSchema();
+
+    // Use resolved IDs in queries and operations
+    $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
+    
+    // ... rest of method
+}
+```
+
+This pattern ensures that:
+- Slugs like 'petstore' are resolved to their numeric IDs
+- UUIDs are resolved to their numeric IDs
+- Numeric IDs are validated and used directly
+- All database operations use consistent numeric identifiers
+
+// ... existing code ... 
