@@ -1161,6 +1161,7 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::insert($entity);
         
         // Dispatch creation event.
+        error_log("ObjectEntityMapper: Dispatching ObjectCreatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
         return $entity;
@@ -1235,6 +1236,7 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
+        error_log("ObjectEntityMapper: Dispatching ObjectUpdatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
         return $entity;
@@ -1287,6 +1289,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::delete($object);
 
         // Dispatch deletion event.
+        error_log("ObjectEntityMapper: Dispatching ObjectDeletedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(
             new ObjectDeletedEvent($object)
         );
@@ -1425,10 +1428,8 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch lock event.
-        $this->eventDispatcher->dispatch(
-            ObjectLockedEvent::class,
-            new ObjectLockedEvent($object)
-        );
+        error_log("ObjectEntityMapper: Dispatching ObjectLockedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL') . ", Process: " . ($process ?? 'NULL'));
+        $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent($object));
 
         return $object;
 
@@ -1461,10 +1462,8 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch unlock event.
-        $this->eventDispatcher->dispatch(
-            ObjectUnlockedEvent::class,
-            new ObjectUnlockedEvent($object)
-        );
+        error_log("ObjectEntityMapper: Dispatching ObjectUnlockedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL'));
+        $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent($object));
 
         return $object;
 
