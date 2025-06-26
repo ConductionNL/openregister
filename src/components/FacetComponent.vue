@@ -1,0 +1,912 @@
+<template>
+	<div class="facet-component">
+		<div v-if="objectStore.facetsLoading" class="facet-loading">
+			<NcLoadingIcon :size="20" />
+			<span>Loading facets...</span>
+		</div>
+
+		<div v-else-if="objectStore.hasFacetableFields" class="facet-content">
+			<!-- Current Active Filters Section - Always at the top -->
+			<div class="current-filters-section">
+				<h3 class="current-filters-title">
+					{{ t('openregister', 'Current Filters') }}
+				</h3>
+
+				<div v-if="hasActiveFilters" class="active-filters">
+					<!-- Display active facets -->
+					<div v-for="(facetData, facetField) in objectStore.currentFacets" :key="`active-${facetField}`" class="active-filter-group">
+						<div class="active-filter-header">
+							<span class="active-filter-name">{{ getActiveFacetDisplayName(facetField) }}</span>
+							<NcButton
+								type="tertiary"
+								size="small"
+								:aria-label="t('openregister', 'Remove filter')"
+								@click="removeFilter(facetField)">
+								<template #icon>
+									<Close :size="16" />
+								</template>
+							</NcButton>
+						</div>
+
+						<!-- Show facet values for this filter -->
+						<div v-if="facetData.buckets && facetData.buckets.length > 0" class="active-filter-values">
+							<div v-for="bucket in facetData.buckets.slice(0, 5)" :key="bucket.key" class="active-filter-value">
+								{{ bucket.key }}
+								<span class="value-count">({{ bucket.results }})</span>
+							</div>
+							<div v-if="facetData.buckets.length > 5" class="filter-more">
+								+{{ facetData.buckets.length - 5 }} more
+							</div>
+						</div>
+					</div>
+
+					<!-- Clear all filters button -->
+					<div class="clear-filters">
+						<NcButton
+							type="tertiary-no-background"
+							size="small"
+							@click="clearAllFilters">
+							{{ t('openregister', 'Clear all filters') }}
+						</NcButton>
+					</div>
+				</div>
+
+				<div v-else class="no-active-filters">
+					<span class="no-filters-text">{{ t('openregister', 'No active filters') }}</span>
+				</div>
+			</div>
+
+			<!-- Available Filters Section -->
+			<div class="available-filters-section">
+				<h3 class="facet-title">
+					{{ t('openregister', 'Available Filters') }}
+				</h3>
+
+				<!-- Metadata Facets -->
+				<div v-if="Object.keys(objectStore.availableMetadataFacets).length > 0" class="facet-section">
+					<h4 class="facet-section-title">
+						{{ t('openregister', 'Metadata Filters') }}
+					</h4>
+
+					<!-- Date Range Pickers for metadata date fields -->
+					<div class="facet-date-ranges">
+						<div
+							v-for="(field, fieldName) in metadataDateFields"
+							:key="`date-${fieldName}`"
+							class="facet-date-item">
+							<label
+								class="facet-date-label"
+								:title="field.description">
+								{{ capitalizeFieldName(fieldName) }}
+								<span v-if="field.date_range" class="date-range-info">
+									({{ formatDateRange(field.date_range) }})
+								</span>
+							</label>
+							<div class="date-range-inputs">
+								<NcDateTimePickerNative
+									:value="getDateRangeValue(fieldName, 'from')"
+									:placeholder="t('openregister', 'From date')"
+									type="date"
+									@update:value="updateDateRange(fieldName, 'from', $event)" />
+								<span class="date-separator">{{ t('openregister', 'to') }}</span>
+								<NcDateTimePickerNative
+									:value="getDateRangeValue(fieldName, 'to')"
+									:placeholder="t('openregister', 'To date')"
+									type="date"
+									@update:value="updateDateRange(fieldName, 'to', $event)" />
+								<NcButton
+									v-if="hasDateRange(fieldName)"
+									type="tertiary"
+									size="small"
+									:aria-label="t('openregister', 'Clear date range')"
+									@click="clearDateRange(fieldName)">
+									<template #icon>
+										<Close :size="16" />
+									</template>
+								</NcButton>
+							</div>
+						</div>
+					</div>
+
+					<!-- Non-date metadata facets -->
+					<div v-if="Object.keys(nonDateMetadataFields).length > 0" class="facet-list">
+						<div
+							v-for="(field, fieldName) in nonDateMetadataFields"
+							:key="`meta-${fieldName}`"
+							class="facet-item">
+							<NcCheckboxRadioSwitch
+								:checked="isActiveFacet(`@self.${fieldName}`)"
+								@update:checked="(status) => toggleFacet(`@self.${fieldName}`, field.facet_types[0], status)">
+								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
+							</NcCheckboxRadioSwitch>
+							<small class="facet-info">
+								{{ field.type }}
+								<span v-if="field.appearance_rate">({{ field.appearance_rate }} objects)</span>
+							</small>
+						</div>
+					</div>
+				</div>
+
+				<!-- Object Field Facets -->
+				<div v-if="Object.keys(objectStore.availableObjectFieldFacets).length > 0" class="facet-section">
+					<h4 class="facet-section-title">
+						{{ t('openregister', 'Property Filters') }}
+					</h4>
+
+					<!-- Terms-based dropdowns for object fields (excluding id) -->
+					<div class="facet-dropdowns">
+						<div
+							v-for="(field, fieldName) in termsFacetableFields"
+							:key="`dropdown-${fieldName}`"
+							class="facet-dropdown-item">
+							<label
+								class="facet-dropdown-label"
+								:title="field.description">
+								{{ capitalizeFieldName(fieldName) }}
+								<span v-if="field.appearance_rate" class="field-coverage">
+									({{ field.appearance_rate }}/{{ objectStore.objectList?.total || 0 }} objects)
+								</span>
+							</label>
+							<NcSelect
+								:value="getSelectedDropdownValues(fieldName)"
+								:options="getDropdownOptions(fieldName)"
+								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: capitalizeFieldName(fieldName) })"
+								:input-label="capitalizeFieldName(fieldName)"
+								:multiple="true"
+								:close-on-select="false"
+								:searchable="true"
+								:loading="objectStore.facetsLoading"
+								@update:value="updateDropdownSelection(fieldName, $event)">
+								<template #option="{ option }">
+									<div v-if="option" class="dropdown-option">
+										<span class="option-label">{{ option.label || option.value || '' }}</span>
+										<span v-if="option.count" class="option-count">({{ option.count }})</span>
+									</div>
+								</template>
+								<template #selected-option="{ option }">
+									<span v-if="option" class="selected-option">{{ option.label || option.value || '' }}</span>
+								</template>
+							</NcSelect>
+						</div>
+					</div>
+
+					<!-- Checkbox-based facets for non-terms fields (excluding id) -->
+					<div v-if="Object.keys(nonTermsObjectFieldFacets).length > 0" class="facet-list">
+						<div
+							v-for="(field, fieldName) in nonTermsObjectFieldFacets"
+							:key="`checkbox-${fieldName}`"
+							class="facet-item">
+							<NcCheckboxRadioSwitch
+								:checked="isActiveFacet(fieldName)"
+								@update:checked="(status) => toggleFacet(fieldName, field.facet_types[0], status)">
+								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
+							</NcCheckboxRadioSwitch>
+							<small class="facet-info">
+								{{ field.type }}
+								<span v-if="field.appearance_rate">({{ field.appearance_rate }} objects)</span>
+								<span v-if="field.sample_values && field.sample_values.length > 0">
+									- Sample: {{ field.sample_values.slice(0, 3).join(', ') }}
+								</span>
+							</small>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div v-else class="facet-empty">
+			<p>{{ t('openregister', 'No facetable fields available. Select a register and schema to see available filters.') }}</p>
+		</div>
+	</div>
+</template>
+
+<script>
+import { NcCheckboxRadioSwitch, NcLoadingIcon, NcButton, NcSelect, NcDateTimePickerNative } from '@nextcloud/vue'
+import Close from 'vue-material-design-icons/Close.vue'
+import { objectStore } from '../store/store.js'
+
+export default {
+	name: 'FacetComponent',
+	components: {
+		NcCheckboxRadioSwitch,
+		NcLoadingIcon,
+		NcButton,
+		NcSelect,
+		NcDateTimePickerNative,
+		Close,
+	},
+	data() {
+		return {
+			objectStore,
+		}
+	},
+	computed: {
+		hasActiveFilters() {
+			return this.objectStore.hasFacets && Object.keys(this.objectStore.currentFacets).length > 0
+		},
+		/**
+		 * Get object fields that support terms faceting (excluding id)
+		 * These will be shown as dropdowns
+		 */
+		termsFacetableFields() {
+			const fields = {}
+			Object.entries(this.objectStore.availableObjectFieldFacets).forEach(([fieldName, field]) => {
+				// Exclude id field and only include fields that support terms faceting
+				if (fieldName !== 'id' && field.facet_types && field.facet_types.includes('terms')) {
+					fields[fieldName] = field
+				}
+			})
+			return fields
+		},
+		/**
+		 * Get object fields that don't support terms faceting (excluding id field)
+		 * These will be shown as checkboxes
+		 */
+		nonTermsObjectFieldFacets() {
+			const fields = {}
+			Object.entries(this.objectStore.availableObjectFieldFacets).forEach(([fieldName, field]) => {
+				// Exclude id field, only include fields that don't support terms faceting
+				if (fieldName !== 'id' && (!field.facet_types || !field.facet_types.includes('terms'))) {
+					fields[fieldName] = field
+				}
+			})
+			return fields
+		},
+		/**
+		 * Get metadata fields that support date range faceting
+		 * These will be shown as date range pickers
+		 */
+		metadataDateFields() {
+			const fields = {}
+			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
+				// Include fields that are date type and support range faceting
+				if (field.type === 'date' && field.facet_types && field.facet_types.includes('range')) {
+					fields[fieldName] = field
+				}
+			})
+			return fields
+		},
+		/**
+		 * Get metadata fields that are not date fields (excluding id and uuid)
+		 * These will be shown as checkboxes
+		 */
+		nonDateMetadataFields() {
+			const fields = {}
+			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
+				// Exclude date fields, id, and uuid
+				if (field.type !== 'date' && fieldName !== 'id' && fieldName !== 'uuid') {
+					fields[fieldName] = field
+				}
+			})
+			return fields
+		},
+	},
+	methods: {
+		isActiveFacet(fieldName) {
+			if (fieldName.startsWith('@self.')) {
+				const field = fieldName.replace('@self.', '')
+				return Boolean(this.objectStore.activeFacets._facets?.['@self']?.[field])
+			} else {
+				return Boolean(this.objectStore.activeFacets._facets?.[fieldName])
+			}
+		},
+		async toggleFacet(fieldName, facetType, enabled) {
+			await this.objectStore.updateActiveFacet(fieldName, facetType, enabled)
+		},
+		getFacetDisplayName(facetField) {
+			if (facetField === '@self') {
+				return 'Metadata'
+			}
+
+			// Try to get a friendly name from facetable fields
+			const metadataField = this.objectStore.availableMetadataFacets[facetField]
+			if (metadataField) {
+				return metadataField.description || facetField
+			}
+
+			const objectField = this.objectStore.availableObjectFieldFacets[facetField]
+			if (objectField) {
+				return objectField.description || facetField
+			}
+
+			return facetField
+		},
+		getActiveFacetDisplayName(facetField) {
+			// Handle nested facet fields (e.g., '@self' contains multiple sub-facets)
+			if (facetField === '@self') {
+				return 'Metadata'
+			}
+
+			// For individual fields, use the same logic as getFacetDisplayName
+			return this.getFacetDisplayName(facetField)
+		},
+		async removeFilter(facetField) {
+			// Remove a specific active filter
+			if (facetField === '@self') {
+				// Remove all metadata facets
+				const metadataFields = Object.keys(this.objectStore.activeFacets._facets?.['@self'] || {})
+				for (const field of metadataFields) {
+					await this.objectStore.updateActiveFacet(`@self.${field}`, null, false)
+				}
+			} else {
+				// Remove individual field facet
+				await this.objectStore.updateActiveFacet(facetField, null, false)
+			}
+		},
+		async clearAllFilters() {
+			// Clear all active facets
+			this.objectStore.setActiveFacets({})
+			await this.objectStore.refreshObjectList()
+		},
+		/**
+		 * Get dropdown options for a specific field
+		 * Uses facet results if available, otherwise uses sample values
+		 * @param fieldName
+		 */
+		getDropdownOptions(fieldName) {
+			const options = []
+
+			// First, try to get values from current facet results
+			const facetData = this.objectStore.currentFacets[fieldName]
+			if (facetData && facetData.buckets) {
+				facetData.buckets.forEach(bucket => {
+					if (bucket && bucket.key !== undefined) {
+						options.push({
+							value: bucket.key,
+							label: bucket.label || bucket.key,
+							count: bucket.results,
+						})
+					}
+				})
+			} else {
+				// Fallback to sample values from facetable fields
+				const fieldInfo = this.objectStore.availableObjectFieldFacets[fieldName]
+				if (fieldInfo && fieldInfo.sample_values) {
+					fieldInfo.sample_values.forEach(sampleValue => {
+						if (sampleValue !== null && sampleValue !== undefined) {
+							// Handle both string and object values
+							let value, label, count
+							if (typeof sampleValue === 'object' && sampleValue !== null && sampleValue.value !== undefined) {
+								value = sampleValue.value
+								label = sampleValue.label || sampleValue.value
+								count = sampleValue.count
+							} else {
+								value = String(sampleValue)
+								label = String(sampleValue)
+								count = null
+							}
+
+							// Avoid duplicates and ensure value is valid
+							if (value !== null && value !== undefined && !options.find(opt => opt.value === value)) {
+								options.push({ value, label, count })
+							}
+						}
+					})
+				}
+			}
+
+			// Filter out any invalid options and sort
+			return options
+				.filter(option => option && option.value !== null && option.value !== undefined)
+				.sort((a, b) => {
+					if (a.count && b.count) {
+						return b.count - a.count
+					}
+					return (a.label || '').localeCompare(b.label || '')
+				})
+		},
+		/**
+		 * Get currently selected values for a dropdown
+		 * @param fieldName
+		 */
+		getSelectedDropdownValues(fieldName) {
+			const activeFacetData = this.objectStore.activeFacets._facets?.[fieldName]
+			if (!activeFacetData) {
+				return []
+			}
+
+			// Extract selected values from the active facet configuration
+			const options = this.getDropdownOptions(fieldName)
+			const selectedValues = []
+
+			// If we have terms configuration, extract the selected values
+			if (activeFacetData.type === 'terms' && activeFacetData.terms) {
+				activeFacetData.terms.forEach(term => {
+					const option = options.find(opt => opt.value === term)
+					if (option) {
+						selectedValues.push(option)
+					} else {
+						// Create option for values not in current options
+						selectedValues.push({
+							value: term,
+							label: term,
+							count: null,
+						})
+					}
+				})
+			}
+
+			return selectedValues
+		},
+		/**
+		 * Update dropdown selection for a field
+		 * @param fieldName
+		 * @param selectedOptions
+		 */
+		async updateDropdownSelection(fieldName, selectedOptions) {
+			// eslint-disable-next-line no-console
+			console.log('updateDropdownSelection called:', { fieldName, selectedOptions })
+
+			try {
+				if (!selectedOptions || selectedOptions.length === 0) {
+					// eslint-disable-next-line no-console
+					console.log('Removing facet for field:', fieldName)
+					// Remove the facet by calling updateActiveFacet with enabled=false
+					await this.objectStore.updateActiveFacet(fieldName, 'terms', false)
+				} else {
+					// Build the terms facet configuration
+					const selectedValues = selectedOptions.map(option => option.value)
+					// eslint-disable-next-line no-console
+					console.log('Selected values:', selectedValues)
+
+					// Get current active facets
+					const currentFacets = { ...this.objectStore.activeFacets }
+
+					// Ensure _facets structure exists
+					if (!currentFacets._facets) {
+						currentFacets._facets = {}
+					}
+
+					// Set the field facet configuration
+					currentFacets._facets[fieldName] = {
+						type: 'terms',
+						terms: selectedValues,
+					}
+
+					// eslint-disable-next-line no-console
+					console.log('Updated facets structure:', currentFacets)
+
+					// Update store and refresh
+					this.objectStore.setActiveFacets(currentFacets)
+					await this.objectStore.refreshObjectList()
+				}
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Error in updateDropdownSelection:', error)
+			}
+		},
+		/**
+		 * Update a field facet with specific configuration
+		 * @param fieldName
+		 * @param facetConfig
+		 */
+		async updateFieldFacet(fieldName, facetConfig) {
+			// eslint-disable-next-line no-console
+			console.log('updateFieldFacet called:', { fieldName, facetConfig })
+
+			// Get current active facets
+			const currentFacets = { ...this.objectStore.activeFacets }
+			// eslint-disable-next-line no-console
+			console.log('Current facets before update:', currentFacets)
+
+			// Ensure _facets structure exists
+			if (!currentFacets._facets) {
+				currentFacets._facets = {}
+			}
+
+			// Set the field facet configuration
+			currentFacets._facets[fieldName] = facetConfig
+			// eslint-disable-next-line no-console
+			console.log('Current facets after update:', currentFacets)
+
+			// Update store and refresh
+			this.objectStore.setActiveFacets(currentFacets)
+			// eslint-disable-next-line no-console
+			console.log('About to refresh object list...')
+			await this.objectStore.refreshObjectList()
+			// eslint-disable-next-line no-console
+			console.log('Object list refreshed')
+		},
+		/**
+		 * Capitalize field names for display
+		 * @param fieldName
+		 */
+		capitalizeFieldName(fieldName) {
+			// Handle common field names and provide proper capitalization
+			const specialCases = {
+				uuid: 'UUID',
+				id: 'ID',
+				uri: 'URI',
+				url: 'URL',
+				api: 'API',
+				xml: 'XML',
+				json: 'JSON',
+				html: 'HTML',
+				css: 'CSS',
+				js: 'JS',
+			}
+
+			// Check for special cases first
+			if (specialCases[fieldName.toLowerCase()]) {
+				return specialCases[fieldName.toLowerCase()]
+			}
+
+			// Standard capitalization - capitalize first letter of each word
+			return fieldName
+				.split(/[\s_-]+/)
+				.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+				.join(' ')
+		},
+		/**
+		 * Format date range for display
+		 * @param dateRange
+		 */
+		formatDateRange(dateRange) {
+			if (!dateRange || !dateRange.min || !dateRange.max) {
+				return ''
+			}
+
+			const formatDate = (dateStr) => {
+				try {
+					return new Date(dateStr).toLocaleDateString()
+				} catch {
+					return dateStr
+				}
+			}
+
+			return `${formatDate(dateRange.min)} - ${formatDate(dateRange.max)}`
+		},
+		/**
+		 * Get date range value for a specific field and bound (from/to)
+		 * @param fieldName
+		 * @param bound
+		 */
+		getDateRangeValue(fieldName, bound) {
+			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
+			if (!activeFacetData || activeFacetData.type !== 'range' || !activeFacetData.ranges) {
+				return null
+			}
+
+			// Find the range that matches our bound
+			const range = activeFacetData.ranges.find(r => r.from || r.to)
+			if (!range) {
+				return null
+			}
+
+			return bound === 'from' ? range.from : range.to
+		},
+		/**
+		 * Update date range for a field
+		 * @param fieldName
+		 * @param bound
+		 * @param value
+		 */
+		async updateDateRange(fieldName, bound, value) {
+			// Get current facet configuration
+			const currentFacets = { ...this.objectStore.activeFacets }
+
+			// Ensure structure exists
+			if (!currentFacets._facets) {
+				currentFacets._facets = {}
+			}
+			if (!currentFacets._facets['@self']) {
+				currentFacets._facets['@self'] = {}
+			}
+
+			// Get or create the range facet
+			let rangeFacet = currentFacets._facets['@self'][fieldName]
+			if (!rangeFacet || rangeFacet.type !== 'range') {
+				rangeFacet = {
+					type: 'range',
+					ranges: [{}],
+				}
+			}
+
+			// Update the range
+			if (!rangeFacet.ranges || rangeFacet.ranges.length === 0) {
+				rangeFacet.ranges = [{}]
+			}
+
+			if (bound === 'from') {
+				rangeFacet.ranges[0].from = value
+			} else {
+				rangeFacet.ranges[0].to = value
+			}
+
+			// Set the facet configuration
+			currentFacets._facets['@self'][fieldName] = rangeFacet
+
+			// Update store and refresh
+			this.objectStore.setActiveFacets(currentFacets)
+			await this.objectStore.refreshObjectList()
+		},
+		/**
+		 * Check if a field has an active date range
+		 * @param fieldName
+		 */
+		hasDateRange(fieldName) {
+			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
+			return activeFacetData
+				   && activeFacetData.type === 'range'
+				   && activeFacetData.ranges
+				   && activeFacetData.ranges.length > 0
+				   && (activeFacetData.ranges[0].from || activeFacetData.ranges[0].to)
+		},
+		/**
+		 * Clear date range for a field
+		 * @param fieldName
+		 */
+		async clearDateRange(fieldName) {
+			// Remove the date range facet
+			const currentFacets = { ...this.objectStore.activeFacets }
+
+			if (currentFacets._facets?.['@self']?.[fieldName]) {
+				delete currentFacets._facets['@self'][fieldName]
+			}
+
+			// Update store and refresh
+			this.objectStore.setActiveFacets(currentFacets)
+			await this.objectStore.refreshObjectList()
+		},
+	},
+}
+</script>
+
+<style scoped>
+.facet-component {
+	padding: 12px 0;
+}
+
+.facet-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 16px;
+	color: var(--color-text-maxcontrast);
+}
+
+.facet-title {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	margin: 0 0 16px 0;
+	padding: 0 16px;
+}
+
+.facet-section {
+	margin-bottom: 24px;
+	border-bottom: 1px solid var(--color-border);
+	padding-bottom: 16px;
+}
+
+.facet-section:last-child {
+	border-bottom: none;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+.facet-section-title {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+	font-weight: bold;
+	margin: 0 0 12px 0;
+	padding: 0 16px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.facet-list {
+	padding: 0 16px;
+}
+
+.facet-item {
+	margin-bottom: 12px;
+}
+
+.facet-info {
+	display: block;
+	color: var(--color-text-maxcontrast);
+	font-size: 11px;
+	margin-top: 4px;
+	margin-left: 28px;
+	line-height: 1.3;
+}
+
+/* Current Filters Section - At the top */
+.current-filters-section {
+	background-color: var(--color-background-hover);
+	border-radius: 8px;
+	padding: 16px;
+	margin: 0 16px 24px 16px;
+	border: 1px solid var(--color-border);
+}
+
+.current-filters-title {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+	font-weight: bold;
+	margin: 0 0 12px 0;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.active-filters {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.active-filter-group {
+	background: var(--color-background-plain);
+	border-radius: 6px;
+	padding: 12px;
+	border: 1px solid var(--color-border-dark);
+}
+
+.active-filter-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+}
+
+.active-filter-name {
+	font-weight: 600;
+	color: var(--color-main-text);
+	font-size: 13px;
+}
+
+.active-filter-values {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.active-filter-value {
+	background: var(--color-primary-light);
+	color: var(--color-primary-text);
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.value-count {
+	color: var(--color-text-maxcontrast);
+	font-weight: normal;
+}
+
+.filter-more {
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+	font-size: 11px;
+	padding: 4px 8px;
+	background: var(--color-background-dark);
+	border-radius: 12px;
+}
+
+.clear-filters {
+	display: flex;
+	justify-content: center;
+	padding-top: 8px;
+	border-top: 1px solid var(--color-border);
+}
+
+.no-active-filters {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 24px;
+}
+
+.no-filters-text {
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+	font-size: 13px;
+}
+
+/* Available Filters Section */
+.available-filters-section {
+	border-top: 2px solid var(--color-border);
+	padding-top: 16px;
+}
+
+/* Facet Date Ranges */
+.facet-date-ranges {
+	padding: 0 16px;
+	margin-bottom: 16px;
+}
+
+.facet-date-item {
+	margin-bottom: 20px;
+}
+
+.facet-date-label {
+	display: block;
+	font-weight: 500;
+	color: var(--color-main-text);
+	margin-bottom: 8px;
+	font-size: 13px;
+	cursor: help;
+}
+
+.date-range-info {
+	color: var(--color-text-maxcontrast);
+	font-weight: normal;
+	font-size: 11px;
+}
+
+.date-range-inputs {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.date-separator {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+/* Facet Dropdowns */
+.facet-dropdowns {
+	padding: 0 16px;
+	margin-bottom: 16px;
+}
+
+.facet-dropdown-item {
+	margin-bottom: 20px;
+}
+
+.facet-dropdown-label {
+	display: block;
+	font-weight: 500;
+	color: var(--color-main-text);
+	margin-bottom: 6px;
+	font-size: 13px;
+}
+
+.field-coverage {
+	color: var(--color-text-maxcontrast);
+	font-weight: normal;
+	font-size: 11px;
+}
+
+.dropdown-option {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+}
+
+.option-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.option-count {
+	color: var(--color-text-maxcontrast);
+	font-size: 11px;
+	margin-left: 8px;
+	flex-shrink: 0;
+}
+
+.selected-option {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.facet-empty {
+	padding: 16px;
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+</style>

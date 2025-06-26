@@ -218,7 +218,90 @@ class ObjectsController extends Controller
 
 
     /**
-     * Helper method to get configuration array from the current request
+     * Helper method to get query array from the current request for faceting-enabled methods
+     *
+     * This method builds a query structure compatible with the searchObjectsPaginated method
+     * which supports faceting, facetable field discovery, and all other search features.
+     *
+     * @param string|null $register Optional register identifier
+     * @param string|null $schema   Optional schema identifier
+     * @param array|null  $ids      Optional array of specific IDs to filter
+     *
+     * @return array Query array containing:
+     *               - @self: Metadata filters (register, schema, etc.)
+     *               - Direct keys: Object field filters
+     *               - _limit: Maximum number of items per page
+     *               - _offset: Number of items to skip
+     *               - _page: Current page number
+     *               - _order: Sort parameters
+     *               - _search: Search term
+     *               - _extend: Properties to extend
+     *               - _fields: Fields to include
+     *               - _filter/_unset: Fields to exclude
+     *               - _facets: Facet configuration
+     *               - _facetable: Include facetable field discovery
+     *               - _ids: Specific IDs to filter
+     */
+    private function buildSearchQuery(?string $register=null, ?string $schema=null, ?array $ids=null): array
+    {
+        $params = $this->request->getParams();
+
+        // Remove system parameters that shouldn't be used as filters
+        unset($params['id'], $params['_route']);
+
+        // Build the query structure for searchObjectsPaginated
+        $query = [];
+
+        // Extract metadata filters into @self
+        $metadataFields = ['register', 'schema', 'uuid', 'created', 'updated', 'published', 'depublished', 'deleted'];
+        $query['@self'] = [];
+        
+        // Add register and schema to @self if provided
+        if ($register !== null) {
+            $query['@self']['register'] = $register;
+        }
+        if ($schema !== null) {
+            $query['@self']['schema'] = $schema;
+        }
+
+        // Extract special underscore parameters
+        $specialParams = [];
+        $objectFilters = [];
+
+        foreach ($params as $key => $value) {
+            if (str_starts_with($key, '_')) {
+                $specialParams[$key] = $value;
+            } elseif (in_array($key, $metadataFields)) {
+                // Only add to @self if not already set from function parameters
+                if (!isset($query['@self'][$key])) {
+                    $query['@self'][$key] = $value;
+                }
+            } else {
+                // This is an object field filter
+                $objectFilters[$key] = $value;
+            }
+        }
+
+        // Add object field filters directly to query
+        $query = array_merge($query, $objectFilters);
+
+        // Add IDs if provided
+        if ($ids !== null) {
+            $query['_ids'] = $ids;
+        }
+
+        // Add all special parameters (they'll be handled by searchObjectsPaginated)
+        $query = array_merge($query, $specialParams);
+
+        return $query;
+
+    }//end buildSearchQuery()
+
+
+    /**
+     * Helper method to get configuration array from the current request (LEGACY)
+     *
+     * @deprecated Use buildSearchQuery() instead for faceting-enabled endpoints
      *
      * @param string|null $register Optional register identifier
      * @param string|null $schema   Optional schema identifier
@@ -275,13 +358,22 @@ class ObjectsController extends Controller
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
-     * It supports filtering, sorting, and pagination through query parameters.
+     * It supports filtering, sorting, pagination, faceting, and facetable field discovery through query parameters.
+     *
+     * Supported parameters:
+     * - Standard filters: Any object field (e.g., name, status, etc.)
+     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Pagination: _limit, _offset, _page
+     * - Search: _search
+     * - Rendering: _extend, _fields, _filter/_unset
+     * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Sorting: _order
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the list of objects
+     * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
      *
      * @NoAdminRequired
      *
@@ -289,31 +381,43 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Get config and fetch objects.
-        $config = $this->getConfig($register, $schema);
+        // Build search query for faceting-enabled method
+        $query = $this->buildSearchQuery($register, $schema);
 
+        // Set register and schema context
         $objectService->setRegister($register)->setSchema($schema);
 
-        // @TODO dit moet netter
-        foreach ($config['filters'] as $key => $filter) {
-            switch ($key) {
-                case 'register':
-                    $config['filters'][$key] = $objectService->getRegister();
-                    break;
-                case 'schema':
-                    $config['filters'][$key] = $objectService->getSchema();
-                    break;
-                default:
-                    break;
+        try {
+            // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
+            $result = $objectService->searchObjectsPaginated($query);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            // Fallback to legacy method if something goes wrong
+            error_log("Faceting-enabled search failed, falling back to legacy method: " . $e->getMessage());
+            
+            // Get config and fetch objects using legacy method
+            $config = $this->getConfig($register, $schema);
+
+            // @TODO dit moet netter
+            foreach ($config['filters'] as $key => $filter) {
+                switch ($key) {
+                    case 'register':
+                        $config['filters'][$key] = $objectService->getRegister();
+                        break;
+                    case 'schema':
+                        $config['filters'][$key] = $objectService->getSchema();
+                        break;
+                    default:
+                        break;
+                }
             }
+
+            $objects = $objectService->findAll($config);
+            $total = $objectService->count($config);
+            
+            return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
         }
-
-        $objects = $objectService->findAll($config);
-
-        // Get total count for pagination.
-        // $total = $objectService->count($config['filters'], $config['search']);
-        $total = $objectService->count($config);
-        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
 
     }//end index()
 
