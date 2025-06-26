@@ -779,6 +779,7 @@ class ObjectService
         $search = $requestParams['_search'] ?? null;
         $fields = $requestParams['_fields'] ?? null;
         $published = $requestParams['_published'] ?? false;
+        $facetable = $requestParams['_facetable'] ?? false;
 
         if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
@@ -798,7 +799,7 @@ class ObjectService
         $filters = $requestParams;
         unset($filters['_route']);
         // TODO: Investigate why this is here and if it's needed.
-        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search'], $filters['_facetable']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
         if (isset($filters['register']) === false) {
@@ -857,13 +858,24 @@ class ObjectService
         
         $facets = $this->getFacetsForObjects($facetQuery);
 
-        return [
+        // Build the result array with pagination and faceting data
+        $result = [
             'results' => $objects,
             'facets'  => $facets,
             'total'   => $total,
             'page'    => $page ?? 1,
             'pages'   => $pages,
         ];
+
+        // Add facetable field discovery if requested
+        if ($facetable === true || $facetable === 'true') {
+            $baseQuery = $facetQuery; // Use the same base query as for facets
+            $sampleSize = (int) ($requestParams['_sample_size'] ?? 100);
+            
+            $result['facetable'] = $this->getFacetableFields($baseQuery, $sampleSize);
+        }
+
+        return $result;
 
     }//end findAllPaginated()
 
@@ -1080,10 +1092,12 @@ class ObjectService
 
 
     /**
-     * Get facets for objects using clean query structure
+     * Get facets for objects matching the given criteria
      *
-     * This method provides facets for objects that match the search query structure.
-     * It uses the new faceting system exclusively and requires _facets configuration.
+     * This method provides comprehensive faceting capabilities for object data,
+     * supporting both metadata facets (like register, schema, dates) and object
+     * field facets (like status, category, priority). It uses the new facet
+     * handlers for optimal performance and consistency.
      *
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
@@ -1102,12 +1116,12 @@ class ObjectService
     public function getFacetsForObjects(array $query = []): array
     {
         // Always use the new comprehensive faceting system via ObjectEntityMapper
-        $result = $this->objectEntityMapper->getSimpleFacets($query);
+        $facets = $this->objectEntityMapper->getSimpleFacets($query);
         
         // Load register and schema context for enhanced metadata
         $this->loadRegistersAndSchemas($query);
         
-        return $result;
+        return ['facets' => $facets];
 
     }//end getFacetsForObjects()
 

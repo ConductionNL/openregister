@@ -53,28 +53,66 @@ Response includes facetable field metadata:
 
 ```json
 {
-  'results': [],
-  'total': 0,
-  'facetable': {
-    '@self': {
-      'register': {
-        'type': 'categorical',
-        'description': 'Register that contains the object',
-        'facet_types': ['terms'],
-        'has_labels': true,
-        'sample_values': [
-          {'value': 1, 'label': 'Publications Register', 'count': 150}
+  "results": [],
+  "total": 0,
+  "facets": {
+    "@self": {
+      "register": {
+        "type": "categorical",
+        "description": "Register that contains the object",
+        "facet_types": ["terms"],
+        "has_labels": true,
+        "sample_values": [
+          {"value": "1", "label": "Publications", "count": 45},
+          {"value": "2", "label": "Events", "count": 32}
+        ]
+      },
+      "created": {
+        "type": "date_histogram", 
+        "interval": "month",
+        "buckets": [
+          {"key": "2024-01", "results": 15},
+          {"key": "2024-02", "results": 28}
         ]
       }
     },
-    'object_fields': {
-      'status': {
-        'type': 'string',
-        'description': 'Object field: status',
-        'facet_types': ['terms'],
-        'cardinality': 'low',  // ≤50 unique values
-        'sample_values': ['published', 'draft', 'archived'],
-        'appearance_rate': 85  // Count of objects containing this field
+    "status": {
+      "type": "terms",
+      "buckets": [
+        {"key": "active", "results": 67},
+        {"key": "inactive", "results": 10}
+      ]
+    },
+    "priority": {
+      "type": "terms", 
+      "buckets": [
+        {"key": "high", "results": 23},
+        {"key": "medium", "results": 45},
+        {"key": "low", "results": 9}
+      ]
+    }
+  },
+  "facetable": {
+    "@self": {
+      "register": {
+        "type": "categorical",
+        "description": "Register that contains the object",
+        "facet_types": ["terms"],
+        "has_labels": true,
+        "sample_values": [
+          {"value": "1", "label": "Publications", "count": 45},
+          {"value": "2", "label": "Events", "count": 32}
+        ]
+      }
+    },
+    "object_fields": {
+      "status": {
+        "type": "string",
+        "description": "Object field: status", 
+        "facet_types": ["terms"],
+        "cardinality": "low",
+        "sample_values": ["active", "inactive", "pending"],
+        "appearance_rate": 77
       }
     }
   }
@@ -658,4 +696,323 @@ Metadata facets return results under the '@self' key:
 
 The automatic faceting system makes it easy to build intelligent, data-driven search interfaces that adapt to your content automatically. By analyzing your actual data, it provides relevant faceting options that help users navigate and discover information efficiently.
 
-The combination of metadata and object field facets, along with intelligent type detection and performance optimization, makes this system suitable for both simple and complex data exploration scenarios. 
+The combination of metadata and object field facets, along with intelligent type detection and performance optimization, makes this system suitable for both simple and complex data exploration scenarios.
+
+## Frontend Integration Guide
+
+### Controller Fix (IMPORTANT)
+
+**Issue Resolved**: The original problem was that the `ObjectsController::index()` method was using legacy methods that don't support facets. 
+
+**Root Cause**: The controller was calling:
+- `$objectService->findAll($config)` - doesn't handle facets
+- `$objectService->count($config)` - doesn't handle facets
+- Manual pagination with `$this->paginate()` - doesn't include facets
+
+**Solution Implemented**:
+
+1. **New buildSearchQuery() method**: Properly extracts and preserves facet parameters (`_facets`, `_facetable`) from the request
+2. **Updated index() method**: Now uses `searchObjectsPaginated()` which handles facets, facetable field discovery, and pagination in one call
+3. **Debug logging**: Added temporary logging to help troubleshoot facet parameter flow
+4. **Fallback support**: Includes error handling that falls back to the legacy method if needed
+
+The controller now properly processes URLs like:
+```
+/api/objects/4/22?_limit=20&_page=1&_facetable=true&_facets[@self][register][type]=terms&_facets[@self][schema][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month
+```
+
+**Testing**: Use `window.facetTests.testExactUserURL()` in the browser console to test the exact URL that was previously failing.
+
+### Store Integration
+
+The OpenRegister object store has been enhanced with comprehensive facet support. The store automatically requests facets when fetching object lists and provides reactive data for building dynamic facet interfaces.
+
+#### New Store State
+
+```javascript
+// Added to object store state
+facets: {}, // Current facet results
+facetableFields: {}, // Available facetable fields for dynamic UI
+activeFacets: {}, // Currently active/selected facets
+facetsLoading: false, // Loading state for facets
+```
+
+#### Key Store Methods
+
+**getFacetableFields(options = {})**
+Discovers what fields can be used for faceting based on the current register/schema context:
+
+```javascript
+// Get facetable fields for current context
+await objectStore.getFacetableFields()
+
+// With custom options
+await objectStore.getFacetableFields({ 
+  register: 1, 
+  schema: 2 
+})
+```
+
+**getFacets(facetConfig = null, options = {})**
+Gets actual facet counts for the current search context:
+
+```javascript
+// Get facets with default configuration
+await objectStore.getFacets()
+
+// With custom facet configuration
+await objectStore.getFacets({
+  _facets: {
+    '@self': {
+      register: { type: 'terms' },
+      created: { type: 'date_histogram', interval: 'month' }
+    },
+    status: { type: 'terms' }
+  }
+})
+```
+
+**updateActiveFacet(field, facetType, enabled)**
+Updates active facets and refreshes data:
+
+```javascript
+// Enable a facet
+await objectStore.updateActiveFacet('@self.register', 'terms', true)
+
+// Disable a facet
+await objectStore.updateActiveFacet('status', 'terms', false)
+```
+
+**Enhanced refreshObjectList(options = {})**
+The main object list method now automatically includes facets:
+
+```javascript
+// Automatically includes facets and facetable fields
+await objectStore.refreshObjectList()
+
+// Disable facet inclusion for performance
+await objectStore.refreshObjectList({ includeFacets: false })
+```
+
+#### Store Getters
+
+**availableMetadataFacets**
+Returns metadata fields that can be used for faceting:
+
+```javascript
+// Access available metadata facets
+const metadataFacets = objectStore.availableMetadataFacets
+// Example: { register: { type: 'categorical', facet_types: ['terms'] }, ... }
+```
+
+**availableObjectFieldFacets**
+Returns object fields that can be used for faceting:
+
+```javascript
+// Access available object field facets
+const objectFacets = objectStore.availableObjectFieldFacets
+// Example: { status: { type: 'string', facet_types: ['terms'] }, ... }
+```
+
+**currentFacets**
+Returns current facet results with buckets:
+
+```javascript
+// Access current facet data
+const facets = objectStore.currentFacets
+// Example: { '@self': { register: { buckets: [{ key: 'Publications', results: 150 }] } } }
+```
+
+**hasFacets / hasFacetableFields**
+Convenience getters for checking data availability:
+
+```javascript
+// Check if facets are available
+if (objectStore.hasFacets) {
+  // Display facet results
+}
+
+// Check if facetable fields are available
+if (objectStore.hasFacetableFields) {
+  // Show facet selection UI
+}
+```
+
+### Vue Component Integration
+
+The **FacetComponent** provides a ready-to-use interface for displaying and managing facets:
+
+```vue
+<template>
+  <FacetComponent />
+</template>
+
+<script>
+import FacetComponent from '../components/FacetComponent.vue'
+
+export default {
+  components: {
+    FacetComponent
+  }
+}
+</script>
+```
+
+#### Component Features
+
+- **Automatic Discovery**: Shows available facetable fields automatically
+- **Dynamic Interface**: Updates based on current register/schema selection
+- **Interactive Selection**: Users can enable/disable facets with checkboxes
+- **Real-time Results**: Displays facet counts and values
+- **Loading States**: Shows loading indicators during facet operations
+- **Responsive Design**: Follows Nextcloud design system
+
+#### Integration in SearchSideBar
+
+The component has been integrated at the bottom of the Filters tab in the search sidebar:
+
+```vue
+<!-- Within the Filters tab -->
+<div class="filterSection">
+  <FacetComponent />
+</div>
+```
+
+#### Enhanced Automatic Filtering System
+
+The FacetComponent now includes intelligent filtering interfaces for different field types:
+
+**🎯 Smart Field Detection:**
+- Automatically identifies field types and creates appropriate interfaces
+- Excludes system fields ('id', 'uuid') from user interface
+- Works with any schema without manual configuration
+- Proper field name capitalization and tooltips
+
+**📅 Date Range Pickers:**
+- Automatic date range pickers for metadata date fields (created, updated, published)
+- Shows available date range for context
+- From/To date selection with native date pickers
+- Clear functionality to remove date filters
+- Supports range faceting in backend
+
+**🔽 Multi-Select Dropdowns:**
+- Terms-facetable object fields automatically become dropdowns
+- Options populated from current facet results (with counts) or sample values
+- Real-time filtering as users select/deselect values
+- Support for both simple string values and complex object values
+- Searchable dropdown interface with proper sorting
+
+**☑️ Checkbox Facets:**
+- Non-terms metadata fields use traditional checkbox interface
+- Maintains backward compatibility for complex faceting scenarios
+
+**✨ User Experience Enhancements:**
+- **Capitalized Field Names**: 'Test' instead of 'test', 'Waarom' instead of 'waarom'
+- **Helpful Tooltips**: Hover over field names to see descriptions
+- **Coverage Information**: Shows how many objects have each field
+- **Date Context**: Available date ranges shown for date fields
+
+**Example Usage:**
+Based on your data structure:
+- **Date Fields**: 'Created', 'Updated', 'Published' appear as date range pickers
+- **Text Fields**: 'Test' and 'Waarom' appear as searchable multi-select dropdowns
+- **System Fields**: 'id' and 'uuid' are hidden from the interface
+
+**Fallback Behavior:**
+- Fields that don't support terms faceting remain as checkboxes
+- If no facet results are available, dropdowns use sample values from field discovery
+- Empty or unavailable fields are gracefully handled
+- Date fields without range support fall back to checkboxes
+
+### Usage Examples
+
+#### Basic Facet Discovery
+
+```javascript
+// When register/schema changes
+async handleSchemaChange(schema) {
+  schemaStore.setSchemaItem(schema)
+  
+  // This automatically discovers facetable fields and loads basic facets
+  await objectStore.refreshObjectList()
+}
+```
+
+#### Custom Facet Configuration
+
+```javascript
+// Build custom facet interface
+const customFacets = {
+  _facets: {
+    '@self': {
+      register: { type: 'terms' },
+      created: { type: 'date_histogram', interval: 'year' },
+      updated: { type: 'range', ranges: [
+        { to: '2023-01-01', key: 'Before 2023' },
+        { from: '2023-01-01', key: '2023 and later' }
+      ]}
+    },
+    status: { type: 'terms' },
+    priority: { type: 'range', ranges: [
+      { from: 1, to: 3, key: 'Low' },
+      { from: 3, to: 7, key: 'Medium' },
+      { from: 7, key: 'High' }
+    ]}
+  }
+}
+
+await objectStore.getFacets(customFacets)
+```
+
+#### Programmatic Facet Control
+
+```javascript
+// Enable metadata facets
+await objectStore.updateActiveFacet('@self.register', 'terms', true)
+await objectStore.updateActiveFacet('@self.created', 'date_histogram', true)
+
+// Enable object field facets
+await objectStore.updateActiveFacet('status', 'terms', true)
+await objectStore.updateActiveFacet('priority', 'range', true)
+
+// The store automatically refreshes facet data after each change
+```
+
+### Performance Considerations
+
+- **Automatic Inclusion**: Facets are included by default but can be disabled with `includeFacets: false`
+- **Context-Aware**: Discovery respects current filters for relevant results
+- **Efficient Caching**: Store state prevents unnecessary API calls
+- **Async Loading**: Facet operations don't block the main UI
+
+### Error Handling
+
+The store includes comprehensive error handling:
+
+```javascript
+try {
+  await objectStore.getFacetableFields()
+} catch (error) {
+  console.error('Failed to load facetable fields:', error)
+  // Store automatically resets to empty state
+}
+```
+
+### Extending the Component
+
+The FacetComponent can be extended or customized:
+
+```vue
+<template>
+  <div class="custom-facet-wrapper">
+    <FacetComponent />
+    <!-- Add custom facet controls here -->
+    <div class="custom-facet-actions">
+      <NcButton @click="clearAllFacets">Clear All</NcButton>
+      <NcButton @click="saveCurrentFacets">Save Configuration</NcButton>
+    </div>
+  </div>
+</template>
+```
+
+This integration provides a solid foundation for building sophisticated search and filtering interfaces that automatically adapt to your data structure and content. 
