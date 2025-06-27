@@ -1,20 +1,34 @@
+/**
+ * @file MassValidateObjects.vue
+ * @module Modals/Object
+ * @author Your Name
+ * @copyright 2024 Your Organization
+ * @license AGPL-3.0-or-later
+ * @version 1.0.0
+ */
+
 <script setup>
 import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="`Delete ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
+	<NcDialog :name="`Validate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		:can-close="false"
 		size="normal">
 		<!-- Object Selection Review -->
-		<div v-if="success === null" class="delete-step">
+		<div v-if="success === null" class="validate-step">
 			<h3 class="step-title">
-				Confirm Object Deletion
+				Confirm Object Validation
 			</h3>
 
 			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.<br><br>
-				Objects will be soft deleted and moved to the <a href="#" class="deleted-link" @click.prevent="navigateToDeleted">deleted objects section</a>. They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.
+				Review the selected objects below. You can remove any objects you don't want to validate by clicking the remove button.<br><br>
+				<strong>When to use mass validation:</strong><br>
+				• After updating the schema to apply new validation rules<br>
+				• When objects need to be re-enriched with updated name/description logic<br>
+				• To refresh computed properties or auto-generated fields<br>
+				• After changing schema configuration that affects existing objects<br><br>
+				Objects will be saved without modification to trigger validation and enrichment processes against the current schema.
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
@@ -42,14 +56,14 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<NcEmptyContent v-else name="No objects selected">
 					<template #description>
-						No objects are currently selected for deletion.
+						No objects are currently selected for validation.
 					</template>
 				</NcEmptyContent>
 			</div>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Object{{ objectStore.selectedObjects.length > 1 ? 's' : '' }} successfully deleted</p>
+			<p>Object{{ selectedObjects.length > 1 ? 's' : '' }} successfully validated</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -64,13 +78,13 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton v-if="success === null"
 				:disabled="loading || selectedObjects.length === 0"
-				type="error"
-				@click="deleteObject()">
+				type="primary"
+				@click="validateObjects()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
+					<CheckCircle v-if="!loading" :size="20" />
 				</template>
-				Delete
+				Validate
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -86,11 +100,11 @@ import {
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 
 export default {
-	name: 'MassDeleteObject',
+	name: 'MassValidateObjects',
 	components: {
 		NcDialog,
 		NcButton,
@@ -98,7 +112,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
-		TrashCanOutline,
+		CheckCircle,
 		Cancel,
 		Close,
 	},
@@ -137,42 +151,59 @@ export default {
 			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
-		navigateToDeleted() {
-			// Close the dialog first
-			this.closeDialog()
-			// Navigate to the deleted objects section
-			navigationStore.setSelected('deleted')
-		},
-		async deleteObject() {
+		async validateObjects() {
 			this.loading = true
 
-			objectStore.massDeleteObject(this.selectedObjects.map(obj => obj.id))
-				.then((result) => {
-					this.result = result
-					this.success = result.successfulIds.length > 0
-					this.error = result.failedIds.length > 0
-					if (result.successfulIds.length > 0) {
-						// Clear selected objects and refresh the object list
-						objectStore.selectedObjects = []
-						objectStore.refreshObjectList()
+			try {
+				// Validate each object individually by saving it without modifications
+				const results = await Promise.allSettled(
+					this.selectedObjects.map(async (obj) => {
+						try {
+							// Save the object as-is to trigger validation and enrichment
+							await objectStore.saveObject(obj, {
+								register: obj['@self']?.register || obj.register,
+								schema: obj['@self']?.schema || obj.schema,
+							})
+							return { success: true, id: obj.id }
+						} catch (error) {
+							console.error(`Failed to validate object ${obj.id}:`, error)
+							return { success: false, id: obj.id, error: error.message }
+						}
+					}),
+				)
 
-						this.closeModalTimeout = setTimeout(() => {
-							this.closeDialog()
-						}, 2000)
-					}
-				}).catch((error) => {
-					this.success = false
-					this.error = error.message || 'An error occurred while deleting the object'
-				}).finally(() => {
-					this.loading = false
-				})
+				// Count successful and failed operations
+				const successful = results.filter(r => r.status === 'fulfilled' && r.value.success)
+				const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success))
+
+				if (successful.length > 0) {
+					this.success = true
+					// Clear selected objects and refresh the object list
+					objectStore.selectedObjects = []
+					objectStore.refreshObjectList()
+
+					this.closeModalTimeout = setTimeout(() => {
+						this.closeDialog()
+					}, 2000)
+				}
+
+				if (failed.length > 0) {
+					this.error = `Failed to validate ${failed.length} object${failed.length > 1 ? 's' : ''}`
+				}
+
+			} catch (error) {
+				this.success = false
+				this.error = error.message || 'An error occurred while validating objects'
+			} finally {
+				this.loading = false
+			}
 		},
 	},
 }
 </script>
 
 <style scoped>
-.delete-step {
+.validate-step {
 	padding: 0;
 }
 
@@ -217,14 +248,4 @@ export default {
 	font-size: 0.9em;
 	margin: 0;
 }
-
-.deleted-link {
-	color: var(--color-primary);
-	text-decoration: underline;
-	cursor: pointer;
-}
-
-.deleted-link:hover {
-	color: var(--color-primary-hover);
-}
-</style>
+</style> 

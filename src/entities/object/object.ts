@@ -8,6 +8,8 @@ export class ObjectEntity implements TObject {
 
 	'@self': {
 		id: string
+		name: string | null
+		description: string | null
 		uuid: string
 		uri: string
 		version: string | null
@@ -23,6 +25,7 @@ export class ObjectEntity implements TObject {
 		authorization: Array<unknown> | null
 		application: string | null
 		organisation: string | null
+		groups: Array<unknown> | null
 		validation: Array<unknown> | null
 		deleted: Array<unknown> | null
 		geo: Array<unknown> | null
@@ -39,6 +42,8 @@ export class ObjectEntity implements TObject {
 	constructor(object: TObject) {
 		this['@self'] = {
 			id: object['@self']?.id || '',
+			name: object['@self']?.name || null,
+			description: object['@self']?.description || null,
 			uuid: object['@self']?.uuid || '',
 			uri: object['@self']?.uri || '',
 			version: object['@self']?.version || null,
@@ -54,6 +59,7 @@ export class ObjectEntity implements TObject {
 			authorization: object['@self']?.authorization || null,
 			application: object['@self']?.application || null,
 			organisation: object['@self']?.organisation || null,
+			groups: object['@self']?.groups || null,
 			validation: object['@self']?.validation || null,
 			deleted: object['@self']?.deleted || null,
 			geo: object['@self']?.geo || null,
@@ -80,6 +86,8 @@ export class ObjectEntity implements TObject {
 		const schema = z.object({
 			'@self': z.object({
 				id: z.string().min(1),
+				name: z.string().nullable(),
+				description: z.string().nullable(),
 				uuid: z.string().min(1),
 				uri: z.string().min(1),
 				version: z.string().nullable(),
@@ -95,6 +103,7 @@ export class ObjectEntity implements TObject {
 				authorization: z.array(z.unknown()).nullable(),
 				application: z.string().nullable(),
 				organisation: z.string().nullable(),
+				groups: z.array(z.unknown()).nullable(),
 				validation: z.array(z.unknown()).nullable(),
 				deleted: z.array(z.unknown()).nullable(),
 				geo: z.array(z.unknown()).nullable(),

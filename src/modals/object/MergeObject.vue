@@ -29,7 +29,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<h3 class="step-title">
 				Select Target Object
 			</h3>
-			<p>Select the object to merge <strong>{{ sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong> into:</p>
+			<p>Select the object to merge <strong>{{ sourceObject?.['@self']?.name || sourceObject?.name || sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong> into:</p>
 
 			<div class="search-container">
 				<NcTextField
@@ -51,7 +51,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					:class="{ 'table-row-selected': selectedTargetObject?.['@self']?.id === obj['@self'].id }"
 					@click="selectTargetObject(obj)">
 					<div class="object-info">
-						<strong>{{ obj['@self'].title || obj.name || obj.title || obj['@self'].id }}</strong>
+						<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj['@self']?.id }}</strong>
 						<p class="object-id">
 							ID: {{ obj['@self'].id }}
 						</p>
@@ -70,8 +70,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		<div v-if="step === 2" class="merge-step">
 			<h3>Configure Merge</h3>
 			<p>
-				Merging <strong>{{ sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong>
-				into <strong>{{ selectedTargetObject?.['@self']?.title || selectedTargetObject?.['@self']?.id }}</strong>
+				Merging <strong>{{ sourceObject?.['@self']?.name || sourceObject?.name || sourceObject?.['@self']?.title || sourceObject?.['@self']?.id }}</strong>
+				into <strong>{{ selectedTargetObject?.['@self']?.name || selectedTargetObject?.name || selectedTargetObject?.['@self']?.title || selectedTargetObject?.['@self']?.id }}</strong>
 			</p>
 
 			<!-- Property Comparison Table -->
@@ -259,14 +259,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<strong>Target Object (Result):</strong>
 							<div class="object-meta">
 								<span class="object-id">ID: {{ selectedTargetObject?.['@self']?.id || selectedTargetObject?.id }}</span>
-								<span class="object-title">{{ selectedTargetObject?.['@self']?.title || selectedTargetObject?.title || 'Untitled' }}</span>
+								<span class="object-title">{{ selectedTargetObject?.['@self']?.name || selectedTargetObject?.name || selectedTargetObject?.['@self']?.title || selectedTargetObject?.title || 'Untitled' }}</span>
 							</div>
 						</div>
 						<div class="object-detail">
 							<strong>Source Object:</strong>
 							<div class="object-meta">
 								<span class="object-id">ID: {{ sourceObject?.['@self']?.id || sourceObject?.id }}</span>
-								<span class="object-title">{{ sourceObject?.['@self']?.title || sourceObject?.title || 'Untitled' }}</span>
+								<span class="object-title">{{ sourceObject?.['@self']?.name || sourceObject?.name || sourceObject?.['@self']?.title || sourceObject?.title || 'Untitled' }}</span>
 								<span class="object-status deleted">Status: Deleted</span>
 							</div>
 						</div>

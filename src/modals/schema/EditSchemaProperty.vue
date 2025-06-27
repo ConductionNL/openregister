@@ -30,6 +30,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Description"
 				:value.sync="properties.description" />
 
+			<NcTextField :disabled="loading"
+				label="Title"
+				:value.sync="properties.title" />
+
 			<div class="ASP-selectContainer">
 				<NcSelect v-bind="typeOptions"
 					v-model="properties.type" />
@@ -254,6 +258,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				Hide in collection view
 			</NcCheckboxRadioSwitch>
 
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.facetable">
+				Facetable
+			</NcCheckboxRadioSwitch>
+
 			<NcTextField :disabled="loading"
 				label="Example"
 				:value.sync="properties.example" />
@@ -446,6 +456,7 @@ export default {
 			propertyTitle: '',
 			properties: {
 				description: '',
+				title: '',
 				type: 'string',
 				format: '',
 				pattern: '',
@@ -455,6 +466,7 @@ export default {
 				deprecated: false,
 				visible: true,
 				hideOnCollection: false,
+				facetable: true,
 				order: 0,
 				minLength: 0,
 				maxLength: 0,
