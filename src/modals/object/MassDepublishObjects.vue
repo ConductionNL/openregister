@@ -34,13 +34,13 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						:key="obj.id"
 						class="selected-object-item">
 						<div class="object-info">
-							<strong>{{ obj.title || obj.name || obj.id }}</strong>
+							<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || 'Unnamed Object' }}</strong>
 							<p class="object-id">
-								ID: {{ obj.id }}
+								ID: {{ obj.id || obj['@self']?.id }}
 							</p>
 						</div>
 						<NcButton type="tertiary"
-							:aria-label="`Remove ${obj.title || obj.id}`"
+							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />

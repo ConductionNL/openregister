@@ -17,6 +17,8 @@ describe('Object Entity', () => {
 		const partialData: TObject = {
 			'@self': {
 				id: '',
+				name: 'Test Object',
+				description: 'Test description',
 				uuid: 'test-uuid',
 				uri: 'test-uri',
 				version: null,
@@ -32,6 +34,7 @@ describe('Object Entity', () => {
 				authorization: null,
 				application: null,
 				organisation: null,
+				groups: null,
 				validation: null,
 				deleted: null,
 				geo: null,
@@ -47,6 +50,8 @@ describe('Object Entity', () => {
 
 		expect(object).toBeInstanceOf(Object)
 		expect(object['@self'].id).toBe('')
+		expect(object['@self'].name).toBe('Test Object')
+		expect(object['@self'].description).toBe('Test description')
 		expect(object['@self'].uuid).toBe('test-uuid')
 		expect(object['@self'].uri).toBe('test-uri')
 		expect(object['@self'].register).toBe('test-register')
@@ -131,6 +136,8 @@ describe('Object Entity', () => {
 		const minimalData: TObject = {
 			'@self': {
 				id: '',
+				name: null,
+				description: null,
 				uuid: 'test-uuid',
 				uri: 'test-uri',
 				version: null,
@@ -146,6 +153,7 @@ describe('Object Entity', () => {
 				authorization: null,
 				application: null,
 				organisation: null,
+				groups: null,
 				validation: null,
 				deleted: null,
 				geo: null,
@@ -160,6 +168,8 @@ describe('Object Entity', () => {
 		const object = new ObjectEntity(minimalData)
 
 		expect(object['@self'].id).toBe('')
+		expect(object['@self'].name).toBe(null)
+		expect(object['@self'].description).toBe(null)
 		expect(object['@self'].folder).toBe(null)
 		expect(object['@self'].published).toBe(null)
 		expect(object['@self'].depublished).toBe(null)

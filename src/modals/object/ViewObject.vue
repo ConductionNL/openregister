@@ -14,7 +14,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 <template>
 	<div>
 		<NcDialog v-if="navigationStore.modal === 'viewObject'"
-			:name="'View Object (' + (objectStore.objectItem.name || objectStore.objectItem.id) + ')'"
+			:name="(objectStore.objectItem['@self']?.name || objectStore.objectItem.name || objectStore.objectItem.id) + ' (' + (currentSchema?.title || currentSchema?.name || 'Unknown Schema') + ')'"
 			size="large"
 			:can-close="true"
 			@update:open="handleDialogClose">
@@ -41,11 +41,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												v-for="([key, value]) in objectProperties"
 												:key="key"
 												class="viewTableRow"
-												:class="{ 
-													'selected-row': selectedProperty === key, 
+												:class="{
+													'selected-row': selectedProperty === key,
 													'edited-row': formData[key] !== undefined,
 													'non-editable-row': !isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value),
-													...getPropertyValidationClass(key, value) 
+													...getPropertyValidationClass(key, value)
 												}"
 												@click="handleRowClick(key, $event)">
 												<td class="tableColumnConstrained prop-cell">
@@ -58,16 +58,18 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															v-tooltip="getPropertyWarningMessage(key, value)"
 															class="validation-icon warning-icon"
 															:size="16" />
+														<Plus v-else-if="getPropertyValidationClass(key, value) === 'property-new'"
+															v-tooltip="getPropertyNewMessage(key)"
+															class="validation-icon new-icon"
+															:size="16" />
 														<LockOutline v-else-if="!isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)"
 															v-tooltip="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
 															class="validation-icon lock-icon"
 															:size="16" />
 														<span
-															v-if="currentSchema?.properties?.[key]?.description"
-															v-tooltip="currentSchema.properties[key].description">
-															{{ key }}
+															v-tooltip="getPropertyTooltip(key)">
+															{{ getPropertyDisplayName(key) }}
 														</span>
-														<span v-else>{{ key }}</span>
 													</div>
 												</td>
 												<td class="tableColumnExpanded value-cell">
@@ -76,25 +78,29 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<NcCheckboxRadioSwitch
 															v-if="getPropertyInputComponent(key) === 'NcCheckboxRadioSwitch'"
 															:checked="formData[key] !== undefined ? formData[key] : value"
+															type="switch"
 															@update:checked="updatePropertyValue(key, $event)">
-															{{ key }}
+															{{ getPropertyDisplayName(key) }}
 														</NcCheckboxRadioSwitch>
-														
+
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
 															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
 															:value="formData[key] !== undefined ? formData[key] : value"
 															:type="getPropertyInputType(key)"
-															:label="key"
+															:label="getPropertyDisplayName(key)"
 															@update:value="updatePropertyValue(key, $event)" />
-														
+
 														<!-- Text/Number properties -->
 														<NcTextField
 															v-else
 															ref="propertyValueInput"
 															:value="String(formData[key] !== undefined ? formData[key] : value || '')"
 															:type="getPropertyInputType(key)"
-															:placeholder="key"
+															:placeholder="getPropertyDisplayName(key)"
+															:min="getPropertyMinimum(key)"
+															:max="getPropertyMaximum(key)"
+															:step="getPropertyStep(key)"
 															@update:value="updatePropertyValue(key, $event)" />
 													</div>
 													<div v-else>
@@ -505,12 +511,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</div>
 
 			<template #actions>
-				<NcButton :disabled="isSaving" @click="saveObject">
+				<NcButton @click="closeModal">
 					<template #icon>
-						<NcLoadingIcon v-if="isSaving" :size="20" />
-						<ContentSave v-else :size="20" />
+						<Cancel :size="20" />
 					</template>
-					{{ isSaving ? 'Saving...' : 'Save' }}
+					Close
 				</NcButton>
 				<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 					<template #icon>
@@ -524,11 +529,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Audit Trails
 				</NcButton>
-				<NcButton type="primary" @click="closeModal">
+				<NcButton type="primary" :disabled="isSaving" @click="saveObject">
 					<template #icon>
-						<Cancel :size="20" />
+						<NcLoadingIcon v-if="isSaving" :size="20" />
+						<ContentSave v-else :size="20" />
 					</template>
-					Close
+					{{ isSaving ? 'Saving...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -635,6 +641,7 @@ import Tag from 'vue-material-design-icons/Tag.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Alert from 'vue-material-design-icons/Alert.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -669,6 +676,7 @@ export default {
 		FormatListChecks,
 		Alert,
 		AlertCircle,
+		Plus,
 		Publish,
 		PublishOff,
 		PaginationComponent,
@@ -710,7 +718,46 @@ export default {
 		objectProperties() {
 			// Return array of [key, value] pairs, excluding '@self' and 'id'
 			if (!objectStore?.objectItem) return []
-			return Object.entries(objectStore.objectItem).filter(([key]) => key !== '@self' && key !== 'id')
+			
+			const objectData = objectStore.objectItem
+			const schemaProperties = this.currentSchema?.properties || {}
+			
+			// Start with properties that exist in the object
+			const existingProperties = Object.entries(objectData)
+				.filter(([key]) => key !== '@self' && key !== 'id')
+			
+			// Add schema properties that don't exist in the object yet
+			const missingSchemaProperties = []
+			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
+				if (!objectData.hasOwnProperty(key)) {
+					// Add with appropriate default value based on type
+					let defaultValue
+					switch (schemaProperty.type) {
+						case 'string':
+							defaultValue = schemaProperty.const || ''
+							break
+						case 'number':
+						case 'integer':
+							defaultValue = 0
+							break
+						case 'boolean':
+							defaultValue = false
+							break
+						case 'array':
+							defaultValue = []
+							break
+						case 'object':
+							defaultValue = {}
+							break
+						default:
+							defaultValue = ''
+					}
+					missingSchemaProperties.push([key, defaultValue])
+				}
+			}
+			
+			// Combine existing properties and missing schema properties
+			return [...existingProperties, ...missingSchemaProperties]
 		},
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
@@ -918,98 +965,7 @@ export default {
 
 			return metadata
 		},
-		getPropertyInputType(key) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (!schemaProperty) return 'text'
-			
-			const type = schemaProperty.type
-			const format = schemaProperty.format
-			
-			// Handle different types and formats
-			switch (type) {
-			case 'string':
-				if (format === 'date') return 'date'
-				if (format === 'time') return 'time'
-				if (format === 'date-time') return 'datetime-local'
-				if (format === 'email') return 'email'
-				if (format === 'url' || format === 'uri') return 'url'
-				if (format === 'password') return 'password'
-				return 'text'
-			case 'number':
-			case 'integer':
-				return 'number'
-			case 'boolean':
-				return 'checkbox'
-			default:
-				return 'text'
-			}
-		},
-		getPropertyInputComponent(key) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (!schemaProperty) return 'NcTextField'
-			
-			const type = schemaProperty.type
-			const format = schemaProperty.format
-			
-			// Handle different types and formats
-			switch (type) {
-			case 'boolean':
-				return 'NcCheckboxRadioSwitch'
-			case 'string':
-				if (format === 'date' || format === 'time' || format === 'date-time') {
-					return 'NcDateTimePickerNative'
-				}
-				return 'NcTextField'
-			case 'number':
-			case 'integer':
-				return 'NcTextField'
-			default:
-				return 'NcTextField'
-			}
-		},
-		getDisplayValue(key, value) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			
-			// If property is const, always show the const value
-			if (schemaProperty?.const !== undefined) {
-				return schemaProperty.const
-			}
-			
-			// If we have an edited value in formData, use that
-			if (this.formData[key] !== undefined) {
-				return this.formData[key]
-			}
-			
-			// Otherwise use the original value
-			return value
-		},
-		showPropertyChangeNotification(key, oldValue, newValue) {
-			// Create a simple notification - you could replace this with a proper toast library
-			const notification = document.createElement('div')
-			notification.style.cssText = `
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				background: var(--color-success);
-				color: white;
-				padding: 12px 16px;
-				border-radius: 6px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-				z-index: 10000;
-				font-size: 14px;
-				max-width: 300px;
-			`
-			notification.textContent = `Property '${key}' changed from '${oldValue}' to '${newValue}'`
-			
-			document.body.appendChild(notification)
-			
-			// Remove notification after 3 seconds
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.parentNode.removeChild(notification)
-				}
-			}, 3000)
-		},
+
 	},
 	watch: {
 		objectStore: {
@@ -1542,13 +1498,19 @@ export default {
 
 			// Check if property exists in schema
 			const schemaProperty = this.currentSchema?.properties?.[key]
+			const existsInObject = objectStore.objectItem.hasOwnProperty(key)
 
 			if (!schemaProperty) {
-				// Property not defined in schema - warning (yellow)
+				// Property exists in object but not in schema - warning (yellow)
 				return 'property-warning'
 			}
 
-			// Property exists in schema, validate the value
+			if (!existsInObject) {
+				// Property exists in schema but not in object yet - neutral (no special class)
+				return 'property-new'
+			}
+
+			// Property exists in both schema and object, validate the value
 			if (this.isValidPropertyValue(key, value, schemaProperty)) {
 				// Valid property - success (green)
 				return 'property-valid'
@@ -1599,7 +1561,7 @@ export default {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
 			if (!schemaProperty) {
-				return `Property '${key}' is not defined in the schema`
+				return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 			}
 
 			// Check if required but empty
@@ -1629,7 +1591,10 @@ export default {
 			return `Property '${key}' has an invalid value`
 		},
 		getPropertyWarningMessage(key, value) {
-			return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
+			return `Property '${key}' exists in the object but is not defined in the current schema. This might happen when property names are changed in the schema.`
+		},
+		getPropertyNewMessage(key) {
+			return `Property '${key}' is defined in the schema but doesn't have a value yet. Click to add a value.`
 		},
 		/**
 		 * Convert any value to a string suitable for NcTextField
@@ -1789,13 +1754,16 @@ export default {
 				return
 			}
 
-			// Only allow editing for supported property types
+			// Only allow editing for supported property types (same as EditObject.vue)
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (schemaProperty && ['string', 'number', 'integer', 'boolean'].includes(schemaProperty.type)) {
 				this.selectProperty(key)
 			} else if (!schemaProperty) {
 				// Allow editing for properties not in schema (free-form)
 				this.selectProperty(key)
+			} else {
+				// Show info for unsupported types
+				this.showWarningNotification(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
 			}
 		},
 		selectProperty(key) {
@@ -1814,17 +1782,68 @@ export default {
 		},
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
-			const oldValue = this.formData[key] !== undefined 
-				? this.formData[key] 
+			const oldValue = this.formData[key] !== undefined
+				? this.formData[key]
 				: this.objectProperties.find(([k]) => k === key)?.[1]
 
-			// Update the form data using Vue 3 reactivity
-			this.formData = { ...this.formData, [key]: newValue }
-			
-			// Show notification if value actually changed
-			if (oldValue !== newValue) {
-				this.showPropertyChangeNotification(key, oldValue, newValue)
+			// Convert value based on schema property type
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			let convertedValue = newValue
+
+			if (schemaProperty) {
+				switch (schemaProperty.type) {
+				case 'number':
+					convertedValue = newValue === '' ? null : parseFloat(newValue)
+					if (isNaN(convertedValue)) convertedValue = null
+					break
+				case 'integer':
+					convertedValue = newValue === '' ? null : parseInt(newValue, 10)
+					if (isNaN(convertedValue)) convertedValue = null
+					break
+				case 'boolean':
+					convertedValue = Boolean(newValue)
+					break
+				case 'string':
+				default:
+					convertedValue = newValue
+					break
+				}
 			}
+
+			// Update the form data using Vue 3 reactivity
+			this.formData = { ...this.formData, [key]: convertedValue }
+
+			// Show notification if value actually changed
+			if (oldValue !== convertedValue) {
+				this.showPropertyChangeNotification(key, oldValue, convertedValue)
+			}
+		},
+		showPropertyChangeNotification(key, oldValue, newValue) {
+			// Create a simple notification - you could replace this with a proper toast library
+			const notification = document.createElement('div')
+			notification.style.cssText = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: var(--color-success);
+				color: white;
+				padding: 12px 16px;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+				z-index: 10000;
+				font-size: 14px;
+				max-width: 300px;
+			`
+			notification.textContent = `Property '${key}' changed from '${oldValue}' to '${newValue}'`
+
+			document.body.appendChild(notification)
+
+			// Remove notification after 3 seconds
+			setTimeout(() => {
+				if (notification.parentNode) {
+					notification.parentNode.removeChild(notification)
+				}
+			}, 3000)
 		},
 		isStringProperty(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -1832,34 +1851,166 @@ export default {
 		},
 		isPropertyEditable(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			
+
 			// If no schema property, allow editing (it's a free-form property)
 			if (!schemaProperty) return true
-			
+
 			// Check if property is const
 			if (schemaProperty.const !== undefined) {
 				return false // Const properties cannot be edited
 			}
-			
+
 			// Check if property is immutable and already has a value
 			if (schemaProperty.immutable && (value !== null && value !== undefined && value !== '')) {
 				return false // Immutable properties with values cannot be edited
 			}
-			
+
 			return true
 		},
 		getEditabilityWarning(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			
+
 			if (schemaProperty?.const !== undefined) {
 				return `This property is constant and must always be '${schemaProperty.const}'. Const properties cannot be modified to maintain data integrity.`
 			}
-			
+
 			if (schemaProperty?.immutable && (value !== null && value !== undefined && value !== '')) {
 				return `This property is immutable and cannot be changed once it has a value. Current value: '${value}'. Immutable properties preserve data consistency.`
 			}
-			
+
 			return null
+		},
+		getPropertyInputType(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (!schemaProperty) return 'text'
+
+			const type = schemaProperty.type
+			const format = schemaProperty.format
+
+			// Handle different types and formats
+			switch (type) {
+			case 'string':
+				if (format === 'date') return 'date'
+				if (format === 'time') return 'time'
+				if (format === 'date-time') return 'datetime-local'
+				if (format === 'email') return 'email'
+				if (format === 'url' || format === 'uri') return 'url'
+				if (format === 'password') return 'password'
+				return 'text'
+			case 'number':
+			case 'integer':
+				return 'number'
+			case 'boolean':
+				return 'checkbox'
+			default:
+				return 'text'
+			}
+		},
+		getPropertyInputComponent(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (!schemaProperty) return 'NcTextField'
+
+			const type = schemaProperty.type
+			const format = schemaProperty.format
+
+			// Handle different types and formats
+			switch (type) {
+			case 'boolean':
+				return 'NcCheckboxRadioSwitch'
+			case 'string':
+				if (format === 'date' || format === 'time' || format === 'date-time') {
+					return 'NcDateTimePickerNative'
+				}
+				return 'NcTextField'
+			case 'number':
+			case 'integer':
+				return 'NcTextField'
+			default:
+				return 'NcTextField'
+			}
+		},
+		/**
+		 * Get the display name for a property (title if available, otherwise key)
+		 * @param {string} key - The property key
+		 * @return {string} The display name
+		 */
+		getPropertyDisplayName(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.title || key
+		},
+		/**
+		 * Get the tooltip text for a property
+		 * @param {string} key - The property key
+		 * @return {string} The tooltip text
+		 */
+		getPropertyTooltip(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			
+			if (schemaProperty?.description) {
+				// If we have both title and description, show both
+				if (schemaProperty.title && schemaProperty.title !== key) {
+					return `${schemaProperty.title}: ${schemaProperty.description}`
+				}
+				// If only description or title same as key, just show description
+				return schemaProperty.description
+			}
+			
+			// Fallback to property key info
+			return `Property: ${key}`
+		},
+		/**
+		 * Get the minimum value for a property
+		 * @param {string} key - The property key
+		 * @return {number|undefined} The minimum value
+		 */
+		getPropertyMinimum(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.minimum
+		},
+		/**
+		 * Get the maximum value for a property
+		 * @param {string} key - The property key
+		 * @return {number|undefined} The maximum value
+		 */
+		getPropertyMaximum(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.maximum
+		},
+		/**
+		 * Get the step value for a property
+		 * @param {string} key - The property key
+		 * @return {string|undefined} The step value
+		 */
+		getPropertyStep(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (schemaProperty?.type === 'integer') {
+				return '1'
+			}
+			if (schemaProperty?.type === 'number') {
+				return 'any'
+			}
+			return undefined
+		},
+		getDisplayValue(key, value) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			// If property is const, always show the const value
+			if (schemaProperty?.const !== undefined) {
+				return schemaProperty.const
+			}
+
+			// If we have an edited value in formData, use that
+			if (this.formData[key] !== undefined) {
+				return this.formData[key]
+			}
+
+			// If this is a schema property that doesn't exist in the object yet, show placeholder
+			if (!objectStore.objectItem.hasOwnProperty(key) && schemaProperty) {
+				return value // This will be the default value we set in objectProperties
+			}
+
+			// Otherwise use the original value
+			return value
 		},
 		showWarningNotification(warning) {
 			// Create a warning notification
@@ -1886,9 +2037,9 @@ export default {
 					<span>${warning}</span>
 				</div>
 			`
-			
+
 			document.body.appendChild(notification)
-			
+
 			// Remove notification after 5 seconds (longer for warnings)
 			setTimeout(() => {
 				if (notification.parentNode) {
@@ -1941,6 +2092,11 @@ export default {
 	border-left: 4px solid var(--color-warning);
 }
 
+.viewTableRow.property-new {
+	background-color: var(--color-primary-element-light);
+	border-left: 4px solid var(--color-primary-element);
+}
+
 .prop-cell-content {
 	display: flex;
 	align-items: center;
@@ -1961,6 +2117,10 @@ export default {
 
 .lock-icon {
 	color: var(--color-text-lighter);
+}
+
+.new-icon {
+	color: var(--color-primary-element);
 }
 
 .viewTableRow.non-editable-row {

@@ -203,7 +203,11 @@ export default {
 			return !objectStore.objectItem || !objectStore.objectItem?.['@self']?.id
 		},
 		dialogTitle() {
-			return this.isNewObject ? 'Add Object' : 'Edit Object'
+			if (this.isNewObject) {
+				return 'Add Object'
+			}
+			const objectName = objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object'
+			return 'Edit ' + objectName
 		},
 	},
 	watch: {
