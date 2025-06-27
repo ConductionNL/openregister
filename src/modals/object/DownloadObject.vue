@@ -4,7 +4,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'downloadObject'"
-		name="Download Object"
+		:name="'Download ' + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">

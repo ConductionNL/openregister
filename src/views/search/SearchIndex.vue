@@ -74,6 +74,15 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							</template>
 							Depublish
 						</NcActionButton>
+						<NcActionButton
+							:disabled="objectStore.selectedObjects.length === 0"
+							close-after-click
+							@click="bulkValidateObjects">
+							<template #icon>
+								<CheckCircle :size="20" />
+							</template>
+							Validate
+						</NcActionButton>
 					</NcActions>
 
 					<!-- Regular Actions -->
@@ -201,6 +210,12 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 											<span v-else-if="column.id === 'meta_schema'">
 												<span>{{ schemaStore.schemaList.find(schema => schema.id === parseInt(result['@self'].schema))?.title }}</span>
 											</span>
+											<span v-else-if="column.id === 'meta_name'">
+												<span>{{ result['@self'].name || 'N/A' }}</span>
+											</span>
+											<span v-else-if="column.id === 'meta_description'">
+												<span>{{ result['@self'].description || 'N/A' }}</span>
+											</span>
 											<span v-else>
 												{{ result['@self'][column.key] || 'N/A' }}
 											</span>
@@ -300,6 +315,7 @@ import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -331,6 +347,7 @@ export default {
 		FormatColumns,
 		Publish,
 		PublishOff,
+		CheckCircle,
 	},
 	data() {
 		return {
@@ -482,14 +499,12 @@ export default {
 		bulkDeleteObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
-			// Prepare selected objects data for deletion
+			// Prepare selected objects data for deletion - pass the full object
 			const selectedObjectsData = objectStore.objectList.results
 				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
 				.map(obj => ({
-					id: obj['@self'].id,
-					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
-					register: obj['@self'].register,
-					schema: obj['@self'].schema,
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
 				}))
 
 			// Store selected objects in the object store for the deletion modal
@@ -501,14 +516,12 @@ export default {
 		migrateObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
-			// Prepare selected objects data for migration
+			// Prepare selected objects data for migration - pass the full object
 			const selectedObjectsData = objectStore.objectList.results
 				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
 				.map(obj => ({
-					id: obj['@self'].id,
-					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
-					register: obj['@self'].register,
-					schema: obj['@self'].schema,
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
 				}))
 
 			// Store selected objects in the object store for the migration modal
@@ -599,14 +612,12 @@ export default {
 		bulkPublishObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
-			// Prepare selected objects data for publishing
+			// Prepare selected objects data for publishing - pass the full object
 			const selectedObjectsData = objectStore.objectList.results
 				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
 				.map(obj => ({
-					id: obj['@self'].id,
-					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
-					register: obj['@self'].register,
-					schema: obj['@self'].schema,
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
 				}))
 
 			// Store selected objects in the object store for the publish modal
@@ -621,14 +632,12 @@ export default {
 		bulkDepublishObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
-			// Prepare selected objects data for depublishing
+			// Prepare selected objects data for depublishing - pass the full object
 			const selectedObjectsData = objectStore.objectList.results
 				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
 				.map(obj => ({
-					id: obj['@self'].id,
-					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
-					register: obj['@self'].register,
-					schema: obj['@self'].schema,
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
 				}))
 
 			// Store selected objects in the object store for the depublish modal
@@ -636,6 +645,26 @@ export default {
 
 			// Open the mass depublish modal
 			navigationStore.setDialog('massDepublishObjects')
+		},
+		/**
+		 * Open bulk validate modal
+		 */
+		bulkValidateObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for validation - pass the full object
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
+				}))
+
+			// Store selected objects in the object store for the validate modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the mass validate modal
+			navigationStore.setDialog('massValidateObjects')
 		},
 		/**
 		 * Check if an object should show the publish action

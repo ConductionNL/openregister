@@ -32,6 +32,7 @@ import { navigationStore } from '../store/store.js'
 		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
 		<MassPublishObjects v-if="navigationStore.dialog === 'massPublishObjects'" />
 		<MassDepublishObjects v-if="navigationStore.dialog === 'massDepublishObjects'" />
+		<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
 		<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
 		<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
 		<UploadFiles />
@@ -69,6 +70,7 @@ import UploadFiles from './file/UploadFiles.vue'
 import MassDeleteObject from './object/MassDeleteObject.vue'
 import MassPublishObjects from './object/MassPublishObjects.vue'
 import MassDepublishObjects from './object/MassDepublishObjects.vue'
+import MassValidateObjects from './object/MassValidateObjects.vue'
 import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import PurgeMultiple from './deleted/PurgeMultiple.vue'
 import ViewSource from './source/ViewSource.vue'
@@ -104,6 +106,7 @@ export default {
 		MassDeleteObject,
 		MassPublishObjects,
 		MassDepublishObjects,
+		MassValidateObjects,
 		RestoreMultiple,
 		PurgeMultiple,
 		ViewSource,

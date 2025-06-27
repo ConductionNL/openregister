@@ -61,11 +61,23 @@ export const useObjectStore = defineStore('object', {
 		},
 		selectedObjects: [],
 		metadata: {
+			name: {
+				label: 'Name',
+				key: 'name',
+				description: 'Display name of the object',
+				enabled: true, // Enabled by default
+			},
+			description: {
+				label: 'Description',
+				key: 'description',
+				description: 'Description of the object',
+				enabled: false,
+			},
 			objectId: {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true, // Enabled by default
+				enabled: false, // Changed from true to false
 			},
 			uri: {
 				label: 'URI',

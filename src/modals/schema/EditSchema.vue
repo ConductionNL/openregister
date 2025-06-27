@@ -761,7 +761,7 @@ export default {
 			// Get the property data first
 			const propertyData = {
 				...this.schemaItem.properties[oldKey],
-				title: newKey, // Update title to match new key
+				// Keep the existing title - don't update it to match the technical key
 			}
 
 			// Transfer the stable ID from old key to new key
@@ -994,9 +994,11 @@ export default {
 				}
 
 				// Add the copied property with the new name
+				// Keep the original title but add a suffix to indicate it's a copy
+				const originalTitle = originalProperty.title || key
 				this.$set(this.schemaItem.properties, newPropertyName, {
 					...originalProperty,
-					title: newPropertyName,
+					title: `${originalTitle} (copy)`,
 				})
 
 				// Check if properties have been modified
