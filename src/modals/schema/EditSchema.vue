@@ -89,7 +89,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 													<NcTextField
 														ref="propertyNameInput"
 														:value="key"
-														label="Property Name"
+														label="(technical) Property Name"
 														@update:value="updatePropertyKey(key, $event)"
 														@click.stop />
 												</div>
@@ -130,6 +130,21 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 											</td>
 											<td class="tableColumnActions">
 												<NcActions>
+													<NcActionCaption name="Actions" />
+													<NcActionButton :aria-label="'Copy ' + key" @click="copyProperty(key)">
+														<template #icon>
+															<ContentCopy :size="16" />
+														</template>
+														Copy Property
+													</NcActionButton>
+													<NcActionButton :aria-label="'Delete ' + key" @click="deleteProperty(key)">
+														<template #icon>
+															<TrashCanOutline :size="16" />
+														</template>
+														Delete Property
+													</NcActionButton>
+
+													<NcActionSeparator />
 													<NcActionCaption name="General" />
 													<NcActionCheckbox
 														:checked="isPropertyRequired(schemaItem, key)"
@@ -156,14 +171,24 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 														@update:checked="updatePropertySetting(key, 'hideOnCollection', $event)">
 														Hide in collection view
 													</NcActionCheckbox>
+													<NcActionCheckbox
+														:checked="property.facetable !== false"
+														@update:checked="updatePropertySetting(key, 'facetable', $event)">
+														Facetable
+													</NcActionCheckbox>
 
 													<NcActionSeparator />
 													<NcActionCaption name="Properties" />
+													<NcActionInput
+														:value="property.title || ''"
+														label="Title"
+														@update:value="updatePropertySetting(key, 'title', $event)" />
 													<NcActionInput
 														v-if="getFormatOptionsForType(property.type).length > 0"
 														v-model="schemaItem.properties[key].format"
 														type="multiselect"
 														:options="getFormatOptionsForType(property.type)"
+														input-label="Format"
 														label="Format" />
 													<NcActionInput
 														:value="property.description || ''"
@@ -266,6 +291,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 																{ id: 'object', label: 'Object' },
 																{ id: 'boolean', label: 'Boolean' }
 															]"
+															input-label="Array Item Type"
 															label="Array Item Type" />
 														<NcActionInput
 															:value="property.minItems || 0"
@@ -291,6 +317,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 																{ id: 'related-schema', label: 'Related Schema' },
 																{ id: 'uri', label: 'URI' }
 															]"
+															input-label="Object Handling"
 															label="Object Handling" />
 														<NcActionInput
 															:value="property.$ref || ''"
@@ -306,21 +333,6 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 															Cascade Delete
 														</NcActionCheckbox>
 													</template>
-
-													<NcActionSeparator />
-													<NcActionCaption name="Actions" />
-													<NcActionButton :aria-label="'Copy ' + key" @click="copyProperty(key)">
-														<template #icon>
-															<ContentCopy :size="16" />
-														</template>
-														Copy Property
-													</NcActionButton>
-													<NcActionButton :aria-label="'Delete ' + key" @click="deleteProperty(key)">
-														<template #icon>
-															<TrashCanOutline :size="16" />
-														</template>
-														Delete Property
-													</NcActionButton>
 												</NcActions>
 											</td>
 										</tr>
@@ -352,13 +364,13 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 								v-model="schemaItem.configuration.objectNameField"
 								:disabled="loading"
 								:options="propertyOptions"
-								label="Object Name Field"
+								input-label="Object Name Field"
 								placeholder="Select a property to use as object name" />
 							<NcSelect
 								v-model="schemaItem.configuration.objectDescriptionField"
 								:disabled="loading"
 								:options="propertyOptions"
-								label="Object Description Field"
+								input-label="Object Description Field"
 								placeholder="Select a property to use as object description" />
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
@@ -546,12 +558,9 @@ export default {
 		},
 		propertyOptions() {
 			const properties = this.schemaItem.properties || {}
-			const options = Object.keys(properties).map(key => ({
-				id: key,
-				label: key,
-			}))
+			const options = Object.keys(properties)
 			// Add empty option at the beginning
-			return [{ id: '', label: 'None' }, ...options]
+			return ['', ...options]
 		},
 
 	},
@@ -598,21 +607,6 @@ export default {
 			},
 			deep: true,
 		},
-		// Convert objectNameField and objectDescriptionField from object to string
-		'schemaItem.configuration.objectNameField': {
-			handler(newValue) {
-				if (newValue && typeof newValue === 'object' && newValue.id) {
-					this.schemaItem.configuration.objectNameField = newValue.id
-				}
-			},
-		},
-		'schemaItem.configuration.objectDescriptionField': {
-			handler(newValue) {
-				if (newValue && typeof newValue === 'object' && newValue.id) {
-					this.schemaItem.configuration.objectDescriptionField = newValue.id
-				}
-			},
-		},
 	},
 	mounted() {
 		this.initializeSchemaItem()
@@ -652,7 +646,14 @@ export default {
 					}
 				}
 
-				// Store original properties for comparison
+				// Ensure existing properties have facetable set to true by default if not specified
+				Object.keys(this.schemaItem.properties || {}).forEach(key => {
+					if (this.schemaItem.properties[key].facetable === undefined) {
+						this.$set(this.schemaItem.properties[key], 'facetable', true)
+					}
+				})
+
+				// Store original properties for comparison AFTER setting defaults
 				this.originalProperties = JSON.parse(JSON.stringify(this.schemaItem.properties || {}))
 			} else {
 				this.originalProperties = {}
@@ -700,6 +701,7 @@ export default {
 				format: '',
 				title: newPropertyName,
 				description: '',
+				facetable: true, // Default to true for new properties
 			})
 
 			// Ensure stable ID is created for the new property
@@ -759,7 +761,7 @@ export default {
 			// Get the property data first
 			const propertyData = {
 				...this.schemaItem.properties[oldKey],
-				title: newKey, // Update title to match new key
+				// Keep the existing title - don't update it to match the technical key
 			}
 
 			// Transfer the stable ID from old key to new key
@@ -992,9 +994,11 @@ export default {
 				}
 
 				// Add the copied property with the new name
+				// Keep the original title but add a suffix to indicate it's a copy
+				const originalTitle = originalProperty.title || key
 				this.$set(this.schemaItem.properties, newPropertyName, {
 					...originalProperty,
-					title: newPropertyName,
+					title: `${originalTitle} (copy)`,
 				})
 
 				// Check if properties have been modified

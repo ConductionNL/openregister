@@ -61,11 +61,23 @@ export const useObjectStore = defineStore('object', {
 		},
 		selectedObjects: [],
 		metadata: {
+			name: {
+				label: 'Name',
+				key: 'name',
+				description: 'Display name of the object',
+				enabled: true, // Enabled by default
+			},
+			description: {
+				label: 'Description',
+				key: 'description',
+				description: 'Description of the object',
+				enabled: false,
+			},
 			objectId: {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true, // Enabled by default
+				enabled: false, // Changed from true to false
 			},
 			uri: {
 				label: 'URI',
@@ -1026,11 +1038,13 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Publish an object with optional date
+		 * If no published date is set and user wants to publish: set to now
+		 * If a depublished date has been set and user wants to publish: remove the depublished date
 		 * @param {object} params - Publish parameters
 		 * @param {string|number} params.register - Register ID
 		 * @param {string|number} params.schema - Schema ID
 		 * @param {string|number} params.objectId - Object ID
-		 * @param {string|null} params.publishedDate - Optional published date (ISO string)
+		 * @param {string|null} params.publishedDate - Optional published date (ISO string), defaults to now
 		 * @return {Promise} API response
 		 */
 		async publishObject({ register, schema, objectId, publishedDate = null }) {
@@ -1038,10 +1052,13 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('Missing required parameters for object publish')
 			}
 
+			// Default to current time if no date provided
+			const finalPublishedDate = publishedDate || new Date().toISOString()
+
 			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/publish`
 
 			try {
-				const body = publishedDate ? { date: publishedDate } : {}
+				const body = { date: finalPublishedDate }
 				const response = await fetch(endpoint, {
 					method: 'POST',
 					headers: {
@@ -1056,7 +1073,8 @@ export const useObjectStore = defineStore('object', {
 
 				// Update the current object item if it matches
 				if (this.objectItem && this.objectItem['@self'].id === objectId) {
-					this.objectItem['@self'].published = data.published || new Date().toISOString()
+					this.objectItem['@self'].published = data.published || finalPublishedDate
+					// Remove depublished date when publishing
 					this.objectItem['@self'].depublished = null
 				}
 
@@ -1071,11 +1089,13 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Depublish an object with optional date
+		 * If no depublished date has been set and user wants to depublish: set to now
+		 * When depublishing, the published date is NOT removed, only depublished date is set
 		 * @param {object} params - Depublish parameters
 		 * @param {string|number} params.register - Register ID
 		 * @param {string|number} params.schema - Schema ID
 		 * @param {string|number} params.objectId - Object ID
-		 * @param {string|null} params.depublishedDate - Optional depublished date (ISO string)
+		 * @param {string|null} params.depublishedDate - Optional depublished date (ISO string), defaults to now
 		 * @return {Promise} API response
 		 */
 		async depublishObject({ register, schema, objectId, depublishedDate = null }) {
@@ -1083,10 +1103,13 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('Missing required parameters for object depublish')
 			}
 
+			// Default to current time if no date provided
+			const finalDepublishedDate = depublishedDate || new Date().toISOString()
+
 			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/depublish`
 
 			try {
-				const body = depublishedDate ? { date: depublishedDate } : {}
+				const body = { date: finalDepublishedDate }
 				const response = await fetch(endpoint, {
 					method: 'POST',
 					headers: {
@@ -1101,7 +1124,8 @@ export const useObjectStore = defineStore('object', {
 
 				// Update the current object item if it matches
 				if (this.objectItem && this.objectItem['@self'].id === objectId) {
-					this.objectItem['@self'].depublished = data.depublished || new Date().toISOString()
+					this.objectItem['@self'].depublished = data.depublished || finalDepublishedDate
+					// Do NOT modify the published date when depublishing
 				}
 
 				// Refresh object list to update the display

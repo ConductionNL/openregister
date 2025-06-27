@@ -1926,6 +1926,10 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Hydrates the name and description of the entity from the object data based on schema configuration.
      *
+     * This method will only fetch the schema from the database if name and description are not already set.
+     * This optimization prevents unnecessary database calls when the SaveObject handler has already
+     * hydrated these fields using the schema that was already available.
+     *
      * @param ObjectEntity $entity The entity to hydrate.
      *
      * @return void
@@ -1933,6 +1937,15 @@ class ObjectEntityMapper extends QBMapper
     private function hydrateNameAndDescription(ObjectEntity &$entity): void
     {
         if (!$entity->getSchema()) {
+            return;
+        }
+
+        // Check if name and description are already set - if so, skip hydration to avoid extra DB call
+        $needsName = $entity->getName() === null || $entity->getName() === '';
+        $needsDescription = $entity->getDescription() === null || $entity->getDescription() === '';
+        
+        if (!$needsName && !$needsDescription) {
+            // Both name and description are already set, no need to hydrate
             return;
         }
 
@@ -1946,14 +1959,14 @@ class ObjectEntityMapper extends QBMapper
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
 
-        if (isset($config['objectNameField']) === true) {
+        if ($needsName && isset($config['objectNameField']) === true) {
             $name = $this->getValueFromPath($objectData, $config['objectNameField']);
             if ($name !== null) {
                 $entity->setName($name);
             }
         }
 
-        if (isset($config['objectDescriptionField']) === true) {
+        if ($needsDescription && isset($config['objectDescriptionField']) === true) {
             $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
             if ($description !== null) {
                 $entity->setDescription($description);

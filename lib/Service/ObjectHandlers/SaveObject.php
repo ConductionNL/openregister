@@ -144,6 +144,75 @@ class SaveObject
     }//end updateObjectRelations()
 
     /**
+     * Hydrates the name and description of the entity from the object data based on schema configuration.
+     *
+     * This method uses the schema configuration to set the name and description fields
+     * on the object entity based on the object data. It prevents an extra database call
+     * by using the schema that's already available in the SaveObject handler.
+     *
+     * @param ObjectEntity $entity The entity to hydrate
+     * @param Schema       $schema The schema containing the configuration
+     *
+     * @return void
+     *
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function hydrateNameAndDescription(ObjectEntity $entity, Schema $schema): void
+    {
+        $config     = $schema->getConfiguration();
+        $objectData = $entity->getObject();
+
+        if (isset($config['objectNameField']) === true) {
+            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
+            if ($name !== null) {
+                $entity->setName($name);
+            }
+        }
+
+        if (isset($config['objectDescriptionField']) === true) {
+            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
+            if ($description !== null) {
+                $entity->setDescription($description);
+            }
+        }
+
+    }//end hydrateNameAndDescription()
+
+
+    /**
+     * Gets a value from an object using dot notation path.
+     *
+     * @param array  $data The object data
+     * @param string $path The dot notation path (e.g., 'name', 'contact.email', 'address.street')
+     *
+     * @return string|null The value at the path, or null if not found
+     *
+     * @psalm-return string|null
+     * @phpstan-return string|null
+     */
+    private function getValueFromPath(array $data, string $path): ?string
+    {
+        $keys = explode('.', $path);
+        $current = $data;
+
+        foreach ($keys as $key) {
+            if (!is_array($current) || !array_key_exists($key, $current)) {
+                return null;
+            }
+            $current = $current[$key];
+        }
+
+        // Convert to string if it's not null and not already a string
+        if ($current !== null && !is_string($current)) {
+            $current = (string) $current;
+        }
+
+        return $current;
+
+    }//end getValueFromPath()
+
+    /**
      * Set default values for values that are not in the data array.
      *
      * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
@@ -407,6 +476,8 @@ class SaveObject
         $data = $this->setDefaultValues($objectEntity, $schema, $data);
         $objectEntity->setObject($data);
 
+        // Hydrate name and description from schema configuration.
+        $this->hydrateNameAndDescription($objectEntity, $schema);
 
         // Set user information if available.
         $user = $this->userSession->getUser();
@@ -588,6 +659,15 @@ class SaveObject
         $existingObject->setSchema($schemaId);
         $existingObject->setObject($data);
         $existingObject->setUpdated(new DateTime());
+
+        // Hydrate name and description from schema configuration.
+        if ($schema instanceof Schema) {
+            $this->hydrateNameAndDescription($existingObject, $schema);
+        } else {
+            // If schema is not an object, load it to hydrate name and description
+            $schemaObject = $this->schemaMapper->find($schemaId);
+            $this->hydrateNameAndDescription($existingObject, $schemaObject);
+        }
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $data);

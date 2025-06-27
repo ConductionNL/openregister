@@ -56,6 +56,33 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							</template>
 							Delete
 						</NcActionButton>
+						<NcActionButton
+							:disabled="objectStore.selectedObjects.length === 0"
+							close-after-click
+							@click="bulkPublishObjects">
+							<template #icon>
+								<Publish :size="20" />
+							</template>
+							Publish
+						</NcActionButton>
+						<NcActionButton
+							:disabled="objectStore.selectedObjects.length === 0"
+							close-after-click
+							@click="bulkDepublishObjects">
+							<template #icon>
+								<PublishOff :size="20" />
+							</template>
+							Depublish
+						</NcActionButton>
+						<NcActionButton
+							:disabled="objectStore.selectedObjects.length === 0"
+							close-after-click
+							@click="bulkValidateObjects">
+							<template #icon>
+								<CheckCircle :size="20" />
+							</template>
+							Validate
+						</NcActionButton>
 					</NcActions>
 
 					<!-- Regular Actions -->
@@ -80,6 +107,43 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 							</template>
 							Refresh
 						</NcActionButton>
+					</NcActions>
+
+					<!-- Columns Actions -->
+					<NcActions
+						:force-name="true"
+						:inline="1"
+						menu-name="Columns">
+						<template #icon>
+							<FormatColumns :size="20" />
+						</template>
+
+						<!-- Properties Section -->
+						<NcActionCaption name="Properties" />
+						<NcActionCheckbox
+							v-for="(property, propertyName) in objectStore.properties"
+							:key="`prop_${propertyName}`"
+							:checked="objectStore.columnFilters[`prop_${propertyName}`]"
+							@update:checked="(status) => objectStore.updateColumnFilter(`prop_${propertyName}`, status)">
+							{{ property.label }}
+						</NcActionCheckbox>
+
+						<template v-if="!Object.keys(objectStore.properties || {}).length">
+							<NcActionText>
+								No properties available. Select a schema to view properties.
+							</NcActionText>
+						</template>
+
+						<!-- Metadata Section -->
+						<NcActionSeparator />
+						<NcActionCaption name="Metadata" />
+						<NcActionCheckbox
+							v-for="meta in metadataColumns"
+							:key="`meta_${meta.id}`"
+							:checked="objectStore.columnFilters[`meta_${meta.id}`]"
+							@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
+							{{ meta.label }}
+						</NcActionCheckbox>
 					</NcActions>
 				</div>
 			</div>
@@ -146,6 +210,12 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 											<span v-else-if="column.id === 'meta_schema'">
 												<span>{{ schemaStore.schemaList.find(schema => schema.id === parseInt(result['@self'].schema))?.title }}</span>
 											</span>
+											<span v-else-if="column.id === 'meta_name'">
+												<span>{{ result['@self'].name || 'N/A' }}</span>
+											</span>
+											<span v-else-if="column.id === 'meta_description'">
+												<span>{{ result['@self'].description || 'N/A' }}</span>
+											</span>
 											<span v-else>
 												{{ result['@self'][column.key] || 'N/A' }}
 											</span>
@@ -173,6 +243,28 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 													<Merge :size="20" />
 												</template>
 												Merge
+											</NcActionButton>
+											<NcActionButton
+												v-if="shouldShowPublishAction(result)"
+												:disabled="publishingObjects.includes(result['@self'].id)"
+												close-after-click
+												@click="publishObject(result)">
+												<template #icon>
+													<NcLoadingIcon v-if="publishingObjects.includes(result['@self'].id)" :size="20" />
+													<Publish v-else :size="20" />
+												</template>
+												Publish
+											</NcActionButton>
+											<NcActionButton
+												v-if="shouldShowDepublishAction(result)"
+												:disabled="depublishingObjects.includes(result['@self'].id)"
+												close-after-click
+												@click="depublishObject(result)">
+												<template #icon>
+													<NcLoadingIcon v-if="depublishingObjects.includes(result['@self'].id)" :size="20" />
+													<PublishOff v-else :size="20" />
+												</template>
+												Depublish
 											</NcActionButton>
 											<NcActionButton close-after-click @click="deleteObject(result)">
 												<template #icon>
@@ -206,7 +298,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 </template>
 
 <script>
-import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcCounterBubble } from '@nextcloud/vue'
+import { NcAppContent, NcLoadingIcon, NcEmptyContent, NcCheckboxRadioSwitch, NcActions, NcActionButton, NcActionCheckbox, NcActionCaption, NcActionSeparator, NcActionText, NcCounterBubble } from '@nextcloud/vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import getValidISOstring from '../../services/getValidISOstring.js'
 import formatBytes from '../../services/formatBytes.js'
@@ -220,6 +312,10 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
+import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
+import Publish from 'vue-material-design-icons/Publish.vue'
+import PublishOff from 'vue-material-design-icons/PublishOff.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -232,6 +328,10 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
+		NcActionCheckbox,
+		NcActionCaption,
+		NcActionSeparator,
+		NcActionText,
 		NcCounterBubble,
 		VueDraggable,
 		Eye,
@@ -244,9 +344,15 @@ export default {
 		Merge,
 		DatabaseExport,
 		FormatListChecks,
+		FormatColumns,
+		Publish,
+		PublishOff,
+		CheckCircle,
 	},
 	data() {
 		return {
+			publishingObjects: [],
+			depublishingObjects: [],
 		}
 	},
 	computed: {
@@ -313,6 +419,12 @@ export default {
 				return 'There are no objects that match this filter'
 			}
 			return ''
+		},
+		metadataColumns() {
+			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
+				id,
+				...meta,
+			}))
 		},
 	},
 	watch: {
@@ -387,14 +499,12 @@ export default {
 		bulkDeleteObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
-			// Prepare selected objects data for deletion
+			// Prepare selected objects data for deletion - pass the full object
 			const selectedObjectsData = objectStore.objectList.results
 				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
 				.map(obj => ({
-					id: obj['@self'].id,
-					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
-					register: obj['@self'].register,
-					schema: obj['@self'].schema,
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
 				}))
 
 			// Store selected objects in the object store for the deletion modal
@@ -406,14 +516,12 @@ export default {
 		migrateObjects() {
 			if (objectStore.selectedObjects.length === 0) return
 
-			// Prepare selected objects data for migration
+			// Prepare selected objects data for migration - pass the full object
 			const selectedObjectsData = objectStore.objectList.results
 				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
 				.map(obj => ({
-					id: obj['@self'].id,
-					title: obj['@self'].title || obj.name || obj.title || obj['@self'].id,
-					register: obj['@self'].register,
-					schema: obj['@self'].schema,
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
 				}))
 
 			// Store selected objects in the object store for the migration modal
@@ -440,6 +548,150 @@ export default {
 		},
 		getValidISOstring,
 		formatBytes,
+		/**
+		 * Publish a single object
+		 * @param {object} result - The object to publish
+		 */
+		async publishObject(result) {
+			const objectId = result['@self'].id
+
+			if (this.publishingObjects.includes(objectId)) {
+				return // Already publishing
+			}
+
+			try {
+				this.publishingObjects.push(objectId)
+
+				const publishedDate = new Date().toISOString()
+
+				await objectStore.publishObject({
+					register: result['@self'].register,
+					schema: result['@self'].schema,
+					objectId,
+					publishedDate,
+				})
+
+			} catch (error) {
+				console.error('Failed to publish object:', error)
+			} finally {
+				this.publishingObjects = this.publishingObjects.filter(id => id !== objectId)
+			}
+		},
+		/**
+		 * Depublish a single object
+		 * @param {object} result - The object to depublish
+		 */
+		async depublishObject(result) {
+			const objectId = result['@self'].id
+
+			if (this.depublishingObjects.includes(objectId)) {
+				return // Already depublishing
+			}
+
+			try {
+				this.depublishingObjects.push(objectId)
+
+				const depublishedDate = new Date().toISOString()
+
+				await objectStore.depublishObject({
+					register: result['@self'].register,
+					schema: result['@self'].schema,
+					objectId,
+					depublishedDate,
+				})
+
+			} catch (error) {
+				console.error('Failed to depublish object:', error)
+			} finally {
+				this.depublishingObjects = this.depublishingObjects.filter(id => id !== objectId)
+			}
+		},
+		/**
+		 * Open bulk publish modal
+		 */
+		bulkPublishObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for publishing - pass the full object
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
+				}))
+
+			// Store selected objects in the object store for the publish modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the mass publish modal
+			navigationStore.setDialog('massPublishObjects')
+		},
+		/**
+		 * Open bulk depublish modal
+		 */
+		bulkDepublishObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for depublishing - pass the full object
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
+				}))
+
+			// Store selected objects in the object store for the depublish modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the mass depublish modal
+			navigationStore.setDialog('massDepublishObjects')
+		},
+		/**
+		 * Open bulk validate modal
+		 */
+		bulkValidateObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for validation - pass the full object
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
+				}))
+
+			// Store selected objects in the object store for the validate modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the mass validate modal
+			navigationStore.setDialog('massValidateObjects')
+		},
+		/**
+		 * Check if an object should show the publish action
+		 * Show publish if: no published date OR has depublished date
+		 * @param {object} result - The object to check
+		 * @return {boolean} True if publish action should be shown
+		 */
+		shouldShowPublishAction(result) {
+			const published = result['@self'].published
+			const depublished = result['@self'].depublished
+
+			// Show publish if not published OR if depublished
+			return !published || depublished
+		},
+		/**
+		 * Check if an object should show the depublish action
+		 * Show depublish if: has published date AND no depublished date
+		 * @param {object} result - The object to check
+		 * @return {boolean} True if depublish action should be shown
+		 */
+		shouldShowDepublishAction(result) {
+			const published = result['@self'].published
+			const depublished = result['@self'].depublished
+
+			// Show depublish if published AND not depublished
+			return published && !depublished
+		},
 	},
 }
 </script>

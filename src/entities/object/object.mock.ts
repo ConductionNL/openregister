@@ -5,6 +5,8 @@ export const mockObjectData = (): TObject[] => [
 	{
 		'@self': {
 			id: '1234a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
+			name: 'Character Example',
+			description: 'Character object description',
 			uuid: 'uuid-1234a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 			uri: 'https://example.com/character/1234a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 			version: '1.0.0',
@@ -20,6 +22,7 @@ export const mockObjectData = (): TObject[] => [
 			authorization: [{ role: 'admin', permissions: ['read', 'write'] }],
 			application: 'OpenRegister',
 			organisation: 'Example Org',
+			groups: null,
 			validation: [{ status: 'valid', errors: [] }],
 			deleted: null,
 			geo: [{ lat: 52.3676, lon: 4.9041 }],
@@ -34,6 +37,8 @@ export const mockObjectData = (): TObject[] => [
 	{
 		'@self': {
 			id: '5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
+			name: 'Item Example',
+			description: null,
 			uuid: 'uuid-5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 			uri: 'https://example.com/item/5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f',
 			version: null,
@@ -49,6 +54,7 @@ export const mockObjectData = (): TObject[] => [
 			authorization: null,
 			application: null,
 			organisation: null,
+			groups: null,
 			validation: null,
 			deleted: null,
 			geo: null,

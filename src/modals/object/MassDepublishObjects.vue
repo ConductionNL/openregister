@@ -1,20 +1,29 @@
+/**
+ * @file MassDepublishObjects.vue
+ * @module Modals/Object
+ * @author Your Name
+ * @copyright 2024 Your Organization
+ * @license AGPL-3.0-or-later
+ * @version 1.0.0
+ */
+
 <script setup>
 import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="`Delete ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
+	<NcDialog :name="`Depublish ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		:can-close="false"
 		size="normal">
 		<!-- Object Selection Review -->
-		<div v-if="success === null" class="delete-step">
+		<div v-if="success === null" class="depublish-step">
 			<h3 class="step-title">
-				Confirm Object Deletion
+				Confirm Object Depublication
 			</h3>
 
-			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.<br><br>
-				Objects will be soft deleted and moved to the <a href="#" class="deleted-link" @click.prevent="navigateToDeleted">deleted objects section</a>. They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.
+			<NcNoteCard type="warning">
+				Review the selected objects below. You can remove any objects you don't want to depublish by clicking the remove button.<br><br>
+				Objects will be depublished with the current date and time. This will make them unavailable to the public while keeping their published date intact.
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
@@ -42,14 +51,14 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<NcEmptyContent v-else name="No objects selected">
 					<template #description>
-						No objects are currently selected for deletion.
+						No objects are currently selected for depublication.
 					</template>
 				</NcEmptyContent>
 			</div>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Object{{ objectStore.selectedObjects.length > 1 ? 's' : '' }} successfully deleted</p>
+			<p>Object{{ selectedObjects.length > 1 ? 's' : '' }} successfully depublished</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -65,12 +74,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<NcButton v-if="success === null"
 				:disabled="loading || selectedObjects.length === 0"
 				type="error"
-				@click="deleteObject()">
+				@click="depublishObjects()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
+					<PublishOff v-if="!loading" :size="20" />
 				</template>
-				Delete
+				Depublish
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -86,11 +95,11 @@ import {
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 
 export default {
-	name: 'MassDeleteObject',
+	name: 'MassDepublishObjects',
 	components: {
 		NcDialog,
 		NcButton,
@@ -98,7 +107,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
-		TrashCanOutline,
+		PublishOff,
 		Cancel,
 		Close,
 	},
@@ -137,42 +146,62 @@ export default {
 			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
-		navigateToDeleted() {
-			// Close the dialog first
-			this.closeDialog()
-			// Navigate to the deleted objects section
-			navigationStore.setSelected('deleted')
-		},
-		async deleteObject() {
+		async depublishObjects() {
 			this.loading = true
 
-			objectStore.massDeleteObject(this.selectedObjects.map(obj => obj.id))
-				.then((result) => {
-					this.result = result
-					this.success = result.successfulIds.length > 0
-					this.error = result.failedIds.length > 0
-					if (result.successfulIds.length > 0) {
-						// Clear selected objects and refresh the object list
-						objectStore.selectedObjects = []
-						objectStore.refreshObjectList()
+			try {
+				const depublishedDate = new Date().toISOString()
 
-						this.closeModalTimeout = setTimeout(() => {
-							this.closeDialog()
-						}, 2000)
-					}
-				}).catch((error) => {
-					this.success = false
-					this.error = error.message || 'An error occurred while deleting the object'
-				}).finally(() => {
-					this.loading = false
-				})
+				// Depublish each object individually
+				const results = await Promise.allSettled(
+					this.selectedObjects.map(async (obj) => {
+						try {
+							await objectStore.depublishObject({
+								register: obj.register,
+								schema: obj.schema,
+								objectId: obj.id,
+								depublishedDate,
+							})
+							return { success: true, id: obj.id }
+						} catch (error) {
+							console.error(`Failed to depublish object ${obj.id}:`, error)
+							return { success: false, id: obj.id, error: error.message }
+						}
+					}),
+				)
+
+				// Count successful and failed operations
+				const successful = results.filter(r => r.status === 'fulfilled' && r.value.success)
+				const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success))
+
+				if (successful.length > 0) {
+					this.success = true
+					// Clear selected objects and refresh the object list
+					objectStore.selectedObjects = []
+					objectStore.refreshObjectList()
+
+					this.closeModalTimeout = setTimeout(() => {
+						this.closeDialog()
+					}, 2000)
+				}
+
+				if (failed.length > 0) {
+					this.error = `Failed to depublish ${failed.length} object${failed.length > 1 ? 's' : ''}`
+				}
+
+			} catch (error) {
+				this.success = false
+				this.error = error.message || 'An error occurred while depublishing objects'
+			} finally {
+				this.loading = false
+			}
 		},
 	},
 }
 </script>
 
 <style scoped>
-.delete-step {
+.depublish-step {
 	padding: 0;
 }
 
@@ -216,15 +245,5 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin: 0;
-}
-
-.deleted-link {
-	color: var(--color-primary);
-	text-decoration: underline;
-	cursor: pointer;
-}
-
-.deleted-link:hover {
-	color: var(--color-primary-hover);
 }
 </style>
