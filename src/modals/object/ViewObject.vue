@@ -14,7 +14,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 <template>
 	<div>
 		<NcDialog v-if="navigationStore.modal === 'viewObject'"
-			:name="(objectStore.objectItem['@self']?.name || objectStore.objectItem.name || objectStore.objectItem.id) + ' (' + (currentSchema?.title || currentSchema?.name || 'Unknown Schema') + ')'"
+			:name="getModalTitle()"
 			size="large"
 			:can-close="true"
 			@update:open="handleDialogClose">
@@ -419,10 +419,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														@update:checked="(checked) => toggleFileSelection(attachment.id, checked)" />
 												</td>
 												<td class="tableColumnExpanded table-row-title">
-													<!-- Show lock icon if file is not shared -->
-													<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
+													<!-- Show warning icon if file is not shared -->
+													<ExclamationThick v-if="!attachment.accessUrl && !attachment.downloadUrl"
 														v-tooltip="'Not shared'"
-														class="notSharedIcon"
+														class="warningIcon"
 														:size="20" />
 													<!-- Show published icon if file is shared -->
 													<FileOutline v-else class="publishedIcon" :size="20" />
@@ -490,9 +490,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-								<NcNoteCard v-else type="info">
-									<p>No files have been attached to this object</p>
-								</NcNoteCard>
+								<NcEmptyContent v-else
+									name="No files attached"
+									:description="isNewObject ? 'Save the object first to attach files' : 'No files have been attached to this object'">
+									<template #icon>
+										<FileOutline :size="64" />
+									</template>
+								</NcEmptyContent>
 
 								<!-- Files Pagination -->
 								<PaginationComponent
@@ -517,7 +521,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Close
 				</NcButton>
-				<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
+				<NcButton v-if="!isNewObject" @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 					<template #icon>
 						<Upload :size="20" />
 					</template>
@@ -534,7 +538,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isSaving" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					{{ isSaving ? 'Saving...' : 'Save' }}
+					{{ isSaving ? (isNewObject ? 'Creating...' : 'Saving...') : (isNewObject ? 'Create' : 'Save') }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -621,6 +625,7 @@ import {
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
 	NcDateTimePickerNative,
+	NcEmptyContent,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
@@ -644,6 +649,10 @@ import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
+import ListBoxOutline from 'vue-material-design-icons/ListBoxOutline.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
+import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 export default {
 	name: 'ViewObject',
@@ -658,6 +667,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcDateTimePickerNative,
+		NcEmptyContent,
 		CodeMirror,
 		BTabs,
 		BTab,
@@ -679,6 +689,10 @@ export default {
 		Plus,
 		Publish,
 		PublishOff,
+		ListBoxOutline,
+		Pencil,
+		AlertOutline,
+		ExclamationThick,
 		PaginationComponent,
 	},
 	data() {
@@ -965,6 +979,9 @@ export default {
 
 			return metadata
 		},
+		isNewObject() {
+			return !objectStore?.objectItem?.id
+		},
 
 	},
 	watch: {
@@ -1014,6 +1031,29 @@ export default {
 		}
 	},
 	methods: {
+		getModalTitle() {
+			if (!objectStore?.objectItem) return 'View Object'
+
+			const name = objectStore.objectItem['@self']?.name
+				|| objectStore.objectItem.name
+				|| objectStore.objectItem.id
+
+			const schemaName = this.currentSchema?.title
+				|| this.currentSchema?.name
+				|| 'Unknown Schema'
+
+			// Add status icon before the title
+			let statusIcon = ''
+			if (objectStore.objectItem['@self']?.published) {
+				statusIcon = '📄 ' // Published
+			} else if (objectStore.objectItem['@self']?.depublished) {
+				statusIcon = '⚠️ ' // Depublished
+			} else {
+				statusIcon = '✏️ ' // Draft/Unpublished
+			}
+
+			return `${statusIcon}${name} (${schemaName})`
+		},
 		async loadTitles() {
 			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
 			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
@@ -2052,6 +2092,98 @@ export default {
 </script>
 
 <style scoped>
+/* Property table row border colors matching validation states */
+.viewTableRow.property-invalid {
+	background-color: var(--color-error-light);
+	border-left: 4px solid var(--color-error);
+}
+
+.viewTableRow.property-warning {
+	background-color: var(--color-warning-light);
+	border-left: 4px solid var(--color-warning);
+}
+
+.viewTableRow.property-new {
+	background-color: var(--color-primary-element-light);
+	border-left: 4px solid var(--color-primary-element);
+}
+
+.viewTableRow.property-valid {
+	border-left: 4px solid var(--color-success);
+}
+
+/* Icon colors for file status */
+.warningIcon {
+	color: var(--color-warning);
+}
+
+.publishedIcon {
+	color: var(--color-success);
+}
+
+/* Validation icons */
+.validation-icon {
+	flex-shrink: 0;
+}
+
+.error-icon {
+	color: var(--color-error);
+}
+
+.warning-icon {
+	color: var(--color-warning);
+}
+
+.lock-icon {
+	color: var(--color-text-lighter);
+}
+
+.new-icon {
+	color: var(--color-primary-element);
+}
+
+.prop-cell-content {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Other necessary styles */
+.viewTableRow {
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.viewTableRow:hover {
+	background-color: var(--color-background-hover);
+}
+
+.viewTableRow.selected-row {
+	background-color: var(--color-primary-light);
+}
+
+.viewTableRow.edited-row {
+	background-color: var(--color-success-light);
+	border-left: 3px solid var(--color-success);
+}
+
+.viewTableRow.edited-row.selected-row {
+	background-color: var(--color-primary-light);
+	border-left: 3px solid var(--color-success);
+}
+
+.viewTableRow.non-editable-row {
+	background-color: var(--color-background-dark);
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.viewTableRow.non-editable-row:hover {
+	background-color: var(--color-background-dark);
+}
+</style>
+
+<style scoped>
 /* ViewObject-specific overrides only */
 .tableColumnActions {
 	width: 100px;
@@ -2121,6 +2253,15 @@ export default {
 
 .new-icon {
 	color: var(--color-primary-element);
+}
+
+/* Icon colors for file status */
+.warningIcon {
+	color: var(--color-warning);
+}
+
+.publishedIcon {
+	color: var(--color-success);
 }
 
 .viewTableRow.non-editable-row {
