@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\Files_Versions\Versions\VersionManager;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -132,6 +133,7 @@ class FileService
      * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper
      * @param ObjectEntityMapper    $objectEntityMapper Object entity mapper
      * @param VersionManager        $versionManager     Version manager service
+     * @param FileMapper            $fileMapper         File mapper for direct database operations
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -147,8 +149,10 @@ class FileService
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly VersionManager $versionManager
+        private readonly VersionManager $versionManager,
+        private readonly FileMapper $fileMapper
     ) {
+        // Dependency injection confirmed working - debug logging removed
     }//end __construct()
 
     /**
@@ -534,7 +538,9 @@ class FileService
     private function getOpenRegisterUserFolder(): Folder
     {
         try {
-            return $this->rootFolder->getUserFolder($this->getUser()->getUID());
+            $user = $this->getUser();
+            $userFolder = $this->rootFolder->getUserFolder($user->getUID());
+            return $userFolder;
         } catch (Exception $e) {
             $this->logger->error("Failed to get OpenRegister user folder: " . $e->getMessage());
             throw new Exception("Cannot access OpenRegister user folder: " . $e->getMessage());
@@ -651,14 +657,17 @@ class FileService
     {
         $folderProperty = $objectEntity->getFolder();
         
-        // Handle legacy cases where folder might be null, empty string, or a string path
-        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
+        // Handle legacy cases where folder might be null, empty string, or a non-numeric string path
+        if ($folderProperty === null || $folderProperty === '' || (is_string($folderProperty) && !is_numeric($folderProperty))) {
             $this->logger->info("Object {$objectEntity->getId()} has legacy folder property, creating new folder");
             return $this->createObjectFolderById($objectEntity);
         }
         
+        // Convert string numeric ID to integer
+        $folderId = is_string($folderProperty) ? (int) $folderProperty : (int) $folderProperty;
+        
         // Try to get folder by ID
-        $folder = $this->getNodeById((int) $folderProperty);
+        $folder = $this->getNodeById($folderId);
         
         if ($folder instanceof Folder) {
             return $folder;
@@ -1226,9 +1235,9 @@ class FileService
      */
     public function findShares(Node $file, int $shareType=3): array
     {
-        // Get the current user.
-        $currentUser = $this->userSession->getUser();
-        $userId = $currentUser ? $currentUser->getUID() : 'Guest';
+        // Use the OpenRegister system user instead of current user session
+        // This ensures we can find shares created by the OpenRegister system user
+        $userId = $this->getUser()->getUID();
 
         return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
     }//end findShares()
@@ -1244,6 +1253,7 @@ class FileService
     public function findShare(string $path, ?int $shareType=3): ?IShare
     {
         $path = trim(string: $path, characters: '/');
+        // Use the OpenRegister system user for consistency
         $userId = $this->getUser()->getUID();
 
         try {
@@ -2445,7 +2455,7 @@ class FileService
     }
 
     /**
-     * Publish a file by creating a public share link.
+     * Publish a file by creating a public share link using direct database operations.
      *
      * @param ObjectEntity|string $object   The object or object ID
      * @param string             $filePath The path to the file to publish
@@ -2526,8 +2536,21 @@ class FileService
 
         $this->logger->info("publishFile: Creating share link for file: " . $file->getPath());
 
-        // Create share link for the file
-        $this->createShareLink(path: $file->getPath());
+        // Use FileMapper to create the share directly in the database
+        try {
+            $openRegisterUser = $this->getUser();
+            $shareInfo = $this->fileMapper->publishFile(
+                fileId: $file->getId(),
+                sharedBy: $openRegisterUser->getUID(),
+                shareOwner: $openRegisterUser->getUID(),
+                permissions: 1 // Read only
+            );
+            
+            $this->logger->info("publishFile: Successfully created public share via FileMapper - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
+        } catch (Exception $e) {
+            $this->logger->error("publishFile: Failed to create share via FileMapper: " . $e->getMessage());
+            throw new Exception('Failed to create share link: ' . $e->getMessage());
+        }
 
         $this->logger->info("publishFile: Successfully published file: " . $file->getName());
         return $file;
@@ -2615,8 +2638,19 @@ class FileService
 
         $this->logger->info("unpublishFile: Removing share links for file: " . $file->getPath());
 
-        // Remove all share links from the file
-        $this->deleteShareLinks(file: $file);
+        // Use FileMapper to remove all public shares directly from the database
+        try {
+            $deletionInfo = $this->fileMapper->depublishFile($file->getId());
+            
+            $this->logger->info("unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}");
+            
+            if ($deletionInfo['deleted_shares'] === 0) {
+                $this->logger->info("unpublishFile: No public shares were found to delete for file: " . $file->getName());
+            }
+        } catch (Exception $e) {
+            $this->logger->error("unpublishFile: Failed to remove shares via FileMapper: " . $e->getMessage());
+            throw new Exception('Failed to remove share links: ' . $e->getMessage());
+        }
 
         $this->logger->info("unpublishFile: Successfully unpublished file: " . $file->getName());
         return $file;

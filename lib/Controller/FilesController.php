@@ -23,6 +23,9 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\Files\NotFoundException;
 use OCP\IRequest;
 use Exception;
 /**
@@ -126,7 +129,10 @@ class FilesController extends Controller
 
         try {
             $file = $this->fileService->getFile($object, $filePath);
-            return new JSONResponse($file);
+            if ($file === null) {
+                return new JSONResponse(['error' => 'File not found'], 404);
+            }
+            return new JSONResponse($this->fileService->formatFile($file));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -163,7 +169,7 @@ class FilesController extends Controller
         try {
             $data   = $this->request->getParams();
             $result = $this->fileService->addFile($object, $data['name'], $data['content'], false, $data['tags']);
-            return new JSONResponse($result);
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -451,7 +457,7 @@ class FilesController extends Controller
 
         try {
             $result = $this->fileService->publishFile($this->objectService->getObject(), $filePath);
-            return new JSONResponse($result);
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -488,7 +494,7 @@ class FilesController extends Controller
 
         try {
             $result = $this->fileService->unpublishFile($this->objectService->getObject(), $filePath);
-            return new JSONResponse($result);
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -497,6 +503,5 @@ class FilesController extends Controller
         }//end try
 
     }//end depublish()
-
 
 }//end class
