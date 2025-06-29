@@ -17,6 +17,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -134,7 +135,7 @@ class FileMapper extends QBMapper
             // Add share-related fields
             $row['accessUrl'] = $row['share_token'] ? $this->generateShareUrl($row['share_token']) : null;
             $row['downloadUrl'] = $row['share_token'] ? $this->generateShareUrl($row['share_token']) . '/download' : null;
-            $row['published'] = $row['share_stime'] ? (new \DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
+            $row['published'] = $row['share_stime'] ? (new DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
             
             $files[] = $row;
         }
@@ -192,7 +193,7 @@ class FileMapper extends QBMapper
         // Add share-related fields
         $file['accessUrl'] = $file['share_token'] ? $this->generateShareUrl($file['share_token']) : null;
         $file['downloadUrl'] = $file['share_token'] ? $this->generateShareUrl($file['share_token']) . '/download' : null;
-        $file['published'] = $file['share_stime'] ? (new \DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
+        $file['published'] = $file['share_stime'] ? (new DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
 
         return $file;
     }
@@ -275,5 +276,175 @@ class FileMapper extends QBMapper
     {
         $baseUrl = $this->urlGenerator->getBaseUrl();
         return $baseUrl . '/index.php/s/' . $token;
+    }
+
+    /**
+     * Publish a file by creating a public share directly in the database.
+     *
+     * @param int    $fileId      The file ID to publish
+     * @param string $sharedBy    The user who is sharing the file
+     * @param string $shareOwner  The owner of the file
+     * @param int    $permissions The permissions for the share (default: 1 = read)
+     *
+     * @return array The created share information
+     *
+     * @throws \Exception If the share creation fails
+     *
+     * @phpstan-param int $fileId
+     * @phpstan-param string $sharedBy
+     * @phpstan-param string $shareOwner
+     * @phpstan-param int $permissions
+     * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+     */
+    public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions = 1): array
+    {
+        // Check if a public share already exists for this file
+        $existingShare = $this->getPublicShare($fileId);
+        if ($existingShare !== null) {
+            // Return existing share information
+            return [
+                'id' => $existingShare['id'],
+                'token' => $existingShare['token'],
+                'accessUrl' => $this->generateShareUrl($existingShare['token']),
+                'downloadUrl' => $this->generateShareUrl($existingShare['token']) . '/download',
+                'published' => (new DateTime())->setTimestamp($existingShare['stime'])->format('c')
+            ];
+        }
+
+        // Generate a unique token for the share
+        $token = $this->generateShareToken();
+        $currentTime = time();
+
+        // Insert the new share into the database
+        $qb = $this->db->getQueryBuilder();
+        $qb->insert('share')
+            ->values([
+                'share_type' => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT), // 3 = public link
+                'share_with' => $qb->createNamedParameter(null),
+                'password' => $qb->createNamedParameter(null),
+                'uid_owner' => $qb->createNamedParameter($shareOwner),
+                'uid_initiator' => $qb->createNamedParameter($sharedBy),
+                'parent' => $qb->createNamedParameter(null),
+                'item_type' => $qb->createNamedParameter('file'),
+                'item_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
+                'item_target' => $qb->createNamedParameter('/' . $fileId),
+                'file_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
+                'file_target' => $qb->createNamedParameter('/' . $fileId),
+                'permissions' => $qb->createNamedParameter($permissions, IQueryBuilder::PARAM_INT),
+                'stime' => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
+                'accepted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                'expiration' => $qb->createNamedParameter(null),
+                'token' => $qb->createNamedParameter($token),
+                'mail_send' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)
+            ]);
+
+        $result = $qb->executeStatement();
+        
+        if ($result !== 1) {
+            throw new \Exception('Failed to create public share in database');
+        }
+
+        // Get the ID of the newly created share
+        $shareId = $qb->getLastInsertId();
+
+        return [
+            'id' => (int) $shareId,
+            'token' => $token,
+            'accessUrl' => $this->generateShareUrl($token),
+            'downloadUrl' => $this->generateShareUrl($token) . '/download',
+            'published' => (new DateTime())->setTimestamp($currentTime)->format('c')
+        ];
+    }
+
+    /**
+     * Depublish a file by removing all public shares directly from the database.
+     *
+     * @param int $fileId The file ID to depublish
+     *
+     * @return array Information about the deletion operation
+     *
+     * @throws \Exception If the share deletion fails
+     *
+     * @phpstan-param int $fileId
+     * @phpstan-return array{deleted_shares: int, file_id: int}
+     */
+    public function depublishFile(int $fileId): array
+    {
+        // Delete all public shares for this file
+        $qb = $this->db->getQueryBuilder();
+        $qb->delete('share')
+            ->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))); // 3 = public link
+
+        $deletedCount = $qb->executeStatement();
+
+        return [
+            'deleted_shares' => $deletedCount,
+            'file_id' => $fileId
+        ];
+    }
+
+    /**
+     * Get an existing public share for a file.
+     *
+     * @param int $fileId The file ID
+     *
+     * @return array|null The share information or null if not found
+     *
+     * @phpstan-param int $fileId
+     * @phpstan-return array{id: int, token: string, stime: int}|null
+     */
+    private function getPublicShare(int $fileId): ?array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'token', 'stime')
+            ->from('share')
+            ->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)))
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $share = $result->fetch();
+        $result->closeCursor();
+
+        return $share ?: null;
+    }
+
+    /**
+     * Generate a unique share token.
+     *
+     * @return string A unique share token
+     *
+     * @phpstan-return string
+     */
+    private function generateShareToken(): string
+    {
+        // Generate a random token similar to how Nextcloud does it
+        // Using a combination of letters and numbers, 15 characters long
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $token = '';
+        $max = strlen($characters) - 1;
+        
+        for ($i = 0; $i < 15; $i++) {
+            $token .= $characters[random_int(0, $max)];
+        }
+        
+        // Ensure the token is unique by checking if it already exists
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('share')
+            ->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
+        
+        $result = $qb->executeQuery();
+        $exists = $result->fetch();
+        $result->closeCursor();
+        
+        // If token exists, generate a new one recursively
+        if ($exists) {
+            return $this->generateShareToken();
+        }
+        
+        return $token;
     }
 }
