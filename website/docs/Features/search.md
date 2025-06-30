@@ -204,7 +204,9 @@ The following metadata fields are available for filtering on all objects:
 | `uuid` | Object universal unique ID | UUID | `@self[uuid]=550e8400-e29b-41d4-a716-446655440000` |
 | `register` | Register ID or slug | Integer/String | `@self[register]=5` or `@self[register]=pets` |
 | `schema` | Schema ID or slug | Integer/String | `@self[schema]=24` or `@self[schema]=animal` |
-| `version` | Object version number | Integer | `@self[version]=1` |
+| `version` | Object version number | String | `@self[version]=1.0.0` |
+| `size` | Object size in bytes | String | `@self[size][gte]=1024` |
+| `schemaVersion` | Schema version used | String | `@self[schemaVersion]=2.1.0` |
 
 #### Timestamps
 | Field | Description | Type | Example |
@@ -243,16 +245,16 @@ All metadata fields support the following operators for precise filtering:
 
 | Operator | Description | Example |
 |----------|-------------|---------|
-| `=` | Equals (case insensitive) | `@self[title]=annual report` |
+| `=` | Equals (case insensitive) | `@self[name]=annual report` |
 | `ne` | Not equals (case insensitive) | `@self[status][ne]=draft` |
 | `gt` | Greater than | `@self[version][gt]=1` |
 | `lt` | Less than | `@self[version][lt]=5` |
 | `gte` | Greater than or equal | `@self[created][gte]=2025-01-01T00:00:00` |
 | `lte` | Less than or equal | `@self[updated][lte]=2025-12-31T23:59:59` |
 | `~` | Contains (case insensitive) | `@self[description][~]=budget` |
-| `^` | Starts with (case insensitive) | `@self[title][^]=annual` |
-| `$` | Ends with (case insensitive) | `@self[reference][$]=2025` |
-| `===` | Equals (case sensitive) | `@self[title][===]=Annual Report` |
+| `^` | Starts with (case insensitive) | `@self[name][^]=annual` |
+| `$` | Ends with (case insensitive) | `@self[name][$]=2025` |
+| `===` | Equals (case sensitive) | `@self[name][===]=Annual Report` |
 | `exists` | Property exists check | `@self[published][exists]=true` |
 | `empty` | Empty value check | `@self[summary][empty]=true` |
 | `null` | Null value check | `@self[depublished][null]=true` |
@@ -288,8 +290,8 @@ GET /api/objects/5/24?@self[register]=5
 # Filter by creation date
 GET /api/objects/5/24?@self[created][gte]=2025-06-01T00:00:00
 
-# Filter by title containing specific text
-GET /api/objects/5/24?@self[title][~]=budget
+# Filter by name containing specific text
+GET /api/objects/5/24?@self[name][~]=budget
 
 # Filter by published objects
 GET /api/objects/5/24?@self[published][exists]=true
@@ -300,8 +302,8 @@ GET /api/objects/5/24?@self[published][exists]=true
 # Objects created after date AND belonging to specific organization
 GET /api/objects/5/24?@self[created][gte]=2025-01-01T00:00:00&@self[organization]=550e8400-e29b-41d4-a716-446655440000
 
-# Published objects with specific title pattern
-GET /api/objects/5/24?@self[published][exists]=true&@self[title][^]=Annual
+# Published objects with specific name pattern
+GET /api/objects/5/24?@self[published][exists]=true&@self[name][^]=Annual
 
 # Objects updated within date range
 GET /api/objects/5/24?@self[updated][gte]=2025-06-01T00:00:00&@self[updated][lte]=2025-06-30T23:59:59
