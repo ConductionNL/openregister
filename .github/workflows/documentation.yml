@@ -38,10 +38,13 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies and build
+      - name: Clear build cache and install dependencies
         timeout-minutes: 3
         run: |
           cd website
+          rm -rf node_modules/.cache
+          rm -rf .docusaurus
+          rm -rf build
           npm run ci
 
       # Deploy to GitHub Pages
