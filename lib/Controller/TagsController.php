@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -31,10 +32,19 @@ class TagsController extends Controller
 {
 
 
+    /**
+     * TagsController constructor.
+     *
+     * @param string        $appName
+     * @param IRequest      $request
+     * @param ObjectService $objectService
+     * @param FileService   $fileService
+     */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly ObjectService $objectService,
+        private readonly FileService $fileService,
     ) {
         parent::__construct($appName, $request);
 
@@ -42,25 +52,17 @@ class TagsController extends Controller
 
 
     /**
-     * Update file metadata for an object
+     * Get all tags available in the system (visible and assignable by users)
      *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $objectType The type of object
-     * @param string $id         The ID of the object
-     * @param string $filePath   Path to the file to update
-     * @param array  $tags       Optional tags to update
      *
      * @return JSONResponse
      */
     public function getAllTags(): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
-
-        return new JSONResponse($this->objectService->getAllTags());
+        // Use the FileService to fetch all tags
+        return new JSONResponse($this->fileService->getAllTags());
 
     }//end getAllTags()
 

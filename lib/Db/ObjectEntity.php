@@ -22,7 +22,9 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\Entity;
+use OC\Files\Node\File;
 use OCP\IUserSession;
 
 /**
@@ -89,13 +91,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @var array|null Array of file IDs that are related to this object
      */
     protected ?array $relations = [];
-
-    /**
-     * Text representation of the object.
-     *
-     * @var string|null Text representation of the object
-     */
-    protected ?string $textRepresentation = null;
 
     /**
      * Lock information for the object if locked.
@@ -202,11 +197,62 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $published = null;
 
+    /**
+     * Published timestamp.
+     *
+     * @var DateTime|null Depublished timestamp
+     */
+    protected ?DateTime $depublished = null;
+
+    /**
+     * Last log entry related to this object (not persisted, runtime only)
+     *
+     * @var array|null
+     * @phpstan-var array<string, mixed>|null
+     * @psalm-var array<string, mixed>|null
+     */
+    private ?array $lastLog = null;
+
+    /**
+     * Name of the object.
+     *
+     * @var string|null Name of the object
+     */
+    protected ?string $name = null;
+
+    /**
+     * Description of the object.
+     *
+     * @var string|null Description of the object
+     */
+    protected ?string $description = null;
+
+    /**
+     * An array defining group-based permissions for CRUD actions.
+     * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
+     * and the values are arrays of group IDs that are permitted to perform that action.
+     * If an action is not present as a key, or its value is an empty array,
+     * it is assumed that all users have permission for that action.
+     *
+     * Example:
+     * [
+     *   'create' => ['group-admin', 'group-editors'],
+     *   'read'   => ['group-viewers'],
+     *   'update' => ['group-editors'],
+     *   'delete' => ['group-admin']
+     * ]
+     *
+     * @var array|null
+     * @phpstan-var array<string, array<string>>|null
+     * @psalm-var array<string, list<string>>|null
+     */
+    protected ?array $groups = [];
 
     /**
      * Initialize the entity and define field types
      */
-    public function __construct()
+    public function __construct(
+	)
     {
         $this->addType(fieldName:'uuid', type: 'string');
         $this->addType(fieldName:'uri', type: 'string');
@@ -216,7 +262,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'object', type: 'json');
         $this->addType(fieldName:'files', type: 'json');
         $this->addType(fieldName:'relations', type: 'json');
-        $this->addType(fieldName:'textRepresentation', type: 'text');
         $this->addType(fieldName:'locked', type: 'json');
         $this->addType(fieldName:'owner', type: 'string');
         $this->addType(fieldName:'authorization', type: 'json');
@@ -229,20 +274,31 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName:'retention', type: 'json');
         $this->addType(fieldName:'size', type: 'string');
         $this->addType(fieldName:'schemaVersion', type: 'string');
+        $this->addType(fieldName:'name', type: 'string');
+        $this->addType(fieldName:'description', type: 'string');
         $this->addType(fieldName:'updated', type: 'datetime');
         $this->addType(fieldName:'created', type: 'datetime');
         $this->addType(fieldName:'published', type: 'datetime');
+        $this->addType(fieldName:'depublished', type: 'datetime');
+        $this->addType('groups', 'json');
+
     }//end __construct()
 
 
     /**
-     * Get the object data
+     * Get the object data and set the 'id' to the 'uuid'
      *
-     * @return array The object data or empty array if null
+     * @return array The object data with 'id' set to 'uuid', or empty array if null
      */
     public function getObject(): array
     {
-        return ($this->object ?? []);
+        // Initialize the object data with an empty array if null
+        $objectData = $this->object ?? [];
+
+        // Ensure 'id' is the first field by setting it before merging with object data
+        $objectData = array_merge(['id' => $this->uuid], $objectData);
+
+        return $objectData;
 
     }//end getObject()
 
@@ -254,7 +310,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getFiles(): array
     {
-        return ($this->files ?? []);
+		return ($this->files ?? []);
 
     }//end getFiles()
 
@@ -375,19 +431,21 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON format
      *
-     * Creates a metadata array containing object properties except sensitive fields.
-     * Filters out 'object', 'textRepresentation' and 'authorization' fields and
-     * stores remaining properties under '@self' key for API responses.
+     * Merges the object's own data with a '@self' key containing metadata.
+     * Ensures that if a name is not set, the UUID is used as a fallback.
      *
      * @return array Serialized object data
      */
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object          = $this->object;
+        $object = ($this->object ?? []); // Default to an empty array if $this->object is null.
         $object['@self'] = $this->getObjectArray($object);
-        $object['id']    = $this->getUuid();
-
+        
+        // Check if name is empty and set uuid as fallback
+        if (empty($object['@self']['name'])) {
+            $object['@self']['name'] = $this->uuid;
+        }
         // Let's merge and return.
         return $object;
 
@@ -401,9 +459,11 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function getObjectArray(array $object=[]): array
     {
-        // Initialize the object array with default properties
+        // Initialize the object array with default properties.
         $objectArray = [
             'id'            => $this->uuid,
+            'name'          => $this->name ?? $this->uuid,
+            'description'   => $this->description ?? $this->id,
             'uri'           => $this->uri,
             'version'       => $this->version,
             'register'      => $this->register,
@@ -413,9 +473,11 @@ class ObjectEntity extends Entity implements JsonSerializable
             'relations'     => $this->relations,
             'locked'        => $this->locked,
             'owner'         => $this->owner,
+            'organisation'  => $this->organisation,
+            'groups'        => $this->groups,
+            'authorization' => $this->authorization,
             'folder'        => $this->folder,
             'application'   => $this->application,
-            'organisation'  => $this->organisation,
             'validation'    => $this->validation,
             'geo'           => $this->geo,
             'retention'     => $this->retention,
@@ -423,31 +485,32 @@ class ObjectEntity extends Entity implements JsonSerializable
             'updated'       => $this->getFormattedDate($this->updated),
             'created'       => $this->getFormattedDate($this->created),
             'published'     => $this->getFormattedDate($this->published),
+            'depublished'   => $this->getFormattedDate($this->depublished),
             'deleted'       => $this->deleted,
         ];
 
-        // Check for '@self' in the provided object array (this is the case if the object metadata is extended)
-        if (isset($object['@self']) && is_array($object['@self'])) {
+        // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
+        if (isset($object['@self']) === true && is_array($object['@self']) === true) {
             $self = $object['@self'];
 
-            // Use the '@self' values if they are arrays
-            if (isset($self['register']) && is_array($self['register'])) {
+            // Use the '@self' values if they are arrays.
+            if (isset($self['register']) === true && is_array($self['register']) === true) {
                 $objectArray['register'] = $self['register'];
             }
 
-            if (isset($self['schema']) && is_array($self['schema'])) {
+            if (isset($self['schema']) === true && is_array($self['schema']) === true) {
                 $objectArray['schema'] = $self['schema'];
             }
 
-            if (isset($self['owner']) && is_array($self['owner'])) {
+            if (isset($self['owner']) === true && is_array($self['owner']) === true) {
                 $objectArray['owner'] = $self['owner'];
             }
 
-            if (isset($self['organisation']) && is_array($self['organisation'])) {
+            if (isset($self['organisation']) === true && is_array($self['organisation']) === true) {
                 $objectArray['organisation'] = $self['organisation'];
             }
 
-            if (isset($self['application']) && is_array($self['application'])) {
+            if (isset($self['application']) === true && is_array($self['application']) === true) {
                 $objectArray['application'] = $self['application'];
             }
         }//end if
@@ -498,7 +561,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
-            $lock = $this->locked;
+            $lock = $this->setLocked();
 
             // If locked by different user.
             if ($lock['user'] !== $userId) {
@@ -510,25 +573,25 @@ class ObjectEntity extends Entity implements JsonSerializable
             $newExpiration  = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->locked = [
+            $this->setLocked([
                 'user'       => $userId,
                 'process'    => ($process ?? $lock['process']),
                 'created'    => $lock['created'],
                 'duration'   => $duration,
                 'expiration' => $newExpiration->format('c'),
-            ];
+            ]);
         } else {
             // Create new lock.
             $expiration = clone $now;
             $expiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->locked = [
+            $this->setLocked([
                 'user'       => $userId,
                 'process'    => $process,
                 'created'    => $now->format('c'),
                 'duration'   => $duration,
                 'expiration' => $expiration->format('c'),
-            ];
+            ]);
         }//end if
 
         return true;
@@ -563,7 +626,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             throw new Exception('Object is locked by another user');
         }
 
-        $this->locked = null;
+        $this->setLocked(null);
         return true;
 
     }//end unlock()
@@ -643,5 +706,31 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end delete()
 
+
+    /**
+     * Get the last log entry for this object (runtime only)
+     *
+     * @return array|null The last log entry or null if not set
+     * @phpstan-return array<string, mixed>|null
+     * @psalm-return array<string, mixed>|null
+     */
+    public function getLastLog(): ?array
+    {
+        return $this->lastLog;
+    }
+
+    /**
+     * Set the last log entry for this object (runtime only)
+     *
+     * @param array|null $log The log entry to set
+     * @phpstan-param array<string, mixed>|null $log
+     * @psalm-param array<string, mixed>|null $log
+     *
+     * @return void
+     */
+    public function setLastLog(?array $log = null): void
+    {
+        $this->lastLog = $log;
+    }
 
 }//end class

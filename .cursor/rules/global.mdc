@@ -116,7 +116,6 @@ You are a senior programmer at an innovation-oriented development company. You a
 ## Special Considerations
 - Never use backticks (`) in documentation or code edits
 - Always use single quotes (') for code examples
-- Always run quality checks before requesting review
 - Fix all linter and test issues before completion
 - Document all decisions and assumptions
 - Keep stakeholder informed of progress

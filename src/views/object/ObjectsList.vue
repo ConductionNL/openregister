@@ -17,19 +17,19 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						<Magnify :size="20" />
 					</NcTextField>
 					<NcActions>
-						<NcActionButton @click="objectStore.refreshObjectList({ search: search, page: 1 })">
+						<NcActionButton close-after-click @click="objectStore.refreshObjectList({ search: search, page: 1 })">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
 							Refresh
 						</NcActionButton>
-						<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
+						<NcActionButton close-after-click @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
+						<NcActionButton close-after-click @click="objectStore.setObjectItem(null); navigationStore.setModal('editObject')">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -61,13 +61,14 @@ import { objectStore, navigationStore } from '../../store/store.js'
 						{{ object.uuid }}
 					</template>
 					<template #actions>
-						<NcActionButton @click="objectStore.setObjectItem(object); navigationStore.setModal('editObject')">
+						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('editObject')">
 							<template #icon>
 								<Pencil />
 							</template>
 							Edit
 						</NcActionButton>
 						<NcActionButton v-if="!object.locked"
+							close-after-click
 							@click="objectStore.setObjectItem(object); navigationStore.setModal('lockObject')">
 							<template #icon>
 								<LockOutline />
@@ -75,13 +76,14 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							Lock
 						</NcActionButton>
 						<NcActionButton v-if="object.locked"
+							close-after-click
 							@click="objectStore.unlockObject(objectStore.objectItem.id)">
 							<template #icon>
 								<LockOpenOutline />
 							</template>
 							Unlock
 						</NcActionButton>
-						<NcActionButton @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
+						<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>

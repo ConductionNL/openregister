@@ -30,6 +30,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Description"
 				:value.sync="properties.description" />
 
+			<NcTextField :disabled="loading"
+				label="Title"
+				:value.sync="properties.title" />
+
 			<div class="ASP-selectContainer">
 				<NcSelect v-bind="typeOptions"
 					v-model="properties.type" />
@@ -55,6 +59,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					type="text"
 					label="Property name of inversed relation"
 					:value.sync="properties.inversedBy" />
+				<NcInputField :disabled="loading"
+					type="text"
+					label="Register of schema referenced"
+					:value.sync="properties.register" />
 			</div>
 
 			<!-- File configuration -->
@@ -85,16 +93,17 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcTextField :disabled="loading"
 					label="Behavior"
 					:value.sync="properties.behavior" />
+				<template v-if="properties.type !== 'array'">
+					<NcInputField :disabled="loading"
+						type="number"
+						label="Minimum length"
+						:value.sync="properties.minLength" />
 
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Minimum length"
-					:value.sync="properties.minLength" />
-
-				<NcInputField :disabled="loading"
-					type="number"
-					label="Maximum length"
-					:value.sync="properties.maxLength" />
+					<NcInputField :disabled="loading"
+						type="number"
+						label="Maximum length"
+						:value.sync="properties.maxLength" />
+				</template>
 			</template>
 
 			<!-- TYPE : STRING -->
@@ -214,6 +223,11 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				label="Default value"
 				:value.sync="properties.default" />
 
+			<NcInputField :disabled="loading"
+				type="number"
+				label="Order"
+				:value.sync="properties.order" />
+
 			<NcCheckboxRadioSwitch
 				:disabled="loading"
 				:checked.sync="properties.required">
@@ -230,6 +244,24 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				:disabled="loading"
 				:checked.sync="properties.deprecated">
 				Deprecated
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.visible">
+				Visible to end users
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.hideOnCollection">
+				Hide in collection view
+			</NcCheckboxRadioSwitch>
+
+			<NcCheckboxRadioSwitch
+				:disabled="loading"
+				:checked.sync="properties.facetable">
+				Facetable
 			</NcCheckboxRadioSwitch>
 
 			<NcTextField :disabled="loading"
@@ -301,6 +333,10 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						type="text"
 						label="Property name of inversed relation"
 						:value.sync="properties.items.inversedBy" />
+					<NcInputField :disabled="loading"
+						type="text"
+						label="Register of schema referenced to"
+						:value.sync="properties.items.register" />
 					<NcCheckboxRadioSwitch
 						:disabled="loading"
 						:checked.sync="properties.items.cascadeDelete">
@@ -420,6 +456,7 @@ export default {
 			propertyTitle: '',
 			properties: {
 				description: '',
+				title: '',
 				type: 'string',
 				format: '',
 				pattern: '',
@@ -427,6 +464,10 @@ export default {
 				behavior: '',
 				required: false,
 				deprecated: false,
+				visible: true,
+				hideOnCollection: false,
+				facetable: true,
+				order: 0,
 				minLength: 0,
 				maxLength: 0,
 				example: '',
@@ -551,6 +592,7 @@ export default {
 				this.properties = {
 					...this.properties, // Preserve default structure
 					...schemaProperty, // Override with existing values
+					order: schemaProperty.order ?? 0,
 					minLength: schemaProperty.minLength ?? 0,
 					maxLength: schemaProperty.maxLength ?? 0,
 					minimum: schemaProperty.minimum ?? 0,
@@ -602,6 +644,7 @@ export default {
 					[this.propertyTitle]: { // create the new property with title as key
 						...this.properties,
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
+						order: parseFloat(this.properties.order) || null,
 						minLength: parseFloat(this.properties.minLength) || null,
 						maxLength: parseFloat(this.properties.maxLength) || null,
 						minimum: parseFloat(this.properties.minimum) || null,
@@ -615,6 +658,15 @@ export default {
 
 			if (!newSchemaItem.properties[this.propertyTitle].items.$ref && !newSchemaItem.properties[this.propertyTitle].items.type) {
 				delete newSchemaItem.properties[this.propertyTitle].items
+			}
+
+			if (this.properties.required === false) {
+				if (newSchemaItem.required && Array.isArray(newSchemaItem.required)) {
+					newSchemaItem.required = newSchemaItem.required.filter(
+						requiredProp => requiredProp !== this.propertyTitle
+						&& (schemaStore.schemaPropertyKey ? requiredProp !== schemaStore.schemaPropertyKey : true),
+					)
+				}
 			}
 
 			if (!newSchemaItem?.id) {

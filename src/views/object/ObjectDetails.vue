@@ -16,31 +16,31 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							<LockOutline v-if="objectStore.objectItem.locked" :size="20" />
 							<DotsHorizontal v-else :size="20" />
 						</template>
-						<NcActionButton @click="navigationStore.setModal('editObject')">
+						<NcActionButton close-after-click @click="navigationStore.setModal('editObject')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton v-if="!objectStore.objectItem.locked" @click="navigationStore.setModal('lockObject')">
+						<NcActionButton v-if="!objectStore.objectItem.locked" close-after-click @click="navigationStore.setModal('lockObject')">
 							<template #icon>
 								<LockOutline :size="20" />
 							</template>
 							Lock
 						</NcActionButton>
-						<NcActionButton v-if="objectStore.objectItem.locked" @click="objectStore.unlockObject(objectStore.objectItem.id)">
+						<NcActionButton v-if="objectStore.objectItem.locked" close-after-click @click="objectStore.unlockObject(objectStore.objectItem.id)">
 							<template #icon>
 								<LockOpenOutline :size="20" />
 							</template>
 							Unlock
 						</NcActionButton>
-						<NcActionButton @click="navigationStore.setDialog('deleteObject')">
+						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
 							Delete
 						</NcActionButton>
-						<NcActionButton
+						<NcActionButton close-after-click
 							:disabled="!objectStore.objectItem.folder"
 							@click="openFolder(objectStore.objectItem.folder)">
 							<template #icon>
@@ -180,7 +180,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										{{ attachment?.type || 'Geen type' }}
 									</template>
 									<template #actions>
-										<NcActionButton @click="openFile(attachment)">
+										<NcActionButton close-after-click @click="openFile(attachment)">
 											<template #icon>
 												<OpenInNew :size="20" />
 											</template>
@@ -230,7 +230,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										{{ auditTrail.userName }}
 									</template>
 									<template #actions>
-										<NcActionButton @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
+										<NcActionButton close-after-click @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
 											<template #icon>
 												<Eye :size="20" />
 											</template>

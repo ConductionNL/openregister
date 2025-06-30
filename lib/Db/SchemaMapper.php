@@ -29,6 +29,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
  * The SchemaMapper class
@@ -66,27 +67,23 @@ class SchemaMapper extends QBMapper
         SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
-        $this->eventDispatcher = $eventDispatcher;
-        $this->validator       = $validator;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->validator          = $validator;
 
     }//end __construct()
 
 
     /**
-     * Finds a schema by id
+     * Finds a schema by id, with optional extension for statistics
      *
-     * @param int|string $id The id of the schema
+     * @param int|string $id     The id of the schema
+     * @param array      $extend Optional array of extensions (e.g., ['@self.stats'])
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return Schema The schema
+     * @return Schema The schema, possibly with stats
      */
-    public function find(string | int $id): Schema
+    public function find(string | int $id, ?array $extend=[]): Schema
     {
         $qb = $this->db->getQueryBuilder();
-
         $qb->select('*')
             ->from('openregister_schemas')
             ->where(
@@ -96,7 +93,7 @@ class SchemaMapper extends QBMapper
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
                 )
             );
-
+        // Just return the entity; do not attach stats here
         return $this->findEntity(query: $qb);
 
     }//end find()
@@ -122,7 +119,7 @@ class SchemaMapper extends QBMapper
             try {
                 $result[] = $this->find($id);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
-                // Catch all exceptions but do nothing
+                // Catch all exceptions but do nothing.
             }
         }
 
@@ -132,24 +129,24 @@ class SchemaMapper extends QBMapper
 
 
     /**
-     * Finds all schemas
+     * Finds all schemas, with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results
      * @param int|null   $offset           The offset of the results
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
+     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
      *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return array The schemas
+     * @return array The schemas, possibly with stats
      */
     public function findAll(
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
         ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?array $searchParams=[],
+        ?array $extend=[]
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -175,6 +172,7 @@ class SchemaMapper extends QBMapper
             }
         }
 
+        // Just return the entities; do not attach stats here
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -233,6 +231,63 @@ class SchemaMapper extends QBMapper
         // Ensure the object has a version.
         if ($schema->getVersion() === null) {
             $schema->setVersion('0.0.1');
+        }
+
+        // Ensure the object has a source set to 'internal' by default.
+        if ($schema->getSource() === null || $schema->getSource() === '') {
+            $schema->setSource('internal');
+        }
+
+        $properties             = ($schema->getProperties() ?? []);
+        $propertyKeys           = array_keys($properties);
+        $configuration          = $schema->getConfiguration() ?? [];
+        $objectNameField        = $configuration['objectNameField'] ?? '';
+        $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
+
+        // If an object name field is provided, it must exist in the properties
+        if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
+        }
+
+        // If an object description field is provided, it must exist in the properties
+        if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
+        }
+
+        // If the object name field is empty, try to find a logical key
+        if (empty($objectNameField) === true) {
+            $nameKeys = [
+                'name',
+                'naam',
+                'title',
+                'titel',
+            ];
+            foreach ($nameKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectNameField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
+        }
+
+        // If the object description field is empty, try to find a logical key
+        if (empty($objectDescriptionField) === true) {
+            $descriptionKeys = [
+                'description',
+                'beschrijving',
+                'omschrijving',
+                'summary',
+            ];
+            foreach ($descriptionKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectDescriptionField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
         }
 
     }//end cleanObject()
@@ -305,18 +360,13 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $schema = $this->find($id);
+        $schema = $this->find($id);        
 
-        // Update version if not set in the object array.
-        if (empty($object['version']) === true) {
-            // Split the version into major, minor, and patch.
-            $version = explode('.', $schema->getVersion());
-            // Increment the patch version.
-            if (isset($version[2]) === true) {
-                $version[2] = ((int) $version[2] + 1);
-                // Reassemble the version string.
-                $object['version'] = implode('.', $version);
-            }
+        // Set or update the version.
+        if (isset($object['version']) === false) {
+            $version    = explode('.', $schema->getVersion());
+            $version[2] = ((int) $version[2] + 1);
+            $schema->setVersion(implode('.', $version));
         }
 
         $schema->hydrate($object, $this->validator);
@@ -332,7 +382,7 @@ class SchemaMapper extends QBMapper
 
 
     /**
-     * Delete a schema
+     * Delete a schema only if no objects are attached
      *
      * @param Entity $schema The schema to delete
      *
@@ -342,6 +392,14 @@ class SchemaMapper extends QBMapper
      */
     public function delete(Entity $schema): Schema
     {
+        // Check for attached objects before deleting
+        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
+        $stats    = $this->objectEntityMapper->getStatistics(null, $schemaId);
+        if (($stats['total'] ?? 0) > 0) {
+            throw new \Exception('Cannot delete schema: objects are still attached.');
+        }
+
+        // Proceed with deletion if no objects are attached
         $result = parent::delete($schema);
 
         // Dispatch deletion event.
@@ -352,6 +410,76 @@ class SchemaMapper extends QBMapper
         return $result;
 
     }//end delete()
+
+
+    /**
+     * Get the number of registers associated with each schema
+     *
+     * This method returns an associative array where the key is the schema ID and the value is the number of registers that reference that schema.
+     *
+     * @phpstan-return array<int,int>  Associative array of schema ID => register count
+     * @psalm-return   array<int,int>    Associative array of schema ID => register count
+     *
+     * @return array<int,int> Associative array of schema ID => register count
+     */
+    public function getRegisterCountPerSchema(): array
+    {
+        // TODO: Optimize for large datasets (current approach loads all registers into memory)
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
+        $result = $qb->executeQuery()->fetchAll();
+
+        $counts = [];
+        foreach ($result as $row) {
+            // Decode the schemas JSON array for each register
+            $schemas = json_decode($row['schemas'], true) ?: [];
+            foreach ($schemas as $schemaId) {
+                $counts[(int) $schemaId] = ($counts[(int) $schemaId] ?? 0) + 1;
+            }
+        }
+
+        return $counts;
+
+    }//end getRegisterCountPerSchema()
+
+    /**
+     * Get all schema ID to slug mappings
+     *
+     * @return array<string,string> Array mapping schema IDs to their slugs
+     */
+    public function getIdToSlugMap(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName());
+
+        $result = $qb->execute();
+        $mappings = [];
+        while ($row = $result->fetch()) {
+            $mappings[$row['id']] = $row['slug'];
+        }
+        return $mappings;
+    }
+
+    /**
+     * Get all schema slug to ID mappings
+     *
+     * @return array<string,string> Array mapping schema slugs to their IDs
+     */
+    public function getSlugToIdMap(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName());
+
+        $result = $qb->execute();
+        $mappings = [];
+        while ($row = $result->fetch()) {
+            $mappings[$row['slug']] = $row['id'];
+        }
+        return $mappings;
+    }
 
 
 }//end class

@@ -69,11 +69,13 @@ class GetObject
 
 
     /**
-     * Gets an object by its UUID with optional extensions.
+     * Gets an object by its ID with optional extensions.
      *
+     * This method also creates an audit trail entry for the 'read' action.
+     *
+     * @param string   $id       The ID of the object to get.
      * @param Register $register The register containing the object.
      * @param Schema   $schema   The schema of the object.
-     * @param string   $uuid     The UUID of the object to get.
      * @param array    $extend   Properties to extend with.
      * @param bool     $files    Include file information.
      *
@@ -93,6 +95,10 @@ class GetObject
         if ($files === true) {
             $object = $this->hydrateFiles($object, $this->fileService->getFiles($object));
         }
+
+        // Create an audit trail for the 'read' action
+        $log = $this->auditTrailMapper->createAuditTrail(null, $object, 'read');
+        $object->setLastLog($log->jsonSerialize());
 
         return $object;
 
@@ -127,7 +133,8 @@ class GetObject
         ?string $uses=null,
         ?Register $register=null,
         ?Schema $schema=null,
-        ?array $ids=null
+        ?array $ids=null,
+        ?bool $published=false
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectEntityMapper->findAll(
@@ -139,7 +146,8 @@ class GetObject
             ids: $ids,
             uses: $uses,
             register: $register,
-            schema: $schema
+            schema: $schema,
+            published: $published
         );
 
         // If files are to be included, hydrate each object with its file information.
@@ -206,7 +214,7 @@ class GetObject
                 $value = $this->objectEntityMapper->findMultiple(ids: $id);
             } else {
                 // Find a single related object by its ID.
-                $value = $this->objectEntityMapper->find(id: $id);
+                $value = $this->objectEntityMapper->find(identifier: $id);
             }
 
             // Update the related objects array with the found value(s).
@@ -262,8 +270,23 @@ class GetObject
         );
 
         // If additional parameters are set, filter the IDs from $referencingObjects.
-        if (!empty($filters) || !empty($searchConditions) || !empty($searchParams) || !empty($sort) || $search !== null || $limit !== null || $offset !== null || !empty($extend) || $files !== false || $uses !== null || $register !== null || $schema !== null) {
-            $ids           = array_map(fn($obj) => $obj->getId(), $referencingObjects);
+        if (empty($filters) === false
+            || empty($searchConditions) === false
+            || empty($searchParams) === false
+            || empty($sort) === false
+            || $search !== null
+            || $limit !== null
+            || $offset !== null
+            || empty($extend) === false
+            || $files !== false
+            || $uses !== null
+            || $register !== null
+            || $schema !== null
+        ) {
+            $ids           = array_map(
+                fn($obj) => $obj->getId(),
+                $referencingObjects
+            );
             $filters['id'] = $ids;
 
             // Use findAll to apply additional filters and return the response.
@@ -280,7 +303,7 @@ class GetObject
                 register: $register,
                 schema: $schema
             );
-        }
+        }//end if
 
         return $referencingObjects;
 
@@ -306,8 +329,6 @@ class GetObject
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
         ?array $sort=['created' => 'DESC'],
         ?string $search=null
     ): array {
@@ -319,8 +340,6 @@ class GetObject
             limit: $limit,
             offset: $offset,
             filters: $filters,
-            searchConditions: $searchConditions,
-            searchParams: $searchParams,
             sort: $sort,
             search: $search
         );

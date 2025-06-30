@@ -1,5 +1,5 @@
 <script setup>
-import { registerStore, schemaStore, sourceStore, navigationStore } from '../../store/store.js'
+import { registerStore, schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -24,14 +24,6 @@ import { registerStore, schemaStore, sourceStore, navigationStore } from '../../
 			<NcTextArea :disabled="loading"
 				label="Description"
 				:value.sync="registerItem.description" />
-			<NcTextField :disabled="loading"
-				label="Table Prefix"
-				:value.sync="registerItem.tablePrefix" />
-			<NcSelect v-bind="sources"
-				v-model="sources.value"
-				input-label="Source"
-				:loading="sourcesLoading"
-				:disabled="loading" />
 			<NcSelect v-bind="schemas"
 				v-model="schemas.value"
 				input-label="Schemas"
@@ -98,8 +90,6 @@ export default {
 				slug: '',
 				description: '',
 				schemas: [],
-				source: '',
-				tablePrefix: '',
 				created: '',
 				updated: '',
 			},
@@ -110,8 +100,6 @@ export default {
 				multiple: true,
 				closeOnSelect: false,
 			},
-			sourcesLoading: false,
-			sources: {},
 			success: false,
 			loading: false,
 			error: false,
@@ -126,7 +114,6 @@ export default {
 		if (navigationStore.modal === 'editRegister' && !this.hasUpdated) {
 			this.initializeRegisterItem()
 			this.initializeSchemas()
-			this.initializeSources()
 			this.hasUpdated = true
 		}
 	},
@@ -139,8 +126,6 @@ export default {
 					slug: registerStore.registerItem.slug || '',
 					description: registerStore.registerItem.description || '',
 					schemas: registerStore.registerItem.schemas || [],
-					source: registerStore.registerItem.source || '',
-					tablePrefix: registerStore.registerItem.tablePrefix || '',
 				}
 			}
 		},
@@ -170,33 +155,6 @@ export default {
 					this.schemasLoading = false
 				})
 		},
-		initializeSources() {
-			this.sourcesLoading = true
-
-			sourceStore.refreshSourceList()
-				.then(() => {
-					const activeSource = registerStore.registerItem?.id
-						? sourceStore.sourceList.find((source) => source.id.toString() === registerStore.registerItem.source)
-						: null
-
-					this.sources = {
-						multiple: false,
-						closeOnSelect: true,
-						options: sourceStore.sourceList.map((source) => ({
-							id: source.id,
-							label: source.title,
-						})),
-						value: activeSource
-							? {
-								id: activeSource.id,
-								label: activeSource.title,
-							}
-							: null,
-					}
-
-					this.sourcesLoading = false
-				})
-		},
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -209,8 +167,6 @@ export default {
 				slug: '',
 				description: '',
 				schemas: [],
-				source: '',
-				tablePrefix: '',
 				created: '',
 				updated: '',
 			}
@@ -221,7 +177,6 @@ export default {
 			registerStore.saveRegister({
 				...this.registerItem,
 				schemas: this.schemas?.value?.map((schema) => schema.id) || [],
-				source: this.sources?.value?.id || '',
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

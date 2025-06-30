@@ -7,11 +7,13 @@
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *
- * @author    Ruben Linde <ruben@nextcloud.com>
- * @copyright Copyright (c) 2024, Ruben Linde (https://github.com/rubenlinde)
- * @license   AGPL-3.0
- * @version   1.0.0
- * @link      https://github.com/cloud-py-api/openregister
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db;
@@ -183,6 +185,7 @@ class ConfigurationMapper extends QBMapper
     public function createFromArray(array $data): Configuration
     {
         $config = new Configuration();
+        $config->setVersion('0.0.1');
         $config->hydrate(object: $data);
 
         // Prepare the object before insertion.
@@ -202,8 +205,16 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $config = $this->find($id);
-        $config->hydrate(object: $data);
+        $object = $this->find($id);        
+
+        // Set or update the version.
+        if (isset($object['version']) === false) {
+            $version    = explode('.', $obj->getVersion());
+            $version[2] = ((int) $version[2] + 1);
+            $obj->setVersion(implode('.', $version));
+        }
+
+        $object->hydrate(object: $data);
 
         return $this->update($config);
 
@@ -278,14 +289,14 @@ class ConfigurationMapper extends QBMapper
     ): array {
         $qb = $this->db->getQueryBuilder();
 
-        // Build the base query
+        // Build the base query.
         $qb->select('*')
             ->from($this->tableName)
             ->setMaxResults($limit)
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply filters
+        // Apply filters.
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
@@ -296,7 +307,7 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Apply search conditions
+        // Apply search conditions.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
@@ -304,7 +315,7 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Execute the query and return the results
+        // Execute the query and return the results.
         return $this->findEntities($qb);
 
     }//end findAll()

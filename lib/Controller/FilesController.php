@@ -23,6 +23,9 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\Files\NotFoundException;
 use OCP\IRequest;
 use Exception;
 /**
@@ -81,14 +84,9 @@ class FilesController extends Controller
         string $schema,
         string $id
     ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $schema   = $this->objectService->setSchema($schema);
-        $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
-
         try {
             // Get the raw files from the file service
-            $files = $this->fileService->getFiles($id);
+            $files = $this->fileService->getFiles(object: $id);
 
             // Format the files with pagination using request parameters
             $formattedFiles = $this->fileService->formatFiles($files, $this->request->getParams());
@@ -131,7 +129,10 @@ class FilesController extends Controller
 
         try {
             $file = $this->fileService->getFile($object, $filePath);
-            return new JSONResponse($file);
+            if ($file === null) {
+                return new JSONResponse(['error' => 'File not found'], 404);
+            }
+            return new JSONResponse($this->fileService->formatFile($file));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -168,7 +169,7 @@ class FilesController extends Controller
         try {
             $data   = $this->request->getParams();
             $result = $this->fileService->addFile($object, $data['name'], $data['content'], false, $data['tags']);
-            return new JSONResponse($result);
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -177,6 +178,75 @@ class FilesController extends Controller
         }//end try
 
     }//end create()
+
+
+    /**
+     * Save a file to an object (create new or update existing)
+     *
+     * This endpoint provides generic save functionality that automatically determines
+     * whether to create a new file or update an existing one. Perfect for synchronization
+     * scenarios where you want to "upsert" files.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to save the file to
+     *
+     * @return JSONResponse
+     */
+    public function save(
+        string $register,
+        string $schema,
+        string $id
+    ): JSONResponse {
+        // Set the schema and register to the object service (forces a check if the are valid).
+        $schema   = $this->objectService->setSchema($schema);
+        $register = $this->objectService->setRegister($register);
+        $object   = $this->objectService->setObject($id);
+
+        try {
+            $data = $this->request->getParams();
+            
+            // Validate required parameters
+            if (empty($data['name']) === true) {
+                return new JSONResponse(['error' => 'File name is required'], 400);
+            }
+            
+            if (empty($data['content']) === true) {
+                return new JSONResponse(['error' => 'File content is required'], 400);
+            }
+
+            // Extract parameters with defaults
+            $fileName = $data['name'];
+            $content = $data['content'];
+            $share = isset($data['share']) && $data['share'] === true;
+            $tags = $data['tags'] ?? [];
+
+            // Ensure tags is an array
+            if (is_string($tags) === true) {
+                $tags = explode(',', $tags);
+                $tags = array_map('trim', $tags);
+            }
+
+            $result = $this->fileService->saveFile(
+                objectEntity: $object,
+                fileName: $fileName,
+                content: $content,
+                share: $share,
+                tags: $tags
+            );
+
+            return new JSONResponse($this->fileService->formatFile($result));
+        } catch (Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                400
+            );
+        }//end try
+
+    }//end save()
 
 
     /**
@@ -209,9 +279,35 @@ class FilesController extends Controller
             // Check if multiple files have been uploaded.
             $files = $_FILES['files'] ?? null;
 
-            if (empty($files) === false) {
+            // Lets see if we have files in the request.
+            if (empty($files) === true) {
+                throw new Exception('No files uploaded');
+            }
+
+            // Normalize single file upload to array structure
+            if (isset($files['name']) === true && is_array($files['name']) === false) {
+                $tags = $data['tags'] ?? '';
+                if (!is_array($tags)) {
+                    $tags = explode(',', $tags);
+                }
+
+                $uploadedFiles[] = [
+                    'name'     => $files['name'],
+                    'type'     => $files['type'],
+                    'tmp_name' => $files['tmp_name'],
+                    'error'    => $files['error'],
+                    'size'     => $files['size'],
+                    'share'    => $data['share'] === 'true',
+                    'tags'     => $tags,
+                ];
+            } else if (isset($files['name']) === true && is_array($files['name']) === true) {
                 // Loop through each file using the count of 'name'
                 for ($i = 0; $i < count($files['name']); $i++) {
+                    $tags = $data['tags'][$i] ?? '';
+                    if (!is_array($tags)) {
+                        $tags = explode(',', $tags);
+                    }
+
                     $uploadedFiles[] = [
                         'name'     => $files['name'][$i],
                         'type'     => $files['type'][$i],
@@ -219,10 +315,10 @@ class FilesController extends Controller
                         'error'    => $files['error'][$i],
                         'size'     => $files['size'][$i],
                         'share'    => $data['share'] === 'true',
-                        'tags'     => explode(',', $data['tags'][$i]),
+                        'tags'     => $tags,
                     ];
                 }
-            }
+            }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
@@ -239,7 +335,7 @@ class FilesController extends Controller
             foreach ($uploadedFiles as $file) {
                 // Create file
                 $results[] = $this->fileService->addFile(
-                    $object,
+                    $this->objectService->getObject(),
                     $file['name'],
                     file_get_contents($file['tmp_name']),
                     $file['share'],
@@ -247,7 +343,7 @@ class FilesController extends Controller
                 );
             }
 
-            return new JSONResponse($results);
+            return new JSONResponse($this->fileService->formatFiles($results, $this->request->getParams())['results']);
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -287,7 +383,7 @@ class FilesController extends Controller
             $data = $this->request->getParams();
             // Ensure tags is set to empty array if not provided
             $tags   = $data['tags'] ?? [];
-            $result = $this->fileService($filePath, $data['content'], $tags);
+            $result = $this->fileService->updateFile($filePath, $data['content'], $tags, $this->objectService->getObject());
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(
@@ -320,10 +416,10 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->deleteFile($filePath);
+            $result = $this->fileService->deleteFile($filePath, $this->objectService->getObject());
             return new JSONResponse($result);
         } catch (Exception $e) {
             return new JSONResponse(
@@ -357,11 +453,11 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->publishFile($object, $filePath);
-            return new JSONResponse($result);
+            $result = $this->fileService->publishFile($this->objectService->getObject(), $filePath);
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -394,11 +490,11 @@ class FilesController extends Controller
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
         $register = $this->objectService->setRegister($register);
-        $object   = $this->objectService->setObject($id);
+        $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->unpublishFile($object, $filePath);
-            return new JSONResponse($result);
+            $result = $this->fileService->unpublishFile($this->objectService->getObject(), $filePath);
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -407,6 +503,5 @@ class FilesController extends Controller
         }//end try
 
     }//end depublish()
-
 
 }//end class

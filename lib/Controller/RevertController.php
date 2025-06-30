@@ -1,13 +1,22 @@
 <?php
 /**
- * @file        RevertController.php
- * @description Controller for handling object reversion in the OpenRegister app
- * @package     OCA\OpenRegister\Controller
- * @author      Ruben Linde <ruben@conduction.nl>
- * @license     EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version     1.0.0
- * @link        https://github.com/OpenCatalogi/OpenRegister
+ * Class RevertController
+ *
+ * Controller for managing object reversion operations in the OpenRegister app.
+ * Provides functionality to revert objects to previous states based on different criteria.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\AppInfo
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
+
 
 namespace OCA\OpenRegister\Controller;
 
@@ -66,13 +75,13 @@ class RevertController extends Controller
         try {
             $data = $this->request->getParams();
 
-            // Parse the revert point
+            // Parse the revert point.
             $until = null;
-            if (isset($data['datetime'])) {
+            if (isset($data['datetime']) === true) {
                 $until = new \DateTime($data['datetime']);
-            } else if (isset($data['auditTrailId'])) {
+            } else if (isset($data['auditTrailId']) === true) {
                 $until = $data['auditTrailId'];
-            } else if (isset($data['version'])) {
+            } else if (isset($data['version']) === true) {
                 $until = $data['version'];
             }
 
@@ -83,10 +92,10 @@ class RevertController extends Controller
                 );
             }
 
-            // Determine if we should overwrite the version
+            // Determine if we should overwrite the version.
             $overwriteVersion = $data['overwriteVersion'] ?? false;
 
-            // Revert the object
+            // Revert the object.
             $revertedObject = $this->revertService->revert(
                 $register,
                 $schema,

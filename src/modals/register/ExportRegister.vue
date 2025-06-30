@@ -17,6 +17,15 @@ import axios from '@nextcloud/axios'
 		<div class="formContainer">
 			<p>Export register "{{ registerTitle }}"?</p>
 
+			<div class="formGroup">
+				<label>Export Format:</label>
+				<NcSelect v-model="exportFormat"
+					:options="exportFormats"
+					option-label="label"
+					option-value="value"
+					:reduce="option => option.value" />
+			</div>
+
 			<NcCheckboxRadioSwitch
 				:checked="includeObjects"
 				type="switch"
@@ -53,6 +62,7 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
+	NcSelect,
 } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -66,6 +76,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
+		NcSelect,
 		// Icons
 		Export,
 		Cancel,
@@ -75,6 +86,12 @@ export default {
 			loading: false,
 			error: null,
 			includeObjects: true,
+			exportFormat: 'configuration',
+			exportFormats: [
+				{ label: 'Configuration (JSON)', value: 'configuration' },
+				{ label: 'Excel', value: 'excel' },
+				{ label: 'CSV', value: 'csv' },
+			],
 		}
 	},
 	computed: {
@@ -89,6 +106,7 @@ export default {
 			this.loading = false
 			this.error = null
 			this.includeObjects = true
+			this.exportFormat = 'configuration'
 		},
 		async exportRegister() {
 			const item = registerStore.registerItem
@@ -103,7 +121,10 @@ export default {
 			try {
 				// Generate the export URL with query parameters
 				const url = generateUrl(`/apps/openregister/api/registers/${item.id}/export`)
-				const params = { includeObjects: this.includeObjects }
+				const params = {
+					format: this.exportFormat,
+					includeObjects: this.includeObjects,
+				}
 
 				// Make the API call
 				const response = await axios({
@@ -114,7 +135,7 @@ export default {
 				})
 
 				// Create a download link
-				const blob = new Blob([response.data], { type: 'application/json' })
+				const blob = new Blob([response.data], { type: response.headers['content-type'] })
 				const downloadUrl = window.URL.createObjectURL(blob)
 				const link = document.createElement('a')
 
@@ -122,7 +143,7 @@ export default {
 				const contentDisposition = response.headers['content-disposition']
 				const filename = contentDisposition
 					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `register_${item.id}_${new Date().toISOString().split('T')[0]}.json`
+					: `register_${item.id}_${new Date().toISOString().split('T')[0]}.${this.exportFormat === 'excel' ? 'xlsx' : this.exportFormat === 'csv' ? 'csv' : 'json'}`
 
 				link.href = downloadUrl
 				link.download = filename
@@ -147,5 +168,15 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
+}
+
+.formGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.formGroup label {
+	font-weight: bold;
 }
 </style>
