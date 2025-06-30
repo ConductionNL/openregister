@@ -340,6 +340,8 @@ class MariaDbSearchHandler
     /**
      * Apply a filter on a specific JSON field
      *
+     * Applies case-insensitive filtering for string values and exact matching for other types.
+     *
      * @param IQueryBuilder $queryBuilder The query builder to modify
      * @param string        $field The JSON field path (e.g., 'name' or 'address.city')
      * @param mixed         $value The value to filter by
@@ -387,27 +389,52 @@ class MariaDbSearchHandler
             $orConditions = $queryBuilder->expr()->orX();
             
             foreach ($value as $arrayValue) {
-                $orConditions->add(
-                    $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction(
-                            'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
-                        ),
-                        $queryBuilder->createNamedParameter($arrayValue)
-                    )
-                );
+                // Use case-insensitive comparison for string values
+                if (is_string($arrayValue)) {
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction(
+                                'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
+                            ),
+                            $queryBuilder->createNamedParameter(strtolower($arrayValue))
+                        )
+                    );
+                } else {
+                    // Exact match for non-string values (numbers, booleans, etc.)
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction(
+                                'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
+                            ),
+                            $queryBuilder->createNamedParameter($arrayValue)
+                        )
+                    );
+                }
             }
             
             $queryBuilder->andWhere($orConditions);
         } else {
-            // Handle single values
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->eq(
-                    $queryBuilder->createFunction(
-                        'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
-                    ),
-                    $queryBuilder->createNamedParameter($value)
-                )
-            );
+            // Handle single values - use case-insensitive comparison for strings
+            if (is_string($value)) {
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction(
+                            'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
+                        ),
+                        $queryBuilder->createNamedParameter(strtolower($value))
+                    )
+                );
+            } else {
+                // Exact match for non-string values (numbers, booleans, etc.)
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction(
+                            'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
+                        ),
+                        $queryBuilder->createNamedParameter($value)
+                    )
+                );
+            }
         }
 
     }//end applyJsonFieldFilter()
@@ -416,7 +443,7 @@ class MariaDbSearchHandler
     /**
      * Apply full-text search on JSON object
      *
-     * Performs a full-text search within the JSON object field.
+     * Performs a case-insensitive full-text search within the JSON object field.
      *
      * @param IQueryBuilder $queryBuilder The query builder to modify
      * @param string        $searchTerm The search term
@@ -431,8 +458,10 @@ class MariaDbSearchHandler
      */
     public function applyFullTextSearch(IQueryBuilder $queryBuilder, string $searchTerm): IQueryBuilder
     {
-        // Use JSON_SEARCH to find the search term anywhere in the JSON object
-        $searchFunction = "JSON_SEARCH(`object`, 'all', " . $queryBuilder->createNamedParameter('%' . $searchTerm . '%') . ")";
+        // Use case-insensitive JSON_SEARCH by converting both the JSON object and search term to lowercase
+        // This ensures the search is case-insensitive across all JSON field values
+        $lowerSearchTerm = strtolower($searchTerm);
+        $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $lowerSearchTerm . '%') . ")";
         
         $queryBuilder->andWhere(
             $queryBuilder->expr()->isNotNull(
