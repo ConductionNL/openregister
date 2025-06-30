@@ -183,7 +183,7 @@ Dynamically discovered from JSON object data:
 
 | Type | Characteristics | Suitable Facets | Example |
 |------|----------------|-----------------|---------|
-| string | Low cardinality (<50 unique values) | terms | status, category, type |
+| string | Low cardinality (less than 50 unique values) | terms | status, category, type |
 | integer | Numeric values | range, terms | priority, score, count |
 | float | Decimal values | range | price, rating, percentage |
 | date | Date/datetime strings | date_histogram, range | event_date, deadline |
@@ -193,10 +193,10 @@ Dynamically discovered from JSON object data:
 
 The system automatically filters out unsuitable fields:
 
-- **High cardinality strings** (>50 unique values) - Too many options for terms facets
-- **Rare fields** (<10% appearance rate) - Not common enough to be useful
+- **High cardinality strings** (more than 50 unique values) - Too many options for terms facets
+- **Rare fields** (less than 10% appearance rate) - Not common enough to be useful
 - **System fields** (starting with @ or _) - Internal use only
-- **Inconsistent types** (<70% type consistency) - Mixed data types
+- **Inconsistent types** (less than 70% type consistency) - Mixed data types
 - **Complex nested objects** - Not suitable for simple faceting
 
 ## Configuration Options
@@ -210,9 +210,9 @@ $facetableFields = $objectService->getFacetableFields($baseQuery, 200);
 ```
 
 **Recommendations:**
-- Small datasets (<1000 objects): Use 100-200 samples
+- Small datasets (less than 1000 objects): Use 100-200 samples
 - Medium datasets (1000-10000 objects): Use 100-500 samples  
-- Large datasets (>10000 objects): Use 100-1000 samples
+- Large datasets (more than 10000 objects): Use 100-1000 samples
 
 ### Appearance Threshold
 
@@ -451,7 +451,7 @@ If no object fields are discovered:
 
 1. **Check sample size** - Increase the sample size parameter
 2. **Verify data structure** - Ensure objects contain JSON data in the 'object' column
-3. **Review appearance threshold** - Fields must appear in >10% of objects
+3. **Review appearance threshold** - Fields must appear in more than 10% of objects
 4. **Check field cardinality** - High cardinality fields are filtered out
 
 ### Poor Performance
