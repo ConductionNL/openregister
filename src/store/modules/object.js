@@ -368,12 +368,42 @@ export const useObjectStore = defineStore('object', {
 				if (values && Array.isArray(values) && values.length > 0) {
 					values.forEach(value => {
 						if (fieldName.startsWith('@self.')) {
-							// Handle metadata filters
-							const metadataField = fieldName.replace('@self.', '')
-							params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+							// Handle metadata filters with potential operators
+							// Check if the field has operators like [>=], [<=], etc.
+							const operatorMatch = fieldName.match(/@self\.([^[]+)(\[.+\])/)
+							if (operatorMatch) {
+								// Field with operator: @self.created[>=] becomes @self[created][>=]
+								const metadataField = operatorMatch[1]
+								const operator = operatorMatch[2]
+								
+								// CRITICAL FIX: Convert operators to PHP-friendly names
+								// PHP's $_GET parser can't handle operators like >= in array keys
+								let phpOperator = operator
+								if (operator === '[>=]') phpOperator = '[gte]'
+								else if (operator === '[<=]') phpOperator = '[lte]'
+								else if (operator === '[>]') phpOperator = '[gt]'
+								else if (operator === '[<]') phpOperator = '[lt]'
+								else if (operator === '[!=]') phpOperator = '[ne]'
+								else if (operator === '[=]') phpOperator = '[eq]'
+								
+								// For metadata operators, only encode the value if it's not a date/time string
+								// Date/time strings (ISO format) contain only safe URL characters
+								const encodedValue = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/.test(value) ? value : encodeURIComponent(value)
+								params.push(`@self[${metadataField}]${phpOperator}=${encodedValue}`)
+								// eslint-disable-next-line no-console
+								console.log(`Added operator filter: @self[${metadataField}]${phpOperator}=${encodedValue} (original: ${operator})`)
+							} else {
+								// Regular metadata filter
+								const metadataField = fieldName.replace('@self.', '')
+								params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+								// eslint-disable-next-line no-console
+								console.log(`Added regular metadata filter: @self[${metadataField}][]=${value}`)
+							}
 						} else {
 							// Handle object field filters
 							params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+							// eslint-disable-next-line no-console
+							console.log(`Added object filter: ${fieldName}[]=${value}`)
 						}
 					})
 				}
@@ -401,6 +431,11 @@ export const useObjectStore = defineStore('object', {
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')
 			}
+
+			// eslint-disable-next-line no-console
+			console.log('refreshObjectList - Final endpoint:', endpoint)
+			// eslint-disable-next-line no-console
+			console.log('refreshObjectList - Params array:', params)
 
 			try {
 				const response = await fetch(endpoint)
@@ -1433,12 +1468,20 @@ export const useObjectStore = defineStore('object', {
 		 * Build facet configuration from currently active facets
 		 */
 		buildFacetConfiguration() {
+			// eslint-disable-next-line no-console
+			console.log('buildFacetConfiguration - activeFacets:', this.activeFacets)
+			
 			const config = {}
 
 			// Build from active facets - this can be expanded based on UI needs
-			if (Object.keys(this.activeFacets).length > 0) {
-				config._facets = this.activeFacets
+			// Check for _facets property specifically since that's where our data is stored
+			if (this.activeFacets._facets && Object.keys(this.activeFacets._facets).length > 0) {
+				// eslint-disable-next-line no-console
+				console.log('Using active facets:', this.activeFacets._facets)
+				config._facets = this.activeFacets._facets
 			} else {
+				// eslint-disable-next-line no-console
+				console.log('Using default facet configuration')
 				// Default facet configuration - basic terms facets for common fields
 				config._facets = {
 					'@self': {
@@ -1456,6 +1499,8 @@ export const useObjectStore = defineStore('object', {
 				})
 			}
 
+			// eslint-disable-next-line no-console
+			console.log('Final facet configuration:', config)
 			return config
 		},
 		/**
@@ -1464,10 +1509,19 @@ export const useObjectStore = defineStore('object', {
 		 * @param facetConfig
 		 */
 		addFacetParamsToUrl(params, facetConfig) {
+			// eslint-disable-next-line no-console
+			console.log('addFacetParamsToUrl - facetConfig:', facetConfig)
+			
 			if (facetConfig._facets) {
 				// Handle @self metadata facets
 				if (facetConfig._facets['@self']) {
+					// eslint-disable-next-line no-console
+					console.log('Processing @self facets:', facetConfig._facets['@self'])
+					
 					Object.entries(facetConfig._facets['@self']).forEach(([field, config]) => {
+						// eslint-disable-next-line no-console
+						console.log(`Processing field: ${field}, config:`, config)
+						
 						params.push(`_facets[@self][${field}][type]=${config.type}`)
 						if (config.interval) {
 							params.push(`_facets[@self][${field}][interval]=${config.interval}`)
@@ -1478,9 +1532,21 @@ export const useObjectStore = defineStore('object', {
 							})
 						}
 						if (config.ranges) {
+							// eslint-disable-next-line no-console
+							console.log(`Adding range parameters for ${field}:`, config.ranges)
 							config.ranges.forEach((range, index) => {
-								if (range.from) params.push(`_facets[@self][${field}][ranges][${index}][from]=${range.from}`)
-								if (range.to) params.push(`_facets[@self][${field}][ranges][${index}][to]=${range.to}`)
+								if (range.from) {
+									const param = `_facets[@self][${field}][ranges][${index}][from]=${range.from}`
+									// eslint-disable-next-line no-console
+									console.log('Adding FROM param:', param)
+									params.push(param)
+								}
+								if (range.to) {
+									const param = `_facets[@self][${field}][ranges][${index}][to]=${range.to}`
+									// eslint-disable-next-line no-console
+									console.log('Adding TO param:', param)
+									params.push(param)
+								}
 								if (range.key) params.push(`_facets[@self][${field}][ranges][${index}][key]=${range.key}`)
 							})
 						}

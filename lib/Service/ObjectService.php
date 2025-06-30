@@ -1829,18 +1829,7 @@ class ObjectService
         $fileAction = $mergeData['fileAction'] ?? 'transfer';
         $relationAction = $mergeData['relationAction'] ?? 'transfer';
 
-        // Add comprehensive logging
-        error_log("=== MERGE OBJECTS DEBUG START ===");
-        error_log("Source Object ID: " . $sourceObjectId);
-        error_log("Target Object ID: " . ($targetObjectId ?? 'NULL'));
-        error_log("Current Register: " . ($this->currentRegister ? $this->currentRegister->getId() : 'NULL'));
-        error_log("Current Schema: " . ($this->currentSchema ? $this->currentSchema->getId() : 'NULL'));
-        error_log("Merge Data: " . json_encode($mergeData));
-        error_log("File Action: " . $fileAction);
-        error_log("Relation Action: " . $relationAction);
-
         if (!$targetObjectId) {
-            error_log("ERROR: Target object ID is required");
             throw new \InvalidArgumentException('Target object ID is required');
         }
         
