@@ -892,6 +892,9 @@ export default {
 		getFormatOptionsForType(type) {
 			const formatMap = {
 				string: [
+					{ id: 'text', label: 'Text' },
+					{ id: 'markdown', label: 'Markdown' },
+					{ id: 'html', label: 'HTML' },
 					{ id: 'date', label: 'Date' },
 					{ id: 'time', label: 'Time' },
 					{ id: 'duration', label: 'Duration' },
