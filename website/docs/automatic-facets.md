@@ -254,7 +254,7 @@ const FacetDiscovery = ({ baseQuery }) => {
         {Object.entries(facetableFields['@self']).map(([field, info]) => (
           <FacetOption 
             key={field}
-            field={`@self.${field}`}
+            field={'@self.' + field}
             info={info}
             onToggle={handleFacetToggle}
           />

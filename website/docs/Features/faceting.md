@@ -181,7 +181,7 @@ Use discovery results to build facet configurations:
 ```javascript
 // Frontend example: Build facet config from discovery
 const buildFacetConfig = (facetableFields) => {
-    const config = { _facets: { '@self': {}, ...{} } };
+    const config = { _facets: { '@self': {} } };
     
     // Add metadata facets
     Object.entries(facetableFields['@self']).forEach(([field, info]) => {
@@ -675,7 +675,7 @@ const DynamicFacetInterface = ({ baseQuery }) => {
       // Get actual facet data
       const facetResponse = await fetch('/api/objects', {
         method: 'POST',
-        body: JSON.stringify({ ...baseQuery, ...facetConfig })
+        body: JSON.stringify(Object.assign({}, baseQuery, facetConfig))
       });
       const facetData = await facetResponse.json();
       setFacetData(facetData.facets);
