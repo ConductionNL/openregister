@@ -84,16 +84,16 @@
 							</label>
 							<div class="date-range-inputs">
 								<NcDateTimePickerNative
-									:value="getDateRangeValue(fieldName, 'from')"
+									:model-value="getDateRangeValue(fieldName, 'from')"
 									:placeholder="t('openregister', 'From date')"
 									type="date"
-									@update:value="updateDateRange(fieldName, 'from', $event)" />
+									@update:model-value="updateDateRange(fieldName, 'from', $event)" />
 								<span class="date-separator">{{ t('openregister', 'to') }}</span>
 								<NcDateTimePickerNative
-									:value="getDateRangeValue(fieldName, 'to')"
+									:model-value="getDateRangeValue(fieldName, 'to')"
 									:placeholder="t('openregister', 'To date')"
 									type="date"
-									@update:value="updateDateRange(fieldName, 'to', $event)" />
+									@update:model-value="updateDateRange(fieldName, 'to', $event)" />
 								<NcButton
 									v-if="hasDateRange(fieldName)"
 									type="tertiary"
@@ -294,13 +294,24 @@ export default {
 		 * These will be shown as date range pickers
 		 */
 		metadataDateFields() {
+			// eslint-disable-next-line no-console
+			console.log('metadataDateFields computed - availableMetadataFacets:', this.objectStore.availableMetadataFacets)
+			
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
+				// eslint-disable-next-line no-console
+				console.log('Checking field:', fieldName, 'with data:', field)
+				
 				// Include fields that are date type and support range faceting
 				if (field.type === 'date' && field.facet_types && field.facet_types.includes('range')) {
+					// eslint-disable-next-line no-console
+					console.log('Adding date field:', fieldName)
 					fields[fieldName] = field
 				}
 			})
+			
+			// eslint-disable-next-line no-console
+			console.log('Final metadataDateFields:', fields)
 			return fields
 		},
 		/**
@@ -349,6 +360,8 @@ export default {
 		},
 		async toggleFacet(fieldName, facetType, enabled) {
 			await this.objectStore.updateActiveFacet(fieldName, facetType, enabled)
+			// Trigger search after toggling facet
+			await this.objectStore.refreshObjectList()
 		},
 		getFacetDisplayName(facetField) {
 			if (facetField === '@self') {
@@ -389,6 +402,8 @@ export default {
 				// Remove individual field facet
 				await this.objectStore.updateActiveFacet(facetField, null, false)
 			}
+			// Trigger search after removing filter
+			await this.objectStore.refreshObjectList()
 		},
 		async clearAllFilters() {
 			// Clear all active facets and filters
@@ -602,18 +617,31 @@ export default {
 		 * @param bound
 		 */
 		getDateRangeValue(fieldName, bound) {
+			// eslint-disable-next-line no-console
+			console.log('getDateRangeValue called:', { fieldName, bound })
+			
 			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
+			// eslint-disable-next-line no-console
+			console.log('Active facet data for', fieldName, ':', activeFacetData)
+			
 			if (!activeFacetData || activeFacetData.type !== 'range' || !activeFacetData.ranges) {
+				// eslint-disable-next-line no-console
+				console.log('No valid range data found, returning null')
 				return null
 			}
 
 			// Find the range that matches our bound
 			const range = activeFacetData.ranges.find(r => r.from || r.to)
 			if (!range) {
+				// eslint-disable-next-line no-console
+				console.log('No range found, returning null')
 				return null
 			}
 
-			return bound === 'from' ? range.from : range.to
+			const value = bound === 'from' ? range.from : range.to
+			// eslint-disable-next-line no-console
+			console.log('Returning value:', value)
+			return value
 		},
 		/**
 		 * Update date range for a field
@@ -622,8 +650,13 @@ export default {
 		 * @param value
 		 */
 		async updateDateRange(fieldName, bound, value) {
+			// eslint-disable-next-line no-console
+			console.log('updateDateRange called:', { fieldName, bound, value })
+			
 			// Get current facet configuration
 			const currentFacets = { ...this.objectStore.activeFacets }
+			// eslint-disable-next-line no-console
+			console.log('Current facets before update:', currentFacets)
 
 			// Ensure structure exists
 			if (!currentFacets._facets) {
@@ -655,10 +688,75 @@ export default {
 
 			// Set the facet configuration
 			currentFacets._facets['@self'][fieldName] = rangeFacet
+			// eslint-disable-next-line no-console
+			console.log('Updated facets:', currentFacets)
 
-			// Update store and refresh
-			this.objectStore.setActiveFacets(currentFacets)
-			await this.objectStore.refreshObjectList()
+			try {
+				// Update store facets
+				this.objectStore.setActiveFacets(currentFacets)
+				
+				// IMPORTANT: Also update activeFilters with proper operator-based filters
+				this.updateActiveFiltersFromDateRange(fieldName, rangeFacet)
+				
+				// eslint-disable-next-line no-console
+				console.log('About to refresh object list...')
+				await this.objectStore.refreshObjectList()
+				// eslint-disable-next-line no-console
+				console.log('Object list refreshed successfully')
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Error in updateDateRange:', error)
+			}
+		},
+
+		/**
+		 * Update activeFilters based on date range facet
+		 * Converts range facets to proper filter parameters like @self[created][>=]=2025-06-24T00:00:00+00:00
+		 * @param fieldName
+		 * @param rangeFacet
+		 */
+		updateActiveFiltersFromDateRange(fieldName, rangeFacet) {
+			// eslint-disable-next-line no-console
+			console.log('updateActiveFiltersFromDateRange called:', { fieldName, rangeFacet })
+			
+			// Get current active filters
+			const currentFilters = { ...this.objectStore.activeFilters }
+			
+			// Remove existing date range filters for this field
+			const filterPrefix = `@self.${fieldName}`
+			Object.keys(currentFilters).forEach(key => {
+				if (key.startsWith(filterPrefix + '[')) {
+					delete currentFilters[key]
+				}
+			})
+			
+			// Add new range filters if we have valid ranges
+			if (rangeFacet && rangeFacet.ranges && rangeFacet.ranges.length > 0) {
+				rangeFacet.ranges.forEach(range => {
+					if (range.from) {
+						// Convert to database format (Y-m-d H:i:s)
+						const fromDate = new Date(range.from).toISOString().replace('T', ' ').replace(/\.000Z$/, '')
+						currentFilters[`@self.${fieldName}[>=]`] = [fromDate]
+						// eslint-disable-next-line no-console
+						console.log(`Added filter: @self.${fieldName}[>=] = ${fromDate}`)
+					}
+					if (range.to) {
+						// Convert to database format and set to end of day for the filter
+						const toDate = new Date(range.to)
+						toDate.setHours(23, 59, 59, 999) // End of day
+						const toDateISO = toDate.toISOString().replace('T', ' ').replace(/\.000Z$/, '')
+						currentFilters[`@self.${fieldName}[<=]`] = [toDateISO]
+						// eslint-disable-next-line no-console
+						console.log(`Added filter: @self.${fieldName}[<=] = ${toDateISO}`)
+					}
+				})
+			}
+			
+			// Update the store
+			this.objectStore.setActiveFilters(currentFilters)
+			
+			// eslint-disable-next-line no-console
+			console.log('updateActiveFiltersFromDateRange - Updated activeFilters:', currentFilters)
 		},
 		/**
 		 * Check if a field has an active date range
@@ -684,8 +782,18 @@ export default {
 				delete currentFacets._facets['@self'][fieldName]
 			}
 
+			// Also clear the corresponding activeFilters
+			const currentFilters = { ...this.objectStore.activeFilters }
+			const filterPrefix = `@self.${fieldName}`
+			Object.keys(currentFilters).forEach(key => {
+				if (key.startsWith(filterPrefix + '[')) {
+					delete currentFilters[key]
+				}
+			})
+
 			// Update store and refresh
 			this.objectStore.setActiveFacets(currentFacets)
+			this.objectStore.setActiveFilters(currentFilters)
 			await this.objectStore.refreshObjectList()
 		},
 		/**
