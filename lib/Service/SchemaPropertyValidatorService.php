@@ -59,6 +59,11 @@ class SchemaPropertyValidatorService
      */
     private array $validStringFormats = [
         '',
+        // Text content formats
+        'text',
+        'markdown',
+        'html',
+        // Standard JSON Schema formats
         'date-time',
         'date',
         'time',

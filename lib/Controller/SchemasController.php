@@ -18,6 +18,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -29,7 +30,7 @@ use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\DB\Exception;
+use OCP\DB\Exception as DBException;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -206,8 +207,22 @@ class SchemasController extends Controller
             unset($data['id']);
         }
 
-        // Create a new schema from the data.
-        return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
+        try {
+            // Create a new schema from the data.
+            return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
+        } catch (Exception $e) {
+            // Check if this is a validation error by examining the message
+            if (str_contains($e->getMessage(), 'Invalid') || 
+                str_contains($e->getMessage(), 'must be') || 
+                str_contains($e->getMessage(), 'required') ||
+                str_contains($e->getMessage(), 'format')) {
+                // Return 400 Bad Request for validation errors
+                return new JSONResponse(['error' => $e->getMessage()], 400);
+            }
+            
+            // Re-throw other exceptions to maintain existing behavior
+            throw $e;
+        }
 
     }//end create()
 
@@ -242,8 +257,22 @@ class SchemasController extends Controller
             unset($data['id']);
         }
 
-        // Update the schema with the provided data.
-        return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
+        try {
+            // Update the schema with the provided data.
+            return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
+        } catch (Exception $e) {
+            // Check if this is a validation error by examining the message
+            if (str_contains($e->getMessage(), 'Invalid') || 
+                str_contains($e->getMessage(), 'must be') || 
+                str_contains($e->getMessage(), 'required') ||
+                str_contains($e->getMessage(), 'format')) {
+                // Return 400 Bad Request for validation errors
+                return new JSONResponse(['error' => $e->getMessage()], 400);
+            }
+            
+            // Re-throw other exceptions to maintain existing behavior
+            throw $e;
+        }
 
     }//end update()
 
@@ -338,18 +367,32 @@ class SchemasController extends Controller
             $phpArray['title'] = 'New Schema';
         }
 
-        // Update the schema with the data from the uploaded JSON.
-        $schema->hydrate($phpArray);
+        try {
+            // Update the schema with the data from the uploaded JSON.
+            $schema->hydrate($phpArray);
 
-        if ($schema->getId() === null) {
-            // Insert a new schema if no ID is set.
-            $schema = $this->schemaMapper->insert($schema);
-        } else {
-            // Update the existing schema.
-            $schema = $this->schemaMapper->update($schema);
+            if ($schema->getId() === null) {
+                // Insert a new schema if no ID is set.
+                $schema = $this->schemaMapper->insert($schema);
+            } else {
+                // Update the existing schema.
+                $schema = $this->schemaMapper->update($schema);
+            }
+
+            return new JSONResponse($schema);
+        } catch (Exception $e) {
+            // Check if this is a validation error by examining the message
+            if (str_contains($e->getMessage(), 'Invalid') || 
+                str_contains($e->getMessage(), 'must be') || 
+                str_contains($e->getMessage(), 'required') ||
+                str_contains($e->getMessage(), 'format')) {
+                // Return 400 Bad Request for validation errors
+                return new JSONResponse(['error' => $e->getMessage()], 400);
+            }
+            
+            // Re-throw other exceptions to maintain existing behavior
+            throw $e;
         }
-
-        return new JSONResponse($schema);
 
     }//end upload()
 
