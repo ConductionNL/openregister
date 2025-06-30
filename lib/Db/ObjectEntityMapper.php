@@ -609,15 +609,15 @@ class ObjectEntityMapper extends QBMapper
             // Process register: convert objects to IDs and handle arrays
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['register']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['register'] = $register;
             }
             
             // Process schema: convert objects to IDs and handle arrays  
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['schema']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['schema'] = $schema;
             }
         }
 
@@ -671,8 +671,10 @@ class ObjectEntityMapper extends QBMapper
                 ->setFirstResult($offset);
         }
 
-        // Handle basic filters
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema);
 
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {
@@ -785,15 +787,15 @@ class ObjectEntityMapper extends QBMapper
             // Process register: convert objects to IDs and handle arrays
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['register']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['register'] = $register;
             }
             
             // Process schema: convert objects to IDs and handle arrays  
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['schema']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['schema'] = $schema;
             }
         }
 
@@ -822,8 +824,10 @@ class ObjectEntityMapper extends QBMapper
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects');
 
-        // Handle basic filters (same as searchObjects)
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema);
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
