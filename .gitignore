@@ -9,6 +9,7 @@
 /tests/.phpunit.cache
 
 /node_modules/
+/website/node_modules/
 /js/
 /custom_apps/
 /config/

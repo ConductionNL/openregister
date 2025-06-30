@@ -379,6 +379,7 @@ class SaveObject
 		if (isset($data['@self']) && is_array($data['@self'])) {
 			$selfData = $data['@self'];
 		}
+
         // Remove the @self property from the data.
         unset($data['@self']);
         unset($data['id']);
@@ -404,7 +405,40 @@ class SaveObject
         if ($uuid !== null) {
             try {
                 $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
-				$data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
+				
+                  // Check if '@self' metadata exists and contains published/depublished properties
+                if (isset($selfData) === true) {
+
+                    // Extract and set published property if present
+                    if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
+                        try {
+                            // Convert string to DateTime if it's a valid date string
+                            if (is_string($selfData['published']) === true) {
+                                $existingObject->setPublished(new DateTime($selfData['published']));
+                            }
+                        } catch (Exception $exception) {
+                            // Silently ignore invalid date formats
+                        }
+                    } else {
+                        $existingObject->setPublished(null);
+                    }
+
+                    // Extract and set depublished property if present
+                    if (array_key_exists('depublished', $selfData) && !empty($selfData['depublished'])) {
+                        try {
+                            // Convert string to DateTime if it's a valid date string
+                            if (is_string($selfData['depublished']) === true) {
+                                $existingObject->setDepublished(new DateTime($selfData['depublished']));
+                            }
+                        } catch (Exception $exception) {
+                            // Silently ignore invalid date formats
+                        }
+                    } else {
+                        $existingObject->setDepublished(null);
+                    }
+                }
+
+                $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
 				$data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
                 return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject);
             } catch (\Exception $e) {
@@ -450,8 +484,6 @@ class SaveObject
                 $objectEntity->setDepublished(null);
             }
         }
-
-        unset($data['@self'], $data['id']);
 
         // Set UUID if provided, otherwise generate a new one.
         if ($uuid !== null) {
