@@ -61,11 +61,23 @@ export const useObjectStore = defineStore('object', {
 		},
 		selectedObjects: [],
 		metadata: {
+			name: {
+				label: 'Name',
+				key: 'name',
+				description: 'Display name of the object',
+				enabled: true, // Enabled by default
+			},
+			description: {
+				label: 'Description',
+				key: 'description',
+				description: 'Description of the object',
+				enabled: false,
+			},
 			objectId: {
 				label: 'ID',
 				key: 'id',
 				description: 'Unique identifier of the object',
-				enabled: true, // Enabled by default
+				enabled: false, // Changed from true to false
 			},
 			uri: {
 				label: 'URI',
@@ -97,16 +109,22 @@ export const useObjectStore = defineStore('object', {
 				description: 'Attached files count',
 				enabled: true, // Enabled by default
 			},
-			relations: {
-				label: 'Relations',
-				key: 'relations',
-				description: 'Related objects count',
-				enabled: false,
-			},
 			locked: {
 				label: 'Locked',
 				key: 'locked',
 				description: 'Lock status of the object',
+				enabled: false,
+			},
+			organization: {
+				label: 'Organization',
+				key: 'organization',
+				description: 'Organization that created the object',
+				enabled: false,
+			},
+			validation: {
+				label: 'Validation',
+				key: 'validation',
+				description: 'Validation status of the object',
 				enabled: false,
 			},
 			owner: {
@@ -127,6 +145,42 @@ export const useObjectStore = defineStore('object', {
 				description: 'Storage folder location',
 				enabled: false,
 			},
+			geo: {
+				label: 'Geo',
+				key: 'geo',
+				description: 'Geographical location of the object',
+				enabled: false,
+			},
+			retention: {
+				label: 'Retention',
+				key: 'retention',
+				description: 'Retention status of the object',
+				enabled: false,
+			},
+			size: {
+				label: 'Size',
+				key: 'size',
+				description: 'Size of the object',
+				enabled: false,
+			},
+			published: {
+				label: 'Published',
+				key: 'published',
+				description: 'Published status of the object',
+				enabled: false,
+			},
+			depublished: {
+				label: 'Depublished',
+				key: 'depublished',
+				description: 'Depublished status of the object',
+				enabled: false,
+			},
+			deleted: {
+				label: 'Deleted',
+				key: 'deleted',
+				description: 'Deleted status of the object',
+				enabled: false,
+			},
 			created: {
 				label: 'Created',
 				key: 'created',
@@ -143,13 +197,26 @@ export const useObjectStore = defineStore('object', {
 		properties: {}, // Will be populated based on schema
 		columnFilters: {}, // Will contain both metadata and property filters
 		loading: false,
+		// Facet-related state
+		facets: {},
+		facetableFields: {},
+		activeFacets: {},
+		facetsLoading: false,
+		// Add new filters state for selected filter values
+		activeFilters: {},
 	}),
 	actions: {
 		// Helper method to build endpoint path
 		_buildObjectPath({ register, schema, objectId = '' }) {
 			return `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 		},
-		async setObjectItem(objectItem) {
+		/**
+		 * Set the active object item, optionally skipping backend refresh to avoid infinite loops.
+		 * @param {object} objectItem - The object item to set
+		 * @param {boolean} skipRefresh - If true, do not fetch from backend (prevents recursion)
+		 */
+		async setObjectItem(objectItem, skipRefresh = false) {
+
 			this.objectItem = objectItem && new ObjectEntity(objectItem)
 			console.info('Active object item set to ' + objectItem?.['@self']?.id)
 
@@ -171,13 +238,26 @@ export const useObjectStore = defineStore('object', {
 					])
 
 					console.info('Successfully fetched all related data for object', objectItem['@self'].id)
+
+					// define register, schema, and objectId before using them
+					const register = objectItem['@self'].register
+					const schema = objectItem['@self'].schema
+					const objectId = objectItem['@self'].id
+
+					// Fore a reload for view logging
+					if (!skipRefresh) {
+						await this.getObject({ register, schema, objectId })
+
+						console.info('Successfully fetched latest object data for object', objectItem['@self'].id)
+					}
+
 				} catch (error) {
 					console.error('Error fetching related data:', error)
 					// Clear data in case of error
 					this.clearRelatedData()
 				}
-			} else {
-				// Clear related data when no object is selected
+			} else if (objectItem === false) {
+				// Clear related data when object item is explicitly set to null
 				this.clearRelatedData()
 			}
 		},
@@ -189,7 +269,7 @@ export const useObjectStore = defineStore('object', {
 				),
 			}
 
-			console.info('Object list set to ' + objectList.length + ' items')
+			console.info('Object list set to ' + objectList.results.length + ' items')
 		},
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
@@ -267,6 +347,8 @@ export const useObjectStore = defineStore('object', {
 				throw new Error('Register and schema are required')
 			}
 
+			this.loading = true
+
 			let endpoint = this._buildObjectPath({
 				register,
 				schema,
@@ -281,6 +363,52 @@ export const useObjectStore = defineStore('object', {
 				}
 			})
 
+			// Handle active filters (from facet selections)
+			Object.entries(this.activeFilters).forEach(([fieldName, values]) => {
+				if (values && Array.isArray(values) && values.length > 0) {
+					values.forEach(value => {
+						if (fieldName.startsWith('@self.')) {
+							// Handle metadata filters with potential operators
+							// Check if the field has operators like [>=], [<=], etc.
+							const operatorMatch = fieldName.match(/@self\.([^[]+)(\[.+\])/)
+							if (operatorMatch) {
+								// Field with operator: @self.created[>=] becomes @self[created][>=]
+								const metadataField = operatorMatch[1]
+								const operator = operatorMatch[2]
+								
+								// CRITICAL FIX: Convert operators to PHP-friendly names
+								// PHP's $_GET parser can't handle operators like >= in array keys
+								let phpOperator = operator
+								if (operator === '[>=]') phpOperator = '[gte]'
+								else if (operator === '[<=]') phpOperator = '[lte]'
+								else if (operator === '[>]') phpOperator = '[gt]'
+								else if (operator === '[<]') phpOperator = '[lt]'
+								else if (operator === '[!=]') phpOperator = '[ne]'
+								else if (operator === '[=]') phpOperator = '[eq]'
+								
+								// For metadata operators, only encode the value if it's not a date/time string
+								// Date/time strings (ISO format) contain only safe URL characters
+								const encodedValue = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/.test(value) ? value : encodeURIComponent(value)
+								params.push(`@self[${metadataField}]${phpOperator}=${encodedValue}`)
+								// eslint-disable-next-line no-console
+								console.log(`Added operator filter: @self[${metadataField}]${phpOperator}=${encodedValue} (original: ${operator})`)
+							} else {
+								// Regular metadata filter
+								const metadataField = fieldName.replace('@self.', '')
+								params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+								// eslint-disable-next-line no-console
+								console.log(`Added regular metadata filter: @self[${metadataField}][]=${value}`)
+							}
+						} else {
+							// Handle object field filters
+							params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+							// eslint-disable-next-line no-console
+							console.log(`Added object filter: ${fieldName}[]=${value}`)
+						}
+					})
+				}
+			})
+
 			if (options.limit || this.pagination.limit) {
 				params.push('_limit=' + (options.limit || this.pagination.limit))
 			}
@@ -288,18 +416,52 @@ export const useObjectStore = defineStore('object', {
 				params.push('_page=' + (options.page || this.pagination.page))
 			}
 
+			// Include facets and facetable fields if requested
+			if (options.includeFacets !== false) { // Default to true
+				// Request facetable fields discovery
+				params.push('_facetable=true')
+
+				// Add basic facet configuration
+				const facetConfiguration = this.buildFacetConfiguration()
+				if (facetConfiguration?._facets) {
+					this.addFacetParamsToUrl(params, facetConfiguration)
+				}
+			}
+
 			if (params.length > 0) {
 				endpoint += '?' + params.join('&')
 			}
 
+			// eslint-disable-next-line no-console
+			console.log('refreshObjectList - Final endpoint:', endpoint)
+			// eslint-disable-next-line no-console
+			console.log('refreshObjectList - Params array:', params)
+
 			try {
 				const response = await fetch(endpoint)
 				const data = await response.json()
+
+				// Set the object list
 				this.setObjectList(data)
+
+				// Set facets if included in response
+				if (data.facets) {
+					this.setFacets(data.facets)
+				}
+
+				// Set facetable fields if included in response
+				if (data.facetable) {
+					this.setFacetableFields(data.facetable)
+				}
+
 				return { response, data }
 			} catch (err) {
 				console.error(err)
+				this.setFacets({})
+				this.setFacetableFields({})
 				throw err
+			} finally {
+				this.loading = false
 			}
 		},
 		async getObject({ register, schema, objectId }) {
@@ -312,9 +474,7 @@ export const useObjectStore = defineStore('object', {
 			try {
 				const response = await fetch(endpoint)
 				const data = await response.json()
-				this.setObjectItem(data)
-				this.getAuditTrails({ register, schema, objectId })
-				this.getRelations({ register, schema, objectId })
+				this.setObjectItem(data, true) // Prevent recursion by skipping refresh
 				return data
 			} catch (err) {
 				console.error(err)
@@ -348,6 +508,37 @@ export const useObjectStore = defineStore('object', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error saving object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Delete a single object
+		 *
+		 * @param {string|number} objectId The ID of the object to delete
+		 * @param {object} options Optional parameters
+		 * @return {Promise} Promise that resolves when the object is deleted
+		 */
+		async deleteObject(objectId, options = {}) {
+			if (!objectId) throw new Error('No object id to delete')
+
+			// Resolve register / schema the same way refreshObjectList does
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+			if (!register || !schema) throw new Error('Register and schema are required')
+
+			const endpoint = this._buildObjectPath({ register, schema, objectId })
+
+			try {
+				const response = await fetch(endpoint, { method: 'DELETE' })
+				if (!response.ok) {
+					throw new Error(`Failed to delete object: ${response.statusText}`)
+				}
+				await this.refreshObjectList({ register, schema })
+				return { response }
+			} catch (error) {
+				console.error('Error deleting object:', error)
 				throw error
 			}
 		},
@@ -423,27 +614,6 @@ export const useObjectStore = defineStore('object', {
 				})
 				throw error
 			}
-		},
-		// RELATIONS
-		async getRelations(object, options = {}) {
-			if (!object?.id) throw new Error('No object id to get relations for')
-
-			let endpoint = this._buildObjectPath({
-				register: object.register,
-				schema: object.schema,
-				objectId: `${object.id}/relations`,
-			})
-
-			const params = []
-			if (options.search) params.push('_search=' + options.search)
-			if (options.limit) params.push('_limit=' + options.limit)
-			if (options.page) params.push('_page=' + options.page)
-			if (params.length) endpoint += '?' + params.join('&')
-
-			const response = await fetch(endpoint)
-			const data = (await response.json()).map(r => new ObjectEntity(r))
-			this.setRelations(data)
-			return { response, data }
 		},
 		// FILES
 		/**
@@ -601,6 +771,10 @@ export const useObjectStore = defineStore('object', {
 		},
 		setSelectedObjects(objects) {
 			this.selectedObjects = objects
+		},
+		setSelectAllObjects() {
+			// Legacy method for compatibility - use toggleSelectAllObjects instead
+			this.toggleSelectAllObjects()
 		},
 		toggleSelectAllObjects() {
 			if (this.isAllSelected) {
@@ -835,6 +1009,627 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Upload files to an object using the multipart endpoint
+		 * @param {object} params - Upload parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {File[]} params.files - Array of File objects
+		 * @param {string[]} [params.labels] - Optional labels/tags
+		 * @param {boolean} [params.share] - Optional share flag
+		 * @return {Promise} API response
+		 */
+		async uploadFiles({ register, schema, objectId, files, labels = [], share = false }) {
+			if (!register || !schema || !objectId || !files?.length) {
+				throw new Error('Missing required parameters for file upload')
+			}
+
+			// Use the /filesMultipart endpoint for proper backend handling
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/filesMultipart`
+			const formData = new FormData()
+
+			// Append files
+			files.forEach((file, idx) => {
+				formData.append('files', file)
+			})
+			// Append labels/tags if present
+			if (labels && labels.length) {
+				formData.append('tags', labels.join(','))
+			}
+			// Append share flag
+			formData.append('share', share ? 'true' : 'false')
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					body: formData,
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to upload files: ${response.statusText}`)
+				}
+				return await response.json()
+			} catch (error) {
+				console.error('Error uploading files:', error)
+				throw error
+			}
+		},
+		/**
+		 * Fetch all tags from the backend
+		 * @return {Promise<{response: Response, data: Array}>} List of tags
+		 */
+		async getTags() {
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/tags')
+				if (!response.ok) {
+					throw new Error('Failed to fetch tags')
+				}
+				const data = await response.json()
+				return { response, data }
+			} catch (error) {
+				console.error('Error fetching tags:', error)
+				throw error
+			}
+		},
+		/**
+		 * Publish an object with optional date
+		 * If no published date is set and user wants to publish: set to now
+		 * If a depublished date has been set and user wants to publish: remove the depublished date
+		 * @param {object} params - Publish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string|null} params.publishedDate - Optional published date (ISO string), defaults to now
+		 * @return {Promise} API response
+		 */
+		async publishObject({ register, schema, objectId, publishedDate = null }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Missing required parameters for object publish')
+			}
+
+			// Default to current time if no date provided
+			const finalPublishedDate = publishedDate || new Date().toISOString()
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/publish`
+
+			try {
+				const body = { date: finalPublishedDate }
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to publish object: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Update the current object item if it matches
+				if (this.objectItem && this.objectItem['@self'].id === objectId) {
+					this.objectItem['@self'].published = data.published || finalPublishedDate
+					// Remove depublished date when publishing
+					this.objectItem['@self'].depublished = null
+				}
+
+				// Refresh object list to update the display
+				await this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error publishing object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Depublish an object with optional date
+		 * If no depublished date has been set and user wants to depublish: set to now
+		 * When depublishing, the published date is NOT removed, only depublished date is set
+		 * @param {object} params - Depublish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string|null} params.depublishedDate - Optional depublished date (ISO string), defaults to now
+		 * @return {Promise} API response
+		 */
+		async depublishObject({ register, schema, objectId, depublishedDate = null }) {
+			if (!register || !schema || !objectId) {
+				throw new Error('Missing required parameters for object depublish')
+			}
+
+			// Default to current time if no date provided
+			const finalDepublishedDate = depublishedDate || new Date().toISOString()
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/depublish`
+
+			try {
+				const body = { date: finalDepublishedDate }
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to depublish object: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Update the current object item if it matches
+				if (this.objectItem && this.objectItem['@self'].id === objectId) {
+					this.objectItem['@self'].depublished = data.depublished || finalDepublishedDate
+					// Do NOT modify the published date when depublishing
+				}
+
+				// Refresh object list to update the display
+				await this.refreshObjectList()
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error depublishing object:', error)
+				throw error
+			}
+		},
+		/**
+		 * Publish a file for an object
+		 * @param {object} params - Publish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string} params.filePath - Path to the file to publish
+		 * @return {Promise} API response
+		 */
+		async publishFile({ register, schema, objectId, filePath }) {
+			if (!register || !schema || !objectId || !filePath) {
+				throw new Error('Missing required parameters for file publish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}/publish`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to publish file: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Refresh files list after publishing
+				await this.getFiles(this.objectItem)
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error publishing file:', error)
+				throw error
+			}
+		},
+		/**
+		 * Unpublish a file for an object
+		 * @param {object} params - Unpublish parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string} params.filePath - Path to the file to unpublish
+		 * @return {Promise} API response
+		 */
+		async unpublishFile({ register, schema, objectId, filePath }) {
+			if (!register || !schema || !objectId || !filePath) {
+				throw new Error('Missing required parameters for file unpublish')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}/depublish`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to unpublish file: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Refresh files list after unpublishing
+				await this.getFiles(this.objectItem)
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error unpublishing file:', error)
+				throw error
+			}
+		},
+		/**
+		 * Delete a file from an object
+		 * @param {object} params - Delete parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.objectId - Object ID
+		 * @param {string} params.filePath - Path to the file to delete
+		 * @return {Promise} API response
+		 */
+		async deleteFile({ register, schema, objectId, filePath }) {
+			if (!register || !schema || !objectId || !filePath) {
+				throw new Error('Missing required parameters for file delete')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'DELETE',
+				})
+				if (!response.ok) {
+					throw new Error(`Failed to delete file: ${response.statusText}`)
+				}
+				const data = await response.json()
+
+				// Refresh files list after deletion
+				await this.getFiles(this.objectItem)
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error deleting file:', error)
+				throw error
+			}
+		},
+		/**
+		 * Merge two objects within the same register and schema
+		 * @param {object} params - Merge parameters
+		 * @param {string|number} params.register - Register ID
+		 * @param {string|number} params.schema - Schema ID
+		 * @param {string|number} params.sourceObjectId - Source object ID (object to merge from)
+		 * @param {string|number} params.target - Target object ID (object to merge into)
+		 * @param {object} params.object - Merged object data (without id)
+		 * @param {string} params.fileAction - File action: 'transfer' or 'delete'
+		 * @param {string} params.relationAction - Relation action: 'transfer' or 'drop'
+		 * @return {Promise} API response with merge result
+		 */
+		async mergeObjects({ register, schema, sourceObjectId, target, object, fileAction = 'transfer', relationAction = 'transfer' }) {
+			if (!register || !schema || !sourceObjectId || !target || !object) {
+				throw new Error('Missing required parameters for object merge')
+			}
+
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${sourceObjectId}/merge`
+
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						target,
+						object,
+						fileAction,
+						relationAction,
+					}),
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					throw new Error(errorData.error || `Failed to merge objects: ${response.statusText}`)
+				}
+
+				const data = await response.json()
+
+				// Refresh object list after merge
+				await this.refreshObjectList({ register, schema })
+
+				return { response, data }
+			} catch (error) {
+				console.error('Error merging objects:', error)
+				throw error
+			}
+		},
+		// Facet-related methods
+		setFacets(facets) {
+			this.facets = facets
+		},
+		setFacetableFields(facetableFields) {
+			this.facetableFields = facetableFields
+		},
+		setActiveFacets(activeFacets) {
+			this.activeFacets = activeFacets
+		},
+		setFacetsLoading(loading) {
+			this.facetsLoading = loading
+		},
+		/**
+		 * Get facetable fields for the current register and schema
+		 * This discovers what fields can be used for faceting
+		 * @param options
+		 */
+		async getFacetableFields(options = {}) {
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+
+			if (!register || !schema) {
+				console.warn('Register and schema are required for facetable fields discovery')
+				return
+			}
+
+			this.setFacetsLoading(true)
+
+			try {
+				let endpoint = this._buildObjectPath({ register, schema })
+
+				// Add facetable discovery parameter and limit to 0 for faster response
+				const params = ['_facetable=true', '_limit=0']
+
+				// Apply current filters for context-aware discovery
+				Object.entries(this.filters).forEach(([key, value]) => {
+					if (value !== undefined && value !== '') {
+						params.push(`${key}=${encodeURIComponent(value)}`)
+					}
+				})
+
+				endpoint += '?' + params.join('&')
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+
+				if (data.facetable) {
+					this.setFacetableFields(data.facetable)
+				}
+
+				return data.facetable
+			} catch (error) {
+				console.error('Error getting facetable fields:', error)
+				this.setFacetableFields({})
+				throw error
+			} finally {
+				this.setFacetsLoading(false)
+			}
+		},
+		/**
+		 * Get facets for the current search/filter context
+		 * This returns actual facet counts based on the current query
+		 * @param facetConfig
+		 * @param options
+		 */
+		async getFacets(facetConfig = null, options = {}) {
+			const registerStore = useRegisterStore()
+			const schemaStore = useSchemaStore()
+
+			const register = options.register || registerStore.registerItem?.id
+			const schema = options.schema || schemaStore.schemaItem?.id
+
+			if (!register || !schema) {
+				console.warn('Register and schema are required for facets')
+				return
+			}
+
+			this.setFacetsLoading(true)
+
+			try {
+				let endpoint = this._buildObjectPath({ register, schema })
+				const params = []
+
+				// Build facet configuration from active facets or provided config
+				const facetConfiguration = facetConfig || this.buildFacetConfiguration()
+
+				if (facetConfiguration && Object.keys(facetConfiguration).length > 0) {
+					// Add facet configuration as URL parameters
+					this.addFacetParamsToUrl(params, facetConfiguration)
+				}
+
+				// Apply current filters for context
+				Object.entries(this.filters).forEach(([key, value]) => {
+					if (value !== undefined && value !== '') {
+						params.push(`${key}=${encodeURIComponent(value)}`)
+					}
+				})
+
+				// Handle active filters (from facet selections)
+				Object.entries(this.activeFilters).forEach(([fieldName, values]) => {
+					if (values && Array.isArray(values) && values.length > 0) {
+						values.forEach(value => {
+							if (fieldName.startsWith('@self.')) {
+								// Handle metadata filters
+								const metadataField = fieldName.replace('@self.', '')
+								params.push(`@self[${metadataField}][]=${encodeURIComponent(value)}`)
+							} else {
+								// Handle object field filters
+								params.push(`${fieldName}[]=${encodeURIComponent(value)}`)
+							}
+						})
+					}
+				})
+
+				// Limit to 0 to only get facets, not objects
+				params.push('_limit=0')
+
+				if (params.length > 0) {
+					endpoint += '?' + params.join('&')
+				}
+
+				const response = await fetch(endpoint)
+				const data = await response.json()
+
+				if (data.facets) {
+					this.setFacets(data.facets)
+				}
+
+				return data.facets
+			} catch (error) {
+				console.error('Error getting facets:', error)
+				this.setFacets({})
+				throw error
+			} finally {
+				this.setFacetsLoading(false)
+			}
+		},
+		/**
+		 * Build facet configuration from currently active facets
+		 */
+		buildFacetConfiguration() {
+			// eslint-disable-next-line no-console
+			console.log('buildFacetConfiguration - activeFacets:', this.activeFacets)
+			
+			const config = {}
+
+			// Build from active facets - this can be expanded based on UI needs
+			// Check for _facets property specifically since that's where our data is stored
+			if (this.activeFacets._facets && Object.keys(this.activeFacets._facets).length > 0) {
+				// eslint-disable-next-line no-console
+				console.log('Using active facets:', this.activeFacets._facets)
+				config._facets = this.activeFacets._facets
+			} else {
+				// eslint-disable-next-line no-console
+				console.log('Using default facet configuration')
+				// Default facet configuration - basic terms facets for common fields
+				config._facets = {
+					'@self': {
+						register: { type: 'terms' },
+						schema: { type: 'terms' },
+						created: { type: 'date_histogram', interval: 'month' },
+					},
+				}
+
+				// Add facets for object fields that support terms faceting
+				Object.entries(this.facetableFields?.object_fields || {}).forEach(([fieldName, field]) => {
+					if (fieldName !== 'id' && field.facet_types && field.facet_types.includes('terms')) {
+						config._facets[fieldName] = { type: 'terms' }
+					}
+				})
+			}
+
+			// eslint-disable-next-line no-console
+			console.log('Final facet configuration:', config)
+			return config
+		},
+		/**
+		 * Add facet parameters to URL params array
+		 * @param params
+		 * @param facetConfig
+		 */
+		addFacetParamsToUrl(params, facetConfig) {
+			// eslint-disable-next-line no-console
+			console.log('addFacetParamsToUrl - facetConfig:', facetConfig)
+			
+			if (facetConfig._facets) {
+				// Handle @self metadata facets
+				if (facetConfig._facets['@self']) {
+					// eslint-disable-next-line no-console
+					console.log('Processing @self facets:', facetConfig._facets['@self'])
+					
+					Object.entries(facetConfig._facets['@self']).forEach(([field, config]) => {
+						// eslint-disable-next-line no-console
+						console.log(`Processing field: ${field}, config:`, config)
+						
+						params.push(`_facets[@self][${field}][type]=${config.type}`)
+						if (config.interval) {
+							params.push(`_facets[@self][${field}][interval]=${config.interval}`)
+						}
+						if (config.terms && Array.isArray(config.terms)) {
+							config.terms.forEach((term, index) => {
+								params.push(`_facets[@self][${field}][terms][${index}]=${encodeURIComponent(term)}`)
+							})
+						}
+						if (config.ranges) {
+							// eslint-disable-next-line no-console
+							console.log(`Adding range parameters for ${field}:`, config.ranges)
+							config.ranges.forEach((range, index) => {
+								if (range.from) {
+									const param = `_facets[@self][${field}][ranges][${index}][from]=${range.from}`
+									// eslint-disable-next-line no-console
+									console.log('Adding FROM param:', param)
+									params.push(param)
+								}
+								if (range.to) {
+									const param = `_facets[@self][${field}][ranges][${index}][to]=${range.to}`
+									// eslint-disable-next-line no-console
+									console.log('Adding TO param:', param)
+									params.push(param)
+								}
+								if (range.key) params.push(`_facets[@self][${field}][ranges][${index}][key]=${range.key}`)
+							})
+						}
+					})
+				}
+
+				// Handle object field facets
+				Object.entries(facetConfig._facets).forEach(([field, config]) => {
+					if (field !== '@self') {
+						params.push(`_facets[${field}][type]=${config.type}`)
+						if (config.interval) {
+							params.push(`_facets[${field}][interval]=${config.interval}`)
+						}
+						if (config.terms && Array.isArray(config.terms)) {
+							config.terms.forEach((term, index) => {
+								params.push(`_facets[${field}][terms][${index}]=${encodeURIComponent(term)}`)
+							})
+						}
+						if (config.ranges) {
+							config.ranges.forEach((range, index) => {
+								if (range.from) params.push(`_facets[${field}][ranges][${index}][from]=${range.from}`)
+								if (range.to) params.push(`_facets[${field}][ranges][${index}][to]=${range.to}`)
+								if (range.key) params.push(`_facets[${field}][ranges][${index}][key]=${range.key}`)
+							})
+						}
+					}
+				})
+			}
+		},
+		/**
+		 * Update active facets and refresh data
+		 * @param field
+		 * @param facetType
+		 * @param enabled
+		 */
+		async updateActiveFacet(field, facetType, enabled = true) {
+			if (enabled) {
+				if (!this.activeFacets._facets) {
+					this.activeFacets._facets = {}
+				}
+
+				if (field.startsWith('@self.')) {
+					if (!this.activeFacets._facets['@self']) {
+						this.activeFacets._facets['@self'] = {}
+					}
+					const fieldName = field.replace('@self.', '')
+					this.activeFacets._facets['@self'][fieldName] = { type: facetType }
+				} else {
+					this.activeFacets._facets[field] = { type: facetType }
+				}
+			} else {
+				// Remove facet
+				if (field.startsWith('@self.')) {
+					const fieldName = field.replace('@self.', '')
+					if (this.activeFacets._facets?.['@self']) {
+						delete this.activeFacets._facets['@self'][fieldName]
+					}
+				} else if (this.activeFacets._facets) {
+					delete this.activeFacets._facets[field]
+				}
+			}
+
+			// Get updated facets
+			await this.getFacets()
+		},
+		// Add methods to manage active filters
+		setActiveFilters(filters) {
+			this.activeFilters = filters
+		},
+		updateFilter(fieldName, values) {
+			if (!values || (Array.isArray(values) && values.length === 0)) {
+				// Remove filter if no values
+				if (this.activeFilters[fieldName]) {
+					delete this.activeFilters[fieldName]
+				}
+			} else {
+				// Set filter values
+				this.activeFilters[fieldName] = Array.isArray(values) ? values : [values]
+			}
+		},
+		clearAllFilters() {
+			this.activeFilters = {}
+		},
 	},
 	getters: {
 		isAllSelected() {
@@ -894,6 +1689,35 @@ export const useObjectStore = defineStore('object', {
 				...this.enabledProperties, // Then properties
 				...this.enabledOtherMetadata, // Then other metadata
 			]
+		},
+		// Facet-related getters
+		availableMetadataFacets() {
+			return this.facetableFields?.['@self'] || {}
+		},
+		availableObjectFieldFacets() {
+			return this.facetableFields?.object_fields || {}
+		},
+		allAvailableFacets() {
+			return {
+				...this.availableMetadataFacets,
+				...this.availableObjectFieldFacets,
+			}
+		},
+		currentFacets() {
+			return this.facets || {}
+		},
+		hasFacets() {
+			return Object.keys(this.currentFacets).length > 0
+		},
+		hasFacetableFields() {
+			return Object.keys(this.allAvailableFacets).length > 0
+		},
+		// Active filters getters
+		hasActiveFilters() {
+			return Object.keys(this.activeFilters).length > 0
+		},
+		activeFilterCount() {
+			return Object.values(this.activeFilters).reduce((total, values) => total + (Array.isArray(values) ? values.length : 0), 0)
 		},
 	},
 })

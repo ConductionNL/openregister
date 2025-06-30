@@ -23,9 +23,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -44,13 +46,15 @@ class RevertService
      * @param RegisterMapper     $registerMapper     The register mapper
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ContainerInterface $container          The DI container
+     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly ContainerInterface $container
+        private readonly ContainerInterface $container,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
 
     }//end __construct()
@@ -105,7 +109,13 @@ class RevertService
         );
 
         // Save the reverted object.
-        return $this->objectEntityMapper->update($revertedObject);
+        $savedObject = $this->objectEntityMapper->update($revertedObject);
+
+        // Dispatch revert event.
+        error_log("RevertService: Dispatching ObjectRevertedEvent for object ID: " . ($savedObject->getId() ?? 'NULL') . ", UUID: " . ($savedObject->getUuid() ?? 'NULL') . ", Until: " . ($until ?? 'NULL'));
+        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent($savedObject, $until));
+
+        return $savedObject;
 
     }//end revert()
 

@@ -64,7 +64,7 @@ class AuditTrail extends Entity implements JsonSerializable
     /**
      * Size of the log in byte
      *
-     * @var integer|null 
+     * @var integer|null
      */
     protected ?int $size = null;
 
@@ -210,6 +210,16 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     protected ?string $retentionPeriod = null;
 
+    /**
+     * The expiration timestamp for this audit trail entry
+     *
+     * When this timestamp is reached, the audit trail entry can be safely removed
+     * from the database during cleanup operations.
+     *
+     * @var DateTime|null The expiration timestamp for this audit trail entry
+     */
+    protected ?DateTime $expires = null;
+
 
     /**
      * Constructor for the AuditTrail class
@@ -242,6 +252,8 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'confidentiality', type: 'string');
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
         $this->addType(fieldName: 'size', type: 'integer');
+        $this->addType(fieldName: 'expires', type: 'datetime');
+
     }//end __construct()
 
 
@@ -324,6 +336,11 @@ class AuditTrail extends Entity implements JsonSerializable
             $created = $this->created->format('c');
         }
 
+        $expires = null;
+        if (isset($this->expires) === true) {
+            $expires = $this->expires->format('c');
+        }
+
         return [
             'id'                    => $this->id,
             'uuid'                  => $this->uuid,
@@ -350,6 +367,7 @@ class AuditTrail extends Entity implements JsonSerializable
             'confidentiality'       => $this->confidentiality,
             'retentionPeriod'       => $this->retentionPeriod,
             'size'                  => $this->size,
+            'expires'               => $expires,
         ];
 
     }//end jsonSerialize()

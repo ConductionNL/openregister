@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\ObjectHandlers;
 use Adbar\Dot;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -35,6 +36,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -78,18 +83,24 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param IURLGenerator      $urlGenerator       URL generator service.
-     * @param FileService        $fileService        File service for managing files.
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for database operations.
-     * @param RegisterMapper     $registerMapper     Register mapper for database operations.
-     * @param SchemaMapper       $schemaMapper       Schema mapper for database operations.
+     * @param IURLGenerator           $urlGenerator         URL generator service.
+     * @param FileMapper              $fileMapper           File mapper for database operations.
+     * @param FileService             $fileService          File service for managing files.
+     * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper for database operations.
+     * @param RegisterMapper          $registerMapper       Register mapper for database operations.
+     * @param SchemaMapper            $schemaMapper         Schema mapper for database operations.
+     * @param ISystemTagManager       $systemTagManager     System tag manager for file tags.
+     * @param ISystemTagObjectMapper  $systemTagMapper      System tag object mapper for file tags.
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
+        private readonly FileMapper $fileMapper,
         private readonly FileService $fileService,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+        private readonly ISystemTagManager $systemTagManager,
+        private readonly ISystemTagObjectMapper $systemTagMapper
     ) {
 
     }//end __construct()
@@ -263,6 +274,113 @@ class RenderObject
     }//end clearCache()
 
 
+	/**
+	 * Add formatted files to the files array in the entity using FileMapper.
+	 *
+	 * This method retrieves files for an object using the FileMapper's getFilesForObject method,
+	 * which handles both folder property lookup and UUID-based fallback search.
+	 * The retrieved files are then formatted to match the FileService->formatFile() structure.
+	 * Share information is now included directly from the FileMapper database query.
+	 *
+	 * @param ObjectEntity $object The entity to add the files to
+	 *
+	 * @return ObjectEntity The updated object with files information
+	 *
+	 * @throws \RuntimeException If multiple nodes are found for the object's uuid
+	 */
+	private function renderFiles(ObjectEntity $object): ObjectEntity
+	{
+		// Use FileMapper to get files for the object (handles folder property and UUID fallback)
+		$fileRecords = $this->fileMapper->getFilesForObject($object);
+
+		// If no files found, set empty array and return
+		if (empty($fileRecords)) {
+			$object->setFiles([]);
+			return $object;
+		}
+
+		// Format the files to match FileService->formatFile() structure
+		$formattedFiles = [];
+		foreach ($fileRecords as $fileRecord) {
+			// Get file tags using our local getFileTags method
+			$labels = $this->getFileTags((string) $fileRecord['fileid']);
+
+			// Create formatted file metadata matching FileService->formatFile() structure
+			// Share information is now included directly from FileMapper
+			$formattedFile = [
+				'id'          => (string) $fileRecord['fileid'],
+				'path'        => $fileRecord['path'],
+				'title'       => $fileRecord['name'],
+				'accessUrl'   => $fileRecord['accessUrl'] ?? null,
+				'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+				'type'        => $fileRecord['mimetype'] ?? 'application/octet-stream',
+				'extension'   => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
+				'size'        => (int) $fileRecord['size'],
+				'hash'        => $fileRecord['etag'] ?? '',
+				'published'   => $fileRecord['published'] ?? null,
+				'modified'    => isset($fileRecord['mtime']) ? 
+					(new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+				'labels'      => $labels,
+			];
+
+			$formattedFiles[] = $formattedFile;
+		}
+
+		// Set the formatted files on the object
+		$object->setFiles($formattedFiles);
+
+		return $object;
+	}
+
+	/**
+	 * Get the tags associated with a file.
+	 *
+	 * This method implements the same logic as FileService->getFileTags() to retrieve
+	 * tags associated with a file by its ID. It filters out internal 'object:' tags.
+	 *
+	 * @param string $fileId The ID of the file
+	 *
+	 * @return array<int, string> The list of tags associated with the file (excluding object: tags)
+	 *
+	 * @phpstan-return array<int, string>
+	 * @psalm-return array<int, string>
+	 */
+	private function getFileTags(string $fileId): array
+	{
+		// File tag type constant (same as in FileService)
+		$fileTagType = 'files';
+
+		// Get tag IDs for the file
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(
+			objIds: [$fileId],
+			objectType: $fileTagType
+		);
+
+		// Check if file has any tags
+		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+			return [];
+		}
+
+		// Get the actual tag objects by their IDs
+		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+
+		// Extract tag names from tag objects and filter out 'object:' tags
+		$tagNames = array_filter(
+			array_map(static function ($tag) {
+				return $tag->getName();
+			}, $tags),
+			static function ($tagName) {
+				// Filter out internal object tags
+				return !str_starts_with($tagName, 'object:');
+			}
+		);
+
+		// Return array of filtered tag names
+		return array_values($tagNames);
+	}
+
+
+
     /**
      * Renders an entity with optional extensions and filters.
      *
@@ -271,14 +389,15 @@ class RenderObject
      * and filtering based on the provided parameters. Additionally, it accepts
      * preloaded registers, schemas, and objects to enhance rendering performance.
      *
-     * @param ObjectEntity      $entity    The entity to render
-     * @param array|string|null $extend    Properties to extend the entity with
-     * @param int               $depth     The depth level for nested rendering
-     * @param array|null        $filter    Filters to apply to the rendered entity
-     * @param array|null        $fields    Specific fields to include in the output
-     * @param array|null        $registers Preloaded registers to use
-     * @param array|null        $schemas   Preloaded schemas to use
-     * @param array|null        $objects   Preloaded objects to use
+     * @param ObjectEntity      $entity     The entity to render
+     * @param array|string|null $extend     Properties to extend the entity with
+     * @param int               $depth      The depth level for nested rendering
+     * @param array|null        $filter     Filters to apply to the rendered entity
+     * @param array|null        $fields     Specific fields to include in the output
+     * @param array|null        $registers  Preloaded registers to use
+     * @param array|null        $schemas    Preloaded schemas to use
+     * @param array|null        $objects    Preloaded objects to use
+     * @param array|null        $visitedIds All ids we already handled
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
      */
@@ -290,8 +409,17 @@ class RenderObject
         ?array $fields=[],
         ?array $registers=[],
         ?array $schemas=[],
-        ?array $objects=[]
+        ?array $objects=[],
+        ?array $visitedIds=[],
     ): ObjectEntity {
+        if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true)) {
+            return $entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
+        }
+
+        if ($entity->getUuid() !== null) {
+            $visitedIds[] = $entity->getUuid();
+        }
+
         // Add preloaded registers to the global cache.
         if (empty($registers) === false) {
             foreach ($registers as $id => $register) {
@@ -313,16 +441,18 @@ class RenderObject
             }
         }
 
-        // Convert extend to an array if it's a string.
-        if (is_string($extend) === true) {
-            $extend = explode(',', $extend);
-        }
+		$entity = $this->renderFiles($entity);
 
         // Get the object data as an array for manipulation.
         $objectData = $entity->getObject();
 
+
         // Apply field filtering if specified.
         if (empty($fields) === false) {
+            $fields[] = '@self';
+            $fields[] = 'id';
+
+
             $filteredData = [];
             foreach ($fields as $field) {
                 if (isset($objectData[$field]) === true) {
@@ -358,107 +488,156 @@ class RenderObject
             );
         }
 
-        // Handle extensions if depth limit not reached.
-        if (empty($extend) === false && $depth < 10) {
-            $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields);
+        // Convert extend to an array if it's a string.
+        if (is_array($extend) === true && in_array('all', $extend, true)) {
+            $id = $objectData['id'] ?? null;
+            $originId = $objectData['originId'] ?? null;
+
+            foreach ($objectData as $key => $value) {
+                if (in_array($key, ['id', 'originId'], true)) {
+                    continue;
+                }
+
+                if ($value !== $id && $value !== $originId) {
+                    $extend[] = $key;
+                }
+            }
+        } elseif (is_string($extend) === true) {
+            $extend = explode(',', $extend);
         }
 
-        $entity->setObject($objectData);
+        // Handle extensions if depth limit not reached.
+        if (empty($extend) === false && $depth < 10) {
+            $objectData = $this->extendObject($entity, $extend, $objectData, $depth, $filter, $fields, $visitedIds);
+        }
 
-        return $entity;
+		$entity->setObject($objectData);
+
+		return $entity;
 
     }//end renderEntity()
+
 
     /**
      * Handle extends containing a wildcard ($)
      *
      * @param array $objectData The data to extend
-     * @param array $extend The fields that should be extended
-     * @param int $depth The current depth.
+     * @param array $extend     The fields that should be extended
+     * @param int   $depth      The current depth.
+     *
      * @return array|Dot
      */
     private function handleWildcardExtends(array $objectData, array &$extend, int $depth): array
     {
         $objectData = new Dot($objectData);
-        if ($depth >=10) {
-            return $objectData;
+        if ($depth >= 10) {
+            return $objectData->all();
         }
 
-        $wildcardExtends = array_filter($extend, function (string $key) {
-            return str_contains($key, '.$.');
-        });
+        $wildcardExtends = array_filter(
+                $extend,
+                function (string $key) {
+                    return str_contains($key, '.$.');
+                }
+        );
 
-        foreach($wildcardExtends as $key => $wildcardExtend) {
+        $extendedRoots = [];
+
+        foreach ($wildcardExtends as $key => $wildcardExtend) {
             unset($extend[$key]);
 
             [$root, $extends] = explode(separator: '.$.', string: $wildcardExtend, limit: 2);
 
-            if(is_numeric($key) === true) {
+            if (is_numeric($key) === true) {
                 $extendedRoots[$root][] = $extends;
             } else {
-                [$root, $path] = explode(separator: '.$.',string: $key, limit: 2 );
+                [$root, $path] = explode(separator: '.$.', string: $key, limit: 2);
                 $extendedRoots[$root][$path] = $extends;
             }
-
         }
 
-        foreach($extendedRoots as $root => $extends) {
+        foreach ($extendedRoots as $root => $extends) {
             $data = $objectData->get($root);
-            foreach($data as $key => $datum) {
-                $data[$key] = $this->handleExtendDot($datum, $extends, $depth);
+            if (is_iterable($data) === false) {
+                continue;
+            }
+
+            foreach ($data as $key => $datum) {
+                $tmpExtends = $extends;
+                $data[$key] = $this->handleExtendDot($datum, $tmpExtends, $depth);
             }
 
             $objectData->set($root, $data);
         }
 
-        return $objectData->jsonSerialize();
-    }
+        return $objectData->all();
+
+    }//end handleWildcardExtends()
+
 
     /**
      * Handle extends on a dot array
      *
-     * @param array $data The data to extend.
+     * @param array $data   The data to extend.
      * @param array $extend The fields to extend.
-     * @param int $depth The current depth.
+     * @param int   $depth  The current depth.
+     * @param bool|null  $allFlag If we extend all or not.
+     * @param array|null  $visitedIds All ids we already handled.
+     *
      * @return array
-     * 
+     *
      * @throws \OCP\DB\Exception
      */
-    private function handleExtendDot(array $data, array &$extend, int $depth): array
+    private function handleExtendDot(array $data, array &$extend, int $depth, bool $allFlag = false, array $visitedIds = []): array
     {
-        $data = $this->handleWildcardExtends($data, $extend, $depth+1);
+        $data = $this->handleWildcardExtends(objectData: $data, extend: $extend, depth: $depth + 1);
 
-        $data = new Dot($data);
+        $dataDot = new Dot($data);
 
-        foreach($extend as $override => $key) {
-            // Skip if the key does not have to be extended
-            if($data->has(keys: $key) === false) {
+        foreach ($extend as $override => $key) {
+            // Skip if the key does not have to be extended.
+            if ($dataDot->has(keys: $key) === false) {
                 continue;
             }
 
-            // Get all the keys that should be extended withtin the extended object
+            // Skip if the key starts with '@' (special fields)
+            if (str_starts_with($key, '@')) {
+                continue;
+            }
+
+            // Get sub-keys for nested extension
             $keyExtends = array_map(
-                function(string $extendedKey) use ($key) {
-                    return substr(string: $extendedKey, offset: strlen(string: $key. '.'));
-                },
+                fn(string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
                 array_filter(
                     $extend,
-                    function (string $singleKey) use ($key) {
-                        return str_starts_with(haystack: $singleKey, needle: $key.'.');
-                    }
+                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key . '.')
                 )
             );
 
-            $value = $data->get(key: $key);
+            $value = $dataDot->get(key: $key);
 
-            // Make sure arrays are arrays
-            if($value instanceof Dot) {
+            // Make sure arrays are arrays.
+            if ($value instanceof Dot) {
                 $value = $value->jsonSerialize();
             }
 
-            // Extend the object(s)
+            // Skip if the value is null
+            if ($value === null) {
+                continue;
+            }
+
+            // Extend the subobject(s).
             if (is_array($value) === true) {
-                $renderedValue = array_map(function(string|int $identifier) use ($depth, $keyExtends) {
+                // Filter out null values and values starting with '@' before mapping
+                $value = array_filter(
+                    $value,
+                    fn($v) => $v !== null && (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
+                );
+                $renderedValue = array_map(function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
+                    if (is_array($identifier)) {
+                        return null;
+                    }
+
                     $object = $this->getObject(id: $identifier);
                     if ($object === null) {
                         $multiObject = $this->objectEntityMapper->findAll(filters: ['identifier' => $identifier]);
@@ -469,16 +648,38 @@ class RenderObject
                             return null;
                         }
                     }
-                    return $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1);
+
+                    if (in_array($object->getUuid(), $visitedIds, true)) {
+                        return ['@circular' => true, 'id' => $object->getUuid()];
+                    }
+
+                    $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
+
+                    return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, visitedIds: $visitedIds)->jsonSerialize();
                 }, $value);
 
-                if(is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $renderedValue);
+                // Filter out any null values that might have been returned from the mapping
+                $renderedValue = array_filter($renderedValue, fn($v) => $v !== null);
+
+                if (is_numeric($override) === true) {
+                    // Reset array keys
+                    $dataDot->set(keys: $key, value: array_values($renderedValue));
                 } else {
-                    $data->set(keys: $override, value: $renderedValue);
+                    // Reset array keys
+                    $dataDot->set(keys: $override, value: array_values($renderedValue));
+                }
+            } else {
+                // Skip if the value starts with '@' or '_'
+                if (is_string($value) && (str_starts_with(haystack: $value, needle: '@') || str_starts_with(haystack: $value, needle: '_'))) {
+                    continue;
                 }
 
-            } else {
+                if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+                    $path = parse_url($value, PHP_URL_PATH);
+                    $pathExploded = explode('/', $path);
+                    $value = end($pathExploded);
+                }
+
                 $object = $this->getObject(id: $value);
 
                 if ($object === null) {
@@ -490,17 +691,33 @@ class RenderObject
                         continue;
                     }
                 }
-                if(is_numeric($override) === true) {
-                    $data->set(keys: $key, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+
+                $subExtend = $allFlag ? array_merge(['all'], $keyExtends) : $keyExtends;
+
+                if (in_array($object->getUuid(), $visitedIds, true) === true) {
+                    $rendered = ['@circular' => true, 'id' => $object->getUuid()];
                 } else {
-                    $data->set(keys: $override, value: $this->renderEntity(entity: $object, extend: $keyExtends, depth: $depth + 1));
+                    $rendered = $this->renderEntity(
+                        entity: $object,
+                        extend: $subExtend,
+                        depth: $depth + 1,
+                        visitedIds: $visitedIds
+                    )->jsonSerialize();
                 }
-            }
+                
+                if (is_numeric($override) === true) {
+                    $dataDot->set(keys: $key, value: $rendered);
+                } else {
+                    $dataDot->set(keys: $override, value: $rendered);
+                }
 
-        }
+            }//end if
 
-        return $data->jsonSerialize();
-    }
+        }//end foreach
+
+        return $dataDot->jsonSerialize();
+
+    }//end handleExtendDot()
 
 
     /**
@@ -512,6 +729,7 @@ class RenderObject
      * @param int          $depth      Current depth level
      * @param array|null   $filter     Filters to apply
      * @param array|null   $fields     Fields to include
+     * @param array|null   $visitedIds ids of objects already handled
      *
      * @return array The extended object data
      */
@@ -521,7 +739,8 @@ class RenderObject
         array $objectData,
         int $depth,
         ?array $filter=[],
-        ?array $fields=[]
+        ?array $fields=[],
+        ?array $visitedIds = []
     ): array {
         // Add register and schema context to @self if requested.
         if (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true) {
@@ -544,8 +763,7 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        $objectDataDot = $this->handleExtendDot($objectData, $extend, $depth);
-
+        $objectDataDot = $this->handleExtendDot(data: $objectData, extend: $extend, depth: $depth, allFlag: in_array('all', $extend, true), visitedIds: $visitedIds);
 
         return $objectDataDot;
 
@@ -567,7 +785,7 @@ class RenderObject
         $inversedProperties = array_filter(
                 $properties,
                 function ($property) {
-                    return isset($property['inversedBy']) && !empty($property['inversedBy']);
+                    return (isset($property['inversedBy']) && !empty($property['inversedBy'])) || (isset($property['items']['inversedBy']) && !empty($property['items']['inversedBy']));
                 }
                 );
 
@@ -616,8 +834,15 @@ class RenderObject
         // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
+
         // Set all found objects to the objectsCache.
-        $ids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $referencingObjects);
+        $ids            = array_map(
+                function (ObjectEntity $object) {
+                    return $object->getUuid();
+                },
+                $referencingObjects
+                );
+
         $objectsToCache = array_combine(keys: $ids, values: $referencingObjects);
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
@@ -625,31 +850,39 @@ class RenderObject
         foreach ($inversedProperties as $propertyName => $inversedBy) {
             $objectData[$propertyName] = [];
 
-            $inversedObjects = array_filter($referencingObjects, function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
-                $data = $object->jsonSerialize();
-                $schema = $object->getSchema();
+            $inversedObjects = array_values(array_filter(
+                    $referencingObjects,
+                    function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
+                        $data   = $object->jsonSerialize();
+                        $schema = $object->getSchema();
 
-                // @TODO: accomodate schema references.
-                if(isset($inversedBy['$ref']) === true) {
-                    $schemaId = substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1);
-                } else if (isset($inversedBy['items']['$ref']) === true) {
-                    $schemaId = substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1);
-                } else {
-                    return false;
-                }//end if
+                        // @TODO: accomodate schema references.
+                        if (isset($inversedBy['$ref']) === true) {
+                            $schemaId = str_contains(haystack: $inversedBy['$ref'], needle: '/') ? substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1) : $inversedBy['$ref'];
+                        } else if (isset($inversedBy['items']['$ref']) === true) {
+                            $schemaId = str_contains(haystack: $inversedBy['items']['$ref'], needle: '/') ? substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1) : $inversedBy['items']['$ref'];
+                        } else {
+                            return false;
+                        }//end if
 
-                return isset($data[$inversedBy['inversedBy']]) === true && ($data[$inversedBy['inversedBy']] === $entity->getUuid() || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId === $object->getSchema();
-            });
+						return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId == $object->getSchema();
+					}
+                    ));
 
-            $inversedUuids = array_map(function(ObjectEntity $object) {return $object->getUuid();}, $inversedObjects);
+            $inversedUuids = array_map(
+                    function (ObjectEntity $object) {
+                        return $object->getUuid();
+                    },
+                    $inversedObjects
+                    );
 
-            if($inversedBy['type'] === 'array') {
+            if ($inversedBy['type'] === 'array') {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
                 $objectData[$propertyName] = end($inversedUuids);
             }
-        }//end foreach
 
+        }//end foreach
 
         return $objectData;
 

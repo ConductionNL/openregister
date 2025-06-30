@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { useDropZone, useFileDialog } from '@vueuse/core'
 import { ref, computed } from 'vue'
-import { publicationStore } from './../store/store.js'
+import { objectStore } from '../store/store.js'
 
 /**
  * File selection composable
@@ -133,7 +133,7 @@ export function useFileSelection(options) {
 	}
 	const setFiles = (files) => {
 		filesList.value = files
-		publicationStore.setAttachmentFile(null)
+		objectStore.setAttachmentFile(null)
 	}
 
 	// Setup dropzone and file dialog composables

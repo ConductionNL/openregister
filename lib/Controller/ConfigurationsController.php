@@ -137,7 +137,7 @@ class ConfigurationsController extends Controller
     {
         $data = $this->request->getParams();
 
-        // Remove internal parameters and data attribute
+        // Remove internal parameters and data attribute.
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_') === true || $key === 'data') {
                 unset($data[$key]);
@@ -177,7 +177,7 @@ class ConfigurationsController extends Controller
     {
         $data = $this->request->getParams();
 
-        // Remove internal parameters and data attribute
+        // Remove internal parameters and data attribute.
         foreach ($data as $key => $value) {
             if (str_starts_with($key, '_') === true || $key === 'data') {
                 unset($data[$key]);

@@ -11,31 +11,44 @@ export const useNavigationStore = defineStore('ui', {
 		dialog: false,
 		// Any data needed in various models, dialogs, views which cannot be transferred through normal means or without writing crappy/excessive code
 		transferData: null,
+
+		sidebarState: {
+			registers: true,
+			register: true,
+			search: true,
+			deleted: true,
+			logs: true,
+		},
 	}),
 	actions: {
+		setSidebarState(sidebar, state) {
+			this.sidebarState[sidebar] = state
+		},
 		setSelected(selected) {
 			this.selected = selected
-			console.log('Active menu item set to ' + selected)
 		},
 		setSelectedCatalogus(selectedCatalogus) {
 			this.selectedCatalogus = selectedCatalogus
-			console.log('Active catalogus menu set to ' + selectedCatalogus)
 		},
 		setModal(modal) {
 			this.modal = modal
-			console.log('Active modal set to ' + modal)
 		},
 		setDialog(dialog) {
+			console.log('NavigationStore - setDialog() called with:', dialog)
 			this.dialog = dialog
-			console.log('Active dialog set to ' + dialog)
 		},
 		setTransferData(data) {
+			console.log('NavigationStore - setTransferData() called with:', data)
 			this.transferData = data
+			console.log('NavigationStore - transferData set to:', this.transferData)
 		},
 		getTransferData() {
-			const tempData = this.transferData
+			console.log('NavigationStore - getTransferData() called, returning:', this.transferData)
+			return this.transferData
+		},
+		clearTransferData() {
+			console.log('NavigationStore - clearTransferData() called')
 			this.transferData = null
-			return tempData
 		},
 	},
 })

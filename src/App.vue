@@ -16,6 +16,7 @@ import Modals from './modals/Modals.vue'
 import Dialogs from './dialogs/Dialogs.vue'
 import Views from './views/Views.vue'
 import SideBars from './sidebars/SideBars.vue'
+import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
 export default {
 	name: 'App',
@@ -26,6 +27,10 @@ export default {
 		Dialogs,
 		Views,
 		SideBars,
+	},
+	mounted() {
+		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
+		setupDashboardStoreWatchers()
 	},
 }
 </script>
