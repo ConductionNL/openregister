@@ -141,6 +141,8 @@ export default {
 			searchQuery: '',
 			activeTab: 'filters-tab',
 			searchTimeout: null,
+			filterTimeout: null,
+			facetTimeout: null,
 		}
 	},
 	computed: {
@@ -236,6 +238,48 @@ export default {
 			},
 			deep: true,
 		},
+		// Watch for filter changes to trigger search
+		'$root.objectStore.activeFilters': {
+			handler(newFilters, oldFilters) {
+				// Only trigger if filters actually changed and we have register/schema selected
+				if (JSON.stringify(newFilters) !== JSON.stringify(oldFilters) && 
+					registerStore.registerItem && 
+					schemaStore.schemaItem) {
+					// Debounce the search to avoid too many API calls
+					if (this.filterTimeout) {
+						clearTimeout(this.filterTimeout)
+					}
+					this.filterTimeout = setTimeout(() => {
+						objectStore.refreshObjectList({
+							register: registerStore.registerItem.id,
+							schema: schemaStore.schemaItem.id,
+						})
+					}, 500)
+				}
+			},
+			deep: true,
+		},
+		// Watch for facet changes to trigger search
+		'$root.objectStore.activeFacets': {
+			handler(newFacets, oldFacets) {
+				// Only trigger if facets actually changed and we have register/schema selected
+				if (JSON.stringify(newFacets) !== JSON.stringify(oldFacets) && 
+					registerStore.registerItem && 
+					schemaStore.schemaItem) {
+					// Debounce the search to avoid too many API calls
+					if (this.facetTimeout) {
+						clearTimeout(this.facetTimeout)
+					}
+					this.facetTimeout = setTimeout(() => {
+						objectStore.refreshObjectList({
+							register: registerStore.registerItem.id,
+							schema: schemaStore.schemaItem.id,
+						})
+					}, 500)
+				}
+			},
+			deep: true,
+		},
 	},
 	mounted() {
 		objectStore.initializeColumnFilters()
@@ -284,6 +328,18 @@ export default {
 			}
 		},
 
+	},
+	beforeUnmount() {
+		// Clean up timeouts to prevent memory leaks
+		if (this.searchTimeout) {
+			clearTimeout(this.searchTimeout)
+		}
+		if (this.filterTimeout) {
+			clearTimeout(this.filterTimeout)
+		}
+		if (this.facetTimeout) {
+			clearTimeout(this.facetTimeout)
+		}
 	},
 }
 </script>

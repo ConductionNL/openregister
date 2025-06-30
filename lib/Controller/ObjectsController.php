@@ -400,8 +400,6 @@ class ObjectsController extends Controller
             return new JSONResponse($result);
         } catch (\Exception $e) {
             // Fallback to legacy method if something goes wrong
-            error_log("Faceting-enabled search failed, falling back to legacy method: " . $e->getMessage());
-            
             // Use findAllPaginated which now supports _facetable parameter
             $requestParams = $this->request->getParams();
             $result = $objectService->findAllPaginated($requestParams);
@@ -1262,45 +1260,24 @@ class ObjectsController extends Controller
             // Get merge data from request body
             $requestParams = $this->request->getParams();
             
-            // Add logging to controller
-            error_log("=== MERGE CONTROLLER DEBUG START ===");
-            error_log("Source object ID from URL: " . $id);
-            error_log("Register from URL: " . $register);
-            error_log("Schema from URL: " . $schema);
-            error_log("Request params: " . json_encode($requestParams));
-            
             // Validate required parameters
             if (!isset($requestParams['target'])) {
-                error_log("ERROR: Target object ID missing from request");
                 return new JSONResponse(['error' => 'Target object ID is required'], 400);
             }
 
             if (!isset($requestParams['object']) || empty($requestParams['object'])) {
-                error_log("ERROR: Object data missing from request");
                 return new JSONResponse(['error' => 'Object data is required'], 400);
             }
 
-            error_log("About to call objectService->mergeObjects()");
             // Perform the merge operation with the new payload structure
             $mergeResult = $objectService->mergeObjects($id, $requestParams);
-
-            error_log("Merge operation completed successfully");
-            error_log("=== MERGE CONTROLLER DEBUG END ===");
             return new JSONResponse($mergeResult);
 
         } catch (DoesNotExistException $exception) {
-            error_log("CONTROLLER ERROR: DoesNotExistException - " . $exception->getMessage());
-            error_log("=== MERGE CONTROLLER DEBUG END (OBJECT NOT FOUND) ===");
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (\InvalidArgumentException $exception) {
-            error_log("CONTROLLER ERROR: InvalidArgumentException - " . $exception->getMessage());
-            error_log("=== MERGE CONTROLLER DEBUG END (INVALID ARGUMENT) ===");
             return new JSONResponse(['error' => $exception->getMessage()], 400);
         } catch (\Exception $exception) {
-            error_log("CONTROLLER ERROR: General Exception - " . $exception->getMessage());
-            error_log("Exception type: " . get_class($exception));
-            error_log("Stack trace: " . $exception->getTraceAsString());
-            error_log("=== MERGE CONTROLLER DEBUG END (GENERAL ERROR) ===");
             return new JSONResponse([
                 'error' => 'Failed to merge objects: ' . $exception->getMessage()
             ], 500);
