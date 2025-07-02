@@ -329,7 +329,8 @@ class ObjectService
         // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject($object, $this->currentSchema);
         if ($result->isValid() === false) {
-            throw new ValidationException($result->error()->message(), errors: $result->error());
+            $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
+            throw new ValidationException($meaningfulMessage, errors: $result->error());
         }
 
         // Save the object using the current register and schema.
@@ -401,7 +402,8 @@ class ObjectService
         // Validate the object against the current schema.
         $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
         if ($result->isValid() === false) {
-            throw new ValidationException($result->error()->message(), errors: $result->error());
+            $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
+            throw new ValidationException($meaningfulMessage, errors: $result->error());
         }
 
         // Save the object using the current register and schema.
@@ -659,7 +661,8 @@ class ObjectService
         if ($this->currentSchema->getHardValidation() === true) {
             $result = $this->validateHandler->validateObject($object, $this->currentSchema);
             if ($result->isValid() === false) {
-                throw new ValidationException($result->error()->message(), errors: $result->error());
+                $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
+                throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
         }
 
