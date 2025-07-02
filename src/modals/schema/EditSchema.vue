@@ -621,7 +621,10 @@ export default {
 		},
 
 		isPropertyRequired(schema, key) {
-			return schema.required && schema.required.includes(key)
+			// Check both the schema-level required array and the property-level required field
+			const isInSchemaRequired = schema.required && schema.required.includes(key)
+			const hasPropertyRequired = schema.properties && schema.properties[key] && schema.properties[key].required === true
+			return isInSchemaRequired || hasPropertyRequired
 		},
 		initializeSchemaItem() {
 			if (schemaStore.schemaItem?.id) {
@@ -945,6 +948,16 @@ export default {
 			}
 		},
 		updatePropertyRequired(key, isRequired) {
+			// Update the property-level required field
+			if (this.schemaItem.properties[key]) {
+				if (isRequired) {
+					this.$set(this.schemaItem.properties[key], 'required', true)
+				} else {
+					this.$delete(this.schemaItem.properties[key], 'required')
+				}
+			}
+
+			// Also update the schema-level required array for consistency
 			if (!this.schemaItem.required) {
 				this.$set(this.schemaItem, 'required', [])
 			}
