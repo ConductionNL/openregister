@@ -72,6 +72,7 @@ class ValidateObject
      *
      * @param IURLGenerator $urlGenerator URL generator service.
      * @param IAppConfig    $config       Application configuration service.
+     * @param SchemaMapper  $schemaMapper Schema mapper service.
      */
     public function __construct(
         private readonly IURLGenerator $urlGenerator,
@@ -215,6 +216,153 @@ class ValidateObject
 
 
     /**
+     * Generates a meaningful error message from a validation result.
+     *
+     * This method creates clear, user-friendly error messages instead of using 
+     * the generic Opis error message like "The required properties ({missing}) are missing".
+     *
+     * @param ValidationResult $result The validation result from Opis JsonSchema.
+     *
+     * @return string A meaningful error message.
+     */
+    public function generateErrorMessage(ValidationResult $result): string
+    {
+        if ($result->isValid() === true) {
+            return 'Validation passed';
+        }
+
+        // Get the primary validation error
+        $error = $result->error();
+        
+        return $this->formatValidationError($error);
+
+    }//end generateErrorMessage()
+
+
+    /**
+     * Formats a validation error into a user-friendly message.
+     *
+     * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
+     *
+     * @return string A formatted error message.
+     */
+    private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string
+    {
+        $keyword = $error->keyword();
+        $dataPath = $error->data()->fullPath();
+        $value = $error->data()->value();
+        $args = $error->args();
+
+        // Build property path for better identification
+        $propertyPath = empty($dataPath) ? 'root' : implode('.', $dataPath);
+
+        switch ($keyword) {
+            case 'required':
+                $missing = $args['missing'] ?? [];
+                if (is_array($missing) && count($missing) > 0) {
+                    if (count($missing) === 1) {
+                        return "The required property '{$missing[0]}' is missing";
+                    }
+                    $missingList = implode(', ', $missing);
+                    return "The required properties ({$missingList}) are missing";
+                }
+                return 'Required property is missing';
+
+            case 'type':
+                $expectedType = $args['expected'] ?? 'unknown';
+                $actualType = $this->getValueType($value);
+                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'";
+
+            case 'format':
+                $format = $args['format'] ?? 'unknown';
+                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not";
+
+            case 'minLength':
+                $minLength = $args['min'] ?? 0;
+                $actualLength = is_string($value) ? strlen($value) : 0;
+                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}";
+
+            case 'maxLength':
+                $maxLength = $args['max'] ?? 0;
+                $actualLength = is_string($value) ? strlen($value) : 0;
+                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}";
+
+            case 'minimum':
+                $minimum = $args['min'] ?? 0;
+                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}";
+
+            case 'maximum':
+                $maximum = $args['max'] ?? 0;
+                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}";
+
+            case 'enum':
+                $allowedValues = $args['values'] ?? [];
+                if (is_array($allowedValues)) {
+                    $valuesList = implode(', ', array_map(function($v) { return "'{$v}'"; }, $allowedValues));
+                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'";
+                }
+                return "Property '{$propertyPath}' has an invalid value '{$value}'";
+
+            case 'pattern':
+                $pattern = $args['pattern'] ?? 'unknown';
+                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not";
+
+            default:
+                // Check for sub-errors to provide more specific messages
+                $subErrors = $error->subErrors();
+                if (!empty($subErrors)) {
+                    return $this->formatValidationError($subErrors[0]);
+                }
+                
+                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'";
+        }
+
+    }//end formatValidationError()
+
+
+    /**
+     * Gets a human-readable type name for a value.
+     *
+     * @param mixed $value The value to get the type for.
+     *
+     * @return string The type name.
+     */
+    private function getValueType($value): string
+    {
+        if ($value === null) {
+            return 'null';
+        }
+
+        if (is_bool($value)) {
+            return 'boolean';
+        }
+
+        if (is_int($value)) {
+            return 'integer';
+        }
+
+        if (is_float($value)) {
+            return 'number';
+        }
+
+        if (is_string($value)) {
+            return 'string';
+        }
+
+        if (is_array($value)) {
+            return 'array';
+        }
+
+        if (is_object($value)) {
+            return 'object';
+        }
+
+        return 'unknown';
+
+    }//end getValueType()
+
+
+    /**
      * Handles validation exceptions by formatting them into a JSON response.
      *
      * @param ValidationException|CustomValidationException $exception The validation exception.
@@ -225,6 +373,7 @@ class ValidateObject
     {
         $errors = [];
         if ($exception instanceof ValidationException) {
+            // The exception message should already be meaningful thanks to generateErrorMessage()
             $errors[] = [
                 'property' => method_exists($exception, 'getProperty') ? $exception->getProperty() : null,
                 'message'  => $exception->getMessage(),
