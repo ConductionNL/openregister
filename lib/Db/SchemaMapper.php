@@ -254,6 +254,23 @@ class SchemaMapper extends QBMapper
             throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
         }
 
+        // Establish the required fields based on the properties
+        // Empty the required array and rebuild it based on property requirements
+        $requiredFields = [];
+        foreach ($properties as $propertyKey => $property) {
+            // Check if the property has a 'required' field set to true or the string 'true'
+            if (isset($property['required']) === true) {
+                $requiredValue = $property['required'];
+                if ($requiredValue === true || 
+                    $requiredValue === 'true' || 
+                    (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')) {
+                    $requiredFields[] = $propertyKey;
+                }
+            }
+        }
+        // Set the required fields on the schema
+        $schema->setRequired($requiredFields);
+
         // If the object name field is empty, try to find a logical key
         if (empty($objectNameField) === true) {
             $nameKeys = [
