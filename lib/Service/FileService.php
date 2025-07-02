@@ -507,8 +507,8 @@ class FileService
 
         // Store the folder ID
         $objectEntity->setFolder((string) $objectFolder->getId());
-        $this->objectEntityMapper->update($objectEntity);
-        
+        $this->objectEntityMapper->update(entity: $objectEntity, throwEvent: false);
+
         $this->logger->info("Created object folder with ID: " . $objectFolder->getId());
         
         // Transfer ownership to OpenRegister and share with current user if needed

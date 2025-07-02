@@ -1202,15 +1202,16 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Updates an entity in the database
      *
-     * @param Entity $entity        The entity to update
-     * @param bool   $includeDeleted Whether to include deleted objects when finding the old object
+     * @param Entity    $entity         The entity to update
+     * @param bool      $includeDeleted Whether to include deleted objects when finding the old object
+     * @param bool|null $throwEvent     Whether to throw event
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
      * @return Entity The updated entity
      */
-    public function update(Entity $entity, bool $includeDeleted = false): Entity
+    public function update(Entity $entity, bool $includeDeleted = false, ?bool $throwEvent = true): Entity
     {
         // For ObjectEntity, we need to find by the internal database ID, not UUID
         // The getId() method returns the database primary key
@@ -1240,9 +1241,10 @@ class ObjectEntityMapper extends QBMapper
         $entity = parent::update($entity);
 
         // Dispatch update event.
-        error_log("ObjectEntityMapper: Dispatching ObjectUpdatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
-
+        if ($throwEvent === true) {
+            error_log("ObjectEntityMapper: Dispatching ObjectUpdatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
+            $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
+        }
         return $entity;
 
     }//end update()
