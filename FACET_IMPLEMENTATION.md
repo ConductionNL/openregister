@@ -1,24 +1,31 @@
 # Facet System Implementation Guide
 
-This document describes the implementation of the automatic faceting system in OpenRegister, including both backend and frontend components.
+This document describes the implementation of the schema-based faceting system in OpenRegister, including both backend and frontend components.
 
 ## Overview
 
-The faceting system provides dynamic filtering capabilities for object searches. It automatically discovers which fields can be used for faceting and provides intelligent suggestions based on your data.
+The faceting system provides dynamic filtering capabilities for object searches. It automatically discovers which fields can be used for faceting based on schema property definitions, providing intelligent suggestions based on your schema configuration rather than analyzing object data.
+
+**Key Features:**
+- **Schema-driven discovery**: Facetable fields are defined in schema properties with `'facetable': true`
+- **Efficient performance**: No need to analyze object data for field discovery
+- **Consistent behavior**: Facets are always available based on schema design, not data content
+- **Type-aware faceting**: Automatically determines appropriate facet types based on schema property types
 
 ## Backend Components
 
 ### Core PHP Classes
 
-1. **`ObjectEntityMapper`** - Main database mapper with facet integration
+1. **`ObjectEntityMapper`** - Main database mapper with schema-based facet integration
    - Location: `lib/Db/ObjectEntityMapper.php`
    - Enhanced `searchObjects()` method supports facet requests
-   - New `getSimpleFacets()` and `getFacetableFields()` methods
+   - New `getFacetableFieldsFromSchemas()` method for schema-based discovery
+   - Enhanced `getSimpleFacets()` and `getFacetableFields()` methods
 
 2. **`MariaDbFacetHandler`** - Handles JSON object field facets
    - Location: `lib/Db/ObjectHandlers/MariaDbFacetHandler.php`
    - Supports terms, date_histogram, and range facets for JSON fields
-   - Includes field discovery and analysis
+   - Works with schema-defined facetable fields
 
 3. **`MetaDataFacetHandler`** - Handles database table column facets
    - Location: `lib/Db/ObjectHandlers/MetaDataFacetHandler.php`
@@ -27,6 +34,60 @@ The faceting system provides dynamic filtering capabilities for object searches.
 4. **`MariaDbSearchHandler`** - Enhanced search capabilities
    - Location: `lib/Db/ObjectHandlers/MariaDbSearchHandler.php`
    - Supports complex filtering and sorting operations
+
+### Schema Property Configuration
+
+Fields are marked as facetable in schema properties using the `facetable` flag:
+
+```json
+{
+  "properties": {
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Current status of the item",
+      "facetable": true,
+      "example": "active"
+    },
+    "priority": {
+      "type": "integer",
+      "title": "Priority Level",
+      "description": "Priority from 1 to 10",
+      "facetable": true,
+      "minimum": 1,
+      "maximum": 10
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Creation Date",
+      "description": "When the item was created",
+      "facetable": true
+    },
+    "internal_notes": {
+      "type": "string",
+      "title": "Internal Notes",
+      "description": "Notes for internal use only",
+      "facetable": false
+    }
+  }
+}
+```
+
+### Automatic Facet Type Detection
+
+Based on schema property definitions, the system automatically determines appropriate facet types:
+
+- **String fields**: 
+  - Regular strings → `terms` facet
+  - Date/datetime format → `date_histogram` and `range` facets
+  - Email/URI/UUID format → `terms` facet
+
+- **Numeric fields** (integer/number): `range` and `terms` facets
+
+- **Boolean fields**: `terms` facet
+
+- **Array fields**: `terms` facet
 
 ## Frontend Implementation
 
@@ -37,20 +98,20 @@ The object store (`src/store/modules/object.js`) has been enhanced with comprehe
 #### New State Properties
 ```javascript
 facets: {}, // Current facet results
-facetableFields: {}, // Available facetable fields for dynamic UI
+facetableFields: {}, // Available facetable fields from schemas
 activeFacets: {}, // Currently active/selected facets
 facetsLoading: false, // Loading state for facets
 ```
 
 #### Key Methods
-- `getFacetableFields()` - Discovers available facetable fields
+- `getFacetableFields()` - Discovers available facetable fields from schemas
 - `getFacets()` - Retrieves facet data for current context
 - `updateActiveFacet()` - Manages active facet selection
 - Enhanced `refreshObjectList()` - Automatically includes facets
 
 #### New Getters
 - `availableMetadataFacets` - Metadata fields available for faceting
-- `availableObjectFieldFacets` - Object fields available for faceting
+- `availableObjectFieldFacets` - Object fields available for faceting (from schemas)
 - `currentFacets` - Current facet results with buckets
 - `hasFacets` / `hasFacetableFields` - Availability checks
 
@@ -59,7 +120,7 @@ facetsLoading: false, // Loading state for facets
 #### FacetComponent
 A ready-to-use Vue component for facet management:
 - Location: `src/components/FacetComponent.vue`
-- Automatically discovers and displays available facets
+- Automatically discovers and displays available facets from schemas
 - Interactive checkbox interface for enabling/disabling facets
 - Real-time display of facet results
 - Responsive design following Nextcloud patterns
@@ -75,12 +136,12 @@ The FacetComponent has been integrated into the existing Filters tab:
 
 The faceting system integrates with the existing API endpoints by adding new query parameters:
 
-#### Facet Discovery
+#### Facet Discovery (Schema-Based)
 ```
 GET /api/objects/{register}/{schema}?_facetable=true&_limit=0
 ```
 
-Response includes `facetable` field with available facet options:
+Response includes `facetable` field with available facet options based on schema definitions:
 ```json
 {
   "results": [],
@@ -96,9 +157,30 @@ Response includes `facetable` field with available facet options:
     "object_fields": {
       "status": {
         "type": "string",
+        "format": "",
+        "title": "Status",
+        "description": "Current status of the item",
         "facet_types": ["terms"],
-        "appearance_rate": 85,
-        "sample_values": ["active", "draft", "archived"]
+        "source": "schema",
+        "example": "active"
+      },
+      "priority": {
+        "type": "integer",
+        "title": "Priority Level",
+        "description": "Priority from 1 to 10",
+        "facet_types": ["range", "terms"],
+        "source": "schema",
+        "minimum": 1,
+        "maximum": 10
+      },
+      "created_date": {
+        "type": "string",
+        "format": "date",
+        "title": "Creation Date",
+        "description": "When the item was created",
+        "facet_types": ["date_histogram", "range"],
+        "source": "schema",
+        "intervals": ["day", "week", "month", "year"]
       }
     }
   }
@@ -140,21 +222,63 @@ Response includes `facets` field with aggregated data:
 
 ### Basic Usage
 
-1. **Automatic Discovery**: When a register and schema are selected, facets are automatically discovered and loaded.
+1. **Schema Configuration**: Define facetable fields in your schema properties with `'facetable': true`.
 
-2. **Interactive Selection**: Users can enable/disable facets in the sidebar's Facets tab.
+2. **Automatic Discovery**: When a register and schema are selected, facets are automatically discovered from schema definitions.
 
-3. **Real-time Results**: Facet counts update automatically when filters or search terms change.
+3. **Interactive Selection**: Users can enable/disable facets in the sidebar's Facets tab.
+
+4. **Real-time Results**: Facet counts update automatically when filters or search terms change.
+
+### Schema Configuration Example
+
+```json
+{
+  "title": "Publication Schema",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Publication Title",
+      "facetable": false
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "description": "Publication category",
+      "facetable": true,
+      "example": "Research"
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Publication Date",
+      "facetable": true
+    },
+    "priority": {
+      "type": "integer",
+      "title": "Priority",
+      "minimum": 1,
+      "maximum": 5,
+      "facetable": true
+    },
+    "is_featured": {
+      "type": "boolean",
+      "title": "Featured Publication",
+      "facetable": true
+    }
+  }
+}
+```
 
 ### Programmatic Usage
 
 ```javascript
-// Get available facetable fields
+// Get available facetable fields (from schemas)
 const facetableFields = await objectStore.getFacetableFields()
 
 // Enable specific facets
 await objectStore.updateActiveFacet('@self.register', 'terms', true)
-await objectStore.updateActiveFacet('status', 'terms', true)
+await objectStore.updateActiveFacet('category', 'terms', true)
 
 // Get facet data with custom configuration
 const customFacets = await objectStore.getFacets({
@@ -163,8 +287,8 @@ const customFacets = await objectStore.getFacets({
       created: { type: 'date_histogram', interval: 'month' }
     },
     priority: { type: 'range', ranges: [
-      { from: 1, to: 5, key: 'Low' },
-      { from: 5, key: 'High' }
+      { from: 1, to: 3, key: 'Low' },
+      { from: 3, to: 5, key: 'High' }
     ]}
   }
 })
@@ -197,9 +321,10 @@ window.facetTests.checkStoreState()
 ## Performance Considerations
 
 ### Backend Optimization
+- **Schema-based discovery**: No object data analysis required, improving performance significantly
 - Facet handlers use efficient database queries
 - Metadata facets use indexed columns for fast performance
-- Object field discovery is sample-based to limit analysis overhead
+- No sampling overhead since discovery is schema-based
 - Async methods available for concurrent operations
 
 ### Frontend Optimization
@@ -210,16 +335,24 @@ window.facetTests.checkStoreState()
 
 ## Configuration Options
 
-### Discovery Sample Size
-Control how many objects are analyzed for field discovery:
-```javascript
-await objectStore.getFacetableFields({ sampleSize: 200 })
+### Schema Property Configuration
+Control facet availability by setting `facetable: true/false` in schema properties:
+```json
+{
+  "property_name": {
+    "type": "string",
+    "title": "Display Name",
+    "description": "Field description",
+    "facetable": true,
+    "example": "sample value"
+  }
+}
 ```
 
 ### Facet Types
-Supported facet types:
-- **Terms**: For categorical data (low cardinality strings)
-- **Date Histogram**: For date fields with configurable intervals
+Supported facet types (automatically determined from schema):
+- **Terms**: For categorical data (strings, booleans, low-cardinality data)
+- **Date Histogram**: For date/datetime fields with configurable intervals
 - **Range**: For numeric data with custom range definitions
 
 ### Custom Intervals
@@ -233,10 +366,19 @@ Date histogram intervals:
 
 ### Common Issues
 
-1. **No Facets Appear**: Ensure register and schema are selected
-2. **Slow Performance**: Reduce sample size or disable facets for large datasets
-3. **Missing Fields**: Check field appearance rate (must be >10% of objects)
-4. **API Errors**: Verify facet parameter formatting in URL
+1. **No Facets Appear**: 
+   - Ensure register and schema are selected
+   - Check that schema properties have `'facetable': true`
+   - Verify schema contains facetable properties
+
+2. **Missing Fields**: 
+   - Check schema property definitions
+   - Ensure `'facetable': true` is set on desired fields
+   - Verify property types are supported for faceting
+
+3. **API Errors**: Verify facet parameter formatting in URL
+
+4. **Performance Issues**: Schema-based approach should be much faster than previous object-based analysis
 
 ### Debug Tools
 
@@ -249,6 +391,15 @@ window.facetTests.checkStoreState()
 await window.facetTests.testFacetDiscovery()
 await window.facetTests.testBasicFacets()
 ```
+
+## Migration from Object-Based Faceting
+
+If you're upgrading from the previous object-based faceting system:
+
+1. **Update Schema Definitions**: Add `'facetable': true` to properties you want to be facetable
+2. **Remove Sample Size Concerns**: No longer need to worry about sample sizes for discovery
+3. **Consistent Results**: Facets are now always available based on schema, not data content
+4. **Better Performance**: No object analysis overhead
 
 ## Future Enhancements
 
@@ -263,12 +414,14 @@ await window.facetTests.testBasicFacets()
 - Custom facet types can be added to handlers
 - FacetComponent can be extended with additional UI elements
 - Store methods can be overridden for custom behavior
+- Schema property extensions for advanced facet configuration
 
 ## Related Documentation
 
 - [Automatic Facets Documentation](website/docs/automatic-facets.md)
 - [Advanced Search Guide](website/docs/advanced-search.md)
 - [API Reference](website/docs/api-reference.md)
+- [Schema Definition Guide](website/docs/schema-guide.md)
 
 ## Support
 
