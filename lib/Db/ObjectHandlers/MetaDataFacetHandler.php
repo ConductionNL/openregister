@@ -430,18 +430,6 @@ class MetaDataFacetHandler
                 'facet_types' => ['terms'],
                 'has_labels' => true
             ],
-            'uuid' => [
-                'type' => 'identifier',
-                'description' => 'Unique identifier of the object',
-                'facet_types' => ['terms'],
-                'has_labels' => false
-            ],
-            'owner' => [
-                'type' => 'categorical',
-                'description' => 'User who owns the object',
-                'facet_types' => ['terms'],
-                'has_labels' => false
-            ],
             'organisation' => [
                 'type' => 'categorical',
                 'description' => 'Organisation associated with the object',
