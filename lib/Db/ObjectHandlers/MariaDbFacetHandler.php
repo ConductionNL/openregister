@@ -47,6 +47,7 @@ class MariaDbFacetHandler
      * Get terms facet for a JSON object field
      *
      * Returns unique values and their counts for categorical JSON fields.
+     * Handles arrays by creating separate facet buckets for each array element.
      *
      * @param string $field     The JSON field name (supports dot notation)
      * @param array  $baseQuery Base query filters to apply
@@ -63,10 +64,16 @@ class MariaDbFacetHandler
      */
     public function getTermsFacet(string $field, array $baseQuery = []): array
     {
-        $queryBuilder = $this->db->getQueryBuilder();
-        
         // Build JSON path for the field
         $jsonPath = '$.' . $field;
+        
+        // First, check if this field commonly contains arrays
+        if ($this->fieldContainsArrays($field, $baseQuery)) {
+            return $this->getTermsFacetForArrayField($field, $baseQuery);
+        }
+
+        // For non-array fields, use the standard approach
+        $queryBuilder = $this->db->getQueryBuilder();
         
         // Build aggregation query for JSON field
         $queryBuilder->selectAlias(
@@ -103,6 +110,180 @@ class MariaDbFacetHandler
         ];
 
     }//end getTermsFacet()
+
+
+    /**
+     * Check if a field commonly contains arrays
+     *
+     * Samples a few objects to determine if the field typically contains arrays.
+     *
+     * @param string $field     The JSON field name
+     * @param array  $baseQuery Base query filters to apply
+     *
+     * @phpstan-param string $field
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return bool True if the field commonly contains arrays
+     */
+    private function fieldContainsArrays(string $field, array $baseQuery): bool
+    {
+        $queryBuilder = $this->db->getQueryBuilder();
+        $jsonPath = '$.' . $field;
+        
+        // Sample a few objects to check if the field contains arrays
+        $queryBuilder->select('object')
+            ->from('openregister_objects')
+            ->where($queryBuilder->expr()->isNotNull(
+                $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+            ))
+            ->setMaxResults(10);
+
+        // Apply base filters
+        $this->applyBaseFilters($queryBuilder, $baseQuery);
+
+        $result = $queryBuilder->executeQuery();
+        $arrayCount = 0;
+        $totalCount = 0;
+
+        while ($row = $result->fetch()) {
+            $objectData = json_decode($row['object'], true);
+            if ($objectData && isset($objectData[$field])) {
+                $totalCount++;
+                if (is_array($objectData[$field])) {
+                    $arrayCount++;
+                }
+            }
+        }
+
+        // If more than 50% of sampled objects have arrays for this field, treat it as an array field
+        return $totalCount > 0 && ($arrayCount / $totalCount) > 0.5;
+
+    }//end fieldContainsArrays()
+
+
+    /**
+     * Get terms facet for an array field
+     *
+     * Expands JSON arrays into individual values and creates separate facet buckets.
+     *
+     * @param string $field     The JSON field name
+     * @param array  $baseQuery Base query filters to apply
+     *
+     * @phpstan-param string $field
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Terms facet data with buckets containing key and results
+     */
+    private function getTermsFacetForArrayField(string $field, array $baseQuery): array
+    {
+        // Get all objects that have this field
+        $queryBuilder = $this->db->getQueryBuilder();
+        $jsonPath = '$.' . $field;
+        
+        $queryBuilder->select('object')
+            ->from('openregister_objects')
+            ->where($queryBuilder->expr()->isNotNull(
+                $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+            ));
+
+        // Apply base filters
+        $this->applyBaseFilters($queryBuilder, $baseQuery);
+
+        $result = $queryBuilder->executeQuery();
+        $valueCounts = [];
+
+        // Process each object to extract individual array values
+        while ($row = $result->fetch()) {
+            $objectData = json_decode($row['object'], true);
+            if ($objectData && isset($objectData[$field])) {
+                $fieldValue = $objectData[$field];
+                
+                // Handle both arrays and single values
+                if (is_array($fieldValue)) {
+                    // For arrays, count each element separately
+                    foreach ($fieldValue as $value) {
+                        $stringValue = $this->normalizeValue($value);
+                        if ($stringValue !== null && $stringValue !== '') {
+                            if (!isset($valueCounts[$stringValue])) {
+                                $valueCounts[$stringValue] = 0;
+                            }
+                            $valueCounts[$stringValue]++;
+                        }
+                    }
+                } else {
+                    // For single values, count normally
+                    $stringValue = $this->normalizeValue($fieldValue);
+                    if ($stringValue !== null && $stringValue !== '') {
+                        if (!isset($valueCounts[$stringValue])) {
+                            $valueCounts[$stringValue] = 0;
+                        }
+                        $valueCounts[$stringValue]++;
+                    }
+                }
+            }
+        }
+
+        // Sort by count descending
+        arsort($valueCounts);
+
+        // Convert to buckets format
+        $buckets = [];
+        foreach ($valueCounts as $key => $count) {
+            $buckets[] = [
+                'key' => $key,
+                'results' => $count
+            ];
+        }
+
+        return [
+            'type' => 'terms',
+            'buckets' => $buckets
+        ];
+
+    }//end getTermsFacetForArrayField()
+
+
+    /**
+     * Normalize a value for faceting
+     *
+     * Converts various value types to a consistent string representation.
+     *
+     * @param mixed $value The value to normalize
+     *
+     * @phpstan-param mixed $value
+     *
+     * @psalm-param mixed $value
+     *
+     * @return string|null The normalized string value or null if invalid
+     */
+    private function normalizeValue(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        
+        if (is_scalar($value)) {
+            return trim((string) $value);
+        }
+        
+        // Skip complex types (objects, nested arrays)
+        return null;
+
+    }//end normalizeValue()
 
 
     /**
@@ -330,23 +511,47 @@ class MariaDbFacetHandler
                 ));
             } else if (is_array($value)) {
                 // For array values, check if any of the values match
+                // This handles both single values and arrays in the JSON field
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
+                    // Check for exact match (single value)
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
                             $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
                             $queryBuilder->createNamedParameter($val)
                         )
                     );
+                    
+                    // Check if the value exists within an array using JSON_CONTAINS
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($val)) . ")"),
+                            $queryBuilder->createNamedParameter(1)
+                        )
+                    );
                 }
                 $queryBuilder->andWhere($orConditions);
             } else {
-                $queryBuilder->andWhere(
+                // For single values, check both exact match and array containment
+                $singleValueConditions = $queryBuilder->expr()->orX();
+                
+                // Check for exact match (single value)
+                $singleValueConditions->add(
                     $queryBuilder->expr()->eq(
                         $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
                         $queryBuilder->createNamedParameter($value)
                     )
                 );
+                
+                // Check if the value exists within an array using JSON_CONTAINS
+                $singleValueConditions->add(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
+                        $queryBuilder->createNamedParameter(1)
+                    )
+                );
+                
+                $queryBuilder->andWhere($singleValueConditions);
             }
         }
 
@@ -567,13 +772,13 @@ class MariaDbFacetHandler
                         $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
                     }
                 } else {
-                    // Array of simple values
+                    // Array of simple values - not nested
                     foreach ($value as $item) {
                         $this->recordValueType($fieldAnalysis[$fieldPath], $item);
                         $this->recordSampleValue($fieldAnalysis[$fieldPath], $item);
                     }
                 }
-            } else if (is_object($value) || (is_array($value) && !empty($value))) {
+            } else if (is_object($value)) {
                 $fieldAnalysis[$fieldPath]['is_nested'] = true;
                 // Recursively analyze nested object
                 if (is_array($value)) {
@@ -768,8 +973,8 @@ class MariaDbFacetHandler
      */
     private function determineFieldConfiguration(string $fieldPath, array $analysis): ?array
     {
-        // Skip nested objects and arrays of objects
-        if ($analysis['is_nested']) {
+        // Skip nested objects and arrays of objects, but allow arrays of simple values
+        if ($analysis['is_nested'] && !$this->isArrayOfSimpleValues($analysis)) {
             return null;
         }
 
@@ -784,7 +989,8 @@ class MariaDbFacetHandler
             'type' => $primaryType,
             'description' => "Object field: $fieldPath",
             'sample_values' => array_slice($analysis['sample_values'], 0, 10),
-            'appearance_rate' => $analysis['count']
+            'appearance_rate' => $analysis['count'],
+            'is_array' => $analysis['is_array'] ?? false
         ];
 
         // Configure facet types based on field type
@@ -825,6 +1031,45 @@ class MariaDbFacetHandler
         return $config;
 
     }//end determineFieldConfiguration()
+
+
+    /**
+     * Check if an analysis represents an array of simple values
+     *
+     * @param array $analysis The field analysis data
+     *
+     * @phpstan-param array<string, mixed> $analysis
+     *
+     * @psalm-param array<string, mixed> $analysis
+     *
+     * @return bool True if this is an array of simple values (not nested objects)
+     */
+    private function isArrayOfSimpleValues(array $analysis): bool
+    {
+        // If it's not an array, it's not an array of simple values
+        if (!($analysis['is_array'] ?? false)) {
+            return false;
+        }
+
+        // If it's nested, check if the types are simple
+        if ($analysis['is_nested'] ?? false) {
+            $types = $analysis['types'] ?? [];
+            
+            // Check if all types are simple (string, integer, float, boolean, numeric_string, date)
+            $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
+            
+            foreach (array_keys($types) as $type) {
+                if (!in_array($type, $simpleTypes)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        return false;
+
+    }//end isArrayOfSimpleValues()
 
 
     /**
