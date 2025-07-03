@@ -1132,12 +1132,16 @@ class ObjectService
     /**
      * Get facetable fields for discovery
      *
-     * This method provides comprehensive information about which fields can be used
-     * for faceting, including their types, available facet types, and sample data.
-     * It's designed to help frontends understand what faceting options are available.
+     * This method provides a comprehensive list of fields that can be used for faceting
+     * by analyzing schema definitions instead of object data. This approach is more
+     * efficient and provides consistent faceting based on schema property definitions.
+     *
+     * Fields are marked as facetable in schema properties by setting 'facetable': true.
+     * This method will return configuration for both metadata fields (@self) and
+     * object fields based on their schema definitions.
      *
      * @param array $baseQuery Base query filters to apply for context
-     * @param int   $sampleSize Maximum number of objects to analyze for object fields
+     * @param int   $sampleSize Unused parameter, kept for backward compatibility
      *
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-param int $sampleSize
@@ -1145,16 +1149,17 @@ class ObjectService
      * @psalm-param array<string, mixed> $baseQuery
      * @psalm-param int $sampleSize
      *
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If facetable field discovery fails
      *
-     * @return array Comprehensive facetable field information with structure:
-     *               - @self: Metadata fields (register, schema, dates, etc.)
-     *               - object_fields: JSON object fields discovered from data
+     * @return array Comprehensive facetable field information from schemas
      */
     public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
     {
-        // Use the ObjectEntityMapper to get facetable fields from both handlers
-        return $this->objectEntityMapper->getFacetableFields($baseQuery, $sampleSize);
+        try {
+            return $this->objectEntityMapper->getFacetableFields($baseQuery);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to get facetable fields from schemas: ' . $e->getMessage(), 0, $e);
+        }
 
     }//end getFacetableFields()
 

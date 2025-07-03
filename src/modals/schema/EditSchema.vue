@@ -172,7 +172,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 														Hide in collection view
 													</NcActionCheckbox>
 													<NcActionCheckbox
-														:checked="property.facetable !== false"
+														:checked="property.facetable === true"
 														@update:checked="updatePropertySetting(key, 'facetable', $event)">
 														Facetable
 													</NcActionCheckbox>
@@ -649,10 +649,10 @@ export default {
 					}
 				}
 
-				// Ensure existing properties have facetable set to true by default if not specified
+				// Ensure existing properties have facetable set to false by default if not specified
 				Object.keys(this.schemaItem.properties || {}).forEach(key => {
 					if (this.schemaItem.properties[key].facetable === undefined) {
-						this.$set(this.schemaItem.properties[key], 'facetable', true)
+						this.$set(this.schemaItem.properties[key], 'facetable', false)
 					}
 				})
 
@@ -704,7 +704,7 @@ export default {
 				format: '',
 				title: newPropertyName,
 				description: '',
-				facetable: true, // Default to true for new properties
+				facetable: false, // Default to false for new properties
 			})
 
 			// Ensure stable ID is created for the new property

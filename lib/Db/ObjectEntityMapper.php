@@ -1917,10 +1917,8 @@ class ObjectEntityMapper extends QBMapper
             $facetableFields['@self'] = $this->metaDataFacetHandler->getFacetableFields($baseQuery);
         }
 
-        // Get object field facetable fields if handler is available
-        if ($this->mariaDbFacetHandler !== null) {
-            $facetableFields['object_fields'] = $this->mariaDbFacetHandler->getFacetableFields($baseQuery, $sampleSize);
-        }
+        // Get object field facetable fields from schemas instead of analyzing objects
+        $facetableFields['object_fields'] = $this->getFacetableFieldsFromSchemas($baseQuery);
 
         return $facetableFields;
 
@@ -2003,5 +2001,291 @@ class ObjectEntityMapper extends QBMapper
         return is_string($value) ? $value : null;
 
     }//end getValueFromPath()
+
+
+    /**
+     * Get facetable fields from schemas
+     *
+     * This method analyzes schema properties to determine which fields
+     * are marked as facetable in the schema definitions. This is more
+     * efficient than analyzing object data and provides consistent
+     * faceting based on schema definitions.
+     *
+     * @param array $baseQuery Base query filters to apply for context
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Facetable fields with their configuration based on schema definitions
+     */
+    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
+    {
+        $facetableFields = [];
+
+        // Get schemas to analyze based on query context
+        $schemas = $this->getSchemasForQuery($baseQuery);
+        
+        if (empty($schemas)) {
+            return [];
+        }
+
+        // Process each schema's properties
+        foreach ($schemas as $schema) {
+            $properties = $schema->getProperties();
+            
+            if (empty($properties)) {
+                continue;
+            }
+
+            // Analyze each property for facetable configuration
+            foreach ($properties as $propertyKey => $property) {
+                if ($this->isPropertyFacetable($property)) {
+                    $fieldConfig = $this->generateFieldConfigFromProperty($propertyKey, $property);
+                    
+                    if ($fieldConfig !== null) {
+                        // If field already exists from another schema, merge configurations
+                        if (isset($facetableFields[$propertyKey])) {
+                            $facetableFields[$propertyKey] = $this->mergeFieldConfigs(
+                                $facetableFields[$propertyKey],
+                                $fieldConfig
+                            );
+                        } else {
+                            $facetableFields[$propertyKey] = $fieldConfig;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $facetableFields;
+
+    }//end getFacetableFieldsFromSchemas()
+
+
+    /**
+     * Get schemas for query context
+     *
+     * Returns schemas that are relevant for the current query context.
+     * If specific schemas are filtered in the query, only those are returned.
+     * Otherwise, all schemas are returned.
+     *
+     * @param array $baseQuery Base query filters to apply
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Array of Schema objects
+     */
+    private function getSchemasForQuery(array $baseQuery): array
+    {
+        $schemaFilters = [];
+        
+        // Check if specific schemas are requested in the query
+        if (isset($baseQuery['@self']['schema'])) {
+            $schemaValue = $baseQuery['@self']['schema'];
+            if (is_array($schemaValue)) {
+                $schemaFilters = $schemaValue;
+            } else {
+                $schemaFilters = [$schemaValue];
+            }
+        }
+
+        // Get schemas from the schema mapper
+        if (empty($schemaFilters)) {
+            // Get all schemas
+            return $this->schemaMapper->findAll();
+        } else {
+            // Get specific schemas
+            return $this->schemaMapper->findMultiple($schemaFilters);
+        }
+
+    }//end getSchemasForQuery()
+
+
+    /**
+     * Check if a property is facetable
+     *
+     * @param array $property The property definition
+     *
+     * @phpstan-param array<string, mixed> $property
+     *
+     * @psalm-param array<string, mixed> $property
+     *
+     * @return bool True if the property is facetable
+     */
+    private function isPropertyFacetable(array $property): bool
+    {
+        return isset($property['facetable']) && $property['facetable'] === true;
+
+    }//end isPropertyFacetable()
+
+
+    /**
+     * Generate field configuration from property definition
+     *
+     * @param string $propertyKey The property key
+     * @param array  $property    The property definition
+     *
+     * @phpstan-param string $propertyKey
+     * @phpstan-param array<string, mixed> $property
+     *
+     * @psalm-param string $propertyKey
+     * @psalm-param array<string, mixed> $property
+     *
+     * @return array|null Field configuration or null if not suitable for faceting
+     */
+    private function generateFieldConfigFromProperty(string $propertyKey, array $property): ?array
+    {
+        $type = $property['type'] ?? 'string';
+        $format = $property['format'] ?? '';
+        $title = $property['title'] ?? $propertyKey;
+        $description = $property['description'] ?? "Schema field: $propertyKey";
+        $example = $property['example'] ?? null;
+
+        // Determine appropriate facet types based on property type and format
+        $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
+        
+        if (empty($facetTypes)) {
+            return null;
+        }
+
+        $config = [
+            'type' => $type,
+            'format' => $format,
+            'title' => $title,
+            'description' => $description,
+            'facet_types' => $facetTypes,
+            'source' => 'schema'
+        ];
+
+        // Add example if available
+        if ($example !== null) {
+            $config['example'] = $example;
+        }
+
+        // Add additional configuration based on type
+        switch ($type) {
+            case 'string':
+                if ($format === 'date' || $format === 'date-time') {
+                    $config['intervals'] = ['day', 'week', 'month', 'year'];
+                } else {
+                    $config['cardinality'] = 'text';
+                }
+                break;
+                
+            case 'integer':
+            case 'number':
+                $config['cardinality'] = 'numeric';
+                if (isset($property['minimum'])) {
+                    $config['minimum'] = $property['minimum'];
+                }
+                if (isset($property['maximum'])) {
+                    $config['maximum'] = $property['maximum'];
+                }
+                break;
+                
+            case 'boolean':
+                $config['cardinality'] = 'binary';
+                break;
+                
+            case 'array':
+                $config['cardinality'] = 'array';
+                break;
+        }
+
+        return $config;
+
+    }//end generateFieldConfigFromProperty()
+
+
+    /**
+     * Determine facet types based on property type and format
+     *
+     * @param string $type   The property type
+     * @param string $format The property format
+     *
+     * @phpstan-param string $type
+     * @phpstan-param string $format
+     *
+     * @psalm-param string $type
+     * @psalm-param string $format
+     *
+     * @return array Array of suitable facet types
+     */
+    private function determineFacetTypesFromProperty(string $type, string $format): array
+    {
+        switch ($type) {
+            case 'string':
+                if ($format === 'date' || $format === 'date-time') {
+                    return ['date_histogram', 'range'];
+                } else if ($format === 'email' || $format === 'uri' || $format === 'uuid') {
+                    return ['terms'];
+                } else {
+                    return ['terms'];
+                }
+                
+            case 'integer':
+            case 'number':
+                return ['range', 'terms'];
+                
+            case 'boolean':
+                return ['terms'];
+                
+            case 'array':
+                return ['terms'];
+                
+            default:
+                return ['terms'];
+        }
+
+    }//end determineFacetTypesFromProperty()
+
+
+    /**
+     * Merge field configurations from multiple schemas
+     *
+     * @param array $existing The existing field configuration
+     * @param array $new      The new field configuration
+     *
+     * @phpstan-param array<string, mixed> $existing
+     * @phpstan-param array<string, mixed> $new
+     *
+     * @psalm-param array<string, mixed> $existing
+     * @psalm-param array<string, mixed> $new
+     *
+     * @return array Merged field configuration
+     */
+    private function mergeFieldConfigs(array $existing, array $new): array
+    {
+        // Merge facet types
+        $existingFacetTypes = $existing['facet_types'] ?? [];
+        $newFacetTypes = $new['facet_types'] ?? [];
+        $merged = $existing;
+        
+        $merged['facet_types'] = array_unique(array_merge($existingFacetTypes, $newFacetTypes));
+        
+        // Use the more descriptive title and description if available
+        if (empty($existing['title']) && !empty($new['title'])) {
+            $merged['title'] = $new['title'];
+        }
+        
+        if (empty($existing['description']) && !empty($new['description'])) {
+            $merged['description'] = $new['description'];
+        }
+        
+        // Add example if not already present
+        if (!isset($existing['example']) && isset($new['example'])) {
+            $merged['example'] = $new['example'];
+        }
+        
+        return $merged;
+
+    }//end mergeFieldConfigs()
 
 }//end class
