@@ -1814,7 +1814,12 @@ class FileService
 
         // Update the file content if provided
         if ($content !== null) {
-            try {
+                try {
+					// Check if the content is base64 encoded and decode it if necessary
+					if (base64_encode(base64_decode($content, true)) === $content) {
+						$content = base64_decode($content);
+					}
+
                 $file->putContent(data: $content);
                 $this->logger->info("updateFile: Successfully updated file content: " . $file->getName());
                 
