@@ -391,12 +391,21 @@ class MariaDbSearchHandler
             foreach ($value as $arrayValue) {
                 // Use case-insensitive comparison for string values
                 if (is_string($arrayValue)) {
+                    // Check for exact match (single value)
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
                             $queryBuilder->createFunction(
                                 'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
                             ),
                             $queryBuilder->createNamedParameter(strtolower($arrayValue))
+                        )
+                    );
+                    
+                    // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . ")), " . $queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))) . ")"),
+                            $queryBuilder->createNamedParameter(1)
                         )
                     );
                 } else {
@@ -409,6 +418,14 @@ class MariaDbSearchHandler
                             $queryBuilder->createNamedParameter($arrayValue)
                         )
                     );
+                    
+                    // Check if the value exists within an array using JSON_CONTAINS
+                    $orConditions->add(
+                        $queryBuilder->expr()->eq(
+                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($arrayValue)) . ")"),
+                            $queryBuilder->createNamedParameter(1)
+                        )
+                    );
                 }
             }
             
@@ -416,7 +433,10 @@ class MariaDbSearchHandler
         } else {
             // Handle single values - use case-insensitive comparison for strings
             if (is_string($value)) {
-                $queryBuilder->andWhere(
+                $singleValueConditions = $queryBuilder->expr()->orX();
+                
+                // Check for exact match (single value)
+                $singleValueConditions->add(
                     $queryBuilder->expr()->eq(
                         $queryBuilder->createFunction(
                             'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
@@ -424,9 +444,22 @@ class MariaDbSearchHandler
                         $queryBuilder->createNamedParameter(strtolower($value))
                     )
                 );
+                
+                // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
+                $singleValueConditions->add(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . ")), " . $queryBuilder->createNamedParameter(json_encode(strtolower($value))) . ")"),
+                        $queryBuilder->createNamedParameter(1)
+                    )
+                );
+                
+                $queryBuilder->andWhere($singleValueConditions);
             } else {
                 // Exact match for non-string values (numbers, booleans, etc.)
-                $queryBuilder->andWhere(
+                $singleValueConditions = $queryBuilder->expr()->orX();
+                
+                // Check for exact match (single value)
+                $singleValueConditions->add(
                     $queryBuilder->expr()->eq(
                         $queryBuilder->createFunction(
                             'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
@@ -434,6 +467,16 @@ class MariaDbSearchHandler
                         $queryBuilder->createNamedParameter($value)
                     )
                 );
+                
+                // Check if the value exists within an array using JSON_CONTAINS
+                $singleValueConditions->add(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
+                        $queryBuilder->createNamedParameter(1)
+                    )
+                );
+                
+                $queryBuilder->andWhere($singleValueConditions);
             }
         }
 
