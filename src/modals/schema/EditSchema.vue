@@ -114,7 +114,9 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 															<span v-if="property.const !== undefined"
 																class="property-chip chip-success">Constant</span>
 															<span v-if="property.enum && property.enum.length > 0"
-																class="property-chip chip-success">Enumeration</span>
+																class="property-chip chip-success">Enumeration ({{ property.enum.length }})</span>
+															<span v-if="property.facetable === true"
+																class="property-chip chip-info">Facetable</span>
 														</div>
 													</div>
 												</div>
@@ -211,22 +213,26 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 														:value="property.const || ''"
 														label="Constant"
 														@update:value="updatePropertySetting(key, 'const', $event === '' ? undefined : $event)" />
-													<div v-if="property.enum && property.enum.length > 0" class="enum-section">
-														<div class="enum-values">
-															<span
-																v-for="(enumValue, index) in property.enum"
-																:key="index"
-																class="enum-chip">
-																{{ String(enumValue) }}
-																<button class="enum-remove" @click="removeEnumValue(key, index)">×</button>
-															</span>
-														</div>
-													</div>
+													<template v-if="property.enum && property.enum.length > 0">
+														<NcActionCaption :name="'Current Enum Values (' + property.enum.length + ')'" />
+														<NcActionButton
+															v-for="(enumValue, index) in property.enum"
+															:key="`enum-chip-${index}-${enumValue}`"
+															:aria-label="'Remove ' + enumValue"
+															class="enum-action-chip"
+															@click="removeEnumValue(key, index)">
+															<template #icon>
+																<Close :size="16" />
+															</template>
+															{{ String(enumValue) }}
+														</NcActionButton>
+													</template>
 													<NcActionInput
-														:value="''"
-														label="Enumeration"
+														:value="enumInputValue"
+														label="Add Enum Value"
 														placeholder="Type value and press Enter"
-														@keydown.enter="addEnumValue(key, $event.target.value); $event.target.value = ''" />
+														@update:value="enumInputValue = $event"
+														@keydown.enter.prevent="addEnumValueAndClear(key)" />
 
 													<!-- Type-specific configurations -->
 													<template v-if="property.type === 'string'">
@@ -452,6 +458,7 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 
 export default {
 	name: 'EditSchema',
@@ -480,6 +487,7 @@ export default {
 		Check,
 		TrashCanOutline,
 		AlertOutline,
+		Close,
 	},
 	data() {
 		return {
@@ -490,6 +498,7 @@ export default {
 			originalProperties: null,
 			propertyStableIds: {}, // Map property names to stable IDs
 			nextPropertyId: 1, // Counter for generating unique IDs
+			enumInputValue: '', // For entering new enum values
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -650,9 +659,15 @@ export default {
 				}
 
 				// Ensure existing properties have facetable set to false by default if not specified
+				// and ensure enum arrays are properly reactive
 				Object.keys(this.schemaItem.properties || {}).forEach(key => {
 					if (this.schemaItem.properties[key].facetable === undefined) {
 						this.$set(this.schemaItem.properties[key], 'facetable', false)
+					}
+
+					// Ensure enum arrays are reactive
+					if (this.schemaItem.properties[key].enum && Array.isArray(this.schemaItem.properties[key].enum)) {
+						this.$set(this.schemaItem.properties[key], 'enum', [...this.schemaItem.properties[key].enum])
 					}
 				})
 
@@ -1044,18 +1059,29 @@ export default {
 
 				// Don't add duplicate values
 				if (!this.schemaItem.properties[key].enum.includes(trimmedValue)) {
-					this.schemaItem.properties[key].enum.push(trimmedValue)
+					// Create a new array to trigger reactivity
+					const newEnum = [...this.schemaItem.properties[key].enum, trimmedValue]
+					this.$set(this.schemaItem.properties[key], 'enum', newEnum)
 					this.checkPropertiesModified()
 				}
 			}
 		},
+		addEnumValueAndClear(key) {
+			if (this.enumInputValue && this.enumInputValue.trim()) {
+				this.addEnumValue(key, this.enumInputValue)
+				this.enumInputValue = ''
+			}
+		},
 		removeEnumValue(key, index) {
 			if (this.schemaItem.properties[key] && this.schemaItem.properties[key].enum) {
-				this.schemaItem.properties[key].enum.splice(index, 1)
+				// Create a new array without the removed item to trigger reactivity
+				const newEnum = this.schemaItem.properties[key].enum.filter((_, i) => i !== index)
 
 				// Remove the enum array if it's empty
-				if (this.schemaItem.properties[key].enum.length === 0) {
+				if (newEnum.length === 0) {
 					this.$delete(this.schemaItem.properties[key], 'enum')
+				} else {
+					this.$set(this.schemaItem.properties[key], 'enum', newEnum)
 				}
 
 				this.checkPropertiesModified()
@@ -1077,5 +1103,58 @@ export default {
 	margin-bottom: 15px;
 	display: flex;
 	justify-content: flex-end;
+}
+
+/* Enum preview styling */
+.enum-preview {
+	margin-top: 4px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+
+.enum-label {
+	color: var(--color-text-lighter);
+	font-size: 11px;
+	font-weight: 500;
+	margin-right: 4px;
+}
+
+.enum-value-chip {
+	background: var(--color-primary-light);
+	color: var(--color-primary-text);
+	padding: 2px 6px;
+	border-radius: 12px;
+	font-size: 10px;
+	font-weight: 500;
+	border: 1px solid var(--color-primary-element-light);
+}
+
+.property-chip.chip-info {
+	background: var(--color-info);
+	color: var(--color-primary-text);
+}
+
+/* Enum chip styling for action menu using NcActionButton */
+.enum-action-chip {
+	background: var(--color-primary-element-light) !important;
+	border-radius: 16px !important;
+	margin: 2px 4px !important;
+	padding: 4px 12px !important;
+}
+
+.enum-action-chip:hover {
+	background: var(--color-primary-element) !important;
+}
+
+.enum-action-chip .action-button__text {
+	color: var(--color-primary-text) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+.enum-action-chip .action-button__icon {
+	color: var(--color-primary-text) !important;
 }
 </style>
