@@ -364,6 +364,7 @@ class SaveObject
      * @param Schema|int|string   $schema   The schema to validate against.
      * @param array               $data     The object data to save.
      * @param string|null         $uuid     The UUID of the object to update (if updating).
+     * @param int|null            $folderId The folder ID to set on the object (optional).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -373,7 +374,8 @@ class SaveObject
         Register | int | string | null $register,
         Schema | int | string $schema,
         array $data,
-        ?string $uuid=null
+        ?string $uuid=null,
+        ?int $folderId=null
     ): ObjectEntity {
 
 		if (isset($data['@self']) && is_array($data['@self'])) {
@@ -403,8 +405,10 @@ class SaveObject
 
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
+            error_log("[SaveObject] Attempting to find existing object with UUID: $uuid");
             try {
                 $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
+                error_log("[SaveObject] Found existing object with ID: " . $existingObject->getId() . ", UUID: " . $existingObject->getUuid());
 				
                   // Check if '@self' metadata exists and contains published/depublished properties
                 if (isset($selfData) === true) {
@@ -440,18 +444,26 @@ class SaveObject
 
                 $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
 				$data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
-                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject);
+                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject, folderId: $folderId);
             } catch (\Exception $e) {
                 // Object not found, proceed with creating new object.
+                error_log("[SaveObject] Object with UUID $uuid not found, creating new object. Error: " . $e->getMessage());
             }
         }
 
         // Create a new object entity.
+        error_log("[SaveObject] Creating new object entity");
         $objectEntity = new ObjectEntity();
         $objectEntity->setRegister($registerId);
         $objectEntity->setSchema($schemaId);
         $objectEntity->setCreated(new DateTime());
         $objectEntity->setUpdated(new DateTime());
+
+        // Set folder ID if provided
+        if ($folderId !== null) {
+            $objectEntity->setFolder((string) $folderId);
+            error_log("[SaveObject] Setting folder ID on new object: " . $folderId);
+        }
 
         // Check if '@self' metadata exists and contains published/depublished properties
 		if (isset($selfData) === true) {
@@ -521,7 +533,9 @@ class SaveObject
         $objectEntity = $this->updateObjectRelations($objectEntity, $data);
 
         // Save the object to database.
+        error_log("[SaveObject] Inserting new object to database");
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
+        error_log("[SaveObject] New object inserted with ID: " . $savedEntity->getId() . ", UUID: " . $savedEntity->getUuid());
 
         // Create audit trail for creation.
         $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
@@ -615,6 +629,7 @@ class SaveObject
      * @param Schema|int|string   $schema         The schema to validate against.
      * @param array               $data           The updated object data.
      * @param ObjectEntity        $existingObject The existing object to update.
+     * @param int|null            $folderId       The folder ID to set on the object (optional).
      *
      * @return ObjectEntity The updated object entity.
      *
@@ -624,8 +639,11 @@ class SaveObject
         Register | int | string $register,
         Schema | int | string $schema,
         array $data,
-        ObjectEntity $existingObject
+        ObjectEntity $existingObject,
+        ?int $folderId=null
     ): ObjectEntity {
+        error_log("[SaveObject] Updating existing object ID: " . $existingObject->getId() . ", UUID: " . $existingObject->getUuid());
+        
         // Store the old state for audit trail.
         $oldObject = clone $existingObject;
 
@@ -692,6 +710,12 @@ class SaveObject
         $existingObject->setObject($data);
         $existingObject->setUpdated(new DateTime());
 
+        // Set folder ID if provided
+        if ($folderId !== null) {
+            $existingObject->setFolder((string) $folderId);
+            error_log("[SaveObject] Setting folder ID on updated object: " . $folderId);
+        }
+
         // Hydrate name and description from schema configuration.
         if ($schema instanceof Schema) {
             $this->hydrateNameAndDescription($existingObject, $schema);
@@ -705,7 +729,9 @@ class SaveObject
         $existingObject = $this->updateObjectRelations($existingObject, $data);
 
         // Save the object to database.
+        error_log("[SaveObject] Updating existing object in database");
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
+        error_log("[SaveObject] Object updated with ID: " . $updatedEntity->getId() . ", UUID: " . $updatedEntity->getUuid());
 
         // Create audit trail for update.
         $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
