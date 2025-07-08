@@ -943,8 +943,10 @@ class FileService
      *     results: array<int, array<string, mixed>>,
      *     total: int,
      *     page: int,
-     *     pages: int
-     * } Array of formatted file metadata arrays
+     *     pages: int,
+     *     limit: int,
+     *     offset: int
+     * } Array of formatted file metadata arrays with pagination information
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -995,6 +997,8 @@ class FileService
             'total'   => $totalFiltered,
             'page'    => $page ?? 1,
             'pages'   => $pages,
+            'limit'   => $limit,
+            'offset'  => $offset,
         ];
     }//end formatFiles()
 
@@ -3082,6 +3086,61 @@ class FileService
         $this->logger->info("testFileLookup: Test results: " . json_encode($results));
         return $results;
     }//end testFileLookup()
+
+    /**
+     * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.
+     *
+     * This method creates a folder structure for an Object Entity within its parent
+     * Register and Schema folders, but does not update the object with the folder ID.
+     * This allows for single-save workflows where the folder ID is set before saving.
+     *
+     * @param ObjectEntity $objectEntity The Object Entity to create a folder for
+     * @param IUser|null   $currentUser  The current user to share the folder with
+     *
+     * @return int|null The folder ID or null if creation fails
+     *
+     * @throws Exception If folder creation fails or entities not found
+     * @throws NotPermittedException If folder creation is not permitted
+     * @throws NotFoundException If parent folders do not exist
+     *
+     * @psalm-return int|null
+     * @phpstan-return int|null
+     */
+    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): ?int
+    {
+        // Ensure register folder exists first
+        $register = $this->registerMapper->find($objectEntity->getRegister());
+        $registerFolder = $this->createRegisterFolderById($register, $currentUser);
+        
+        if ($registerFolder === null) {
+            throw new Exception("Failed to create or access register folder");
+        }
+
+        // Create object folder within the register folder
+        $objectFolderName = $this->getObjectFolderName($objectEntity);
+        
+        try {
+            // Try to get existing folder first
+            $objectFolder = $registerFolder->get($objectFolderName);
+            $this->logger->info("Object folder already exists: " . $objectFolderName);
+        } catch (NotFoundException) {
+            // Create new folder if it doesn't exist
+            $objectFolder = $registerFolder->newFolder($objectFolderName);
+            $this->logger->info("Created object folder: " . $objectFolderName);
+        }
+
+        $this->logger->info("Created object folder with ID: " . $objectFolder->getId());
+        
+        // Transfer ownership to OpenRegister and share with current user if needed
+        $this->transferFolderOwnershipIfNeeded($objectFolder);
+        
+        // Share the folder with the currently active user if there is one
+        if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
+            $this->shareFolderWithUser($objectFolder, $currentUser->getUID());
+        }
+        
+        return $objectFolder->getId();
+    }//end createObjectFolderWithoutUpdate()
 
 }//end class
 

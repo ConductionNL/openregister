@@ -1119,32 +1119,81 @@ class ObjectsController extends Controller
     public function import(int $registerId): JSONResponse
     {
         try {
+            error_log("[ObjectsController] Starting import for register ID: $registerId");
+            
             // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
+                error_log("[ObjectsController] No file uploaded");
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
 
-            // Get include objects parameter
-            $includeObjects = $this->request->getParam('includeObjects', false);
+            error_log("[ObjectsController] File uploaded: " . $uploadedFile['name'] . " (size: " . $uploadedFile['size'] . " bytes)");
 
             // Find the register
             $register = $this->registerMapper->find($registerId);
+            error_log("[ObjectsController] Found register: " . $register->getTitle());
 
-            // Import the data
-            $result = $this->importService->importFromJson(
-                $uploadedFile->getTempName(),
-                $register,
-                $includeObjects
-            );
+            // Determine file type from extension
+            $filename = $uploadedFile['name'];
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            
+            error_log("[ObjectsController] File extension: $extension");
+
+            // Handle different file types
+            switch ($extension) {
+                case 'xlsx':
+                case 'xls':
+                    error_log("[ObjectsController] Processing Excel file");
+                    $summary = $this->importService->importFromExcel(
+                        $uploadedFile['tmp_name'],
+                        $register,
+                        null // Schema will be determined from sheet names
+                    );
+                    break;
+                    
+                case 'csv':
+                    error_log("[ObjectsController] Processing CSV file");
+                    
+                    // For CSV, we need to specify a schema
+                    // Get the first available schema from the register
+                    $schemas = $register->getSchemas();
+                    if (empty($schemas)) {
+                        error_log("[ObjectsController] No schemas found for register");
+                        return new JSONResponse(['error' => 'No schema found for register'], 400);
+                    }
+                    
+                    $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                    $schema = $this->schemaMapper->find($schemaId);
+                    
+                    error_log("[ObjectsController] Using schema: " . $schema->getTitle());
+                    
+                    $summary = $this->importService->importFromCsv(
+                        $uploadedFile['tmp_name'],
+                        $register,
+                        $schema
+                    );
+                    break;
+                    
+                default:
+                    error_log("[ObjectsController] Unsupported file type: $extension");
+                    return new JSONResponse(['error' => "Unsupported file type: $extension"], 400);
+            }
+
+            error_log("[ObjectsController] Import completed successfully");
+            error_log("[ObjectsController] Summary: " . json_encode($summary));
 
             return new JSONResponse([
                 'message' => 'Import successful',
-                'imported' => $result
+                'summary' => $summary
             ]);
 
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
+            error_log("[ObjectsController] Import failed with error: " . $e->getMessage());
+            error_log("[ObjectsController] Exception type: " . get_class($e));
+            error_log("[ObjectsController] Stack trace: " . $e->getTraceAsString());
+            
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
 

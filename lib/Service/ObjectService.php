@@ -45,6 +45,7 @@ use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
 use OCP\IUserSession;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Service class for managing objects in the OpenRegister application.
@@ -333,15 +334,29 @@ class ObjectService
             throw new ValidationException($meaningfulMessage, errors: $result->error());
         }
 
-        // Save the object using the current register and schema.
+        // Create a temporary object entity to generate UUID and create folder
+        $tempObject = new ObjectEntity();
+        $tempObject->setRegister($this->currentRegister->getId());
+        $tempObject->setSchema($this->currentSchema->getId());
+        $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        
+        // Create folder before saving to avoid double update
+        $folderId = null;
+        try {
+            $folderId = $this->fileService->createObjectFolderWithoutUpdate($tempObject);
+        } catch (\Exception $e) {
+            // Log error but continue - object can function without folder
+            error_log("Failed to create folder for new object: " . $e->getMessage());
+        }
+
+        // Save the object using the current register and schema with folder ID
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
-            $object
+            $object,
+            $tempObject->getUuid(),
+            $folderId
         );
-
-        // Ensure folder exists for the saved object
-        $this->ensureObjectFolderExists($savedObject);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -406,16 +421,25 @@ class ObjectService
             throw new ValidationException($meaningfulMessage, errors: $result->error());
         }
 
+        // Create folder before saving if object doesn't have one
+        $folderId = null;
+        if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
+            try {
+                $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
+            } catch (\Exception $e) {
+                // Log error but continue - object can function without folder
+                error_log("Failed to create folder for updated object: " . $e->getMessage());
+            }
+        }
+
         // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             register: $this->currentRegister,
             schema: $this->currentSchema,
             data: $object,
-            uuid: $id
+            uuid: $id,
+            folderId: $folderId
         );
-
-        // Ensure folder exists for the saved object
-        $this->ensureObjectFolderExists($savedObject);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -666,16 +690,47 @@ class ObjectService
             }
         }
 
+        // Create folder before saving if needed
+        $folderId = null;
+        if ($uuid !== null) {
+            // For existing objects, check if folder needs to be created
+            try {
+                $existingObject = $this->objectEntityMapper->find($uuid);
+                if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
+                    try {
+                        $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
+                    } catch (\Exception $e) {
+                        // Log error but continue - object can function without folder
+                        error_log("Failed to create folder for existing object: " . $e->getMessage());
+                    }
+                }
+            } catch (\Exception $e) {
+                // Object not found, will create new one
+            }
+        } else {
+                         // For new objects, create temporary object to generate UUID and create folder
+             $tempObject = new ObjectEntity();
+             $tempObject->setRegister($this->currentRegister->getId());
+             $tempObject->setSchema($this->currentSchema->getId());
+             $tempObject->setUuid(Uuid::v4()->toRfc4122());
+            
+            try {
+                $folderId = $this->fileService->createObjectFolderWithoutUpdate($tempObject);
+                $uuid = $tempObject->getUuid(); // Use the generated UUID
+            } catch (\Exception $e) {
+                // Log error but continue - object can function without folder
+                error_log("Failed to create folder for new object: " . $e->getMessage());
+            }
+        }
+
         // Save the object using the current register and schema.
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
             $object,
-            $uuid
+            $uuid,
+            $folderId
         );
-
-        // Ensure folder exists for the saved object
-        $this->ensureObjectFolderExists($savedObject);
 
         // Determine if register and schema should be passed to renderEntity.
         if (isset($config['filters']['register']) === true) {
