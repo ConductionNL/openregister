@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Controller;
@@ -74,6 +75,13 @@ class RegistersController extends Controller
     private readonly ImportService $importService;
 
     /**
+     * Schema mapper for handling schema operations
+     *
+     * @var SchemaMapper
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
      * Constructor for the RegistersController
      *
      * @param string               $appName              The name of the app
@@ -85,6 +93,7 @@ class RegistersController extends Controller
      * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
      * @param ExportService        $exportService        The export service
      * @param ImportService        $importService        The import service
+     * @param SchemaMapper         $schemaMapper         The schema mapper
      *
      * @return void
      */
@@ -97,13 +106,15 @@ class RegistersController extends Controller
         ConfigurationService $configurationService,
         AuditTrailMapper $auditTrailMapper,
         ExportService $exportService,
-        ImportService $importService
+        ImportService $importService,
+        SchemaMapper $schemaMapper
     ) {
         parent::__construct($appName, $request);
         $this->configurationService = $configurationService;
         $this->auditTrailMapper     = $auditTrailMapper;
         $this->exportService        = $exportService;
         $this->importService        = $importService;
+        $this->schemaMapper         = $schemaMapper;
     }//end __construct()
 
 
@@ -421,7 +432,7 @@ class RegistersController extends Controller
             // Handle different import types
             switch ($type) {
                 case 'excel':
-                    // Import from Excel and get summary
+                    // Import from Excel and get summary (now returns sheet-based format)
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
                         $register,
@@ -429,7 +440,7 @@ class RegistersController extends Controller
                     );
                     break;
                 case 'csv':
-                    // Import from CSV and get summary
+                    // Import from CSV and get summary (now returns sheet-based format)
                     // For CSV, schema must be specified or inferred (not handled here)
                     // For now, assume only one schema per register and get the first
                     $schemas = $register->getSchemas();
@@ -437,7 +448,7 @@ class RegistersController extends Controller
                         return new JSONResponse(['error' => 'No schema found for register'], 400);
                     }
                     $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
-                    $schema = $this->importService->schemaMapper->find($schemaId);
+                    $schema = $this->schemaMapper->find($schemaId);
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
                         $register,
@@ -458,16 +469,28 @@ class RegistersController extends Controller
                         $jsonData,
                         $this->request->getParam('owner')
                     );
-                    // Build a summary for objects if present
+                    // Build a summary for objects if present in sheet-based format
                     $summary = [
-                        'created' => [],
-                        'updated' => [],
-                        'unchanged' => [],
+                        'configuration' => [
+                            'created' => [],
+                            'updated' => [],
+                            'unchanged' => [],
+                            'errors' => []
+                        ]
                     ];
                     if (isset($result['objects']) && is_array($result['objects'])) {
                         foreach ($result['objects'] as $object) {
                             // For now, treat all as 'created' (improve if possible)
-                            $summary['created'][] = $object->getId();
+                            $summary['configuration']['created'][] = [
+                                'id' => $object->getId(),
+                                'uuid' => $object->getUuid(),
+                                'sheet' => 'configuration',
+                                'register' => [
+                                    'id' => $register->getId(),
+                                    'name' => $register->getTitle()
+                                ],
+                                'schema' => null // Schema info not available in configuration import
+                            ];
                         }
                     }
 
