@@ -7,21 +7,97 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 		name="import"
 		title="Import Data into Register"
 		size="large"
-		:can-close="false">
+		@close="closeModal">
 		<NcNoteCard v-if="success && importSummary" type="success">
 			<p>Register imported successfully!</p>
-			<div class="importSummary">
-				<p><strong>Import Summary:</strong></p>
-				<ul>
-					<li><strong>Created:</strong> {{ importSummary.created.length }} <span v-if="importSummary.created.length">({{ importSummary.created.join(', ') }})</span></li>
-					<li><strong>Updated:</strong> {{ importSummary.updated.length }} <span v-if="importSummary.updated.length">({{ importSummary.updated.join(', ') }})</span></li>
-					<li><strong>Unchanged:</strong> {{ importSummary.unchanged.length }} <span v-if="importSummary.unchanged.length">({{ importSummary.unchanged.join(', ') }})</span></li>
-				</ul>
-				<NcButton type="secondary" style="margin-top: 1rem;" @click="closeModal">
-					Close
-				</NcButton>
-			</div>
 		</NcNoteCard>
+
+		<div v-if="success && importSummary" class="summaryContainer">
+			<div class="summaryGrid">
+				<div v-for="(sheetSummary, sheetName) in importSummary" :key="sheetName" class="summaryCard">
+					<div class="cardHeader" @click="toggleDetails(sheetName)">
+						<h4>{{ sheetName }}</h4>
+						<NcButton type="tertiary" class="toggleButton">
+							<template #icon>
+								<ChevronDown v-if="!expandedSheets[sheetName]" :size="16" />
+								<ChevronUp v-else :size="16" />
+							</template>
+						</NcButton>
+					</div>
+					<div class="summaryStats">
+						<div class="statItem">
+							<span class="statNumber">{{ sheetSummary.created.length }}</span>
+							<span class="statLabel">Created</span>
+						</div>
+						<div class="statItem">
+							<span class="statNumber">{{ sheetSummary.updated.length }}</span>
+							<span class="statLabel">Updated</span>
+						</div>
+						<div class="statItem">
+							<span class="statNumber">{{ sheetSummary.unchanged.length }}</span>
+							<span class="statLabel">Unchanged</span>
+						</div>
+						<div class="statItem">
+							<span class="statNumber">{{ sheetSummary.errors.length }}</span>
+							<span class="statLabel">Errors</span>
+						</div>
+					</div>
+
+					<div v-if="expandedSheets[sheetName]" class="detailsTable">
+						<table class="objectTable">
+							<thead>
+								<tr>
+									<th>Row</th>
+									<th>Action</th>
+									<th>Object ID</th>
+									<th>Register</th>
+									<th>Schema</th>
+									<th>Result</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(obj, index) in sheetSummary.created" :key="'created-' + index" class="successRow">
+									<td>{{ obj.row || '-' }}</td>
+									<td><span class="actionBadge created">Created</span></td>
+									<td>{{ obj.id }}</td>
+									<td>{{ obj.register?.name || '-' }}</td>
+									<td>{{ obj.schema?.name || '-' }}</td>
+									<td><span class="resultBadge success">Success</span></td>
+								</tr>
+								<tr v-for="(obj, index) in sheetSummary.updated" :key="'updated-' + index" class="updateRow">
+									<td>{{ obj.row || '-' }}</td>
+									<td><span class="actionBadge updated">Updated</span></td>
+									<td>{{ obj.id }}</td>
+									<td>{{ obj.register?.name || '-' }}</td>
+									<td>{{ obj.schema?.name || '-' }}</td>
+									<td><span class="resultBadge success">Success</span></td>
+								</tr>
+								<tr v-for="(obj, index) in sheetSummary.unchanged" :key="'unchanged-' + index" class="unchangedRow">
+									<td>{{ obj.row || '-' }}</td>
+									<td><span class="actionBadge unchanged">Unchanged</span></td>
+									<td>{{ obj.id }}</td>
+									<td>{{ obj.register?.name || '-' }}</td>
+									<td>{{ obj.schema?.name || '-' }}</td>
+									<td><span class="resultBadge info">No Changes</span></td>
+								</tr>
+								<tr v-for="(errorItem, index) in sheetSummary.errors" :key="'error-' + index" class="errorRow">
+									<td>{{ errorItem.row || '-' }}</td>
+									<td><span class="actionBadge error">Failed</span></td>
+									<td>-</td>
+									<td>{{ errorItem.register?.name || '-' }}</td>
+									<td>{{ errorItem.schema?.name || '-' }}</td>
+									<td><span class="resultBadge error" :title="errorItem.error">Error</span></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<NcButton type="secondary" style="margin-top: 1rem;" @click="closeModal">
+				Close
+			</NcButton>
+		</div>
 
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -58,6 +134,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedRegisterValue"
 				:loading="registerLoading"
 				:disabled="registerLoading"
+				input-label="Select a register"
 				placeholder="Select a register"
 				@update:model-value="handleRegisterChange" />
 
@@ -66,6 +143,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedSchemaValue"
 				:loading="schemaLoading"
 				:disabled="!registerStore.registerItem || schemaLoading"
+				input-label="Select a schema"
 				placeholder="Select a schema"
 				@update:model-value="handleSchemaChange" />
 
@@ -136,6 +214,8 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 
 export default {
 	name: 'ImportRegister',
@@ -150,6 +230,8 @@ export default {
 		Cancel,
 		Import,
 		Upload,
+		ChevronDown,
+		ChevronUp,
 	},
 	/**
 	 * Component data properties
@@ -166,6 +248,7 @@ export default {
 			importSummary: null, // The import summary from the backend
 			registerLoading: false,
 			schemaLoading: false,
+			expandedSheets: {}, // To track expanded details for each sheet
 		}
 	},
 	computed: {
@@ -260,7 +343,6 @@ export default {
 	},
 	methods: {
 		/**
-		/**
 		 * Get the file extension from a filename
 		 * @param {string} filename - The name of the file to get extension from
 		 * @return {string}
@@ -320,6 +402,7 @@ export default {
 			this.error = null
 			this.includeObjects = false
 			this.importSummary = null
+			this.expandedSheets = {} // Reset expanded state
 		},
 		/**
 		 * Import the selected register file and handle the summary
@@ -386,6 +469,14 @@ export default {
 				return !!this.selectedRegisterValue && !!this.selectedSchemaValue
 			}
 			return false
+		},
+		/**
+		 * Toggle the expanded state for a sheet's details
+		 * @param {string} sheetName - The name of the sheet to toggle
+		 */
+		toggleDetails(sheetName) {
+			// Use Vue.set to ensure reactivity for dynamic object properties
+			this.$set(this.expandedSheets, sheetName, !this.expandedSheets[sheetName])
 		},
 	},
 }
@@ -455,10 +546,196 @@ export default {
 	margin-top: 1rem;
 }
 
-.importSummary {
+.summaryContainer {
 	margin-top: 1rem;
+}
+
+.summaryGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.summaryCard {
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
 	padding: 1rem;
+	border: 1px solid var(--color-border);
+}
+
+.cardHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	cursor: pointer;
+	margin-bottom: 0.75rem;
+}
+
+.cardHeader h4 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--color-text-light);
+}
+
+.toggleButton {
+	min-width: auto !important;
+	width: 32px !important;
+	height: 32px !important;
+}
+
+.summaryStats {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.statItem {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 0.5rem;
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius-small);
+}
+
+.statNumber {
+	font-size: 1.25rem;
+	font-weight: bold;
+	color: var(--color-primary);
+	line-height: 1.2;
+}
+
+.statLabel {
+	font-size: 0.75rem;
+	color: var(--color-text-maxcontrast);
+	margin-top: 0.25rem;
+}
+
+.detailsTable {
+	margin-top: 1rem;
+	border-radius: var(--border-radius);
+	overflow: hidden;
+	border: 1px solid var(--color-border);
+}
+
+.objectTable {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.875rem;
+}
+
+.objectTable th {
+	background: var(--color-background-dark);
+	padding: 0.5rem;
+	text-align: left;
+	font-weight: 600;
+	color: var(--color-text-light);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.objectTable td {
+	padding: 0.5rem;
+	border-bottom: 1px solid var(--color-border-dark);
+	vertical-align: middle;
+}
+
+.objectTable tr:last-child td {
+	border-bottom: none;
+}
+
+.successRow {
+	background: var(--color-success-background);
+}
+
+.updateRow {
+	background: var(--color-warning-background);
+}
+
+.unchangedRow {
+	background: var(--color-background-hover);
+}
+
+.errorRow {
+	background: var(--color-error-background);
+}
+
+.actionBadge {
+	display: inline-block;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-pill);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.actionBadge.created {
+	background: var(--color-success);
+	color: white;
+}
+
+.actionBadge.updated {
+	background: var(--color-warning);
+	color: white;
+}
+
+.actionBadge.unchanged {
+	background: var(--color-text-maxcontrast);
+	color: white;
+}
+
+.actionBadge.error {
+	background: var(--color-error);
+	color: white;
+}
+
+.resultBadge {
+	display: inline-block;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius-pill);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.resultBadge.success {
+	background: var(--color-success-background);
+	color: var(--color-success-text);
+	border: 1px solid var(--color-success);
+}
+
+.resultBadge.info {
+	background: var(--color-info-background);
+	color: var(--color-info-text);
+	border: 1px solid var(--color-info);
+}
+
+.resultBadge.error {
+	background: var(--color-error-background);
+	color: var(--color-error-text);
+	border: 1px solid var(--color-error);
+	cursor: help;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.summaryGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.summaryStats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.objectTable {
+		font-size: 0.75rem;
+	}
+
+	.objectTable th,
+	.objectTable td {
+		padding: 0.375rem;
+	}
 }
 </style>

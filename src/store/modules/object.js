@@ -375,7 +375,7 @@ export const useObjectStore = defineStore('object', {
 								// Field with operator: @self.created[>=] becomes @self[created][>=]
 								const metadataField = operatorMatch[1]
 								const operator = operatorMatch[2]
-								
+
 								// CRITICAL FIX: Convert operators to PHP-friendly names
 								// PHP's $_GET parser can't handle operators like >= in array keys
 								let phpOperator = operator
@@ -385,7 +385,7 @@ export const useObjectStore = defineStore('object', {
 								else if (operator === '[<]') phpOperator = '[lt]'
 								else if (operator === '[!=]') phpOperator = '[ne]'
 								else if (operator === '[=]') phpOperator = '[eq]'
-								
+
 								// For metadata operators, only encode the value if it's not a date/time string
 								// Date/time strings (ISO format) contain only safe URL characters
 								const encodedValue = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/.test(value) ? value : encodeURIComponent(value)
@@ -1470,7 +1470,7 @@ export const useObjectStore = defineStore('object', {
 		buildFacetConfiguration() {
 			// eslint-disable-next-line no-console
 			console.log('buildFacetConfiguration - activeFacets:', this.activeFacets)
-			
+
 			const config = {}
 
 			// Build from active facets - this can be expanded based on UI needs
@@ -1511,17 +1511,17 @@ export const useObjectStore = defineStore('object', {
 		addFacetParamsToUrl(params, facetConfig) {
 			// eslint-disable-next-line no-console
 			console.log('addFacetParamsToUrl - facetConfig:', facetConfig)
-			
+
 			if (facetConfig._facets) {
 				// Handle @self metadata facets
 				if (facetConfig._facets['@self']) {
 					// eslint-disable-next-line no-console
 					console.log('Processing @self facets:', facetConfig._facets['@self'])
-					
+
 					Object.entries(facetConfig._facets['@self']).forEach(([field, config]) => {
 						// eslint-disable-next-line no-console
 						console.log(`Processing field: ${field}, config:`, config)
-						
+
 						params.push(`_facets[@self][${field}][type]=${config.type}`)
 						if (config.interval) {
 							params.push(`_facets[@self][${field}][interval]=${config.interval}`)

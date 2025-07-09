@@ -732,14 +732,14 @@ export default {
 		objectProperties() {
 			// Return array of [key, value] pairs, excluding '@self' and 'id'
 			if (!objectStore?.objectItem) return []
-			
+
 			const objectData = objectStore.objectItem
 			const schemaProperties = this.currentSchema?.properties || {}
-			
+
 			// Start with properties that exist in the object
 			const existingProperties = Object.entries(objectData)
 				.filter(([key]) => key !== '@self' && key !== 'id')
-			
+
 			// Add schema properties that don't exist in the object yet
 			const missingSchemaProperties = []
 			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
@@ -747,29 +747,29 @@ export default {
 					// Add with appropriate default value based on type
 					let defaultValue
 					switch (schemaProperty.type) {
-						case 'string':
-							defaultValue = schemaProperty.const || ''
-							break
-						case 'number':
-						case 'integer':
-							defaultValue = 0
-							break
-						case 'boolean':
-							defaultValue = false
-							break
-						case 'array':
-							defaultValue = []
-							break
-						case 'object':
-							defaultValue = {}
-							break
-						default:
-							defaultValue = ''
+					case 'string':
+						defaultValue = schemaProperty.const || ''
+						break
+					case 'number':
+					case 'integer':
+						defaultValue = 0
+						break
+					case 'boolean':
+						defaultValue = false
+						break
+					case 'array':
+						defaultValue = []
+						break
+					case 'object':
+						defaultValue = {}
+						break
+					default:
+						defaultValue = ''
 					}
 					missingSchemaProperties.push([key, defaultValue])
 				}
 			}
-			
+
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
 		},
@@ -1985,7 +1985,7 @@ export default {
 		 */
 		getPropertyTooltip(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			
+
 			if (schemaProperty?.description) {
 				// If we have both title and description, show both
 				if (schemaProperty.title && schemaProperty.title !== key) {
@@ -1994,7 +1994,7 @@ export default {
 				// If only description or title same as key, just show description
 				return schemaProperty.description
 			}
-			
+
 			// Fallback to property key info
 			return `Property: ${key}`
 		},
