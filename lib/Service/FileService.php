@@ -2237,7 +2237,7 @@ class FileService
      */
     public function addFile(ObjectEntity | string $objectEntity, ?int $registerId = null, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null): File
     {
-		// try {
+		try {
 			// Ensure we have an ObjectEntity instance
 			if (is_string($objectEntity)) {
                 try {
