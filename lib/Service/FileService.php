@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
@@ -392,7 +393,7 @@ class FileService
             if ($entity instanceof Register) {
                 return $this->createRegisterFolderById($entity, $currentUser);
             } else {
-                return $this->createObjectFolderById($entity, $currentUser);
+                return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
             }
         } catch (exception $e) {
             $this->logger->error(
@@ -462,7 +463,8 @@ class FileService
     /**
      * Creates a folder for an ObjectEntity nested under the register folder.
      *
-     * @param ObjectEntity $objectEntity The object entity to create the folder for
+     * @param ObjectEntity|string $objectEntity The object entity to create the folder for
+     * @param int|null            $registerId   The register of the object to add the file to
      * @param IUser|null   $currentUser  The current user to share the folder with
      *
      * @return Node|null The created folder Node or null if creation fails
@@ -473,9 +475,11 @@ class FileService
      * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
-    private function createObjectFolderById(ObjectEntity $objectEntity, ?IUser $currentUser = null): ?Node
+    private function createObjectFolderById(ObjectEntity|string $objectEntity, ?int $registerId = null, ?IUser $currentUser = null): ?Node
     {
-        $folderProperty = $objectEntity->getFolder();
+        if ($objectEntity instanceof ObjectEntity === true) {
+            $folderProperty = $objectEntity->getFolder();
+        }
         
         // Check if folder ID is already set and valid (not legacy string)
         if ($folderProperty !== null && $folderProperty !== '' && !is_string($folderProperty)) {
@@ -491,7 +495,16 @@ class FileService
         }
 
         // Ensure register folder exists first
-        $register = $this->registerMapper->find($objectEntity->getRegister());
+        if ($objectEntity instanceof ObjectEntity === true) { 
+            $register = $this->registerMapper->find($objectEntity->getRegister());
+        } else if ($registerId !== null) {
+            $register = $this->registerMapper->find($registerId);
+        }
+
+        if ($register === null) {
+            throw new Exception("Failed to create or access register folder");
+        }
+        
         $registerFolder = $this->createRegisterFolderById($register, $currentUser);
         
         if ($registerFolder === null) {
@@ -512,8 +525,10 @@ class FileService
         }
 
         // Store the folder ID
-        $objectEntity->setFolder((string) $objectFolder->getId());
-        $this->objectEntityMapper->update($objectEntity);
+        if ($objectEntity instanceof ObjectEntity === true) { 
+            $objectEntity->setFolder((string) $objectFolder->getId());
+            $this->objectEntityMapper->update($objectEntity);
+        }
         
         $this->logger->info("Created object folder with ID: " . $objectFolder->getId());
         
@@ -652,21 +667,26 @@ class FileService
     /**
      * Get an object folder by its stored ID.
      *
-     * @param ObjectEntity $objectEntity The object entity to get the folder for
+     * @param ObjectEntity|string $objectEntity The object entity to get the folder for
+     * @param int|null            $registerId   The register of the object to add the file to
      *
      * @return Folder|null The folder Node or null if not found
      *
      * @psalm-return Folder|null
      * @phpstan-return Folder|null
      */
-    public function getObjectFolder(ObjectEntity $objectEntity): ?Folder
+    public function getObjectFolder(ObjectEntity|string $objectEntity, ?int $registerId = null): ?Folder
     {
-        $folderProperty = $objectEntity->getFolder();
+        $folderProperty = null;
+        if ($objectEntity instanceof ObjectEntity === true) {
+            $folderProperty = $objectEntity->getFolder();
+        }
         
         // Handle legacy cases where folder might be null, empty string, or a non-numeric string path
         if ($folderProperty === null || $folderProperty === '' || (is_string($folderProperty) && !is_numeric($folderProperty))) {
-            $this->logger->info("Object {$objectEntity->getId()} has legacy folder property, creating new folder");
-            return $this->createObjectFolderById($objectEntity);
+            $objectEntityId = ($objectEntity instanceof ObjectEntity ? $objectEntity->getId() : $objectEntity);
+            $this->logger->info("Object $objectEntityId has legacy folder property, creating new folder");
+            return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
         }
         
         // Convert string numeric ID to integer
@@ -681,7 +701,8 @@ class FileService
         
         // If stored ID is invalid, recreate the folder
         $this->logger->warning("Object {$objectEntity->getId()} has invalid folder ID, recreating folder");
-        return $this->createObjectFolderById($objectEntity);
+        
+        return $this->createObjectFolderById(objectEntity: $objectEntity);
     }//end getObjectFolder()
 
     /**
@@ -2245,11 +2266,12 @@ class FileService
      * This method automatically adds an 'object:' tag containing the object's UUID
      * in addition to any user-provided tags.
      *
-     * @param ObjectEntity $objectEntity The object entity to add the file to
-     * @param string       $fileName     The name of the file to create
-     * @param string       $content      The content to write to the file
-     * @param bool         $share        Whether to create a share link for the file
-     * @param array        $tags         Optional array of tags to attach to the file
+     * @param ObjectEntity|string $objectEntity The object entity to add the file to
+     * @param int                 $registerId   The register of the object to add the file to
+     * @param string              $fileName     The name of the file to create
+     * @param string              $content      The content to write to the file
+     * @param bool                $share        Whether to create a share link for the file
+     * @param array               $tags         Optional array of tags to attach to the file
      *
      * @throws NotPermittedException If file creation fails due to permissions
      * @throws Exception If file creation fails for other reasons
@@ -2259,16 +2281,20 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null): File
+    public function addFile(ObjectEntity | string $objectEntity, ?int $registerId = null, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null): File
     {
 		try {
 			// Ensure we have an ObjectEntity instance
 			if (is_string($objectEntity)) {
-				$objectEntity = $this->objectEntityMapper->find($objectEntity);
+                try {
+				    $objectEntity = $this->objectEntityMapper->find($objectEntity);
+                } catch (DoesNotExistException) {
+                    // In this case it is a possibility the object gets created later in a process (for example: synchronization) so we create the file for a given uuid
+                }
 			}
 
 			// Use the new ID-based folder approach
-			        $folder = $this->getObjectFolder($objectEntity);
+            $folder = $this->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
 
             // Check if the content is base64 encoded and decode it if necessary
             if (base64_encode(base64_decode($content, true)) === $content) {
