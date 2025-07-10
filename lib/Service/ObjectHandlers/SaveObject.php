@@ -356,6 +356,134 @@ class SaveObject
 		$this->saveObject(register: $register, schema: $definition['$ref'], data: $object, uuid: $uuid);
 	}
 
+	/**
+	 * Handles inverse relations write-back by updating target objects to include reference to current object
+	 *
+	 * This method extends the existing inverse relations functionality to handle write operations.
+	 * When a property has `inversedBy` configuration and `writeBack: true`, this method will
+	 * update the target objects to include a reference back to the current object.
+	 *
+	 * For example, when creating a community with a list of deelnemers (participant UUIDs),
+	 * this method will update each participant's deelnames array to include the community's UUID.
+	 *
+	 * @param ObjectEntity $objectEntity The current object being saved
+	 * @param Schema $schema The schema of the current object
+	 * @param array $data The data being saved
+	 *
+	 * @return array The data with write-back properties optionally removed
+	 * @throws Exception
+	 */
+	private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
+	{
+		$properties = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true)['properties'];
+
+		// Find properties that have inversedBy configuration with writeBack enabled
+		$writeBackProperties = array_filter($properties, function(array $property) {
+			// Check for inversedBy with writeBack at property level
+			if (isset($property['inversedBy']) && isset($property['writeBack']) && $property['writeBack'] === true) {
+				return true;
+			}
+			
+			// Check for inversedBy with writeBack in array items
+			if ($property['type'] === 'array' && isset($property['items']['inversedBy']) && isset($property['items']['writeBack']) && $property['items']['writeBack'] === true) {
+				return true;
+			}
+			
+			return false;
+		});
+
+		foreach ($writeBackProperties as $propertyName => $definition) {
+			// Skip if property not present in data
+			if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
+				continue;
+			}
+
+			$targetUuids = $data[$propertyName];
+			$inverseProperty = null;
+			$targetSchema = null;
+			$targetRegister = null;
+			$removeFromSource = false;
+
+			// Extract configuration from property or array items
+			if (isset($definition['inversedBy']) && isset($definition['writeBack']) && $definition['writeBack'] === true) {
+				$inverseProperty = $definition['inversedBy'];
+				$targetSchema = $definition['$ref'] ?? null;
+				$targetRegister = $definition['register'] ?? $objectEntity->getRegister();
+				$removeFromSource = $definition['removeAfterWriteBack'] ?? false;
+			} elseif (isset($definition['items']['inversedBy']) && isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true) {
+				$inverseProperty = $definition['items']['inversedBy'];
+				$targetSchema = $definition['items']['$ref'] ?? null;
+				$targetRegister = $definition['items']['register'] ?? $objectEntity->getRegister();
+				$removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
+			}
+
+			// Skip if we don't have the necessary configuration
+			if (!$inverseProperty || !$targetSchema) {
+				continue;
+			}
+
+			// Ensure targetUuids is an array
+			if (!is_array($targetUuids)) {
+				$targetUuids = [$targetUuids];
+			}
+
+			// Update each target object
+			foreach ($targetUuids as $targetUuid) {
+				if (empty($targetUuid) || !is_string($targetUuid)) {
+					continue;
+				}
+
+				try {
+					// Find the target object
+					$targetObject = $this->objectEntityMapper->find($targetUuid);
+					if (!$targetObject) {
+						error_log("Inverse relation write-back target object not found: {$targetUuid}");
+						continue;
+					}
+
+					// Get current data from target object
+					$targetData = $targetObject->getObject();
+					
+					// Initialize inverse property as array if it doesn't exist
+					if (!isset($targetData[$inverseProperty])) {
+						$targetData[$inverseProperty] = [];
+					}
+
+					// Ensure inverse property is an array
+					if (!is_array($targetData[$inverseProperty])) {
+						$targetData[$inverseProperty] = [$targetData[$inverseProperty]];
+					}
+
+					// Add current object's UUID to the inverse property if not already present
+					if (!in_array($objectEntity->getUuid(), $targetData[$inverseProperty])) {
+						$targetData[$inverseProperty][] = $objectEntity->getUuid();
+					}
+
+					// Save the updated target object
+					$this->saveObject(
+						register: $targetRegister,
+						schema: $targetSchema,
+						data: $targetData,
+						uuid: $targetUuid
+					);
+
+					error_log("Updated inverse relation write-back: {$targetUuid} -> {$inverseProperty} now includes {$objectEntity->getUuid()}");
+
+				} catch (Exception $e) {
+					error_log("Failed to update inverse relation write-back for {$targetUuid}: " . $e->getMessage());
+					// Continue with other targets even if one fails
+				}
+			}
+
+			// Remove the property from source object if configured to do so
+			if ($removeFromSource) {
+				unset($data[$propertyName]);
+			}
+		}
+
+		return $data;
+	}
+
 
     /**
      * Saves an object.
@@ -442,8 +570,9 @@ class SaveObject
                     }
                 }
 
-                $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
-				$data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
+                        $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
+		$data = $this->handleInverseRelationsWriteBack(objectEntity: $existingObject, schema: $schema, data: $data);
+		$data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
                 return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject, folderId: $folderId);
             } catch (\Exception $e) {
                 // Object not found, proceed with creating new object.
@@ -517,6 +646,7 @@ class SaveObject
             $schema = $this->schemaMapper->find($schemaId);
         }
 		$data = $this->cascadeObjects($objectEntity, $schema, $data);
+        $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
         $data = $this->setDefaultValues($objectEntity, $schema, $data);
         $objectEntity->setObject($data);
 

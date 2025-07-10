@@ -447,4 +447,64 @@ class FileMapper extends QBMapper
         
         return $token;
     }
+
+    /**
+     * Set file ownership at database level.
+     *
+     * @TODO: This is a hack to fix NextCloud file ownership issues on production
+     * @TODO: where files exist but can't be accessed due to permission problems.
+     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+     *
+     * @param int    $fileId The file ID to change ownership for
+     * @param string $userId The user ID to set as owner
+     *
+     * @return bool True if ownership was updated successfully, false otherwise
+     *
+     * @throws \Exception If the ownership update fails
+     *
+     * @phpstan-param int $fileId
+     * @phpstan-param string $userId
+     * @phpstan-return bool
+     */
+    public function setFileOwnership(int $fileId, string $userId): bool
+    {
+        // Get storage information for this file
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('storage')
+            ->from('filecache')
+            ->where($qb->expr()->eq('fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        $result = $qb->executeQuery();
+        $fileInfo = $result->fetch();
+        $result->closeCursor();
+
+        if (!$fileInfo) {
+            throw new \Exception("File with ID $fileId not found in filecache");
+        }
+
+        $storageId = $fileInfo['storage'];
+
+        // Update the storage owner in the oc_storages table
+        $qb = $this->db->getQueryBuilder();
+        $qb->update('storages')
+            ->set('id', $qb->createNamedParameter("home::$userId"))
+            ->where($qb->expr()->eq('numeric_id', $qb->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
+
+        $storageResult = $qb->executeStatement();
+
+        // Also try to update any mounts table if it exists
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->update('mounts')
+                ->set('user_id', $qb->createNamedParameter($userId))
+                ->where($qb->expr()->eq('storage_id', $qb->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
+
+            $qb->executeStatement();
+        } catch (\Exception $e) {
+            // Mounts table might not exist or might have different structure
+            // This is not critical for the ownership fix
+        }
+
+        return $storageResult > 0;
+    }
 }

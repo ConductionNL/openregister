@@ -200,6 +200,9 @@ class FileService
      */
     public function createNewVersion(File $file, ?string $filename=null): File
     {
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
         $this->versionManager->createVersion(user: $this->userManager->get(self::APP_USER), file: $file);
 
         if ($filename !== null) {
@@ -222,6 +225,9 @@ class FileService
         if ($file instanceof File === false) {
             return $file;
         }
+
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
 
         return $this->versionManager->getVersionFile($this->userManager->get(self::APP_USER), $file, $version);
     }//end getVersion()
@@ -821,7 +827,124 @@ class FileService
         return $openCatalogiUser;
     }//end getUser()
 
+    /**
+     * Set file ownership to the OpenRegister user at database level.
+     *
+     * @TODO: This is a hack to fix NextCloud file ownership issues on production
+     * @TODO: where files exist but can't be accessed due to permission problems.
+     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+     *
+     * @param Node $file The file node to change ownership for
+     *
+     * @return bool True if ownership was updated successfully, false otherwise
+     *
+     * @throws Exception If the ownership update fails
+     *
+     * @psalm-return bool
+     * @phpstan-return bool
+     */
+    private function ownFile(Node $file): bool
+    {
+        try {
+            $openRegisterUser = $this->getUser();
+            $userId = $openRegisterUser->getUID();
+            $fileId = $file->getId();
+            
+            $this->logger->info("ownFile: Attempting to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
+            
+            $result = $this->fileMapper->setFileOwnership($fileId, $userId);
+            
+            if ($result) {
+                $this->logger->info("ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
+            } else {
+                $this->logger->warning("ownFile: Failed to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            $this->logger->error("ownFile: Error setting ownership of file {$file->getName()}: " . $e->getMessage());
+            throw new Exception("Failed to set file ownership: " . $e->getMessage());
+        }
+    }//end ownFile()
 
+    /**
+     * Check file ownership and fix it if needed to prevent "File not found" errors.
+     *
+     * @TODO: This is a hack to fix NextCloud file ownership issues on production
+     * @TODO: where files exist but can't be accessed due to permission problems.
+     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+     *
+     * @param Node $file The file node to check ownership for
+     *
+     * @return void
+     *
+     * @throws Exception If ownership check/fix fails
+     *
+     * @psalm-return void
+     * @phpstan-return void
+     */
+    private function checkOwnership(Node $file): void
+    {
+        try {
+            // Try to read the file to trigger any potential access issues
+            if ($file instanceof File) {
+                $file->getContent();
+            } else {
+                // For folders, try to list contents
+                $file->getDirectoryListing();
+            }
+            
+            // If we get here, the file is accessible
+            $this->logger->debug("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible, no ownership fix needed");
+        } catch (NotFoundException $e) {
+            // File exists but we can't access it - likely an ownership issue
+            $this->logger->warning("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership");
+            
+            try {
+                $fileOwner = $file->getOwner();
+                $openRegisterUser = $this->getUser();
+                
+                if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
+                    $this->logger->info("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix");
+                    
+                    // Try to fix the ownership
+                    $ownershipFixed = $this->ownFile($file);
+                    
+                    if ($ownershipFixed) {
+                        $this->logger->info("checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})");
+                    } else {
+                        $this->logger->error("checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})");
+                        throw new Exception("Failed to fix file ownership for file: " . $file->getName());
+                    }
+                } else {
+                    $this->logger->info("checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible");
+                }
+            } catch (Exception $ownershipException) {
+                $this->logger->error("checkOwnership: Error checking/fixing ownership for file {$file->getName()}: " . $ownershipException->getMessage());
+                throw new Exception("Ownership check failed for file: " . $file->getName());
+            }
+        } catch (NotPermittedException $e) {
+            // Permission denied - likely an ownership issue
+            $this->logger->warning("checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix");
+            
+            try {
+                $ownershipFixed = $this->ownFile($file);
+                
+                if ($ownershipFixed) {
+                    $this->logger->info("checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error");
+                } else {
+                    $this->logger->error("checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()}) after permission error");
+                    throw new Exception("Failed to fix file ownership after permission error: " . $file->getName());
+                }
+            } catch (Exception $ownershipException) {
+                $this->logger->error("checkOwnership: Error fixing ownership after permission error for file {$file->getName()}: " . $ownershipException->getMessage());
+                throw new Exception("Ownership fix failed after permission error: " . $file->getName());
+            }
+        } catch (Exception $e) {
+            // Other exceptions - log but don't necessarily fix ownership
+            $this->logger->debug("checkOwnership: Other exception while checking file {$file->getName()}: " . $e->getMessage());
+        }
+    }//end checkOwnership()
 
     /**
      * Gets a NextCloud Node object for the given file or folder path.
@@ -834,7 +957,12 @@ class FileService
     {
         try {
             $userFolder = $this->getOpenRegisterUserFolder();
-            return $userFolder->get(path: $path);
+            $node = $userFolder->get(path: $path);
+            
+            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+            $this->checkOwnership($node);
+            
+            return $node;
         } catch (NotFoundException | NotPermittedException $e) {
             $this->logger->error(message: $e->getMessage());
             return null;
@@ -853,6 +981,9 @@ class FileService
      */
     public function formatFile(Node $file): array
     {
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
         // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
         $shares = $this->findShares($file);
 
@@ -1212,6 +1343,9 @@ class FileService
      */
     private function getFileTags(string $fileId): array
     {
+        // @TODO: This method takes a file ID instead of a Node, so we can't check ownership here
+        // @TODO: The ownership check should be done on the Node before calling this method
+        
         $tagIds = $this->systemTagMapper->getTagIdsForObjects(
             objIds: [$fileId],
             objectType: $this::FILE_TAG_TYPE
@@ -1239,6 +1373,9 @@ class FileService
      */
     public function findShares(Node $file, int $shareType=3): array
     {
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
         // Use the OpenRegister system user instead of current user session
         // This ensures we can find shares created by the OpenRegister system user
         $userId = $this->getUser()->getUID();
@@ -1276,6 +1413,9 @@ class FileService
         }
 
         if ($file instanceof File) {
+            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+            $this->checkOwnership($file);
+
             $shares = $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
             if (count($shares) > 0) {
                 return $shares[0];
@@ -1600,6 +1740,9 @@ class FileService
             return 'File not found at '.$path;
         }
 
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
         try {
             $share = $this->createShare([
                 'path'        => $path,
@@ -1625,6 +1768,9 @@ class FileService
      */
     public function deleteShareLinks(Node $file): Node
     {
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
         // IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
         $shares = $this->findShares($file);
 
@@ -1824,6 +1970,9 @@ class FileService
 						$content = base64_decode($content);
 					}
 
+                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+                $this->checkOwnership($file);
+
                 $file->putContent(data: $content);
                 $this->logger->info("updateFile: Successfully updated file content: " . $file->getName());
                 
@@ -1890,137 +2039,34 @@ class FileService
      */
     public function deleteFile(Node | string $file, ?ObjectEntity $object = null): bool
     {
-        try {
-            $deletedFilePath = null;
-            $fileDeleted = false;
 
-            // If we received a Node object, delete it directly
-            if ($file instanceof Node) {
-                $deletedFilePath = $file->getPath();
-                $fileName = $file->getName();
-                $this->logger->info("Deleting file node: $fileName");
-                $file->delete();
-                $fileDeleted = true;
-            } else {
-                // If we received a string path, locate the file first then delete it
-                $originalFilePath = $file;
-                $this->logger->info("deleteFile: Original file path received: '$originalFilePath'");
 
-                // Clean file path and extract filename using utility method
-                $pathInfo = $this->extractFileNameFromPath($file);
-                $filePath = $pathInfo['cleanPath'];
-                $fileName = $pathInfo['fileName'];
-                $deletedFilePath = $filePath;
-
-                $this->logger->info("deleteFile: After cleaning: '$filePath'");
-                if ($fileName !== $filePath) {
-                    $this->logger->info("deleteFile: Extracted filename from path: '$fileName' (from '$filePath')");
-                }
-
-                // If object is provided, try to find the file in the object folder first
-                if ($object !== null) {
-                    try {
-                        $objectFolder = $this->getObjectFolder($object);
-
-                        if ($objectFolder !== null) {
-                            $this->logger->info("deleteFile: Object folder path: " . $objectFolder->getPath());
-                            $this->logger->info("deleteFile: Object folder ID: " . $objectFolder->getId());
-
-                            // List all files in the object folder for debugging
-                            try {
-                                $folderFiles = $objectFolder->getDirectoryListing();
-                                $fileNames = array_map(fn($f) => $f->getName(), $folderFiles);
-                                $this->logger->info("deleteFile: Files in object folder: " . implode(', ', $fileNames));
-                            } catch (Exception $e) {
-                                $this->logger->warning("deleteFile: Could not list folder contents: " . $e->getMessage());
-                            }
-
-                            // Try to get the file from object folder using just the filename
-                            try {
-                                $fileNode = $objectFolder->get($fileName);
-                                $this->logger->info("deleteFile: Found file in object folder: " . $fileNode->getName() . " (ID: " . $fileNode->getId() . ")");
-                                $fileNode->delete();
-                                $fileDeleted = true;
-                            } catch (NotFoundException) {
-                                $this->logger->warning("deleteFile: File '$fileName' not found in object folder.");
-                                
-                                // Also try with the full path in case it's nested
-                                try {
-                                    $fileNode = $objectFolder->get($filePath);
-                                    $this->logger->info("deleteFile: Found file using full path in object folder: " . $fileNode->getName());
-                                    $fileNode->delete();
-                                    $fileDeleted = true;
-                                } catch (NotFoundException) {
-                                    $this->logger->warning("deleteFile: File '$filePath' also not found with full path in object folder.");
-                                    $fileDeleted = false;
-                                }
-                            }
-                        } else {
-                            $this->logger->warning("deleteFile: Could not get object folder for object ID: " . $object->getId());
-                        }
-                    } catch (Exception $e) {
-                        $this->logger->error("deleteFile: Error accessing object folder: " . $e->getMessage());
-                    }
-                } else {
-                    $this->logger->info("deleteFile: No object provided, will search in user folder");
-                }
-
-                // If object wasn't provided or file wasn't found in object folder, try user folder
-                if ($fileDeleted === false) {
-                    $this->logger->info("deleteFile: Trying user folder approach with path: '$filePath'");
-                    $userFolder = $this->getOpenRegisterUserFolder();
-
-                    // Check if file exists and delete it if it does.
-                    try {
-                        $fileNode = $userFolder->get(path: $filePath);
-                        $this->logger->info("deleteFile: Found file in user folder at path: $filePath (ID: " . $fileNode->getId() . ")");
-                        $fileNode->delete();
-                        $fileDeleted = true;
-                    } catch (NotFoundException) {
-                        // File does not exist.
-                        $this->logger->warning("deleteFile: File $filePath does not exist in user folder either.");
-                        
-                        // Try to find the file by ID if the path starts with a number
-                        if (preg_match('/^(\d+)\//', $filePath, $matches)) {
-                            $fileId = (int) $matches[1];
-                            $this->logger->info("deleteFile: Attempting to find file by ID: $fileId");
-                            
-                            try {
-                                $nodes = $userFolder->getById($fileId);
-                                if (!empty($nodes)) {
-                                    $fileNode = $nodes[0];
-                                    $this->logger->info("deleteFile: Found file by ID $fileId: " . $fileNode->getName() . " at path: " . $fileNode->getPath());
-                                    $fileNode->delete();
-                                    $fileDeleted = true;
-                                } else {
-                                    $this->logger->warning("deleteFile: No file found with ID: $fileId");
-                                }
-                            } catch (Exception $e) {
-                                $this->logger->error("deleteFile: Error finding file by ID $fileId: " . $e->getMessage());
-                            }
-                        }
-                        
-                        $fileDeleted = false;
-                    }
-                }
-            }
-
-            // If the file was successfully deleted and an object was provided, update the object's files array
-            if ($fileDeleted && $object !== null && $deletedFilePath !== null) {
-                $this->updateObjectFilesArray($object, $deletedFilePath);
-            }
-
-            return $fileDeleted;
-
-        } catch (NotPermittedException | InvalidPathException $e) {
-            $filePath = $file instanceof Node ? $file->getPath() : $file;
-            $this->logger->error("Can't delete file $filePath: ".$e->getMessage());
-            throw new Exception("Can't delete file $filePath: ".$e->getMessage());
-        } catch (Exception $e) {
-            $filePath = $file instanceof Node ? $file->getPath() : $file;
-            $this->logger->error("Can't delete file $filePath: ".$e->getMessage());
-            throw new Exception("Can't delete file $filePath: ".$e->getMessage());
+        if ($file instanceof Node === false) {
+            $fileName = $file;
+            $file = $this->getFile($object, $file);
         }
+
+        if($file === null) {
+            $this->logger->error('File '.$fileName.' not found for object '.$object->getId() . ' not found ');
+            return false;
+        }
+
+        if ($file instanceof File === false) {
+            $this->logger->error('File is not a File instance, it\'s a: ' . get_class($file));
+            return false;
+        }
+
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
+        try {
+            $file->delete();
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to delete file: ' . $e->getMessage());
+            return false;
+        }
+        
+        return true;
     }//end deleteFile()
 
     /**
@@ -2239,6 +2285,9 @@ class FileService
              */
             $file = $folder->newFile($fileName);
 
+            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+            $this->checkOwnership($file);
+
             // Write content to the file
             $file->putContent($content);
 
@@ -2448,11 +2497,21 @@ class FileService
         if ($folder instanceof Folder === true) {
             try {
                 // First try with just the filename
-                return $folder->get($fileName);
+                $file = $folder->get($fileName);
+                
+                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+                $this->checkOwnership($file);
+                
+                return $file;
             } catch (NotFoundException) {
                 try {
                     // If that fails, try with the full path
-                    return $folder->get($filePath);
+                    $file = $folder->get($filePath);
+                    
+                    // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+                    $this->checkOwnership($file);
+                    
+                    return $file;
                 } catch (NotFoundException) {
                     // File not found
                     return null;
@@ -2542,6 +2601,9 @@ class FileService
             $this->logger->error("publishFile: Found node is not a File instance, it's a: " . get_class($file));
             throw new Exception('File not found.');
         }
+
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
 
         $this->logger->info("publishFile: Creating share link for file: " . $file->getPath());
 
@@ -2645,6 +2707,9 @@ class FileService
             throw new Exception('File not found.');
         }
 
+        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+        $this->checkOwnership($file);
+
         $this->logger->info("unpublishFile: Removing share links for file: " . $file->getPath());
 
         // Use FileMapper to remove all public shares directly from the database
@@ -2746,6 +2811,9 @@ class FileService
                     $skippedFiles++;
                     continue;
                 }
+
+                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
+                $this->checkOwnership($file);
 
                 // Get file content
                 $fileContent = $file->getContent();
