@@ -296,12 +296,12 @@ export default {
 		metadataDateFields() {
 			// eslint-disable-next-line no-console
 			console.log('metadataDateFields computed - availableMetadataFacets:', this.objectStore.availableMetadataFacets)
-			
+
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
 				// eslint-disable-next-line no-console
 				console.log('Checking field:', fieldName, 'with data:', field)
-				
+
 				// Include fields that are date type and support range faceting
 				if (field.type === 'date' && field.facet_types && field.facet_types.includes('range')) {
 					// eslint-disable-next-line no-console
@@ -309,7 +309,7 @@ export default {
 					fields[fieldName] = field
 				}
 			})
-			
+
 			// eslint-disable-next-line no-console
 			console.log('Final metadataDateFields:', fields)
 			return fields
@@ -619,11 +619,11 @@ export default {
 		getDateRangeValue(fieldName, bound) {
 			// eslint-disable-next-line no-console
 			console.log('getDateRangeValue called:', { fieldName, bound })
-			
+
 			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
 			// eslint-disable-next-line no-console
 			console.log('Active facet data for', fieldName, ':', activeFacetData)
-			
+
 			if (!activeFacetData || activeFacetData.type !== 'range' || !activeFacetData.ranges) {
 				// eslint-disable-next-line no-console
 				console.log('No valid range data found, returning null')
@@ -652,7 +652,7 @@ export default {
 		async updateDateRange(fieldName, bound, value) {
 			// eslint-disable-next-line no-console
 			console.log('updateDateRange called:', { fieldName, bound, value })
-			
+
 			// Get current facet configuration
 			const currentFacets = { ...this.objectStore.activeFacets }
 			// eslint-disable-next-line no-console
@@ -694,10 +694,10 @@ export default {
 			try {
 				// Update store facets
 				this.objectStore.setActiveFacets(currentFacets)
-				
+
 				// IMPORTANT: Also update activeFilters with proper operator-based filters
 				this.updateActiveFiltersFromDateRange(fieldName, rangeFacet)
-				
+
 				// eslint-disable-next-line no-console
 				console.log('About to refresh object list...')
 				await this.objectStore.refreshObjectList()
@@ -718,10 +718,10 @@ export default {
 		updateActiveFiltersFromDateRange(fieldName, rangeFacet) {
 			// eslint-disable-next-line no-console
 			console.log('updateActiveFiltersFromDateRange called:', { fieldName, rangeFacet })
-			
+
 			// Get current active filters
 			const currentFilters = { ...this.objectStore.activeFilters }
-			
+
 			// Remove existing date range filters for this field
 			const filterPrefix = `@self.${fieldName}`
 			Object.keys(currentFilters).forEach(key => {
@@ -729,7 +729,7 @@ export default {
 					delete currentFilters[key]
 				}
 			})
-			
+
 			// Add new range filters if we have valid ranges
 			if (rangeFacet && rangeFacet.ranges && rangeFacet.ranges.length > 0) {
 				rangeFacet.ranges.forEach(range => {
@@ -751,10 +751,10 @@ export default {
 					}
 				})
 			}
-			
+
 			// Update the store
 			this.objectStore.setActiveFilters(currentFilters)
-			
+
 			// eslint-disable-next-line no-console
 			console.log('updateActiveFiltersFromDateRange - Updated activeFilters:', currentFilters)
 		},

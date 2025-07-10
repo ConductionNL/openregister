@@ -242,9 +242,9 @@ export default {
 		'$root.objectStore.activeFilters': {
 			handler(newFilters, oldFilters) {
 				// Only trigger if filters actually changed and we have register/schema selected
-				if (JSON.stringify(newFilters) !== JSON.stringify(oldFilters) && 
-					registerStore.registerItem && 
-					schemaStore.schemaItem) {
+				if (JSON.stringify(newFilters) !== JSON.stringify(oldFilters)
+					&& registerStore.registerItem
+					&& schemaStore.schemaItem) {
 					// Debounce the search to avoid too many API calls
 					if (this.filterTimeout) {
 						clearTimeout(this.filterTimeout)
@@ -263,9 +263,9 @@ export default {
 		'$root.objectStore.activeFacets': {
 			handler(newFacets, oldFacets) {
 				// Only trigger if facets actually changed and we have register/schema selected
-				if (JSON.stringify(newFacets) !== JSON.stringify(oldFacets) && 
-					registerStore.registerItem && 
-					schemaStore.schemaItem) {
+				if (JSON.stringify(newFacets) !== JSON.stringify(oldFacets)
+					&& registerStore.registerItem
+					&& schemaStore.schemaItem) {
 					// Debounce the search to avoid too many API calls
 					if (this.facetTimeout) {
 						clearTimeout(this.facetTimeout)
@@ -306,6 +306,18 @@ export default {
 			objectStore.refreshObjectList()
 		}
 	},
+	beforeUnmount() {
+		// Clean up timeouts to prevent memory leaks
+		if (this.searchTimeout) {
+			clearTimeout(this.searchTimeout)
+		}
+		if (this.filterTimeout) {
+			clearTimeout(this.filterTimeout)
+		}
+		if (this.facetTimeout) {
+			clearTimeout(this.facetTimeout)
+		}
+	},
 	methods: {
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
@@ -328,18 +340,6 @@ export default {
 			}
 		},
 
-	},
-	beforeUnmount() {
-		// Clean up timeouts to prevent memory leaks
-		if (this.searchTimeout) {
-			clearTimeout(this.searchTimeout)
-		}
-		if (this.filterTimeout) {
-			clearTimeout(this.filterTimeout)
-		}
-		if (this.facetTimeout) {
-			clearTimeout(this.facetTimeout)
-		}
 	},
 }
 </script>
