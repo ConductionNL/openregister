@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, schemaStore } from '../../store/store.js'
+import { navigationStore, schemaStore, registerStore } from '../../store/store.js'
 </script>
 <template>
 	<NcDialog :name="schemaStore.schemaPropertyKey
@@ -51,18 +51,47 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<NcSelect
 					v-model="properties.objectConfiguration.handling"
 					v-bind="objectConfiguration.handling" />
-				<NcInputField :disabled="loading"
-					type="text"
-					label="Schema reference of object ($ref)"
-					:value.sync="properties.$ref" />
-				<NcInputField :disabled="loading"
-					type="text"
+				<NcSelect
+					:disabled="loading"
+					input-label="Register"
+					label="Register"
+					placeholder="Select a register..."
+					:options="availableRegisters"
+					:value="properties.register"
+					@update:value="handleRegisterChange($event)" />
+				<NcSelect
+					:disabled="loading || !properties.register"
+					input-label="Schema reference ($ref)"
+					label="Schema reference ($ref)"
+					placeholder="Select a schema..."
+					:options="availableSchemas"
+					:value="properties.$ref"
+					@update:value="handleSchemaChange($event)" />
+				<NcSelect
+					:disabled="loading || !properties.$ref"
+					v-bind="inversedByOptions"
+					input-label="Property name of inversed relation"
 					label="Property name of inversed relation"
-					:value.sync="properties.inversedBy" />
-				<NcInputField :disabled="loading"
-					type="text"
-					label="Register of schema referenced"
-					:value.sync="properties.register" />
+					:model-value="properties.inversedBy"
+					@update:model-value="handleInversedByChange" />
+				<NcCheckboxRadioSwitch
+					v-if="properties.inversedBy"
+					:disabled="loading"
+					:checked.sync="properties.writeBack">
+					Enable write-back to target objects
+				</NcCheckboxRadioSwitch>
+				<div v-if="properties.inversedBy && !properties.writeBack" class="helper-text">
+					When enabled, saving this object will also update the target objects to include a reference back to this object.
+				</div>
+				<NcCheckboxRadioSwitch
+					v-if="properties.inversedBy && properties.writeBack"
+					:disabled="loading"
+					:checked.sync="properties.removeAfterWriteBack">
+					Remove property after write-back
+				</NcCheckboxRadioSwitch>
+				<div v-if="properties.inversedBy && properties.writeBack && !properties.removeAfterWriteBack" class="helper-text">
+					When enabled, this property will be removed from the source object after updating the target objects.
+				</div>
 			</div>
 
 			<!-- File configuration -->
@@ -72,8 +101,9 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					v-model="properties.fileConfiguration.handling"
 					label="File Handling" />
 				<NcSelect
-					v-bind="mimeTypes"
 					v-model="properties.fileConfiguration.allowedMimeTypes"
+					:options="mimeTypes"
+					input-label="Allowed MIME Types"
 					label="Allowed MIME Types"
 					multiple />
 				<NcTextField :disabled="loading"
@@ -316,27 +346,52 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<!-- type array and sub type object only -->
 				<div v-if="properties.items.type === 'object'">
 					<div class="objectConfigurationTitle">
-						Object Configuration:
+						Array Object Configuration:
 					</div>
 					<NcSelect
 						v-model="properties.objectConfiguration.handling"
 						v-bind="objectConfiguration.handling" />
-				</div>
-
-				<!-- type array and sub type object only -->
-				<div v-if="properties.items.type === 'object'">
-					<NcInputField :disabled="loading"
-						type="text"
-						label="Schema reference of object ($ref)"
-						:value.sync="properties.items.$ref" />
-					<NcInputField :disabled="loading"
-						type="text"
+					<NcSelect
+						:disabled="loading || !properties.items.register"
+						input-label="Register"
+						label="Register"
+						placeholder="Select a register..."
+						:options="availableRegisters"
+						:value="properties.items.register"
+						@update:value="handleRegisterChange($event)" />
+					<NcSelect
+						:disabled="loading || !properties.items.register"
+						input-label="Schema reference ($ref)"
+						label="Schema reference ($ref)"
+						placeholder="Select a schema..."
+						:options="availableSchemas"
+						:value="properties.items.$ref"
+						@update:value="handleSchemaChange($event)" />
+					<NcSelect
+						:disabled="loading || !properties.items.$ref"
+						v-bind="inversedByOptions"
+						input-label="Property name of inversed relation"
 						label="Property name of inversed relation"
-						:value.sync="properties.items.inversedBy" />
-					<NcInputField :disabled="loading"
-						type="text"
-						label="Register of schema referenced to"
-						:value.sync="properties.items.register" />
+						:model-value="properties.items.inversedBy"
+						@update:model-value="handleInversedByChange" />
+					<NcCheckboxRadioSwitch
+						v-if="properties.items.inversedBy"
+						:disabled="loading"
+						:checked.sync="properties.items.writeBack">
+						Enable write-back to target objects
+					</NcCheckboxRadioSwitch>
+					<div v-if="properties.items.inversedBy && !properties.items.writeBack" class="helper-text">
+						When enabled, saving this object will also update the target objects to include a reference back to this object.
+					</div>
+					<NcCheckboxRadioSwitch
+						v-if="properties.items.inversedBy && properties.items.writeBack"
+						:disabled="loading"
+						:checked.sync="properties.items.removeAfterWriteBack">
+						Remove property after write-back
+					</NcCheckboxRadioSwitch>
+					<div v-if="properties.items.inversedBy && properties.items.writeBack && !properties.items.removeAfterWriteBack" class="helper-text">
+						When enabled, this property will be removed from the source object after updating the target objects.
+					</div>
 					<NcCheckboxRadioSwitch
 						:disabled="loading"
 						:checked.sync="properties.items.cascadeDelete">
@@ -482,10 +537,17 @@ export default {
 				cascadeDelete: false,
 				inversedBy: '',
 				$ref: '',
+				register: '',
+				writeBack: false,
+				removeAfterWriteBack: false,
 				items: {
 					cascadeDelete: false,
 					$ref: '',
 					type: '',
+					inversedBy: '',
+					register: '',
+					writeBack: false,
+					removeAfterWriteBack: false,
 				},
 				objectConfiguration: {
 					handling: 'nested-object',
@@ -514,39 +576,97 @@ export default {
 				multiple: false,
 				options: ['text', 'markdown', 'html', 'date', 'time', 'duration', 'date-time', 'url', 'uri', 'uuid', 'email', 'idn-email', 'hostname', 'idn-hostname', 'ipv4', 'ipv6', 'uri-reference', 'iri', 'iri-reference', 'uri-template', 'json-pointer', 'regex', 'binary', 'byte', 'password', 'rsin', 'kvk', 'bsn', 'oidn', 'telephone', 'accessUrl', 'shareUrl', 'downloadUrl', 'extension', 'filename'],
 			},
-			objectConfiguration: {
+			loading: false,
+			success: null,
+			error: false,
+			closeModalTimeout: null,
+			registerLoading: false,
+			schemaLoading: false,
+			selectedRegister: null,
+			selectedSchema: null,
+		}
+	},
+	computed: {
+		objectConfiguration() {
+			return {
 				handling: {
-					inputLabel: 'Object Handeling',
+					inputLabel: 'Object Handling',
 					multiple: false,
-					options: ['nested-object', 'nested-schema', 'related-schema', 'uri'],
+					options: [
+						{
+							value: 'nested-object',
+							label: 'Nested Object',
+							description: 'Store object data directly within the parent object (embedded)',
+						},
+						{
+							value: 'nested-schema',
+							label: 'Nested Schema',
+							description: 'Store object as separate entity but nest the data in response',
+						},
+						{
+							value: 'related-schema',
+							label: 'Related Schema',
+							description: 'Store object as separate entity and reference by UUID/ID',
+						},
+						{
+							value: 'uri',
+							label: 'URI Reference',
+							description: 'Reference external objects by URI/URL',
+						},
+					],
+					reduce: option => option.value,
+					label: 'label',
+					getOptionLabel: option => option.label || option.value || '',
 				},
-			},
-			fileConfiguration: {
+			}
+		},
+		availableSchemas() {
+			return schemaStore.schemaList.map(schema => ({
+				id: schema.id,
+				label: schema.title || schema.name || schema.id,
+			}))
+		},
+		availableRegisters() {
+			return registerStore.registerList.map(register => ({
+				id: register.id,
+				label: register.title || register.name || register.id,
+			}))
+		},
+		mimeTypes() {
+			return ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'] // Add more MIME types as needed
+		},
+		fileConfiguration() {
+			return {
 				handling: {
 					inputLabel: 'File Configuration',
 					multiple: false,
 					options: ['ignore', 'transform'],
 				},
-			},
-			availableSchemas: {
-				inputLabel: 'Select Schema',
+			}
+		},
+
+		// Dynamic inversedBy options based on selected schema
+		inversedByOptions() {
+			const schema = this.selectedSchema || this.getSchemaFromRef(this.properties.$ref) || this.getSchemaFromRef(this.properties.items.$ref)
+			if (!schema || !schema.properties) {
+				return { inputLabel: 'Select Property', multiple: false, options: [], disabled: true }
+			}
+
+			const properties = Object.keys(schema.properties).map(key => ({
+				value: key,
+				label: schema.properties[key].title || key,
+				title: schema.properties[key].description || schema.properties[key].title || key,
+			}))
+
+			return {
+				inputLabel: 'Select Property',
 				multiple: false,
-				options: ['schema1', 'schema2', 'schema3'], // This should be populated with actual schemas
-			},
-			mimeTypes: {
-				inputLabel: 'Allowed MIME Types',
-				multiple: true,
-				options: ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'], // Add more MIME types as needed
-			},
-			loading: false,
-			success: null,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
-	computed: {
-		schemaProperty() {
-			return this.properties
+				options: properties,
+				reduce: option => option.value,
+				label: 'label',
+				getOptionLabel: option => option.label || option.value || '',
+				disabled: !schema,
+			}
 		},
 	},
 	watch: {
@@ -574,6 +694,7 @@ export default {
 	},
 	mounted() {
 		this.initializeSchemaItem()
+		this.loadRegistersAndSchemas()
 	},
 	methods: {
 		addOneOfEntry() {
@@ -697,6 +818,69 @@ export default {
 				return false
 			}
 		},
+		async loadRegistersAndSchemas() {
+			this.registerLoading = true
+			this.schemaLoading = true
+
+			try {
+				// Load registers if not already loaded
+				if (!registerStore.registerList.length) {
+					await registerStore.refreshRegisterList()
+				}
+
+				// Load schemas if not already loaded
+				if (!schemaStore.schemaList.length) {
+					await schemaStore.refreshSchemaList()
+				}
+			} catch (error) {
+				console.error('Error loading registers and schemas:', error)
+			} finally {
+				this.registerLoading = false
+				this.schemaLoading = false
+			}
+		},
+
+		getSchemaFromRef(ref) {
+			if (!ref) return null
+
+			// Extract schema ID from $ref (handle both simple IDs and paths)
+			const schemaId = ref.includes('/') ? ref.split('/').pop() : ref
+
+			// Find schema in store
+			return schemaStore.schemaList.find(schema =>
+				schema.id === schemaId || schema.title === schemaId || schema.slug === schemaId,
+			)
+		},
+
+		handleRegisterChange(register) {
+			// Store the register ID, not the whole object
+			const registerId = typeof register === 'object' ? register.id : register
+			this.selectedRegister = register
+			this.properties.register = registerId
+			this.properties.items.register = registerId
+			// Clear schema and inversedBy when register changes
+			this.properties.$ref = ''
+			this.properties.inversedBy = ''
+			this.properties.items.$ref = ''
+			this.properties.items.inversedBy = ''
+		},
+
+		handleSchemaChange(schema) {
+			// Store the schema ID, not the whole object
+			const schemaId = typeof schema === 'object' ? schema.id : schema
+			this.selectedSchema = schema
+			this.properties.$ref = schemaId
+			this.properties.items.$ref = schemaId
+			// Clear inversedBy when schema changes
+			this.properties.inversedBy = ''
+			this.properties.items.inversedBy = ''
+		},
+
+		handleInversedByChange(property) {
+			const propertyName = typeof property === 'object' ? property.value || property.id : property
+			this.properties.inversedBy = propertyName
+			this.properties.items.inversedBy = propertyName
+		},
 	},
 }
 </script>
@@ -738,5 +922,14 @@ export default {
 .objectConfigurationTitle {
 	margin-block-end: 5px;
 	font-weight: bold;
+}
+
+.helper-text {
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+	margin-top: -8px;
+	margin-bottom: 8px;
+	margin-left: 8px;
+	font-style: italic;
 }
 </style>
