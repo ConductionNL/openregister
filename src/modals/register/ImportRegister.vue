@@ -12,86 +12,49 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 			<p>Register imported successfully!</p>
 		</NcNoteCard>
 
-		<div v-if="success && importSummary" class="summaryContainer">
-			<div class="summaryGrid">
-				<div v-for="(sheetSummary, sheetName) in importSummary" :key="sheetName" class="summaryCard">
-					<div class="cardHeader" @click="toggleDetails(sheetName)">
-						<h4>{{ sheetName }}</h4>
-						<NcButton type="tertiary" class="toggleButton">
-							<template #icon>
-								<ChevronDown v-if="!expandedSheets[sheetName]" :size="16" />
-								<ChevronUp v-else :size="16" />
-							</template>
-						</NcButton>
-					</div>
-					<div class="summaryStats">
-						<div class="statItem">
-							<span class="statNumber">{{ sheetSummary.created.length }}</span>
-							<span class="statLabel">Created</span>
-						</div>
-						<div class="statItem">
-							<span class="statNumber">{{ sheetSummary.updated.length }}</span>
-							<span class="statLabel">Updated</span>
-						</div>
-						<div class="statItem">
-							<span class="statNumber">{{ sheetSummary.unchanged.length }}</span>
-							<span class="statLabel">Unchanged</span>
-						</div>
-						<div class="statItem">
-							<span class="statNumber">{{ sheetSummary.errors.length }}</span>
-							<span class="statLabel">Errors</span>
-						</div>
-					</div>
-
-					<div v-if="expandedSheets[sheetName]" class="detailsTable">
-						<table class="objectTable">
-							<thead>
-								<tr>
-									<th>Row</th>
-									<th>Action</th>
-									<th>Object ID</th>
-									<th>Register</th>
-									<th>Schema</th>
-									<th>Result</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="(obj, index) in sheetSummary.created" :key="'created-' + index" class="successRow">
-									<td>{{ obj.row || '-' }}</td>
-									<td><span class="actionBadge created">Created</span></td>
-									<td>{{ obj.id }}</td>
-									<td>{{ obj.register?.name || '-' }}</td>
-									<td>{{ obj.schema?.name || '-' }}</td>
-									<td><span class="resultBadge success">Success</span></td>
-								</tr>
-								<tr v-for="(obj, index) in sheetSummary.updated" :key="'updated-' + index" class="updateRow">
-									<td>{{ obj.row || '-' }}</td>
-									<td><span class="actionBadge updated">Updated</span></td>
-									<td>{{ obj.id }}</td>
-									<td>{{ obj.register?.name || '-' }}</td>
-									<td>{{ obj.schema?.name || '-' }}</td>
-									<td><span class="resultBadge success">Success</span></td>
-								</tr>
-								<tr v-for="(obj, index) in sheetSummary.unchanged" :key="'unchanged-' + index" class="unchangedRow">
-									<td>{{ obj.row || '-' }}</td>
-									<td><span class="actionBadge unchanged">Unchanged</span></td>
-									<td>{{ obj.id }}</td>
-									<td>{{ obj.register?.name || '-' }}</td>
-									<td>{{ obj.schema?.name || '-' }}</td>
-									<td><span class="resultBadge info">No Changes</span></td>
-								</tr>
-								<tr v-for="(errorItem, index) in sheetSummary.errors" :key="'error-' + index" class="errorRow">
-									<td>{{ errorItem.row || '-' }}</td>
-									<td><span class="actionBadge error">Failed</span></td>
-									<td>-</td>
-									<td>{{ errorItem.register?.name || '-' }}</td>
-									<td>{{ errorItem.schema?.name || '-' }}</td>
-									<td><span class="resultBadge error" :title="errorItem.error">Error</span></td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
+		<div v-if="importResults" class="importResults">
+			<!-- Summary Table -->
+			<div class="summaryTable">
+				<h3>Import Summary</h3>
+				<table class="sheetSummaryTable">
+					<thead>
+						<tr>
+							<th>Sheet</th>
+							<th>Created</th>
+							<th>Updated</th>
+							<th>Unchanged</th>
+							<th>Errors</th>
+							<th>Total</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="(sheetSummary, sheetName) in importResults" :key="sheetName">
+							<td class="sheetName">
+								{{ sheetName }}
+							</td>
+							<td class="statCell created">
+								{{ (sheetSummary.created && sheetSummary.created.length) || 0 }}
+							</td>
+							<td class="statCell updated">
+								{{ (sheetSummary.updated && sheetSummary.updated.length) || 0 }}
+							</td>
+							<td class="statCell unchanged">
+								{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
+							</td>
+							<td class="statCell errors">
+								{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}
+							</td>
+							<td class="statCell total">
+								{{
+									((sheetSummary.created && sheetSummary.created.length) || 0) +
+										((sheetSummary.updated && sheetSummary.updated.length) || 0) +
+										((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
+										((sheetSummary.errors && sheetSummary.errors.length) || 0)
+								}}
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 
 			<NcButton type="secondary" style="margin-top: 1rem;" @click="closeModal">
@@ -214,8 +177,6 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 
 export default {
 	name: 'ImportRegister',
@@ -230,8 +191,6 @@ export default {
 		Cancel,
 		Import,
 		Upload,
-		ChevronDown,
-		ChevronUp,
 	},
 	/**
 	 * Component data properties
@@ -246,6 +205,7 @@ export default {
 			includeObjects: false, // Whether to include objects
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
+			importResults: null, // The import results for display
 			registerLoading: false,
 			schemaLoading: false,
 			expandedSheets: {}, // To track expanded details for each sheet
@@ -402,6 +362,7 @@ export default {
 			this.error = null
 			this.includeObjects = false
 			this.importSummary = null
+			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
 		},
 		/**
@@ -421,6 +382,7 @@ export default {
 				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects)
 				// Store the import summary from the backend response
 				this.importSummary = result?.responseData?.summary || null
+				this.importResults = result?.responseData?.summary || null
 				this.success = true
 				this.loading = false
 				// Do not auto-close; let user review the summary and close manually
@@ -538,88 +500,136 @@ export default {
 	padding-left: 1.5rem;
 }
 
-.fileTypesList li {
-	margin-bottom: 0.25rem;
-}
-
 .includeObjects {
 	margin-top: 1rem;
 }
 
-.summaryContainer {
-	margin-top: 1rem;
+/* Summary Table Styles */
+.summaryTable {
+	margin-bottom: 1.5rem;
 }
 
-.summaryGrid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-	gap: 1rem;
-	margin-bottom: 1rem;
+.summaryTable h3 {
+	margin: 0 0 1rem 0;
+	font-size: 1.2rem;
+	font-weight: 600;
+	color: var(--color-text-light);
 }
 
-.summaryCard {
-	background: var(--color-background-hover);
+.sheetSummaryTable {
+	width: 100%;
+	border-collapse: collapse;
 	border-radius: var(--border-radius);
-	padding: 1rem;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sheetSummaryTable th,
+.sheetSummaryTable td {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.sheetSummaryTable th {
+	background: var(--color-background-dark);
+	font-weight: 600;
+	color: var(--color-text-light);
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.sheetSummaryTable tbody tr:hover {
+	background: var(--color-background-hover);
+}
+
+.sheetSummaryTable tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.sheetName {
+	font-weight: 600;
+	color: var(--color-text-light);
+	min-width: 150px;
+}
+
+.statCell {
+	text-align: center;
+	font-weight: 600;
+	min-width: 80px;
+}
+
+.statCell.created {
+	color: var(--color-success);
+}
+
+.statCell.updated {
+	color: var(--color-warning);
+}
+
+.statCell.unchanged {
+	color: var(--color-text-maxcontrast);
+}
+
+.statCell.errors {
+	color: var(--color-error);
+}
+
+.statCell.total {
+	color: var(--color-text-light);
+	font-weight: 700;
+	border-left: 1px solid var(--color-border);
+}
+
+.cumulativeTable {
+	margin-top: 1rem;
+	border-radius: var(--border-radius);
+	overflow: hidden;
 	border: 1px solid var(--color-border);
 }
 
-.cardHeader {
+.tableHeader {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	cursor: pointer;
-	margin-bottom: 0.75rem;
+	padding: 0.75rem 1rem;
+	background: var(--color-background-dark);
+	border-bottom: 1px solid var(--color-border);
 }
 
-.cardHeader h4 {
+.tableHeader h3 {
 	margin: 0;
 	font-size: 1rem;
 	font-weight: 600;
 	color: var(--color-text-light);
 }
 
-.toggleButton {
-	min-width: auto !important;
-	width: 32px !important;
-	height: 32px !important;
-}
-
-.summaryStats {
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 0.5rem;
-	margin-bottom: 0.5rem;
-}
-
-.statItem {
+.columnHeader {
 	display: flex;
-	flex-direction: column;
 	align-items: center;
-	text-align: center;
-	padding: 0.5rem;
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius-small);
+	gap: 0.5rem;
 }
 
-.statNumber {
-	font-size: 1.25rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	line-height: 1.2;
+.columnHeader span {
+	font-weight: 600;
+	color: var(--color-text-light);
 }
 
-.statLabel {
-	font-size: 0.75rem;
-	color: var(--color-text-maxcontrast);
-	margin-top: 0.25rem;
-}
-
-.detailsTable {
-	margin-top: 1rem;
-	border-radius: var(--border-radius);
-	overflow: hidden;
+.columnFilter {
+	flex-grow: 1;
+	padding: 0.375rem 0.75rem;
 	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-small);
+	background: var(--color-background-hover);
+	color: var(--color-text-maxcontrast);
+	font-size: 0.875rem;
+}
+
+.columnFilter:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .objectTable {
@@ -721,12 +731,21 @@ export default {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-	.summaryGrid {
-		grid-template-columns: 1fr;
+	.sheetSummaryTable {
+		font-size: 0.875rem;
 	}
 
-	.summaryStats {
-		grid-template-columns: repeat(2, 1fr);
+	.sheetSummaryTable th,
+	.sheetSummaryTable td {
+		padding: 0.5rem;
+	}
+
+	.sheetName {
+		min-width: 120px;
+	}
+
+	.statCell {
+		min-width: 60px;
 	}
 
 	.objectTable {
@@ -736,6 +755,17 @@ export default {
 	.objectTable th,
 	.objectTable td {
 		padding: 0.375rem;
+	}
+
+	.columnFilter {
+		font-size: 0.75rem;
+		padding: 0.25rem 0.5rem;
+	}
+
+	.tableHeader {
+		flex-direction: column;
+		gap: 0.5rem;
+		align-items: flex-start;
 	}
 }
 </style>
