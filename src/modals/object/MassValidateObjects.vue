@@ -248,4 +248,4 @@ export default {
 	font-size: 0.9em;
 	margin: 0;
 }
-</style> 
+</style>

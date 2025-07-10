@@ -111,9 +111,9 @@ class ImportService
      * @param Register|null $register Optional register to associate with imported objects
      * @param Schema|null   $schema   Optional schema to associate with imported objects
      *
-     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[], 'errors'=>[]]
-     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
-     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
+     * @return array<string, array> Summary of import with sheet-based results
+     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null): array
     {
@@ -126,7 +126,12 @@ class ImportService
             return $this->processMultiSchemaSpreadsheet($spreadsheet, $register);
         }
 
-        return $this->processSpreadsheet($spreadsheet, $register, $schema);
+        // Single schema processing - return in sheet-based format for consistency
+        $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
+        
+        // Return in sheet-based format for consistency
+        return [$sheetTitle => $sheetSummary];
 
     }//end importFromExcel()
 
@@ -163,9 +168,9 @@ class ImportService
      * @param Register|null $register Optional register to associate with imported objects
      * @param Schema|null   $schema   Optional schema to associate with imported objects
      *
-     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[], 'errors'=>[]]
-     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
-     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
+     * @return array<string, array> Summary of import with sheet-based results
+     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
     public function importFromCsv(string $filePath, ?Register $register=null, ?Schema $schema=null): array
     {
@@ -181,7 +186,12 @@ class ImportService
         $reader->setLineEnding("\r\n");
         $spreadsheet = $reader->load($filePath);
 
-        return $this->processSpreadsheet($spreadsheet, $register, $schema);
+        // Get the sheet title for CSV (usually just 'Worksheet' or similar)
+        $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
+        $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
+        
+        // Return in sheet-based format for consistency
+        return [$sheetTitle => $sheetSummary];
 
     }//end importFromCsv()
 
@@ -192,35 +202,45 @@ class ImportService
      * @param Spreadsheet $spreadsheet The spreadsheet to process
      * @param Register    $register    The register to associate with imported objects
      *
-     * @return array<string, array> Summary of import: ['created'=>[], 'updated'=>[], 'unchanged'=>[], 'errors'=>[]]
-     * @phpstan-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
-     * @psalm-return array{created: array<int|string>, updated: array<int|string>, unchanged: array<int|string>, errors: array<mixed>}
+     * @return array<string, array> Summary of import with sheet-based results
+     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
+     * @psalm-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
     private function processMultiSchemaSpreadsheet(Spreadsheet $spreadsheet, Register $register): array
     {
-        $summary = [
-            'created' => [],
-            'updated' => [],
-            'unchanged' => [],
-            'errors' => [],
-        ];
+        $summary = [];
 
         foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
             $schemaSlug = $worksheet->getTitle();
             $schema     = $this->getSchemaBySlug($schemaSlug);
 
+            // Initialize sheet summary even if no schema found
+            $summary[$schemaSlug] = [
+                'created' => [],
+                'updated' => [],
+                'unchanged' => [],
+                'errors' => [],
+            ];
+
             // Skip sheets that don't correspond to a valid schema.
             if ($schema === null) {
+                $summary[$schemaSlug]['errors'][] = [
+                    'sheet' => $schemaSlug,
+                    'register' => [
+                        'id' => $register->getId(),
+                        'name' => $register->getTitle()
+                    ],
+                    'schema' => null,
+                    'error' => 'No matching schema found for sheet: ' . $schemaSlug,
+                    'type' => 'SchemaNotFoundException'
+                ];
                 continue;
             }
 
             // Set the worksheet as active and process
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
             $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
-            $summary['created'] = array_merge($summary['created'], $sheetSummary['created']);
-            $summary['updated'] = array_merge($summary['updated'], $sheetSummary['updated']);
-            $summary['unchanged'] = array_merge($summary['unchanged'], $sheetSummary['unchanged']);
-            $summary['errors'] = array_merge($summary['errors'], $sheetSummary['errors']);
+            $summary[$schemaSlug] = $sheetSummary;
         }
 
         return $summary;
@@ -330,8 +350,14 @@ class ImportService
                 $summary['errors'][] = [
                     'row' => $row,
                     'sheet' => $sheetTitle,
-                    'register' => $register ? ['id' => $register->getId(), 'slug' => $register->getSlug()] : null,
-                    'schema' => $schema ? ['id' => $schema->getId(), 'slug' => $schema->getSlug()] : null,
+                    'register' => [
+                        'id' => $register ? $register->getId() : null,
+                        'name' => $register ? $register->getTitle() : null
+                    ],
+                    'schema' => [
+                        'id' => $schema ? $schema->getId() : null,
+                        'name' => $schema ? $schema->getTitle() : null
+                    ],
                     'data' => ['key' => $objectKey], // Reduced data to prevent memory issues
                     'error' => 'Duplicate object detected - skipping to prevent loops',
                     'type' => 'DuplicateObjectException'
@@ -363,11 +389,20 @@ class ImportService
                 $created = $savedObject->getCreated();
                 $updated = $savedObject->getUpdated();
 
-                // Get minimal log info to reduce memory usage
+                // Get detailed log info with register and schema information
                 $logInfo = [
                     'id' => $savedObject->getId(),
                     'uuid' => $savedObject->getUuid(),
-                    'row' => $row
+                    'row' => $row,
+                    'sheet' => $sheetTitle,
+                    'register' => [
+                        'id' => $register ? $register->getId() : null,
+                        'name' => $register ? $register->getTitle() : null
+                    ],
+                    'schema' => [
+                        'id' => $schema ? $schema->getId() : null,
+                        'name' => $schema ? $schema->getTitle() : null
+                    ]
                 ];
 
                 // If created timestamp is after our beforeSave timestamp, it's a new object
@@ -398,20 +433,18 @@ class ImportService
                 error_log("[ImportService] Exception type: " . get_class($e));
                 error_log("[ImportService] Stack trace: " . $e->getTraceAsString());
                 
-                // Capture the error with minimal data to prevent memory issues
+                // Capture the error with detailed information
                 $summary['errors'][] = [
                     'row' => $row,
                     'sheet' => $sheetTitle,
-                    'register' => $register ? [
-                        'id' => $register->getId(),
-                        'slug' => $register->getSlug(),
-                        'title' => $register->getTitle()
-                    ] : null,
-                    'schema' => $schema ? [
-                        'id' => $schema->getId(),
-                        'slug' => $schema->getSlug(),
-                        'title' => $schema->getTitle()
-                    ] : null,
+                    'register' => [
+                        'id' => $register ? $register->getId() : null,
+                        'name' => $register ? $register->getTitle() : null
+                    ],
+                    'schema' => [
+                        'id' => $schema ? $schema->getId() : null,
+                        'name' => $schema ? $schema->getTitle() : null
+                    ],
                     'data' => array_slice($objectData, 0, 5, true), // Limit data to first 5 fields to prevent memory issues
                     'error' => $e->getMessage(),
                     'type' => get_class($e)
