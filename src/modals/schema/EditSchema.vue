@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -325,14 +325,26 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 															]"
 															input-label="Object Handling"
 															label="Object Handling" />
-														<NcActionInput
-															:value="property.$ref || ''"
-															label="Schema Reference"
-															@update:value="updatePropertySetting(key, '$ref', $event)" />
-														<NcActionInput
-															:value="property.inversedBy || ''"
-															label="Inversed By"
-															@update:value="updatePropertySetting(key, 'inversedBy', $event)" />
+													<NcActionInput
+														v-model="schemaItem.properties[key].register"
+														type="multiselect"
+														:options="availableRegisters"
+														input-label="Register"
+														label="Register" />
+													<NcActionInput
+														v-model="schemaItem.properties[key].$ref"
+														type="multiselect"
+														:options="availableSchemas"
+														input-label="Schema Reference"
+														label="Schema Reference"
+														:disabled="!schemaItem.properties[key].register" />
+													<NcActionInput
+														v-model="schemaItem.properties[key].inversedBy"
+														type="multiselect"
+														:options="getInversedByOptions(key)"
+														input-label="Inversed By Property"
+														label="Inversed By"
+														:disabled="!schemaItem.properties[key].$ref" />
 														<NcActionCheckbox
 															:checked="property.cascadeDelete || false"
 															@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
@@ -571,7 +583,38 @@ export default {
 			// Add empty option at the beginning
 			return ['', ...options]
 		},
+		availableRegisters() {
+			return registerStore.registerList.map(register => ({
+				id: register.id,
+				label: register.title || register.name || register.id
+			}))
+		},
+		availableSchemas() {
+			// Filter schemas by selected register if a register is selected
+			const selectedProperty = this.selectedProperty
+			if (!selectedProperty || !this.schemaItem.properties[selectedProperty]) {
+				return schemaStore.schemaList.map(schema => ({
+					id: schema.id,
+					label: schema.title || schema.name || schema.id
+				}))
+			}
 
+			const selectedRegister = this.schemaItem.properties[selectedProperty].register
+			if (!selectedRegister) {
+				return schemaStore.schemaList.map(schema => ({
+					id: schema.id,
+					label: schema.title || schema.name || schema.id
+				}))
+			}
+
+			// Filter schemas that belong to the selected register
+			return schemaStore.schemaList
+				.filter(schema => schema.register === selectedRegister)
+				.map(schema => ({
+					id: schema.id,
+					label: schema.title || schema.name || schema.id
+				}))
+		},
 	},
 	watch: {
 		'schemaItem.properties': {
@@ -619,8 +662,25 @@ export default {
 	},
 	mounted() {
 		this.initializeSchemaItem()
+		this.loadRegistersAndSchemas()
 	},
 	methods: {
+		async loadRegistersAndSchemas() {
+			try {
+				// Load registers if not already loaded
+				if (!registerStore.registerList.length) {
+					await registerStore.refreshRegisterList()
+				}
+
+				// Load schemas if not already loaded
+				if (!schemaStore.schemaList.length) {
+					await schemaStore.refreshSchemaList()
+				}
+			} catch (error) {
+				console.error('Error loading registers and schemas:', error)
+			}
+		},
+		
 		// Generate or get stable ID for a property
 		getStablePropertyId(propertyName) {
 			if (!this.propertyStableIds[propertyName]) {
@@ -1086,6 +1146,28 @@ export default {
 
 				this.checkPropertiesModified()
 			}
+		},
+		getInversedByOptions(key) {
+			const property = this.schemaItem.properties[key]
+			if (!property || !property.$ref) {
+				return []
+			}
+
+			// Find the referenced schema - handle both string and object values
+			const schemaRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
+			const referencedSchema = schemaStore.schemaList.find(schema => 
+				schema.id == schemaRef || schema.title === schemaRef || schema.slug === schemaRef
+			)
+
+			if (!referencedSchema || !referencedSchema.properties) {
+				return []
+			}
+
+			// Return properties from the referenced schema
+			return Object.keys(referencedSchema.properties).map(propKey => ({
+				id: propKey,
+				label: referencedSchema.properties[propKey].title || propKey
+			}))
 		},
 	},
 }
