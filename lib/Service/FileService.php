@@ -496,14 +496,21 @@ class FileService
         }
 
         // Ensure register folder exists first
+        $register = null;
         if ($objectEntity instanceof ObjectEntity === true) { 
             $register = $this->registerMapper->find($objectEntity->getRegister());
+            if ($register === null) {
+                throw new Exception("Failed to create file, could not find register for objects register: {$objectEntity->getRegister()}");
+            }
         } else if ($registerId !== null) {
             $register = $this->registerMapper->find($registerId);
+            if ($register === null) {
+                throw new Exception("Failed to create file, could not find register with register id: $registerId");
+            }
         }
 
         if ($register === null) {
-            throw new Exception("Failed to create or access register folder");
+            throw new Exception("Failed to create file because no objectEntity or registerId given");
         }
         
         $registerFolder = $this->createRegisterFolderById($register, $currentUser);
