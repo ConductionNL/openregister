@@ -325,26 +325,26 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															]"
 															input-label="Object Handling"
 															label="Object Handling" />
-													<NcActionInput
-														v-model="schemaItem.properties[key].register"
-														type="multiselect"
-														:options="availableRegisters"
-														input-label="Register"
-														label="Register" />
-													<NcActionInput
-														v-model="schemaItem.properties[key].$ref"
-														type="multiselect"
-														:options="availableSchemas"
-														input-label="Schema Reference"
-														label="Schema Reference"
-														:disabled="!schemaItem.properties[key].register" />
-													<NcActionInput
-														v-model="schemaItem.properties[key].inversedBy"
-														type="multiselect"
-														:options="getInversedByOptions(key)"
-														input-label="Inversed By Property"
-														label="Inversed By"
-														:disabled="!schemaItem.properties[key].$ref" />
+														<NcActionInput
+															v-model="schemaItem.properties[key].register"
+															type="multiselect"
+															:options="availableRegisters"
+															input-label="Register"
+															label="Register" />
+														<NcActionInput
+															v-model="schemaItem.properties[key].$ref"
+															type="multiselect"
+															:options="availableSchemas"
+															input-label="Schema Reference"
+															label="Schema Reference"
+															:disabled="!schemaItem.properties[key].register" />
+														<NcActionInput
+															v-model="schemaItem.properties[key].inversedBy"
+															type="multiselect"
+															:options="getInversedByOptions(key)"
+															input-label="Inversed By Property"
+															label="Inversed By"
+															:disabled="!schemaItem.properties[key].$ref" />
 														<NcActionCheckbox
 															:checked="property.cascadeDelete || false"
 															@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
@@ -586,7 +586,7 @@ export default {
 		availableRegisters() {
 			return registerStore.registerList.map(register => ({
 				id: register.id,
-				label: register.title || register.name || register.id
+				label: register.title || register.name || register.id,
 			}))
 		},
 		availableSchemas() {
@@ -595,7 +595,7 @@ export default {
 			if (!selectedProperty || !this.schemaItem.properties[selectedProperty]) {
 				return schemaStore.schemaList.map(schema => ({
 					id: schema.id,
-					label: schema.title || schema.name || schema.id
+					label: schema.title || schema.name || schema.id,
 				}))
 			}
 
@@ -603,7 +603,7 @@ export default {
 			if (!selectedRegister) {
 				return schemaStore.schemaList.map(schema => ({
 					id: schema.id,
-					label: schema.title || schema.name || schema.id
+					label: schema.title || schema.name || schema.id,
 				}))
 			}
 
@@ -612,7 +612,7 @@ export default {
 				.filter(schema => schema.register === selectedRegister)
 				.map(schema => ({
 					id: schema.id,
-					label: schema.title || schema.name || schema.id
+					label: schema.title || schema.name || schema.id,
 				}))
 		},
 	},
@@ -680,7 +680,7 @@ export default {
 				console.error('Error loading registers and schemas:', error)
 			}
 		},
-		
+
 		// Generate or get stable ID for a property
 		getStablePropertyId(propertyName) {
 			if (!this.propertyStableIds[propertyName]) {
@@ -1155,8 +1155,8 @@ export default {
 
 			// Find the referenced schema - handle both string and object values
 			const schemaRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
-			const referencedSchema = schemaStore.schemaList.find(schema => 
-				schema.id == schemaRef || schema.title === schemaRef || schema.slug === schemaRef
+			const referencedSchema = schemaStore.schemaList.find(schema =>
+				schema.id === schemaRef || schema.title === schemaRef || schema.slug === schemaRef,
 			)
 
 			if (!referencedSchema || !referencedSchema.properties) {
@@ -1166,7 +1166,7 @@ export default {
 			// Return properties from the referenced schema
 			return Object.keys(referencedSchema.properties).map(propKey => ({
 				id: propKey,
-				label: referencedSchema.properties[propKey].title || propKey
+				label: referencedSchema.properties[propKey].title || propKey,
 			}))
 		},
 	},
