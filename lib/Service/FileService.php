@@ -2040,36 +2040,34 @@ class FileService
     /**
      * Deletes a file from NextCloud.
      *
-     * This method can accept either a file path string or a Node object for deletion.
-     * When a Node object is provided, it will be deleted directly. When a string path
+     * This method can accept either a file path string, file ID integer, or a Node object for deletion.
+     * When a Node object is provided, it will be deleted directly. When a string path or integer ID
      * is provided, the file will be located first and then deleted.
      *
      * If an ObjectEntity is provided, the method will also update the object's files
      * array to remove the reference to the deleted file and save the updated object.
      *
-     * @param Node|string        $file   The file Node object or path (from root) to the file you want to delete
+     * @param Node|string|int    $file   The file Node object, path (from root), or file ID to delete
      * @param ObjectEntity|null  $object Optional object entity to update the files array for
      *
      * @throws Exception If deleting the file is not permitted or file operations fail
      *
      * @return bool True if successful, false if the file didn't exist
      *
-     * @psalm-param Node|string $file
-     * @phpstan-param Node|string $file
+     * @psalm-param Node|string|int $file
+     * @phpstan-param Node|string|int $file
      * @psalm-param ObjectEntity|null $object
      * @phpstan-param ObjectEntity|null $object
      */
-    public function deleteFile(Node | string $file, ?ObjectEntity $object = null): bool
+    public function deleteFile(Node | string | int $file, ?ObjectEntity $object = null): bool
     {
-
-
         if ($file instanceof Node === false) {
-            $fileName = $file;
+            $fileName = (string) $file;
             $file = $this->getFile($object, $file);
         }
 
         if($file === null) {
-            $this->logger->error('File '.$fileName.' not found for object '.$object->getId());
+            $this->logger->error('File '.$fileName.' not found for object '.($object?->getId() ?? 'unknown'));
             return false;
         }
 
@@ -2581,8 +2579,8 @@ class FileService
     /**
      * Publish a file by creating a public share link using direct database operations.
      *
-     * @param ObjectEntity|string $object   The object or object ID
-     * @param string             $filePath The path to the file to publish
+     * @param ObjectEntity|string $object The object or object ID
+     * @param string|int         $file   The path to the file or file ID to publish
      *
      * @return File The published file
      *
@@ -2593,7 +2591,7 @@ class FileService
      * @psalm-return File
      * @phpstan-return File
      */
-    public function publishFile(ObjectEntity | string $object, string $filePath): File
+    public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
         // If string ID provided, try to find the object entity
         if (is_string($object) === true) {
