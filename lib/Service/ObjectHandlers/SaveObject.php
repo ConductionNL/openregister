@@ -747,7 +747,7 @@ class SaveObject
     {
         $fileContent = $object[$propertyName];
         $fileName    = $propertyName.'_'.time();
-        $this->fileService->addFile($objectEntity, $fileName, $fileContent);
+        $this->fileService->addFile(objectEntity: $objectEntity, fileName: $fileName, content: $fileContent);
 
     }//end handleFileProperty()
 
