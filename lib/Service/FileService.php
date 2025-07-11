@@ -2418,7 +2418,7 @@ class FileService
             // Check if the file already exists for this object
             $existingFile = $this->getFile(
                 object: $objectEntity,
-                filePath: $fileName
+                file: $fileName
             );
 
             if ($existingFile !== null) {
