@@ -55,6 +55,8 @@ use OCP\IURLGenerator;
  *   checksum: string,
  *   share_token: string|null,
  *   share_stime: int|null,
+ *   storage_id: string|null,
+ *   owner: string|null,
  *   accessUrl: string|null,
  *   downloadUrl: string|null,
  *   published: string|null
@@ -82,12 +84,12 @@ class FileMapper extends QBMapper
     }
 
     /**
-     * Get all files for a given node (parent) and/or file IDs with share information.
+     * Get all files for a given node (parent) and/or file IDs with share information and owner data.
      *
      * @param int|null   $node The parent node ID (optional)
      * @param array|null $ids  The file IDs to filter (optional)
      *
-     * @return array<int, array> List of files as associative arrays with share information
+     * @return array<int, array> List of files as associative arrays with share information and owner data
      *
      * @phpstan-param int|null $node
      * @phpstan-param array<int>|null $ids
@@ -98,13 +100,14 @@ class FileMapper extends QBMapper
         // Create a new query builder instance
         $qb = $this->db->getQueryBuilder();
         
-        // Select all filecache fields, share information, and mimetype strings
+        // Select all filecache fields, share information, mimetype strings, and owner information
         $qb->select(
                 'fc.fileid', 'fc.storage', 'fc.path', 'fc.path_hash', 'fc.parent', 'fc.name',
                 'mt.mimetype', 'mp.mimetype as mimepart',
                 'fc.size', 'fc.mtime', 'fc.storage_mtime', 'fc.encrypted', 'fc.unencrypted_size',
                 'fc.etag', 'fc.permissions', 'fc.checksum',
-                's.token as share_token', 's.stime as share_stime'
+                's.token as share_token', 's.stime as share_stime',
+                'st.id as storage_id'
             )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
@@ -114,7 +117,8 @@ class FileMapper extends QBMapper
                     $qb->expr()->eq('s.file_source', 'fc.fileid'),
                     $qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)) // 3 = public link
                 )
-            );
+            )
+            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
 
         // Add condition for node/parent if provided
         if ($node !== null) {
@@ -130,12 +134,22 @@ class FileMapper extends QBMapper
         $result = $qb->executeQuery();
         $files = [];
         
-        // Fetch all rows manually and process share information
+        // Fetch all rows manually and process share information and owner data
         while ($row = $result->fetch()) {
             // Add share-related fields
             $row['accessUrl'] = $row['share_token'] ? $this->generateShareUrl($row['share_token']) : null;
             $row['downloadUrl'] = $row['share_token'] ? $this->generateShareUrl($row['share_token']) . '/download' : null;
             $row['published'] = $row['share_stime'] ? (new DateTime())->setTimestamp($row['share_stime'])->format('c') : null;
+            
+            // Extract owner from storage ID (format is usually "home::username")
+            $row['owner'] = null;
+            if ($row['storage_id']) {
+                if (str_starts_with($row['storage_id'], 'home::')) {
+                    $row['owner'] = substr($row['storage_id'], 6); // Remove "home::" prefix
+                } else {
+                    $row['owner'] = $row['storage_id']; // Fallback to full storage ID
+                }
+            }
             
             $files[] = $row;
         }
@@ -147,11 +161,11 @@ class FileMapper extends QBMapper
     }
 
     /**
-     * Get a single file by its fileid with share information.
+     * Get a single file by its fileid with share information and owner data.
      *
      * @param int $fileId The file ID
      *
-     * @return array|null The file as an associative array with share information, or null if not found
+     * @return array|null The file as an associative array with share information and owner data, or null if not found
      *
      * @phpstan-param int $fileId
      * @phpstan-return File|null
@@ -161,13 +175,14 @@ class FileMapper extends QBMapper
         // Create a new query builder instance
         $qb = $this->db->getQueryBuilder();
         
-        // Select all filecache fields, share information, and mimetype strings
+        // Select all filecache fields, share information, mimetype strings, and owner information
         $qb->select(
                 'fc.fileid', 'fc.storage', 'fc.path', 'fc.path_hash', 'fc.parent', 'fc.name',
                 'mt.mimetype', 'mp.mimetype as mimepart',
                 'fc.size', 'fc.mtime', 'fc.storage_mtime', 'fc.encrypted', 'fc.unencrypted_size',
                 'fc.etag', 'fc.permissions', 'fc.checksum',
-                's.token as share_token', 's.stime as share_stime'
+                's.token as share_token', 's.stime as share_stime',
+                'st.id as storage_id'
             )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
@@ -178,6 +193,7 @@ class FileMapper extends QBMapper
                     $qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)) // 3 = public link
                 )
             )
+            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
             ->where($qb->expr()->eq('fc.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
 
         // Execute the query and fetch the result using proper Nextcloud method
@@ -194,6 +210,16 @@ class FileMapper extends QBMapper
         $file['accessUrl'] = $file['share_token'] ? $this->generateShareUrl($file['share_token']) : null;
         $file['downloadUrl'] = $file['share_token'] ? $this->generateShareUrl($file['share_token']) . '/download' : null;
         $file['published'] = $file['share_stime'] ? (new DateTime())->setTimestamp($file['share_stime'])->format('c') : null;
+
+        // Extract owner from storage ID (format is usually "home::username")
+        $file['owner'] = null;
+        if ($file['storage_id']) {
+            if (str_starts_with($file['storage_id'], 'home::')) {
+                $file['owner'] = substr($file['storage_id'], 6); // Remove "home::" prefix
+            } else {
+                $file['owner'] = $file['storage_id']; // Fallback to full storage ID
+            }
+        }
 
         return $file;
     }
