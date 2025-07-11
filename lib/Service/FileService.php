@@ -1022,6 +1022,7 @@ class FileService
             'published'   => count($shares) > 0 ? $shares[0]->getShareTime()->format('c') : null,
             'modified'    => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
             'labels'      => $this->getFileTags(fileId: $file->getId()),
+            'owner'       => $file->getOwner()?->getUID(),
         ];
 
         // Process labels that contain ':' to add as separate metadata fields.
@@ -2068,7 +2069,7 @@ class FileService
         }
 
         if($file === null) {
-            $this->logger->error('File '.$fileName.' not found for object '.$object->getId() . ' not found ');
+            $this->logger->error('File '.$fileName.' not found for object '.$object->getId());
             return false;
         }
 
