@@ -112,7 +112,7 @@ class FilesController extends Controller
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
-     * @param string $filePath Path to the file to update
+     * @param int    $fileId   The ID of the file to retrieve
      *
      * @return JSONResponse
      */
@@ -120,7 +120,7 @@ class FilesController extends Controller
         string $register,
         string $schema,
         string $id,
-        string $filePath
+        int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
@@ -128,7 +128,7 @@ class FilesController extends Controller
         $object   = $this->objectService->setObject($id);
 
         try {
-            $file = $this->fileService->getFile($object, $filePath);
+            $file = $this->fileService->getFile($object, $fileId);
             if ($file === null) {
                 return new JSONResponse(['error' => 'File not found'], 404);
             }
@@ -363,7 +363,7 @@ class FilesController extends Controller
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
-     * @param string $filePath Path to the file to update
+     * @param int    $fileId   ID of the file to update
      * @param array  $tags     Optional tags to update
      *
      * @return JSONResponse
@@ -372,7 +372,7 @@ class FilesController extends Controller
         string $register,
         string $schema,
         string $id,
-        string $filePath
+        int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
@@ -383,8 +383,8 @@ class FilesController extends Controller
             $data = $this->request->getParams();
             // Ensure tags is set to empty array if not provided
             $tags   = $data['tags'] ?? [];
-            $result = $this->fileService->updateFile($filePath, $data['content'], $tags, $this->objectService->getObject());
-            return new JSONResponse($result);
+            $result = $this->fileService->updateFile($fileId, $data['content'], $tags, $this->objectService->getObject());
+            return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -404,14 +404,14 @@ class FilesController extends Controller
      * @param  string $register The register slug or identifier
      * @param  string $schema   The schema slug or identifier
      * @param  string $id       The ID of the object to retrieve files for
-     * @param  string $filePath Path to the file to delete
+     * @param  int    $fileId   ID of the file to delete
      * @return JSONResponse
      */
     public function delete(
         string $register,
         string $schema,
         string $id,
-        string $filePath
+        int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
@@ -419,8 +419,8 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->deleteFile($filePath, $this->objectService->getObject());
-            return new JSONResponse($result);
+            $result = $this->fileService->deleteFile($fileId, $this->objectService->getObject());
+            return new JSONResponse(['success' => $result]);
         } catch (Exception $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -440,7 +440,7 @@ class FilesController extends Controller
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
-     * @param string $filePath Path to the file to publish
+     * @param int    $fileId   ID of the file to publish
      *
      * @return JSONResponse
      */
@@ -448,7 +448,7 @@ class FilesController extends Controller
         string $register,
         string $schema,
         string $id,
-        string $filePath
+        int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
@@ -456,7 +456,7 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->publishFile($this->objectService->getObject(), $filePath);
+            $result = $this->fileService->publishFile($this->objectService->getObject(), $fileId);
             return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
@@ -477,7 +477,7 @@ class FilesController extends Controller
      * @param string $register The register slug or identifier
      * @param string $schema   The schema slug or identifier
      * @param string $id       The ID of the object to retrieve files for
-     * @param string $filePath Path to the file to depublish
+     * @param int    $fileId   ID of the file to depublish
      *
      * @return JSONResponse
      */
@@ -485,7 +485,7 @@ class FilesController extends Controller
         string $register,
         string $schema,
         string $id,
-        string $filePath
+        int $fileId
     ): JSONResponse {
         // Set the schema and register to the object service (forces a check if the are valid).
         $schema   = $this->objectService->setSchema($schema);
@@ -493,7 +493,7 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->unpublishFile($this->objectService->getObject(), $filePath);
+            $result = $this->fileService->unpublishFile($this->objectService->getObject(), $fileId);
             return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
