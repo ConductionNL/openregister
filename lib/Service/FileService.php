@@ -477,6 +477,7 @@ class FileService
      */
     private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser = null, int|string|null $registerId = null): ?Node
     {
+        $folderProperty = null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();
         }
