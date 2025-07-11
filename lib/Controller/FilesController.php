@@ -168,7 +168,7 @@ class FilesController extends Controller
 
         try {
             $data   = $this->request->getParams();
-            $result = $this->fileService->addFile($object, $data['name'], $data['content'], false, $data['tags']);
+            $result = $this->fileService->addFile(objectEntity: $object, fileName: $data['name'], content: $data['content'], share: false, tags: $data['tags']);
             return new JSONResponse($this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(
@@ -335,11 +335,11 @@ class FilesController extends Controller
             foreach ($uploadedFiles as $file) {
                 // Create file
                 $results[] = $this->fileService->addFile(
-                    $this->objectService->getObject(),
-                    $file['name'],
-                    file_get_contents($file['tmp_name']),
-                    $file['share'],
-                    $file['tags']
+                    objectEntity: $this->objectService->getObject(),
+                    fileName: $file['name'],
+                    content: file_get_contents($file['tmp_name']),
+                    share: $file['share'],
+                    tags: $file['tags']
                 );
             }
 
