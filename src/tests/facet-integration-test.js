@@ -4,6 +4,10 @@
  * This file contains examples and manual tests for the facet integration.
  * Use these in the browser console to test facet functionality.
  */
+/* eslint-disable no-console */
+
+// Import object store
+import { objectStore } from '../store/store.js'
 
 // Test 1: Basic Facet Discovery
 async function testFacetDiscovery() {
