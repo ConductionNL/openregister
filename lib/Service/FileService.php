@@ -2435,7 +2435,7 @@ class FileService
     }//end getAllTags()
 
     /**
-     * Get all files for an object.
+     * Get all files for an object. 
      *
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
@@ -2462,57 +2462,86 @@ class FileService
     }
 
     /**
-     * Get files for an object.
+     * Get a file by file identifier (ID or name/path) or by object and file name/path.
+     *
+     * If $file is an integer or a string that is an integer (e.g. '23234234'), the file will be fetched by ID
+     * and the $object parameter will be ignored. Otherwise, the file will be fetched by name/path within the object folder.
      *
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
-     * @param ObjectEntity|string $object   The object or object ID to fetch files for
-     * @param string             $filePath The path to the file within the object folder
+     * @param ObjectEntity|string|null $object The object or object ID to fetch files for (ignored if $file is an ID)
+     * @param string|int $file The file name/path within the object folder, or the file ID (int or numeric string)
      *
      * @return File|null The file if found, null otherwise
      *
      * @throws NotFoundException If the folder is not found
      * @throws DoesNotExistException If the object ID is not found
      *
+     * @psalm-param ObjectEntity|string|null $object
+     * @phpstan-param ObjectEntity|string|null $object
+     * @psalm-param string|int $file
+     * @phpstan-param string|int $file
      * @psalm-return File|null
      * @phpstan-return File|null
      */
-    public function getFile(ObjectEntity | string $object, string $filePath): ?File
+    public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File
     {
-        // If string ID provided, try to find the object entity
-        if (is_string($object) === true) {
+
+        // If string ID provided for object, try to find the object entity
+        if (is_string($object) === true && !empty($object)) {
             $object = $this->objectEntityMapper->find($object);
+        }
+        
+        // Use the new ID-based folder approach
+        $folder = $this->getObjectFolder($object);
+        
+        // If $file is an integer or a string that is an integer, treat as file ID
+        if (is_int($file) || (is_string($file) && ctype_digit($file))) {
+
+            // Try to get the file by ID
+            try {
+                $nodes = $folder->getById((int)$file);
+                if (!empty($nodes) && $nodes[0] instanceof File) {
+                    $fileNode = $nodes[0];
+                    // Check ownership for NextCloud rights issues
+                    $this->checkOwnership($fileNode);
+                    return $fileNode;
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('getFile: Error finding file by ID ' . $file . ': ' . $e->getMessage());
+                return null;
+            }
+            // If not found by ID, return null
+            return null;
         }
 
         // Clean file path and extract filename using utility method
-        $originalFilePath = $filePath;
-        $pathInfo = $this->extractFileNameFromPath($filePath);
+        $originalFile = $file;
+        $pathInfo = $this->extractFileNameFromPath((string)$file);
         $filePath = $pathInfo['cleanPath'];
         $fileName = $pathInfo['fileName'];
 
-        // Use the new ID-based folder approach
-        $folder = $this->getObjectFolder($object);
 
         // Check if folder exists and get the file
         if ($folder instanceof Folder === true) {
             try {
                 // First try with just the filename
-                $file = $folder->get($fileName);
-                
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
-                $this->checkOwnership($file);
-                
-                return $file;
+                $fileNode = $folder->get($fileName);
+
+                // Check ownership for NextCloud rights issues
+                $this->checkOwnership($fileNode);
+
+                return $fileNode;
             } catch (NotFoundException) {
                 try {
                     // If that fails, try with the full path
-                    $file = $folder->get($filePath);
-                    
-                    // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues
-                    $this->checkOwnership($file);
-                    
-                    return $file;
+                    $fileNode = $folder->get($filePath);
+
+                    // Check ownership for NextCloud rights issues
+                    $this->checkOwnership($fileNode);
+
+                    return $fileNode;
                 } catch (NotFoundException) {
                     // File not found
                     return null;
