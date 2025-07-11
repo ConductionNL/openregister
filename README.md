@@ -2,7 +2,7 @@
 
 Open Registers provides a way to quicly build and deploy standardized registers based on [NLGov REST API Design Rules](https://logius-standaarden.github.io/API-Design-Rules/) and [Common Ground Principles](https://common-ground.nl/common-ground-principes/). It is based on based on the concepts of defining object types in [`schema.json`](https://json-schema.org/) and storing objects in configurable source.
 
-## What is Open Registers?
+## What is Open Registers? 
 
 Open Registers is a system for managing registers in Nextcloud. A register is a collection of one or more object types that are defined by a [`schema.json`](https://json-schema.org/). Registers sort objects and validate them against their object types.
 
