@@ -1373,21 +1373,15 @@ export default {
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Publish each file individually
+				// Publish each file individually using the store method
 				for (const file of selectedFiles) {
-					const endpoint = `/index.php/apps/openregister/api/objects/${objectStore.objectItem['@self'].register}/${objectStore.objectItem['@self'].schema}/${objectStore.objectItem.id}/files/${encodeURIComponent(file.title || file.name || file.path)}/publish`
-
-					const response = await fetch(endpoint, {
-						method: 'POST',
+					await objectStore.publishFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						fileId: file.id,
 					})
-
-					if (!response.ok) {
-						throw new Error(`Failed to publish file ${file.title || file.name}: ${response.statusText}`)
-					}
 				}
-
-				// Refresh files list once after all operations
-				await objectStore.getFiles(objectStore.objectItem)
 
 				// Clear selection after successful operation
 				this.selectedAttachments = []
@@ -1410,21 +1404,15 @@ export default {
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Depublish each file individually
+				// Depublish each file individually using the store method
 				for (const file of selectedFiles) {
-					const endpoint = `/index.php/apps/openregister/api/objects/${objectStore.objectItem['@self'].register}/${objectStore.objectItem['@self'].schema}/${objectStore.objectItem.id}/files/${encodeURIComponent(file.title || file.name || file.path)}/depublish`
-
-					const response = await fetch(endpoint, {
-						method: 'POST',
+					await objectStore.unpublishFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						fileId: file.id,
 					})
-
-					if (!response.ok) {
-						throw new Error(`Failed to depublish file ${file.title || file.name}: ${response.statusText}`)
-					}
 				}
-
-				// Refresh files list once after all operations
-				await objectStore.getFiles(objectStore.objectItem)
 
 				// Clear selection after successful operation
 				this.selectedAttachments = []
@@ -1453,7 +1441,7 @@ export default {
 						register: objectStore.objectItem['@self'].register,
 						schema: objectStore.objectItem['@self'].schema,
 						objectId: objectStore.objectItem.id,
-						filePath: file.title || file.name || file.path,
+						fileId: file.id,
 					})
 				}
 
@@ -1474,7 +1462,7 @@ export default {
 					register: objectStore.objectItem['@self'].register,
 					schema: objectStore.objectItem['@self'].schema,
 					objectId: objectStore.objectItem.id,
-					filePath: file.title || file.name || file.path,
+					fileId: file.id,
 				})
 
 				// Files list is automatically refreshed by the store method
@@ -1493,7 +1481,7 @@ export default {
 					register: objectStore.objectItem['@self'].register,
 					schema: objectStore.objectItem['@self'].schema,
 					objectId: objectStore.objectItem.id,
-					filePath: file.title || file.name || file.path,
+					fileId: file.id,
 				})
 
 				// Files list is automatically refreshed by the store method
@@ -1512,7 +1500,7 @@ export default {
 					register: objectStore.objectItem['@self'].register,
 					schema: objectStore.objectItem['@self'].schema,
 					objectId: objectStore.objectItem.id,
-					filePath: file.title || file.name || file.path,
+					fileId: file.id,
 				})
 
 				// Files list is automatically refreshed by the store method
