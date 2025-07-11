@@ -464,8 +464,8 @@ class FileService
      * Creates a folder for an ObjectEntity nested under the register folder.
      *
      * @param ObjectEntity|string $objectEntity The object entity to create the folder for
-     * @param int|null            $registerId   The register of the object to add the file to
-     * @param IUser|null   $currentUser  The current user to share the folder with
+     * @param IUser|null          $currentUser  The current user to share the folder with
+     * @param int|string|null     $registerId   The register of the object to add the file to
      *
      * @return Node|null The created folder Node or null if creation fails
      *
@@ -475,7 +475,7 @@ class FileService
      * @psalm-suppress InvalidNullableReturnType
      * @phpstan-return Node|null
      */
-    private function createObjectFolderById(ObjectEntity|string $objectEntity, ?int $registerId = null, ?IUser $currentUser = null): ?Node
+    private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser = null, int|string|null $registerId = null): ?Node
     {
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();
@@ -668,14 +668,14 @@ class FileService
      * Get an object folder by its stored ID.
      *
      * @param ObjectEntity|string $objectEntity The object entity to get the folder for
-     * @param int|null            $registerId   The register of the object to add the file to
+     * @param int|string|null     $registerId   The register of the object to add the file to
      *
      * @return Folder|null The folder Node or null if not found
      *
      * @psalm-return Folder|null
      * @phpstan-return Folder|null
      */
-    public function getObjectFolder(ObjectEntity|string $objectEntity, ?int $registerId = null): ?Folder
+    public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder
     {
         $folderProperty = null;
         if ($objectEntity instanceof ObjectEntity === true) {
@@ -2268,11 +2268,11 @@ class FileService
      * in addition to any user-provided tags.
      *
      * @param ObjectEntity|string $objectEntity The object entity to add the file to
-     * @param int                 $registerId   The register of the object to add the file to
      * @param string              $fileName     The name of the file to create
      * @param string              $content      The content to write to the file
      * @param bool                $share        Whether to create a share link for the file
      * @param array               $tags         Optional array of tags to attach to the file
+     * @param int|string|null     $registerId   The register of the object to add the file to
      *
      * @throws NotPermittedException If file creation fails due to permissions
      * @throws Exception If file creation fails for other reasons
@@ -2282,7 +2282,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, ?int $registerId = null, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | Schema | null $schema = null, int | Register | null $register = null, int|string|null $registerId = null): File
     {
 		try {
 			// Ensure we have an ObjectEntity instance
