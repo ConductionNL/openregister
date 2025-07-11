@@ -1178,15 +1178,15 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string|number} params.register - Register ID
 		 * @param {string|number} params.schema - Schema ID
 		 * @param {string|number} params.objectId - Object ID
-		 * @param {string} params.filePath - Path to the file to publish
+		 * @param {string|number} params.fileId - ID of the file to publish
 		 * @return {Promise} API response
 		 */
-		async publishFile({ register, schema, objectId, filePath }) {
-			if (!register || !schema || !objectId || !filePath) {
+		async publishFile({ register, schema, objectId, fileId }) {
+			if (!register || !schema || !objectId || !fileId) {
 				throw new Error('Missing required parameters for file publish')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}/publish`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${fileId}/publish`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -1212,15 +1212,15 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string|number} params.register - Register ID
 		 * @param {string|number} params.schema - Schema ID
 		 * @param {string|number} params.objectId - Object ID
-		 * @param {string} params.filePath - Path to the file to unpublish
+		 * @param {string|number} params.fileId - ID of the file to unpublish
 		 * @return {Promise} API response
 		 */
-		async unpublishFile({ register, schema, objectId, filePath }) {
-			if (!register || !schema || !objectId || !filePath) {
+		async unpublishFile({ register, schema, objectId, fileId }) {
+			if (!register || !schema || !objectId || !fileId) {
 				throw new Error('Missing required parameters for file unpublish')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}/depublish`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${fileId}/depublish`
 
 			try {
 				const response = await fetch(endpoint, {
@@ -1246,15 +1246,15 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string|number} params.register - Register ID
 		 * @param {string|number} params.schema - Schema ID
 		 * @param {string|number} params.objectId - Object ID
-		 * @param {string} params.filePath - Path to the file to delete
+		 * @param {string|number} params.fileId - ID of the file to delete
 		 * @return {Promise} API response
 		 */
-		async deleteFile({ register, schema, objectId, filePath }) {
-			if (!register || !schema || !objectId || !filePath) {
+		async deleteFile({ register, schema, objectId, fileId }) {
+			if (!register || !schema || !objectId || !fileId) {
 				throw new Error('Missing required parameters for file delete')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${encodeURIComponent(filePath)}`
+			const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/files/${fileId}`
 
 			try {
 				const response = await fetch(endpoint, {
