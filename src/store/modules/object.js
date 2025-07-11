@@ -207,6 +207,14 @@ export const useObjectStore = defineStore('object', {
 	}),
 	actions: {
 		// Helper method to build endpoint path
+		/**
+		 * Build the API endpoint path for objects
+		 * @param {object} params - Path parameters
+		 * @param {string} params.register - Register ID
+		 * @param {string} params.schema - Schema ID
+		 * @param {string} [params.objectId] - Optional object ID
+		 * @return {string} Complete API endpoint path
+		 */
 		_buildObjectPath({ register, schema, objectId = '' }) {
 			return `/index.php/apps/openregister/api/objects/${register}/${schema}${objectId ? '/' + objectId : ''}`
 		},
@@ -261,6 +269,11 @@ export const useObjectStore = defineStore('object', {
 				this.clearRelatedData()
 			}
 		},
+		/**
+		 * Set the object list with proper entity mapping
+		 * @param {object} objectList - Object list data
+		 * @return {void}
+		 */
 		setObjectList(objectList) {
 			this.objectList = {
 				...objectList,
@@ -271,9 +284,19 @@ export const useObjectStore = defineStore('object', {
 
 			console.info('Object list set to ' + objectList.results.length + ' items')
 		},
+		/**
+		 * Set the audit trail item
+		 * @param {object|null} auditTrailItem - Audit trail item data
+		 * @return {void}
+		 */
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem && new AuditTrail(auditTrailItem)
 		},
+		/**
+		 * Set the audit trails list
+		 * @param {object} auditTrails - Audit trails data
+		 * @return {void}
+		 */
 		setAuditTrails(auditTrails) {
 			this.auditTrails = auditTrails
 			this.auditTrails.results = auditTrails.results
@@ -283,6 +306,11 @@ export const useObjectStore = defineStore('object', {
 				: []
 			console.info('Audit trails set to', this.auditTrails.results.length, 'items')
 		},
+		/**
+		 * Set the contracts list
+		 * @param {object} contracts - Contracts data
+		 * @return {void}
+		 */
 		setContracts(contracts) {
 			this.contracts = contracts
 			this.contracts.results = contracts.results
@@ -292,6 +320,11 @@ export const useObjectStore = defineStore('object', {
 				: []
 			console.info('Contracts set to', this.contracts.results.length, 'items')
 		},
+		/**
+		 * Set the uses list
+		 * @param {object} uses - Uses data
+		 * @return {void}
+		 */
 		setUses(uses) {
 			this.uses = uses
 			this.uses.results = uses.results
@@ -301,6 +334,11 @@ export const useObjectStore = defineStore('object', {
 				: []
 			console.info('Uses set to', this.uses.results.length, 'items')
 		},
+		/**
+		 * Set the used by list
+		 * @param {object} used - Used by data
+		 * @return {void}
+		 */
 		setUsed(used) {
 			this.used = used
 			this.used.results = used.results
@@ -310,6 +348,11 @@ export const useObjectStore = defineStore('object', {
 				: []
 			console.info('Used by set to', this.used.results.length, 'items')
 		},
+		/**
+		 * Set the files list
+		 * @param {object} files - Files data
+		 * @return {void}
+		 */
 		setFiles(files) {
 			this.files = files
 			this.files.results = files.results || []
@@ -336,6 +379,16 @@ export const useObjectStore = defineStore('object', {
 			this.filters = { ...this.filters, ...filters }
 			console.info('Query filters set to', this.filters)
 		},
+		/**
+		 * Refresh the object list with current filters and facets
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.register] - Register ID
+		 * @param {string} [options.schema] - Schema ID
+		 * @param {number} [options.limit] - Page limit
+		 * @param {number} [options.page] - Page number
+		 * @param {boolean} [options.includeFacets] - Whether to include facets
+		 * @return {Promise<object>} Promise that resolves with response and data
+		 */
 		async refreshObjectList(options = {}) {
 			const registerStore = useRegisterStore()
 			const schemaStore = useSchemaStore()
@@ -464,6 +517,14 @@ export const useObjectStore = defineStore('object', {
 				this.loading = false
 			}
 		},
+		/**
+		 * Get a single object by ID
+		 * @param {object} params - Object parameters
+		 * @param {string} params.register - Register ID
+		 * @param {string} params.schema - Schema ID
+		 * @param {string} params.objectId - Object ID
+		 * @return {Promise<object>} Promise that resolves with object data
+		 */
 		async getObject({ register, schema, objectId }) {
 			if (!register || !schema || !objectId) {
 				throw new Error('Register, schema and objectId are required')
@@ -481,6 +542,14 @@ export const useObjectStore = defineStore('object', {
 				throw err
 			}
 		},
+		/**
+		 * Save an object (create or update)
+		 * @param {object} objectItem - Object data to save
+		 * @param {object} params - Save parameters
+		 * @param {string} params.register - Register ID
+		 * @param {string} params.schema - Schema ID
+		 * @return {Promise<object>} Promise that resolves with response and data
+		 */
 		async saveObject(objectItem, { register, schema }) {
 			if (!objectItem || !register || !schema) {
 				throw new Error('Object item, register and schema are required')
@@ -543,6 +612,14 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		// mass delete objects
+		/**
+		 * Delete multiple objects
+		 * @param {Array<string|number>} objectIds - Array of object IDs to delete
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.register] - Register ID
+		 * @param {string} [options.schema] - Schema ID
+		 * @return {Promise<object>} Promise that resolves with deletion results
+		 */
 		async massDeleteObject(objectIds, options = {}) {
 			if (!objectIds?.length) throw new Error('No object ids to delete')
 
@@ -571,6 +648,15 @@ export const useObjectStore = defineStore('object', {
 			return result
 		},
 		// AUDIT TRAILS
+		/**
+		 * Get audit trails for an object
+		 * @param {object} object - Object containing id, register, and schema
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.search] - Search term
+		 * @param {number} [options.limit] - Page limit
+		 * @param {number} [options.page] - Page number
+		 * @return {Promise<object>} Promise that resolves with audit trails data
+		 */
 		async getAuditTrails(object, options = {}) {
 			if (!object?.id) {
 				throw new Error('No object id to get audit trails for')
@@ -680,6 +766,10 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		// mappings
+		/**
+		 * Get object mappings
+		 * @return {Promise<object>} Promise that resolves with mappings data
+		 */
 		async getMappings() {
 			const endpoint = '/index.php/apps/openregister/api/objects/mappings'
 
@@ -769,13 +859,26 @@ export const useObjectStore = defineStore('object', {
 			await this.refreshObjectList()
 			return { response, data }
 		},
+		/**
+		 * Set selected objects
+		 * @param {Array<string|number>} objects - Array of object IDs to select
+		 * @return {void}
+		 */
 		setSelectedObjects(objects) {
 			this.selectedObjects = objects
 		},
+		/**
+		 * Set select all objects (legacy method)
+		 * @return {void}
+		 */
 		setSelectAllObjects() {
 			// Legacy method for compatibility - use toggleSelectAllObjects instead
 			this.toggleSelectAllObjects()
 		},
+		/**
+		 * Toggle select all objects
+		 * @return {void}
+		 */
 		toggleSelectAllObjects() {
 			if (this.isAllSelected) {
 				// Clear selection
@@ -785,6 +888,12 @@ export const useObjectStore = defineStore('object', {
 				this.selectedObjects = this.objectList.results.map(result => result['@self'].id)
 			}
 		},
+		/**
+		 * Update column filter
+		 * @param {string} id - Filter ID
+		 * @param {boolean} enabled - Whether the filter is enabled
+		 * @return {void}
+		 */
 		updateColumnFilter(id, enabled) {
 			console.info('Updating column filter:', id, enabled)
 			console.info('Current columnFilters:', this.columnFilters)
@@ -810,6 +919,11 @@ export const useObjectStore = defineStore('object', {
 			this.objectList = { ...this.objectList }
 		},
 		// Initialize properties based on schema
+		/**
+		 * Initialize properties based on schema
+		 * @param {object} schema - Schema object with properties
+		 * @return {void}
+		 */
 		initializeProperties(schema) {
 			if (!schema?.properties) {
 				return
@@ -841,6 +955,10 @@ export const useObjectStore = defineStore('object', {
 			this.initializeColumnFilters()
 		},
 		// Update to handle both metadata and properties
+		/**
+		 * Initialize column filters for both metadata and properties
+		 * @return {void}
+		 */
 		initializeColumnFilters() {
 			this.columnFilters = {
 				...Object.entries(this.metadata).reduce((acc, [id, meta]) => {
@@ -854,6 +972,10 @@ export const useObjectStore = defineStore('object', {
 			}
 			console.info('Initialized column filters:', this.columnFilters)
 		},
+		/**
+		 * Clear all related data
+		 * @return {void}
+		 */
 		clearRelatedData() {
 			const emptyPaginatedData = {
 				results: [],
@@ -877,6 +999,15 @@ export const useObjectStore = defineStore('object', {
 
 			console.info('All related data cleared')
 		},
+		/**
+		 * Get contracts for an object
+		 * @param {object} object - Object containing id, register, and schema
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.search] - Search term
+		 * @param {number} [options.limit] - Page limit
+		 * @param {number} [options.page] - Page number
+		 * @return {Promise<object>} Promise that resolves with contracts data
+		 */
 		async getContracts(object, options = {}) {
 			if (!object?.id) {
 				throw new Error('No object id to get contracts for')
@@ -921,6 +1052,15 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Get uses for an object
+		 * @param {object} object - Object containing id, register, and schema
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.search] - Search term
+		 * @param {number} [options.limit] - Page limit
+		 * @param {number} [options.page] - Page number
+		 * @return {Promise<object>} Promise that resolves with uses data
+		 */
 		async getUses(object, options = {}) {
 			if (!object?.id) {
 				throw new Error('No object id to get uses for')
@@ -965,6 +1105,15 @@ export const useObjectStore = defineStore('object', {
 				throw error
 			}
 		},
+		/**
+		 * Get used by for an object
+		 * @param {object} object - Object containing id, register, and schema
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.search] - Search term
+		 * @param {number} [options.limit] - Page limit
+		 * @param {number} [options.page] - Page number
+		 * @return {Promise<object>} Promise that resolves with used by data
+		 */
 		async getUsed(object, options = {}) {
 			if (!object?.id) {
 				throw new Error('No object id to get used by for')
@@ -1324,22 +1473,45 @@ export const useObjectStore = defineStore('object', {
 			}
 		},
 		// Facet-related methods
+		/**
+		 * Set facets data
+		 * @param {object} facets - Facets data
+		 * @return {void}
+		 */
 		setFacets(facets) {
 			this.facets = facets
 		},
+		/**
+		 * Set facetable fields data
+		 * @param {object} facetableFields - Facetable fields data
+		 * @return {void}
+		 */
 		setFacetableFields(facetableFields) {
 			this.facetableFields = facetableFields
 		},
+		/**
+		 * Set active facets
+		 * @param {object} activeFacets - Active facets configuration
+		 * @return {void}
+		 */
 		setActiveFacets(activeFacets) {
 			this.activeFacets = activeFacets
 		},
+		/**
+		 * Set facets loading state
+		 * @param {boolean} loading - Loading state
+		 * @return {void}
+		 */
 		setFacetsLoading(loading) {
 			this.facetsLoading = loading
 		},
 		/**
 		 * Get facetable fields for the current register and schema
 		 * This discovers what fields can be used for faceting
-		 * @param options
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.register] - Register ID
+		 * @param {string} [options.schema] - Schema ID
+		 * @return {Promise<object>} Promise that resolves with facetable fields data
 		 */
 		async getFacetableFields(options = {}) {
 			const registerStore = useRegisterStore()
@@ -1389,8 +1561,11 @@ export const useObjectStore = defineStore('object', {
 		/**
 		 * Get facets for the current search/filter context
 		 * This returns actual facet counts based on the current query
-		 * @param facetConfig
-		 * @param options
+		 * @param {object|null} [facetConfig] - Facet configuration object
+		 * @param {object} [options] - Optional parameters
+		 * @param {string} [options.register] - Register ID
+		 * @param {string} [options.schema] - Schema ID
+		 * @return {Promise<object>} Promise that resolves with facets data
 		 */
 		async getFacets(facetConfig = null, options = {}) {
 			const registerStore = useRegisterStore()
@@ -1466,6 +1641,7 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Build facet configuration from currently active facets
+		 * @return {object} Facet configuration object
 		 */
 		buildFacetConfiguration() {
 			// eslint-disable-next-line no-console
@@ -1505,8 +1681,9 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Add facet parameters to URL params array
-		 * @param params
-		 * @param facetConfig
+		 * @param {Array} params - URL params array
+		 * @param {object} facetConfig - Facet configuration object
+		 * @return {void}
 		 */
 		addFacetParamsToUrl(params, facetConfig) {
 			// eslint-disable-next-line no-console
@@ -1578,9 +1755,10 @@ export const useObjectStore = defineStore('object', {
 		},
 		/**
 		 * Update active facets and refresh data
-		 * @param field
-		 * @param facetType
-		 * @param enabled
+		 * @param {string} field - Field name
+		 * @param {string} facetType - Facet type
+		 * @param {boolean} [enabled] - Whether to enable or disable the facet
+		 * @return {Promise<void>} Promise that resolves when the facet is updated
 		 */
 		async updateActiveFacet(field, facetType, enabled = true) {
 			if (enabled) {
@@ -1613,9 +1791,20 @@ export const useObjectStore = defineStore('object', {
 			await this.getFacets()
 		},
 		// Add methods to manage active filters
+		/**
+		 * Set active filters
+		 * @param {object} filters - Filters object
+		 * @return {void}
+		 */
 		setActiveFilters(filters) {
 			this.activeFilters = filters
 		},
+		/**
+		 * Update filter for a field
+		 * @param {string} fieldName - Field name
+		 * @param {Array|string} values - Filter values
+		 * @return {void}
+		 */
 		updateFilter(fieldName, values) {
 			if (!values || (Array.isArray(values) && values.length === 0)) {
 				// Remove filter if no values
@@ -1627,6 +1816,10 @@ export const useObjectStore = defineStore('object', {
 				this.activeFilters[fieldName] = Array.isArray(values) ? values : [values]
 			}
 		},
+		/**
+		 * Clear all active filters
+		 * @return {void}
+		 */
 		clearAllFilters() {
 			this.activeFilters = {}
 		},
