@@ -649,9 +649,6 @@ import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
-import ListBoxOutline from 'vue-material-design-icons/ListBoxOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 export default {
@@ -689,9 +686,6 @@ export default {
 		Plus,
 		Publish,
 		PublishOff,
-		ListBoxOutline,
-		Pencil,
-		AlertOutline,
 		ExclamationThick,
 		PaginationComponent,
 	},
@@ -743,7 +737,7 @@ export default {
 			// Add schema properties that don't exist in the object yet
 			const missingSchemaProperties = []
 			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
-				if (!objectData.hasOwnProperty(key)) {
+				if (!Object.prototype.hasOwnProperty.call(objectData, key)) {
 					// Add with appropriate default value based on type
 					let defaultValue
 					switch (schemaProperty.type) {
@@ -1526,7 +1520,7 @@ export default {
 
 			// Check if property exists in schema
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			const existsInObject = objectStore.objectItem.hasOwnProperty(key)
+			const existsInObject = Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
 
 			if (!schemaProperty) {
 				// Property exists in object but not in schema - warning (yellow)
@@ -2033,7 +2027,7 @@ export default {
 			}
 
 			// If this is a schema property that doesn't exist in the object yet, show placeholder
-			if (!objectStore.objectItem.hasOwnProperty(key) && schemaProperty) {
+			if (!Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) && schemaProperty) {
 				return value // This will be the default value we set in objectProperties
 			}
 
