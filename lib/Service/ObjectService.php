@@ -1358,6 +1358,9 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query = []): array
     {
+        // Start timing execution
+        $startTime = microtime(true);
+        
         // Extract pagination parameters
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1447,8 +1450,11 @@ class ObjectService
             $paginatedResults['prev'] = $prevUrl;
         }
 
-        // Log the search trail
-        $this->logSearchTrail($query, count($results), $total, 'sync');
+        // Calculate execution time in milliseconds
+        $executionTime = (microtime(true) - $startTime) * 1000;
+
+        // Log the search trail with actual execution time
+        $this->logSearchTrail($query, count($results), $total, $executionTime, 'sync');
 
         return $paginatedResults;
 
@@ -1493,6 +1499,9 @@ class ObjectService
      */
     public function searchObjectsPaginatedAsync(array $query = []): PromiseInterface
     {
+        // Start timing execution
+        $startTime = microtime(true);
+        
         // Extract pagination parameters (same as synchronous version)
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1574,7 +1583,7 @@ class ObjectService
         });
 
         // Execute all promises concurrently and combine results
-        return \React\Promise\all($promises)->then(function ($results) use ($page, $limit, $offset) {
+        return \React\Promise\all($promises)->then(function ($results) use ($page, $limit, $offset, $query, $startTime) {
             // Extract results from promises
             $searchResults = $results['search'];
             $total = $results['count'];
@@ -1623,8 +1632,11 @@ class ObjectService
                 $paginatedResults['prev'] = $prevUrl;
             }
 
-            // Log the search trail
-            $this->logSearchTrail($query, count($searchResults), $total, 'async');
+            // Calculate execution time in milliseconds
+            $executionTime = (microtime(true) - $startTime) * 1000;
+
+            // Log the search trail with actual execution time
+            $this->logSearchTrail($query, count($searchResults), $total, $executionTime, 'async');
 
             return $paginatedResults;
         });
@@ -1656,6 +1668,7 @@ class ObjectService
         $promise = $this->searchObjectsPaginatedAsync($query);
         
         // Use React's await functionality to get the result synchronously
+        // Note: The async version already logs the search trail, so we don't need to log again
         return \React\Async\await($promise);
 
     }//end searchObjectsPaginatedSync()
@@ -2607,22 +2620,20 @@ class ObjectService
      * @param array  $query         The search query parameters
      * @param int    $resultCount   The number of results returned
      * @param int    $totalResults  The total number of matching results
+     * @param float  $executionTime The actual execution time in milliseconds
      * @param string $executionType The execution type ('sync' or 'async')
      *
      * @return void
      */
-    private function logSearchTrail(array $query, int $resultCount, int $totalResults, string $executionType = 'sync'): void
+    private function logSearchTrail(array $query, int $resultCount, int $totalResults, float $executionTime, string $executionType = 'sync'): void
     {
         try {
-            // Calculate response time (this is a simplified version)
-            $responseTime = 0.0; // In a real implementation, you'd track the actual response time
-            
-            // Create the search trail entry using the service
+            // Create the search trail entry using the service with actual execution time
             $this->searchTrailService->createSearchTrail(
                 $query,
                 $resultCount,
                 $totalResults,
-                $responseTime,
+                $executionTime,
                 $executionType
             );
         } catch (\Exception $e) {

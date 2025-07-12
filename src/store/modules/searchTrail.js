@@ -113,39 +113,48 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set popular terms
-		 * @param {Array} terms - The popular terms array
+		 * @param {object} response - The popular terms response object
 		 */
-		setPopularTerms(terms) {
+		setPopularTerms(response) {
+			// Handle response structure from API
+			const terms = response?.terms || response
 			this.popularTerms = Array.isArray(terms) ? [...terms] : []
 			console.info('Popular terms set to:', this.popularTerms.length, 'items')
 		},
 
 		/**
 		 * Set activity data
-		 * @param {object} activity - The activity data object
+		 * @param {object} activityResponse - The activity data response
 		 */
-		setActivity(activity) {
-			this.activity = {
-				...this.activity,
-				...activity,
-			}
+		setActivity(activityResponse) {
+			// Handle response structure from API
+			Object.entries(activityResponse).forEach(([period, response]) => {
+				// Extract activity data from the response
+				// The response can be structured as {activity: [array]} or directly as an array
+				const activityData = response?.activity || response
+				this.activity[period] = Array.isArray(activityData) ? [...activityData] : []
+			})
 			console.info('Search trail activity set to:', this.activity)
 		},
 
 		/**
 		 * Set register schema statistics
-		 * @param {Array} stats - The register schema statistics array
+		 * @param {object} response - The register schema statistics response
 		 */
-		setRegisterSchemaStats(stats) {
+		setRegisterSchemaStats(response) {
+			// Handle response structure from API
+			const stats = response?.statistics || response
 			this.registerSchemaStats = Array.isArray(stats) ? [...stats] : []
 			console.info('Register schema stats set to:', this.registerSchemaStats.length, 'items')
 		},
 
 		/**
 		 * Set user agent statistics
-		 * @param {Array} stats - The user agent statistics array
+		 * @param {object} response - The user agent statistics response
 		 */
-		setUserAgentStats(stats) {
+		setUserAgentStats(response) {
+			// Handle response structure from API
+			const stats = response?.user_agents || response
 			this.userAgentStats = Array.isArray(stats) ? [...stats] : []
 			console.info('User agent stats set to:', this.userAgentStats.length, 'items')
 		},
@@ -327,7 +336,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			try {
 				console.info('Fetching search activity for period:', period)
 
-				const response = await fetch(`${apiUrl}/search-trails/activity?period=${period}`, {
+				const response = await fetch(`${apiUrl}/search-trails/activity?interval=${period}`, {
 					method: 'GET',
 					headers: {
 						'Content-Type': 'application/json',

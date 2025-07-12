@@ -117,7 +117,7 @@ import formatBytes from '../../services/formatBytes.js'
 						<tr v-for="searchTrail in paginatedSearchTrails"
 							:key="searchTrail.id"
 							class="viewTableRow searchTrailRow"
-							:class="{ 'success': searchTrail.success, 'failed': !searchTrail.success }">
+							:class="{ 'success': searchTrail.totalResults > 0, 'failed': searchTrail.totalResults === 0 }">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:checked="selectedSearchTrails.includes(searchTrail.id)"
@@ -125,8 +125,8 @@ import formatBytes from '../../services/formatBytes.js'
 							</td>
 							<td class="searchTermColumn">
 								<span class="searchTermText">{{ searchTrail.searchTerm || '-' }}</span>
-								<span v-if="searchTrail.resultCount > 0" class="searchResultsBadge">
-									{{ searchTrail.resultCount }} {{ t('openregister', 'results') }}
+								<span v-if="searchTrail.totalResults > 0" class="searchResultsBadge">
+									{{ searchTrail.totalResults }} {{ t('openregister', 'results') }}
 								</span>
 							</td>
 							<td class="timestampColumn">
@@ -142,12 +142,12 @@ import formatBytes from '../../services/formatBytes.js'
 								{{ searchTrail.userName || searchTrail.user || '-' }}
 							</td>
 							<td class="tableColumnConstrained">
-								<span :class="{ 'success-text': searchTrail.success, 'error-text': !searchTrail.success }">
-									{{ searchTrail.resultCount || 0 }}
+								<span :class="{ 'success-text': searchTrail.totalResults > 0, 'error-text': !searchTrail.totalResults }">
+									{{ searchTrail.totalResults || 0 }}
 								</span>
 							</td>
 							<td class="tableColumnConstrained">
-								<span class="executionTime">{{ formatExecutionTime(searchTrail.executionTime) }}</span>
+								<span class="executionTime">{{ formatExecutionTime(searchTrail.responseTime) }}</span>
 							</td>
 							<td class="tableColumnActions">
 								<NcActions>
@@ -163,12 +163,11 @@ import formatBytes from '../../services/formatBytes.js'
 										</template>
 										{{ t('openregister', 'View Parameters') }}
 									</NcActionButton>
-									<NcActionButton close-after-click @click="copyData(searchTrail)">
+									<NcActionButton v-if="searchTrail.searchTerm" close-after-click @click="rerunSearch(searchTrail)">
 										<template #icon>
-											<Check v-if="copyStates[searchTrail.id]" :size="20" class="copySuccessIcon" />
-											<ContentCopy v-else :size="20" />
+											<Refresh :size="20" />
 										</template>
-										{{ copyStates[searchTrail.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
+										{{ t('openregister', 'Rerun Search') }}
 									</NcActionButton>
 									<NcActionButton close-after-click class="deleteAction" @click="deleteSearchTrail(searchTrail)">
 										<template #icon>
@@ -212,8 +211,7 @@ import Broom from 'vue-material-design-icons/Broom.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Check from 'vue-material-design-icons/Check.vue'
+
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -233,14 +231,11 @@ export default {
 		Refresh,
 		Eye,
 		Cog,
-		ContentCopy,
-		Check,
 		PaginationComponent,
 	},
 	data() {
 		return {
 			itemsPerPage: 50,
-			copyStates: {}, // Track copy state for each search trail
 			selectedSearchTrails: [],
 		}
 	},
@@ -309,7 +304,7 @@ export default {
 				await searchTrailStore.refreshSearchTrailList()
 			} catch (error) {
 				console.error('Error loading search trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error loading search trails'))
+				OC.Notification.showTemporary(this.t('openregister', 'Error loading search trails'), { type: 'error' })
 			}
 		},
 		/**
@@ -328,10 +323,27 @@ export default {
 		 * @return {void}
 		 */
 		viewDetails(searchTrail) {
-			// Set the search trail item in the store
-			searchTrailStore.setSearchTrailItem(searchTrail)
-			// Open the details modal
-			navigationStore.setDialog('searchTrailDetails')
+			// Create a formatted details message
+			const details = []
+			details.push(`Search Term: ${searchTrail.searchTerm || 'N/A'}`)
+			details.push(`Timestamp: ${new Date(searchTrail.created).toLocaleString()}`)
+			details.push(`Register: ${searchTrail.registerName || searchTrail.register || 'N/A'}`)
+			details.push(`Schema: ${searchTrail.schemaName || searchTrail.schema || 'N/A'}`)
+			details.push(`User: ${searchTrail.userName || searchTrail.user || 'N/A'}`)
+			details.push(`Results: ${searchTrail.totalResults || 0}`)
+			details.push(`Execution Time: ${this.formatExecutionTime(searchTrail.responseTime)}`)
+			
+			if (searchTrail.parameters && typeof searchTrail.parameters === 'object') {
+				details.push(`Parameters: ${JSON.stringify(searchTrail.parameters, null, 2)}`)
+			}
+			
+			// Show details in a dialog
+			OC.dialogs.info(
+				details.join('\n'),
+				this.t('openregister', 'Search Trail Details'),
+				null,
+				true
+			)
 		},
 		/**
 		 * View parameters information for a search trail entry
@@ -344,52 +356,42 @@ export default {
 			navigationStore.setDialog('searchTrailParameters')
 		},
 		/**
-		 * Copy search trail data to clipboard
-		 * @param {object} searchTrail - Search trail entry to copy
-		 * @return {Promise<void>}
+		 * Rerun a search based on the search trail parameters
+		 * @param {object} searchTrail - Search trail entry to rerun
+		 * @return {void}
 		 */
-		async copyData(searchTrail) {
-			try {
-				const data = JSON.stringify(searchTrail, null, 2)
-				await navigator.clipboard.writeText(data)
-
-				// Set successful copy state
-				this.$set(this.copyStates, searchTrail.id, true)
-
-				// Show success notification with enhanced styling
-				OC.Notification.showSuccess(this.t('openregister', 'Search trail data copied to clipboard'))
-
-				// Reset copy state after 2 seconds
-				setTimeout(() => {
-					this.$set(this.copyStates, searchTrail.id, false)
-				}, 2000)
-
-			} catch (error) {
-				console.error('Error copying to clipboard:', error)
-				// Fallback for older browsers or when clipboard API is not available
+		rerunSearch(searchTrail) {
+			// Navigate to the search page with the same parameters
+			const searchParams = {
+				q: searchTrail.searchTerm,
+				register: searchTrail.register,
+				schema: searchTrail.schema,
+			}
+			
+			// Add any additional parameters from the search trail
+			if (searchTrail.parameters) {
 				try {
-					const textArea = document.createElement('textarea')
-					textArea.value = JSON.stringify(searchTrail, null, 2)
-					document.body.appendChild(textArea)
-					textArea.select()
-					document.execCommand('copy')
-					document.body.removeChild(textArea)
-
-					// Set successful copy state for fallback method too
-					this.$set(this.copyStates, searchTrail.id, true)
-
-					OC.Notification.showSuccess(this.t('openregister', 'Search trail data copied to clipboard'))
-
-					// Reset copy state after 2 seconds
-					setTimeout(() => {
-						this.$set(this.copyStates, searchTrail.id, false)
-					}, 2000)
-
-				} catch (fallbackError) {
-					console.error('Fallback copy failed:', fallbackError)
-					OC.Notification.showError(this.t('openregister', 'Failed to copy data to clipboard'))
+					const parsedParams = typeof searchTrail.parameters === 'string' 
+						? JSON.parse(searchTrail.parameters) 
+						: searchTrail.parameters
+					
+					Object.assign(searchParams, parsedParams)
+				} catch (error) {
+					console.error('Error parsing search parameters:', error)
 				}
 			}
+			
+			// Navigate to search page with parameters
+			this.$router.push({
+				name: 'search',
+				query: searchParams,
+			})
+			
+			// Show notification
+			OC.Notification.showTemporary(
+				this.t('openregister', 'Rerunning search: {searchTerm}', { searchTerm: searchTrail.searchTerm }),
+				{ type: 'info' }
+			)
 		},
 		/**
 		 * Delete a single search trail using the new modal
@@ -414,17 +416,17 @@ export default {
 			try {
 				const result = await searchTrailStore.cleanupSearchTrails(30)
 
-				if (result.success) {
-					OC.Notification.showSuccess(this.t('openregister', 'Cleanup completed successfully. Deleted {count} entries.', { count: result.deletedCount || 0 }))
-					// Refresh the list
-					await this.loadSearchTrails()
-				} else {
-					throw new Error(result.message || 'Cleanup failed')
-				}
-			} catch (error) {
-				console.error('Error during cleanup:', error)
-				OC.Notification.showError(this.t('openregister', 'Cleanup failed: {error}', { error: error.message }))
+							if (result.success) {
+				OC.Notification.showTemporary(this.t('openregister', 'Cleanup completed successfully. Deleted {count} entries.', { count: result.deletedCount || 0 }), { type: 'success' })
+				// Refresh the list
+				await this.loadSearchTrails()
+			} else {
+				throw new Error(result.message || 'Cleanup failed')
 			}
+		} catch (error) {
+			console.error('Error during cleanup:', error)
+			OC.Notification.showTemporary(this.t('openregister', 'Cleanup failed: {error}', { error: error.message }), { type: 'error' })
+		}
 		},
 		/**
 		 * Refresh search trails list
@@ -556,19 +558,19 @@ export default {
 
 				const result = await response.json()
 
-				if (result.success) {
-					OC.Notification.showSuccess(result.message || this.t('openregister', 'Selected search trails deleted successfully'))
-					// Clear selection
-					this.selectedSearchTrails = []
-					// Refresh the list
-					await this.loadSearchTrails()
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
-			} catch (error) {
-				console.error('Error deleting search trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error deleting search trails: {error}', { error: error.message }))
+							if (result.success) {
+				OC.Notification.showTemporary(result.message || this.t('openregister', 'Selected search trails deleted successfully'), { type: 'success' })
+				// Clear selection
+				this.selectedSearchTrails = []
+				// Refresh the list
+				await this.loadSearchTrails()
+			} else {
+				throw new Error(result.error || 'Deletion failed')
 			}
+		} catch (error) {
+			console.error('Error deleting search trails:', error)
+			OC.Notification.showTemporary(this.t('openregister', 'Error deleting search trails: {error}', { error: error.message }), { type: 'error' })
+		}
 		},
 	},
 }

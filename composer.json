@@ -24,6 +24,8 @@
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
 		"cs:check": "php-cs-fixer fix --dry-run --diff",
 		"cs:fix": "php-cs-fixer fix",
+		"phpcs": "phpcs --standard=phpcs.xml",
+		"phpcs:fix": "phpcbf --standard=phpcs.xml",
 		"psalm": "psalm --threads=1 --no-cache",
 		"test:unit": "phpunit tests -c tests/phpunit.xml --colors=always --fail-on-warning --fail-on-risky",
 		"openapi": "generate-spec"
@@ -45,12 +47,15 @@
 	},
 	"require-dev": {
 		"nextcloud/ocp": "dev-stable29",
-		"roave/security-advisories": "dev-latest"
+		"phpcsstandards/phpcsextra": "^1.4",
+		"roave/security-advisories": "dev-latest",
+		"squizlabs/php_codesniffer": "^3.9"
 	},
 	"config": {
 		"allow-plugins": {
 			"bamarni/composer-bin-plugin": true,
-			"php-http/discovery": true
+			"php-http/discovery": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,

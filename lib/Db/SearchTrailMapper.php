@@ -197,7 +197,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $count = $result->fetchOne();
         $result->closeCursor();
 
@@ -247,10 +247,10 @@ class SearchTrailMapper extends QBMapper
 
 
     /**
-     * Get search statistics for a given period
+     * Get search statistics for the given time period
      *
-     * @param DateTime|null $from Start date for statistics
-     * @param DateTime|null $to   End date for statistics
+     * @param DateTime|null $from Start date filter
+     * @param DateTime|null $to   End date filter
      *
      * @return array Array of search statistics
      */
@@ -261,14 +261,11 @@ class SearchTrailMapper extends QBMapper
         // Base query for time period
         $qb->select([
             $qb->func()->count('*', 'total_searches'),
-            $qb->func()->sum('result_count', 'total_results'),
-            $qb->func()->avg('result_count', 'avg_results_per_search'),
-            $qb->func()->avg('response_time', 'avg_response_time'),
-            $qb->func()->sum(
-                $qb->expr()->literal(1),
-                $qb->expr()->literal('non_empty_searches')
-            )->from($this->getTableName()),
+            $qb->func()->sum('total_results', 'total_results'),
         ])
+            ->addSelect($qb->createFunction('AVG(total_results) AS avg_results_per_search'))
+            ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
+            ->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
             ->from($this->getTableName());
 
         // Apply date filters
@@ -279,7 +276,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $stats = $result->fetch();
         $result->closeCursor();
 
@@ -310,9 +307,9 @@ class SearchTrailMapper extends QBMapper
         $qb->select([
             'search_term',
             $qb->func()->count('*', 'search_count'),
-            $qb->func()->avg('result_count', 'avg_results'),
-            $qb->func()->avg('response_time', 'avg_response_time'),
         ])
+            ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
+            ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
             ->where($qb->expr()->isNotNull('search_term'))
             ->andWhere($qb->expr()->neq('search_term', $qb->createNamedParameter('')))
@@ -328,7 +325,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $terms = $result->fetchAll();
         $result->closeCursor();
 
@@ -359,28 +356,35 @@ class SearchTrailMapper extends QBMapper
 
         // Format date based on interval
         $dateFormat = match ($interval) {
-            'hour' => 'Y-m-d H:00:00',
-            'day' => 'Y-m-d',
-            'week' => 'Y-\\WW',
-            'month' => 'Y-m',
-            default => 'Y-m-d',
+            'hour' => '%Y-%m-%d %H:00:00',
+            'day' => '%Y-%m-%d',
+            'week' => '%Y-%u',
+            'month' => '%Y-%m',
+            default => '%Y-%m-%d',
         };
 
         $qb->select([
             $qb->func()->count('*', 'search_count'),
-            $qb->func()->avg('result_count', 'avg_results'),
-            $qb->func()->avg('response_time', 'avg_response_time'),
         ])
+            ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
+            ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
             ->groupBy('date_period')
             ->orderBy('date_period', 'ASC');
 
         // Add date formatting based on database type
         if ($this->db->getDatabasePlatform()->getName() === 'mysql') {
-            $qb->addSelect("DATE_FORMAT(created, '{$dateFormat}') as date_period");
+            $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
         } else {
-            // For SQLite and PostgreSQL
-            $qb->addSelect("strftime('{$dateFormat}', created) as date_period");
+            // For SQLite and PostgreSQL - convert MySQL format to SQLite format
+            $sqliteFormat = match ($interval) {
+                'hour' => '%Y-%m-%d %H:00:00',
+                'day' => '%Y-%m-%d',
+                'week' => '%Y-%W',
+                'month' => '%Y-%m',
+                default => '%Y-%m-%d',
+            };
+            $qb->addSelect($qb->createFunction("strftime('{$sqliteFormat}', created) AS date_period"));
         }
 
         // Apply date filters
@@ -391,7 +395,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $activity = $result->fetchAll();
         $result->closeCursor();
 
@@ -425,9 +429,9 @@ class SearchTrailMapper extends QBMapper
             'register_uuid',
             'schema_uuid',
             $qb->func()->count('*', 'search_count'),
-            $qb->func()->avg('result_count', 'avg_results'),
-            $qb->func()->avg('response_time', 'avg_response_time'),
         ])
+            ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
+            ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
             ->groupBy('register', 'schema', 'register_uuid', 'schema_uuid')
             ->orderBy('search_count', 'DESC');
@@ -440,7 +444,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $stats = $result->fetchAll();
         $result->closeCursor();
 
@@ -475,9 +479,9 @@ class SearchTrailMapper extends QBMapper
         $qb->select([
             'user_agent',
             $qb->func()->count('*', 'search_count'),
-            $qb->func()->avg('result_count', 'avg_results'),
-            $qb->func()->avg('response_time', 'avg_response_time'),
         ])
+            ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
+            ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
             ->where($qb->expr()->isNotNull('user_agent'))
             ->groupBy('user_agent')
@@ -492,7 +496,7 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $stats = $result->fetchAll();
         $result->closeCursor();
 
@@ -529,7 +533,7 @@ class SearchTrailMapper extends QBMapper
             $qb->where($qb->expr()->lt('created', $qb->createNamedParameter($oneYearAgo->format('Y-m-d H:i:s'))));
         }
 
-        return $qb->execute();
+        return $qb->executeStatement();
 
     }//end cleanup()
 
