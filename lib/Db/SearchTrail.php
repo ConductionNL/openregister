@@ -58,28 +58,28 @@ class SearchTrail extends Entity implements JsonSerializable
     /**
      * The number of results returned for this search
      *
-     * @var int|null The number of results returned for this search
+     * @var integer|null The number of results returned for this search
      */
     protected ?int $resultCount = null;
 
     /**
      * The total number of matching results (before pagination)
      *
-     * @var int|null The total number of matching results
+     * @var integer|null The total number of matching results
      */
     protected ?int $totalResults = null;
 
     /**
      * Register ID associated with the search
      *
-     * @var int|null Register ID associated with the search
+     * @var integer|null Register ID associated with the search
      */
     protected ?int $register = null;
 
     /**
      * Schema ID associated with the search
      *
-     * @var int|null Schema ID associated with the search
+     * @var integer|null Schema ID associated with the search
      */
     protected ?int $schema = null;
 
@@ -110,6 +110,20 @@ class SearchTrail extends Entity implements JsonSerializable
      * @var string|null Username associated with the search
      */
     protected ?string $userName = null;
+
+    /**
+     * Register name associated with the search
+     *
+     * @var string|null Register name associated with the search
+     */
+    protected ?string $registerName = null;
+
+    /**
+     * Schema name associated with the search
+     *
+     * @var string|null Schema name associated with the search
+     */
+    protected ?string $schemaName = null;
 
     /**
      * Session ID associated with the search
@@ -149,42 +163,42 @@ class SearchTrail extends Entity implements JsonSerializable
     /**
      * Response time for the search in milliseconds
      *
-     * @var int|null Response time for the search in milliseconds
+     * @var integer|null Response time for the search in milliseconds
      */
     protected ?int $responseTime = null;
 
     /**
      * The page number requested (if pagination was used)
      *
-     * @var int|null The page number requested
+     * @var integer|null The page number requested
      */
     protected ?int $page = null;
 
     /**
      * The limit parameter used for pagination
      *
-     * @var int|null The limit parameter used for pagination
+     * @var integer|null The limit parameter used for pagination
      */
     protected ?int $limit = null;
 
     /**
      * The offset parameter used for pagination
      *
-     * @var int|null The offset parameter used for pagination
+     * @var integer|null The offset parameter used for pagination
      */
     protected ?int $offset = null;
 
     /**
      * Whether facets were requested in the search
      *
-     * @var bool|null Whether facets were requested in the search
+     * @var boolean|null Whether facets were requested in the search
      */
     protected ?bool $facetsRequested = null;
 
     /**
      * Whether facetable field discovery was requested
      *
-     * @var bool|null Whether facetable field discovery was requested
+     * @var boolean|null Whether facetable field discovery was requested
      */
     protected ?bool $facetableRequested = null;
 
@@ -205,7 +219,7 @@ class SearchTrail extends Entity implements JsonSerializable
     /**
      * Whether the search was performed on published objects only
      *
-     * @var bool|null Whether the search was performed on published objects only
+     * @var boolean|null Whether the search was performed on published objects only
      */
     protected ?bool $publishedOnly = null;
 
@@ -263,6 +277,8 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'schemaUuid', type: 'string');
         $this->addType(fieldName: 'user', type: 'string');
         $this->addType(fieldName: 'userName', type: 'string');
+        $this->addType(fieldName: 'registerName', type: 'string');
+        $this->addType(fieldName: 'schemaName', type: 'string');
         $this->addType(fieldName: 'session', type: 'string');
         $this->addType(fieldName: 'ipAddress', type: 'string');
         $this->addType(fieldName: 'userAgent', type: 'string');
@@ -376,6 +392,34 @@ class SearchTrail extends Entity implements JsonSerializable
 
 
     /**
+     * Set the register name
+     *
+     * @param string|null $registerName The register name
+     *
+     * @return void
+     */
+    public function setRegisterName(?string $registerName): void
+    {
+        $this->registerName = $registerName;
+
+    }//end setRegisterName()
+
+
+    /**
+     * Set the schema name
+     *
+     * @param string|null $schemaName The schema name
+     *
+     * @return void
+     */
+    public function setSchemaName(?string $schemaName): void
+    {
+        $this->schemaName = $schemaName;
+
+    }//end setSchemaName()
+
+
+    /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
@@ -395,40 +439,42 @@ class SearchTrail extends Entity implements JsonSerializable
         }
 
         return [
-            'id'                  => $this->id,
-            'uuid'                => $this->uuid,
-            'searchTerm'          => $this->searchTerm,
-            'queryParameters'     => $this->queryParameters,
-            'resultCount'         => $this->resultCount,
-            'totalResults'        => $this->totalResults,
-            'register'            => $this->register,
-            'schema'              => $this->schema,
-            'registerUuid'        => $this->registerUuid,
-            'schemaUuid'          => $this->schemaUuid,
-            'user'                => $this->user,
-            'userName'            => $this->userName,
-            'session'             => $this->session,
-            'ipAddress'           => $this->ipAddress,
-            'userAgent'           => $this->userAgent,
-            'requestUri'          => $this->requestUri,
-            'httpMethod'          => $this->httpMethod,
-            'responseTime'        => $this->responseTime,
-            'page'                => $this->page,
-            'limit'               => $this->limit,
-            'offset'              => $this->offset,
-            'facetsRequested'     => $this->facetsRequested,
-            'facetableRequested'  => $this->facetableRequested,
-            'filters'             => $this->filters,
-            'sortParameters'      => $this->sortParameters,
-            'publishedOnly'       => $this->publishedOnly,
-            'executionType'       => $this->executionType,
-            'created'             => $created,
-            'organisationId'      => $this->organisationId,
-            'organisationIdType'  => $this->organisationIdType,
-            'expires'             => $expires,
+            'id'                 => $this->id,
+            'uuid'               => $this->uuid,
+            'searchTerm'         => $this->searchTerm,
+            'queryParameters'    => $this->queryParameters,
+            'resultCount'        => $this->resultCount,
+            'totalResults'       => $this->totalResults,
+            'register'           => $this->register,
+            'schema'             => $this->schema,
+            'registerUuid'       => $this->registerUuid,
+            'schemaUuid'         => $this->schemaUuid,
+            'user'               => $this->user,
+            'userName'           => $this->userName,
+            'registerName'       => $this->registerName,
+            'schemaName'         => $this->schemaName,
+            'session'            => $this->session,
+            'ipAddress'          => $this->ipAddress,
+            'userAgent'          => $this->userAgent,
+            'requestUri'         => $this->requestUri,
+            'httpMethod'         => $this->httpMethod,
+            'responseTime'       => $this->responseTime,
+            'page'               => $this->page,
+            'limit'              => $this->limit,
+            'offset'             => $this->offset,
+            'facetsRequested'    => $this->facetsRequested,
+            'facetableRequested' => $this->facetableRequested,
+            'filters'            => $this->filters,
+            'sortParameters'     => $this->sortParameters,
+            'publishedOnly'      => $this->publishedOnly,
+            'executionType'      => $this->executionType,
+            'created'            => $created,
+            'organisationId'     => $this->organisationId,
+            'organisationIdType' => $this->organisationIdType,
+            'expires'            => $expires,
         ];
 
     }//end jsonSerialize()
 
 
-}//end class 
+}//end class

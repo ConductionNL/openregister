@@ -18,6 +18,8 @@ export const useNavigationStore = defineStore('ui', {
 			search: true,
 			deleted: true,
 			logs: true,
+			searchTrail: true,
+			auditTrail: true,
 		},
 	}),
 	actions: {
