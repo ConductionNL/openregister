@@ -61,11 +61,17 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 							</thead>
 							<tbody>
 								<tr v-for="term in searchTrailStore.popularTerms" :key="term.term">
-									<td class="searchTerm">{{ term.term }}</td>
-									<td class="count">{{ term.count }}</td>
-									<td class="percentage">{{ term.percentage }}%</td>
+									<td class="searchTerm">
+										{{ term.term }}
+									</td>
+									<td class="count">
+										{{ term.count }}
+									</td>
+									<td class="percentage">
+										{{ term.percentage }}%
+									</td>
 									<td class="effectiveness">
-										<span 
+										<span
 											:class="['effectiveness-badge', term.effectiveness]"
 											:title="term.effectiveness === 'high' ? 'High effectiveness' : 'Low effectiveness'">
 											{{ term.effectiveness }}
@@ -86,28 +92,52 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 					<h3>Search Statistics</h3>
 					<div class="statisticsGrid">
 						<div class="statItem">
-							<div class="statValue">{{ searchTrailStore.statistics.total.toLocaleString() }}</div>
-							<div class="statLabel">Total Searches</div>
+							<div class="statValue">
+								{{ searchTrailStore.statistics.total.toLocaleString() }}
+							</div>
+							<div class="statLabel">
+								Total Searches
+							</div>
 						</div>
 						<div class="statItem">
-							<div class="statValue">{{ searchTrailStore.statistics.totalResults.toLocaleString() }}</div>
-							<div class="statLabel">Total Results</div>
+							<div class="statValue">
+								{{ searchTrailStore.statistics.totalResults.toLocaleString() }}
+							</div>
+							<div class="statLabel">
+								Total Results
+							</div>
 						</div>
 						<div class="statItem">
-							<div class="statValue">{{ searchTrailStore.statistics.averageResultsPerSearch.toFixed(1) }}</div>
-							<div class="statLabel">Avg Results/Search</div>
+							<div class="statValue">
+								{{ searchTrailStore.statistics.averageResultsPerSearch.toFixed(1) }}
+							</div>
+							<div class="statLabel">
+								Avg Results/Search
+							</div>
 						</div>
 						<div class="statItem">
-							<div class="statValue">{{ searchTrailStore.statistics.averageExecutionTime.toFixed(0) }}ms</div>
-							<div class="statLabel">Avg Execution Time</div>
+							<div class="statValue">
+								{{ searchTrailStore.statistics.averageExecutionTime.toFixed(0) }}ms
+							</div>
+							<div class="statLabel">
+								Avg Execution Time
+							</div>
 						</div>
 						<div class="statItem">
-							<div class="statValue">{{ (searchTrailStore.statistics.successRate * 100).toFixed(1) }}%</div>
-							<div class="statLabel">Success Rate</div>
+							<div class="statValue">
+								{{ (searchTrailStore.statistics.successRate * 100).toFixed(1) }}%
+							</div>
+							<div class="statLabel">
+								Success Rate
+							</div>
 						</div>
 						<div class="statItem">
-							<div class="statValue">{{ searchTrailStore.statistics.uniqueSearchTerms.toLocaleString() }}</div>
-							<div class="statLabel">Unique Terms</div>
+							<div class="statValue">
+								{{ searchTrailStore.statistics.uniqueSearchTerms.toLocaleString() }}
+							</div>
+							<div class="statLabel">
+								Unique Terms
+							</div>
 						</div>
 					</div>
 					<div v-if="searchTrailStore.statistics.total === 0" class="noData">
@@ -345,15 +375,15 @@ export default {
 			if (!searchTrailStore.activity.daily || searchTrailStore.activity.daily.length === 0) {
 				return []
 			}
-			
+
 			const data = searchTrailStore.activity.daily.map(item => ({
 				x: item.period,
-				y: item.searches
+				y: item.searches,
 			}))
-			
+
 			return [{
 				name: 'Searches',
-				data: data
+				data,
 			}]
 		},
 	},
@@ -388,7 +418,7 @@ export default {
 		// Load dashboard data
 		dashboardStore.preload()
 		dashboardStore.fetchAllChartData()
-		
+
 		// Load search trail data with error handling
 		try {
 			await this.loadSearchTrailData()
@@ -402,31 +432,31 @@ export default {
 		setEmptySearchTrailData() {
 			// Set empty data so UI doesn't break
 			searchTrailStore.setStatistics({
-				total: 0,
-				totalResults: 0,
-				averageResultsPerSearch: 0,
-				averageExecutionTime: 0,
-				successRate: 0,
-				uniqueSearchTerms: 0,
-				uniqueUsers: 0,
-				uniqueOrganizations: 0,
-				queryComplexity: {
+				total_searches: 0,
+				total_results: 0,
+				avg_results_per_search: 0,
+				avg_response_time: 0,
+				success_rate: 0,
+				unique_search_terms: 0,
+				unique_users: 0,
+				unique_organizations: 0,
+				query_complexity: {
 					simple: 0,
 					medium: 0,
 					complex: 0,
 				},
 			})
-			searchTrailStore.setPopularTerms({ terms: [] })
-			searchTrailStore.setActivity({ daily: [] })
+			searchTrailStore.setPopularTerms({ results: [] })
+			searchTrailStore.setActivity({ daily: { activity: [] } })
 		},
 		async loadSearchTrailData() {
 			try {
 				// Fetch search trail statistics
 				await searchTrailStore.fetchStatistics()
-				
+
 				// Fetch popular search terms
 				await searchTrailStore.fetchPopularTerms()
-				
+
 				// Fetch search activity data for daily chart
 				await searchTrailStore.fetchActivity('daily')
 			} catch (error) {
@@ -559,38 +589,38 @@ export default {
 		width: 100%;
 		border-collapse: collapse;
 		margin-top: 10px;
-		
+
 		th, td {
 			padding: 12px;
 			text-align: left;
 			border-bottom: 1px solid var(--color-border);
 		}
-		
+
 		th {
 			background-color: var(--color-background-dark);
 			font-weight: 600;
 			color: var(--color-main-text);
 		}
-		
+
 		tbody tr:hover {
 			background-color: var(--color-background-hover);
 		}
 	}
-	
+
 	.searchTerm {
 		font-weight: 500;
 		color: var(--color-main-text);
 	}
-	
+
 	.count {
 		font-weight: 600;
 		color: var(--color-primary);
 	}
-	
+
 	.percentage {
 		color: var(--color-text-maxcontrast);
 	}
-	
+
 	.effectiveness-badge {
 		display: inline-block;
 		padding: 4px 8px;
@@ -598,18 +628,18 @@ export default {
 		font-size: 0.8em;
 		font-weight: 500;
 		text-transform: uppercase;
-		
+
 		&.high {
 			background-color: var(--color-success);
 			color: white;
 		}
-		
+
 		&.low {
 			background-color: var(--color-error);
 			color: white;
 		}
 	}
-	
+
 	.noData {
 		text-align: center;
 		padding: 40px;
@@ -630,14 +660,14 @@ export default {
 	background-color: var(--color-background-dark);
 	border-radius: 8px;
 	border: 1px solid var(--color-border);
-	
+
 	.statValue {
 		font-size: 2em;
 		font-weight: 700;
 		color: var(--color-primary);
 		margin-bottom: 5px;
 	}
-	
+
 	.statLabel {
 		font-size: 0.9em;
 		color: var(--color-text-maxcontrast);
@@ -649,7 +679,7 @@ export default {
 	.chartsContainer {
 		grid-template-columns: 1fr;
 	}
-	
+
 	.statisticsGrid {
 		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 	}

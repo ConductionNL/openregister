@@ -282,7 +282,17 @@ export const useObjectStore = defineStore('object', {
 				),
 			}
 
+			// Update pagination information from the response
+			this.pagination = {
+				total: objectList.total || 0,
+				page: objectList.page || 1,
+				pages: objectList.pages || 1,
+				limit: objectList.limit || 20,
+				offset: objectList.offset || 0,
+			}
+
 			console.info('Object list set to ' + objectList.results.length + ' items')
+			console.info('Pagination updated:', this.pagination)
 		},
 		/**
 		 * Set the audit trail item
@@ -971,6 +981,32 @@ export const useObjectStore = defineStore('object', {
 				}, {}),
 			}
 			console.info('Initialized column filters:', this.columnFilters)
+		},
+		/**
+		 * Set property enabled state
+		 * @param {string} propertyId - Property ID
+		 * @param {boolean} enabled - Whether the property is enabled
+		 * @return {void}
+		 */
+		setPropertyEnabled(propertyId, enabled) {
+			if (this.properties[propertyId]) {
+				this.properties[propertyId].enabled = enabled
+				this.columnFilters[`prop_${propertyId}`] = enabled
+				console.info('Property enabled state updated:', propertyId, enabled)
+			}
+		},
+		/**
+		 * Set metadata enabled state
+		 * @param {string} metadataId - Metadata ID
+		 * @param {boolean} enabled - Whether the metadata is enabled
+		 * @return {void}
+		 */
+		setMetadataEnabled(metadataId, enabled) {
+			if (this.metadata[metadataId]) {
+				this.metadata[metadataId].enabled = enabled
+				this.columnFilters[`meta_${metadataId}`] = enabled
+				console.info('Metadata enabled state updated:', metadataId, enabled)
+			}
 		},
 		/**
 		 * Clear all related data

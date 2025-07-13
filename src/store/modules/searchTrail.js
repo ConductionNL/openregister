@@ -105,8 +105,21 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setStatistics(stats) {
 			this.statistics = {
-				...this.statistics,
-				...stats,
+				total: stats.total_searches || 0,
+				totalResults: stats.total_results || 0,
+				averageResultsPerSearch: stats.avg_results_per_search || 0,
+				averageExecutionTime: stats.avg_response_time || 0,
+				successRate: stats.success_rate ? (stats.success_rate / 100) : 0,
+				uniqueSearchTerms: stats.unique_search_terms || 0,
+				uniqueUsers: stats.unique_users || 0,
+				uniqueOrganizations: stats.unique_organizations || 0,
+				avgSearchesPerSession: stats.avg_searches_per_session || 0,
+				avgObjectViewsPerSession: stats.avg_object_views_per_session || 0,
+				queryComplexity: stats.query_complexity || {
+					simple: 0,
+					medium: 0,
+					complex: 0,
+				},
 			}
 			console.info('Search trail statistics set to:', this.statistics)
 		},
@@ -117,7 +130,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setPopularTerms(response) {
 			// Handle response structure from API
-			const terms = response?.terms || response
+			const terms = response?.results || response?.terms || response
 			this.popularTerms = Array.isArray(terms) ? [...terms] : []
 			console.info('Popular terms set to:', this.popularTerms.length, 'items')
 		},
@@ -132,7 +145,17 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				// Extract activity data from the response
 				// The response can be structured as {activity: [array]} or directly as an array
 				const activityData = response?.activity || response
-				this.activity[period] = Array.isArray(activityData) ? [...activityData] : []
+				if (Array.isArray(activityData)) {
+					// Map the activity data to match expected format
+					this.activity[period] = activityData.map(item => ({
+						period: item.period,
+						searches: item.count || item.searches || 0,
+						avgResults: item.avg_results || 0,
+						avgResponseTime: item.avg_response_time || 0,
+					}))
+				} else {
+					this.activity[period] = []
+				}
 			})
 			console.info('Search trail activity set to:', this.activity)
 		},
@@ -143,7 +166,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setRegisterSchemaStats(response) {
 			// Handle response structure from API
-			const stats = response?.statistics || response
+			const stats = response?.results || response?.statistics || response
 			this.registerSchemaStats = Array.isArray(stats) ? [...stats] : []
 			console.info('Register schema stats set to:', this.registerSchemaStats.length, 'items')
 		},
@@ -154,7 +177,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setUserAgentStats(response) {
 			// Handle response structure from API
-			const stats = response?.user_agents || response
+			const stats = response?.results || response?.user_agents || response
 			this.userAgentStats = Array.isArray(stats) ? [...stats] : []
 			console.info('User agent stats set to:', this.userAgentStats.length, 'items')
 		},

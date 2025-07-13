@@ -386,6 +386,72 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Process search parameter to handle multiple search words
+     *
+     * This method handles the _search parameter which can be:
+     * - A string with comma-separated values
+     * - An array of search terms
+     * - A single search term
+     *
+     * @param mixed $search The search parameter (string or array)
+     *
+     * @return string|null The processed search string ready for the search handler
+     */
+    private function processSearchParameter(mixed $search): ?string
+    {
+        if ($search === null) {
+            return null;
+        }
+
+        $searchTerms = [];
+
+        // Handle array search terms
+        if (is_array($search) === true) {
+            $searchTerms = array_filter(
+                array_map('trim', $search),
+                function ($term) {
+                    return empty($term) === false;
+                }
+            );
+        } else if (is_string($search) === true) {
+            // Handle comma-separated values in string
+            $searchTerms = array_filter(
+                array_map('trim', explode(',', $search)),
+                function ($term) {
+                    return empty($term) === false;
+                }
+            );
+        }
+
+        // If no valid search terms, return null
+        if (empty($searchTerms) === true) {
+            return null;
+        }
+
+        // Process each search term to make them case-insensitive and support partial matches
+        $processedTerms = [];
+        foreach ($searchTerms as $term) {
+            // Convert to lowercase for case-insensitive matching
+            $lowerTerm = strtolower(trim($term));
+            
+            // Add wildcards for partial matching if not already present
+            if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
+                $lowerTerm = '*' . $lowerTerm;
+            }
+            if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
+                $lowerTerm = $lowerTerm . '*';
+            }
+            
+            $processedTerms[] = $lowerTerm;
+        }
+
+        // Join multiple terms with OR logic (any term can match)
+        return implode(' OR ', $processedTerms);
+
+    }//end processSearchParameter()
+
+
+    /**
      * Search objects using a clean query structure
      *
      * This method provides a cleaner alternative to findAll with better separation
@@ -482,10 +548,16 @@ class ObjectEntityMapper extends QBMapper
      * ]
      * ```
      *
-     * ### `_search` (string|null)
+     * ### `_search` (string|array|null)
      * Full-text search within JSON object data
+     * Supports multiple search words:
+     * - String with comma-separated values: `'_search' => 'customer,service,important'`
+     * - Array of search terms: `'_search' => ['customer', 'service', 'important']`
+     * - Single search term: `'_search' => 'customer service important'`
      * ```php
      * '_search' => 'customer service important'
+     * '_search' => ['customer', 'service', 'important']
+     * '_search' => 'customer,service,important'
      * ```
      *
      * ### `_includeDeleted` (bool)
@@ -592,7 +664,7 @@ class ObjectEntityMapper extends QBMapper
         $limit = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
         $order = $query['_order'] ?? [];
-        $search = $query['_search'] ?? null;
+        $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
         $ids = $query['_ids'] ?? null;
@@ -755,7 +827,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
      *                     - Direct keys: Object field filters for JSON data
-     *                     - _search: Full-text search term
+     *                     - _search: Full-text search term (string or array)
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
      *                     - _ids: Array of IDs/UUIDs to filter by
@@ -771,7 +843,7 @@ class ObjectEntityMapper extends QBMapper
     public function countSearchObjects(array $query = []): int
     {
         // Extract options from query (prefixed with _)
-        $search = $query['_search'] ?? null;
+        $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
         $ids = $query['_ids'] ?? null;

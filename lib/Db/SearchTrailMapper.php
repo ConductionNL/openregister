@@ -261,9 +261,9 @@ class SearchTrailMapper extends QBMapper
         // Base query for time period
         $qb->select([
             $qb->func()->count('*', 'total_searches'),
-            $qb->func()->sum('total_results', 'total_results'),
+            $qb->createFunction('COALESCE(SUM(CASE WHEN total_results IS NOT NULL THEN total_results ELSE 0 END), 0) AS total_results'),
         ])
-            ->addSelect($qb->createFunction('AVG(total_results) AS avg_results_per_search'))
+            ->addSelect($qb->createFunction('AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search'))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
             ->from($this->getTableName());
@@ -510,6 +510,157 @@ class SearchTrailMapper extends QBMapper
         }, $stats);
 
     }//end getUserAgentStatistics()
+
+
+    /**
+     * Get count of unique search terms for the given time period
+     *
+     * @param DateTime|null $from Start date filter
+     * @param DateTime|null $to   End date filter
+     *
+     * @return int Number of unique search terms
+     */
+    public function getUniqueSearchTermsCount(?DateTime $from = null, ?DateTime $to = null): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->selectDistinct('search_term')
+            ->from($this->getTableName())
+            ->where($qb->expr()->isNotNull('search_term'))
+            ->andWhere($qb->expr()->neq('search_term', $qb->createNamedParameter('')));
+
+        // Apply date filters
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
+        }
+        if ($to !== null) {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+        }
+
+        $result = $qb->executeQuery();
+        $terms = $result->fetchAll();
+        $result->closeCursor();
+
+        return count($terms);
+
+    }//end getUniqueSearchTermsCount()
+
+
+    /**
+     * Get count of unique users for the given time period
+     *
+     * @param DateTime|null $from Start date filter
+     * @param DateTime|null $to   End date filter
+     *
+     * @return int Number of unique users
+     */
+    public function getUniqueUsersCount(?DateTime $from = null, ?DateTime $to = null): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->selectDistinct('user')
+            ->from($this->getTableName())
+            ->where($qb->expr()->isNotNull('user'))
+            ->andWhere($qb->expr()->neq('user', $qb->createNamedParameter('')));
+
+        // Apply date filters
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
+        }
+        if ($to !== null) {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+        }
+
+        $result = $qb->executeQuery();
+        $users = $result->fetchAll();
+        $result->closeCursor();
+
+        return count($users);
+
+    }//end getUniqueUsersCount()
+
+
+    /**
+     * Get average searches per session for the given time period
+     *
+     * @param DateTime|null $from Start date filter
+     * @param DateTime|null $to   End date filter
+     *
+     * @return float Average searches per session
+     */
+    public function getAverageSearchesPerSession(?DateTime $from = null, ?DateTime $to = null): float
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select(
+            $qb->func()->count('*', 'total_searches'),
+            $qb->createFunction('COUNT(DISTINCT session) as unique_sessions')
+        )
+            ->from($this->getTableName())
+            ->where($qb->expr()->isNotNull('session'))
+            ->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
+
+        // Apply date filters
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
+        }
+        if ($to !== null) {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+        }
+
+        $result = $qb->executeQuery();
+        $data = $result->fetch();
+        $result->closeCursor();
+
+        $totalSearches = (int) ($data['total_searches'] ?? 0);
+        $uniqueSessions = (int) ($data['unique_sessions'] ?? 0);
+
+        return $uniqueSessions > 0 ? round($totalSearches / $uniqueSessions, 2) : 0.0;
+
+    }//end getAverageSearchesPerSession()
+
+
+    /**
+     * Get average object views per session for the given time period
+     *
+     * This method queries the audit trail table to count 'read' actions per session
+     *
+     * @param DateTime|null $from Start date filter
+     * @param DateTime|null $to   End date filter
+     *
+     * @return float Average object views per session
+     */
+    public function getAverageObjectViewsPerSession(?DateTime $from = null, ?DateTime $to = null): float
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select(
+            $qb->func()->count('*', 'total_views'),
+            $qb->createFunction('COUNT(DISTINCT session) as unique_sessions')
+        )
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->eq('action', $qb->createNamedParameter('read')))
+            ->andWhere($qb->expr()->isNotNull('session'))
+            ->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
+
+        // Apply date filters
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
+        }
+        if ($to !== null) {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+        }
+
+        $result = $qb->executeQuery();
+        $data = $result->fetch();
+        $result->closeCursor();
+
+        $totalViews = (int) ($data['total_views'] ?? 0);
+        $uniqueSessions = (int) ($data['unique_sessions'] ?? 0);
+
+        return $uniqueSessions > 0 ? round($totalViews / $uniqueSessions, 2) : 0.0;
+
+    }//end getAverageObjectViewsPerSession()
 
 
     /**

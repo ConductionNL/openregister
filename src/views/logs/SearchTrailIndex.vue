@@ -212,7 +212,6 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 
-
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -332,17 +331,17 @@ export default {
 			details.push(`User: ${searchTrail.userName || searchTrail.user || 'N/A'}`)
 			details.push(`Results: ${searchTrail.totalResults || 0}`)
 			details.push(`Execution Time: ${this.formatExecutionTime(searchTrail.responseTime)}`)
-			
+
 			if (searchTrail.parameters && typeof searchTrail.parameters === 'object') {
 				details.push(`Parameters: ${JSON.stringify(searchTrail.parameters, null, 2)}`)
 			}
-			
+
 			// Show details in a dialog
 			OC.dialogs.info(
 				details.join('\n'),
 				this.t('openregister', 'Search Trail Details'),
 				null,
-				true
+				true,
 			)
 		},
 		/**
@@ -367,30 +366,30 @@ export default {
 				register: searchTrail.register,
 				schema: searchTrail.schema,
 			}
-			
+
 			// Add any additional parameters from the search trail
 			if (searchTrail.parameters) {
 				try {
-					const parsedParams = typeof searchTrail.parameters === 'string' 
-						? JSON.parse(searchTrail.parameters) 
+					const parsedParams = typeof searchTrail.parameters === 'string'
+						? JSON.parse(searchTrail.parameters)
 						: searchTrail.parameters
-					
+
 					Object.assign(searchParams, parsedParams)
 				} catch (error) {
 					console.error('Error parsing search parameters:', error)
 				}
 			}
-			
+
 			// Navigate to search page with parameters
 			this.$router.push({
 				name: 'search',
 				query: searchParams,
 			})
-			
+
 			// Show notification
 			OC.Notification.showTemporary(
 				this.t('openregister', 'Rerunning search: {searchTerm}', { searchTerm: searchTrail.searchTerm }),
-				{ type: 'info' }
+				{ type: 'info' },
 			)
 		},
 		/**
@@ -416,17 +415,17 @@ export default {
 			try {
 				const result = await searchTrailStore.cleanupSearchTrails(30)
 
-							if (result.success) {
-				OC.Notification.showTemporary(this.t('openregister', 'Cleanup completed successfully. Deleted {count} entries.', { count: result.deletedCount || 0 }), { type: 'success' })
-				// Refresh the list
-				await this.loadSearchTrails()
-			} else {
-				throw new Error(result.message || 'Cleanup failed')
+				if (result.success) {
+					OC.Notification.showTemporary(this.t('openregister', 'Cleanup completed successfully. Deleted {count} entries.', { count: result.deletedCount || 0 }), { type: 'success' })
+					// Refresh the list
+					await this.loadSearchTrails()
+				} else {
+					throw new Error(result.message || 'Cleanup failed')
+				}
+			} catch (error) {
+				console.error('Error during cleanup:', error)
+				OC.Notification.showTemporary(this.t('openregister', 'Cleanup failed: {error}', { error: error.message }), { type: 'error' })
 			}
-		} catch (error) {
-			console.error('Error during cleanup:', error)
-			OC.Notification.showTemporary(this.t('openregister', 'Cleanup failed: {error}', { error: error.message }), { type: 'error' })
-		}
 		},
 		/**
 		 * Refresh search trails list
@@ -558,19 +557,19 @@ export default {
 
 				const result = await response.json()
 
-							if (result.success) {
-				OC.Notification.showTemporary(result.message || this.t('openregister', 'Selected search trails deleted successfully'), { type: 'success' })
-				// Clear selection
-				this.selectedSearchTrails = []
-				// Refresh the list
-				await this.loadSearchTrails()
-			} else {
-				throw new Error(result.error || 'Deletion failed')
+				if (result.success) {
+					OC.Notification.showTemporary(result.message || this.t('openregister', 'Selected search trails deleted successfully'), { type: 'success' })
+					// Clear selection
+					this.selectedSearchTrails = []
+					// Refresh the list
+					await this.loadSearchTrails()
+				} else {
+					throw new Error(result.error || 'Deletion failed')
+				}
+			} catch (error) {
+				console.error('Error deleting search trails:', error)
+				OC.Notification.showTemporary(this.t('openregister', 'Error deleting search trails: {error}', { error: error.message }), { type: 'error' })
 			}
-		} catch (error) {
-			console.error('Error deleting search trails:', error)
-			OC.Notification.showTemporary(this.t('openregister', 'Error deleting search trails: {error}', { error: error.message }), { type: 'error' })
-		}
 		},
 	},
 }

@@ -804,3 +804,4 @@ class SearchTrailController extends Controller
 
 
 }//end class
+ 

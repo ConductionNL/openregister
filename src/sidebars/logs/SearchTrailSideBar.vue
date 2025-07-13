@@ -208,6 +208,22 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							{{ t('openregister', 'Unique Search Terms') }}
 						</div>
 					</div>
+					<div class="statCard">
+						<div class="statNumber">
+							{{ avgSearchesPerSession }}
+						</div>
+						<div class="statLabel">
+							{{ t('openregister', 'Avg Searches/Session') }}
+						</div>
+					</div>
+					<div class="statCard">
+						<div class="statNumber">
+							{{ avgObjectViewsPerSession }}
+						</div>
+						<div class="statLabel">
+							{{ t('openregister', 'Avg Object Views/Session') }}
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -217,7 +233,11 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<div class="complexityBars">
 					<div class="complexityBar">
 						<div class="complexityLabel">
-							<span>{{ t('openregister', 'Simple') }}</span>
+							<span
+								:title="t('openregister', 'Simple queries: Basic text searches with minimal parameters (e.g., single search term, no advanced filters)')"
+								class="complexity-label-with-tooltip">
+								{{ t('openregister', 'Simple') }}
+							</span>
 							<span>{{ queryComplexity.simple }}</span>
 						</div>
 						<div class="complexityProgress">
@@ -226,7 +246,11 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					</div>
 					<div class="complexityBar">
 						<div class="complexityLabel">
-							<span>{{ t('openregister', 'Medium') }}</span>
+							<span
+								:title="t('openregister', 'Medium queries: Searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)')"
+								class="complexity-label-with-tooltip">
+								{{ t('openregister', 'Medium') }}
+							</span>
 							<span>{{ queryComplexity.medium }}</span>
 						</div>
 						<div class="complexityProgress">
@@ -235,7 +259,11 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					</div>
 					<div class="complexityBar">
 						<div class="complexityLabel">
-							<span>{{ t('openregister', 'Complex') }}</span>
+							<span
+								:title="t('openregister', 'Complex queries: Advanced searches with multiple filters, operators, and complex parameter combinations')"
+								class="complexity-label-with-tooltip">
+								{{ t('openregister', 'Complex') }}
+							</span>
 							<span>{{ queryComplexity.complex }}</span>
 						</div>
 						<div class="complexityProgress">
@@ -269,13 +297,13 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<div class="registerSchemaList">
 					<NcListItem v-for="(stat, index) in registerSchemaStats"
 						:key="index"
-						:name="stat.registerName || stat.register"
+						:name="getRegisterSchemaName(stat)"
 						:bold="false">
 						<template #icon>
 							<DatabaseOutline :size="32" />
 						</template>
 						<template #subname>
-							{{ t('openregister', '{count} searches', { count: stat.searchCount }) }}
+							{{ t('openregister', '{count} searches', { count: stat.count }) }}
 						</template>
 					</NcListItem>
 				</div>
@@ -331,7 +359,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<div class="userAgentList">
 						<NcListItem v-for="(agent, index) in userAgentStats"
 							:key="index"
-							:name="agent.browser || agent.userAgent"
+							:name="getBrowserName(agent)"
 							:bold="false">
 							<template #icon>
 								<Monitor :size="32" />
@@ -411,6 +439,8 @@ export default {
 			uniqueSearchTerms: 0,
 			uniqueUsers: 0,
 			uniqueOrganizations: 0,
+			avgSearchesPerSession: 0,
+			avgObjectViewsPerSession: 0,
 			queryComplexity: {
 				simple: 0,
 				medium: 0,
@@ -731,9 +761,23 @@ export default {
 				this.uniqueSearchTerms = stats.uniqueSearchTerms || 0
 				this.uniqueUsers = stats.uniqueUsers || 0
 				this.uniqueOrganizations = stats.uniqueOrganizations || 0
+				this.avgSearchesPerSession = stats.avgSearchesPerSession || 0
+				this.avgObjectViewsPerSession = stats.avgObjectViewsPerSession || 0
 				this.queryComplexity = stats.queryComplexity || { simple: 0, medium: 0, complex: 0 }
 			} catch (error) {
-				// Handle error silently
+				console.error('Error loading statistics:', error)
+				// Set default values on error
+				this.totalSearchTrails = 0
+				this.totalResults = 0
+				this.averageResultsPerSearch = 0
+				this.averageExecutionTime = 0
+				this.successRate = 0
+				this.uniqueSearchTerms = 0
+				this.uniqueUsers = 0
+				this.uniqueOrganizations = 0
+				this.avgSearchesPerSession = 0
+				this.avgObjectViewsPerSession = 0
+				this.queryComplexity = { simple: 0, medium: 0, complex: 0 }
 			}
 		},
 		/**
@@ -745,7 +789,8 @@ export default {
 				const terms = await searchTrailStore.getPopularTerms(10)
 				this.popularTerms = terms || []
 			} catch (error) {
-				// Handle error silently
+				console.error('Error loading popular terms:', error)
+				this.popularTerms = []
 			}
 		},
 		/**
@@ -757,7 +802,8 @@ export default {
 				const stats = await searchTrailStore.getRegisterSchemaStats()
 				this.registerSchemaStats = stats || []
 			} catch (error) {
-				// Handle error silently
+				console.error('Error loading register schema stats:', error)
+				this.registerSchemaStats = []
 			}
 		},
 		/**
@@ -769,7 +815,8 @@ export default {
 				const stats = await searchTrailStore.getUserAgentStats()
 				this.userAgentStats = stats || []
 			} catch (error) {
-				// Handle error silently
+				console.error('Error loading user agent stats:', error)
+				this.userAgentStats = []
 			}
 		},
 		/**
@@ -782,7 +829,8 @@ export default {
 				const data = await searchTrailStore.getActivity(period)
 				this.currentActivityData = data || []
 			} catch (error) {
-				// Handle error silently
+				console.error('Error loading activity data:', error)
+				this.currentActivityData = []
 			}
 		},
 		/**
@@ -835,6 +883,33 @@ export default {
 		handleSchemaChange(schema) {
 			schemaStore.setSchemaItem(schema)
 			this.applyFilters()
+		},
+		/**
+		 * Get register/schema name for display
+		 * @param {object} stat - The register/schema stat object
+		 * @return {string} The display name
+		 */
+		getRegisterSchemaName(stat) {
+			const register = registerStore.registerList.find(r => r.id === stat.register)
+			const schema = schemaStore.schemaList.find(s => s.id === stat.schema)
+
+			const registerName = register?.title || `Register ${stat.register}`
+			const schemaName = schema?.title || `Schema ${stat.schema}`
+
+			return `${registerName} / ${schemaName}`
+		},
+		/**
+		 * Get browser name for display
+		 * @param {object} agent - The user agent stat object
+		 * @return {string} The browser name
+		 */
+		getBrowserName(agent) {
+			if (agent.browser_info?.browser) {
+				const browser = agent.browser_info.browser
+				const version = agent.browser_info.version
+				return version ? `${browser} ${version}` : browser
+			}
+			return agent.user_agent || 'Unknown Browser'
 		},
 	},
 }
@@ -991,6 +1066,17 @@ export default {
 
 .complexityProgressBar.complex {
 	background: var(--color-error);
+}
+
+.complexity-label-with-tooltip {
+	cursor: help;
+	text-decoration: underline;
+	text-decoration-style: dotted;
+	text-underline-offset: 2px;
+}
+
+.complexity-label-with-tooltip:hover {
+	text-decoration-style: solid;
 }
 
 .activityData {
