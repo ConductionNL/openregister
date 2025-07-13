@@ -46,14 +46,7 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 						v-model="searchQuery"
 						:placeholder="searchPlaceholder"
 						:disabled="searchLoading"
-						@keyup.enter="addSearchTerms" />
-					<NcButton
-						v-if="searchQuery.trim()"
-						type="secondary"
-						:disabled="searchLoading"
-						@click="addSearchTerms">
-						{{ t('openregister', 'Add') }}
-					</NcButton>
+						@keyup.enter="performSearch" />
 					<NcButton
 						type="primary"
 						:disabled="!canSearch || searchLoading"
