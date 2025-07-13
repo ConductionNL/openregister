@@ -487,9 +487,10 @@ class MariaDbSearchHandler
      * Apply full-text search on JSON object
      *
      * Performs a case-insensitive full-text search within the JSON object field.
+     * Supports multiple search terms separated by ' OR ' for OR logic.
      *
      * @param IQueryBuilder $queryBuilder The query builder to modify
-     * @param string        $searchTerm The search term
+     * @param string        $searchTerm The search term (can contain multiple terms separated by ' OR ')
      *
      * @phpstan-param IQueryBuilder $queryBuilder
      * @phpstan-param string $searchTerm
@@ -501,16 +502,47 @@ class MariaDbSearchHandler
      */
     public function applyFullTextSearch(IQueryBuilder $queryBuilder, string $searchTerm): IQueryBuilder
     {
-        // Use case-insensitive JSON_SEARCH by converting both the JSON object and search term to lowercase
-        // This ensures the search is case-insensitive across all JSON field values
-        $lowerSearchTerm = strtolower($searchTerm);
-        $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $lowerSearchTerm . '%') . ")";
-        
-        $queryBuilder->andWhere(
-            $queryBuilder->expr()->isNotNull(
-                $queryBuilder->createFunction($searchFunction)
-            )
+        // Split search terms by ' OR ' to handle multiple search words
+        $searchTerms = array_filter(
+            array_map('trim', explode(' OR ', $searchTerm)),
+            function ($term) {
+                return empty($term) === false;
+            }
         );
+
+        // If no valid search terms, return the query builder unchanged
+        if (empty($searchTerms) === true) {
+            return $queryBuilder;
+        }
+
+        // Create OR conditions for each search term
+        $orConditions = $queryBuilder->expr()->orX();
+
+        foreach ($searchTerms as $term) {
+            // Clean the search term - remove wildcards and convert to lowercase
+            $cleanTerm = strtolower(trim($term));
+            $cleanTerm = str_replace(['*', '%'], '', $cleanTerm);
+
+            // Skip empty terms after cleaning
+            if (empty($cleanTerm) === true) {
+                continue;
+            }
+
+            // Use case-insensitive JSON_SEARCH with partial matching
+            // This ensures the search is case-insensitive and supports partial matches
+            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $cleanTerm . '%') . ")";
+            
+            $orConditions->add(
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction($searchFunction)
+                )
+            );
+        }
+
+        // Add the OR conditions to the query if we have any valid terms
+        if ($orConditions->count() > 0) {
+            $queryBuilder->andWhere($orConditions);
+        }
 
         return $queryBuilder;
 

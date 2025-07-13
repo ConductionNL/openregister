@@ -21,7 +21,7 @@
 ### Important: Do NOT use standalone PHP server for API testing
 The standalone PHP server (`php -S localhost:8000`) **does not work** for testing Nextcloud API endpoints because:
 - It lacks the Nextcloud framework and routing system
-- API routes like `/index.php/apps/openregister/api/search-trails/statistics` will return 404 errors
+- API routes like '/index.php/apps/openregister/api/search-trails/statistics' will return 404 errors
 - It cannot handle Nextcloud's dependency injection and service container
 - Authentication and session handling won't work properly
 
@@ -31,21 +31,38 @@ The standalone PHP server (`php -S localhost:8000`) **does not work** for testin
 Test API endpoints using the actual Nextcloud Docker instance:
 ```bash
 # If Nextcloud runs on localhost:80
-curl -s "http://localhost/index.php/apps/openregister/api/search-trails/statistics"
+curl -s 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
 
 # If Nextcloud runs on a custom domain
-curl -s "http://nextcloud.local/index.php/apps/openregister/api/search-trails/statistics"
+curl -s 'http://nextcloud.local/index.php/apps/openregister/api/search-trails/statistics'
 ```
 
 #### 2. Test from within the Docker Container
 Execute curl commands from inside the Nextcloud Docker container:
-```bash
-# Execute command in the container
-docker exec -u 33 nextcloud-container-name curl -s "http://localhost/index.php/apps/openregister/api/search-trails/statistics"
 
-# Or get a shell in the container
-docker exec -it nextcloud-container-name /bin/bash
+**Step 1: Find your Nextcloud container name**
+```bash
+# List running containers to find Nextcloud container
+docker ps | grep nextcloud
 ```
+
+**Step 2: Test API from within container**
+```bash
+# Execute curl command in the container (replace 'master-nextcloud-1' with your container name)
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/search-trails?limit=50&page=1'"
+
+# For statistics endpoint specifically
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'"
+
+# Or get a shell in the container for interactive testing
+docker exec -it -u 33 master-nextcloud-1 /bin/bash
+```
+
+**Important Notes:**
+- Use `-u 33` flag to run as the correct user (www-data)
+- Include authentication with `-u 'admin:admin'` or your Nextcloud credentials
+- Add `OCS-APIREQUEST: true` header for proper API handling
+- Use single quotes to avoid shell interpretation of special characters
 
 #### 3. Use Browser Developer Tools
 For testing authenticated endpoints:
@@ -60,14 +77,20 @@ For testing authenticated endpoints:
 Include necessary headers for API testing:
 ```bash
 # Test with authentication headers
-curl -H "Authorization: Bearer your-token" \
-     -H "Content-Type: application/json" \
-     "http://localhost/index.php/apps/openregister/api/search-trails/statistics"
+curl -H 'Authorization: Bearer your-token' \
+     -H 'Content-Type: application/json' \
+     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
 
 # Test with OCS API format
-curl -H "OCS-APIRequest: true" \
-     -H "Accept: application/json" \
-     "http://localhost/ocs/v2.php/apps/openregister/api/search-trails/statistics"
+curl -H 'OCS-APIRequest: true' \
+     -H 'Accept: application/json' \
+     'http://localhost/ocs/v2.php/apps/openregister/api/search-trails/statistics'
+
+# Test with basic authentication (most common for development)
+curl -u 'admin:admin' \
+     -H 'OCS-APIREQUEST: true' \
+     -H 'Content-Type: application/json' \
+     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
 ```
 
 ### Debugging API Endpoint Issues
@@ -75,11 +98,14 @@ curl -H "OCS-APIRequest: true" \
 #### 1. Check App Status
 Ensure the app is enabled in Nextcloud:
 ```bash
-# Check if app is enabled
-docker exec -u 33 nextcloud-container php /var/www/html/occ app:list | grep appname
+# Check if app is enabled (replace 'master-nextcloud-1' with your container name)
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:list | grep openregister
 
 # Enable the app if needed
-docker exec -u 33 nextcloud-container php /var/www/html/occ app:enable appname
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
+
+# Verify app is enabled (should show 'openregister already enabled')
+docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
 ```
 
 #### 2. Verify Routes Configuration
@@ -105,18 +131,18 @@ public function statistics(): JSONResponse
 #### 4. Monitor Nextcloud Logs
 Check Nextcloud logs for API errors:
 ```bash
-# View live logs
-docker exec -u 33 nextcloud-container tail -f /var/www/html/data/nextcloud.log
+# View live logs (replace 'master-nextcloud-1' with your container name)
+docker exec -u 33 master-nextcloud-1 tail -f /var/www/html/data/nextcloud.log
 
 # Check recent errors
-docker exec -u 33 nextcloud-container grep -i error /var/www/html/data/nextcloud.log | tail -10
+docker exec -u 33 master-nextcloud-1 grep -i error /var/www/html/data/nextcloud.log | tail -10
 ```
 
 #### 5. Test Database Connectivity
 Verify database queries work properly:
 ```bash
-# Test database connection in container
-docker exec -u 33 nextcloud-container php -r "
+# Test database connection in container (replace 'master-nextcloud-1' with your container name)
+docker exec -u 33 master-nextcloud-1 php -r "
 \$config = include '/var/www/html/config/config.php';
 \$pdo = new PDO('mysql:host=' . \$config['dbhost'] . ';dbname=' . \$config['dbname'], \$config['dbuser'], \$config['dbpassword']);
 var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
@@ -139,22 +165,25 @@ var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
 ```bash
 # POST request with JSON data
 curl -X POST \
-     -H "Content-Type: application/json" \
+     -H 'Content-Type: application/json' \
      -d '{"key": "value"}' \
-     "http://localhost/index.php/apps/openregister/api/endpoint"
+     'http://localhost/index.php/apps/openregister/api/endpoint'
 ```
 
 #### Testing with Query Parameters
 ```bash
 # GET request with query parameters
-curl "http://localhost/index.php/apps/openregister/api/search-trails?limit=10&offset=0"
+curl 'http://localhost/index.php/apps/openregister/api/search-trails?limit=10&offset=0'
 ```
 
 #### Testing with Authentication
 ```bash
 # Test with Nextcloud user authentication
-curl -u "username:password" \
-     "http://localhost/index.php/apps/openregister/api/search-trails/statistics"
+curl -u 'username:password' \
+     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
+
+# Test from within Docker container with authentication
+docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'"
 ```
 
 ## Class Structure

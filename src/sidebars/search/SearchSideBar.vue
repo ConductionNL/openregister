@@ -5,16 +5,11 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 <template>
 	<NcAppSidebar
 		ref="sidebar"
-		v-model="activeTab"
-		name="Object selection"
-		subtitle="Select register and schema"
+		name="Search Objects"
+		subtitle="Select register, schema and search"
 		subname="Within the federative network"
 		:open="navigationStore.sidebarState.search"
 		@update:open="(e) => navigationStore.setSidebarState('search', e)">
-		<NcAppSidebarTab id="filters-tab" name="Filters" :order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
 
 			<!-- Filter Section -->
 			<div class="filterSection">
@@ -24,9 +19,9 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					<NcSelect v-bind="registerOptions"
 						id="registerSelect"
 						:model-value="selectedRegisterValue"
-						input-label="Register"
 						:loading="registerLoading"
 						:disabled="registerLoading"
+						:input-label="t('openregister', 'Register')"
 						placeholder="Select a register"
 						@update:model-value="handleRegisterChange" />
 				</div>
@@ -35,114 +30,94 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 					<NcSelect v-bind="schemaOptions"
 						id="schemaSelect"
 						:model-value="selectedSchemaValue"
-						input-label="Schema"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
+						:input-label="t('openregister', 'Schema')"
 						placeholder="Select a schema"
 						@update:model-value="handleSchemaChange" />
 				</div>
-				<div class="filterGroup">
+			</div>
+
+			<!-- Search Section -->
+			<div class="section">
+				<h3 class="sectionTitle">{{ t('openregister', 'Search') }}</h3>
+				<div class="search-input-container">
 					<NcTextField
 						v-model="searchQuery"
-						label="Search objects"
-						type="search"
-						:disabled="!registerStore.registerItem || !schemaStore.schemaItem"
-						placeholder="Type to search..."
-						class="search-input"
-						@update:modelValue="handleSearch" />
+						:placeholder="searchPlaceholder"
+						:disabled="searchLoading"
+						@keyup.enter="addSearchTerms" />
+					<NcButton
+						v-if="searchQuery.trim()"
+						type="secondary"
+						:disabled="searchLoading"
+						@click="addSearchTerms">
+						{{ t('openregister', 'Add') }}
+					</NcButton>
+					<NcButton
+						type="primary"
+						:disabled="!canSearch || searchLoading"
+						@click="performSearch">
+						<template #icon>
+							<NcLoadingIcon v-if="searchLoading" :size="20" />
+							<Magnify v-else :size="20" />
+						</template>
+						{{ t('openregister', 'Search') }}
+					</NcButton>
+				</div>
+				<div v-if="searchTerms.length > 0" class="search-terms">
+					<span class="search-terms-label">{{ t('openregister', 'Search terms:') }}</span>
+					<div class="search-chips">
+						<div
+							v-for="(term, index) in searchTerms"
+							:key="index"
+							class="search-chip">
+							<span class="chip-text">{{ term }}</span>
+							<button class="chip-remove" @click="removeSearchTerm(index)">
+								<Close :size="16" />
+							</button>
+						</div>
+					</div>
+				</div>
+				<div v-if="lastSearchStats" class="search-stats">
+					{{ t('openregister', 'Found {total} objects in {time}ms', lastSearchStats) }}
 				</div>
 			</div>
 
-			<NcNoteCard type="info" class="column-hint">
-				You can customize visible columns in the Columns tab
-			</NcNoteCard>
-
-			<!-- Facets Section -->
-			<div class="filterSection">
-				<FacetComponent />
-			</div>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="columns-tab" name="Columns" :order="2">
-			<template #icon>
-				<FormatColumns :size="20" />
-			</template>
-
-			<!-- Custom Columns Section -->
 			<div class="section">
-				<h3 class="section-title">
-					Properties
-				</h3>
-				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
-					No schema selected. Please select a schema to view properties.
+				<NcNoteCard type="info" class="search-hint">
+					{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
 				</NcNoteCard>
-				<NcNoteCard v-else-if="!Object.keys(objectStore.properties || {}).length" type="warning">
-					Selected schema has no properties. Please add properties to the schema.
-				</NcNoteCard>
-				<div v-else class="column-switches">
-					<NcCheckboxRadioSwitch
-						v-for="(property, propertyName) in objectStore.properties"
-						:key="`prop_${propertyName}`"
-						:checked="objectStore.columnFilters[`prop_${propertyName}`]"
-						:title="property.description"
-						@update:checked="(status) => objectStore.updateColumnFilter(`prop_${propertyName}`, status)">
-						{{ property.label }}
-					</NcCheckboxRadioSwitch>
-				</div>
 			</div>
-
-			<!-- Default Columns Section -->
-			<div class="section">
-				<h3 class="section-title">
-					Metadata
-				</h3>
-				<NcNoteCard v-if="!schemaStore.schemaItem" type="info">
-					No schema selected. Please select a schema to view metadata columns.
-				</NcNoteCard>
-				<div v-if="schemaStore.schemaItem" class="column-switches">
-					<NcCheckboxRadioSwitch
-						v-for="meta in metadataColumns"
-						:key="`meta_${meta.id}`"
-						:checked="objectStore.columnFilters[`meta_${meta.id}`]"
-						:title="meta.description"
-						@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
-						{{ meta.label }}
-					</NcCheckboxRadioSwitch>
-				</div>
-			</div>
-		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
-import FacetComponent from '../../components/FacetComponent.vue'
+import { NcAppSidebar, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Close from 'vue-material-design-icons/Close.vue'
+import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'SearchSideBar',
 	components: {
 		NcAppSidebar,
-		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcCheckboxRadioSwitch,
 		NcTextField,
-		FilterOutline,
-		FormatColumns,
-		FacetComponent,
+		NcButton,
+		NcLoadingIcon,
+		Magnify,
+		Close,
 	},
 	data() {
 		return {
 			registerLoading: false,
 			schemaLoading: false,
-			ignoreNextPageWatch: false,
 			searchQuery: '',
-			activeTab: 'filters-tab',
-			searchTimeout: null,
-			filterTimeout: null,
-			facetTimeout: null,
+			searchTerms: [],
+			searchLoading: false,
+			lastSearchStats: null,
 		}
 	},
 	computed: {
@@ -200,30 +175,18 @@ export default {
 				schema,
 			}
 		},
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
+
+
+		canSearch() {
+			// Add null checks to prevent undefined errors
+			// Always allow search if register and schema are selected
+			return registerStore.registerItem && schemaStore.schemaItem
+		},
+		searchPlaceholder() {
+			return this.searchTerms.length > 0 ? 'Add more search terms...' : 'Type to search...'
 		},
 	},
 	watch: {
-		searchQuery(value) {
-			if (this.searchTimeout) {
-				clearTimeout(this.searchTimeout)
-			}
-			this.searchTimeout = setTimeout(() => {
-				objectStore.setFilters({
-					_search: value || '',
-				})
-				if (registerStore.registerItem && schemaStore.schemaItem) {
-					objectStore.refreshObjectList({
-						register: registerStore.registerItem.id,
-						schema: schemaStore.schemaItem.id,
-					})
-				}
-			}, 1000)
-		},
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
@@ -234,48 +197,6 @@ export default {
 				} else {
 					objectStore.properties = {}
 					objectStore.initializeColumnFilters()
-				}
-			},
-			deep: true,
-		},
-		// Watch for filter changes to trigger search
-		'$root.objectStore.activeFilters': {
-			handler(newFilters, oldFilters) {
-				// Only trigger if filters actually changed and we have register/schema selected
-				if (JSON.stringify(newFilters) !== JSON.stringify(oldFilters)
-					&& registerStore.registerItem
-					&& schemaStore.schemaItem) {
-					// Debounce the search to avoid too many API calls
-					if (this.filterTimeout) {
-						clearTimeout(this.filterTimeout)
-					}
-					this.filterTimeout = setTimeout(() => {
-						objectStore.refreshObjectList({
-							register: registerStore.registerItem.id,
-							schema: schemaStore.schemaItem.id,
-						})
-					}, 500)
-				}
-			},
-			deep: true,
-		},
-		// Watch for facet changes to trigger search
-		'$root.objectStore.activeFacets': {
-			handler(newFacets, oldFacets) {
-				// Only trigger if facets actually changed and we have register/schema selected
-				if (JSON.stringify(newFacets) !== JSON.stringify(oldFacets)
-					&& registerStore.registerItem
-					&& schemaStore.schemaItem) {
-					// Debounce the search to avoid too many API calls
-					if (this.facetTimeout) {
-						clearTimeout(this.facetTimeout)
-					}
-					this.facetTimeout = setTimeout(() => {
-						objectStore.refreshObjectList({
-							register: registerStore.registerItem.id,
-							schema: schemaStore.schemaItem.id,
-						})
-					}, 500)
 				}
 			},
 			deep: true,
@@ -306,19 +227,8 @@ export default {
 			objectStore.refreshObjectList()
 		}
 	},
-	beforeUnmount() {
-		// Clean up timeouts to prevent memory leaks
-		if (this.searchTimeout) {
-			clearTimeout(this.searchTimeout)
-		}
-		if (this.filterTimeout) {
-			clearTimeout(this.filterTimeout)
-		}
-		if (this.facetTimeout) {
-			clearTimeout(this.facetTimeout)
-		}
-	},
 	methods: {
+		t,
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
@@ -330,23 +240,98 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
-		handleSearch() {
-			if (registerStore.registerItem && schemaStore.schemaItem) {
-				objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-					search: this.searchQuery,
-				})
+		handleSearchInput() {
+			// Parse search terms from input (support comma and space separation)
+			const inputTerms = this.searchQuery
+				.split(/[,\s]+/)
+				.map(term => term.trim())
+				.filter(term => term.length > 0)
+			
+			// Find terms that are new (not already in searchTerms)
+			const newTerms = inputTerms.filter(term => !this.searchTerms.includes(term))
+			
+			// Add only new terms to existing ones
+			if (newTerms.length > 0) {
+				this.searchTerms = [...this.searchTerms, ...newTerms]
 			}
 		},
-
+		addSearchTerms() {
+			// This method adds terms from the input to the existing search terms
+			this.handleSearchInput()
+			// Clear the input after adding terms
+			this.searchQuery = ''
+		},
+		async removeSearchTerm(index) {
+			this.searchTerms.splice(index, 1)
+			this.searchQuery = this.searchTerms.join(', ')
+			
+			// Automatically perform search after removing a term
+			// This will either search with remaining terms or show all results if no terms left
+			if (this.canSearch) {
+				await this.performSearch()
+			}
+		},
+		async performSearch() {
+			if (!this.canSearch) return
+			
+			// Add any terms from the input to the search terms
+			this.handleSearchInput()
+			// Clear the input after adding terms
+			this.searchQuery = ''
+			
+			// Start performance timing
+			const startTime = performance.now()
+			
+			try {
+				this.searchLoading = true
+				this.lastSearchStats = null
+				
+				// Set the search terms in the filters
+				if (this.searchTerms.length > 0) {
+					objectStore.setFilters({
+						_search: this.searchTerms.join(' '),
+					})
+				} else {
+					// Clear search filter if no terms
+					objectStore.setFilters({
+						_search: '',
+					})
+				}
+				
+				// Perform the search using the existing object store method
+				await objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+				})
+				
+				// Calculate performance statistics
+				const endTime = performance.now()
+				const executionTime = Math.round(endTime - startTime)
+				
+				this.lastSearchStats = {
+					total: objectStore.pagination.total || 0,
+					time: executionTime,
+				}
+				
+				console.log(`Search completed: ${this.lastSearchStats.total} results in ${executionTime}ms`)
+				
+			} catch (error) {
+				console.error('Search failed:', error)
+				this.lastSearchStats = {
+					total: 0,
+					time: 0,
+				}
+			} finally {
+				this.searchLoading = false
+			}
+		},
 	},
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .section {
-	padding: 12px 0;
+	padding: 12px 16px;
 	border-bottom: 1px solid var(--color-border);
 }
 
@@ -354,76 +339,18 @@ export default {
 	border-bottom: none;
 }
 
-.section-title {
+.sectionTitle {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
-	padding: 0 16px;
 	margin: 0 0 12px 0;
-}
-
-.column-switches {
-	padding: 0 16px;
-}
-
-.column-switches :deep(.checkbox-radio-switch) {
-	margin: 8px 0;
-}
-
-.search-input {
-	margin: 12px 16px;
-}
-
-.empty-state {
-	color: var(--color-text-maxcontrast);
-	text-align: center;
-	padding: 12px;
-	font-style: italic;
-}
-
-/* Add some spacing between select inputs */
-:deep(.v-select) {
-	margin: 0 16px 12px 16px;
-}
-
-/* Style for the last select to maintain consistent spacing */
-:deep(.v-select:last-of-type) {
-	margin-bottom: 0;
-}
-
-/* Empty content styling */
-:deep(.empty-content) {
-	margin: 20px 0;
-}
-
-:deep(.empty-content__icon) {
-	width: 32px;
-	height: 32px;
-}
-
-.column-hint {
-	margin: 8px 16px;
-}
-
-.inline-button {
-	display: inline;
-	padding: 0;
-	margin: 0;
-	text-decoration: underline;
-	height: auto;
-	min-height: auto;
-	color: var(--color-primary);
-}
-
-.inline-button:hover {
-	text-decoration: none;
 }
 
 .filterSection {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
-	padding-bottom: 20px;
+	padding: 0 16px 20px 16px;
 	border-bottom: 1px solid var(--color-border);
 
 	h3 {
@@ -442,5 +369,76 @@ export default {
 		font-size: 0.9em;
 		color: var(--color-text-maxcontrast);
 	}
+}
+
+.search-input-container {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.search-input-container .nc-text-field {
+	flex: 1;
+}
+
+.search-terms {
+	margin-bottom: 10px;
+}
+
+.search-terms-label {
+	display: block;
+	margin-bottom: 5px;
+	font-size: 14px;
+	color: var(--color-text-maxcontrast);
+}
+
+.search-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.search-chip {
+	display: inline-flex;
+	align-items: center;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element-text);
+	border-radius: 16px;
+	padding: 4px 8px;
+	font-size: 12px;
+	max-width: 200px;
+}
+
+.chip-text {
+	margin-right: 4px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.chip-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: inherit;
+	opacity: 0.7;
+	transition: opacity 0.2s;
+}
+
+.chip-remove:hover {
+	opacity: 1;
+}
+
+.search-stats {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 10px;
+}
+
+.search-hint {
+	margin: 0;
 }
 </style>

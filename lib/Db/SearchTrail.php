@@ -478,3 +478,4 @@ class SearchTrail extends Entity implements JsonSerializable
 
 
 }//end class
+ 
