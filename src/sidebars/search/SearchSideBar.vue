@@ -84,6 +84,51 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 				</div>
 			</div>
 
+			<!-- Faceted Search Section -->
+			<div v-if="facetData && Object.keys(facetData).length > 0" class="section">
+				<h3 class="sectionTitle">{{ t('openregister', 'Filter') }}</h3>
+				<div v-if="facetsLoading" class="loading-container">
+					<NcLoadingIcon :size="20" />
+					<span>{{ t('openregister', 'Loading filters...') }}</span>
+				</div>
+				<div v-else class="facets-container">
+					<!-- Show message if no facet data available -->
+					<div v-if="!facetData || Object.keys(facetData).length === 0" class="no-facets-message">
+						<p>{{ t('openregister', 'No facet filters available for this schema.') }}</p>
+					</div>
+					
+					<!-- Metadata facets (@self) -->
+					<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
+						<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
+						<NcSelect
+							:model-value="facetFilters[`@self.${field}`] || []"
+							:options="(facet?.buckets || []).map(bucket => ({
+								value: bucket.key,
+								label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
+							}))"
+							:multiple="true"
+							:placeholder="t('openregister', 'Select options...')"
+							:input-label="getFacetLabel(field, facet, true)"
+							@update:model-value="(value) => updateFacetFilter(`@self.${field}`, value)" />
+					</div>
+
+					<!-- Object field facets -->
+					<div v-for="(facet, field) in Object.fromEntries(Object.entries(facetData || {}).filter(([key]) => key !== '@self'))" :key="field" class="facet-group">
+						<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
+						<NcSelect
+							:model-value="facetFilters[field] || []"
+							:options="(facet?.buckets || []).map(bucket => ({
+								value: bucket.key,
+								label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
+							}))"
+							:multiple="true"
+							:placeholder="t('openregister', 'Select options...')"
+							:input-label="getFacetLabel(field, facet, false)"
+							@update:model-value="(value) => updateFacetFilter(field, value)" />
+					</div>
+				</div>
+			</div>
+
 			<div class="section">
 				<NcNoteCard type="info" class="search-hint">
 					{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
@@ -118,6 +163,10 @@ export default {
 			searchTerms: [],
 			searchLoading: false,
 			lastSearchStats: null,
+			facetableFields: null,
+			facetData: null,
+			facetFilters: {},
+			facetsLoading: false,
 		}
 	},
 	computed: {
@@ -237,7 +286,12 @@ export default {
 			schemaStore.setSchemaItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
-				objectStore.refreshObjectList()
+				// First: Load facetable fields to discover what facets are available
+				console.log('Schema changed, loading facetable fields...')
+				await this.loadFacetableFields()
+				console.log('Facetable fields loaded:', this.facetableFields)
+				// Second: Refresh object list with facet configuration to get both results and facet data
+				await this.performSearchWithFacets()
 			}
 		},
 		handleSearchInput() {
@@ -265,10 +319,10 @@ export default {
 			this.searchTerms.splice(index, 1)
 			this.searchQuery = this.searchTerms.join(', ')
 			
-			// Automatically perform search after removing a term
+			// Automatically apply filters after removing a term
 			// This will either search with remaining terms or show all results if no terms left
 			if (this.canSearch) {
-				await this.performSearch()
+				await this.applyFacetFilters()
 			}
 		},
 		async performSearch() {
@@ -286,23 +340,8 @@ export default {
 				this.searchLoading = true
 				this.lastSearchStats = null
 				
-				// Set the search terms in the filters
-				if (this.searchTerms.length > 0) {
-					objectStore.setFilters({
-						_search: this.searchTerms.join(' '),
-					})
-				} else {
-					// Clear search filter if no terms
-					objectStore.setFilters({
-						_search: '',
-					})
-				}
-				
-				// Perform the search using the existing object store method
-				await objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-				})
+				// Apply all filters (search terms + facet filters) and perform search with facets
+				await this.performSearchWithFacets()
 				
 				// Calculate performance statistics
 				const endTime = performance.now()
@@ -324,6 +363,146 @@ export default {
 			} finally {
 				this.searchLoading = false
 			}
+		},
+
+		async loadFacetableFields() {
+			// Load facetable fields to discover what facets are available
+			if (!registerStore.registerItem || !schemaStore.schemaItem) return
+
+			try {
+				this.facetsLoading = true
+				
+				// Use objectStore.getFacetableFields to discover available facetable fields
+				const facetableFields = await objectStore.getFacetableFields({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+				})
+				
+				this.facetableFields = facetableFields || {}
+
+				console.log('Facetable fields loaded:', {
+					facetableFields: this.facetableFields,
+				})
+
+			} catch (error) {
+				console.error('Error loading facetable fields:', error)
+				this.facetableFields = null
+			} finally {
+				this.facetsLoading = false
+			}
+		},
+
+		async performSearchWithFacets() {
+			// Perform search with facet configuration to get both results and facet data
+			if (!registerStore.registerItem || !schemaStore.schemaItem) return
+
+			try {
+				this.searchLoading = true
+				
+				// Apply current filters and search terms to objectStore
+				this.applyFiltersToObjectStore()
+				
+				// Refresh object list with facets included - this will get both results and facet data
+				await objectStore.refreshObjectList({
+					register: registerStore.registerItem.id,
+					schema: schemaStore.schemaItem.id,
+					includeFacets: true,
+				})
+				
+				// Get the facet data from the objectStore
+				// The API response has facets nested under facets.facets
+				this.facetData = objectStore.facets?.facets || {}
+
+				console.log('Search with facets completed:', {
+					facetData: this.facetData,
+					objectStoreFacets: objectStore.facets,
+					rawFacetData: objectStore.facets?.facets,
+					totalResults: objectStore.pagination.total,
+				})
+
+				// Debug facet buckets to ensure counts are properly displayed
+				Object.entries(this.facetData || {}).forEach(([fieldName, facet]) => {
+					if (facet?.buckets && facet.buckets.length > 0) {
+						console.log(`Facet ${fieldName}:`, {
+							type: facet.type,
+							buckets: facet.buckets.map(bucket => ({
+								key: bucket.key,
+								originalLabel: bucket.label || bucket.key,
+								results: bucket.results,
+								finalLabel: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
+							}))
+						})
+					}
+				})
+
+			} catch (error) {
+				console.error('Error performing search with facets:', error)
+				this.facetData = null
+			} finally {
+				this.searchLoading = false
+			}
+		},
+
+		getFacetLabel(field, facet, isMetadata) {
+			// Get human-readable label for facet
+			if (isMetadata) {
+				const fieldInfo = this.facetableFields?.['@self']?.[field]
+				return fieldInfo?.description || this.capitalizeFieldName(field)
+			} else {
+				const fieldInfo = this.facetableFields?.object_fields?.[field]
+				return fieldInfo?.title || fieldInfo?.description || this.capitalizeFieldName(field)
+			}
+		},
+
+		capitalizeFieldName(fieldName) {
+			// Convert field names like 'tooiCategorieNaam' to 'Tooi Categorie Naam'
+			return fieldName
+				.replace(/([a-z])([A-Z])/g, '$1 $2') // Split camelCase
+				.replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+		},
+
+		updateFacetFilter(field, selectedValues) {
+			// Update facet filter and refresh search
+			this.facetFilters = {
+				...this.facetFilters,
+				[field]: selectedValues
+			}
+
+			// Apply facet filters to search
+			this.applyFacetFilters()
+		},
+
+		applyFiltersToObjectStore() {
+			// Convert facet filters to object store activeFilters format
+			const activeFilters = {}
+
+			// Add facet filters
+			Object.entries(this.facetFilters).forEach(([field, values]) => {
+				if (values && values.length > 0) {
+					const filterValues = values.map(option => option.value || option)
+					activeFilters[field] = filterValues
+				}
+			})
+
+			// Add search terms to regular filters if any
+			const filters = {}
+			if (this.searchTerms.length > 0) {
+				filters._search = this.searchTerms.join(' ')
+			}
+
+			// Apply filters to object store using the existing activeFilters system
+			objectStore.setActiveFilters(activeFilters)
+			objectStore.setFilters(filters)
+
+			console.log('Filters applied to objectStore:', {
+				activeFilters,
+				filters,
+			})
+		},
+
+		async applyFacetFilters() {
+			// Apply facet filters and refresh search with facets
+			await this.performSearchWithFacets()
 		},
 	},
 }
@@ -440,5 +619,37 @@ export default {
 
 .search-hint {
 	margin: 0;
+}
+
+.loading-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-text-maxcontrast);
+}
+
+.facets-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.facet-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.facet-label {
+	font-size: 0.9em;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+}
+
+.no-facets-message {
+	padding: 16px;
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
 }
 </style>
