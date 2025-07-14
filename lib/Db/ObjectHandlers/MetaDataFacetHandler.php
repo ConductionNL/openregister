@@ -66,7 +66,7 @@ class MetaDataFacetHandler
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-
+        
         // Build aggregation query
         $queryBuilder->select($field, $queryBuilder->createFunction('COUNT(*) as doc_count'))
             ->from('openregister_objects')
@@ -83,7 +83,7 @@ class MetaDataFacetHandler
         while ($row = $result->fetch()) {
             $key   = $row[$field];
             $label = $this->getFieldLabel($field, $key);
-
+            
             $buckets[] = [
                 'key'     => $key,
                 'results' => (int) $row['doc_count'],
@@ -123,10 +123,10 @@ class MetaDataFacetHandler
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-
+        
         // Build date histogram query based on interval
         $dateFormat = $this->getDateFormatForInterval($interval);
-
+        
         $queryBuilder->selectAlias(
                 $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
                 'date_key'
@@ -186,7 +186,7 @@ class MetaDataFacetHandler
 
         foreach ($ranges as $range) {
             $queryBuilder = $this->db->getQueryBuilder();
-
+            
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
                 ->from('openregister_objects')
                 ->where($queryBuilder->expr()->isNotNull($field));
@@ -986,12 +986,12 @@ class MetaDataFacetHandler
         foreach ($metadataFields as $field => $config) {
             if ($this->hasFieldData($field, $baseQuery)) {
                 $fieldConfig = $config;
-
+                
                 // Add sample values for categorical fields
                 if ($config['type'] === 'categorical') {
                     $fieldConfig['sample_values'] = $this->getSampleValues($field, $baseQuery, 10);
                 }
-
+                
                 // Add date range for date fields
                 if ($config['type'] === 'date') {
                     $dateRange = $this->getDateRange($field, $baseQuery);
@@ -999,7 +999,7 @@ class MetaDataFacetHandler
                         $fieldConfig['date_range'] = $dateRange;
                     }
                 }
-
+                
                 $facetableFields[$field] = $fieldConfig;
             }
         }
@@ -1028,7 +1028,7 @@ class MetaDataFacetHandler
     private function hasFieldData(string $field, array $baseQuery): bool
     {
         $queryBuilder = $this->db->getQueryBuilder();
-
+        
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field));
@@ -1066,7 +1066,7 @@ class MetaDataFacetHandler
     private function getSampleValues(string $field, array $baseQuery, int $limit): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-
+        
         $queryBuilder->select($field)
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects')
@@ -1084,7 +1084,7 @@ class MetaDataFacetHandler
         while ($row = $result->fetch()) {
             $value = $row[$field];
             $label = $this->getFieldLabel($field, $value);
-
+            
             $samples[] = [
                 'value' => $value,
                 'label' => $label,
@@ -1116,7 +1116,7 @@ class MetaDataFacetHandler
     private function getDateRange(string $field, array $baseQuery): ?array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-
+        
         $queryBuilder->selectAlias($queryBuilder->createFunction("MIN($field)"), 'min_date')
             ->selectAlias($queryBuilder->createFunction("MAX($field)"), 'max_date')
             ->from('openregister_objects')
@@ -1140,4 +1140,4 @@ class MetaDataFacetHandler
     }//end getDateRange()
 
 
-}//end class
+}//end class 
