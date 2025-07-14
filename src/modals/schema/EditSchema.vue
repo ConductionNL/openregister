@@ -326,18 +326,17 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															input-label="Object Handling"
 															label="Object Handling" />
 														<NcActionInput
-															v-model="schemaItem.properties[key].register"
-															type="multiselect"
-															:options="availableRegisters"
-															input-label="Register"
-															label="Register" />
-														<NcActionInput
 															v-model="schemaItem.properties[key].$ref"
 															type="multiselect"
 															:options="availableSchemas"
 															input-label="Schema Reference"
-															label="Schema Reference"
-															:disabled="!schemaItem.properties[key].register" />
+															label="Schema Reference" />
+														<NcActionInput
+															v-model="schemaItem.properties[key].register"
+															type="multiselect"
+															:options="availableRegisters"
+															input-label="Register (Optional)"
+															label="Register (Optional - defaults to parent register)" />
 														<NcActionInput
 															v-model="schemaItem.properties[key].inversedBy"
 															type="multiselect"
@@ -590,30 +589,12 @@ export default {
 			}))
 		},
 		availableSchemas() {
-			// Filter schemas by selected register if a register is selected
-			const selectedProperty = this.selectedProperty
-			if (!selectedProperty || !this.schemaItem.properties[selectedProperty]) {
-				return schemaStore.schemaList.map(schema => ({
-					id: schema.id,
-					label: schema.title || schema.name || schema.id,
-				}))
-			}
-
-			const selectedRegister = this.schemaItem.properties[selectedProperty].register
-			if (!selectedRegister) {
-				return schemaStore.schemaList.map(schema => ({
-					id: schema.id,
-					label: schema.title || schema.name || schema.id,
-				}))
-			}
-
-			// Filter schemas that belong to the selected register
-			return schemaStore.schemaList
-				.filter(schema => schema.register === selectedRegister)
-				.map(schema => ({
-					id: schema.id,
-					label: schema.title || schema.name || schema.id,
-				}))
+			// Return all schemas regardless of register selection
+			// The register selection is optional and used for explicit register specification
+			return schemaStore.schemaList.map(schema => ({
+				id: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
+				label: schema.title || schema.name || schema.id,
+			}))
 		},
 	},
 	watch: {
@@ -1153,10 +1134,20 @@ export default {
 				return []
 			}
 
-			// Find the referenced schema - handle both string and object values
+			// Extract schema slug from reference format like "#/components/schemas/Contactgegevens"
 			const schemaRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
+			let schemaSlug = schemaRef
+			
+			// Handle JSON Schema path references
+			if (schemaRef.includes('/')) {
+				schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
+			}
+
+			// Find the referenced schema by slug (case-insensitive), ID, or title
 			const referencedSchema = schemaStore.schemaList.find(schema =>
-				schema.id === schemaRef || schema.title === schemaRef || schema.slug === schemaRef,
+				(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
+				schema.id === schemaSlug || 
+				schema.title === schemaSlug,
 			)
 
 			if (!referencedSchema || !referencedSchema.properties) {
