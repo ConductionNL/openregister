@@ -1,43 +1,137 @@
-# PHP Coding Standards
-
-## General Rules
-- Use spaces for indentation, not tabs
-- Indent with 4 spaces
-- Line length should not exceed 150 characters
-- Files must end with a single blank line
-- No trailing whitespace at the end of lines
-- Use single quotes for strings unless double quotes are needed
-- Add docblocks to all methods, classes, and properties
-- Add return types to all methods
-- Add type hints to all methods
-- Add default values to all methods where appropriate
-- Add phpstan and psalm annotations to all methods
-- Add phpunit tests to all methods
-- Add inline comments to explain complex logic
-- Use readonly properties where appropriate
-
 ## API Testing
 
-### Important: Do NOT use standalone PHP server for API testing
-The standalone PHP server (`php -S localhost:8000`) **does not work** for testing Nextcloud API endpoints because:
-- It lacks the Nextcloud framework and routing system
-- API routes like '/index.php/apps/openregister/api/search-trails/statistics' will return 404 errors
-- It cannot handle Nextcloud's dependency injection and service container
-- Authentication and session handling won't work properly
+### CRITICAL: Local Development API Testing Requirements
+
+For local development environments, API calls **MUST** be made from within the Nextcloud Docker container. External calls will fail due to authentication and routing issues.
+
+#### Common Mistakes to Avoid
+
+1. **❌ DO NOT** make API calls from the host machine to `http://localhost` or `http://nextcloud.local`
+   - These will result in 401 Unauthorized errors
+   - Authentication cookies and sessions don't work properly from external calls
+
+2. **❌ DO NOT** use standalone PHP server for API testing
+   - `php -S localhost:8000` lacks the Nextcloud framework and routing system
+   - API routes will return 404 errors
+   - Dependency injection and service container won't work
+
+3. **❌ DO NOT** forget authentication headers
+   - Always include `-u 'admin:admin'` for basic auth
+   - Always include `-H 'OCS-APIREQUEST: true'` header
+
+### Handling Empty Values in API Requests
+
+The OpenRegister API intelligently handles empty values based on schema requirements to prevent cascading errors in related apps while maintaining data integrity.
+
+#### Empty Object Properties
+
+For object properties (type: 'object'):
+
+**✅ Non-required object properties:**
+```json
+{
+  "contactgegevens": {}    // Converted to null automatically
+}
+// Result: "contactgegevens": null
+```
+
+**⚠️ Required object properties:**
+```json
+{
+  "requiredObject": {}     // Kept as {} but will fail validation
+}
+// Result: Validation error with clear message
+```
+
+#### Empty Array Properties
+
+For array properties (type: 'array'):
+
+**✅ Arrays with no minItems constraint:**
+```json
+{
+  "links": []              // Preserved as valid empty array
+}
+// Result: "links": []
+```
+
+**⚠️ Arrays with minItems > 0:**
+```json
+{
+  "requiredItems": []      // Kept as [] but will fail validation
+}
+// Result: Validation error: "Property 'requiredItems' should have at least 1 items, but has 0"
+```
+
+#### Empty String Properties
+
+For string properties (type: 'string'):
+
+**✅ Non-required string properties:**
+```json
+{
+  "optionalField": ""      // Converted to null automatically
+}
+// Result: "optionalField": null
+```
+
+**⚠️ Required string properties:**
+```json
+{
+  "requiredField": ""      // Kept as "" but will fail validation
+}
+// Result: Validation error with guidance
+```
+
+#### Explicit Null Values
+
+Explicit null values are always preserved for clearing fields:
+
+```json
+{
+  "fieldToClear": null     // Always preserved
+}
+// Result: "fieldToClear": null
+```
+
+#### Best Practices for API Clients
+
+1. **Use explicit null values** when you want to clear a field:
+   ```json
+   { "contactgegevens": null }  // Clear the field
+   ```
+
+2. **Omit properties entirely** if you don't want to change them:
+   ```json
+   { "naam": "Updated Name" }   // Only update name, leave other fields unchanged
+   ```
+
+3. **Provide valid data** for required fields:
+   ```json
+   { 
+     "naam": "Organization Name",           // Required string
+     "website": "https://example.com",     // Required string
+     "contactgegevens": {                  // Required object with data
+       "email": "contact@example.com"
+     }
+   }
+   ```
+
+4. **Handle validation errors** properly by checking the error message:
+   ```json
+   {
+     "status": "error",
+     "message": "Validation failed",
+     "errors": [{
+       "property": "naam",
+       "message": "The required property 'naam' is missing. Please provide a value for this property or set it to null if allowed."
+     }]
+   }
+   ```
 
 ### Proper API Testing Methods
 
-#### 1. Use the Nextcloud Docker Environment
-Test API endpoints using the actual Nextcloud Docker instance:
-```bash
-# If Nextcloud runs on localhost:80
-curl -s 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
-
-# If Nextcloud runs on a custom domain
-curl -s 'http://nextcloud.local/index.php/apps/openregister/api/search-trails/statistics'
-```
-
-#### 2. Test from within the Docker Container
+#### 1. REQUIRED: Test from within the Docker Container
 Execute curl commands from inside the Nextcloud Docker container:
 
 **Step 1: Find your Nextcloud container name**
@@ -46,7 +140,7 @@ Execute curl commands from inside the Nextcloud Docker container:
 docker ps | grep nextcloud
 ```
 
-**Step 2: Test API from within container**
+**Step 2: Test API from within container (REQUIRED for local development)**
 ```bash
 # Execute curl command in the container (replace 'master-nextcloud-1' with your container name)
 docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/search-trails?limit=50&page=1'"
@@ -64,8 +158,8 @@ docker exec -it -u 33 master-nextcloud-1 /bin/bash
 - Add `OCS-APIREQUEST: true` header for proper API handling
 - Use single quotes to avoid shell interpretation of special characters
 
-#### 3. Use Browser Developer Tools
-For testing authenticated endpoints:
+#### 2. Alternative: Use Browser Developer Tools
+For testing authenticated endpoints in the browser:
 1. Open Browser Developer Tools (F12)
 2. Go to Network tab
 3. Access the page that calls the API
@@ -73,24 +167,23 @@ For testing authenticated endpoints:
 5. Right-click on failed requests and select 'Copy as cURL'
 6. Use the copied cURL command for testing
 
-#### 4. Test with Proper Headers
-Include necessary headers for API testing:
+#### 3. Required Headers for API Testing
+Always include these headers when testing:
 ```bash
-# Test with authentication headers
-curl -H 'Authorization: Bearer your-token' \
-     -H 'Content-Type: application/json' \
-     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
-
-# Test with OCS API format
-curl -H 'OCS-APIRequest: true' \
-     -H 'Accept: application/json' \
-     'http://localhost/ocs/v2.php/apps/openregister/api/search-trails/statistics'
-
-# Test with basic authentication (most common for development)
+# Test with authentication headers (REQUIRED)
 curl -u 'admin:admin' \
      -H 'OCS-APIREQUEST: true' \
      -H 'Content-Type: application/json' \
      'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
+```
+
+#### 4. External API Testing (Production/Staging Only)
+Only use external calls for production or staging environments:
+```bash
+# For production/staging environments only
+curl -H 'Authorization: Bearer your-token' \
+     -H 'Content-Type: application/json' \
+     'https://your-domain.com/index.php/apps/openregister/api/search-trails/statistics'
 ```
 
 ### Debugging API Endpoint Issues
@@ -148,410 +241,3 @@ docker exec -u 33 master-nextcloud-1 php -r "
 var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
 "
 ```
-
-### API Development Workflow
-
-1. **Develop API endpoint** in the proper Nextcloud environment
-2. **Test using curl** with the Nextcloud Docker URL
-3. **Check browser network tab** for frontend integration
-4. **Monitor logs** for any errors
-5. **Verify database queries** return expected data
-6. **Test authentication** if required
-7. **Document the endpoint** with examples
-
-### Common API Testing Patterns
-
-#### Testing with JSON Data
-```bash
-# POST request with JSON data
-curl -X POST \
-     -H 'Content-Type: application/json' \
-     -d '{"key": "value"}' \
-     'http://localhost/index.php/apps/openregister/api/endpoint'
-```
-
-#### Testing with Query Parameters
-```bash
-# GET request with query parameters
-curl 'http://localhost/index.php/apps/openregister/api/search-trails?limit=10&offset=0'
-```
-
-#### Testing with Authentication
-```bash
-# Test with Nextcloud user authentication
-curl -u 'username:password' \
-     'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
-
-# Test from within Docker container with authentication
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/search-trails/statistics'"
-```
-
-## Class Structure
-- Class files should begin with a docblock containing:
-  - Class name
-  - Category
-  - Package
-  - Author
-  - Copyright
-  - License
-  - Version
-  - Link to the application
-
-## Method Structure
-- One blank line between methods
-- Opening brace on same line as method declaration
-- Closing brace must be followed by one blank line
-- Method parameters should be properly aligned
-- Type declarations should be used whenever possible
-- Return type declarations should be used
-
-## Control Structures
-- Opening brace on same line
-- One space after keywords (if, for, while, etc)
-- No space after function name in function calls
-- Spaces around operators
-- One space after commas in function calls
-- Use elseif instead of else if
-- Add end comments for long control structures
-
-## Arrays
-- Multi-line arrays should have each element on its own line
-- Array elements should be properly aligned
-- Trailing comma after last element
-- Use short array syntax []
-
-## Error Handling
-- Use try-catch blocks appropriately
-- Document thrown exceptions in docblocks
-- Add meaningful error messages
-
-## Documentation
-- All classes must have complete docblocks
-- All methods must have complete docblocks
-- Complex logic should have inline comments
-- Use proper alignment in docblocks
-- Add @param, @return, and @throws tags as needed
-
-## Naming Conventions
-- Classes: PascalCase
-- Methods: camelCase
-- Properties: camelCase
-- Constants: UPPER_SNAKE_CASE
-- Variables: camelCase
-
-## File Structure
-- One class per file
-- Namespace declaration first
-- Use statements after namespace
-- Class declaration after use statements
-- Proper file and directory naming
-
-## Testing
-- All public methods should have unit tests
-- Test class names should end with Test
-- Test methods should begin with test
-- Use meaningful test method names
-- Add docblocks to test methods
-
-## Security
-- Validate all input
-- Escape all output
-- Use prepared statements for SQL
-- Follow OWASP security guidelines
-- Document security considerations
-
-## Performance
-- Optimize database queries
-- Use caching where appropriate
-- Minimize file operations
-- Document performance considerations
-
-## Maintenance
-- Remove unused code
-- Keep dependencies updated
-- Monitor error logs
-- Regular backups
-- Document maintenance procedures
-
-## Class and Interface Rules
-- All classes and interfaces must have a complete docblock containing:
-  - Description
-  - Package
-  - Category
-  - Author
-  - Copyright
-  - License
-  - Version
-  - Link
-  - Since
-
-## Code Style
-- Follow PSR-12 coding standards
-- Multi-line control structures must have:
-  - First expression on the line after the opening parenthesis
-  - Closing parenthesis on the line after the last expression
-  - Proper indentation for all lines
-
-## Properties
-- All properties must have type declarations
-- Use readonly properties where appropriate
-- All properties must have docblocks with type information
-
-## Methods
-- All methods must have:
-  - Return type declarations
-  - Parameter type declarations
-  - Default values for optional parameters
-  - Complete docblocks including:
-    - Description
-    - @param annotations with types and descriptions
-    - @return annotation with type and description
-    - @throws annotation for any exceptions
-  - PHPStan and Psalm annotations where appropriate
-
-## Documentation
-- All code changes must be documented in Docusaurus
-- Documentation files must be in the website/docs folder
-- Use single quotes (') instead of backticks (`) in documentation
-- Technical documentation must include:
-  - Class purpose and responsibility
-  - Method descriptions and usage examples
-  - Configuration options
-  - Dependencies and requirements
-
-## Quality Checks
-- All code must pass:
-  - PHP_CodeSniffer (PSR-12) with zero errors or warnings
-  - PHPStan (Level 5) with zero errors
-  - Psalm (Level 5) with zero errors
-  - PHPUnit tests with 100% pass rate and at least 80% code coverage
-- Configuration files:
-  - Use phpcs.xml for phpcs configuration
-  - Use phpstan.neon for PHPStan configuration
-  - Use psalm.xml for Psalm configuration
-  - Both should be present in the project root
-- Set up pre-commit hooks to automatically run checks
-- For CI/CD pipelines, these checks should be part of the build process
-
-## Example Class Structure
-```php
-<?php
-
-namespace OCA\OpenConnector\Service\Handler;
-
-/**
- * Description of the class purpose.
- *
- * @package     OpenConnector
- * @category    Service
- * @author      Conduction B.V. <info@conduction.nl>
- * @copyright   Copyright (C) 2024 Conduction B.V. All rights reserved.
- * @license     EUPL 1.2
- * @version     1.0.0
- * @link        https://openregister.app
- *
- * @since       1.0.0 - Description of when this class was added
- */
-class ExampleClass
-{
-    /**
-     * Description of the property.
-     *
-     * @var string
-     */
-    private readonly string $property;
-
-    /**
-     * Constructor.
-     *
-     * @param string $property Description of the parameter
-     */
-    public function __construct(string $property)
-    {
-        $this->property = $property;
-    }
-
-    /**
-     * Description of what the method does.
-     *
-     * @param string $param Description of the parameter
-     * @param int    $optionalParam Description of the optional parameter
-     *
-     * @return bool Description of the return value
-     *
-     * @throws \Exception When something goes wrong
-     *
-     * @psalm-pure
-     * @phpstan-return bool
-     */
-    public function exampleMethod(string $param, int $optionalParam = 0): bool
-    {
-        // Method implementation
-        return true;
-    }
-}
-```
-
-## App Structure
-- Backend (PHP):
-  - All PHP code resides in the `lib/` directory
-  - Directory structure follows PSR-4 autoloading:
-    - `lib/Controller/` - Application controllers
-    - `lib/Service/` - Business logic and services
-    - `lib/Db/` - Database entities and mappers
-    - `lib/Exception/` - Custom exceptions
-    - `lib/Migration/` - Database migrations
-    - `lib/Helper/` - Helper classes and utilities
-    - `lib/Event/` - Event classes
-    - `lib/EventListener/` - Event listeners
-    - `lib/Command/` - Console commands
-    - `lib/Cron/` - Cron jobs
-    - `lib/Settings/` - Application settings
-    - `lib/AppInfo/` - App information and registration
-    - `lib/Http/` - HTTP related classes
-    - `lib/Validator/` - Validation classes
-    - `lib/Factory/` - Factory classes
-    - `lib/Provider/` - Service providers
-    - `lib/Twig/` - Twig extensions and runtime
-
-## Code Style (PHPCS Rules)
-- Use the phpcs.xml in the root as standard when doing phpcs checks
-- Follow PEAR standard with specific customizations:
-  - Line length: max 125 chars (soft limit), 150 chars (hard limit)
-  - No Yoda conditions
-  - Use short array syntax []
-  - One argument per line in multi-line function calls
-  - No inline control structures
-  - No multiple statements on one line
-  - Space after type casting
-  - No underscore prefix for private methods/properties
-  - Inline comments must end in full-stops, exclamation marks, or question marks
-  - Implicit true comparisons prohibited; use === true instead
-  - Operator ! prohibited; use === false instead
-
-### Spacing Rules
-- Array bracket spacing (Squiz)
-- Function declaration argument spacing (Squiz)
-- Control structure spacing (Squiz)
-- Function spacing: 1 line between functions
-- Member var spacing (Squiz)
-- Operator spacing (Squiz)
-- No superfluous whitespace
-
-### Commenting Rules
-- Block comments properly aligned (Squiz)
-- DocComment alignment (Squiz)
-- Empty catch must have comment
-- Proper inline comment formatting
-- Long condition closing comments
-- Variable comments required
-
-### Forbidden Functions/Patterns
-- sizeof (use count)
-- delete (use unset)
-- print (use echo)
-- is_null
-- create_function
-- var_dump
-- No inline if statements
-
-### Array Formatting
-- Custom array indentation rules
-- No long array syntax
-- Proper key/value alignment
-
-## Method Requirements
-- All methods, classes, and properties MUST have docblocks
-- All methods MUST have:
-  - Return type declarations
-  - Parameter type hints
-  - Default values for optional parameters
-  - PHPStan and Psalm annotations
-  - PHPUnit tests
-  - Inline comments explaining each logical step
-  - Docblocks containing:
-    - @param annotations with types and descriptions
-    - @return annotation with type and description
-    - @throws annotations for all possible exceptions
-    - @since annotation with version number
-    - @deprecated annotation if applicable
-- Properties MUST:
-  - Have docblocks with type information
-  - Use readonly modifier when the property should not be modified after construction
-  - Include visibility modifier (public, protected, private)
-  - Have proper type hints
-- Classes MUST:
-  - Have complete docblocks as per template
-  - Follow single responsibility principle
-  - Use proper inheritance and interfaces
-  - Have descriptive names matching their purpose
-
-## Automatic Code Quality Checks
-
-### PHP_CodeSniffer (PHPCS)
-- All code must pass PHPCS checks using PSR-12 standard
-- Run PHPCS before committing code changes:
-  ```bash
-  # Check coding standard violations
-  phpcs --standard=PSR12 file_or_directory_to_check.php
-  
-  # Automatically fix coding standard violations
-  phpcbf --standard=PSR12 file_or_directory_to_check.php
-  ```
-- Common standards to check:
-  - PSR-12 (Preferred)
-  - PSR-2 (Legacy)
-  - PSR-1 (Basic)
-
-### PHPStan
-- All code must pass PHPStan analysis at level 5 or higher
-- Run PHPStan before committing code changes:
-  ```bash
-  # Run PHPStan on specific files
-  vendor/bin/phpstan analyse lib/Service/YourService.php
-  
-  # Run PHPStan on entire lib directory
-  vendor/bin/phpstan analyse lib/
-  ```
-- Use PHPStan annotations to improve type checking:
-  - `@phpstan-param` - Specify more detailed parameter types
-  - `@phpstan-return` - Specify more detailed return types
-  - `@phpstan-var` - Specify more detailed property types
-  - `@phpstan-template` - For generic classes
-  - `@phpstan-type` - To define complex types
-
-### Psalm
-- All code must pass Psalm analysis at level 5 or higher
-- Run Psalm before committing code changes:
-  ```bash
-  # Run Psalm on specific files
-  vendor/bin/psalm lib/Service/YourService.php --no-cache
-  
-  # Run Psalm on entire lib directory
-  vendor/bin/psalm --no-cache
-  ```
-- Use Psalm annotations for better type checking:
-  - `@psalm-param` - Specify more detailed parameter types
-  - `@psalm-return` - Specify more detailed return types
-  - `@psalm-var` - Specify more detailed property types
-  - `@psalm-pure` - Mark methods as pure (no side effects)
-  - `@psalm-immutable` - Mark classes as immutable
-
-### Verification Workflow
-1. Write or modify code according to standards
-2. Run PHPCS to check and fix formatting issues:
-   ```bash
-   phpcbf --standard=PSR12 path/to/your/file.php
-   phpcs --standard=PSR12 path/to/your/file.php
-   ```
-3. Run PHPStan to check for type errors and logical issues:
-   ```bash
-   vendor/bin/phpstan analyse path/to/your/file.php
-   ```
-4. Run Psalm for additional static analysis:
-   ```bash
-   vendor/bin/psalm path/to/your/file.php --no-cache
-   ```
-5. Fix any identified issues
-6. Run unit tests to ensure functionality
-7. Commit only after all checks pass 
