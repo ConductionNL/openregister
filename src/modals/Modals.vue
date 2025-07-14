@@ -24,6 +24,7 @@ import { navigationStore } from '../store/store.js'
 		<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
 		<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
 		<DeleteObject />
+		<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
 		<LockObject />
 		<ViewObject />
 		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
@@ -61,6 +62,7 @@ import EditObject from './object/EditObject.vue'
 import MergeObject from './object/MergeObject.vue'
 import MigrationObject from './object/MigrationObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
+import CopyObject from './object/CopyObject.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
 import LockObject from './object/LockObject.vue'
@@ -97,6 +99,7 @@ export default {
 		MergeObject,
 		MigrationObject,
 		DeleteObject,
+		CopyObject,
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,

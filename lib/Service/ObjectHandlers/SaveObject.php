@@ -100,23 +100,32 @@ class SaveObject
     {
         $relations = [];
 
-        foreach ($data as $key => $value) {
-            $currentPath = $prefix ? $prefix.'.'.$key : $key;
+        try {
+            foreach ($data as $key => $value) {
+                // Skip if key is not a string or is empty
+                if (!is_string($key) || empty($key)) {
+                    continue;
+                }
 
-            if (is_array($value)) {
-                // Recursively scan nested arrays
-                $relations = array_merge($relations, $this->scanForRelations($value, $currentPath));
-            } else if (is_string($value)) {
-                // Check for UUID pattern
-                if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
-                    $relations[$currentPath] = $value;
+                $currentPath = $prefix ? $prefix.'.'.$key : $key;
+
+                if (is_array($value) && !empty($value)) {
+                    // Recursively scan nested arrays
+                    $relations = array_merge($relations, $this->scanForRelations($value, $currentPath));
+                } else if (is_string($value) && !empty($value) && trim($value) !== '') {
+                    // Check for UUID pattern
+                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value)) {
+                        $relations[$currentPath] = $value;
+                    }
+                    // Check for URL pattern
+                    else if (filter_var($value, FILTER_VALIDATE_URL)) {
+                        $relations[$currentPath] = $value;
+                    }
                 }
-                // Check for URL pattern
-                else if (filter_var($value, FILTER_VALIDATE_URL)) {
-                    $relations[$currentPath] = $value;
-                }
-            }
-        }
+            }//end foreach
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error scanning for relations: ".$e->getMessage());
+        }//end try
 
         return $relations;
 
@@ -143,6 +152,7 @@ class SaveObject
 
     }//end updateObjectRelations()
 
+
     /**
      * Hydrates the name and description of the entity from the object data based on schema configuration.
      *
@@ -155,7 +165,7 @@ class SaveObject
      *
      * @return void
      *
-     * @psalm-return void
+     * @psalm-return   void
      * @phpstan-return void
      */
     private function hydrateNameAndDescription(ObjectEntity $entity, Schema $schema): void
@@ -188,18 +198,19 @@ class SaveObject
      *
      * @return string|null The value at the path, or null if not found
      *
-     * @psalm-return string|null
+     * @psalm-return   string|null
      * @phpstan-return string|null
      */
     private function getValueFromPath(array $data, string $path): ?string
     {
-        $keys = explode('.', $path);
+        $keys    = explode('.', $path);
         $current = $data;
 
         foreach ($keys as $key) {
             if (!is_array($current) || !array_key_exists($key, $current)) {
                 return null;
             }
+
             $current = $current[$key];
         }
 
@@ -212,36 +223,52 @@ class SaveObject
 
     }//end getValueFromPath()
 
+
     /**
      * Set default values and constant values for properties based on the schema.
      *
      * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
-     * @param Schema $schema The schema the objectEntity belongs to.
-     * @param array $data The data that is written to the object.
+     * @param Schema       $schema       The schema the objectEntity belongs to.
+     * @param array        $data         The data that is written to the object.
      *
      * @return array The data object updated with default values and constant values from the $schema.
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\SyntaxError
      */
-    private function setDefaultValues (ObjectEntity $objectEntity, Schema $schema, array $data): array
+    private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
-        $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+        try {
+            $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+
+            if (!isset($schemaObject['properties']) || !is_array($schemaObject['properties'])) {
+                error_log("[SaveObject] Schema has no properties or invalid properties structure");
+                return $data;
+            }
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error getting schema object for default values: ".$e->getMessage());
+            return $data;
+        }
 
         // Convert the properties array to a processable array.
-        $properties = array_map(function(string $key, array $property) {
-            if (isset($property['default']) === false) {
-                $property['default'] = null;
-            }
-            $property['title'] = $key;
-            return $property;
-        }, array_keys($schemaObject['properties']), $schemaObject['properties']);
+        $properties = array_map(
+                function (string $key, array $property) {
+                    if (isset($property['default']) === false) {
+                        $property['default'] = null;
+                    }
+
+                    $property['title'] = $key;
+                    return $property;
+                },
+                array_keys($schemaObject['properties']),
+                $schemaObject['properties']
+                );
 
         // Handle constant values - these should ALWAYS be set regardless of input data
         $constantValues = [];
         foreach ($properties as $property) {
             if (isset($property['const']) === true) {
                 $constantValues[$property['title']] = $property['const'];
-                error_log("[SaveObject] Setting constant value for property '{$property['title']}': " . json_encode($property['const']));
+                error_log("[SaveObject] Setting constant value for property '{$property['title']}': ".json_encode($property['const']));
             }
         }
 
@@ -252,267 +279,457 @@ class SaveObject
         $defaultValues = array_diff_key($defaultValues, $data);
 
         // Render twig templated default values.
-        $renderedDefaultValues = array_map(function(mixed $defaultValue) use ($objectEntity, $data) {
-            if (is_string($defaultValue) && str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
-                return $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
+        $renderedDefaultValues = [];
+        foreach ($defaultValues as $key => $defaultValue) {
+            try {
+                if (is_string($defaultValue) && str_contains(haystack: $defaultValue, needle: '{{') && str_contains(haystack: $defaultValue, needle: '}}')) {
+                    $renderedDefaultValues[$key] = $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
+                } else {
+                    $renderedDefaultValues[$key] = $defaultValue;
+                }
+            } catch (Exception $e) {
+                error_log("[SaveObject] Error rendering default value template for property '$key': ".$e->getMessage());
+                $renderedDefaultValues[$key] = $defaultValue;
+                // Use original value if template fails
             }
+        }
 
-            return $defaultValue;
-        }, $defaultValues);
-
-        // Merge in this order: 
+        // Merge in this order:
         // 1. Start with rendered default values (only for properties not in $data)
         // 2. Add existing data (this preserves user input)
         // 3. Override with constant values (constants always take precedence)
         $mergedData = array_merge($renderedDefaultValues, $data, $constantValues);
-        
+
         if (!empty($constantValues)) {
-            error_log("[SaveObject] Applied constant values: " . json_encode($constantValues));
-            error_log("[SaveObject] Final merged data includes constants: " . json_encode(array_intersect_key($mergedData, $constantValues)));
+            error_log("[SaveObject] Applied constant values: ".json_encode($constantValues));
+            error_log("[SaveObject] Final merged data includes constants: ".json_encode(array_intersect_key($mergedData, $constantValues)));
         }
-        
+
         return $mergedData;
-    }//end setDefaultValues
 
-	/**
-	 * Cascades objects from the data array.
-	 *
-	 * @param ObjectEntity $objectEntity The parent object
-	 * @param Schema $schema The of the parent object.
-	 * @param array $data The data from which to create the cascaded object.
-	 *
-	 * @return array
-	 * @throws Exception
-	 */
-	private function cascadeObjects (ObjectEntity $objectEntity, Schema $schema, array $data): array
-	{
-		$properties = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true)['properties'];
+    }//end setDefaultValues()
 
-		$objectProperties = array_filter($properties, function(array $property) {
-			return $property['type'] === 'object' && isset($property['$ref']) === true && isset($property['inversedBy']) === true;
-		});
 
-		$arrayObjectProperties = array_filter($properties, function(array $property) {
-			return $property['type'] === 'array'
-				&& (isset($property['$ref']) || isset($property['items']['$ref']))
-				&& (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true);
-		});
+    /**
+     * Cascade objects from the data to separate objects.
+     *
+     * This method processes object properties that have schema references ($ref) and determines
+     * whether they should be cascaded as separate objects or kept as nested data.
+     *
+     * Objects are cascaded (saved separately) only if they have both:
+     * - $ref: Schema reference
+     * - inversedBy: Relation configuration
+     *
+     * Objects with only $ref (like nested objects with objectConfiguration.handling: "nested-object")
+     * are kept as-is in the data and not cascaded.
+     *
+     * @param ObjectEntity $objectEntity The parent object entity
+     * @param Schema       $schema       The schema of the parent object
+     * @param array        $data         The object data to process
+     *
+     * @return array The processed data with cascaded objects removed
+     */
+    private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
+    {
+        try {
+            $schemaObject = $schema->getSchemaObject($this->urlGenerator);
+            $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error getting schema object for cascading: ".$e->getMessage());
+            return $data;
+        }
 
-		//@TODO this can be done asynchronous
-		foreach($objectProperties as $property => $definition) {
-            if (isset($data[$property]) === false || empty($data[$property]) === true) {
+        // Only cascade objects that have BOTH $ref AND inversedBy (actual relations)
+        // Objects with only $ref are nested objects that should remain in the data
+        $objectProperties = array_filter(
+          $properties,
+          function (array $property) {
+            return $property['type'] === 'object' 
+                && isset($property['$ref']) === true 
+                && isset($property['inversedBy']) === true;
+          }
+          );
+
+        // Same logic for array properties - only cascade if they have inversedBy
+        $arrayObjectProperties = array_filter(
+          $properties,
+          function (array $property) {
+            return $property['type'] === 'array'
+                && (isset($property['$ref']) || isset($property['items']['$ref']))
+                && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true);
+          }
+          );
+
+        // Process single object properties that need cascading
+        foreach ($objectProperties as $property => $definition) {
+            // Skip if property not present in data
+            if (isset($data[$property]) === false) {
                 continue;
             }
 
-            $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $data[$property]);
-			unset($data[$property]);
-		}
-
-		foreach($arrayObjectProperties as $property => $definition) {
-            if (isset($data[$property]) === false || empty($data[$property]) === true) {
+            // Skip if the property is empty or not an array/object
+            if (empty($data[$property]) === true || (!is_array($data[$property]) && !is_object($data[$property]))) {
+                error_log("[SaveObject] Skipping cascade for property '$property': empty or invalid data");
                 continue;
             }
 
-            $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
-			unset($data[$property]);
-		}
+            // Convert object to array if needed
+            $objectData = is_object($data[$property]) ? (array) $data[$property] : $data[$property];
+
+            // Skip if the object is effectively empty (only contains empty values)
+            if ($this->isEffectivelyEmptyObject($objectData)) {
+                error_log("[SaveObject] Skipping cascade for property '$property': object is effectively empty");
+                continue;
+            }
+
+            try {
+                $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $objectData);
+                unset($data[$property]);
+            } catch (Exception $e) {
+                error_log("[SaveObject] Error cascading single object for property '$property': ".$e->getMessage());
+                // Continue with other properties even if one fails
+            }
+        }
+
+        // Process array object properties that need cascading
+        foreach ($arrayObjectProperties as $property => $definition) {
+            // Skip if property not present, empty, or not an array
+            if (isset($data[$property]) === false || empty($data[$property]) === true || !is_array($data[$property])) {
+                continue;
+            }
+
+            try {
+                $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
+                unset($data[$property]);
+            } catch (Exception $e) {
+                error_log("[SaveObject] Error cascading multiple objects for property '$property': ".$e->getMessage());
+                // Continue with other properties even if one fails
+            }
+        }
+
+        return $data;
+
+    }//end cascadeObjects()
 
 
-		return $data;
-	}
+    /**
+     * Cascade multiple objects from an array of objects in the data.
+     *
+     * @param ObjectEntity $objectEntity The parent object.
+     * @param array        $property     The property to add the objects to.
+     * @param array        $propData     The data in the property.
+     *
+     * @return void
+     * @throws Exception
+     */
+    private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): void
+    {
+        if (array_is_list($propData) === false) {
+            error_log("[SaveObject] Data is not an array of objects for cascading multiple objects");
+            return;
+        }
 
-	/**
-	 * Cascade multiple objects from an array of objects in the data.
-	 *
-	 * @param ObjectEntity $objectEntity The parent object.
-	 * @param array $property The property to add the objects to.
-	 * @param array $propData The data in the property.
-	 *
-	 * @return void
-	 * @throws Exception
-	 */
-	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): void
-	{
-		if(array_is_list($propData) === false) {
-			throw new Exception('Data is not an array of objects');
-		}
+        // Filter out empty or invalid objects
+        $validObjects = array_filter(
+          $propData,
+          function ($object) {
+            return is_array($object) && !empty($object) && !(count($object) === 1 && isset($object['id']) && empty($object['id']));
+          }
+          );
 
-		if (isset($property['$ref']) === true) {
-			$property['items']['$ref'] = $property['$ref'];
-		}
+        if (empty($validObjects)) {
+            error_log("[SaveObject] No valid objects found for cascading multiple objects");
+            return;
+        }
 
-		if (isset($property['inversedBy']) === true) {
-			$property['items']['inversedBy'] = $property['inversedBy'];
-		}
+        if (isset($property['$ref']) === true) {
+            $property['items']['$ref'] = $property['$ref'];
+        }
 
-		if (isset($property['register']) === true) {
-			$property['items']['register'] = $property['register'];
-		}
+        if (isset($property['inversedBy']) === true) {
+            $property['items']['inversedBy'] = $property['inversedBy'];
+        }
 
-		$propData = array_map(function(array $object) use ($objectEntity, $property) {
-			$this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
-			return $object;
-		}, $propData);
+        if (isset($property['register']) === true) {
+            $property['items']['register'] = $property['register'];
+        }
 
-	}
+        // Validate that we have the necessary configuration
+        if (!isset($property['items']['$ref']) || !isset($property['items']['inversedBy'])) {
+            error_log("[SaveObject] Missing required configuration for cascading multiple objects");
+            return;
+        }
 
-	/**
-	 * Cascade a single object form an object in the source data
-	 *
-	 * @param ObjectEntity $objectEntity The parent object.
-	 * @param array $definition The definition of the property the cascaded object is found in.
-	 * @param array $object The object to cascade.
-	 * @return void
-	 * @throws Exception
-	 */
-	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): void
-	{
-		$objectId = $objectEntity->getUuid();
+        foreach ($validObjects as $object) {
+            try {
+                $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
+            } catch (Exception $e) {
+                error_log("[SaveObject] Error cascading single object in multiple objects: ".$e->getMessage());
+                // Continue with other objects even if one fails
+            }
+        }
 
-		$object[$definition['inversedBy']] = $objectId;
+    }//end cascadeMultipleObjects()
+
+
+    /**
+     * Cascade a single object form an object in the source data
+     *
+     * @param  ObjectEntity $objectEntity The parent object.
+     * @param  array        $definition   The definition of the property the cascaded object is found in.
+     * @param  array        $object       The object to cascade.
+     * @return void
+     * @throws Exception
+     */
+    private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): void
+    {
+        // Validate that we have the necessary configuration
+        if (!isset($definition['inversedBy']) || !isset($definition['$ref'])) {
+            error_log("[SaveObject] Missing required configuration for cascading single object");
+            return;
+        }
+
+        // Skip if object is empty or doesn't contain actual data
+        if (empty($object) || (count($object) === 1 && isset($object['id']) && empty($object['id']))) {
+            error_log("[SaveObject] Skipping cascade for empty or invalid object");
+            return;
+        }
+
+        $objectId = $objectEntity->getUuid();
+        if (empty($objectId)) {
+            error_log("[SaveObject] Parent object UUID is empty, cannot cascade");
+            return;
+        }
+
+        $object[$definition['inversedBy']] = $objectId;
         $register = $definition['register'] ?? $objectEntity->getRegister();
-        $uuid = $object['id'] ?? $object['@self']['id'] ?? null;
+        $uuid     = $object['id'] ?? $object['@self']['id'] ?? null;
 
-		$this->saveObject(register: $register, schema: $definition['$ref'], data: $object, uuid: $uuid);
-	}
+        try {
+            $this->saveObject(register: $register, schema: $definition['$ref'], data: $object, uuid: $uuid);
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error saving cascaded object: ".$e->getMessage());
+            throw $e;
+        }
 
-	/**
-	 * Handles inverse relations write-back by updating target objects to include reference to current object
-	 *
-	 * This method extends the existing inverse relations functionality to handle write operations.
-	 * When a property has `inversedBy` configuration and `writeBack: true`, this method will
-	 * update the target objects to include a reference back to the current object.
-	 *
-	 * For example, when creating a community with a list of deelnemers (participant UUIDs),
-	 * this method will update each participant's deelnames array to include the community's UUID.
-	 *
-	 * @param ObjectEntity $objectEntity The current object being saved
-	 * @param Schema $schema The schema of the current object
-	 * @param array $data The data being saved
-	 *
-	 * @return array The data with write-back properties optionally removed
-	 * @throws Exception
-	 */
-	private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
-	{
-		$properties = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true)['properties'];
+    }//end cascadeSingleObject()
 
-		// Find properties that have inversedBy configuration with writeBack enabled
-		$writeBackProperties = array_filter($properties, function(array $property) {
-			// Check for inversedBy with writeBack at property level
-			if (isset($property['inversedBy']) && isset($property['writeBack']) && $property['writeBack'] === true) {
-				return true;
-			}
-			
-			// Check for inversedBy with writeBack in array items
-			if ($property['type'] === 'array' && isset($property['items']['inversedBy']) && isset($property['items']['writeBack']) && $property['items']['writeBack'] === true) {
-				return true;
-			}
-			
-			return false;
-		});
 
-		foreach ($writeBackProperties as $propertyName => $definition) {
-			// Skip if property not present in data
-			if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
-				continue;
-			}
+    /**
+     * Handles inverse relations write-back by updating target objects to include reference to current object
+     *
+     * This method extends the existing inverse relations functionality to handle write operations.
+     * When a property has `inversedBy` configuration and `writeBack: true`, this method will
+     * update the target objects to include a reference back to the current object.
+     *
+     * For example, when creating a community with a list of deelnemers (participant UUIDs),
+     * this method will update each participant's deelnames array to include the community's UUID.
+     *
+     * @param ObjectEntity $objectEntity The current object being saved
+     * @param Schema       $schema       The schema of the current object
+     * @param array        $data         The data being saved
+     *
+     * @return array The data with write-back properties optionally removed
+     * @throws Exception
+     */
+    private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
+    {
+        try {
+            $schemaObject = $schema->getSchemaObject($this->urlGenerator);
+            $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error getting schema object for inverse relations: ".$e->getMessage());
+            return $data;
+        }
 
-			$targetUuids = $data[$propertyName];
-			$inverseProperty = null;
-			$targetSchema = null;
-			$targetRegister = null;
-			$removeFromSource = false;
+        // Find properties that have inversedBy configuration with writeBack enabled
+        $writeBackProperties = array_filter(
+          $properties,
+          function (array $property) {
+            // Check for inversedBy with writeBack at property level
+            if (isset($property['inversedBy']) && isset($property['writeBack']) && $property['writeBack'] === true) {
+                return true;
+            }
 
-			// Extract configuration from property or array items
-			if (isset($definition['inversedBy']) && isset($definition['writeBack']) && $definition['writeBack'] === true) {
-				$inverseProperty = $definition['inversedBy'];
-				$targetSchema = $definition['$ref'] ?? null;
-				$targetRegister = $definition['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-			} elseif (isset($definition['items']['inversedBy']) && isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true) {
-				$inverseProperty = $definition['items']['inversedBy'];
-				$targetSchema = $definition['items']['$ref'] ?? null;
-				$targetRegister = $definition['items']['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
-			}
+            // Check for inversedBy with writeBack in array items
+            if ($property['type'] === 'array' && isset($property['items']['inversedBy']) && isset($property['items']['writeBack']) && $property['items']['writeBack'] === true) {
+                return true;
+            }
 
-			// Skip if we don't have the necessary configuration
-			if (!$inverseProperty || !$targetSchema) {
-				continue;
-			}
+            return false;
+          }
+          );
 
-			// Ensure targetUuids is an array
-			if (!is_array($targetUuids)) {
-				$targetUuids = [$targetUuids];
-			}
+        foreach ($writeBackProperties as $propertyName => $definition) {
+            // Skip if property not present in data or is empty
+            if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
+                continue;
+            }
 
-			// Update each target object
-			foreach ($targetUuids as $targetUuid) {
-				if (empty($targetUuid) || !is_string($targetUuid)) {
-					continue;
-				}
+            $targetUuids      = $data[$propertyName];
+            $inverseProperty  = null;
+            $targetSchema     = null;
+            $targetRegister   = null;
+            $removeFromSource = false;
 
-				try {
-					// Find the target object
-					$targetObject = $this->objectEntityMapper->find($targetUuid);
-					if (!$targetObject) {
-						error_log("Inverse relation write-back target object not found: {$targetUuid}");
-						continue;
-					}
+            // Extract configuration from property or array items
+            if (isset($definition['inversedBy']) && isset($definition['writeBack']) && $definition['writeBack'] === true) {
+                $inverseProperty  = $definition['inversedBy'];
+                $targetSchema     = $definition['$ref'] ?? null;
+                $targetRegister   = $definition['register'] ?? $objectEntity->getRegister();
+                $removeFromSource = $definition['removeAfterWriteBack'] ?? false;
+            } else if (isset($definition['items']['inversedBy']) && isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true) {
+                $inverseProperty  = $definition['items']['inversedBy'];
+                $targetSchema     = $definition['items']['$ref'] ?? null;
+                $targetRegister   = $definition['items']['register'] ?? $objectEntity->getRegister();
+                $removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
+            }
 
-					// Get current data from target object
-					$targetData = $targetObject->getObject();
-					
-					// Initialize inverse property as array if it doesn't exist
-					if (!isset($targetData[$inverseProperty])) {
-						$targetData[$inverseProperty] = [];
-					}
+            // Skip if we don't have the necessary configuration
+            if (!$inverseProperty || !$targetSchema) {
+                error_log("[SaveObject] Missing required configuration for inverse relations write-back for property '$propertyName'");
+                continue;
+            }
 
-					// Ensure inverse property is an array
-					if (!is_array($targetData[$inverseProperty])) {
-						$targetData[$inverseProperty] = [$targetData[$inverseProperty]];
-					}
+            // Ensure targetUuids is an array
+            if (!is_array($targetUuids)) {
+                $targetUuids = [$targetUuids];
+            }
 
-					// Add current object's UUID to the inverse property if not already present
-					if (!in_array($objectEntity->getUuid(), $targetData[$inverseProperty])) {
-						$targetData[$inverseProperty][] = $objectEntity->getUuid();
-					}
+            // Filter out empty or invalid UUIDs
+            $validUuids = array_filter(
+            $targetUuids,
+           function ($uuid) {
+                return !empty($uuid) && is_string($uuid) && trim($uuid) !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+           }
+            );
 
-					// Save the updated target object
-					$this->saveObject(
-						register: $targetRegister,
-						schema: $targetSchema,
-						data: $targetData,
-						uuid: $targetUuid
-					);
+            if (empty($validUuids)) {
+                error_log("[SaveObject] No valid UUIDs found for inverse relations write-back for property '$propertyName'");
+                continue;
+            }
 
-					error_log("Updated inverse relation write-back: {$targetUuid} -> {$inverseProperty} now includes {$objectEntity->getUuid()}");
+            // Update each target object
+            foreach ($validUuids as $targetUuid) {
+                try {
+                    // Find the target object
+                    $targetObject = $this->objectEntityMapper->find($targetUuid);
+                    if (!$targetObject) {
+                        error_log("[SaveObject] Inverse relation write-back target object not found: {$targetUuid}");
+                        continue;
+                    }
 
-				} catch (Exception $e) {
-					error_log("Failed to update inverse relation write-back for {$targetUuid}: " . $e->getMessage());
-					// Continue with other targets even if one fails
-				}
-			}
+                    // Get current data from target object
+                    $targetData = $targetObject->getObject();
 
-			// Remove the property from source object if configured to do so
-			if ($removeFromSource) {
-				unset($data[$propertyName]);
-			}
-		}
+                    // Initialize inverse property as array if it doesn't exist
+                    if (!isset($targetData[$inverseProperty])) {
+                        $targetData[$inverseProperty] = [];
+                    }
 
-		return $data;
-	}
+                    // Ensure inverse property is an array
+                    if (!is_array($targetData[$inverseProperty])) {
+                        $targetData[$inverseProperty] = [$targetData[$inverseProperty]];
+                    }
+
+                    // Add current object's UUID to the inverse property if not already present
+                    if (!in_array($objectEntity->getUuid(), $targetData[$inverseProperty])) {
+                        $targetData[$inverseProperty][] = $objectEntity->getUuid();
+                    }
+
+                    // Save the updated target object
+                    $this->saveObject(
+                        register: $targetRegister,
+                        schema: $targetSchema,
+                        data: $targetData,
+                        uuid: $targetUuid
+                    );
+
+                    error_log("[SaveObject] Updated inverse relation write-back: {$targetUuid} -> {$inverseProperty} now includes {$objectEntity->getUuid()}");
+                } catch (Exception $e) {
+                    error_log("[SaveObject] Failed to update inverse relation write-back for {$targetUuid}: ".$e->getMessage());
+                    // Continue with other targets even if one fails
+                }//end try
+            }//end foreach
+
+            // Remove the property from source object if configured to do so
+            if ($removeFromSource) {
+                unset($data[$propertyName]);
+            }
+        }//end foreach
+
+        return $data;
+
+    }//end handleInverseRelationsWriteBack()
+
+
+    /**
+     * Sanitizes empty strings to null for object and array properties based on schema definitions.
+     *
+     * This method prevents empty strings from causing issues in downstream processing by converting
+     * them to null values for properties that are defined as objects or arrays in the schema.
+     * Empty strings are invalid values for object/array properties and can cause 404 errors
+     * during processing.
+     *
+     * @param array  $data   The object data to sanitize
+     * @param Schema $schema The schema to check property definitions against
+     *
+     * @return array The sanitized data with empty strings converted to null for object/array properties
+     */
+    private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
+    {
+        try {
+            $schemaObject = $schema->getSchemaObject($this->urlGenerator);
+            $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error getting schema object for sanitization: ".$e->getMessage());
+            return $data;
+        }
+
+        $sanitizedData = $data;
+
+        foreach ($properties as $propertyName => $propertyDefinition) {
+            // Skip if property is not in the data
+            if (!isset($sanitizedData[$propertyName])) {
+                continue;
+            }
+
+            $value = $sanitizedData[$propertyName];
+            $propertyType = $propertyDefinition['type'] ?? null;
+
+            // Convert empty strings to null for object and array properties
+            if ($value === '' && ($propertyType === 'object' || $propertyType === 'array')) {
+                $sanitizedData[$propertyName] = null;
+                error_log("[SaveObject] Sanitized empty string to null for property '$propertyName' (type: $propertyType)");
+            }
+            // Also handle array properties that might contain empty strings
+            elseif ($propertyType === 'array' && is_array($value)) {
+                $sanitizedArray = [];
+                foreach ($value as $index => $item) {
+                    if ($item === '') {
+                        $sanitizedArray[$index] = null;
+                        error_log("[SaveObject] Sanitized empty string to null in array property '$propertyName' at index $index");
+                    } else {
+                        $sanitizedArray[$index] = $item;
+                    }
+                }
+                $sanitizedData[$propertyName] = $sanitizedArray;
+            }
+        }
+
+        return $sanitizedData;
+
+    }//end sanitizeEmptyStringsForObjectProperties()
 
 
     /**
      * Saves an object.
      *
      * @param Register|int|string|null $register The register containing the object.
-     * @param Schema|int|string   $schema   The schema to validate against.
-     * @param array               $data     The object data to save.
-     * @param string|null         $uuid     The UUID of the object to update (if updating).
-     * @param int|null            $folderId The folder ID to set on the object (optional).
+     * @param Schema|int|string        $schema   The schema to validate against.
+     * @param array                    $data     The object data to save.
+     * @param string|null              $uuid     The UUID of the object to update (if updating).
+     * @param int|null                 $folderId The folder ID to set on the object (optional).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -526,9 +743,9 @@ class SaveObject
         ?int $folderId=null
     ): ObjectEntity {
 
-		if (isset($data['@self']) && is_array($data['@self'])) {
-			$selfData = $data['@self'];
-		}
+        if (isset($data['@self']) && is_array($data['@self'])) {
+            $selfData = $data['@self'];
+        }
 
         // Remove the @self property from the data.
         unset($data['@self']);
@@ -540,7 +757,7 @@ class SaveObject
             $schemaId = $schema->getId();
         } else {
             $schemaId = $schema;
-            $schema = $this->schemaMapper->find(id: $schema);
+            $schema   = $this->schemaMapper->find(id: $schema);
         }
 
         $registerId = null;
@@ -548,7 +765,16 @@ class SaveObject
             $registerId = $register->getId();
         } else {
             $registerId = $register;
-            $register = $this->registerMapper->find(id: $register);
+            $register   = $this->registerMapper->find(id: $register);
+        }
+
+        // Sanitize empty strings to null for object/array properties early in the process
+        // This prevents empty strings from causing issues in downstream processing
+        try {
+            $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error sanitizing empty strings: ".$e->getMessage());
+            // Continue without sanitization if it fails
         }
 
         // If UUID is provided, try to find and update existing object.
@@ -556,11 +782,10 @@ class SaveObject
             error_log("[SaveObject] Attempting to find existing object with UUID: $uuid");
             try {
                 $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
-                error_log("[SaveObject] Found existing object with ID: " . $existingObject->getId() . ", UUID: " . $existingObject->getUuid());
-				
-                  // Check if '@self' metadata exists and contains published/depublished properties
-                if (isset($selfData) === true) {
+                error_log("[SaveObject] Found existing object with ID: ".$existingObject->getId().", UUID: ".$existingObject->getUuid());
 
+                // Check if '@self' metadata exists and contains published/depublished properties
+                if (isset($selfData) === true) {
                     // Extract and set published property if present
                     if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
                         try {
@@ -570,6 +795,7 @@ class SaveObject
                             }
                         } catch (Exception $exception) {
                             // Silently ignore invalid date formats
+                            error_log("[SaveObject] Invalid published date format: ".$exception->getMessage());
                         }
                     } else {
                         $existingObject->setPublished(null);
@@ -584,21 +810,31 @@ class SaveObject
                             }
                         } catch (Exception $exception) {
                             // Silently ignore invalid date formats
+                            error_log("[SaveObject] Invalid depublished date format: ".$exception->getMessage());
                         }
                     } else {
                         $existingObject->setDepublished(null);
                     }
-                }
+                }//end if
 
-                        $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
-		$data = $this->handleInverseRelationsWriteBack(objectEntity: $existingObject, schema: $schema, data: $data);
-		$data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
-                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject, folderId: $folderId);
-            } catch (\Exception $e) {
+                try {
+                    $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
+                    $data = $this->handleInverseRelationsWriteBack(objectEntity: $existingObject, schema: $schema, data: $data);
+                    $data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
+                    return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject, folderId: $folderId);
+                } catch (Exception $e) {
+                    error_log("[SaveObject] Error processing existing object during update: ".$e->getMessage());
+                    throw $e;
+                }
+            } catch (DoesNotExistException $e) {
                 // Object not found, proceed with creating new object.
-                error_log("[SaveObject] Object with UUID $uuid not found, creating new object. Error: " . $e->getMessage());
-            }
-        }
+                error_log("[SaveObject] Object with UUID $uuid not found, creating new object. Error: ".$e->getMessage());
+            } catch (Exception $e) {
+                // Other errors during object lookup
+                error_log("[SaveObject] Error looking up object with UUID $uuid: ".$e->getMessage());
+                throw $e;
+            }//end try
+        }//end if
 
         // Create a new object entity.
         error_log("[SaveObject] Creating new object entity");
@@ -611,12 +847,11 @@ class SaveObject
         // Set folder ID if provided
         if ($folderId !== null) {
             $objectEntity->setFolder((string) $folderId);
-            error_log("[SaveObject] Setting folder ID on new object: " . $folderId);
+            error_log("[SaveObject] Setting folder ID on new object: ".$folderId);
         }
 
         // Check if '@self' metadata exists and contains published/depublished properties
-		if (isset($selfData) === true) {
-
+        if (isset($selfData) === true) {
             // Extract and set published property if present
             if (array_key_exists('published', $selfData) && !empty($selfData['published'])) {
                 try {
@@ -644,7 +879,7 @@ class SaveObject
             } else {
                 $objectEntity->setDepublished(null);
             }
-        }
+        }//end if
 
         // Set UUID if provided, otherwise generate a new one.
         if ($uuid !== null) {
@@ -653,25 +888,43 @@ class SaveObject
         } else {
             $objectEntity->setUuid(Uuid::v4());
         }
-        $objectEntity->setUri($this->urlGenerator->getAbsoluteURL($this->urlGenerator->linkToRoute(
-            self::URL_PATH_IDENTIFIER, [
-                'register' => $register instanceof Register === true && $schema->getSlug() !== null ? $register->getSlug() : $registerId,
-                'schema' => $schema instanceof Schema === true && $schema->getSlug() !== null ? $schema->getSlug() : $schemaId,
-                'id' => $objectEntity->getUuid()
-            ]
-        )));
+
+        $objectEntity->setUri(
+                $this->urlGenerator->getAbsoluteURL(
+                $this->urlGenerator->linkToRoute(
+            self::URL_PATH_IDENTIFIER,
+                [
+                    'register' => $register instanceof Register === true && $schema->getSlug() !== null ? $register->getSlug() : $registerId,
+                    'schema'   => $schema instanceof Schema === true && $schema->getSlug() !== null ? $schema->getSlug() : $schemaId,
+                    'id'       => $objectEntity->getUuid(),
+                ]
+                )
+                )
+                );
 
         // Set default values.
         if ($schema instanceof Schema === false) {
             $schema = $this->schemaMapper->find($schemaId);
         }
-		$data = $this->cascadeObjects($objectEntity, $schema, $data);
-        $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
-        $data = $this->setDefaultValues($objectEntity, $schema, $data);
+
+        try {
+            $data = $this->cascadeObjects($objectEntity, $schema, $data);
+            $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
+            $data = $this->setDefaultValues($objectEntity, $schema, $data);
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error processing new object data: ".$e->getMessage());
+            throw $e;
+        }
+
         $objectEntity->setObject($data);
 
         // Hydrate name and description from schema configuration.
-        $this->hydrateNameAndDescription($objectEntity, $schema);
+        try {
+            $this->hydrateNameAndDescription($objectEntity, $schema);
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error hydrating name and description: ".$e->getMessage());
+            // Continue without hydration if it fails
+        }
 
         // Set user information if available.
         $user = $this->userSession->getUser();
@@ -680,12 +933,17 @@ class SaveObject
         }
 
         // Update object relations.
-        $objectEntity = $this->updateObjectRelations($objectEntity, $data);
+        try {
+            $objectEntity = $this->updateObjectRelations($objectEntity, $data);
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error updating object relations: ".$e->getMessage());
+            // Continue without relations if it fails
+        }
 
         // Save the object to database.
         error_log("[SaveObject] Inserting new object to database");
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
-        error_log("[SaveObject] New object inserted with ID: " . $savedEntity->getId() . ", UUID: " . $savedEntity->getUuid());
+        error_log("[SaveObject] New object inserted with ID: ".$savedEntity->getId().", UUID: ".$savedEntity->getUuid());
 
         // Create audit trail for creation.
         $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
@@ -792,8 +1050,8 @@ class SaveObject
         ObjectEntity $existingObject,
         ?int $folderId=null
     ): ObjectEntity {
-        error_log("[SaveObject] Updating existing object ID: " . $existingObject->getId() . ", UUID: " . $existingObject->getUuid());
-        
+        error_log("[SaveObject] Updating existing object ID: ".$existingObject->getId().", UUID: ".$existingObject->getUuid());
+
         // Store the old state for audit trail.
         $oldObject = clone $existingObject;
 
@@ -849,10 +1107,42 @@ class SaveObject
             } else {
                 $existingObject->setDepublished(null);
             }
-        }
+        }//end if
 
         // Remove @self and id from the data before setting object
         unset($data['@self'], $data['id']);
+
+        // Sanitize empty strings to null for object/array properties early in the process
+        // This prevents empty strings from causing issues in downstream processing
+        try {
+            if ($schema instanceof Schema) {
+                $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
+            } else {
+                $schemaObject = $this->schemaMapper->find($schemaId);
+                $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schemaObject);
+            }
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error sanitizing empty strings during update: ".$e->getMessage());
+            // Continue without sanitization if it fails
+        }
+
+        // Get schema object for processing
+        $schemaObject = null;
+        if ($schema instanceof Schema) {
+            $schemaObject = $schema;
+        } else {
+            $schemaObject = $this->schemaMapper->find($schemaId);
+        }
+
+        // Process the data with the same logic as saveObject to prevent 404 errors
+        try {
+            $data = $this->cascadeObjects($existingObject, $schemaObject, $data);
+            $data = $this->handleInverseRelationsWriteBack($existingObject, $schemaObject, $data);
+            $data = $this->setDefaultValues($existingObject, $schemaObject, $data);
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error processing object data during update: ".$e->getMessage());
+            throw $e;
+        }
 
         // Update the object properties.
         $existingObject->setRegister($registerId);
@@ -863,17 +1153,11 @@ class SaveObject
         // Set folder ID if provided
         if ($folderId !== null) {
             $existingObject->setFolder((string) $folderId);
-            error_log("[SaveObject] Setting folder ID on updated object: " . $folderId);
+            error_log("[SaveObject] Setting folder ID on updated object: ".$folderId);
         }
 
         // Hydrate name and description from schema configuration.
-        if ($schema instanceof Schema) {
-            $this->hydrateNameAndDescription($existingObject, $schema);
-        } else {
-            // If schema is not an object, load it to hydrate name and description
-            $schemaObject = $this->schemaMapper->find($schemaId);
-            $this->hydrateNameAndDescription($existingObject, $schemaObject);
-        }
+        $this->hydrateNameAndDescription($existingObject, $schemaObject);
 
         // Update object relations.
         $existingObject = $this->updateObjectRelations($existingObject, $data);
@@ -881,7 +1165,7 @@ class SaveObject
         // Save the object to database.
         error_log("[SaveObject] Updating existing object in database");
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
-        error_log("[SaveObject] Object updated with ID: " . $updatedEntity->getId() . ", UUID: " . $updatedEntity->getUuid());
+        error_log("[SaveObject] Object updated with ID: ".$updatedEntity->getId().", UUID: ".$updatedEntity->getUuid());
 
         // Create audit trail for update.
         $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
@@ -897,6 +1181,88 @@ class SaveObject
         return $updatedEntity;
 
     }//end updateObject()
+
+
+    /**
+     * Check if an object is effectively empty (contains only empty values)
+     *
+     * This method checks if an object contains only empty strings, empty arrays,
+     * empty objects, or null values, which indicates it doesn't contain meaningful data
+     * that should be cascaded.
+     *
+     * @param array $object The object data to check
+     *
+     * @return bool True if the object is effectively empty, false otherwise
+     */
+    private function isEffectivelyEmptyObject(array $object): bool
+    {
+        // If the array is completely empty, it's effectively empty
+        if (empty($object)) {
+            return true;
+        }
+
+        // Check each value in the object
+        foreach ($object as $key => $value) {
+            // Skip metadata keys that don't represent actual data
+            if (in_array($key, ['@self', 'id', '_id']) === true) {
+                continue;
+            }
+
+            // If we find any non-empty value, the object is not effectively empty
+            if ($this->isValueNotEmpty($value)) {
+                return false;
+            }
+        }
+
+        // All values are empty, so the object is effectively empty
+        return true;
+
+    }//end isEffectivelyEmptyObject()
+
+
+    /**
+     * Check if a value is not empty (contains meaningful data)
+     *
+     * @param mixed $value The value to check
+     *
+     * @return bool True if the value is not empty, false otherwise
+     */
+    private function isValueNotEmpty($value): bool
+    {
+        // Null values are empty
+        if ($value === null) {
+            return false;
+        }
+
+        // Empty strings are empty
+        if (is_string($value) && trim($value) === '') {
+            return false;
+        }
+
+        // Empty arrays are empty
+        if (is_array($value) && empty($value)) {
+            return false;
+        }
+
+        // For objects/arrays with content, check recursively
+        if (is_array($value) && !empty($value)) {
+            // If it's an associative array (object-like), check if it's effectively empty
+            if (array_keys($value) !== range(0, count($value) - 1)) {
+                return !$this->isEffectivelyEmptyObject($value);
+            }
+            // For indexed arrays, check if any element is not empty
+            foreach ($value as $item) {
+                if ($this->isValueNotEmpty($item)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // For all other values (numbers, booleans, etc.), they are not empty
+        return true;
+
+    }//end isValueNotEmpty()
 
 
 }//end class
