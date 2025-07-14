@@ -261,51 +261,96 @@ class ValidateObject
                 $missing = $args['missing'] ?? [];
                 if (is_array($missing) && count($missing) > 0) {
                     if (count($missing) === 1) {
-                        return "The required property '{$missing[0]}' is missing";
+                        $property = $missing[0];
+                        return "The required property '{$property}' is missing. Please provide a value for this property or set it to null if allowed.";
                     }
                     $missingList = implode(', ', $missing);
-                    return "The required properties ({$missingList}) are missing";
+                    return "The required properties ({$missingList}) are missing. Please provide values for these properties.";
                 }
                 return 'Required property is missing';
 
             case 'type':
                 $expectedType = $args['expected'] ?? 'unknown';
                 $actualType = $this->getValueType($value);
-                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'";
+                
+                // Provide specific guidance for empty values
+                if ($expectedType === 'object' && (is_array($value) && empty($value))) {
+                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). " .
+                           "For non-required object properties, you can set this to null to clear the field. " .
+                           "For required object properties, provide a valid object with the necessary properties.";
+                }
+                
+                if ($expectedType === 'array' && (is_array($value) && empty($value))) {
+                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). " .
+                           "This property likely has a minItems constraint. Please provide at least one item in the array.";
+                }
+                
+                if ($expectedType === 'string' && $value === '') {
+                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. " .
+                           "For non-required string properties, you can set this to null to clear the field. " .
+                           "For required string properties, provide a valid string value.";
+                }
+                
+                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. " .
+                       "Please provide a value of the correct type.";
+
+            case 'minItems':
+                $minItems = $args['min'] ?? 0;
+                $actualItems = is_array($value) ? count($value) : 0;
+                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. " .
+                       "Please add more items to the array or set to null if the property is not required.";
+
+            case 'maxItems':
+                $maxItems = $args['max'] ?? 0;
+                $actualItems = is_array($value) ? count($value) : 0;
+                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. " .
+                       "Please remove some items from the array.";
 
             case 'format':
                 $format = $args['format'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not";
+                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. " .
+                       "Please provide a value in the correct format.";
 
             case 'minLength':
                 $minLength = $args['min'] ?? 0;
                 $actualLength = is_string($value) ? strlen($value) : 0;
-                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}";
+                if ($actualLength === 0) {
+                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. " .
+                           "Please provide a non-empty string value.";
+                }
+                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. " .
+                       "Please provide a longer string value.";
 
             case 'maxLength':
                 $maxLength = $args['max'] ?? 0;
                 $actualLength = is_string($value) ? strlen($value) : 0;
-                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}";
+                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. " .
+                       "Please provide a shorter string value.";
 
             case 'minimum':
                 $minimum = $args['min'] ?? 0;
-                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}";
+                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}. " .
+                       "Please provide a larger number.";
 
             case 'maximum':
                 $maximum = $args['max'] ?? 0;
-                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}";
+                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}. " .
+                       "Please provide a smaller number.";
 
             case 'enum':
                 $allowedValues = $args['values'] ?? [];
                 if (is_array($allowedValues)) {
                     $valuesList = implode(', ', array_map(function($v) { return "'{$v}'"; }, $allowedValues));
-                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'";
+                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. " .
+                           "Please choose one of the allowed values.";
                 }
-                return "Property '{$propertyPath}' has an invalid value '{$value}'";
+                return "Property '{$propertyPath}' has an invalid value '{$value}'. " .
+                       "Please provide one of the allowed values.";
 
             case 'pattern':
                 $pattern = $args['pattern'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not";
+                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. " .
+                       "Please provide a value that matches the required pattern.";
 
             default:
                 // Check for sub-errors to provide more specific messages
@@ -314,7 +359,8 @@ class ValidateObject
                     return $this->formatValidationError($subErrors[0]);
                 }
                 
-                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'";
+                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. " .
+                       "Please check the property value and schema requirements.";
         }
 
     }//end formatValidationError()

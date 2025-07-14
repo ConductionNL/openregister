@@ -664,23 +664,33 @@ class SaveObject
 
 
     /**
-     * Sanitizes empty strings to null for object and array properties based on schema definitions.
+     * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
      *
      * This method prevents empty strings from causing issues in downstream processing by converting
-     * them to null values for properties that are defined as objects or arrays in the schema.
-     * Empty strings are invalid values for object/array properties and can cause 404 errors
-     * during processing.
+     * them to appropriate values for properties based on their schema definitions.
+     * 
+     * For object properties:
+     * - If not required: empty objects {} become null (allows clearing the field)
+     * - If required: empty objects {} remain as {} but will fail validation with clear error
+     * 
+     * For array properties:
+     * - If no minItems constraint: empty arrays [] are allowed
+     * - If minItems > 0: empty arrays [] will fail validation with clear error
+     * - Empty strings become null for array properties
      *
      * @param array  $data   The object data to sanitize
      * @param Schema $schema The schema to check property definitions against
      *
-     * @return array The sanitized data with empty strings converted to null for object/array properties
+     * @return array The sanitized data with appropriate handling of empty values
+     * 
+     * @throws \Exception If schema processing fails
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
     {
         try {
             $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+            $required = json_decode(json_encode($schemaObject), associative: true)['required'] ?? [];
         } catch (Exception $e) {
             error_log("[SaveObject] Error getting schema object for sanitization: ".$e->getMessage());
             return $data;
@@ -696,24 +706,68 @@ class SaveObject
 
             $value = $sanitizedData[$propertyName];
             $propertyType = $propertyDefinition['type'] ?? null;
+            $isRequired = in_array($propertyName, $required) || ($propertyDefinition['required'] ?? false);
 
-            // Convert empty strings to null for object and array properties
-            if ($value === '' && ($propertyType === 'object' || $propertyType === 'array')) {
-                $sanitizedData[$propertyName] = null;
-                error_log("[SaveObject] Sanitized empty string to null for property '$propertyName' (type: $propertyType)");
+            // Handle object properties
+            if ($propertyType === 'object') {
+                if ($value === '') {
+                    // Empty string to null for object properties
+                    $sanitizedData[$propertyName] = null;
+                    error_log("[SaveObject] Sanitized empty string to null for object property '$propertyName'");
+                } elseif (is_array($value) && empty($value) && !$isRequired) {
+                    // Empty object {} to null for non-required object properties
+                    $sanitizedData[$propertyName] = null;
+                    error_log("[SaveObject] Sanitized empty object to null for non-required object property '$propertyName'");
+                } elseif (is_array($value) && empty($value) && $isRequired) {
+                    // Keep empty object {} for required properties - will fail validation with clear error
+                    error_log("[SaveObject] Keeping empty object for required object property '$propertyName' - will be validated");
+                }
             }
-            // Also handle array properties that might contain empty strings
-            elseif ($propertyType === 'array' && is_array($value)) {
-                $sanitizedArray = [];
-                foreach ($value as $index => $item) {
-                    if ($item === '') {
-                        $sanitizedArray[$index] = null;
-                        error_log("[SaveObject] Sanitized empty string to null in array property '$propertyName' at index $index");
+            // Handle array properties
+            elseif ($propertyType === 'array') {
+                if ($value === '') {
+                    // Empty string to null for array properties
+                    $sanitizedData[$propertyName] = null;
+                    error_log("[SaveObject] Sanitized empty string to null for array property '$propertyName'");
+                } elseif (is_array($value)) {
+                    // Check minItems constraint
+                    $minItems = $propertyDefinition['minItems'] ?? 0;
+                    
+                    if (empty($value) && $minItems > 0) {
+                        // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error
+                        error_log("[SaveObject] Keeping empty array for array property '$propertyName' with minItems=$minItems - will be validated");
+                    } elseif (empty($value) && $minItems === 0) {
+                        // Empty array is valid for arrays with no minItems constraint
+                        error_log("[SaveObject] Empty array is valid for array property '$propertyName' (no minItems constraint)");
                     } else {
-                        $sanitizedArray[$index] = $item;
+                        // Handle array items that might contain empty strings
+                        $sanitizedArray = [];
+                        $hasChanges = false;
+                        foreach ($value as $index => $item) {
+                            if ($item === '') {
+                                $sanitizedArray[$index] = null;
+                                $hasChanges = true;
+                                error_log("[SaveObject] Sanitized empty string to null in array property '$propertyName' at index $index");
+                            } else {
+                                $sanitizedArray[$index] = $item;
+                            }
+                        }
+                        if ($hasChanges) {
+                            $sanitizedData[$propertyName] = $sanitizedArray;
+                        }
                     }
                 }
-                $sanitizedData[$propertyName] = $sanitizedArray;
+            }
+            // Handle other property types with empty strings
+            elseif ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean'])) {
+                if (!$isRequired) {
+                    // Convert empty string to null for non-required scalar properties
+                    $sanitizedData[$propertyName] = null;
+                    error_log("[SaveObject] Sanitized empty string to null for non-required $propertyType property '$propertyName'");
+                } else {
+                    // Keep empty string for required properties - will fail validation with clear error
+                    error_log("[SaveObject] Keeping empty string for required $propertyType property '$propertyName' - will be validated");
+                }
             }
         }
 
