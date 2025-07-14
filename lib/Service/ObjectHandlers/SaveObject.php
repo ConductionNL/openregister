@@ -89,6 +89,74 @@ class SaveObject
 
 
     /**
+     * Resolves a schema reference to a schema ID.
+     *
+     * This method handles various types of schema references:
+     * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
+     * - JSON Schema path references: "#/components/schemas/Contactgegevens"
+     * - URL references: "http://example.com/api/schemas/34"
+     * - Slug references: "contactgegevens"
+     *
+     * For path and URL references, it extracts the last part and matches against schema slugs (case-insensitive).
+     *
+     * @param string $reference The schema reference to resolve
+     *
+     * @return string|null The resolved schema ID or null if not found
+     */
+    private function resolveSchemaReference(string $reference): ?string
+    {
+        if (empty($reference)) {
+            return null;
+        }
+
+        // First, try direct ID lookup (numeric ID or UUID)
+        if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
+            try {
+                $schema = $this->schemaMapper->find($reference);
+                return $schema->getId();
+            } catch (DoesNotExistException $e) {
+                // Continue with other resolution methods
+            }
+        }
+
+        // Extract the last part of path/URL references
+        $slug = $reference;
+        if (str_contains($reference, '/')) {
+            // For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens"
+            $slug = substr($reference, strrpos($reference, '/') + 1);
+        }
+
+        // Try to find schema by slug (case-insensitive)
+        try {
+            $schemas = $this->schemaMapper->findAll();
+            foreach ($schemas as $schema) {
+                if (strcasecmp($schema->getSlug(), $slug) === 0) {
+                    error_log("[SaveObject] Resolved schema reference '$reference' to schema ID: {$schema->getId()} (slug: {$schema->getSlug()})");
+                    return $schema->getId();
+                }
+            }
+        } catch (Exception $e) {
+            error_log("[SaveObject] Error searching schemas by slug: ".$e->getMessage());
+        }
+
+        // Try direct slug match as last resort
+        try {
+            $schema = $this->schemaMapper->findBySlug($slug);
+            if ($schema) {
+                error_log("[SaveObject] Resolved schema reference '$reference' to schema ID: {$schema->getId()} (direct slug match)");
+                return $schema->getId();
+            }
+        } catch (Exception $e) {
+            // Schema not found
+        }
+
+        error_log("[SaveObject] Could not resolve schema reference: '$reference'");
+        return null;
+
+    }//end resolveSchemaReference()
+
+
+    /**
      * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
      *
      * @param array  $data   The object data to scan
@@ -339,24 +407,29 @@ class SaveObject
             return $data;
         }
 
-        // Only cascade objects that have BOTH $ref AND inversedBy (actual relations)
-        // Objects with only $ref are nested objects that should remain in the data
+        // Cascade objects that have $ref with either:
+        // 1. inversedBy (creates relation back to parent) - results in empty array/null in parent
+        // 2. objectConfiguration.handling: "cascade" (stores IDs in parent) - results in IDs stored in parent
+        // Objects with only $ref and nested-object handling remain in the data
         $objectProperties = array_filter(
           $properties,
           function (array $property) {
             return $property['type'] === 'object' 
                 && isset($property['$ref']) === true 
-                && isset($property['inversedBy']) === true;
+                && (isset($property['inversedBy']) === true || 
+                    (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade'));
           }
           );
 
-        // Same logic for array properties - only cascade if they have inversedBy
+        // Same logic for array properties - cascade if they have inversedBy OR cascade handling
         $arrayObjectProperties = array_filter(
           $properties,
           function (array $property) {
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
-                && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true);
+                && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
+                    (isset($property['objectConfiguration']['handling']) && $property['objectConfiguration']['handling'] === 'cascade') ||
+                    (isset($property['items']['objectConfiguration']['handling']) && $property['items']['objectConfiguration']['handling'] === 'cascade'));
           }
           );
 
@@ -383,8 +456,16 @@ class SaveObject
             }
 
             try {
-                $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $objectData);
-                unset($data[$property]);
+                $createdUuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $definition, object: $objectData);
+                
+                // Handle the result based on whether inversedBy is present
+                if (isset($definition['inversedBy'])) {
+                    // With inversedBy: remove the property (traditional cascading)
+                    unset($data[$property]);
+                } else {
+                    // Without inversedBy: store the created object's UUID
+                    $data[$property] = $createdUuid;
+                }
             } catch (Exception $e) {
                 error_log("[SaveObject] Error cascading single object for property '$property': ".$e->getMessage());
                 // Continue with other properties even if one fails
@@ -399,8 +480,16 @@ class SaveObject
             }
 
             try {
-                $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
-                unset($data[$property]);
+                $createdUuids = $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $definition, propData: $data[$property]);
+                
+                // Handle the result based on whether inversedBy is present
+                if (isset($definition['inversedBy']) || isset($definition['items']['inversedBy'])) {
+                    // With inversedBy: remove the property (traditional cascading)
+                    unset($data[$property]);
+                } else {
+                    // Without inversedBy: store the created objects' UUIDs
+                    $data[$property] = $createdUuids;
+                }
             } catch (Exception $e) {
                 error_log("[SaveObject] Error cascading multiple objects for property '$property': ".$e->getMessage());
                 // Continue with other properties even if one fails
@@ -419,14 +508,14 @@ class SaveObject
      * @param array        $property     The property to add the objects to.
      * @param array        $propData     The data in the property.
      *
-     * @return void
+     * @return array Array of UUIDs of created objects
      * @throws Exception
      */
-    private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): void
+    private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
         if (array_is_list($propData) === false) {
             error_log("[SaveObject] Data is not an array of objects for cascading multiple objects");
-            return;
+            return [];
         }
 
         // Filter out empty or invalid objects
@@ -439,7 +528,7 @@ class SaveObject
 
         if (empty($validObjects)) {
             error_log("[SaveObject] No valid objects found for cascading multiple objects");
-            return;
+            return [];
         }
 
         if (isset($property['$ref']) === true) {
@@ -454,20 +543,30 @@ class SaveObject
             $property['items']['register'] = $property['register'];
         }
 
-        // Validate that we have the necessary configuration
-        if (!isset($property['items']['$ref']) || !isset($property['items']['inversedBy'])) {
-            error_log("[SaveObject] Missing required configuration for cascading multiple objects");
-            return;
+        if (isset($property['objectConfiguration']) === true) {
+            $property['items']['objectConfiguration'] = $property['objectConfiguration'];
         }
 
+        // Validate that we have the necessary configuration
+        if (!isset($property['items']['$ref'])) {
+            error_log("[SaveObject] Missing required $ref configuration for cascading multiple objects");
+            return [];
+        }
+
+        $createdUuids = [];
         foreach ($validObjects as $object) {
             try {
-                $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
+                $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property['items'], object: $object);
+                if ($uuid !== null) {
+                    $createdUuids[] = $uuid;
+                }
             } catch (Exception $e) {
                 error_log("[SaveObject] Error cascading single object in multiple objects: ".$e->getMessage());
                 // Continue with other objects even if one fails
             }
         }
+
+        return $createdUuids;
 
     }//end cascadeMultipleObjects()
 
@@ -478,35 +577,58 @@ class SaveObject
      * @param  ObjectEntity $objectEntity The parent object.
      * @param  array        $definition   The definition of the property the cascaded object is found in.
      * @param  array        $object       The object to cascade.
-     * @return void
+     * @return string|null  The UUID of the created object, or null if no object was created
      * @throws Exception
      */
-    private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): void
+    private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
     {
         // Validate that we have the necessary configuration
-        if (!isset($definition['inversedBy']) || !isset($definition['$ref'])) {
-            error_log("[SaveObject] Missing required configuration for cascading single object");
-            return;
+        if (!isset($definition['$ref'])) {
+            error_log("[SaveObject] Missing required $ref configuration for cascading single object");
+            return null;
         }
 
         // Skip if object is empty or doesn't contain actual data
         if (empty($object) || (count($object) === 1 && isset($object['id']) && empty($object['id']))) {
             error_log("[SaveObject] Skipping cascade for empty or invalid object");
-            return;
+            return null;
         }
 
         $objectId = $objectEntity->getUuid();
         if (empty($objectId)) {
             error_log("[SaveObject] Parent object UUID is empty, cannot cascade");
-            return;
+            return null;
         }
 
-        $object[$definition['inversedBy']] = $objectId;
+        // Only set inversedBy if it's configured (for relation-based cascading)
+        if (isset($definition['inversedBy'])) {
+            $inversedByProperty = $definition['inversedBy'];
+            
+            // Check if the inversedBy property already exists and is an array
+            if (isset($object[$inversedByProperty]) && is_array($object[$inversedByProperty])) {
+                // Add to existing array if not already present
+                if (!in_array($objectId, $object[$inversedByProperty])) {
+                    $object[$inversedByProperty][] = $objectId;
+                }
+            } else {
+                // Set as single value or create new array
+                $object[$inversedByProperty] = $objectId;
+            }
+        }
+
         $register = $definition['register'] ?? $objectEntity->getRegister();
         $uuid     = $object['id'] ?? $object['@self']['id'] ?? null;
 
+        // Resolve schema reference to actual schema ID
+        $schemaId = $this->resolveSchemaReference($definition['$ref']);
+        if ($schemaId === null) {
+            error_log("[SaveObject] Could not resolve schema reference '{$definition['$ref']}' for cascading");
+            throw new Exception("Invalid schema reference: {$definition['$ref']}");
+        }
+
         try {
-            $this->saveObject(register: $register, schema: $definition['$ref'], data: $object, uuid: $uuid);
+            $savedObject = $this->saveObject(register: $register, schema: $schemaId, data: $object, uuid: $uuid);
+            return $savedObject->getUuid();
         } catch (Exception $e) {
             error_log("[SaveObject] Error saving cascaded object: ".$e->getMessage());
             throw $e;
@@ -591,6 +713,13 @@ class SaveObject
                 continue;
             }
 
+            // Resolve schema reference to actual schema ID
+            $resolvedSchemaId = $this->resolveSchemaReference($targetSchema);
+            if ($resolvedSchemaId === null) {
+                error_log("[SaveObject] Could not resolve schema reference '$targetSchema' for inverse relations write-back for property '$propertyName'");
+                continue;
+            }
+
             // Ensure targetUuids is an array
             if (!is_array($targetUuids)) {
                 $targetUuids = [$targetUuids];
@@ -640,7 +769,7 @@ class SaveObject
                     // Save the updated target object
                     $this->saveObject(
                         register: $targetRegister,
-                        schema: $targetSchema,
+                        schema: $resolvedSchemaId,
                         data: $targetData,
                         uuid: $targetUuid
                     );
@@ -822,14 +951,8 @@ class SaveObject
             $register   = $this->registerMapper->find(id: $register);
         }
 
-        // Sanitize empty strings to null for object/array properties early in the process
-        // This prevents empty strings from causing issues in downstream processing
-        try {
-            $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
-        } catch (Exception $e) {
-            error_log("[SaveObject] Error sanitizing empty strings: ".$e->getMessage());
-            // Continue without sanitization if it fails
-        }
+        // NOTE: Do NOT sanitize here - let validation happen first in ObjectService
+        // Sanitization will happen after validation but before cascading operations
 
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
@@ -872,6 +995,15 @@ class SaveObject
                 }//end if
 
                 try {
+                    // Sanitize empty strings after validation but before cascading operations
+                    // This prevents empty values from causing issues in downstream processing
+                    try {
+                        $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
+                    } catch (Exception $e) {
+                        error_log("[SaveObject] Error sanitizing empty strings: ".$e->getMessage());
+                        // Continue without sanitization if it fails
+                    }
+
                     $data = $this->cascadeObjects(objectEntity: $existingObject, schema: $schema, data: $data);
                     $data = $this->handleInverseRelationsWriteBack(objectEntity: $existingObject, schema: $schema, data: $data);
                     $data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
@@ -962,6 +1094,15 @@ class SaveObject
         }
 
         try {
+            // Sanitize empty strings after validation but before cascading operations
+            // This prevents empty values from causing issues in downstream processing
+            try {
+                $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
+            } catch (Exception $e) {
+                error_log("[SaveObject] Error sanitizing empty strings: ".$e->getMessage());
+                // Continue without sanitization if it fails
+            }
+
             $data = $this->cascadeObjects($objectEntity, $schema, $data);
             $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
             $data = $this->setDefaultValues($objectEntity, $schema, $data);
@@ -1166,7 +1307,7 @@ class SaveObject
         // Remove @self and id from the data before setting object
         unset($data['@self'], $data['id']);
 
-        // Sanitize empty strings to null for object/array properties early in the process
+        // Sanitize empty strings after validation (which happened in the calling saveObject method)
         // This prevents empty strings from causing issues in downstream processing
         try {
             if ($schema instanceof Schema) {

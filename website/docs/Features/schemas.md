@@ -400,174 +400,377 @@ Open Register supports schema versioning to manage changes over time:
 2. **Major Updates**: Adding required fields, removing fields, or changing field types
 3. **Archive**: Previous versions are stored in the schema's archive property
 
-### Schema Relationships
+# Schema References and Object Cascading
 
-Open Register supports two powerful relationship mechanisms: inversion and revertedBy. These features enable complex data modeling and version control capabilities.
+OpenRegister supports schema references to enable reusable schema definitions and complex object relationships. This document explains how schema references work, how they are resolved, and how to configure object cascading.
 
-#### Inversion
+## Reference Format
 
-Inversion is a powerful feature that enables bidirectional relationships between objects. When you define an inverse relationship in a schema, changes in one object automatically propagate to related objects, maintaining data consistency across your system.
+Schema references use the JSON Schema format: `#/components/schemas/[slug]`
 
-**Key Features of Inversion:**
+### Examples
 
-1. **Bidirectional Updates**
-   - Changes in the source object reflect in the target object
-   - Updates are automatically synchronized
-   - Maintains referential integrity
+```json
+{
+  'type': 'object',
+  'properties': {
+    'person': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Person'
+    },
+    'contacts': {
+      'type': 'array',
+      'items': {
+        '$ref': '#/components/schemas/Contactgegevens'
+      }
+    }
+  }
+}
+```
 
-2. **Schema Definition**
-   ```json
-   {
-     "properties": {
-       "manager": {
-         "type": "object",
-         "inversedBy": "subordinates",
-         "description": "The person's manager"
-       },
-       "subordinates": {
-         "type": "array",
-         "items": {
-           "type": "object"
-         },
-         "description": "People reporting to this person"
-       }
-     }
-   }
-   ```
+## Object Handling Configuration
 
-3. **Use Cases**
-   - Parent-child relationships
-   - Manager-subordinate hierarchies
-   - Document-revision chains
-   - Project-task dependencies
+OpenRegister provides different ways to handle nested objects through the `objectConfiguration.handling` property:
 
-4. **Benefits**
-   - Automatic relationship maintenance
-   - Reduced manual synchronization
-   - Improved data consistency
-   - Simplified relationship management
+### 1. Nested Objects (`nested-object`)
 
-#### RevertedBy
+Objects are stored as nested data within the parent object. This is the default behavior.
 
-The revertedBy property is a crucial part of Open Register's version control system. It enables tracking of object reversions, allowing you to maintain a complete history of changes and their reversions.
+```json
+{
+  'contactgegevens': {
+    'type': 'object',
+    '$ref': '#/components/schemas/Contactgegevens',
+    'objectConfiguration': {
+      'handling': 'nested-object'
+    }
+  }
+}
+```
 
-**Key Features of RevertedBy:**
+**Result**: The contactgegevens data is stored directly in the parent object.
 
-1. **Version Control**
-   - Tracks which object this version was reverted from
-   - Maintains reversion history
-   - Enables rollback capabilities
+### 2. Cascading Objects (`cascade`)
 
-2. **Schema Definition**
-   ```json
-   {
-     "properties": {
-       "revertedBy": {
-         "type": "string",
-         "description": "UUID of the object this version was reverted from",
-         "format": "uuid"
-       }
-     }
-   }
-   ```
+Objects are created as separate entities. There are two types of cascading behavior:
 
-3. **Use Cases**
-   - Undoing changes
-   - Restoring previous versions
-   - Audit trail maintenance
-   - Compliance requirements
+#### 2a. Cascading with `inversedBy` (Relational Cascading)
 
-4. **Benefits**
-   - Complete change history
-   - Audit trail preservation
-   - Compliance support
-   - Data recovery options
+Creates separate entities with back-references to the parent object:
 
-### Schema Import & Sharing
+```json
+{
+  'contactgegevens': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Contactgegevens',
+      'inversedBy': 'organisatie'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '34'
+    }
+  }
+}
+```
 
-Open Register provides powerful schema import capabilities, allowing organizations to leverage existing standards and share their own schemas through Open Catalogi.
+**Result**: 
+- Each contactgegevens object is created as a separate entity with the `organisatie` property set to the parent object's UUID
+- The parent object's `contactgegevens` property becomes an empty array `[]`
 
-## Overview
+#### 2b. Cascading without `inversedBy` (ID Storage Cascading)
 
-The schema system supports importing from:
-- Schema.org definitions
-- OpenAPI Specification (OAS) files
-- Gemeentelijk Gegevensmodel (GGM)
-- Open Catalogi
-- Custom JSON Schema files
+Creates independent entities and stores their IDs in the parent object:
 
-## Import Sources
+```json
+{
+  'contactgegevens': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Contactgegevens'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '34'
+    }
+  }
+}
+```
 
-### Schema.org
-- Import standard web vocabularies
-- Use established data structures
-- Benefit from widespread adoption
-- Maintain semantic compatibility
+**Result**: 
+- Each contactgegevens object is created as a separate, independent entity
+- The parent object's `contactgegevens` property stores an array of the created objects' UUIDs: `['uuid1', 'uuid2']`
 
-### OpenAPI Specification
-- Import API definitions
-- Reuse existing data models
-- Maintain API compatibility
-- Leverage API documentation
+## Cascading Configuration
 
-### Gemeentelijk Gegevensmodel (GGM)
-- Import Dutch municipal data models
-- Comply with government standards
-- Ensure data compatibility
-- Support Common Ground principles
+For objects to be cascaded (saved as separate entities), they must have:
 
-### Open Catalogi
-- Share schemas between organizations
-- Import from central repositories
-- Collaborate on definitions
-- Version control schemas
+1. **Schema Reference**: `$ref` property pointing to the target schema
+2. **Object Configuration**: `objectConfiguration.handling` set to `'cascade'`
+3. **Target Schema**: `objectConfiguration.schema` property specifying the schema ID for cascaded objects
 
-## Schema Sharing
+### Optional Configuration
 
-Organizations can share their schemas through Open Catalogi:
-- Publish schemas publicly
-- Version control
-- Collaborative development
-- Change management
-- Documentation
-- Usage statistics
+4. **Inverse Relationship**: `inversedBy` property for relational cascading (creates back-reference)
+5. **Register**: `register` property (defaults to parent object's register)
 
-## Key Benefits
+### Cascading Types
 
-1. **Standardization**
-   - Reuse existing standards
-   - Ensure compatibility
-   - Reduce development time
-   - Share best practices
+- **With `inversedBy`**: Creates relational cascading where cascaded objects reference the parent
+- **Without `inversedBy`**: Creates independent cascading where parent stores cascaded object IDs
 
-2. **Collaboration**
-   - Share schemas
-   - Collaborate on definitions
-   - Build on existing work
-   - Community involvement
+### Single Object Cascading
 
-3. **Maintenance**
-   - Central updates
-   - Version management
-   - Change tracking
-   - Documentation
+#### With `inversedBy` (Relational)
 
-## Schema Design Best Practices
+```json
+{
+  'manager': {
+    'type': 'object',
+    '$ref': '#/components/schemas/Person',
+    'inversedBy': 'managedOrganisation',
+    'register': '6',
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '12'
+    }
+  }
+}
+```
 
-1. **Start Simple**: Begin with the minimum required fields and add complexity as needed
-2. **Use Clear Names**: Choose descriptive property names that reflect their purpose
-3. **Add Descriptions**: Document each property with clear descriptions
-4. **Consider Validation**: Add appropriate validation rules to ensure data quality
-5. **Think About Relationships**: Design schemas with relationships in mind
-6. **Plan for Evolution**: Design schemas to accommodate future changes
-7. **Reuse Common Patterns**: Create reusable components for common data structures
+**Result**: Manager object is created separately with `managedOrganisation` property set to parent UUID. Parent object's `manager` property becomes `null`.
 
-## Relationship to Other Concepts
+#### Without `inversedBy` (ID Storage)
 
-- **Registers**: Registers specify which schemas they support
-- **Objects**: Objects must conform to a schema to be valid
-- **Validation**: The validation engine uses schemas to validate objects
+```json
+{
+  'manager': {
+    'type': 'object',
+    '$ref': '#/components/schemas/Person',
+    'register': '6',
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '12'
+    }
+  }
+}
+```
 
-## Conclusion
+**Result**: Manager object is created independently. Parent object's `manager` property stores the manager's UUID as a string.
 
-Schemas are the foundation of data quality in Open Register. By defining clear, consistent structures for your data, you ensure that all information in the system meets your requirements and can be reliably used across different applications and processes. 
+### Array Object Cascading
+
+#### With `inversedBy` (Relational)
+
+```json
+{
+  'employees': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Person',
+      'inversedBy': 'employer'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '12'
+    }
+  }
+}
+```
+
+**Result**: Each employee object is created separately with `employer` property set to parent UUID. Parent object's `employees` property becomes an empty array `[]`.
+
+#### Without `inversedBy` (ID Storage)
+
+```json
+{
+  'employees': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Person'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '12'
+    }
+  }
+}
+```
+
+**Result**: Each employee object is created independently. Parent object's `employees` property stores an array of employee UUIDs: `['uuid1', 'uuid2', 'uuid3']`.
+
+## Schema Resolution Process
+
+Schema references are resolved through a **pre-processing approach** that happens before validation:
+
+### 1. Schema Pre-processing
+
+Before validation, the system:
+- Scans the schema for `$ref` properties
+- Resolves references to actual schema definitions
+- Embeds the resolved schemas in place of references
+- Creates union types for properties that support both objects and UUID references
+
+### 2. Reference Resolution Order
+
+The system resolves schema references in the following order:
+
+1. **Direct ID/UUID**: `'34'`, `'21aab6e0-2177-4920-beb0-391492fed04b'`
+2. **JSON Schema path**: `'#/components/schemas/Contactgegevens'`
+3. **URL references**: `'http://example.com/api/schemas/34'`
+4. **Slug references**: `'contactgegevens'` (case-insensitive)
+
+For path and URL references, the system extracts the last path segment and matches it against schema slugs.
+
+### 3. Union Type Creation
+
+For cascading objects, the system creates union types that allow both:
+- **Full nested object**: Complete object data
+- **UUID reference**: String UUID pointing to an existing object
+
+```json
+{
+  'type': ['object', 'string'],
+  'properties': {
+    // ... full schema properties
+  },
+  'pattern': '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+}
+```
+
+## Cascading Behavior
+
+### Object Creation Flow
+
+1. **Validation**: Objects are validated against the union type schema
+2. **Sanitization**: Empty values are cleaned up
+3. **Cascading**: Objects with `inversedBy` are extracted and saved separately
+4. **Relationship Setting**: The `inversedBy` property is set to the parent object's UUID
+5. **Separate Storage**: Cascaded objects are saved as independent entities
+6. **Parent Update**: Cascaded objects are removed from the parent object's data
+
+### Example Flow
+
+Input data:
+```json
+{
+  'naam': 'Test Organization',
+  'contactgegevens': [
+    {
+      'email': 'contact@example.com',
+      'telefoon': '123-456-7890',
+      'voornaam': 'John',
+      'achternaam': 'Doe'
+    }
+  ]
+}
+```
+
+Result:
+1. **Parent object** (organisatie): Stored with `contactgegevens: []`
+2. **Cascaded object** (contactgegevens): Stored separately with `organisatie: 'parent-uuid'`
+
+## Configuration Examples
+
+### E-commerce Product with Reviews
+
+```json
+{
+  'reviews': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Review',
+      'inversedBy': 'product'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '25'
+    }
+  }
+}
+```
+
+### Organization with Departments
+
+```json
+{
+  'departments': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Department',
+      'inversedBy': 'organization',
+      'register': '6'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade'
+    }
+  }
+}
+```
+
+### Project with Tasks
+
+```json
+{
+  'tasks': {
+    'type': 'array',
+    'items': {
+      'type': 'object',
+      '$ref': '#/components/schemas/Task',
+      'inversedBy': 'project'
+    },
+    'objectConfiguration': {
+      'handling': 'cascade',
+      'schema': '18'
+    }
+  }
+}
+```
+
+## Best Practices
+
+### When to Use Cascading
+
+Use cascading when:
+- Objects have independent lifecycle management
+- You need to query/filter child objects separately
+- Child objects may be referenced by multiple parents
+- You want to maintain referential integrity
+
+### When to Use Nested Objects
+
+Use nested objects when:
+- Data is simple and doesn't need independent management
+- Objects are tightly coupled to their parent
+- Performance is critical (fewer database queries)
+- You don't need to query child objects separately
+
+### Configuration Tips
+
+1. **Always specify `inversedBy`** for cascading relationships
+2. **Use descriptive relationship names** that make sense from the child's perspective
+3. **Consider register boundaries** - cascaded objects can be in different registers
+4. **Test with both object and UUID inputs** to ensure union types work correctly
+5. **Document your schema relationships** for other developers
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Objects not cascading**: Check that both `$ref` and `inversedBy` are present
+2. **Validation errors**: Ensure the referenced schema exists and is accessible
+3. **Missing relationships**: Verify the `inversedBy` property name matches the target schema
+4. **Performance issues**: Consider using nested objects for simple, non-queryable data
+
+### Debug Tips
+
+1. Check the schema resolution logs for reference resolution issues
+2. Verify that the target schema exists and has the expected `inversedBy` property
+3. Test with simple object data first before complex nested structures
+4. Use the API to inspect created objects and verify relationships 
