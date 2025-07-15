@@ -208,6 +208,29 @@ class Register extends Entity implements JsonSerializable
 
 
     /**
+     * Set the schemas data
+     *
+     * @param array|string $schemas Array of schema IDs or JSON string
+     *
+     * @return self
+     */
+    public function setSchemas($schemas): self
+    {
+        if (is_string($schemas)) {
+            $schemas = json_decode($schemas, true) ?: [];
+        }
+        if (!is_array($schemas)) {
+            $schemas = [];
+        }
+        // Only keep IDs (int or string)
+        $this->schemas = array_filter($schemas, function ($item) {
+            return is_int($item) || is_string($item);
+        });
+        return $this;
+    }
+
+
+    /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
@@ -288,6 +311,11 @@ class Register extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
+        // Always return schemas as array of IDs (int/string)
+        $schemas = array_filter($this->schemas ?? [], function ($item) {
+            return is_int($item) || is_string($item);
+        });
+
         return [
             'id'            => $this->id,
             'uuid'          => $this->uuid,
@@ -295,7 +323,7 @@ class Register extends Entity implements JsonSerializable
             'title'         => $this->title,
             'version'       => $this->version,
             'description'   => $this->description,
-            'schemas'       => $this->schemas,
+            'schemas'       => $schemas,
             'source'        => $this->source,
             'tablePrefix'   => $this->tablePrefix,
             'folder'        => $this->folder,

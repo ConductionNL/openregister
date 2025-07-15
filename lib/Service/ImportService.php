@@ -216,10 +216,17 @@ class ImportService
 
             // Initialize sheet summary even if no schema found
             $summary[$schemaSlug] = [
+                'found' => 0,
                 'created' => [],
                 'updated' => [],
                 'unchanged' => [],
                 'errors' => [],
+                'schema' => null,
+                'debug' => [
+                    'headers' => [],
+                    'schemaProperties' => [],
+                    'processableHeaders' => [],
+                ],
             ];
 
             // Skip sheets that don't correspond to a valid schema.
@@ -237,10 +244,24 @@ class ImportService
                 continue;
             }
 
+            // Add schema information to the summary
+            $summary[$schemaSlug]['schema'] = [
+                'id' => $schema->getId(),
+                'title' => $schema->getTitle(),
+                'slug' => $schema->getSlug(),
+            ];
+            
+            // Update debug information with schema properties
+            $schemaProperties = $schema->getProperties();
+            $propertyKeys = array_keys($schemaProperties);
+            $summary[$schemaSlug]['debug']['schemaProperties'] = $propertyKeys;
+
             // Set the worksheet as active and process
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
             $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
-            $summary[$schemaSlug] = $sheetSummary;
+            
+            // Merge the sheet summary with the existing summary (preserve debug info)
+            $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
         }
 
         return $summary;
@@ -272,30 +293,107 @@ class ImportService
             $headers[$col] = $sheet->getCell($col.'1')->getValue();
         }
 
+        error_log("[ImportService] Sheet '$sheetTitle' headers: " . implode(', ', array_filter($headers)));
+
         // Get schema properties for mapping
         $schemaProperties = $schema ? $schema->getProperties() : [];
         $propertyKeys = array_keys($schemaProperties);
+        
+        error_log("[ImportService] Schema '$sheetTitle' properties: " . implode(', ', $propertyKeys));
+        
+        // Log which headers will be processed (excluding metadata)
+        $processableHeaders = [];
+        foreach ($headers as $header) {
+            if ($header && !str_starts_with($header, '_')) {
+                $processableHeaders[] = $header;
+            }
+        }
+        error_log("[ImportService] Processable headers (excluding metadata): " . implode(', ', $processableHeaders));
+        
+        // Validate that sheet has an 'id' column
+        $hasIdColumn = in_array('id', array_filter($headers), true);
+        if (!$hasIdColumn) {
+            error_log("[ImportService] WARNING: Sheet '$sheetTitle' is missing required 'id' column");
+        }
 
         $summary = [
+            'found' => 0,
             'created' => [],
             'updated' => [],
             'unchanged' => [],
             'errors' => [],
+            'schema' => $schema ? [
+                'id' => $schema->getId(),
+                'title' => $schema->getTitle(),
+                'slug' => $schema->getSlug(),
+            ] : null,
+            'debug' => [
+                'headers' => array_filter($headers),
+                'schemaProperties' => $propertyKeys,
+                'processableHeaders' => $processableHeaders,
+            ],
         ];
 
+        // Add error for missing id column if needed
+        if (!$hasIdColumn) {
+            $summary['errors'][] = [
+                'row' => 1, // Header row
+                'sheet' => $sheetTitle,
+                'register' => [
+                    'id' => $register ? $register->getId() : null,
+                    'name' => $register ? $register->getTitle() : null
+                ],
+                'schema' => [
+                    'id' => $schema ? $schema->getId() : null,
+                    'name' => $schema ? $schema->getTitle() : null
+                ],
+                'data' => ['headers' => array_filter($headers)],
+                'error' => 'Sheet is missing required "id" column. Every sheet must have an "id" column for import.',
+                'type' => 'MissingIdColumnException'
+            ];
+        }
+
+        // Count found rows (rows with data) - only if sheet has id column
+        $foundRows = 0;
+        if ($hasIdColumn) {
+            for ($row = 2; $row <= $highestRow; $row++) {
+                $hasData = false;
+                for ($col = 'A'; $col <= $highestColumn; $col++) {
+                    $header = $headers[$col];
+                    $value = $sheet->getCell($col.$row)->getValue();
+                    
+                    // Skip metadata columns (headers starting with _)
+                    if (str_starts_with($header, '_')) {
+                        continue;
+                    }
+                    
+                    // Check if this column has data and matches schema properties OR is 'id'
+                    if (($value !== null && $value !== '') && (in_array($header, $propertyKeys, true) || $header === 'id')) {
+                        $hasData = true;
+                        break;
+                    }
+                }
+                if ($hasData) {
+                    $foundRows++;
+                }
+            }
+        }
+        $summary['found'] = $foundRows;
+        
         // Track processed objects to detect duplicates and prevent loops
         $processedObjects = [];
         $memoryStart = memory_get_usage();
         
-        error_log("[ImportService] Starting row processing. Memory usage: " . round($memoryStart / 1024 / 1024, 2) . " MB");
+        // error_log("[ImportService] Starting row processing. Memory usage: " . round($memoryStart / 1024 / 1024, 2) . " MB");
 
-        // Process each row.
-        for ($row = 2; $row <= $highestRow; $row++) {
+        // Process each row - only if sheet has id column
+        if ($hasIdColumn) {
+            for ($row = 2; $row <= $highestRow; $row++) {
             $objectData = [];
             $objectFields = [];
             
-            error_log("[ImportService] Processing row {$row}");
-            error_log("[ImportService] Sheet: $sheetTitle, Register: " . ($register ? $register->getTitle() : 'NULL') . ", Schema: " . ($schema ? $schema->getTitle() : 'NULL'));
+            // error_log("[ImportService] Processing row {$row}");
+            // error_log("[ImportService] Sheet: $sheetTitle, Register: " . ($register ? $register->getTitle() : 'NULL') . ", Schema: " . ($schema ? $schema->getTitle() : 'NULL'));
 
             // Collect data for each column.
             for ($col = 'A'; $col <= $highestColumn; $col++) {
@@ -307,7 +405,45 @@ class ImportService
                     continue;
                 }
 
+                // Skip metadata columns (headers starting with _)
+                if (str_starts_with($header, '_')) {
+                    error_log("[ImportService] Skipping metadata column '$header' with value: '$value'");
+                    continue;
+                }
+
+                // Handle 'id' field specially - it's used for create/update logic but not stored as object data
+                if ($header === 'id') {
+                    error_log("[ImportService] Found ID field with value: '$value'");
+                    
+                    // Validate UUID format if ID is provided
+                    if ($value !== null && $value !== '') {
+                        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+                            error_log("[ImportService] WARNING: Invalid UUID format in ID field: '$value'");
+                            $summary['errors'][] = [
+                                'row' => $row,
+                                'sheet' => $sheetTitle,
+                                'register' => [
+                                    'id' => $register ? $register->getId() : null,
+                                    'name' => $register ? $register->getTitle() : null
+                                ],
+                                'schema' => [
+                                    'id' => $schema ? $schema->getId() : null,
+                                    'name' => $schema ? $schema->getTitle() : null
+                                ],
+                                'data' => ['id' => $value],
+                                'error' => 'Invalid UUID format in ID field. ID must be a valid UUID or empty for new objects.',
+                                'type' => 'InvalidUuidException'
+                            ];
+                            continue; // Skip this row
+                        }
+                    }
+                    
+                    $objectData['_import_id'] = $value; // Store ID separately for processing
+                    continue;
+                }
+
                 if (in_array($header, $propertyKeys, true)) {
+                    error_log("[ImportService] Found matching property '$header' with value: '$value'");
                     // Check if this property should be treated as an array
                     $propertyDefinition = $schemaProperties[$header] ?? null;
                     
@@ -331,6 +467,7 @@ class ImportService
                         }
                     }
                 } else {
+                    error_log("[ImportService] Header '$header' not found in schema properties. Available: " . implode(', ', $propertyKeys));
                     // Otherwise, treat as a top-level field
                    // $objectData[$header] = $value;
                 }
@@ -338,15 +475,20 @@ class ImportService
 
             // Skip empty rows
             if (empty($objectData)) {
-                error_log("[ImportService] Skipping empty row $row");
+                error_log("[ImportService] Skipping empty row $row in sheet '$sheetTitle'");
                 continue;
             }
 
+            error_log("[ImportService] Row $row data: " . json_encode(array_keys($objectData)));
+            if (empty($objectData)) {
+                error_log("[ImportService] Row $row has no valid data after processing");
+            }
+
             // Check for potential duplicate processing (memory leak prevention)
-            $objectKey = $objectData['id'] ?? $objectData['naam'] ?? "row_$row";
+            $objectKey = $objectData['_import_id'] ?? $objectData['naam'] ?? "row_$row";
             if (isset($processedObjects[$objectKey])) {
-                error_log("[ImportService] WARNING: Duplicate object key detected: $objectKey (row $row)");
-                error_log("[ImportService] Object data: " . json_encode($objectData));
+                // error_log("[ImportService] WARNING: Duplicate object key detected: $objectKey (row $row)");
+                // error_log("[ImportService] Object data: " . json_encode($objectData));
                 $summary['errors'][] = [
                     'row' => $row,
                     'sheet' => $sheetTitle,
@@ -371,19 +513,23 @@ class ImportService
 
             // Use ObjectService to save the object (handles create/update/validation)
             try {
-                error_log("[ImportService] Saving object with key: $objectKey");
-                error_log("[ImportService] Object ID being passed: " . ($objectData['id'] ?? 'NULL'));
-                error_log("[ImportService] Object data keys: " . implode(', ', array_keys($objectData)));
+                // error_log("[ImportService] Saving object with key: $objectKey");
+                // error_log("[ImportService] Object ID being passed: " . ($objectData['id'] ?? 'NULL'));
+                // error_log("[ImportService] Object data keys: " . implode(', ', array_keys($objectData)));
+                
+                // Remove the _import_id from object data before saving
+                $importId = $objectData['_import_id'] ?? null;
+                unset($objectData['_import_id']);
                 
                 $savedObject = $this->objectService->saveObject(
                     $objectData,
                     [],
                     $register,
                     $schema,
-                    $objectData['id'] ?? null
+                    $importId
                 );
 
-                error_log("[ImportService] Successfully saved object ID: " . $savedObject->getId() . ", UUID: " . $savedObject->getUuid());
+                // error_log("[ImportService] Successfully saved object ID: " . $savedObject->getId() . ", UUID: " . $savedObject->getUuid());
 
                 // Get the created and updated timestamps from the saved object
                 $created = $savedObject->getCreated();
@@ -408,24 +554,24 @@ class ImportService
                 // If created timestamp is after our beforeSave timestamp, it's a new object
                 if ($created && $created > $beforeSave) {
                     $summary['created'][] = $logInfo;
-                    error_log("[ImportService] Object created: " . $savedObject->getUuid());
+                    // error_log("[ImportService] Object created: " . $savedObject->getUuid());
                 }
                 // If updated timestamp is after our beforeSave timestamp, it's an updated object
                 else if ($updated && $updated > $beforeSave) {
                     $summary['updated'][] = $logInfo;
-                    error_log("[ImportService] Object updated: " . $savedObject->getUuid());
+                    // error_log("[ImportService] Object updated: " . $savedObject->getUuid());
                 }
                 // If neither timestamp is after beforeSave, the object was unchanged
                 else {
                     $summary['unchanged'][] = $logInfo;
-                    error_log("[ImportService] Object unchanged: " . $savedObject->getUuid());
+                    // error_log("[ImportService] Object unchanged: " . $savedObject->getUuid());
                 }
                 
                 // Force garbage collection every 10 rows to manage memory
                 if ($row % 10 === 0) {
                     gc_collect_cycles();
                     $currentMemory = memory_get_usage();
-                    error_log("[ImportService] Row $row - Memory usage: " . round($currentMemory / 1024 / 1024, 2) . " MB");
+                    // error_log("[ImportService] Row $row - Memory usage: " . round($currentMemory / 1024 / 1024, 2) . " MB");
                 }
                 
             } catch (\Exception $e) {
@@ -454,10 +600,11 @@ class ImportService
             // Clear object data to free memory
             unset($objectData, $objectFields);
         }
+        } // End of if ($hasIdColumn)
         
         $memoryEnd = memory_get_usage();
-        error_log("[ImportService] Finished row processing. Memory usage: " . round($memoryEnd / 1024 / 1024, 2) . " MB");
-        error_log("[ImportService] Memory increase: " . round(($memoryEnd - $memoryStart) / 1024 / 1024, 2) . " MB");
+        // error_log("[ImportService] Finished row processing. Memory usage: " . round($memoryEnd / 1024 / 1024, 2) . " MB");
+        // error_log("[ImportService] Memory increase: " . round(($memoryEnd - $memoryStart) / 1024 / 1024, 2) . " MB");
         return $summary;
 
     }//end processSpreadsheet()
@@ -473,8 +620,11 @@ class ImportService
     private function getSchemaBySlug(string $slug): ?Schema
     {
         try {
-            return $this->schemaMapper->find($slug);
+            $schema = $this->schemaMapper->find($slug);
+            error_log("[ImportService] Found schema for slug '$slug': " . ($schema ? $schema->getTitle() : 'NULL'));
+            return $schema;
         } catch (\OCP\AppFramework\Db\DoesNotExistException) {
+            error_log("[ImportService] Schema not found for slug: '$slug'");
             return null;
         }
 

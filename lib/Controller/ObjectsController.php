@@ -445,6 +445,11 @@ class ObjectsController extends Controller
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
 
+        // Convert extend to array if it's a string
+        if (is_string($extend)) {
+            $extend = explode(',', $extend);
+        }
+
         // Find and validate the object.
         try {
             $object = $this->objectService->find($id, $extend);
@@ -479,6 +484,7 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);

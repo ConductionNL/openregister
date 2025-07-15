@@ -458,8 +458,8 @@ Objects are created as separate entities. There are two types of cascading behav
 
 Creates separate entities with back-references to the parent object:
 
-```json
-{
+   ```json
+   {
   'contactgegevens': {
     'type': 'array',
     'items': {
@@ -553,10 +553,10 @@ For objects to be cascaded (saved as separate entities), they must have:
     'objectConfiguration': {
       'handling': 'cascade',
       'schema': '12'
-    }
-  }
-}
-```
+       }
+     }
+   }
+   ```
 
 **Result**: Manager object is created independently. Parent object's `manager` property stores the manager's UUID as a string.
 
@@ -585,8 +585,8 @@ For objects to be cascaded (saved as separate entities), they must have:
 
 #### Without `inversedBy` (ID Storage)
 
-```json
-{
+   ```json
+   {
   'employees': {
     'type': 'array',
     'items': {
@@ -596,10 +596,10 @@ For objects to be cascaded (saved as separate entities), they must have:
     'objectConfiguration': {
       'handling': 'cascade',
       'schema': '12'
-    }
-  }
-}
-```
+       }
+     }
+   }
+   ```
 
 **Result**: Each employee object is created independently. Parent object's `employees` property stores an array of employee UUIDs: `['uuid1', 'uuid2', 'uuid3']`.
 
@@ -773,4 +773,258 @@ Use nested objects when:
 1. Check the schema resolution logs for reference resolution issues
 2. Verify that the target schema exists and has the expected `inversedBy` property
 3. Test with simple object data first before complex nested structures
-4. Use the API to inspect created objects and verify relationships 
+4. Use the API to inspect created objects and verify relationships
+
+---
+
+# Two-Way Relationships with writeBack
+
+OpenRegister supports **two-way relationships** that automatically maintain bidirectional references between objects. This feature allows you to create relationships where both objects reference each other, ensuring data consistency and enabling efficient queries from either direction.
+
+## Understanding Two-Way Relationships
+
+### Key Concepts
+
+- **`inversedBy`**: Declarative property that defines the relationship direction ("referenced objects have a property that points back to me")
+- **`writeBack`**: Action property that triggers the actual update ("when I set this property, update the referenced objects' reverse property")
+- **`removeAfterWriteBack`**: Optional property that removes the source property after the write-back is complete
+
+### Relationship Flow
+
+```mermaid
+graph TD
+    A[Samenwerking Object] -->|deelnemers: [org1, org2]| B[Organization 1]
+    A -->|deelnemers: [org1, org2]| C[Organization 2]
+    B -->|deelnames: [samenwerking]| A
+    C -->|deelnames: [samenwerking]| A
+    
+    subgraph "Write-Back Process"
+        D[Create Samenwerking] --> E[Process deelnemers]
+        E --> F[Find Organizations]
+        F --> G[Update deelnames on each Organization]
+        G --> H[Remove deelnemers from Samenwerking]
+    end
+```
+
+## Schema Configuration
+
+### Basic Two-Way Relationship
+
+```json
+{
+  "deelnemers": {
+    "type": "array",
+    "title": "Deelnemers",
+    "description": "Organisaties die deelnemen aan deze community",
+    "items": {
+      "type": "object",
+      "objectConfiguration": {"handling": "related-object"},
+      "$ref": "#/components/schemas/organisatie",
+      "inversedBy": "deelnames",
+      "writeBack": true,
+      "removeAfterWriteBack": true
+    }
+  }
+}
+```
+
+### Configuration Properties
+
+| Property | Type | Description | Example |
+|----------|------|-------------|---------|
+| `inversedBy` | string | Name of the property on the referenced object that points back | `"deelnames"` |
+| `writeBack` | boolean | Enables automatic update of the reverse relationship | `true` |
+| `removeAfterWriteBack` | boolean | Removes the source property after write-back (optional) | `true` |
+
+## Implementation Details
+
+### How It Works
+
+1. **Object Creation**: When a samenwerking is created with `deelnemers`
+2. **Property Detection**: System detects properties with `writeBack: true`
+3. **Target Resolution**: Finds the referenced organizations using UUIDs
+4. **Reverse Update**: Updates each organization's `deelnames` property
+5. **Cleanup**: Optionally removes the `deelnemers` property from the samenwerking
+
+### Processing Order
+
+The write-back process happens **before** cascading operations to ensure the source data is available:
+
+1. **Sanitization**: Clean empty values
+2. **Write-Back**: Process inverse relationships
+3. **Cascading**: Handle object cascading
+4. **Default Values**: Set any default values
+
+### UUID Validation
+
+The system validates UUIDs using a strict regex pattern:
+```
+^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+```
+
+This ensures only valid UUIDs are processed for write-back operations.
+
+## Example: Samenwerking and Organizations
+
+### Samenwerking Schema (Source)
+
+```json
+{
+  "properties": {
+    "naam": {
+      "type": "string",
+      "title": "Naam",
+      "description": "Naam van de samenwerking"
+    },
+    "deelnemers": {
+      "type": "array",
+      "title": "Deelnemers",
+      "description": "Organisaties die deelnemen aan deze community",
+      "items": {
+        "type": "object",
+        "objectConfiguration": {"handling": "related-object"},
+        "$ref": "#/components/schemas/organisatie",
+        "inversedBy": "deelnames",
+        "writeBack": true,
+        "removeAfterWriteBack": true
+      }
+    }
+  }
+}
+```
+
+### Organization Schema (Target)
+
+```json
+{
+  "properties": {
+    "naam": {
+      "type": "string",
+      "title": "Naam",
+      "description": "Naam van de organisatie"
+    },
+    "deelnames": {
+      "type": "array",
+      "title": "Deelnames",
+      "description": "UUIDs van communities waar deze organisatie aan deelneemt",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  }
+}
+```
+
+## API Usage
+
+### Creating a Samenwerking
+
+```bash
+curl -u 'admin:admin' \
+  -H 'OCS-APIREQUEST: true' \
+  -H 'Content-Type: application/json' \
+  -X POST 'http://localhost/index.php/apps/openregister/api/objects/6/35' \
+  -d '{
+    "naam": "Test Samenwerking",
+    "website": "https://samenwerking.nl",
+    "type": "Samenwerking",
+    "deelnemers": ["13382394-13cf-4f59-93ae-4c4e4998543f"]
+  }'
+```
+
+**Response**:
+```json
+{
+  "id": "9ee70e18-1852-4321-a70a-dff29c604aaa",
+  "naam": "Test Samenwerking",
+  "website": "https://samenwerking.nl",
+  "type": "Samenwerking",
+  "deelnemers": [],
+  "@self": {
+    "id": "9ee70e18-1852-4321-a70a-dff29c604aaa",
+    "name": "Test Samenwerking",
+    "description": 2806,
+    "uri": "http://localhost/index.php/apps/openregister/api/objects/voorzieningen/organisatie/9ee70e18-1852-4321-a70a-dff29c604aaa",
+    "register": "6",
+    "schema": "35"
+  }
+}
+```
+
+### Checking the Organization
+
+```bash
+curl -u 'admin:admin' \
+  -H 'OCS-APIREQUEST: true' \
+  'http://localhost/index.php/apps/openregister/api/objects/6/35/13382394-13cf-4f59-93ae-4c4e4998543f'
+```
+
+**Response**:
+```json
+{
+  "id": "13382394-13cf-4f59-93ae-4c4e4998543f",
+  "naam": "Test Organisatie 1",
+  "website": "https://test1.nl",
+  "type": "Leverancier",
+  "deelnames": ["9ee70e18-1852-4321-a70a-dff29c604aaa"],
+  "deelnemers": [],
+  "@self": {
+    "id": "13382394-13cf-4f59-93ae-4c4e4998543f",
+    "name": "Test Organisatie 1",
+    "updated": "2025-07-14T20:14:46+00:00"
+  }
+}
+```
+
+## Best Practices
+
+### When to Use Two-Way Relationships
+
+Use two-way relationships when:
+- You need to query relationships from both directions
+- Data consistency is critical
+- You want to maintain referential integrity
+- Performance benefits from bidirectional queries
+
+### Configuration Guidelines
+
+1. **Clear Property Names**: Use descriptive names for both sides of the relationship
+2. **Consistent Data Types**: Ensure both sides use compatible data types
+3. **UUID Validation**: Always use valid UUIDs for references
+4. **Documentation**: Document the relationship purpose and behavior
+
+### Performance Considerations
+
+- Write-back operations add processing time to object creation
+- Consider the impact on bulk operations
+- Monitor database performance with large relationship sets
+- Use `removeAfterWriteBack` to reduce storage overhead
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Write-back not working**: Check that both `inversedBy` and `writeBack` are configured
+2. **UUID validation errors**: Ensure UUIDs match the expected format
+3. **Missing reverse properties**: Verify the target schema has the expected property
+4. **Performance issues**: Consider the number of relationships being processed
+
+### Debug Steps
+
+1. Check the debug logs for write-back processing
+2. Verify schema configuration is correct
+3. Test with simple UUIDs first
+4. Inspect both objects to confirm the relationship
+
+### Recent Fixes
+
+#### UUID Regex Fix (v1.0.0)
+**Issue**: UUID validation regex was incorrectly configured for the third group.
+**Fix**: Updated regex from `[0-9a-f]{3}` to `[0-9a-f]{4}` for the third UUID group.
+**Impact**: Enables proper UUID validation for write-back operations.
+
+#### Cascade Integration Fix (v1.0.0)
+**Issue**: Properties with `writeBack` were being removed by cascade operations before write-back processing.
+**Fix**: Modified cascade logic to skip properties with `writeBack` enabled.
+**Impact**: Ensures write-back operations receive the correct data for processing. 

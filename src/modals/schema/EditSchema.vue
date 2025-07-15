@@ -309,6 +309,49 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															type="number"
 															label="Maximum Items"
 															@update:value="updatePropertySetting(key, 'maxItems', Number($event))" />
+
+														<!-- Show object configuration for array items when item type is object -->
+														<template v-if="property.items && property.items.type === 'object'">
+															<NcActionSeparator />
+															<NcActionCaption name="Array Item Object Configuration" />
+															<NcActionInput
+																v-model="schemaItem.properties[key].items.objectConfiguration.handling"
+																type="multiselect"
+																:options="[
+																	{ id: 'nested-object', label: 'Nested Object' },
+																	{ id: 'related-object', label: 'Related Object' },
+																	{ id: 'nested-schema', label: 'Nested Schema' },
+																	{ id: 'related-schema', label: 'Related Schema' },
+																	{ id: 'uri', label: 'URI' }
+																]"
+																input-label="Object Handling"
+																label="Object Handling" />
+															<NcActionInput
+																v-model="schemaItem.properties[key].items.$ref"
+																type="multiselect"
+																:options="availableSchemas"
+																input-label="Schema Reference"
+																label="Schema Reference" />
+															<NcActionInput
+																v-model="schemaItem.properties[key].items.register"
+																type="multiselect"
+																:options="availableRegisters"
+																input-label="Register (Optional)"
+																label="Register (Optional - defaults to parent register)" />
+															<NcActionInput
+																v-model="schemaItem.properties[key].items.inversedBy"
+																type="multiselect"
+																:options="getInversedByOptionsForArrayItems(key)"
+																input-label="Inversed By Property"
+																label="Inversed By"
+																:disabled="!schemaItem.properties[key].items.$ref"
+																@update:value="updateInversedByForArrayItems(key, $event)" />
+															<NcActionCheckbox
+																:checked="property.items.cascadeDelete || false"
+																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'cascadeDelete', $event)">
+																Cascade Delete
+															</NcActionCheckbox>
+														</template>
 													</template>
 
 													<template v-if="property.type === 'object'">
@@ -319,6 +362,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															type="multiselect"
 															:options="[
 																{ id: 'nested-object', label: 'Nested Object' },
+																{ id: 'related-object', label: 'Related Object' },
 																{ id: 'nested-schema', label: 'Nested Schema' },
 																{ id: 'related-schema', label: 'Related Schema' },
 																{ id: 'uri', label: 'URI' }
@@ -343,7 +387,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															:options="getInversedByOptions(key)"
 															input-label="Inversed By Property"
 															label="Inversed By"
-															:disabled="!schemaItem.properties[key].$ref" />
+															:disabled="!schemaItem.properties[key].$ref"
+															@update:value="updateInversedBy(key, $event)" />
 														<NcActionCheckbox
 															:checked="property.cascadeDelete || false"
 															@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
@@ -612,6 +657,10 @@ export default {
 							if (property.type === 'object' && !property.objectConfiguration) {
 								this.$set(this.schemaItem.properties[key], 'objectConfiguration', { handling: 'nested-object' })
 							}
+							// Initialize array item object configuration if items type is object
+							if (property.type === 'array' && property.items && property.items.type === 'object' && !property.items.objectConfiguration) {
+								this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'nested-object' })
+							}
 
 							// Convert property type from object to string
 							if (property.type && typeof property.type === 'object' && property.type.id) {
@@ -632,6 +681,25 @@ export default {
 							if (property.objectConfiguration && property.objectConfiguration.handling
 								&& typeof property.objectConfiguration.handling === 'object' && property.objectConfiguration.handling.id) {
 								this.$set(this.schemaItem.properties[key].objectConfiguration, 'handling', property.objectConfiguration.handling.id)
+							}
+
+							// Convert array item object handling from object to string
+							if (property.items && property.items.objectConfiguration && property.items.objectConfiguration.handling
+								&& typeof property.items.objectConfiguration.handling === 'object' && property.items.objectConfiguration.handling.id) {
+								this.$set(this.schemaItem.properties[key].items.objectConfiguration, 'handling', property.items.objectConfiguration.handling.id)
+							}
+
+							// Ensure $ref is always a string
+							this.ensureRefIsString(this.schemaItem.properties, key)
+
+							// Ensure inversedBy is always a string for regular properties
+							if (property.inversedBy && typeof property.inversedBy === 'object' && property.inversedBy.id) {
+								this.$set(this.schemaItem.properties[key], 'inversedBy', property.inversedBy.id)
+							}
+
+							// Ensure inversedBy is always a string for array items
+							if (property.items && property.items.inversedBy && typeof property.items.inversedBy === 'object' && property.items.inversedBy.id) {
+								this.$set(this.schemaItem.properties[key].items, 'inversedBy', property.items.inversedBy.id)
 							}
 						}
 					})
@@ -710,6 +778,17 @@ export default {
 					if (this.schemaItem.properties[key].enum && Array.isArray(this.schemaItem.properties[key].enum)) {
 						this.$set(this.schemaItem.properties[key], 'enum', [...this.schemaItem.properties[key].enum])
 					}
+
+					// Initialize array item object configuration if needed
+					const property = this.schemaItem.properties[key]
+					if (property.type === 'array' && property.items && property.items.type === 'object' && !property.items.objectConfiguration) {
+						this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', { handling: 'nested-object' })
+					}
+				})
+
+				// Ensure all $ref values are strings
+				Object.keys(this.schemaItem.properties || {}).forEach(key => {
+					this.ensureRefIsString(this.schemaItem.properties, key)
 				})
 
 				// Store original properties for comparison AFTER setting defaults
@@ -889,6 +968,11 @@ export default {
 		async editSchema() {
 			this.loading = true
 
+			// Ensure all $ref values are strings before saving
+			Object.keys(this.schemaItem.properties || {}).forEach(key => {
+				this.ensureRefIsString(this.schemaItem.properties, key)
+			})
+
 			schemaStore.saveSchema({
 				...this.schemaItem,
 			}).then(({ response }) => {
@@ -1000,6 +1084,8 @@ export default {
 				// Handle both string values and objects with id property
 				const settingValue = typeof value === 'object' && value?.id ? value.id : value
 				this.$set(this.schemaItem.properties[key], setting, settingValue)
+				// Enforce $ref is always a string after any update
+				this.ensureRefIsString(this.schemaItem.properties, key)
 				this.checkPropertiesModified()
 			}
 		},
@@ -1037,6 +1123,20 @@ export default {
 				// Handle both string values and objects with id property
 				const typeValue = typeof itemType === 'object' && itemType?.id ? itemType.id : itemType
 				this.$set(this.schemaItem.properties[key].items, 'type', typeValue)
+				this.checkPropertiesModified()
+			}
+		},
+		updateArrayItemObjectConfigurationSetting(key, setting, value) {
+			if (this.schemaItem.properties[key]) {
+				if (!this.schemaItem.properties[key].items) {
+					this.$set(this.schemaItem.properties[key], 'items', {})
+				}
+				if (!this.schemaItem.properties[key].items.objectConfiguration) {
+					this.$set(this.schemaItem.properties[key].items, 'objectConfiguration', {})
+				}
+				// Handle both string values and objects with id property
+				const settingValue = typeof value === 'object' && value?.id ? value.id : value
+				this.$set(this.schemaItem.properties[key].items, setting, settingValue)
 				this.checkPropertiesModified()
 			}
 		},
@@ -1137,7 +1237,7 @@ export default {
 			// Extract schema slug from reference format like "#/components/schemas/Contactgegevens"
 			const schemaRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
 			let schemaSlug = schemaRef
-			
+
 			// Handle JSON Schema path references
 			if (schemaRef.includes('/')) {
 				schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
@@ -1145,9 +1245,9 @@ export default {
 
 			// Find the referenced schema by slug (case-insensitive), ID, or title
 			const referencedSchema = schemaStore.schemaList.find(schema =>
-				(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase()) ||
-				schema.id === schemaSlug || 
-				schema.title === schemaSlug,
+				(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+				|| schema.id === schemaSlug
+				|| schema.title === schemaSlug,
 			)
 
 			if (!referencedSchema || !referencedSchema.properties) {
@@ -1159,6 +1259,76 @@ export default {
 				id: propKey,
 				label: referencedSchema.properties[propKey].title || propKey,
 			}))
+		},
+		getInversedByOptionsForArrayItems(key) {
+			const property = this.schemaItem.properties[key]
+			if (!property || !property.items || !property.items.$ref) {
+				return []
+			}
+
+			// Extract schema slug from reference format like "#/components/schemas/Contactgegevens"
+			const schemaRef = typeof property.items.$ref === 'object' ? property.items.$ref.id : property.items.$ref
+			let schemaSlug = schemaRef
+
+			// Handle JSON Schema path references
+			if (schemaRef.includes('/')) {
+				schemaSlug = schemaRef.substring(schemaRef.lastIndexOf('/') + 1)
+			}
+
+			// Find the referenced schema by slug (case-insensitive), ID, or title
+			const referencedSchema = schemaStore.schemaList.find(schema =>
+				(schema.slug && schema.slug.toLowerCase() === schemaSlug.toLowerCase())
+				|| schema.id === schemaSlug
+				|| schema.title === schemaSlug,
+			)
+
+			if (!referencedSchema || !referencedSchema.properties) {
+				return []
+			}
+
+			// Return properties from the referenced schema
+			return Object.keys(referencedSchema.properties).map(propKey => ({
+				id: propKey,
+				label: referencedSchema.properties[propKey].title || propKey,
+			}))
+		},
+		ensureRefIsString(obj, key) {
+			if (!obj || !key) return
+
+			// Check property $ref
+			if (obj[key] && typeof obj[key].$ref === 'object' && obj[key].$ref !== null) {
+				if (obj[key].$ref.id) {
+					obj[key].$ref = obj[key].$ref.id
+				} else {
+					// If $ref is not a string or object with id, clear it
+					obj[key].$ref = ''
+				}
+			}
+
+			// Also check array items
+			if (obj[key] && obj[key].items && typeof obj[key].items.$ref === 'object' && obj[key].items.$ref !== null) {
+				if (obj[key].items.$ref.id) {
+					obj[key].items.$ref = obj[key].items.$ref.id
+				} else {
+					obj[key].items.$ref = ''
+				}
+			}
+		},
+		updateInversedBy(key, value) {
+			// Ensure inversedBy is always a string, not an object
+			if (this.schemaItem.properties[key]) {
+				const inversedByValue = typeof value === 'object' && value?.id ? value.id : value
+				this.$set(this.schemaItem.properties[key], 'inversedBy', inversedByValue)
+				this.checkPropertiesModified()
+			}
+		},
+		updateInversedByForArrayItems(key, value) {
+			// Ensure inversedBy is always a string for array items, not an object
+			if (this.schemaItem.properties[key] && this.schemaItem.properties[key].items) {
+				const inversedByValue = typeof value === 'object' && value?.id ? value.id : value
+				this.$set(this.schemaItem.properties[key].items, 'inversedBy', inversedByValue)
+				this.checkPropertiesModified()
+			}
 		},
 	},
 }
