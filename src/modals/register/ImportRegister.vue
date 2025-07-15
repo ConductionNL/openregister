@@ -20,6 +20,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 					<thead>
 						<tr>
 							<th>Sheet</th>
+							<th>Found</th>
 							<th>Created</th>
 							<th>Updated</th>
 							<th>Unchanged</th>
@@ -31,6 +32,30 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						<tr v-for="(sheetSummary, sheetName) in importResults" :key="sheetName">
 							<td class="sheetName">
 								{{ sheetName }}
+								<div v-if="sheetSummary.schema" class="schemaInfo">
+									<small>Schema: {{ sheetSummary.schema.title }}</small>
+								</div>
+								<div v-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'MissingIdColumnException')" class="errorInfo">
+									<small class="errorText">Missing required "id" column</small>
+								</div>
+								<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'InvalidUuidException')" class="errorInfo">
+									<small class="errorText">Invalid UUID format in ID column</small>
+								</div>
+								<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
+									<small class="errorText">No data found - check schema matching</small>
+								</div>
+								<div v-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length === 0" class="infoInfo">
+									<small class="infoText">Sheet appears empty or has no matching data</small>
+								</div>
+								<div v-if="sheetSummary.found === 0 && sheetSummary.debug && sheetSummary.debug.headers && Array.isArray(sheetSummary.debug.headers)" class="debugInfo">
+									<small class="debugText">
+										Headers: {{ sheetSummary.debug.headers.join(', ') }}<br>
+										Schema properties: {{ Array.isArray(sheetSummary.debug.schemaProperties) ? sheetSummary.debug.schemaProperties.join(', ') : 'N/A' }}
+									</small>
+								</div>
+							</td>
+							<td class="statCell found">
+								{{ sheetSummary.found || 0 }}
 							</td>
 							<td class="statCell created">
 								{{ (sheetSummary.created && sheetSummary.created.length) || 0 }}
@@ -42,7 +67,16 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
 							</td>
 							<td class="statCell errors">
-								{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}
+								<div class="errorCell">
+									<span>{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}</span>
+									<button
+										v-if="sheetSummary.errors && sheetSummary.errors.length > 0"
+										class="expandButton"
+										:class="{ expanded: expandedErrors[sheetName] }"
+										@click="toggleErrorDetails(sheetName)">
+										<ChevronDown :size="16" />
+									</button>
+								</div>
 							</td>
 							<td class="statCell total">
 								{{
@@ -51,6 +85,40 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
 										((sheetSummary.errors && sheetSummary.errors.length) || 0)
 								}}
+							</td>
+						</tr>
+						<!-- Error Details Row -->
+						<tr v-if="expandedErrors[sheetName] && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorDetailsRow">
+							<td colspan="7" class="errorDetailsCell">
+								<div class="errorDetailsTable">
+									<table class="errorTable">
+										<thead>
+											<tr>
+												<th>Row</th>
+												<th>Error Type</th>
+												<th>Error Message</th>
+												<th>Data</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="(error, index) in sheetSummary.errors" :key="index" class="errorRow">
+												<td class="errorRowNumber">
+													{{ error.row }}
+												</td>
+												<td class="errorType">
+													{{ error.type }}
+												</td>
+												<td class="errorMessage">
+													{{ error.error }}
+												</td>
+												<td class="errorData">
+													<pre v-if="error.data && Object.keys(error.data).length > 0">{{ JSON.stringify(error.data, null, 2) }}</pre>
+													<span v-else class="noData">No data</span>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
 							</td>
 						</tr>
 					</tbody>
@@ -66,7 +134,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<div v-if="!success" class="formContainer">
+		<div v-if="!success && !importResults" class="formContainer">
 			<input
 				ref="fileInput"
 				type="file"
@@ -99,6 +167,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:disabled="registerLoading"
 				input-label="Select a register"
 				placeholder="Select a register"
+				aria-label-combobox="Select a register"
 				@update:model-value="handleRegisterChange" />
 
 			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'csv')"
@@ -108,6 +177,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:disabled="!registerStore.registerItem || schemaLoading"
 				input-label="Select a schema"
 				placeholder="Select a schema"
+				aria-label-combobox="Select a schema"
 				@update:model-value="handleSchemaChange" />
 
 			<div class="fileTypes">
@@ -128,6 +198,17 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						<em>You can only update one schema within a register.</em>
 					</li>
 				</ul>
+				<div class="importRequirements">
+					<p class="requirementsTitle">
+						<strong>Import Requirements:</strong>
+					</p>
+					<ul class="requirementsList">
+						<li>Every sheet must have an <strong>"id"</strong> column for object identification</li>
+						<li>Empty "id" values create new objects, existing "id" values update objects</li>
+						<li>ID values must be valid UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000)</li>
+						<li>Metadata columns (starting with "_") are automatically ignored</li>
+					</ul>
+				</div>
 			</div>
 
 			<div class="includeObjects">
@@ -143,7 +224,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 			</div>
 		</div>
 
-		<template v-if="!success" #actions>
+		<template v-if="!success && !importResults" #actions>
 			<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
@@ -177,6 +258,7 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 
 export default {
 	name: 'ImportRegister',
@@ -191,6 +273,7 @@ export default {
 		Cancel,
 		Import,
 		Upload,
+		ChevronDown,
 	},
 	/**
 	 * Component data properties
@@ -209,6 +292,7 @@ export default {
 			registerLoading: false,
 			schemaLoading: false,
 			expandedSheets: {}, // To track expanded details for each sheet
+			expandedErrors: {}, // To track expanded error details for each sheet
 		}
 	},
 	computed: {
@@ -364,6 +448,7 @@ export default {
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
+			this.expandedErrors = {} // Reset expanded errors state
 		},
 		/**
 		 * Import the selected register file and handle the summary
@@ -381,8 +466,8 @@ export default {
 			try {
 				const result = await registerStore.importRegister(this.selectedFile, this.includeObjects)
 				// Store the import summary from the backend response
-				this.importSummary = result?.responseData?.summary || null
-				this.importResults = result?.responseData?.summary || null
+				this.importSummary = result?.responseData?.summary || result?.summary || null
+				this.importResults = result?.responseData?.summary || result?.summary || null
 				this.success = true
 				this.loading = false
 				// Do not auto-close; let user review the summary and close manually
@@ -439,6 +524,13 @@ export default {
 		toggleDetails(sheetName) {
 			// Use Vue.set to ensure reactivity for dynamic object properties
 			this.$set(this.expandedSheets, sheetName, !this.expandedSheets[sheetName])
+		},
+		/**
+		 * Toggle the expanded state for a sheet's error details
+		 * @param {string} sheetName - The name of the sheet to toggle
+		 */
+		toggleErrorDetails(sheetName) {
+			this.$set(this.expandedErrors, sheetName, !this.expandedErrors[sheetName])
 		},
 	},
 }
@@ -500,6 +592,29 @@ export default {
 	padding-left: 1.5rem;
 }
 
+.importRequirements {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--color-border);
+}
+
+.requirementsTitle {
+	margin: 0 0 0.5rem 0;
+	font-weight: bold;
+	color: var(--color-text-light);
+}
+
+.requirementsList {
+	margin: 0;
+	padding-left: 1.5rem;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+}
+
+.requirementsList li {
+	margin-bottom: 0.25rem;
+}
+
 .includeObjects {
 	margin-top: 1rem;
 }
@@ -554,10 +669,61 @@ export default {
 	min-width: 150px;
 }
 
+.schemaInfo {
+	margin-top: 0.25rem;
+}
+
+.schemaInfo small {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.8rem;
+	font-weight: normal;
+}
+
+.errorInfo {
+	margin-top: 0.25rem;
+}
+
+.errorInfo .errorText {
+	color: var(--color-error);
+	font-size: 0.8rem;
+	font-weight: normal;
+}
+
+.infoInfo {
+	margin-top: 0.25rem;
+}
+
+.infoInfo .infoText {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.8rem;
+	font-weight: normal;
+}
+
+.debugInfo {
+	margin-top: 0.25rem;
+}
+
+.debugInfo .debugText {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.75rem;
+	font-weight: normal;
+	opacity: 0.8;
+}
+
+.errorText {
+	color: var(--color-error);
+	font-size: 0.8rem;
+	font-weight: normal;
+}
+
 .statCell {
 	text-align: center;
 	font-weight: 600;
 	min-width: 80px;
+}
+
+.statCell.found {
+	color: var(--color-primary);
 }
 
 .statCell.created {
@@ -574,6 +740,30 @@ export default {
 
 .statCell.errors {
 	color: var(--color-error);
+}
+
+.errorCell {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.expandButton {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0.25rem;
+	border-radius: var(--border-radius-small);
+	color: var(--color-error);
+	transition: all 0.2s ease;
+}
+
+.expandButton:hover {
+	background: var(--color-background-hover);
+}
+
+.expandButton.expanded {
+	transform: rotate(180deg);
 }
 
 .statCell.total {
@@ -727,6 +917,92 @@ export default {
 	color: var(--color-error-text);
 	border: 1px solid var(--color-error);
 	cursor: help;
+}
+
+/* Error Details Styles */
+.errorDetailsRow {
+	background: var(--color-background-hover);
+}
+
+.errorDetailsCell {
+	padding: 0.75rem 1rem;
+}
+
+.errorDetailsTable {
+	width: 100%;
+	border-collapse: collapse;
+	border-radius: var(--border-radius);
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.errorTable {
+	width: 100%;
+	border-collapse: collapse;
+	border-radius: var(--border-radius);
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.errorTable th,
+.errorTable td {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.errorTable th {
+	background: var(--color-background-dark);
+	font-weight: 600;
+	color: var(--color-text-light);
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.errorTable tbody tr:hover {
+	background: var(--color-background-hover);
+}
+
+.errorTable tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.errorRowNumber {
+	font-weight: 600;
+	color: var(--color-text-light);
+	min-width: 50px;
+}
+
+.errorType {
+	font-weight: 600;
+	color: var(--color-warning);
+}
+
+.errorMessage {
+	color: var(--color-error);
+	font-size: 0.9em;
+	font-weight: normal;
+}
+
+.errorData {
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+	white-space: pre-wrap; /* Preserve whitespace and break lines */
+	word-break: break-all; /* Break long words */
+}
+
+.errorData pre {
+	background: var(--color-background-dark);
+	padding: 0.5rem;
+	border-radius: var(--border-radius-small);
+	border: 1px solid var(--color-border);
+	overflow-x: auto; /* Enable horizontal scrolling for pre */
+}
+
+.errorData .noData {
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
 }
 
 /* Responsive adjustments */

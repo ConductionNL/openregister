@@ -95,7 +95,7 @@ class ValidateObject
      *
      * @return object The processed schema object with resolved references
      */
-    private function preprocessSchemaReferences(object $schemaObject, array $visited=[]): object
+    private function preprocessSchemaReferences(object $schemaObject, array $visited=[], bool $skipUuidTransformed=false): object
     {
         // Clone the schema object to avoid modifying the original
         $processedSchema = json_decode(json_encode($schemaObject));
@@ -103,13 +103,26 @@ class ValidateObject
         // Recursively process all properties
         if (isset($processedSchema->properties)) {
             foreach ($processedSchema->properties as $propertyName => $propertySchema) {
+                // Skip processing if this property has been transformed to a UUID type by OpenRegister logic
+                // This prevents circular references for related-object properties
+                if (isset($propertySchema->type) && $propertySchema->type === 'string' && 
+                    isset($propertySchema->pattern) && str_contains($propertySchema->pattern, 'uuid')) {
+                    continue;
+                }
+                
                 $processedSchema->properties->$propertyName = $this->resolveSchemaProperty($propertySchema, $visited);
             }
         }
 
         // Process array items if present
         if (isset($processedSchema->items)) {
-            $processedSchema->items = $this->resolveSchemaProperty($processedSchema->items, $visited);
+            // Skip processing if array items have been transformed to UUID type by OpenRegister logic
+            if (isset($processedSchema->items->type) && $processedSchema->items->type === 'string' && 
+                isset($processedSchema->items->pattern) && str_contains($processedSchema->items->pattern, 'uuid')) {
+                // Skip processing - already transformed
+            } else {
+                $processedSchema->items = $this->resolveSchemaProperty($processedSchema->items, $visited);
+            }
         }
 
         return $processedSchema;
@@ -130,24 +143,29 @@ class ValidateObject
         // Handle $ref references
         if (isset($propertySchema->{'$ref'})) {
             $reference = $propertySchema->{'$ref'};
+            
+            // Handle both string and object formats for $ref
+            if (is_object($reference) && isset($reference->id)) {
+                $reference = $reference->id;
+            } elseif (is_array($reference) && isset($reference['id'])) {
+                $reference = $reference['id'];
+            }
 
             // Check if this is a schema reference we should resolve
-            if (str_contains($reference, '/components/schemas/')) {
+            if (is_string($reference) && str_contains($reference, '#/components/schemas/')) {
                 $schemaSlug = substr($reference, strrpos($reference, '/') + 1);
 
                 // Prevent infinite loops
                 if (in_array($schemaSlug, $visited)) {
-                    error_log("[ValidateObject] Circular reference detected for schema: $schemaSlug");
                     return $propertySchema;
                 }
 
                 // Try to resolve the schema
                 $referencedSchema = $this->findSchemaBySlug($schemaSlug);
                 if ($referencedSchema) {
-                    error_log("[ValidateObject] Resolving schema reference '$reference' to schema: {$referencedSchema->getSlug()}");
-
                     // Get the referenced schema object and recursively process it
                     $referencedSchemaObject = $referencedSchema->getSchemaObject($this->urlGenerator);
+                    
                     $newVisited     = array_merge($visited, [$schemaSlug]);
                     $resolvedSchema = $this->preprocessSchemaReferences($referencedSchemaObject, $newVisited);
 
@@ -185,7 +203,7 @@ class ValidateObject
                         return $resolvedSchema;
                     }//end if
                 } else {
-                    error_log("[ValidateObject] Could not resolve schema reference: $reference");
+                    // Could not resolve schema reference: $reference
                 }//end if
             }//end if
         }//end if
@@ -205,6 +223,557 @@ class ValidateObject
         return $propertySchema;
 
     }//end resolveSchemaProperty()
+
+
+    /**
+     * Transforms OpenRegister-specific object configurations before validation.
+     *
+     * This method handles the difference between:
+     * - Related objects: Should expect UUID strings, not full objects
+     * - Nested objects: Should expect full object structures
+     *
+     * This prevents circular reference issues and ensures proper validation
+     * according to OpenRegister's object handling logic.
+     *
+     * @param object $schemaObject The schema object to transform
+     *
+     * @return object The transformed schema object
+     */
+    private function transformOpenRegisterObjectConfigurations(object $schemaObject): object
+    {
+        if (!isset($schemaObject->properties)) {
+            return $schemaObject;
+        }
+
+        foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+            $this->transformPropertyForOpenRegister($propertySchema);
+        }
+
+        return $schemaObject;
+
+    }//end transformOpenRegisterObjectConfigurations()
+
+
+
+
+
+    /**
+     * Transforms a single property based on OpenRegister object configuration.
+     *
+     * @param object $propertySchema The property schema to transform
+     *
+     * @return void
+     */
+    private function transformPropertyForOpenRegister(object $propertySchema): void
+    {
+        // Handle array properties with object items
+        if (isset($propertySchema->type) && $propertySchema->type === 'array' && isset($propertySchema->items)) {
+            $this->transformArrayItemsForOpenRegister($propertySchema->items);
+        }
+
+        // Handle direct object properties
+        if (isset($propertySchema->type) && $propertySchema->type === 'object') {
+            $this->transformObjectPropertyForOpenRegister($propertySchema);
+        }
+
+        // Recursively transform nested properties
+        if (isset($propertySchema->properties)) {
+            foreach ($propertySchema->properties as $nestedPropertyName => $nestedPropertySchema) {
+                $this->transformPropertyForOpenRegister($nestedPropertySchema);
+            }
+        }
+
+    }//end transformPropertyForOpenRegister()
+
+
+    /**
+     * Transforms array items based on OpenRegister object configuration.
+     *
+     * @param mixed $itemsSchema The array items schema to transform
+     *
+     * @return void
+     */
+    private function transformArrayItemsForOpenRegister($itemsSchema): void
+    {
+        // Handle case where items might be an array or not an object
+        if (!is_object($itemsSchema)) {
+            return;
+        }
+
+        if (!isset($itemsSchema->type) || $itemsSchema->type !== 'object') {
+            return;
+        }
+
+        $this->transformObjectPropertyForOpenRegister($itemsSchema);
+
+    }//end transformArrayItemsForOpenRegister()
+
+
+    /**
+     * Transforms object properties based on OpenRegister object configuration.
+     *
+     * @param object $objectSchema The object schema to transform
+     *
+     * @return void
+     */
+    private function transformObjectPropertyForOpenRegister(object $objectSchema): void
+    {
+        // Check if this has objectConfiguration
+        if (!isset($objectSchema->objectConfiguration) || !isset($objectSchema->objectConfiguration->handling)) {
+            return;
+        }
+
+        $handling = $objectSchema->objectConfiguration->handling;
+
+        switch ($handling) {
+            case 'related-object':
+                // For related objects, expect UUID strings instead of full objects
+                $this->transformToUuidProperty($objectSchema);
+                break;
+
+            case 'nested-object':
+                // For nested objects, keep the full object structure but remove circular refs
+                $this->transformToNestedObjectProperty($objectSchema);
+                break;
+
+            default:
+                // For other handling types, leave as-is
+                break;
+        }
+
+    }//end transformObjectPropertyForOpenRegister()
+
+
+    /**
+     * Transforms an object property to expect UUID strings for related objects.
+     *
+     * @param object $objectSchema The object schema to transform
+     *
+     * @return void
+     */
+    private function transformToUuidProperty(object $objectSchema): void
+    {
+        // Remove object-specific properties
+        unset($objectSchema->properties, $objectSchema->required);
+
+        // Set to string type with UUID pattern
+        $objectSchema->type = 'string';
+        $objectSchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+        $objectSchema->description = 'UUID reference to a related object';
+
+        // Remove $ref to prevent circular references
+        unset($objectSchema->{'$ref'});
+
+    }//end transformToUuidProperty()
+
+
+    /**
+     * Transforms an object property for nested objects, removing circular references.
+     *
+     * @param object $objectSchema The object schema to transform
+     *
+     * @return void
+     */
+    private function transformToNestedObjectProperty(object $objectSchema): void
+    {
+        // For nested objects, we need to resolve the $ref but prevent circular references
+        if (isset($objectSchema->{'$ref'})) {
+            $ref = $objectSchema->{'$ref'};
+            
+            // Handle both string and object formats for $ref
+            if (is_object($ref) && isset($ref->id)) {
+                $reference = $ref->id;
+            } elseif (is_array($ref) && isset($ref['id'])) {
+                $reference = $ref['id'];
+            } else {
+                $reference = $ref;
+            }
+
+            // If this is a self-reference (circular), convert to a simple object type
+            if (is_string($reference) && str_contains($reference, '/components/schemas/')) {
+                $schemaSlug = substr($reference, strrpos($reference, '/') + 1);
+                
+                // For self-references, create a generic object structure to prevent circular validation
+                if ($this->isSelfReference($schemaSlug)) {
+                    $objectSchema->type = 'object';
+                    $objectSchema->description = 'Nested object (self-reference prevented)';
+                    unset($objectSchema->{'$ref'});
+                    
+                    // Add basic properties that most objects should have
+                    $objectSchema->properties = (object) [
+                        'id' => (object) [
+                            'type' => 'string',
+                            'description' => 'Object identifier'
+                        ]
+                    ];
+                }
+            }
+        }
+
+    }//end transformToNestedObjectProperty()
+
+
+
+
+
+    /**
+     * Transforms schema for validation by handling circular references, OpenRegister configurations, and schema resolution.
+     *
+     * This function combines all schema transformation steps into a single method:
+     * 1. Detects and transforms circular references (self-references)
+     * 2. Transforms OpenRegister-specific object configurations
+     * 3. Resolves schema references
+     *
+     * @param object $schemaObject The schema object to transform
+     * @param array  $object       The object data to transform
+     * @param string $currentSchemaSlug The current schema slug to detect self-references
+     *
+     * @return array Array containing [transformedSchema, transformedObject]
+     */
+    private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
+    {
+        // error_log('[ValidateObject] Starting schema transformation for schema slug: ' . $currentSchemaSlug); // Remove info log
+        // error_log('[ValidateObject] Original schema object keys: ' . json_encode(array_keys((array)$schemaObject))); // Remove info log
+        
+        if (!isset($schemaObject->properties)) {
+            // error_log('[ValidateObject] No properties found in schema'); // Remove info log
+            return [$schemaObject, $object];
+        }
+
+        $propertiesArray = (array)$schemaObject->properties;
+        // error_log('[ValidateObject] Processing ' . count($propertiesArray) . ' properties'); // Remove info log
+        
+        // Step 1: Handle circular references
+        // error_log('[ValidateObject] Step 1: Handling circular references'); // Remove info log
+        foreach ($propertiesArray as $propertyName => $propertySchema) {
+            // error_log('[ValidateObject] Checking property: ' . $propertyName); // Remove info log
+            
+            // Check if this property has a $ref that references the current schema
+            if ($this->isSelfReference($propertySchema, $currentSchemaSlug)) {
+                // error_log('[ValidateObject] Found self-reference in property: ' . $propertyName); // Remove info log
+                
+                // Check if this is a related-object with objectConfiguration
+                if (isset($propertySchema->objectConfiguration) && 
+                    isset($propertySchema->objectConfiguration->handling) && 
+                    $propertySchema->objectConfiguration->handling === 'related-object') {
+                    
+                    // Transform to UUID string type
+                    $propertySchema->type = 'string';
+                    $propertySchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+                    $propertySchema->description = 'UUID reference to a related object (self-reference)';
+                    unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
+                    // error_log('[ValidateObject] Transformed ' . $propertyName . ' to UUID string property'); // Remove info log
+                } else if (isset($propertySchema->type) && $propertySchema->type === 'array' && 
+                          isset($propertySchema->items) && is_object($propertySchema->items) && $this->isSelfReference($propertySchema->items, $currentSchemaSlug)) {
+                    
+                    // Check if array items are self-referencing
+                    $propertySchema->type = 'array';
+                    $propertySchema->items = (object)[
+                        'type' => 'string',
+                        'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                        'description' => 'UUID reference to a related object (self-reference)'
+                    ];
+                    unset($propertySchema->{'$ref'});
+                    // error_log('[ValidateObject] Transformed ' . $propertyName . ' array items to UUID string property'); // Remove info log
+                    
+                    // Ensure items has a valid schema after transformation
+                    if (!isset($propertySchema->items->type)) {
+                        $propertySchema->items->type = 'string';
+                    }
+                }
+                
+                // Remove the $ref to prevent circular validation issues
+                unset($propertySchema->{'$ref'});
+                // error_log('[ValidateObject] Removed $ref from property: ' . $propertyName); // Remove info log
+            }
+        }
+
+        // Step 2: Transform OpenRegister-specific object configurations
+        // error_log('[ValidateObject] Step 2: Transforming OpenRegister object configurations'); // Remove info log
+        $schemaObject = $this->transformOpenRegisterObjectConfigurations($schemaObject);
+
+        // Step 3: Remove $id property to prevent duplicate schema ID errors
+        // error_log('[ValidateObject] Step 3: Removing $id property'); // Remove info log
+        if (isset($schemaObject->{'$id'})) {
+            // error_log('[ValidateObject] Removed $id: ' . $schemaObject->{'$id'}); // Remove info log
+            unset($schemaObject->{'$id'});
+        } else {
+            // error_log('[ValidateObject] No $id property found to remove'); // Remove info log
+        }
+        
+        // Step 4: Pre-process the schema to resolve all schema references (but skip UUID-transformed properties)
+        // error_log('[ValidateObject] Step 4: Pre-processing schema references'); // Remove info log
+        // Temporarily disable schema resolution to see if that's causing the duplicate schema ID issue
+        // $schemaObject = $this->preprocessSchemaReferences($schemaObject, [], true);
+        // error_log('[ValidateObject] Skipping schema resolution for now'); // Remove info log
+        
+        // error_log('[ValidateObject] Final schema object keys: ' . json_encode(array_keys((array)$schemaObject))); // Remove info log
+        // error_log('[ValidateObject] Schema transformation completed'); // Remove info log
+
+        return [$schemaObject, $object];
+
+    }//end transformSchemaForValidation()
+
+
+    /**
+     * Cleans a schema object by removing all Nextcloud-specific metadata properties.
+     * This ensures the schema is valid JSON Schema before validation.
+     *
+     * @param object $schemaObject The schema object to clean
+     * @param bool   $isArrayItems Whether this is cleaning array items (more aggressive cleaning)
+     *
+     * @return object The cleaned schema object
+     */
+    private function cleanSchemaForValidation(object $schemaObject, bool $isArrayItems = false): object
+    {
+        // error_log('[ValidateObject] Cleaning schema for validation, isArrayItems: ' . ($isArrayItems ? 'true' : 'false')); // Remove info log
+        
+        // Clone the schema object to avoid modifying the original
+        $cleanedSchema = json_decode(json_encode($schemaObject));
+        
+        // Remove Nextcloud-specific metadata properties
+        $metadataProperties = [
+            'cascadeDelete',
+            'objectConfiguration', 
+            'inversedBy',
+            'mappedBy',
+            'targetEntity',
+            'fetch',
+            'indexBy',
+            'orphanRemoval',
+            'joinColumns',
+            'inverseJoinColumns',
+            'joinTable',
+            'uniqueConstraints',
+            'indexes',
+            'options'
+        ];
+        
+        foreach ($metadataProperties as $property) {
+            if (isset($cleanedSchema->$property)) {
+                // error_log('[ValidateObject] Removing metadata property: ' . $property); // Remove info log
+                unset($cleanedSchema->$property);
+            }
+        }
+        
+        // Handle properties recursively
+        if (isset($cleanedSchema->properties)) {
+            foreach ($cleanedSchema->properties as $propertyName => $propertySchema) {
+                $cleanedSchema->properties->$propertyName = $this->cleanPropertyForValidation($propertySchema, false);
+            }
+        }
+        
+        // Handle array items - this is where the distinction matters
+        if (isset($cleanedSchema->items)) {
+            $cleanedSchema->items = $this->cleanPropertyForValidation($cleanedSchema->items, true);
+        }
+        
+        return $cleanedSchema;
+        
+    }//end cleanSchemaForValidation()
+
+
+    /**
+     * Cleans a property schema by removing metadata and handling special cases.
+     *
+     * @param mixed $propertySchema The property schema to clean
+     * @param bool  $isArrayItems   Whether this is cleaning array items (more aggressive)
+     *
+     * @return mixed The cleaned property schema
+     */
+    private function cleanPropertyForValidation($propertySchema, bool $isArrayItems = false)
+    {
+        // Handle non-object properties
+        if (!is_object($propertySchema)) {
+            return $propertySchema;
+        }
+        
+        // Clone to avoid modifying original
+        $cleanedProperty = json_decode(json_encode($propertySchema));
+        
+        // Remove Nextcloud-specific metadata properties
+        $metadataProperties = [
+            'cascadeDelete',
+            'objectConfiguration',
+            'inversedBy', 
+            'mappedBy',
+            'targetEntity',
+            'fetch',
+            'indexBy',
+            'orphanRemoval',
+            'joinColumns',
+            'inverseJoinColumns',
+            'joinTable',
+            'uniqueConstraints',
+            'indexes',
+            'options'
+        ];
+        
+        foreach ($metadataProperties as $property) {
+            if (isset($cleanedProperty->$property)) {
+                // error_log('[ValidateObject] Removing metadata property from ' . ($isArrayItems ? 'array items' : 'property') . ': ' . $property); // Remove info log
+                unset($cleanedProperty->$property);
+            }
+        }
+        
+        // Special handling for array items - more aggressive transformation
+        if ($isArrayItems) {
+            return $this->transformArrayItemsForValidation($cleanedProperty);
+        }
+        
+        // Handle nested properties recursively
+        if (isset($cleanedProperty->properties)) {
+            foreach ($cleanedProperty->properties as $nestedPropertyName => $nestedPropertySchema) {
+                $cleanedProperty->properties->$nestedPropertyName = $this->cleanPropertyForValidation($nestedPropertySchema, false);
+            }
+        }
+        
+        // Handle nested array items
+        if (isset($cleanedProperty->items)) {
+            $cleanedProperty->items = $this->cleanPropertyForValidation($cleanedProperty->items, true);
+        }
+        
+        return $cleanedProperty;
+        
+    }//end cleanPropertyForValidation()
+
+
+    /**
+     * Transforms array items for validation by converting object items to appropriate types.
+     *
+     * @param object $itemsSchema The array items schema to transform
+     *
+     * @return object The transformed items schema
+     */
+    private function transformArrayItemsForValidation(object $itemsSchema): object
+    {
+        // error_log('[ValidateObject] Transforming array items for validation'); // Remove info log
+        
+        // If items don't have a type or aren't objects, return as-is
+        if (!isset($itemsSchema->type) || $itemsSchema->type !== 'object') {
+            return $itemsSchema;
+        }
+        
+        // Check if this has objectConfiguration to determine handling
+        if (isset($itemsSchema->objectConfiguration) && isset($itemsSchema->objectConfiguration->handling)) {
+            $handling = $itemsSchema->objectConfiguration->handling;
+            // error_log('[ValidateObject] Array items have objectConfiguration handling: ' . $handling); // Remove info log
+            
+            switch ($handling) {
+                case 'related-object':
+                    // For related objects, convert to UUID strings
+                    return $this->transformItemsToUuidStrings($itemsSchema);
+                    
+                case 'nested-object':
+                    // For nested objects, create a simple object structure
+                    return $this->transformItemsToSimpleObject($itemsSchema);
+                    
+                default:
+                    // For other handling types, convert to UUID strings as default
+                    return $this->transformItemsToUuidStrings($itemsSchema);
+            }
+        }
+        
+        // If no objectConfiguration, check if there's a $ref
+        if (isset($itemsSchema->{'$ref'})) {
+            // Convert to UUID strings for any referenced objects
+            return $this->transformItemsToUuidStrings($itemsSchema);
+        }
+        
+        // Default: convert to simple object structure
+        return $this->transformItemsToSimpleObject($itemsSchema);
+        
+    }//end transformArrayItemsForValidation()
+
+
+    /**
+     * Transforms array items to expect UUID strings.
+     *
+     * @param object $itemsSchema The array items schema to transform
+     *
+     * @return object The transformed schema expecting UUID strings
+     */
+    private function transformItemsToUuidStrings(object $itemsSchema): object
+    {
+        // error_log('[ValidateObject] Transforming array items to UUID strings'); // Remove info log
+        
+        // Remove all object-specific properties
+        unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
+        
+        // Set to string type with UUID pattern
+        $itemsSchema->type = 'string';
+        $itemsSchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+        $itemsSchema->description = 'UUID reference to a related object';
+        
+        return $itemsSchema;
+        
+    }//end transformItemsToUuidStrings()
+
+
+    /**
+     * Transforms array items to a simple object structure.
+     *
+     * @param object $itemsSchema The array items schema to transform
+     *
+     * @return object The transformed schema with simple object structure
+     */
+    private function transformItemsToSimpleObject(object $itemsSchema): object
+    {
+        // error_log('[ValidateObject] Transforming array items to simple object structure'); // Remove info log
+        
+        // Remove $ref to prevent circular references
+        unset($itemsSchema->{'$ref'});
+        
+        // Create a simple object structure
+        $itemsSchema->type = 'object';
+        $itemsSchema->description = 'Nested object';
+        
+        // Add basic properties that most objects should have
+        $itemsSchema->properties = (object) [
+            'id' => (object) [
+                'type' => 'string',
+                'description' => 'Object identifier'
+            ]
+        ];
+        
+        return $itemsSchema;
+        
+    }//end transformItemsToSimpleObject()
+
+
+    /**
+     * Checks if a property schema is a self-reference to the given schema slug.
+     *
+     * @param object $propertySchema The property schema to check
+     * @param string $schemaSlug The schema slug to check against
+     *
+     * @return bool True if this is a self-reference
+     */
+    private function isSelfReference(object $propertySchema, string $schemaSlug): bool
+    {
+        // Check for $ref in the property
+        if (isset($propertySchema->{'$ref'})) {
+            $ref = $propertySchema->{'$ref'};
+            
+            // Handle both string and object formats for $ref
+            if (is_object($ref) && isset($ref->id)) {
+                $refId = $ref->id;
+            } elseif (is_array($ref) && isset($ref['id'])) {
+                $refId = $ref['id'];
+            } else {
+                $refId = $ref;
+            }
+
+            // Extract schema slug from reference path
+            if (is_string($refId) && str_contains($refId, '#/components/schemas/')) {
+                $referencedSlug = substr($refId, strrpos($refId, '/') + 1);
+                return $referencedSlug === $schemaSlug;
+            }
+        }
+
+        return false;
+
+    }//end isSelfReference()
 
 
     /**
@@ -235,7 +804,7 @@ class ValidateObject
                 }
             }
         } catch (Exception $e) {
-            error_log("[ValidateObject] Error searching schemas by slug: ".$e->getMessage());
+            // error_log('[ValidateObject] Error searching schemas by slug: ' . $e->getMessage()); // Remove info log
         }
 
         return null;
@@ -269,8 +838,20 @@ class ValidateObject
             }
         }
 
-        // Pre-process the schema to resolve all schema references
-        $schemaObject = $this->preprocessSchemaReferences($schemaObject);
+        // Get the current schema slug for circular reference detection
+        $currentSchemaSlug = '';
+        if ($schema instanceof Schema) {
+            $currentSchemaSlug = $schema->getSlug();
+        }
+
+        // Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution)
+        [$schemaObject, $object] = $this->transformSchemaForValidation($schemaObject, $object, $currentSchemaSlug);
+
+        // Clean the schema by removing all Nextcloud-specific metadata properties
+        $schemaObject = $this->cleanSchemaForValidation($schemaObject);
+
+        // Log the final schema object before validation
+        // error_log('[ValidateObject] Final schema before validation: ' . json_encode($schemaObject)); // Remove info log
 
         // If schemaObject reuired is empty unset it.
         if (isset($schemaObject->required) === true && empty($schemaObject->required) === true) {

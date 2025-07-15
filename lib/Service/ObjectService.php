@@ -691,12 +691,15 @@ class ObjectService
                 $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
+            // error_log('[ObjectService] Object validation passed'); // Removed info log
+        } else {
+            // error_log('[ObjectService] Hard validation disabled, skipping validation'); // Removed info log
         }
 
-        // Create folder before saving if needed
+        // Handle folder creation for existing objects or new objects with UUIDs
         $folderId = null;
         if ($uuid !== null) {
-            // For existing objects, check if folder needs to be created
+            // For existing objects or objects with specific UUIDs, check if folder needs to be created
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
@@ -708,25 +711,14 @@ class ObjectService
                     }
                 }
             } catch (\Exception $e) {
-                // Object not found, will create new one
-            }
-        } else {
-                         // For new objects, create temporary object to generate UUID and create folder
-             $tempObject = new ObjectEntity();
-             $tempObject->setRegister($this->currentRegister->getId());
-             $tempObject->setSchema($this->currentSchema->getId());
-             $tempObject->setUuid(Uuid::v4()->toRfc4122());
-            
-            try {
-                $folderId = $this->fileService->createObjectFolderWithoutUpdate($tempObject);
-                $uuid = $tempObject->getUuid(); // Use the generated UUID
-            } catch (\Exception $e) {
-                // Log error but continue - object can function without folder
-                error_log("Failed to create folder for new object: " . $e->getMessage());
+                // Object not found, will create new one with the specified UUID
+                // Let SaveObject handle the creation with the provided UUID
             }
         }
+        // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
 
         // Save the object using the current register and schema.
+        // Let SaveObject handle the UUID logic completely
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
@@ -801,12 +793,16 @@ class ObjectService
             if (isset($registerArray['schemas']) === true && is_array($registerArray['schemas']) === true) {
                 $registerArray['schemas'] = array_map(
                     function ($schemaId) {
-                        try {
-                            return $this->schemaMapper->find($schemaId)->jsonSerialize();
-                        } catch (Exception $e) {
-                            // If schema can't be found, return the ID.
-                            return $schemaId;
+                        // Only expand if it's an int or string (ID/UUID/slug)
+                        if (is_int($schemaId) || is_string($schemaId)) {
+                            try {
+                                return $this->schemaMapper->find($schemaId)->jsonSerialize();
+                            } catch (Exception $e) {
+                                return $schemaId;
+                            }
                         }
+                        // If it's already an array/object, return as-is
+                        return $schemaId;
                     },
                     $registerArray['schemas']
                 );

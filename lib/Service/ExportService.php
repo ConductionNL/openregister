@@ -199,7 +199,7 @@ class ExportService
         $headers = $this->getHeaders($register, $schema);
         $row     = 1;
 
-        // Write headers.
+        // Write headers using property keys for consistency with imports.
         foreach ($headers as $col => $header) {
             $sheet->setCellValue($col.$row, $header);
         }
@@ -233,20 +233,18 @@ class ExportService
      * @param Register|null $register Optional register to export
      * @param Schema|null   $schema   Optional schema to export
      *
-     * @return array Headers indexed by column letter
+     * @return array Headers indexed by column letter with property key as value
      */
     private function getHeaders(?Register $register=null, ?Schema $schema=null): array
     {
-        // Start with basic metadata columns
+        // Start with id as the first column
         $headers = [
             'A' => 'id',  // Will contain the uuid
-            'B' => 'created',
-            'C' => 'updated',
         ];
 
         // Add schema fields from the schema properties
         if ($schema !== null) {
-            $col = 'D';  // Start after metadata columns
+            $col = 'B';  // Start after id column
             $properties = $schema->getProperties();
             
             // Sort properties by their order in the schema
@@ -256,15 +254,48 @@ class ExportService
                     continue;
                 }
                 
-                // Use the field's title if available, otherwise use the field name
-                $headerTitle = $fieldDefinition['title'] ?? $fieldName;
-                $headers[$col] = $headerTitle;
+                // Always use the property key as the header to ensure consistent data access
+                $headers[$col] = $fieldName;
                 $col++;
             }
         }
 
+        // Add other metadata fields at the end with _ prefix
+        $metadataFields = [
+            'created',
+            'updated',
+            'published',
+            'depublished',
+            'deleted',
+            'locked',
+            'owner',
+            'organisation',
+            'application',
+            'folder',
+            'size',
+            'version',
+            'schemaVersion',
+            'uri',
+            'register',
+            'schema',
+            'name',
+            'description',
+            'validation',
+            'geo',
+            'retention',
+            'authorization',
+            'groups',
+        ];
+
+        foreach ($metadataFields as $field) {
+            $headers[$col] = '_' . $field;
+            $col++;
+        }
+
         return $headers;
     }
+
+
 
 
     /**
@@ -277,19 +308,48 @@ class ExportService
      */
     private function getObjectValue(ObjectEntity $object, string $header): ?string
     {
-        // Get the object data
-        $objectData = $object->getObject();
+        // Handle metadata fields with _ prefix
+        if (str_starts_with($header, '_')) {
+            $fieldName = substr($header, 1); // Remove the _ prefix
+            
+            // Get the object array which contains all metadata
+            $objectArray = $object->getObjectArray();
+            
+            // Check if the field exists in the object array
+            if (isset($objectArray[$fieldName])) {
+                $value = $objectArray[$fieldName];
+                
+                // Handle DateTime objects (they come as ISO strings from getObjectArray)
+                if (is_string($value) && str_contains($value, 'T') && str_contains($value, 'Z')) {
+                    // Convert ISO 8601 to our preferred format
+                    try {
+                        $date = new \DateTime($value);
+                        return $date->format('Y-m-d H:i:s');
+                    } catch (\Exception $e) {
+                        return $value; // Return as-is if parsing fails
+                    }
+                }
+                
+                // Handle arrays and objects
+                if (is_array($value) || is_object($value)) {
+                    return $this->convertValueToString($value);
+                }
+                
+                // Handle scalar values
+                return $value !== null ? (string) $value : null;
+            }
+            
+            // Fallback for fields that might not exist
+            return null;
+        }
 
-        // Handle metadata fields
+        // Handle regular fields
         switch ($header) {
             case 'id':
                 return $object->getUuid();  // Return uuid for id column
-            case 'created':
-                return $object->getCreated()->format('Y-m-d H:i:s');
-            case 'updated':
-                return $object->getUpdated()->format('Y-m-d H:i:s');
             default:
                 // Get value from object data and convert to string
+                $objectData = $object->getObject();
                 $value = $objectData[$header] ?? null;
                 return $this->convertValueToString($value);
         }

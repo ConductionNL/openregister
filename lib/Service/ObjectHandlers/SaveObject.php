@@ -131,26 +131,23 @@ class SaveObject
             $schemas = $this->schemaMapper->findAll();
             foreach ($schemas as $schema) {
                 if (strcasecmp($schema->getSlug(), $slug) === 0) {
-                    error_log("[SaveObject] Resolved schema reference '$reference' to schema ID: {$schema->getId()} (slug: {$schema->getSlug()})");
                     return $schema->getId();
                 }
             }
         } catch (Exception $e) {
-            error_log("[SaveObject] Error searching schemas by slug: ".$e->getMessage());
+            // Schema not found
         }
 
         // Try direct slug match as last resort
         try {
             $schema = $this->schemaMapper->findBySlug($slug);
             if ($schema) {
-                error_log("[SaveObject] Resolved schema reference '$reference' to schema ID: {$schema->getId()} (direct slug match)");
                 return $schema->getId();
             }
         } catch (Exception $e) {
             // Schema not found
         }
 
-        error_log("[SaveObject] Could not resolve schema reference: '$reference'");
         return null;
 
     }//end resolveSchemaReference()
@@ -192,7 +189,7 @@ class SaveObject
                 }
             }//end foreach
         } catch (Exception $e) {
-            error_log("[SaveObject] Error scanning for relations: ".$e->getMessage());
+            // Error scanning for relations
         }//end try
 
         return $relations;
@@ -309,11 +306,9 @@ class SaveObject
             $schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
 
             if (!isset($schemaObject['properties']) || !is_array($schemaObject['properties'])) {
-                error_log("[SaveObject] Schema has no properties or invalid properties structure");
                 return $data;
             }
         } catch (Exception $e) {
-            error_log("[SaveObject] Error getting schema object for default values: ".$e->getMessage());
             return $data;
         }
 
@@ -336,7 +331,6 @@ class SaveObject
         foreach ($properties as $property) {
             if (isset($property['const']) === true) {
                 $constantValues[$property['title']] = $property['const'];
-                error_log("[SaveObject] Setting constant value for property '{$property['title']}': ".json_encode($property['const']));
             }
         }
 
@@ -356,7 +350,6 @@ class SaveObject
                     $renderedDefaultValues[$key] = $defaultValue;
                 }
             } catch (Exception $e) {
-                error_log("[SaveObject] Error rendering default value template for property '$key': ".$e->getMessage());
                 $renderedDefaultValues[$key] = $defaultValue;
                 // Use original value if template fails
             }
@@ -367,11 +360,6 @@ class SaveObject
         // 2. Add existing data (this preserves user input)
         // 3. Override with constant values (constants always take precedence)
         $mergedData = array_merge($renderedDefaultValues, $data, $constantValues);
-
-        if (!empty($constantValues)) {
-            error_log("[SaveObject] Applied constant values: ".json_encode($constantValues));
-            error_log("[SaveObject] Final merged data includes constants: ".json_encode(array_intersect_key($mergedData, $constantValues)));
-        }
 
         return $mergedData;
 
@@ -403,7 +391,6 @@ class SaveObject
             $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
         } catch (Exception $e) {
-            error_log("[SaveObject] Error getting schema object for cascading: ".$e->getMessage());
             return $data;
         }
 
@@ -411,9 +398,15 @@ class SaveObject
         // 1. inversedBy (creates relation back to parent) - results in empty array/null in parent
         // 2. objectConfiguration.handling: "cascade" (stores IDs in parent) - results in IDs stored in parent
         // Objects with only $ref and nested-object handling remain in the data
+        // BUT skip if they have writeBack enabled (those are handled by write-back method)
         $objectProperties = array_filter(
           $properties,
           function (array $property) {
+            // Skip if writeBack is enabled (handled by write-back method)
+            if (isset($property['writeBack']) && $property['writeBack'] === true) {
+                return false;
+            }
+            
             return $property['type'] === 'object' 
                 && isset($property['$ref']) === true 
                 && (isset($property['inversedBy']) === true || 
@@ -422,9 +415,16 @@ class SaveObject
           );
 
         // Same logic for array properties - cascade if they have inversedBy OR cascade handling
+        // BUT skip if they have writeBack enabled (those are handled by write-back method)
         $arrayObjectProperties = array_filter(
           $properties,
           function (array $property) {
+            // Skip if writeBack is enabled (handled by write-back method)
+            if ((isset($property['writeBack']) && $property['writeBack'] === true) ||
+                (isset($property['items']['writeBack']) && $property['items']['writeBack'] === true)) {
+                return false;
+            }
+            
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || isset($property['items']['$ref']))
                 && (isset($property['inversedBy']) === true || isset($property['items']['inversedBy']) === true ||
@@ -442,7 +442,6 @@ class SaveObject
 
             // Skip if the property is empty or not an array/object
             if (empty($data[$property]) === true || (!is_array($data[$property]) && !is_object($data[$property]))) {
-                error_log("[SaveObject] Skipping cascade for property '$property': empty or invalid data");
                 continue;
             }
 
@@ -451,7 +450,6 @@ class SaveObject
 
             // Skip if the object is effectively empty (only contains empty values)
             if ($this->isEffectivelyEmptyObject($objectData)) {
-                error_log("[SaveObject] Skipping cascade for property '$property': object is effectively empty");
                 continue;
             }
 
@@ -460,14 +458,19 @@ class SaveObject
                 
                 // Handle the result based on whether inversedBy is present
                 if (isset($definition['inversedBy'])) {
-                    // With inversedBy: remove the property (traditional cascading)
-                    unset($data[$property]);
+                    // With inversedBy: check if writeBack is enabled
+                    if (isset($definition['writeBack']) && $definition['writeBack'] === true) {
+                        // Keep the property for write-back processing
+                        $data[$property] = $createdUuid;
+                    } else {
+                        // Remove the property (traditional cascading)
+                        unset($data[$property]);
+                    }
                 } else {
                     // Without inversedBy: store the created object's UUID
                     $data[$property] = $createdUuid;
                 }
             } catch (Exception $e) {
-                error_log("[SaveObject] Error cascading single object for property '$property': ".$e->getMessage());
                 // Continue with other properties even if one fails
             }
         }
@@ -484,14 +487,22 @@ class SaveObject
                 
                 // Handle the result based on whether inversedBy is present
                 if (isset($definition['inversedBy']) || isset($definition['items']['inversedBy'])) {
-                    // With inversedBy: remove the property (traditional cascading)
-                    unset($data[$property]);
+                    // With inversedBy: check if writeBack is enabled
+                    $hasWriteBack = (isset($definition['writeBack']) && $definition['writeBack'] === true) ||
+                                   (isset($definition['items']['writeBack']) && $definition['items']['writeBack'] === true);
+                    
+                    if ($hasWriteBack) {
+                        // Keep the property for write-back processing
+                        $data[$property] = $createdUuids;
+                    } else {
+                        // Remove the property (traditional cascading)
+                        unset($data[$property]);
+                    }
                 } else {
                     // Without inversedBy: store the created objects' UUIDs
                     $data[$property] = $createdUuids;
                 }
             } catch (Exception $e) {
-                error_log("[SaveObject] Error cascading multiple objects for property '$property': ".$e->getMessage());
                 // Continue with other properties even if one fails
             }
         }
@@ -514,7 +525,6 @@ class SaveObject
     private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
         if (array_is_list($propData) === false) {
-            error_log("[SaveObject] Data is not an array of objects for cascading multiple objects");
             return [];
         }
 
@@ -527,7 +537,6 @@ class SaveObject
           );
 
         if (empty($validObjects)) {
-            error_log("[SaveObject] No valid objects found for cascading multiple objects");
             return [];
         }
 
@@ -549,7 +558,6 @@ class SaveObject
 
         // Validate that we have the necessary configuration
         if (!isset($property['items']['$ref'])) {
-            error_log("[SaveObject] Missing required $ref configuration for cascading multiple objects");
             return [];
         }
 
@@ -561,7 +569,6 @@ class SaveObject
                     $createdUuids[] = $uuid;
                 }
             } catch (Exception $e) {
-                error_log("[SaveObject] Error cascading single object in multiple objects: ".$e->getMessage());
                 // Continue with other objects even if one fails
             }
         }
@@ -584,19 +591,16 @@ class SaveObject
     {
         // Validate that we have the necessary configuration
         if (!isset($definition['$ref'])) {
-            error_log("[SaveObject] Missing required $ref configuration for cascading single object");
             return null;
         }
 
         // Skip if object is empty or doesn't contain actual data
         if (empty($object) || (count($object) === 1 && isset($object['id']) && empty($object['id']))) {
-            error_log("[SaveObject] Skipping cascade for empty or invalid object");
             return null;
         }
 
         $objectId = $objectEntity->getUuid();
         if (empty($objectId)) {
-            error_log("[SaveObject] Parent object UUID is empty, cannot cascade");
             return null;
         }
 
@@ -617,12 +621,21 @@ class SaveObject
         }
 
         $register = $definition['register'] ?? $objectEntity->getRegister();
-        $uuid     = $object['id'] ?? $object['@self']['id'] ?? null;
+        
+        // For cascading with inversedBy, preserve existing UUID for updates
+        // For cascading without inversedBy, always create new objects (no UUID)
+        $uuid = null;
+        if (isset($definition['inversedBy'])) {
+            $uuid = $object['id'] ?? $object['@self']['id'] ?? null;
+        } else {
+            // Remove any existing UUID/id fields to force new object creation
+            unset($object['id']);
+            unset($object['@self']);
+        }
 
         // Resolve schema reference to actual schema ID
         $schemaId = $this->resolveSchemaReference($definition['$ref']);
         if ($schemaId === null) {
-            error_log("[SaveObject] Could not resolve schema reference '{$definition['$ref']}' for cascading");
             throw new Exception("Invalid schema reference: {$definition['$ref']}");
         }
 
@@ -630,7 +643,6 @@ class SaveObject
             $savedObject = $this->saveObject(register: $register, schema: $schemaId, data: $object, uuid: $uuid);
             return $savedObject->getUuid();
         } catch (Exception $e) {
-            error_log("[SaveObject] Error saving cascaded object: ".$e->getMessage());
             throw $e;
         }
 
@@ -656,11 +668,11 @@ class SaveObject
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
+        
         try {
             $schemaObject = $schema->getSchemaObject($this->urlGenerator);
             $properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
         } catch (Exception $e) {
-            error_log("[SaveObject] Error getting schema object for inverse relations: ".$e->getMessage());
             return $data;
         }
 
@@ -678,11 +690,17 @@ class SaveObject
                 return true;
             }
 
+            // Check for inversedBy with writeBack at array property level (for array of objects)
+            if ($property['type'] === 'array' && isset($property['items']['inversedBy']) && isset($property['writeBack']) && $property['writeBack'] === true) {
+                return true;
+            }
+
             return false;
           }
           );
-
+        
         foreach ($writeBackProperties as $propertyName => $definition) {
+            
             // Skip if property not present in data or is empty
             if (!isset($data[$propertyName]) || empty($data[$propertyName])) {
                 continue;
@@ -705,18 +723,22 @@ class SaveObject
                 $targetSchema     = $definition['items']['$ref'] ?? null;
                 $targetRegister   = $definition['items']['register'] ?? $objectEntity->getRegister();
                 $removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
+            } else if (isset($definition['items']['inversedBy']) && isset($definition['writeBack']) && $definition['writeBack'] === true) {
+                // Handle array of objects with writeBack at array level
+                $inverseProperty  = $definition['items']['inversedBy'];
+                $targetSchema     = $definition['items']['$ref'] ?? null;
+                $targetRegister   = $definition['register'] ?? $objectEntity->getRegister();
+                $removeFromSource = $definition['removeAfterWriteBack'] ?? false;
             }
 
             // Skip if we don't have the necessary configuration
             if (!$inverseProperty || !$targetSchema) {
-                error_log("[SaveObject] Missing required configuration for inverse relations write-back for property '$propertyName'");
                 continue;
             }
 
             // Resolve schema reference to actual schema ID
             $resolvedSchemaId = $this->resolveSchemaReference($targetSchema);
             if ($resolvedSchemaId === null) {
-                error_log("[SaveObject] Could not resolve schema reference '$targetSchema' for inverse relations write-back for property '$propertyName'");
                 continue;
             }
 
@@ -729,12 +751,11 @@ class SaveObject
             $validUuids = array_filter(
             $targetUuids,
            function ($uuid) {
-                return !empty($uuid) && is_string($uuid) && trim($uuid) !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+                return !empty($uuid) && is_string($uuid) && trim($uuid) !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
            }
             );
 
             if (empty($validUuids)) {
-                error_log("[SaveObject] No valid UUIDs found for inverse relations write-back for property '$propertyName'");
                 continue;
             }
 
@@ -744,7 +765,6 @@ class SaveObject
                     // Find the target object
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
                     if (!$targetObject) {
-                        error_log("[SaveObject] Inverse relation write-back target object not found: {$targetUuid}");
                         continue;
                     }
 
@@ -774,9 +794,7 @@ class SaveObject
                         uuid: $targetUuid
                     );
 
-                    error_log("[SaveObject] Updated inverse relation write-back: {$targetUuid} -> {$inverseProperty} now includes {$objectEntity->getUuid()}");
                 } catch (Exception $e) {
-                    error_log("[SaveObject] Failed to update inverse relation write-back for {$targetUuid}: ".$e->getMessage());
                     // Continue with other targets even if one fails
                 }//end try
             }//end foreach
@@ -821,7 +839,6 @@ class SaveObject
             $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
             $required = json_decode(json_encode($schemaObject), associative: true)['required'] ?? [];
         } catch (Exception $e) {
-            error_log("[SaveObject] Error getting schema object for sanitization: ".$e->getMessage());
             return $data;
         }
 
@@ -842,14 +859,11 @@ class SaveObject
                 if ($value === '') {
                     // Empty string to null for object properties
                     $sanitizedData[$propertyName] = null;
-                    error_log("[SaveObject] Sanitized empty string to null for object property '$propertyName'");
                 } elseif (is_array($value) && empty($value) && !$isRequired) {
                     // Empty object {} to null for non-required object properties
                     $sanitizedData[$propertyName] = null;
-                    error_log("[SaveObject] Sanitized empty object to null for non-required object property '$propertyName'");
                 } elseif (is_array($value) && empty($value) && $isRequired) {
                     // Keep empty object {} for required properties - will fail validation with clear error
-                    error_log("[SaveObject] Keeping empty object for required object property '$propertyName' - will be validated");
                 }
             }
             // Handle array properties
@@ -857,17 +871,14 @@ class SaveObject
                 if ($value === '') {
                     // Empty string to null for array properties
                     $sanitizedData[$propertyName] = null;
-                    error_log("[SaveObject] Sanitized empty string to null for array property '$propertyName'");
                 } elseif (is_array($value)) {
                     // Check minItems constraint
                     $minItems = $propertyDefinition['minItems'] ?? 0;
                     
                     if (empty($value) && $minItems > 0) {
                         // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error
-                        error_log("[SaveObject] Keeping empty array for array property '$propertyName' with minItems=$minItems - will be validated");
                     } elseif (empty($value) && $minItems === 0) {
                         // Empty array is valid for arrays with no minItems constraint
-                        error_log("[SaveObject] Empty array is valid for array property '$propertyName' (no minItems constraint)");
                     } else {
                         // Handle array items that might contain empty strings
                         $sanitizedArray = [];
@@ -876,7 +887,6 @@ class SaveObject
                             if ($item === '') {
                                 $sanitizedArray[$index] = null;
                                 $hasChanges = true;
-                                error_log("[SaveObject] Sanitized empty string to null in array property '$propertyName' at index $index");
                             } else {
                                 $sanitizedArray[$index] = $item;
                             }
@@ -892,10 +902,8 @@ class SaveObject
                 if (!$isRequired) {
                     // Convert empty string to null for non-required scalar properties
                     $sanitizedData[$propertyName] = null;
-                    error_log("[SaveObject] Sanitized empty string to null for non-required $propertyType property '$propertyName'");
                 } else {
                     // Keep empty string for required properties - will fail validation with clear error
-                    error_log("[SaveObject] Keeping empty string for required $propertyType property '$propertyName' - will be validated");
                 }
             }
         }
@@ -956,10 +964,8 @@ class SaveObject
 
         // If UUID is provided, try to find and update existing object.
         if ($uuid !== null) {
-            error_log("[SaveObject] Attempting to find existing object with UUID: $uuid");
             try {
                 $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
-                error_log("[SaveObject] Found existing object with ID: ".$existingObject->getId().", UUID: ".$existingObject->getUuid());
 
                 // Check if '@self' metadata exists and contains published/depublished properties
                 if (isset($selfData) === true) {
@@ -972,7 +978,6 @@ class SaveObject
                             }
                         } catch (Exception $exception) {
                             // Silently ignore invalid date formats
-                            error_log("[SaveObject] Invalid published date format: ".$exception->getMessage());
                         }
                     } else {
                         $existingObject->setPublished(null);
@@ -987,7 +992,6 @@ class SaveObject
                             }
                         } catch (Exception $exception) {
                             // Silently ignore invalid date formats
-                            error_log("[SaveObject] Invalid depublished date format: ".$exception->getMessage());
                         }
                     } else {
                         $existingObject->setDepublished(null);
@@ -1000,7 +1004,6 @@ class SaveObject
                     try {
                         $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
                     } catch (Exception $e) {
-                        error_log("[SaveObject] Error sanitizing empty strings: ".$e->getMessage());
                         // Continue without sanitization if it fails
                     }
 
@@ -1009,21 +1012,17 @@ class SaveObject
                     $data = $this->setDefaultValues(objectEntity: $existingObject, schema: $schema, data: $data);
                     return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $existingObject, folderId: $folderId);
                 } catch (Exception $e) {
-                    error_log("[SaveObject] Error processing existing object during update: ".$e->getMessage());
                     throw $e;
                 }
             } catch (DoesNotExistException $e) {
                 // Object not found, proceed with creating new object.
-                error_log("[SaveObject] Object with UUID $uuid not found, creating new object. Error: ".$e->getMessage());
             } catch (Exception $e) {
                 // Other errors during object lookup
-                error_log("[SaveObject] Error looking up object with UUID $uuid: ".$e->getMessage());
                 throw $e;
             }//end try
         }//end if
 
         // Create a new object entity.
-        error_log("[SaveObject] Creating new object entity");
         $objectEntity = new ObjectEntity();
         $objectEntity->setRegister($registerId);
         $objectEntity->setSchema($schemaId);
@@ -1033,7 +1032,6 @@ class SaveObject
         // Set folder ID if provided
         if ($folderId !== null) {
             $objectEntity->setFolder((string) $folderId);
-            error_log("[SaveObject] Setting folder ID on new object: ".$folderId);
         }
 
         // Check if '@self' metadata exists and contains published/depublished properties
@@ -1099,7 +1097,6 @@ class SaveObject
             try {
                 $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schema);
             } catch (Exception $e) {
-                error_log("[SaveObject] Error sanitizing empty strings: ".$e->getMessage());
                 // Continue without sanitization if it fails
             }
 
@@ -1107,7 +1104,6 @@ class SaveObject
             $data = $this->handleInverseRelationsWriteBack($objectEntity, $schema, $data);
             $data = $this->setDefaultValues($objectEntity, $schema, $data);
         } catch (Exception $e) {
-            error_log("[SaveObject] Error processing new object data: ".$e->getMessage());
             throw $e;
         }
 
@@ -1117,7 +1113,6 @@ class SaveObject
         try {
             $this->hydrateNameAndDescription($objectEntity, $schema);
         } catch (Exception $e) {
-            error_log("[SaveObject] Error hydrating name and description: ".$e->getMessage());
             // Continue without hydration if it fails
         }
 
@@ -1131,14 +1126,11 @@ class SaveObject
         try {
             $objectEntity = $this->updateObjectRelations($objectEntity, $data);
         } catch (Exception $e) {
-            error_log("[SaveObject] Error updating object relations: ".$e->getMessage());
             // Continue without relations if it fails
         }
 
         // Save the object to database.
-        error_log("[SaveObject] Inserting new object to database");
         $savedEntity = $this->objectEntityMapper->insert($objectEntity);
-        error_log("[SaveObject] New object inserted with ID: ".$savedEntity->getId().", UUID: ".$savedEntity->getUuid());
 
         // Create audit trail for creation.
         $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
@@ -1245,7 +1237,6 @@ class SaveObject
         ObjectEntity $existingObject,
         ?int $folderId=null
     ): ObjectEntity {
-        error_log("[SaveObject] Updating existing object ID: ".$existingObject->getId().", UUID: ".$existingObject->getUuid());
 
         // Store the old state for audit trail.
         $oldObject = clone $existingObject;
@@ -1317,7 +1308,6 @@ class SaveObject
                 $data = $this->sanitizeEmptyStringsForObjectProperties($data, $schemaObject);
             }
         } catch (Exception $e) {
-            error_log("[SaveObject] Error sanitizing empty strings during update: ".$e->getMessage());
             // Continue without sanitization if it fails
         }
 
@@ -1335,7 +1325,6 @@ class SaveObject
             $data = $this->handleInverseRelationsWriteBack($existingObject, $schemaObject, $data);
             $data = $this->setDefaultValues($existingObject, $schemaObject, $data);
         } catch (Exception $e) {
-            error_log("[SaveObject] Error processing object data during update: ".$e->getMessage());
             throw $e;
         }
 
@@ -1348,7 +1337,6 @@ class SaveObject
         // Set folder ID if provided
         if ($folderId !== null) {
             $existingObject->setFolder((string) $folderId);
-            error_log("[SaveObject] Setting folder ID on updated object: ".$folderId);
         }
 
         // Hydrate name and description from schema configuration.
@@ -1358,9 +1346,7 @@ class SaveObject
         $existingObject = $this->updateObjectRelations($existingObject, $data);
 
         // Save the object to database.
-        error_log("[SaveObject] Updating existing object in database");
         $updatedEntity = $this->objectEntityMapper->update($existingObject);
-        error_log("[SaveObject] Object updated with ID: ".$updatedEntity->getId().", UUID: ".$updatedEntity->getUuid());
 
         // Create audit trail for update.
         $log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);

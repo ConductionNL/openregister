@@ -834,7 +834,6 @@ class RenderObject
         // Find objects that reference this object.
         $referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
 
-
         // Set all found objects to the objectsCache.
         $ids            = array_map(
                 function (ObjectEntity $object) {
@@ -847,26 +846,59 @@ class RenderObject
         $this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
 
         // Process each inversed property.
-        foreach ($inversedProperties as $propertyName => $inversedBy) {
+        foreach ($inversedProperties as $propertyName => $propertyConfig) {
             $objectData[$propertyName] = [];
+
+            // Extract inversedBy configuration based on property structure
+            $inversedByProperty = null;
+            $targetSchema = null;
+            $isArray = false;
+
+            // Check if this is an array property with inversedBy in items
+            if (isset($propertyConfig['type']) && $propertyConfig['type'] === 'array' && isset($propertyConfig['items']['inversedBy'])) {
+                $inversedByProperty = $propertyConfig['items']['inversedBy'];
+                $targetSchema = $propertyConfig['items']['$ref'] ?? null;
+                $isArray = true;
+            }
+            // Check if this is a direct object property with inversedBy
+            elseif (isset($propertyConfig['inversedBy'])) {
+                $inversedByProperty = $propertyConfig['inversedBy'];
+                $targetSchema = $propertyConfig['$ref'] ?? null;
+                $isArray = false;
+            }
+            // Skip if no inversedBy configuration found
+            else {
+                continue;
+            }
+
+            // Resolve schema reference to actual schema ID
+            if ($targetSchema !== null) {
+                $schemaId = $this->resolveSchemaReference($targetSchema);
+            } else {
+                $schemaId = $entity->getSchema(); // Use current schema if no target specified
+            }
 
             $inversedObjects = array_values(array_filter(
                     $referencingObjects,
-                    function (ObjectEntity $object) use ($propertyName, $inversedBy, $entity) {
-                        $data   = $object->jsonSerialize();
-                        $schema = $object->getSchema();
-
-                        // @TODO: accomodate schema references.
-                        if (isset($inversedBy['$ref']) === true) {
-                            $schemaId = str_contains(haystack: $inversedBy['$ref'], needle: '/') ? substr(string: $inversedBy['$ref'], offset: strrpos($inversedBy['$ref'], '/') + 1) : $inversedBy['$ref'];
-                        } else if (isset($inversedBy['items']['$ref']) === true) {
-                            $schemaId = str_contains(haystack: $inversedBy['items']['$ref'], needle: '/') ? substr(string: $inversedBy['items']['$ref'], offset: strrpos($inversedBy['items']['$ref'], needle: '/') + 1) : $inversedBy['items']['$ref'];
-                        } else {
+                    function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
+                        $data = $object->getObject();
+                        
+                        // Check if the referencing object has the inversedBy property
+                        if (!isset($data[$inversedByProperty])) {
                             return false;
-                        }//end if
+                        }
 
-						return isset($data[$inversedBy['inversedBy']]) === true && (str_ends_with(haystack: $data[$inversedBy['inversedBy']], needle: $entity->getUuid()) || $data[$inversedBy['inversedBy']] === $entity->getId()) && $schemaId == $object->getSchema();
-					}
+                        $referenceValue = $data[$inversedByProperty];
+                        
+                        // Handle both array and single value references
+                        if (is_array($referenceValue)) {
+                            // Check if the current entity's UUID is in the array
+                            return in_array($entity->getUuid(), $referenceValue, true);
+                        } else {
+                            // Check if the reference value matches the current entity's UUID
+                            return $referenceValue === $entity->getUuid();
+                        }
+                    }
                     ));
 
             $inversedUuids = array_map(
@@ -876,10 +908,11 @@ class RenderObject
                     $inversedObjects
                     );
 
-            if ($inversedBy['type'] === 'array') {
+            // Set the inversed property value based on whether it's an array or single value
+            if ($isArray) {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
-                $objectData[$propertyName] = end($inversedUuids);
+                $objectData[$propertyName] = !empty($inversedUuids) ? end($inversedUuids) : null;
             }
 
         }//end foreach
@@ -887,6 +920,56 @@ class RenderObject
         return $objectData;
 
     }//end handleInversedProperties()
+
+
+    /**
+     * Resolve schema reference to actual schema ID
+     *
+     * @param string $schemaRef The schema reference (ID, UUID, path, or slug)
+     *
+     * @return string The resolved schema ID
+     */
+    private function resolveSchemaReference(string $schemaRef): string
+    {
+        // If it's already a numeric ID, return it
+        if (is_numeric($schemaRef)) {
+            return $schemaRef;
+        }
+
+        // If it's a UUID, try to find the schema by UUID
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $schemaRef)) {
+            try {
+                $schema = $this->schemaMapper->find($schemaRef);
+                return (string) $schema->getId();
+            } catch (\Exception $e) {
+                // If not found by UUID, continue with other methods
+            }
+        }
+
+        // Handle JSON Schema path references (e.g., "#/components/schemas/organisatie")
+        if (str_contains($schemaRef, '/')) {
+            $lastSegment = basename($schemaRef);
+            // Remove any file extension or fragment
+            $lastSegment = preg_replace('/\.[^.]*$/', '', $lastSegment);
+            $lastSegment = preg_replace('/#.*$/', '', $lastSegment);
+            
+            // Try to find schema by slug (case-insensitive)
+            try {
+                $schemas = $this->schemaMapper->findAll();
+                foreach ($schemas as $schema) {
+                    if (strtolower($schema->getSlug()) === strtolower($lastSegment)) {
+                        return (string) $schema->getId();
+                    }
+                }
+            } catch (\Exception $e) {
+                // If not found by slug, continue
+            }
+        }
+
+        // If all else fails, try to use the reference as-is
+        return $schemaRef;
+
+    }//end resolveSchemaReference()
 
 
     /**

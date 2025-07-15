@@ -208,6 +208,11 @@ class SchemaMapper extends QBMapper
      */
     private function cleanObject(Schema $schema): void
     {
+        // Enforce $ref is always a string in all properties and array items
+        $properties = $schema->getProperties() ?? [];
+        $this->enforceRefIsStringRecursive($properties);
+        $schema->setProperties($properties);
+
         // Check if UUID is set, if not, generate a new one.
         if ($schema->getUuid() === null) {
             $schema->setUuid(Uuid::v4());
@@ -308,6 +313,41 @@ class SchemaMapper extends QBMapper
         }
 
     }//end cleanObject()
+
+
+    /**
+     * Recursively enforce that $ref is always a string in all properties and array items
+     *
+     * @param array &$properties The properties array to check
+     * @throws \Exception If $ref is not a string or cannot be converted
+     */
+    private function enforceRefIsStringRecursive(array &$properties): void
+    {
+        foreach ($properties as $key => &$property) {
+            // If property is not an array, skip
+            if (!is_array($property)) {
+                continue;
+            }
+            // Check $ref at this level
+            if (isset($property['$ref'])) {
+                if (is_array($property['$ref']) && isset($property['$ref']['id'])) {
+                    $property['$ref'] = $property['$ref']['id'];
+                } elseif (is_object($property['$ref']) && isset($property['$ref']->id)) {
+                    $property['$ref'] = $property['$ref']->id;
+                } elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                    throw new \Exception("Schema property '$key' has a $ref that is not a string or empty: " . print_r($property['$ref'], true));
+                }
+            }
+            // Check array items recursively
+            if (isset($property['items']) && is_array($property['items'])) {
+                $this->enforceRefIsStringRecursive($property['items']);
+            }
+            // Check nested properties recursively
+            if (isset($property['properties']) && is_array($property['properties'])) {
+                $this->enforceRefIsStringRecursive($property['properties']);
+            }
+        }
+    }
 
 
     /**
