@@ -29,98 +29,100 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(sheetSummary, sheetName) in importResults" :key="sheetName">
-							<td class="sheetName">
-								{{ sheetName }}
-								<div v-if="sheetSummary.schema" class="schemaInfo">
-									<small>Schema: {{ sheetSummary.schema.title }}</small>
-								</div>
-								<div v-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'MissingIdColumnException')" class="errorInfo">
-									<small class="errorText">Missing required "id" column</small>
-								</div>
-								<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'InvalidUuidException')" class="errorInfo">
-									<small class="errorText">Invalid UUID format in ID column</small>
-								</div>
-								<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
-									<small class="errorText">No data found - check schema matching</small>
-								</div>
-								<div v-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length === 0" class="infoInfo">
-									<small class="infoText">Sheet appears empty or has no matching data</small>
-								</div>
-								<div v-if="sheetSummary.found === 0 && sheetSummary.debug && sheetSummary.debug.headers && Array.isArray(sheetSummary.debug.headers)" class="debugInfo">
-									<small class="debugText">
-										Headers: {{ sheetSummary.debug.headers.join(', ') }}<br>
-										Schema properties: {{ Array.isArray(sheetSummary.debug.schemaProperties) ? sheetSummary.debug.schemaProperties.join(', ') : 'N/A' }}
-									</small>
-								</div>
-							</td>
-							<td class="statCell found">
-								{{ sheetSummary.found || 0 }}
-							</td>
-							<td class="statCell created">
-								{{ (sheetSummary.created && sheetSummary.created.length) || 0 }}
-							</td>
-							<td class="statCell updated">
-								{{ (sheetSummary.updated && sheetSummary.updated.length) || 0 }}
-							</td>
-							<td class="statCell unchanged">
-								{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
-							</td>
-							<td class="statCell errors">
-								<div class="errorCell">
-									<span>{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}</span>
-									<button
-										v-if="sheetSummary.errors && sheetSummary.errors.length > 0"
-										class="expandButton"
-										:class="{ expanded: expandedErrors[sheetName] }"
-										@click="toggleErrorDetails(sheetName)">
-										<ChevronDown :size="16" />
-									</button>
-								</div>
-							</td>
-							<td class="statCell total">
-								{{
-									((sheetSummary.created && sheetSummary.created.length) || 0) +
-										((sheetSummary.updated && sheetSummary.updated.length) || 0) +
-										((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
-										((sheetSummary.errors && sheetSummary.errors.length) || 0)
-								}}
-							</td>
-						</tr>
-						<!-- Error Details Row -->
-						<tr v-if="expandedErrors[sheetName] && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorDetailsRow">
-							<td colspan="7" class="errorDetailsCell">
-								<div class="errorDetailsTable">
-									<table class="errorTable">
-										<thead>
-											<tr>
-												<th>Row</th>
-												<th>Error Type</th>
-												<th>Error Message</th>
-												<th>Data</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr v-for="(error, index) in sheetSummary.errors" :key="index" class="errorRow">
-												<td class="errorRowNumber">
-													{{ error.row }}
-												</td>
-												<td class="errorType">
-													{{ error.type }}
-												</td>
-												<td class="errorMessage">
-													{{ error.error }}
-												</td>
-												<td class="errorData">
-													<pre v-if="error.data && Object.keys(error.data).length > 0">{{ JSON.stringify(error.data, null, 2) }}</pre>
-													<span v-else class="noData">No data</span>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</td>
-						</tr>
+						<template v-for="(sheetSummary, sheetName) in importResults">
+							<tr :key="sheetName">
+								<td class="sheetName">
+									{{ sheetName }}
+									<div v-if="sheetSummary.schema" class="schemaInfo">
+										<small>Schema: {{ sheetSummary.schema.title }}</small>
+									</div>
+									<div v-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'MissingIdColumnException')" class="errorInfo">
+										<small class="errorText">Missing required "id" column</small>
+									</div>
+									<div v-else-if="sheetSummary.errors && sheetSummary.errors.some(error => error.type === 'InvalidUuidException')" class="errorInfo">
+										<small class="errorText">Invalid UUID format in ID column</small>
+									</div>
+									<div v-else-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorInfo">
+										<small class="errorText">No data found - check schema matching</small>
+									</div>
+									<div v-if="sheetSummary.found === 0 && sheetSummary.errors && sheetSummary.errors.length === 0" class="infoInfo">
+										<small class="infoText">Sheet appears empty or has no matching data</small>
+									</div>
+									<div v-if="sheetSummary.found === 0 && sheetSummary.debug && sheetSummary.debug.headers && Array.isArray(sheetSummary.debug.headers)" class="debugInfo">
+										<small class="debugText">
+											Headers: {{ sheetSummary.debug.headers.join(', ') }}<br>
+											Schema properties: {{ Array.isArray(sheetSummary.debug.schemaProperties) ? sheetSummary.debug.schemaProperties.join(', ') : 'N/A' }}
+										</small>
+									</div>
+								</td>
+								<td class="statCell found">
+									{{ sheetSummary.found || 0 }}
+								</td>
+								<td class="statCell created">
+									{{ (sheetSummary.created && sheetSummary.created.length) || 0 }}
+								</td>
+								<td class="statCell updated">
+									{{ (sheetSummary.updated && sheetSummary.updated.length) || 0 }}
+								</td>
+								<td class="statCell unchanged">
+									{{ (sheetSummary.unchanged && sheetSummary.unchanged.length) || 0 }}
+								</td>
+								<td class="statCell errors">
+									<div class="errorCell">
+										<span>{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}</span>
+										<button
+											v-if="sheetSummary.errors && sheetSummary.errors.length > 0"
+											class="expandButton"
+											:class="{ expanded: expandedErrors[sheetName] }"
+											@click="toggleErrorDetails(sheetName)">
+											<ChevronDown :size="16" />
+										</button>
+									</div>
+								</td>
+								<td class="statCell total">
+									{{
+										((sheetSummary.created && sheetSummary.created.length) || 0) +
+											((sheetSummary.updated && sheetSummary.updated.length) || 0) +
+											((sheetSummary.unchanged && sheetSummary.unchanged.length) || 0) +
+											((sheetSummary.errors && sheetSummary.errors.length) || 0)
+									}}
+								</td>
+							</tr>
+							<!-- Error Details Row -->
+							<tr v-if="expandedErrors[sheetName] && sheetSummary.errors && sheetSummary.errors.length > 0" :key="`${sheetName}-errors`" class="errorDetailsRow">
+								<td colspan="7" class="errorDetailsCell">
+									<div class="errorDetailsTable">
+										<table class="errorTable">
+											<thead>
+												<tr>
+													<th>Row</th>
+													<th>Error Type</th>
+													<th>Error Message</th>
+													<th>Data</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr v-for="(error, index) in sheetSummary.errors" :key="index" class="errorRow">
+													<td class="errorRowNumber">
+														{{ error.row }}
+													</td>
+													<td class="errorType">
+														{{ error.type }}
+													</td>
+													<td class="errorMessage">
+														{{ error.error }}
+													</td>
+													<td class="errorData">
+														<pre v-if="error.data && Object.keys(error.data).length > 0">{{ JSON.stringify(error.data, null, 2) }}</pre>
+														<span v-else class="noData">No data</span>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</td>
+							</tr>
+						</template>
 					</tbody>
 				</table>
 			</div>
@@ -165,9 +167,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedRegisterValue"
 				:loading="registerLoading"
 				:disabled="registerLoading"
-				input-label="Select a register"
-				placeholder="Select a register"
 				aria-label-combobox="Select a register"
+				placeholder="Select a register"
 				@update:model-value="handleRegisterChange" />
 
 			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'csv')"
@@ -175,9 +176,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedSchemaValue"
 				:loading="schemaLoading"
 				:disabled="!registerStore.registerItem || schemaLoading"
-				input-label="Select a schema"
-				placeholder="Select a schema"
 				aria-label-combobox="Select a schema"
+				placeholder="Select a schema"
 				@update:model-value="handleSchemaChange" />
 
 			<div class="fileTypes">
@@ -293,6 +293,7 @@ export default {
 			schemaLoading: false,
 			expandedSheets: {}, // To track expanded details for each sheet
 			expandedErrors: {}, // To track expanded error details for each sheet
+			sheetName: null, // Current sheet name for error details
 		}
 	},
 	computed: {
