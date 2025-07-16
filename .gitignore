@@ -1,6 +1,7 @@
 /.idea/
 /*.iml
 *.Identifier
+.phphunit.result.cache
 
 /vendor/
 /vendor-bin/*/vendor/
