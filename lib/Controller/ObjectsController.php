@@ -445,6 +445,11 @@ class ObjectsController extends Controller
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
 
+        // Convert extend to array if it's a string
+        if (is_string($extend)) {
+            $extend = explode(',', $extend);
+        }
+
         // Find and validate the object.
         try {
             $object = $this->objectService->find($id, $extend);
@@ -479,6 +484,7 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
@@ -1109,17 +1115,17 @@ class ObjectsController extends Controller
     /**
      * Import objects into a register
      *
-     * @param int $registerId The ID of the register to import into
+     * @param int $register The ID of the register to import into
      *
      * @return JSONResponse The result of the import operation
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $registerId): JSONResponse
+    public function import(int $register): JSONResponse
     {
         try {
-            error_log("[ObjectsController] Starting import for register ID: $registerId");
+            error_log("[ObjectsController] Starting import for register ID: $register");
             
             // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
@@ -1131,8 +1137,8 @@ class ObjectsController extends Controller
             error_log("[ObjectsController] File uploaded: " . $uploadedFile['name'] . " (size: " . $uploadedFile['size'] . " bytes)");
 
             // Find the register
-            $register = $this->registerMapper->find($registerId);
-            error_log("[ObjectsController] Found register: " . $register->getTitle());
+            $registerEntity = $this->registerMapper->find($register);
+            error_log("[ObjectsController] Found register: " . $registerEntity->getTitle());
 
             // Determine file type from extension
             $filename = $uploadedFile['name'];
@@ -1147,7 +1153,7 @@ class ObjectsController extends Controller
                     error_log("[ObjectsController] Processing Excel file");
                     $summary = $this->importService->importFromExcel(
                         $uploadedFile['tmp_name'],
-                        $register,
+                        $registerEntity,
                         null // Schema will be determined from sheet names
                     );
                     break;
@@ -1155,22 +1161,26 @@ class ObjectsController extends Controller
                 case 'csv':
                     error_log("[ObjectsController] Processing CSV file");
                     
-                    // For CSV, we need to specify a schema
-                    // Get the first available schema from the register
-                    $schemas = $register->getSchemas();
-                    if (empty($schemas)) {
-                        error_log("[ObjectsController] No schemas found for register");
-                        return new JSONResponse(['error' => 'No schema found for register'], 400);
+                    // For CSV, schema can be specified in the request
+                    $schemaId = $this->request->getParam('schema');
+                    
+                    if (!$schemaId) {
+                        // If no schema specified, get the first available schema from the register
+                        $schemas = $registerEntity->getSchemas();
+                        if (empty($schemas)) {
+                            error_log("[ObjectsController] No schemas found for register");
+                            return new JSONResponse(['error' => 'No schema found for register'], 400);
+                        }
+                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
                     }
                     
-                    $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
                     $schema = $this->schemaMapper->find($schemaId);
                     
                     error_log("[ObjectsController] Using schema: " . $schema->getTitle());
                     
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],
-                        $register,
+                        $registerEntity,
                         $schema
                     );
                     break;

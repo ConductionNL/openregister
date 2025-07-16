@@ -409,7 +409,7 @@ class ObjectService
         // Retrieve the existing object by its UUID.
         $existingObject = $this->getHandler->find(id: $id);
         if ($existingObject === null) {
-            throw new DoesNotExistException('Object not found');
+            throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
 
         // If patch is true, merge the existing object with the new data.
@@ -691,12 +691,15 @@ class ObjectService
                 $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
+            // error_log('[ObjectService] Object validation passed'); // Removed info log
+        } else {
+            // error_log('[ObjectService] Hard validation disabled, skipping validation'); // Removed info log
         }
 
-        // Create folder before saving if needed
+        // Handle folder creation for existing objects or new objects with UUIDs
         $folderId = null;
         if ($uuid !== null) {
-            // For existing objects, check if folder needs to be created
+            // For existing objects or objects with specific UUIDs, check if folder needs to be created
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
@@ -707,26 +710,18 @@ class ObjectService
                         error_log("Failed to create folder for existing object: " . $e->getMessage());
                     }
                 }
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Object not found, will create new one with the specified UUID
+                // Let SaveObject handle the creation with the provided UUID
             } catch (\Exception $e) {
-                // Object not found, will create new one
-            }
-        } else {
-                         // For new objects, create temporary object to generate UUID and create folder
-             $tempObject = new ObjectEntity();
-             $tempObject->setRegister($this->currentRegister->getId());
-             $tempObject->setSchema($this->currentSchema->getId());
-             $tempObject->setUuid(Uuid::v4()->toRfc4122());
-            
-            try {
-                $folderId = $this->fileService->createObjectFolderWithoutUpdate($tempObject);
-                $uuid = $tempObject->getUuid(); // Use the generated UUID
-            } catch (\Exception $e) {
-                // Log error but continue - object can function without folder
-                error_log("Failed to create folder for new object: " . $e->getMessage());
+                // Other errors - let SaveObject handle the creation
+                error_log("Error checking for existing object: " . $e->getMessage());
             }
         }
+        // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
 
         // Save the object using the current register and schema.
+        // Let SaveObject handle the UUID logic completely
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
@@ -801,12 +796,16 @@ class ObjectService
             if (isset($registerArray['schemas']) === true && is_array($registerArray['schemas']) === true) {
                 $registerArray['schemas'] = array_map(
                     function ($schemaId) {
-                        try {
-                            return $this->schemaMapper->find($schemaId)->jsonSerialize();
-                        } catch (Exception $e) {
-                            // If schema can't be found, return the ID.
-                            return $schemaId;
+                        // Only expand if it's an int or string (ID/UUID/slug)
+                        if (is_int($schemaId) || is_string($schemaId)) {
+                            try {
+                                return $this->schemaMapper->find($schemaId)->jsonSerialize();
+                            } catch (Exception $e) {
+                                return $schemaId;
+                            }
                         }
+                        // If it's already an array/object, return as-is
+                        return $schemaId;
                     },
                     $registerArray['schemas']
                 );
@@ -1981,12 +1980,12 @@ class ObjectService
 
             if ($sourceObject === null) {
                 error_log("ERROR: Source object not found");
-                throw new DoesNotExistException('Source object not found');
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Source object not found');
             }
 
             if ($targetObject === null) {
                 error_log("ERROR: Target object not found");
-                throw new DoesNotExistException('Target object not found');
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Target object not found');
             }
 
             // Store original objects in report
@@ -2337,7 +2336,7 @@ class ObjectService
 
             // Validate entities exist
             if (!$sourceRegisterEntity || !$sourceSchemaEntity || !$targetRegisterEntity || !$targetSchemaEntity) {
-                throw new DoesNotExistException('One or more registers/schemas not found');
+                throw new \OCP\AppFramework\Db\DoesNotExistException('One or more registers/schemas not found');
             }
 
             // Get all source objects at once using ObjectEntityMapper

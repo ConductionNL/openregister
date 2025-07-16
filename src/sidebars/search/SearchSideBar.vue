@@ -10,123 +10,126 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 		subname="Within the federative network"
 		:open="navigationStore.sidebarState.search"
 		@update:open="(e) => navigationStore.setSidebarState('search', e)">
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-					<NcSelect v-bind="registerOptions"
-						id="registerSelect"
-						:model-value="selectedRegisterValue"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:input-label="t('openregister', 'Register')"
-						placeholder="Select a register"
-						@update:model-value="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-					<NcSelect v-bind="schemaOptions"
-						id="schemaSelect"
-						:model-value="selectedSchemaValue"
-						:loading="schemaLoading"
-						:disabled="!registerStore.registerItem || schemaLoading"
-						:input-label="t('openregister', 'Schema')"
-						placeholder="Select a schema"
-						@update:model-value="handleSchemaChange" />
-				</div>
+		<!-- Filter Section -->
+		<div class="filterSection">
+			<h3>{{ t('openregister', 'Filter Objects') }}</h3>
+			<div class="filterGroup">
+				<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+				<NcSelect v-bind="registerOptions"
+					id="registerSelect"
+					:model-value="selectedRegisterValue"
+					:loading="registerLoading"
+					:disabled="registerLoading"
+					:input-label="t('openregister', 'Register')"
+					placeholder="Select a register"
+					@update:model-value="handleRegisterChange" />
 			</div>
-
-			<!-- Search Section -->
-			<div class="section">
-				<h3 class="sectionTitle">{{ t('openregister', 'Search') }}</h3>
-				<div class="search-input-container">
-					<NcTextField
-						v-model="searchQuery"
-						:placeholder="searchPlaceholder"
-						:disabled="searchLoading"
-						@keyup.enter="performSearch" />
-					<NcButton
-						type="primary"
-						:disabled="!canSearch || searchLoading"
-						@click="performSearch">
-						<template #icon>
-							<NcLoadingIcon v-if="searchLoading" :size="20" />
-							<Magnify v-else :size="20" />
-						</template>
-						{{ t('openregister', 'Search') }}
-					</NcButton>
-				</div>
-				<div v-if="searchTerms.length > 0" class="search-terms">
-					<span class="search-terms-label">{{ t('openregister', 'Search terms:') }}</span>
-					<div class="search-chips">
-						<div
-							v-for="(term, index) in searchTerms"
-							:key="index"
-							class="search-chip">
-							<span class="chip-text">{{ term }}</span>
-							<button class="chip-remove" @click="removeSearchTerm(index)">
-								<Close :size="16" />
-							</button>
-						</div>
-					</div>
-				</div>
-				<div v-if="lastSearchStats" class="search-stats">
-					{{ t('openregister', 'Found {total} objects in {time}ms', lastSearchStats) }}
-				</div>
+			<div class="filterGroup">
+				<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+				<NcSelect v-bind="schemaOptions"
+					id="schemaSelect"
+					:model-value="selectedSchemaValue"
+					:loading="schemaLoading"
+					:disabled="!registerStore.registerItem || schemaLoading"
+					:input-label="t('openregister', 'Schema')"
+					placeholder="Select a schema"
+					@update:model-value="handleSchemaChange" />
 			</div>
+		</div>
 
-			<!-- Faceted Search Section -->
-			<div v-if="facetData && Object.keys(facetData).length > 0" class="section">
-				<h3 class="sectionTitle">{{ t('openregister', 'Filter') }}</h3>
-				<div v-if="facetsLoading" class="loading-container">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading filters...') }}</span>
-				</div>
-				<div v-else class="facets-container">
-					<!-- Show message if no facet data available -->
-					<div v-if="!facetData || Object.keys(facetData).length === 0" class="no-facets-message">
-						<p>{{ t('openregister', 'No facet filters available for this schema.') }}</p>
-					</div>
-					
-					<!-- Metadata facets (@self) -->
-					<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
-						<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
-						<NcSelect
-							:model-value="facetFilters[`@self.${field}`] || []"
-							:options="(facet?.buckets || []).map(bucket => ({
-								value: bucket.key,
-								label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
-							}))"
-							:multiple="true"
-							:placeholder="t('openregister', 'Select options...')"
-							:input-label="getFacetLabel(field, facet, true)"
-							@update:model-value="(value) => updateFacetFilter(`@self.${field}`, value)" />
-					</div>
-
-					<!-- Object field facets -->
-					<div v-for="(facet, field) in Object.fromEntries(Object.entries(facetData || {}).filter(([key]) => key !== '@self'))" :key="field" class="facet-group">
-						<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
-						<NcSelect
-							:model-value="facetFilters[field] || []"
-							:options="(facet?.buckets || []).map(bucket => ({
-								value: bucket.key,
-								label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
-							}))"
-							:multiple="true"
-							:placeholder="t('openregister', 'Select options...')"
-							:input-label="getFacetLabel(field, facet, false)"
-							@update:model-value="(value) => updateFacetFilter(field, value)" />
+		<!-- Search Section -->
+		<div class="section">
+			<h3 class="sectionTitle">
+				{{ t('openregister', 'Search') }}
+			</h3>
+			<div class="search-input-container">
+				<NcTextField
+					v-model="searchQuery"
+					:placeholder="searchPlaceholder"
+					:disabled="searchLoading"
+					@keyup.enter="performSearch" />
+				<NcButton
+					type="primary"
+					:disabled="!canSearch || searchLoading"
+					@click="performSearch">
+					<template #icon>
+						<NcLoadingIcon v-if="searchLoading" :size="20" />
+						<Magnify v-else :size="20" />
+					</template>
+					{{ t('openregister', 'Search') }}
+				</NcButton>
+			</div>
+			<div v-if="searchTerms.length > 0" class="search-terms">
+				<span class="search-terms-label">{{ t('openregister', 'Search terms:') }}</span>
+				<div class="search-chips">
+					<div
+						v-for="(term, index) in searchTerms"
+						:key="index"
+						class="search-chip">
+						<span class="chip-text">{{ term }}</span>
+						<button class="chip-remove" @click="removeSearchTerm(index)">
+							<Close :size="16" />
+						</button>
 					</div>
 				</div>
 			</div>
-
-			<div class="section">
-				<NcNoteCard type="info" class="search-hint">
-					{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
-				</NcNoteCard>
+			<div v-if="lastSearchStats" class="search-stats">
+				{{ t('openregister', 'Found {total} objects in {time}ms', lastSearchStats) }}
 			</div>
+		</div>
+
+		<!-- Faceted Search Section -->
+		<div v-if="facetData && Object.keys(facetData).length > 0" class="section">
+			<h3 class="sectionTitle">
+				{{ t('openregister', 'Filter') }}
+			</h3>
+			<div v-if="facetsLoading" class="loading-container">
+				<NcLoadingIcon :size="20" />
+				<span>{{ t('openregister', 'Loading filters...') }}</span>
+			</div>
+			<div v-else class="facets-container">
+				<!-- Show message if no facet data available -->
+				<div v-if="!facetData || Object.keys(facetData).length === 0" class="no-facets-message">
+					<p>{{ t('openregister', 'No facet filters available for this schema.') }}</p>
+				</div>
+
+				<!-- Metadata facets (@self) -->
+				<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
+					<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
+					<NcSelect
+						:model-value="facetFilters[`@self.${field}`] || []"
+						:options="(facet?.buckets || []).map(bucket => ({
+							value: bucket.key,
+							label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
+						}))"
+						:multiple="true"
+						:placeholder="t('openregister', 'Select options...')"
+						:input-label="getFacetLabel(field, facet, true)"
+						@update:model-value="(value) => updateFacetFilter(`@self.${field}`, value)" />
+				</div>
+
+				<!-- Object field facets -->
+				<div v-for="(facet, field) in Object.fromEntries(Object.entries(facetData || {}).filter(([key]) => key !== '@self'))" :key="field" class="facet-group">
+					<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
+					<NcSelect
+						:model-value="facetFilters[field] || []"
+						:options="(facet?.buckets || []).map(bucket => ({
+							value: bucket.key,
+							label: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
+						}))"
+						:multiple="true"
+						:placeholder="t('openregister', 'Select options...')"
+						:input-label="getFacetLabel(field, facet, false)"
+						@update:model-value="(value) => updateFacetFilter(field, value)" />
+				</div>
+			</div>
+		</div>
+
+		<div class="section">
+			<NcNoteCard type="info" class="search-hint">
+				{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
+			</NcNoteCard>
+		</div>
 	</NcAppSidebar>
 </template>
 
@@ -218,7 +221,6 @@ export default {
 			}
 		},
 
-
 		canSearch() {
 			// Add null checks to prevent undefined errors
 			// Always allow search if register and schema are selected
@@ -293,10 +295,10 @@ export default {
 				.split(/[,\s]+/)
 				.map(term => term.trim())
 				.filter(term => term.length > 0)
-			
+
 			// Find terms that are new (not already in searchTerms)
 			const newTerms = inputTerms.filter(term => !this.searchTerms.includes(term))
-			
+
 			// Add only new terms to existing ones
 			if (newTerms.length > 0) {
 				this.searchTerms = [...this.searchTerms, ...newTerms]
@@ -311,7 +313,7 @@ export default {
 		async removeSearchTerm(index) {
 			this.searchTerms.splice(index, 1)
 			this.searchQuery = this.searchTerms.join(', ')
-			
+
 			// Automatically apply filters after removing a term
 			// This will either search with remaining terms or show all results if no terms left
 			if (this.canSearch) {
@@ -320,33 +322,33 @@ export default {
 		},
 		async performSearch() {
 			if (!this.canSearch) return
-			
+
 			// Add any terms from the input to the search terms
 			this.handleSearchInput()
 			// Clear the input after adding terms
 			this.searchQuery = ''
-			
+
 			// Start performance timing
 			const startTime = performance.now()
-			
+
 			try {
 				this.searchLoading = true
 				this.lastSearchStats = null
-				
+
 				// Apply all filters (search terms + facet filters) and perform search with facets
 				await this.performSearchWithFacets()
-				
+
 				// Calculate performance statistics
 				const endTime = performance.now()
 				const executionTime = Math.round(endTime - startTime)
-				
+
 				this.lastSearchStats = {
 					total: objectStore.pagination.total || 0,
 					time: executionTime,
 				}
-				
+
 				console.log(`Search completed: ${this.lastSearchStats.total} results in ${executionTime}ms`)
-				
+
 			} catch (error) {
 				console.error('Search failed:', error)
 				this.lastSearchStats = {
@@ -364,13 +366,13 @@ export default {
 
 			try {
 				this.facetsLoading = true
-				
+
 				// Use objectStore.getFacetableFields to discover available facetable fields
 				const facetableFields = await objectStore.getFacetableFields({
 					register: registerStore.registerItem.id,
 					schema: schemaStore.schemaItem.id,
 				})
-				
+
 				this.facetableFields = facetableFields || {}
 
 				console.log('Facetable fields loaded:', {
@@ -391,17 +393,17 @@ export default {
 
 			try {
 				this.searchLoading = true
-				
+
 				// Apply current filters and search terms to objectStore
 				this.applyFiltersToObjectStore()
-				
+
 				// Refresh object list with facets included - this will get both results and facet data
 				await objectStore.refreshObjectList({
 					register: registerStore.registerItem.id,
 					schema: schemaStore.schemaItem.id,
 					includeFacets: true,
 				})
-				
+
 				// Get the facet data from the objectStore
 				// The API response has facets nested under facets.facets
 				this.facetData = objectStore.facets?.facets || {}
@@ -422,8 +424,8 @@ export default {
 								key: bucket.key,
 								originalLabel: bucket.label || bucket.key,
 								results: bucket.results,
-								finalLabel: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')'
-							}))
+								finalLabel: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')',
+							})),
 						})
 					}
 				})
@@ -458,7 +460,7 @@ export default {
 			// Update facet filter and refresh search
 			this.facetFilters = {
 				...this.facetFilters,
-				[field]: selectedValues
+				[field]: selectedValues,
 			}
 
 			// Apply facet filters to search

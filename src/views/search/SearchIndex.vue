@@ -50,6 +50,15 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 						<NcActionButton
 							:disabled="objectStore.selectedObjects.length === 0"
 							close-after-click
+							@click="bulkCopyObjects">
+							<template #icon>
+								<ContentCopy :size="20" />
+							</template>
+							Copy
+						</NcActionButton>
+						<NcActionButton
+							:disabled="objectStore.selectedObjects.length === 0"
+							close-after-click
 							@click="bulkDeleteObjects">
 							<template #icon>
 								<Delete :size="20" />
@@ -244,6 +253,12 @@ import { navigationStore, objectStore, registerStore, schemaStore } from '../../
 												</template>
 												Merge
 											</NcActionButton>
+											<NcActionButton close-after-click @click="copyObject(result)">
+												<template #icon>
+													<ContentCopy :size="20" />
+												</template>
+												Copy
+											</NcActionButton>
 											<NcActionButton
 												v-if="shouldShowPublishAction(result)"
 												:disabled="publishingObjects.includes(result['@self'].id)"
@@ -316,6 +331,7 @@ import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
@@ -348,6 +364,7 @@ export default {
 		Publish,
 		PublishOff,
 		CheckCircle,
+		ContentCopy,
 	},
 	data() {
 		return {
@@ -546,6 +563,11 @@ export default {
 			objectStore.setObjectItem(sourceObject)
 			navigationStore.setModal('mergeObject')
 		},
+		copyObject(sourceObject) {
+			// Set the source object for copying and open the copy dialog
+			objectStore.setObjectItem(sourceObject)
+			navigationStore.setDialog('copyObject')
+		},
 		getValidISOstring,
 		formatBytes,
 		/**
@@ -665,6 +687,23 @@ export default {
 
 			// Open the mass validate modal
 			navigationStore.setDialog('massValidateObjects')
+		},
+		bulkCopyObjects() {
+			if (objectStore.selectedObjects.length === 0) return
+
+			// Prepare selected objects data for copying - pass the full object
+			const selectedObjectsData = objectStore.objectList.results
+				.filter(obj => objectStore.selectedObjects.includes(obj['@self'].id))
+				.map(obj => ({
+					...obj, // Include the full object data
+					id: obj['@self'].id, // Ensure id is available at root level
+				}))
+
+			// Store selected objects in the object store for the copy modal
+			objectStore.selectedObjects = selectedObjectsData
+
+			// Open the mass copy modal
+			navigationStore.setDialog('massCopyObjects')
 		},
 		/**
 		 * Check if an object should show the publish action

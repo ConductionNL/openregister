@@ -6,6 +6,8 @@
  * This service acts as a business logic layer between controllers and the SearchTrailMapper,
  * providing comprehensive search analytics and logging functionality.
  *
+ * This service also supports self-clearing (automatic cleanup) of old search trails.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -32,11 +34,20 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * Service class for managing search trail operations
  *
  * This service provides business logic for search trail logging, analytics,
- * and management operations.
+ * management operations, and supports self-clearing (automatic cleanup) of old search trails.
  */
 class SearchTrailService
 {
+    /**
+     * The default retention period for search trails (in days).
+     * Trails older than this will be automatically deleted by self-clearing.
+     */
+    private int $retentionDays = 365;
 
+    /**
+     * Whether self-clearing (automatic cleanup) is enabled.
+     */
+    private bool $selfClearingEnabled = true;
 
     /**
      * Constructor for SearchTrailService
@@ -44,15 +55,23 @@ class SearchTrailService
      * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
      * @param RegisterMapper    $registerMapper    Mapper for register database operations
      * @param SchemaMapper      $schemaMapper      Mapper for schema database operations
+     * @param int|null          $retentionDays     Optional retention period in days for self-clearing
+     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing
      */
     public function __construct(
         private readonly SearchTrailMapper $searchTrailMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+        ?int $retentionDays = null,
+        ?bool $selfClearing = null
     ) {
-
+        if ($retentionDays !== null) {
+            $this->retentionDays = $retentionDays;
+        }
+        if ($selfClearing !== null) {
+            $this->selfClearingEnabled = $selfClearing;
+        }
     }//end __construct()
-
 
     /**
      * Create a search trail log entry
@@ -60,6 +79,7 @@ class SearchTrailService
      * This method processes search query parameters and creates a comprehensive
      * search trail entry for analytics and monitoring purposes. System parameters
      * (starting with _) are automatically excluded from tracking.
+     * If self-clearing is enabled, it will also trigger cleanup of old search trails.
      *
      * @param array  $query         The search query parameters
      * @param int    $resultCount   The number of results returned
@@ -79,13 +99,20 @@ class SearchTrailService
         string $executionType='sync'
     ): SearchTrail {
         try {
-            return $this->searchTrailMapper->createSearchTrail(
+            $trail = $this->searchTrailMapper->createSearchTrail(
                 $query,
                 $resultCount,
                 $totalResults,
                 $responseTime,
                 $executionType
             );
+
+            // Self-clearing: automatically clean up old search trails if enabled
+            if ($this->selfClearingEnabled) {
+                $this->selfClearSearchTrails();
+            }
+
+            return $trail;
         } catch (Exception $e) {
             error_log("Failed to create search trail: ".$e->getMessage());
             throw new Exception("Search trail creation failed: ".$e->getMessage(), 0, $e);
@@ -93,6 +120,35 @@ class SearchTrailService
 
     }//end createSearchTrail()
 
+    /**
+     * Self-clearing: Automatically clean up old search trail logs based on retention policy.
+     *
+     * This method deletes search trails older than the configured retention period.
+     * It is called automatically after creating a new search trail if self-clearing is enabled.
+     *
+     * @return array Cleanup results
+     */
+    public function selfClearSearchTrails(): array
+    {
+        $before = new DateTime('-' . $this->retentionDays . ' days');
+        try {
+            $deletedCount = $this->searchTrailMapper->cleanup($before);
+
+            return [
+                'success'      => true,
+                'deleted'      => $deletedCount,
+                'cleanup_date' => $before->format('Y-m-d H:i:s'),
+                'message'      => "Self-clearing: deleted {$deletedCount} old search trail entries",
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'deleted' => 0,
+                'error'   => $e->getMessage(),
+                'message' => 'Self-clearing operation failed',
+            ];
+        }
+    }
 
     /**
      * Get paginated search trail logs
@@ -777,4 +833,3 @@ class SearchTrailService
 
 
 }//end class
- 

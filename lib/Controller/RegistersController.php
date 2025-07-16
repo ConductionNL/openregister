@@ -369,8 +369,17 @@ class RegistersController extends Controller
                     $content = ob_get_clean();
                     return new DataDownloadResponse($content, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                 case 'csv':
-                    $csv = $this->exportService->exportToCsv($register);
-                    $filename = sprintf('%s_%s.csv', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    // CSV exports require a specific schema
+                    $schemaId = $this->request->getParam('schema');
+                    
+                    if (!$schemaId) {
+                        // If no schema specified, return error (CSV cannot handle multiple schemas)
+                        return new JSONResponse(['error' => 'CSV export requires a specific schema to be selected'], 400);
+                    }
+                    
+                    $schema = $this->schemaMapper->find($schemaId);
+                    $csv = $this->exportService->exportToCsv($register, $schema);
+                    $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
                 default:
@@ -441,13 +450,18 @@ class RegistersController extends Controller
                     break;
                 case 'csv':
                     // Import from CSV and get summary (now returns sheet-based format)
-                    // For CSV, schema must be specified or inferred (not handled here)
-                    // For now, assume only one schema per register and get the first
-                    $schemas = $register->getSchemas();
-                    if (empty($schemas)) {
-                        return new JSONResponse(['error' => 'No schema found for register'], 400);
+                    // For CSV, schema can be specified in the request
+                    $schemaId = $this->request->getParam('schema');
+                    
+                    if (!$schemaId) {
+                        // If no schema specified, use the first schema from the register
+                        $schemas = $register->getSchemas();
+                        if (empty($schemas)) {
+                            return new JSONResponse(['error' => 'No schema found for register'], 400);
+                        }
+                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
                     }
-                    $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                    
                     $schema = $this->schemaMapper->find($schemaId);
                     $summary = $this->importService->importFromCsv(
                         $uploadedFile['tmp_name'],

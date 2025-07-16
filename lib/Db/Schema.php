@@ -336,9 +336,47 @@ class Schema extends Entity implements JsonSerializable
             return true;
         }
 
+        // Validate and normalize inversedBy properties to ensure they are strings
+        $this->normalizeInversedByProperties();
+
         return $validator->validateProperties($this->properties);
 
     }//end validateProperties()
+
+    /**
+     * Normalize inversedBy properties to ensure they are always strings
+     *
+     * @return void
+     */
+    private function normalizeInversedByProperties(): void
+    {
+        if (empty($this->properties) === true) {
+            return;
+        }
+
+        foreach ($this->properties as $propertyName => $property) {
+            // Handle regular object properties
+            if (isset($property['inversedBy']) === true) {
+                if (is_array($property['inversedBy']) === true && isset($property['inversedBy']['id']) === true) {
+                    $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
+                } elseif (is_string($property['inversedBy']) === false) {
+                    // Remove invalid inversedBy if it's not a string or object with id
+                    unset($this->properties[$propertyName]['inversedBy']);
+                }
+            }
+
+            // Handle array items with inversedBy
+            if (isset($property['items']['inversedBy']) === true) {
+                if (is_array($property['items']['inversedBy']) === true && isset($property['items']['inversedBy']['id']) === true) {
+                    $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
+                } elseif (is_string($property['items']['inversedBy']) === false) {
+                    // Remove invalid inversedBy if it's not a string or object with id
+                    unset($this->properties[$propertyName]['items']['inversedBy']);
+                }
+            }
+        }
+
+    }//end normalizeInversedByProperties()
 
 
     /**
@@ -506,7 +544,7 @@ class Schema extends Entity implements JsonSerializable
                 $prop = new stdClass();
                 foreach ($property as $key => $value) {
                     // Skip 'required' property on this level.
-                    if ($key !== 'required' && empty($value) === false) {
+                    if ($key !== 'required' && ($value !== null && $value !== '')) {
                         $prop->{$key} = $value;
                     }
                 }

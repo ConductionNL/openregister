@@ -28,6 +28,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						:model-value="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
+						aria-label-combobox="Select a register"
 						placeholder="Select a register"
 						@update:model-value="handleRegisterChange" />
 				</div>
@@ -38,6 +39,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
+						aria-label-combobox="Select a schema"
 						placeholder="Select a schema"
 						@update:model-value="handleSchemaChange" />
 				</div>
