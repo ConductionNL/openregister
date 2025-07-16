@@ -409,7 +409,7 @@ class ObjectService
         // Retrieve the existing object by its UUID.
         $existingObject = $this->getHandler->find(id: $id);
         if ($existingObject === null) {
-            throw new DoesNotExistException('Object not found');
+            throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
 
         // If patch is true, merge the existing object with the new data.
@@ -710,9 +710,12 @@ class ObjectService
                         error_log("Failed to create folder for existing object: " . $e->getMessage());
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, will create new one with the specified UUID
                 // Let SaveObject handle the creation with the provided UUID
+            } catch (\Exception $e) {
+                // Other errors - let SaveObject handle the creation
+                error_log("Error checking for existing object: " . $e->getMessage());
             }
         }
         // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
@@ -1977,12 +1980,12 @@ class ObjectService
 
             if ($sourceObject === null) {
                 error_log("ERROR: Source object not found");
-                throw new DoesNotExistException('Source object not found');
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Source object not found');
             }
 
             if ($targetObject === null) {
                 error_log("ERROR: Target object not found");
-                throw new DoesNotExistException('Target object not found');
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Target object not found');
             }
 
             // Store original objects in report
@@ -2333,7 +2336,7 @@ class ObjectService
 
             // Validate entities exist
             if (!$sourceRegisterEntity || !$sourceSchemaEntity || !$targetRegisterEntity || !$targetSchemaEntity) {
-                throw new DoesNotExistException('One or more registers/schemas not found');
+                throw new \OCP\AppFramework\Db\DoesNotExistException('One or more registers/schemas not found');
             }
 
             // Get all source objects at once using ObjectEntityMapper

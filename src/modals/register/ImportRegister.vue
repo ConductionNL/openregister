@@ -127,7 +127,12 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</table>
 			</div>
 
-			<NcButton type="secondary" style="margin-top: 1rem;" @click="closeModal">
+			<NcButton type="secondary" 
+				style="margin-top: 1rem;" 
+				@click="closeModal">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
 				Close
 			</NcButton>
 		</div>
