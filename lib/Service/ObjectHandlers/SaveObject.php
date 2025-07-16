@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Db\DoesNotExistException;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 

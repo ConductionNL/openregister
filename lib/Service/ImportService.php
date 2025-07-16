@@ -23,13 +23,9 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use React\Async\PromiseInterface;
-use React\Promise\Promise;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Service for importing data from various formats
@@ -78,34 +74,6 @@ class ImportService
         $this->objectService      = $objectService;
     }//end __construct()
 
-
-
-
-    /**
-     * Import data from Excel file asynchronously
-     *
-     * @param string        $filePath The path to the Excel file
-     * @param Register|null $register Optional register to associate with imported objects
-     * @param Schema|null   $schema   Optional schema to associate with imported objects
-     *
-     * @return PromiseInterface<array> Promise that resolves with array of imported object IDs
-     */
-    public function importFromExcelAsync(string $filePath, ?Register $register=null, ?Schema $schema=null): PromiseInterface
-    {
-        return new Promise(
-                function (callable $resolve, callable $reject) use ($filePath, $register, $schema) {
-                    try {
-                        $result = $this->importFromExcel($filePath, $register, $schema);
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
-                }
-                );
-
-    }//end importFromExcelAsync()
-
-
     /**
      * Import data from Excel file
      *
@@ -132,35 +100,19 @@ class ImportService
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
         $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
         
+        // Add schema information to the summary (consistent with multi-sheet Excel import)
+        if ($schema !== null) {
+            $sheetSummary['schema'] = [
+                'id' => $schema->getId(),
+                'title' => $schema->getTitle(),
+                'slug' => $schema->getSlug(),
+            ];
+        }
+        
         // Return in sheet-based format for consistency
         return [$sheetTitle => $sheetSummary];
 
     }//end importFromExcel()
-
-
-    /**
-     * Import data from CSV file asynchronously
-     *
-     * @param string        $filePath The path to the CSV file
-     * @param Register|null $register Optional register to associate with imported objects
-     * @param Schema|null   $schema   Optional schema to associate with imported objects
-     *
-     * @return PromiseInterface<array> Promise that resolves with array of imported object IDs
-     */
-    public function importFromCsvAsync(string $filePath, ?Register $register=null, ?Schema $schema=null): PromiseInterface
-    {
-        return new Promise(
-                function (callable $resolve, callable $reject) use ($filePath, $register, $schema) {
-                    try {
-                        $result = $this->importFromCsv($filePath, $register, $schema);
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
-                }
-                );
-
-    }//end importFromCsvAsync()
 
 
     /**
@@ -185,12 +137,18 @@ class ImportService
         $reader->setReadDataOnly(true);
         $reader->setDelimiter(',');
         $reader->setEnclosure('"');
-        $reader->setLineEnding("\r\n");
         $spreadsheet = $reader->load($filePath);
 
         // Get the sheet title for CSV (usually just 'Worksheet' or similar)
         $sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
         $sheetSummary = $this->processSpreadsheet($spreadsheet, $register, $schema);
+        
+        // Add schema information to the summary (consistent with Excel import)
+        $sheetSummary['schema'] = [
+            'id' => $schema->getId(),
+            'title' => $schema->getTitle(),
+            'slug' => $schema->getSlug(),
+        ];
         
         // Return in sheet-based format for consistency
         return [$sheetTitle => $sheetSummary];
@@ -374,38 +332,38 @@ class ImportService
                     // Transform object data based on schema property types
                     $objectData = $this->transformObjectBySchema($objectData, $schema);
                     
-                    // Check if this object already exists (by id if present)
+                    // Get the object ID for tracking updates vs creates
                     $objectId = $rowData['id'] ?? null;
-                    $existingObject = null;
+                    $wasExisting = false;
                     
+                    // Check if object exists (for reporting purposes only)
                     if ($objectId) {
                         try {
                             $existingObject = $this->objectEntityMapper->find($objectId);
+                            $wasExisting = true;
                         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                             // Object not found, will create new
+                            $wasExisting = false;
+                        } catch (\Exception $e) {
+                            // Other errors - assume it doesn't exist
+                            $wasExisting = false;
                         }
                     }
                     
-                    if ($existingObject) {
-                        // Update existing object
-                        $updatedObject = $this->objectService->saveObject(
-                            $objectData,
-                            null,
-                            $register,
-                            $schema,
-                            $objectId
-                        );
-                        $summary['updated'][] = $updatedObject->getUuid();
+                    // Save the object (ObjectService handles create vs update logic)
+                    $savedObject = $this->objectService->saveObject(
+                        $objectData,
+                        null,
+                        $register,
+                        $schema,
+                        $objectId
+                    );
+                    
+                    // Track whether it was an update or create for reporting
+                    if ($wasExisting) {
+                        $summary['updated'][] = $savedObject->getUuid();
                     } else {
-                        // Create new object
-                        $createdObject = $this->objectService->saveObject(
-                            $objectData,
-                            null,
-                            $register,
-                            $schema,
-                            $objectId
-                        );
-                        $summary['created'][] = $createdObject->getUuid();
+                        $summary['created'][] = $savedObject->getUuid();
                     }
                     
                 } catch (\Exception $e) {
@@ -656,101 +614,5 @@ class ImportService
         // Single value - return as array with one element
         return [$value];
     }//end stringToArray()
-
-    /**
-     * Parse array from string input
-     *
-     * This method attempts to parse various array formats commonly found in CSV/Excel imports:
-     * - JSON arrays: ["value1", "value2"]
-     * - Comma-separated: value1,value2
-     * - Quoted comma-separated: "value1","value2"
-     * - Mixed quotes: ["value1",'value2']
-     *
-     * @param mixed $input The input value to parse
-     *
-     * @return array The parsed array or original value wrapped in array if parsing fails
-     *
-     * @phpstan-return array<int|string, mixed>
-     * @psalm-return array<int|string, mixed>
-     * @deprecated Use stringToArray() instead
-     */
-    private function parseArrayFromString($input): array
-    {
-        // If already an array, return as is
-        if (is_array($input)) {
-            return $input;
-        }
-
-        // If not a string, return as single-item array
-        if (!is_string($input)) {
-            return [$input];
-        }
-
-        // Trim whitespace
-        $input = trim($input);
-
-        // If empty string, return empty array
-        if ($input === '') {
-            return [];
-        }
-
-        // Limit input size to prevent memory issues
-        if (strlen($input) > 10000) {
-            $input = substr($input, 0, 10000);
-        }
-
-        // Try to parse as JSON first
-        if (str_starts_with($input, '[') && str_ends_with($input, ']')) {
-            $jsonDecoded = json_decode($input, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($jsonDecoded)) {
-                            // Limit array size to prevent memory issues
-            if (count($jsonDecoded) > 100) {
-                $jsonDecoded = array_slice($jsonDecoded, 0, 100);
-            }
-                return $jsonDecoded;
-            }
-        }
-
-        // Handle comma-separated values
-        if (str_contains($input, ',')) {
-            // Split by comma and clean up each value
-            $values = explode(',', $input);
-            
-            // Limit array size to prevent memory issues
-            if (count($values) > 100) {
-                $values = array_slice($values, 0, 100);
-            }
-            
-            $result = [];
-            
-            foreach ($values as $value) {
-                $value = trim($value);
-                
-                // Remove surrounding quotes if present
-                if ((str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-                    (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
-                    $value = substr($value, 1, -1);
-                }
-                
-                $result[] = $value;
-            }
-            
-            // Clear variables to free memory
-            unset($values);
-            
-            return $result;
-        }
-
-        // If no comma found, return as single-item array
-        // But first check if it's a quoted single value
-        if ((str_starts_with($input, '"') && str_ends_with($input, '"')) ||
-            (str_starts_with($input, "'") && str_ends_with($input, "'"))) {
-            $input = substr($input, 1, -1);
-        }
-
-        return [$input];
-
-    }//end parseArrayFromString()
-
 
 }//end class
