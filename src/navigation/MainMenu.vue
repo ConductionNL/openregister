@@ -53,6 +53,11 @@ import { navigationStore } from '../store/store.js'
 					<TextBoxOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="navigationStore.selected === 'searchTrails'" :name="t('openregister', 'Search Trails')" @click="navigationStore.setSelected('searchTrails')">
+				<template #icon>
+					<MagnifyPlus :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
@@ -75,6 +80,7 @@ import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 
 export default {
 	name: 'MainMenu',
@@ -94,6 +100,7 @@ export default {
 		CogOutline,
 		DeleteRestore,
 		TextBoxOutline,
+		MagnifyPlus,
 	},
 	methods: {
 		openLink(url, type = '') {

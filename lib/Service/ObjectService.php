@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
@@ -93,6 +94,7 @@ class ObjectService
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
      * @param FileService        $fileService        Service for file operations.
      * @param IUserSession       $userSession        User session for getting current user.
+     * @param SearchTrailService $searchTrailService Service for search trail operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -106,7 +108,8 @@ class ObjectService
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly SearchTrailService $searchTrailService
     ) {
 
     }//end __construct()
@@ -1355,6 +1358,9 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query = []): array
     {
+        // Start timing execution
+        $startTime = microtime(true);
+        
         // Extract pagination parameters
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1444,6 +1450,12 @@ class ObjectService
             $paginatedResults['prev'] = $prevUrl;
         }
 
+        // Calculate execution time in milliseconds
+        $executionTime = (microtime(true) - $startTime) * 1000;
+
+        // Log the search trail with actual execution time
+        $this->logSearchTrail($query, count($results), $total, $executionTime, 'sync');
+
         return $paginatedResults;
 
     }//end searchObjectsPaginated()
@@ -1487,6 +1499,9 @@ class ObjectService
      */
     public function searchObjectsPaginatedAsync(array $query = []): PromiseInterface
     {
+        // Start timing execution
+        $startTime = microtime(true);
+        
         // Extract pagination parameters (same as synchronous version)
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1568,7 +1583,7 @@ class ObjectService
         });
 
         // Execute all promises concurrently and combine results
-        return \React\Promise\all($promises)->then(function ($results) use ($page, $limit, $offset) {
+        return \React\Promise\all($promises)->then(function ($results) use ($page, $limit, $offset, $query, $startTime) {
             // Extract results from promises
             $searchResults = $results['search'];
             $total = $results['count'];
@@ -1617,6 +1632,12 @@ class ObjectService
                 $paginatedResults['prev'] = $prevUrl;
             }
 
+            // Calculate execution time in milliseconds
+            $executionTime = (microtime(true) - $startTime) * 1000;
+
+            // Log the search trail with actual execution time
+            $this->logSearchTrail($query, count($searchResults), $total, $executionTime, 'async');
+
             return $paginatedResults;
         });
 
@@ -1647,6 +1668,7 @@ class ObjectService
         $promise = $this->searchObjectsPaginatedAsync($query);
         
         // Use React's await functionality to get the result synchronously
+        // Note: The async version already logs the search trail, so we don't need to log again
         return \React\Async\await($promise);
 
     }//end searchObjectsPaginatedSync()
@@ -2586,5 +2608,39 @@ class ObjectService
         }
 
     }//end migrateObjectRelations()
+
+
+    /**
+     * Log a search trail for analytics
+     *
+     * This method creates a search trail entry to track search operations,
+     * including search terms, parameters, results, and performance metrics.
+     * System parameters (starting with _) are excluded from tracking.
+     *
+     * @param array  $query         The search query parameters
+     * @param int    $resultCount   The number of results returned
+     * @param int    $totalResults  The total number of matching results
+     * @param float  $executionTime The actual execution time in milliseconds
+     * @param string $executionType The execution type ('sync' or 'async')
+     *
+     * @return void
+     */
+    private function logSearchTrail(array $query, int $resultCount, int $totalResults, float $executionTime, string $executionType = 'sync'): void
+    {
+        try {
+            // Create the search trail entry using the service with actual execution time
+            $this->searchTrailService->createSearchTrail(
+                $query,
+                $resultCount,
+                $totalResults,
+                $executionTime,
+                $executionType
+            );
+        } catch (\Exception $e) {
+            // Log the error but don't fail the request
+            error_log("Failed to log search trail: " . $e->getMessage());
+        }
+
+    }//end logSearchTrail()
 
 }//end class

@@ -71,8 +71,11 @@ class SearchController extends Controller
         // Get the search query from the request parameters.
         $query = $this->request->getParam('query', '');
 
+        // Process the search query to handle multiple search words
+        $processedQuery = $this->processSearchQuery($query);
+
         // Perform the search using the search service.
-        $results = $this->searchService->search($query);
+        $results = $this->searchService->search($processedQuery);
 
         // Format the search results for the JSON response.
         $formattedResults = array_map(
@@ -91,6 +94,67 @@ class SearchController extends Controller
         return new JSONResponse($formattedResults);
 
     }//end search()
+
+
+    /**
+     * Process search query to support multiple search words and case-insensitive partial matches
+     *
+     * This method handles multiple search words by:
+     * 1. Supporting comma-separated values in the query parameter
+     * 2. Supporting array parameters (_search[])
+     * 3. Making searches case-insensitive
+     * 4. Enabling partial matches (e.g., 'tes' matches 'test')
+     *
+     * @param string $query The raw search query from the request
+     *
+     * @return string The processed search query ready for the search service
+     */
+    private function processSearchQuery(string $query): string
+    {
+        // Handle array parameters (_search[])
+        $searchArray = $this->request->getParam('_search', []);
+        if (is_array($searchArray) === true && empty($searchArray) === false) {
+            // Combine array values with the main query
+            $searchTerms = array_merge(
+                [$query],
+                $searchArray
+            );
+        } else {
+            // Handle comma-separated values in the main query
+            $searchTerms = array_filter(
+                array_map('trim', explode(',', $query)),
+                function ($term) {
+                    return empty($term) === false;
+                }
+            );
+        }
+
+        // If no search terms found, return the original query
+        if (empty($searchTerms) === true) {
+            return $query;
+        }
+
+        // Process each search term to make them case-insensitive and support partial matches
+        $processedTerms = [];
+        foreach ($searchTerms as $term) {
+            // Convert to lowercase for case-insensitive matching
+            $lowerTerm = strtolower(trim($term));
+            
+            // Add wildcards for partial matching if not already present
+            if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
+                $lowerTerm = '*' . $lowerTerm;
+            }
+            if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
+                $lowerTerm = $lowerTerm . '*';
+            }
+            
+            $processedTerms[] = $lowerTerm;
+        }
+
+        // Join multiple terms with OR logic (any term can match)
+        return implode(' OR ', $processedTerms);
+
+    }//end processSearchQuery()
 
 
 }//end class
