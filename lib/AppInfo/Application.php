@@ -80,6 +80,7 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        // @TODO: Usually, services are autowired. Les figure out why we need to do this
         // Register SearchTrail components
         $context->registerService(SearchTrailMapper::class, function ($container) {
             return new SearchTrailMapper(
