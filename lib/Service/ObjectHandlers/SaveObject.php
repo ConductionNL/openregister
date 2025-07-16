@@ -213,13 +213,13 @@ class SaveObject
     }//end getValueFromPath()
 
     /**
-     * Set default values for values that are not in the data array.
+     * Set default values and constant values for properties based on the schema.
      *
      * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
      * @param Schema $schema The schema the objectEntity belongs to.
      * @param array $data The data that is written to the object.
      *
-     * @return array The data object updated with default values from the $schema.
+     * @return array The data object updated with default values and constant values from the $schema.
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\SyntaxError
      */
@@ -236,6 +236,16 @@ class SaveObject
             return $property;
         }, array_keys($schemaObject['properties']), $schemaObject['properties']);
 
+        // Handle constant values - these should ALWAYS be set regardless of input data
+        $constantValues = [];
+        foreach ($properties as $property) {
+            if (isset($property['const']) === true) {
+                $constantValues[$property['title']] = $property['const'];
+                error_log("[SaveObject] Setting constant value for property '{$property['title']}': " . json_encode($property['const']));
+            }
+        }
+
+        // Handle default values - only set if not already present in data
         $defaultValues = array_filter(array_column($properties, 'default', 'title'));
 
         // Remove all keys from array for which a value has already been set in $data.
@@ -250,8 +260,18 @@ class SaveObject
             return $defaultValue;
         }, $defaultValues);
 
-        // Add data to the $data array, with the order that values already in $data never get overwritten.
-        return array_merge($renderedDefaultValues, $data);
+        // Merge in this order: 
+        // 1. Start with rendered default values (only for properties not in $data)
+        // 2. Add existing data (this preserves user input)
+        // 3. Override with constant values (constants always take precedence)
+        $mergedData = array_merge($renderedDefaultValues, $data, $constantValues);
+        
+        if (!empty($constantValues)) {
+            error_log("[SaveObject] Applied constant values: " . json_encode($constantValues));
+            error_log("[SaveObject] Final merged data includes constants: " . json_encode(array_intersect_key($mergedData, $constantValues)));
+        }
+        
+        return $mergedData;
     }//end setDefaultValues
 
 	/**
