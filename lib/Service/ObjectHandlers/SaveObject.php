@@ -620,7 +620,13 @@ class SaveObject
             }
         }
 
+        // Extract register ID from definition or use parent object's register
         $register = $definition['register'] ?? $objectEntity->getRegister();
+        
+        // If register is an array, extract the ID
+        if (is_array($register)) {
+            $register = $register['id'] ?? $register;
+        }
         
         // For cascading with inversedBy, preserve existing UUID for updates
         // For cascading without inversedBy, always create new objects (no UUID)
