@@ -675,6 +675,9 @@ class ObjectService
             $this->setSchema($schema);
         }
 
+        // Debug logging can be added here if needed
+        // echo "=== SAVEOBJECT START ===\n";
+        
         // Handle ObjectEntity input - extract UUID and convert to array
         if ($object instanceof ObjectEntity) {
             // If no UUID was passed, use the UUID from the existing object
@@ -683,6 +686,19 @@ class ObjectService
             }
             $object = $object->getObject(); // Get the object data array
         }
+
+        // Store the parent object's register and schema context before cascading
+        // This prevents nested object creation from corrupting the main object's context
+        $parentRegister = $this->currentRegister;
+        $parentSchema = $this->currentSchema;
+        
+        // Pre-validation cascading: Handle inversedBy properties BEFORE validation
+        // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects
+        [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
+        
+        // Restore the parent object's register and schema context after cascading
+        $this->currentRegister = $parentRegister;
+        $this->currentSchema = $parentSchema;
 
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
@@ -1942,49 +1958,25 @@ class ObjectService
         ];
 
         try {
-            // Log before attempting to find objects
-            error_log("Attempting to find source object with ID: " . $sourceObjectId);
-            error_log("Using register: " . ($this->currentRegister ? $this->currentRegister->getId() : 'NULL'));
-            error_log("Using schema: " . ($this->currentSchema ? $this->currentSchema->getId() : 'NULL'));
-            
             // Fetch both objects directly from mapper for updating (not rendered)
-            error_log("Using ObjectEntityMapper to find raw objects for updating");
             
             try {
                 $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
-                error_log("Source object found via mapper: " . ($sourceObject ? 'YES' : 'NO'));
-                if ($sourceObject) {
-                    error_log("Source object internal ID: " . ($sourceObject->getId() ?? 'NULL'));
-                    error_log("Source object UUID: " . $sourceObject->getUuid());
-                    error_log("Source object register: " . $sourceObject->getRegister());
-                    error_log("Source object schema: " . $sourceObject->getSchema());
-                }
             } catch (\Exception $e) {
-                error_log("Error finding source object via mapper: " . $e->getMessage());
                 $sourceObject = null;
             }
             
             try {
                 $targetObject = $this->objectEntityMapper->find($targetObjectId);
-                error_log("Target object found via mapper: " . ($targetObject ? 'YES' : 'NO'));
-                if ($targetObject) {
-                    error_log("Target object internal ID: " . ($targetObject->getId() ?? 'NULL'));
-                    error_log("Target object UUID: " . $targetObject->getUuid());
-                    error_log("Target object register: " . $targetObject->getRegister());
-                    error_log("Target object schema: " . $targetObject->getSchema());
-                }
             } catch (\Exception $e) {
-                error_log("Error finding target object via mapper: " . $e->getMessage());
                 $targetObject = null;
             }
 
             if ($sourceObject === null) {
-                error_log("ERROR: Source object not found");
                 throw new \OCP\AppFramework\Db\DoesNotExistException('Source object not found');
             }
 
             if ($targetObject === null) {
-                error_log("ERROR: Target object not found");
                 throw new \OCP\AppFramework\Db\DoesNotExistException('Target object not found');
             }
 
@@ -2076,19 +2068,8 @@ class ObjectService
             }
 
             // Update target object with merged data
-            error_log("About to update target object");
-            error_log("Target object internal ID: " . ($targetObject->getId() ?? 'NULL'));
-            error_log("Target object UUID: " . $targetObject->getUuid());
-            error_log("Target object data before update: " . json_encode($targetObject->getObject()));
-            
             $targetObject->setObject($targetObjectData);
-            
-            error_log("Target object data after merge: " . json_encode($targetObject->getObject()));
-            error_log("Calling objectEntityMapper->update()");
-            
             $updatedObject = $this->objectEntityMapper->update($targetObject);
-            
-            error_log("Update completed successfully");
 
             // Update references to source object
             $referencingObjects = $this->findByRelations($sourceObject->getUuid());
@@ -2126,14 +2107,11 @@ class ObjectService
             $mergeReport['success'] = true;
             $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
             
-            error_log("Merge completed successfully");
-            error_log("=== MERGE OBJECTS DEBUG END ===");
+            // Merge completed successfully
 
         } catch (\Exception $e) {
-            error_log("ERROR in merge process: " . $e->getMessage());
-            error_log("Exception type: " . get_class($e));
-            error_log("Stack trace: " . $e->getTraceAsString());
-            error_log("=== MERGE OBJECTS DEBUG END (WITH ERROR) ===");
+            // Handle merge error
+            $mergeReport['errors'][] = "Merge failed: " . $e->getMessage();
             $mergeReport['errors'][] = $e->getMessage();
             throw $e;
         }
@@ -2275,6 +2253,193 @@ class ObjectService
 
     }//end deleteObjectFiles()
 
+
+
+
+    /**
+     * Handles pre-validation cascading for inversedBy properties
+     *
+     * This method processes properties with inversedBy configuration BEFORE validation.
+     * It creates related objects from nested object data and replaces them with UUIDs
+     * so that validation sees UUIDs instead of objects.
+     *
+     * @param array       $object The object data to process
+     * @param Schema      $schema The schema containing property definitions
+     * @param string|null $uuid   The UUID of the parent object (will be generated if null)
+     *
+     * @return array Array containing [processedObject, parentUuid]
+     *
+     * @throws Exception If there's an error during object creation
+     */
+    private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
+    {
+        // Pre-validation cascading to handle nested objects
+        
+        try {
+            // Get the URL generator from the SaveObject handler
+            $urlGenerator = new \ReflectionClass($this->saveHandler);
+            $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
+            $urlGeneratorProperty->setAccessible(true);
+            $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
+            
+            $schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
+            $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+            // Process schema properties for inversedBy relationships
+        } catch (Exception $e) {
+            // Handle error in schema processing
+            return [$object, $uuid];
+        }
+
+        // Find properties that have inversedBy configuration
+        $inversedByProperties = array_filter(
+            $properties,
+            function (array $property) {
+                // Check for inversedBy in array items
+                if ($property['type'] === 'array' && isset($property['items']['inversedBy'])) {
+                    return true;
+                }
+                // Check for inversedBy in direct object properties
+                if (isset($property['inversedBy'])) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        // Check if we have any inversedBy properties to process
+        if (empty($inversedByProperties)) {
+            return [$object, $uuid];
+        }
+
+        // Generate UUID for parent object if not provided
+        if ($uuid === null) {
+            $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+        }
+
+        foreach ($inversedByProperties as $propertyName => $definition) {
+            // Skip if property not present in data or is empty
+            if (!isset($object[$propertyName]) || empty($object[$propertyName])) {
+                continue;
+            }
+
+            $propertyValue = $object[$propertyName];
+
+            // Handle array properties
+            if ($definition['type'] === 'array' && isset($definition['items']['inversedBy'])) {
+                if (is_array($propertyValue) && !empty($propertyValue)) {
+                    $createdUuids = [];
+                    foreach ($propertyValue as $item) {
+                        if (is_array($item) && !$this->isUuid($item)) {
+                            // This is a nested object, create it first
+                            $createdUuid = $this->createRelatedObject($item, $definition['items'], $uuid);
+                            if ($createdUuid) {
+                                $createdUuids[] = $createdUuid;
+                            }
+                        } elseif (is_string($item) && $this->isUuid($item)) {
+                            // This is already a UUID, keep it
+                            $createdUuids[] = $item;
+                        }
+                    }
+                    $object[$propertyName] = $createdUuids;
+                }
+            }
+            // Handle single object properties
+            elseif (isset($definition['inversedBy']) && !($definition['type'] === 'array')) {
+                if (is_array($propertyValue) && !$this->isUuid($propertyValue)) {
+                    // This is a nested object, create it first
+                    $createdUuid = $this->createRelatedObject($propertyValue, $definition, $uuid);
+                    if ($createdUuid) {
+                        $object[$propertyName] = $createdUuid;
+                    }
+                }
+            }
+        }
+
+        return [$object, $uuid];
+    }
+
+    /**
+     * Creates a related object and returns its UUID
+     *
+     * @param array  $objectData The object data to create
+     * @param array  $definition The property definition containing schema reference
+     * @param string $parentUuid The UUID of the parent object
+     *
+     * @return string|null The UUID of the created object or null if creation failed
+     */
+    private function createRelatedObject(array $objectData, array $definition, string $parentUuid): ?string
+    {
+        try {
+            // Resolve schema reference to actual schema ID
+            $schemaRef = $definition['$ref'] ?? null;
+            if (!$schemaRef) {
+                return null;
+            }
+
+            // Extract schema slug from reference
+            $schemaSlug = null;
+            if (str_contains($schemaRef, '#/components/schemas/')) {
+                $schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
+            }
+
+            if (!$schemaSlug) {
+                return null;
+            }
+
+            // Find the schema - use the same logic as SaveObject.resolveSchemaReference
+            $targetSchema = null;
+            
+            // First try to find by slug using findAll and filtering
+            $allSchemas = $this->schemaMapper->findAll();
+            foreach ($allSchemas as $schema) {
+                if (strcasecmp($schema->getSlug(), $schemaSlug) === 0) {
+                    $targetSchema = $schema;
+                    break;
+                }
+            }
+            
+            if (!$targetSchema) {
+                return null;
+            }
+
+            // Get the register (use the same register as the parent object)
+            $targetRegister = $this->currentRegister;
+
+            // Add the inverse relationship to the parent object
+            $inversedBy = $definition['inversedBy'] ?? null;
+            if ($inversedBy) {
+                $objectData[$inversedBy] = $parentUuid;
+            }
+
+            // Create the object
+            $createdObject = $this->saveHandler->saveObject(
+                register: $targetRegister,
+                schema: $targetSchema,
+                data: $objectData,
+                uuid: null // Let it generate a new UUID
+            );
+
+            return $createdObject->getUuid();
+        } catch (Exception $e) {
+            // Log error but don't expose details
+            return null;
+        }
+    }
+
+    /**
+     * Checks if a value is a UUID string
+     *
+     * @param mixed $value The value to check
+     *
+     * @return bool True if the value is a UUID string
+     */
+    private function isUuid($value): bool
+    {
+        if (!is_string($value)) {
+            return false;
+        }
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
+    }
 
     /**
      * Migrate objects between registers and/or schemas

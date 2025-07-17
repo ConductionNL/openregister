@@ -179,7 +179,7 @@ class ValidateObject
                             (object) [
                         // UUID string
                                 'type'    => 'string',
-                                'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                                'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
                             ],
                         ];
 
@@ -353,16 +353,59 @@ class ValidateObject
      */
     private function transformToUuidProperty(object $objectSchema): void
     {
-        // Remove object-specific properties
-        unset($objectSchema->properties, $objectSchema->required);
+        // If this property has inversedBy, it should support both objects and UUID strings
+        if (isset($objectSchema->inversedBy)) {
+            // Create a union type that allows both full objects and UUID strings
+            $originalProperties = $objectSchema->properties ?? null;
+            $originalRequired = $objectSchema->required ?? null;
+            $originalRef = $objectSchema->{'$ref'} ?? null;
+            
+            // Create the object schema (preserve original structure)
+            $objectTypeSchema = (object) [
+                'type' => 'object'
+            ];
+            
+            if ($originalProperties) {
+                $objectTypeSchema->properties = $originalProperties;
+            }
+            if ($originalRequired) {
+                $objectTypeSchema->required = $originalRequired;
+            }
+            if ($originalRef) {
+                $objectTypeSchema->{'$ref'} = $originalRef;
+            }
+            
+            // Create the UUID string schema
+            $uuidTypeSchema = (object) [
+                'type' => 'string',
+                'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                'description' => 'UUID reference to a related object'
+            ];
+            
+            // Clear the current object and set up union type
+            $objectSchema->type = null;
+            unset($objectSchema->properties, $objectSchema->required, $objectSchema->{'$ref'});
+            
+            // Create union type
+            $objectSchema->oneOf = [
+                $objectTypeSchema,
+                $uuidTypeSchema
+            ];
+            
+            $objectSchema->description = 'Related object (can be full object or UUID reference)';
+        } else {
+            // Original behavior for non-inversedBy properties
+            // Remove object-specific properties
+            unset($objectSchema->properties, $objectSchema->required);
 
-        // Set to string type with UUID pattern
-        $objectSchema->type = 'string';
-        $objectSchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
-        $objectSchema->description = 'UUID reference to a related object';
+            // Set to string type with UUID pattern
+            $objectSchema->type = 'string';
+            $objectSchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+            $objectSchema->description = 'UUID reference to a related object';
 
-        // Remove $ref to prevent circular references
-        unset($objectSchema->{'$ref'});
+            // Remove $ref to prevent circular references
+            unset($objectSchema->{'$ref'});
+        }
 
     }//end transformToUuidProperty()
 
@@ -459,7 +502,7 @@ class ValidateObject
                     
                     // Transform to UUID string type
                     $propertySchema->type = 'string';
-                    $propertySchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+                    $propertySchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
                     $propertySchema->description = 'UUID reference to a related object (self-reference)';
                     unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
                     // error_log('[ValidateObject] Transformed ' . $propertyName . ' to UUID string property'); // Remove info log
@@ -468,16 +511,35 @@ class ValidateObject
                     
                     // Check if array items are self-referencing
                     $propertySchema->type = 'array';
-                    $propertySchema->items = (object)[
-                        'type' => 'string',
-                        'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
-                        'description' => 'UUID reference to a related object (self-reference)'
-                    ];
+                    
+                    // If the array items have inversedBy, create a union type
+                    if (isset($propertySchema->items->inversedBy)) {
+                        $propertySchema->items = (object)[
+                            'oneOf' => [
+                                (object)[
+                                    'type' => 'object',
+                                    'description' => 'Full object for creation'
+                                ],
+                                (object)[
+                                    'type' => 'string',
+                                    'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                                    'description' => 'UUID reference to a related object'
+                                ]
+                            ]
+                        ];
+                    } else {
+                        $propertySchema->items = (object)[
+                            'type' => 'string',
+                            'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                            'description' => 'UUID reference to a related object (self-reference)'
+                        ];
+                    }
+                    
                     unset($propertySchema->{'$ref'});
                     // error_log('[ValidateObject] Transformed ' . $propertyName . ' array items to UUID string property'); // Remove info log
                     
                     // Ensure items has a valid schema after transformation
-                    if (!isset($propertySchema->items->type)) {
+                    if (!isset($propertySchema->items->type) && !isset($propertySchema->items->oneOf)) {
                         $propertySchema->items->type = 'string';
                     }
                 }
