@@ -110,7 +110,7 @@ class SaveObject
         }
 
         // First, try direct ID lookup (numeric ID or UUID)
-        if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
+        if (is_numeric($reference) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference)) {
             try {
                 $schema = $this->schemaMapper->find($reference);
                 return $schema->getId();
@@ -942,6 +942,8 @@ class SaveObject
         unset($data['@self']);
         unset($data['id']);
 
+        // Debug logging can be added here if needed
+
         // Set schema ID based on input type.
         $schemaId = null;
         if ($schema instanceof Schema === true) {
@@ -958,6 +960,8 @@ class SaveObject
             $registerId = $register;
             $register   = $this->registerMapper->find(id: $register);
         }
+
+        // Debug logging can be added here if needed
 
         // NOTE: Do NOT sanitize here - let validation happen first in ObjectService
         // Sanitization will happen after validation but before cascading operations
