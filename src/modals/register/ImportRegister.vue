@@ -29,10 +29,10 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="(sheetSummary, sheetName) in importResults">
-							<tr :key="sheetName">
+						<template v-for="(sheetSummary, sheetKey) in importResults">
+							<tr :key="sheetKey">
 								<td class="sheetName">
-									{{ sheetName }}
+									{{ sheetKey }}
 									<div v-if="sheetSummary.schema" class="schemaInfo">
 										<small>Schema: {{ sheetSummary.schema.title }}</small>
 									</div>
@@ -73,8 +73,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										<button
 											v-if="sheetSummary.errors && sheetSummary.errors.length > 0"
 											class="expandButton"
-											:class="{ expanded: expandedErrors[sheetName] }"
-											@click="toggleErrorDetails(sheetName)">
+											:class="{ expanded: expandedErrors[sheetKey] }"
+											@click="toggleErrorDetails(sheetKey)">
 											<ChevronDown :size="16" />
 										</button>
 									</div>
@@ -89,7 +89,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								</td>
 							</tr>
 							<!-- Error Details Row -->
-							<tr v-if="expandedErrors[sheetName] && sheetSummary.errors && sheetSummary.errors.length > 0" :key="`${sheetName}-errors`" class="errorDetailsRow">
+							<tr v-if="expandedErrors[sheetKey] && sheetSummary.errors && sheetSummary.errors.length > 0" :key="`${sheetKey}-errors`" class="errorDetailsRow">
 								<td colspan="7" class="errorDetailsCell">
 									<div class="errorDetailsTable">
 										<table class="errorTable">
@@ -102,18 +102,18 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 												</tr>
 											</thead>
 											<tbody>
-												<tr v-for="(error, index) in sheetSummary.errors" :key="index" class="errorRow">
+												<tr v-for="(importError, index) in sheetSummary.errors" :key="index" class="errorRow">
 													<td class="errorRowNumber">
-														{{ error.row }}
+														{{ importError.row }}
 													</td>
 													<td class="errorType">
-														{{ error.type }}
+														{{ importError.type }}
 													</td>
 													<td class="errorMessage">
-														{{ error.error }}
+														{{ importError.error }}
 													</td>
 													<td class="errorData">
-														<pre v-if="error.data && Object.keys(error.data).length > 0">{{ JSON.stringify(error.data, null, 2) }}</pre>
+														<pre v-if="importError.data && Object.keys(importError.data).length > 0">{{ JSON.stringify(importError.data, null, 2) }}</pre>
 														<span v-else class="noData">No data</span>
 													</td>
 												</tr>
@@ -127,8 +127,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</table>
 			</div>
 
-			<NcButton type="secondary" 
-				style="margin-top: 1rem;" 
+			<NcButton type="secondary"
+				style="margin-top: 1rem;"
 				@click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />

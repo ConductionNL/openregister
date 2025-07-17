@@ -332,6 +332,10 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																:options="availableSchemas"
 																input-label="Schema Reference"
 																label="Schema Reference" />
+															<NcActionCaption
+																v-if="isArrayItemRefInvalid(key)"
+																:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].items.$ref}). This will be sent to backend as-is.`"
+																style="color: var(--color-error); font-weight: bold;" />
 															<NcActionInput
 																v-model="schemaItem.properties[key].items.register"
 																type="multiselect"
@@ -375,6 +379,10 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															:options="availableSchemas"
 															input-label="Schema Reference"
 															label="Schema Reference" />
+														<NcActionCaption
+															v-if="isRefInvalid(key)"
+															:name="`⚠️ Invalid Schema Reference: Expected string, got number (${schemaItem.properties[key].$ref}). This will be sent to backend as-is.`"
+															style="color: var(--color-error); font-weight: bold;" />
 														<NcActionInput
 															v-model="schemaItem.properties[key].register"
 															type="multiselect"
@@ -1235,7 +1243,15 @@ export default {
 			}
 
 			// Extract schema slug from reference format like "#/components/schemas/Contactgegevens"
-			const schemaRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
+			const rawRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
+
+			// If $ref is a number, it's invalid - return empty options but don't break
+			if (typeof rawRef === 'number') {
+				console.warn(`Invalid $ref for property '${key}': expected string, got number (${rawRef})`)
+				return []
+			}
+
+			const schemaRef = String(rawRef) // Ensure it's a string before using string methods
 			let schemaSlug = schemaRef
 
 			// Handle JSON Schema path references
@@ -1267,7 +1283,15 @@ export default {
 			}
 
 			// Extract schema slug from reference format like "#/components/schemas/Contactgegevens"
-			const schemaRef = typeof property.items.$ref === 'object' ? property.items.$ref.id : property.items.$ref
+			const rawRef = typeof property.items.$ref === 'object' ? property.items.$ref.id : property.items.$ref
+
+			// If $ref is a number, it's invalid - return empty options but don't break
+			if (typeof rawRef === 'number') {
+				console.warn(`Invalid $ref for array items property '${key}': expected string, got number (${rawRef})`)
+				return []
+			}
+
+			const schemaRef = String(rawRef) // Ensure it's a string before using string methods
 			let schemaSlug = schemaRef
 
 			// Handle JSON Schema path references
@@ -1295,17 +1319,18 @@ export default {
 		ensureRefIsString(obj, key) {
 			if (!obj || !key) return
 
-			// Check property $ref
+			// Check property $ref - only convert objects to strings, preserve numbers
 			if (obj[key] && typeof obj[key].$ref === 'object' && obj[key].$ref !== null) {
 				if (obj[key].$ref.id) {
 					obj[key].$ref = obj[key].$ref.id
 				} else {
-					// If $ref is not a string or object with id, clear it
+					// If $ref is not a string, number, or object with id, clear it
 					obj[key].$ref = ''
 				}
 			}
+			// Note: Numbers are preserved as-is and will be sent to backend
 
-			// Also check array items
+			// Also check array items - only convert objects to strings, preserve numbers
 			if (obj[key] && obj[key].items && typeof obj[key].items.$ref === 'object' && obj[key].items.$ref !== null) {
 				if (obj[key].items.$ref.id) {
 					obj[key].items.$ref = obj[key].items.$ref.id
@@ -1313,6 +1338,7 @@ export default {
 					obj[key].items.$ref = ''
 				}
 			}
+			// Note: Numbers are preserved as-is and will be sent to backend
 		},
 		updateInversedBy(key, value) {
 			// Ensure inversedBy is always a string, not an object
@@ -1329,6 +1355,24 @@ export default {
 				this.$set(this.schemaItem.properties[key].items, 'inversedBy', inversedByValue)
 				this.checkPropertiesModified()
 			}
+		},
+		// Check if a property's $ref is invalid (contains a number instead of string)
+		isRefInvalid(key) {
+			const property = this.schemaItem.properties[key]
+			if (!property || !property.$ref) {
+				return false
+			}
+			const rawRef = typeof property.$ref === 'object' ? property.$ref.id : property.$ref
+			return typeof rawRef === 'number'
+		},
+		// Check if an array item's $ref is invalid (contains a number instead of string)
+		isArrayItemRefInvalid(key) {
+			const property = this.schemaItem.properties[key]
+			if (!property || !property.items || !property.items.$ref) {
+				return false
+			}
+			const rawRef = typeof property.items.$ref === 'object' ? property.items.$ref.id : property.items.$ref
+			return typeof rawRef === 'number'
 		},
 	},
 }
