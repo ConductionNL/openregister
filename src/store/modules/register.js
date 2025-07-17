@@ -240,11 +240,11 @@ export const useRegisterStore = defineStore('register', {
 				throw new Error('No register selected for import')
 			}
 
-					// Get the schema for CSV files
-		const fileExtension = file.name.split('.').pop().toLowerCase()
-		const { useSchemaStore } = await import('./schema')
-		const schemaStore = useSchemaStore()
-		const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
+			// Get the schema for CSV files
+			const fileExtension = file.name.split('.').pop().toLowerCase()
+			const { useSchemaStore } = await import('./schema.js')
+			const schemaStore = useSchemaStore()
+			const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
 
 			// Build endpoint with schema parameter if needed
 			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import?includeObjects=${includeObjects ? '1' : '0'}`
