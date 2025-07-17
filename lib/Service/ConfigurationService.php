@@ -393,16 +393,20 @@ class ConfigurationService
                 }
             }
             if (isset($property['register']) === true) {
-                $registerId = $this->getLastNumericSegment(url: $property['register']);
-                if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
-                    $property['register'] = $registerIdsAndSlugsMap[$registerId];
+                if (is_string($property['register']) === true) {
+                    $registerId = $this->getLastNumericSegment(url: $property['register']);
+                    if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
+                        $property['register'] = $registerIdsAndSlugsMap[$registerId];
+                    }
                 }
             }
 
             if (isset($property['items']['register']) === true) {
-                $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
-                if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
-                    $property['items']['register'] = $registerIdsAndSlugsMap[$registerId];
+                if (is_string($property['items']['register']) === true) {
+                    $registerId = $this->getLastNumericSegment(url: $property['items']['register']);
+                    if (isset($registerIdsAndSlugsMap[$registerId]) === true) {
+                        $property['items']['register'] = $registerIdsAndSlugsMap[$registerId];
+                    }
                 }
             }
         }
@@ -414,15 +418,26 @@ class ConfigurationService
     /**
      * Get the last segment of a URL if it is numeric.
      *
-     * @param string $url The input URL to evaluate.
-     * @return string The numeric value if found, or the original URL.
+     * This method takes a URL string, removes trailing slashes, splits it by '/' and
+     * checks if the last segment is numeric. If it is, returns that numeric value,
+     * otherwise returns the original URL.
+     *
+     * @param string $url The input URL to evaluate
+     * @return string The numeric value if found, or the original URL
+     * 
+     * @throws InvalidArgumentException If the URL is not a string
      */
-    private function getLastNumericSegment(string $url) {
+    private function getLastNumericSegment(string $url): string {
+        // Remove trailing slashes from the URL
         $url = rtrim($url, '/');
 
+        // Split the URL by '/' to get individual segments
         $parts = explode('/', $url);
+        
+        // Get the last segment
         $lastSegment = end($parts);
 
+        // Return numeric segment if found, otherwise return original URL
         return is_numeric($lastSegment) ? $lastSegment : $url;
     }
 

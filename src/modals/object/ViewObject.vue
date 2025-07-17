@@ -14,95 +14,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 <template>
 	<div>
 		<NcDialog v-if="navigationStore.modal === 'viewObject'"
-			:name="'View Object (' + objectStore.objectItem.title + ')'"
+			:name="getModalTitle()"
 			size="large"
-			:can-close="false">
+			:can-close="true"
+			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
-				<!-- Metadata Display -->
-				<div class="detail-grid">
-					<div class="detail-item id-card" :class="{ 'empty-value': !objectStore.objectItem.id }">
-						<div class="id-card-header">
-							<span class="detail-label">ID:</span>
-							<NcButton class="copy-button" @click="copyToClipboard(objectStore.objectItem.id)">
-								<template #icon>
-									<Check v-if="isCopied" :size="20" />
-									<ContentCopy v-else :size="20" />
-								</template>
-								{{ isCopied ? 'Copied' : 'Copy' }}
-							</NcButton>
-						</div>
-						<span class="detail-value">{{ objectStore.objectItem.id }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].register }">
-						<span class="detail-label">Register:</span>
-						<span class="detail-value">{{ registerTitle }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].schema }">
-						<span class="detail-label">Schema:</span>
-						<span class="detail-value">{{ schemaTitle }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].version }">
-						<span class="detail-label">Version:</span>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].version || 'Not set' }}</span>
-					</div>
-					<div class="detail-item">
-						<span class="detail-label">Created:</span>
-						<span class="detail-value">{{ new Date(objectStore.objectItem['@self'].created).toLocaleString() }}</span>
-					</div>
-					<div class="detail-item">
-						<span class="detail-label">Updated:</span>
-						<span class="detail-value">{{ new Date(objectStore.objectItem['@self'].updated).toLocaleString() }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].published }">
-						<div class="id-card-header">
-							<span class="detail-label">Published:</span>
-							<NcButton
-								class="copy-button"
-								:disabled="isPublishing"
-								@click="openPublishModal">
-								<template #icon>
-									<NcLoadingIcon v-if="isPublishing" :size="20" />
-									<Publish v-else :size="20" />
-								</template>
-								Change
-							</NcButton>
-						</div>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].published ? new Date(objectStore.objectItem['@self'].published).toLocaleString() : 'Not published' }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].depublished }">
-						<div class="id-card-header">
-							<span class="detail-label">Depublished:</span>
-							<NcButton
-								class="copy-button"
-								:disabled="isDepublishing"
-								@click="openDepublishModal">
-								<template #icon>
-									<NcLoadingIcon v-if="isDepublishing" :size="20" />
-									<PublishOff v-else :size="20" />
-								</template>
-								Change
-							</NcButton>
-						</div>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].depublished ? new Date(objectStore.objectItem['@self'].depublished).toLocaleString() : 'Not depublished' }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': objectStore.objectItem['@self'].validation === null }">
-						<span class="detail-label">Validation:</span>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].validation !== null ? (objectStore.objectItem['@self'].validation ? 'Valid' : 'Invalid') : 'Not validated' }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].owner }">
-						<span class="detail-label">Owner:</span>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].owner || 'Not set' }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].application }">
-						<span class="detail-label">Application:</span>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].application || 'Not set' }}</span>
-					</div>
-					<div class="detail-item" :class="{ 'empty-value': !objectStore.objectItem['@self'].organisation }">
-						<span class="detail-label">Organisation:</span>
-						<span class="detail-value">{{ objectStore.objectItem['@self'].organisation || 'Not set' }}</span>
-					</div>
-				</div>
-
 				<!-- Display Object -->
 				<div v-if="objectStore.objectItem">
 					<div class="tabContainer">
@@ -125,7 +41,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												v-for="([key, value]) in objectProperties"
 												:key="key"
 												class="viewTableRow"
-												:class="getPropertyValidationClass(key, value)">
+												:class="{
+													'selected-row': selectedProperty === key,
+													'edited-row': formData[key] !== undefined,
+													'non-editable-row': !isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value),
+													...getPropertyValidationClass(key, value)
+												}"
+												@click="handleRowClick(key, $event)">
 												<td class="tableColumnConstrained prop-cell">
 													<div class="prop-cell-content">
 														<AlertCircle v-if="getPropertyValidationClass(key, value) === 'property-invalid'"
@@ -136,15 +58,146 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															v-tooltip="getPropertyWarningMessage(key, value)"
 															class="validation-icon warning-icon"
 															:size="16" />
-														{{ key }}
+														<Plus v-else-if="getPropertyValidationClass(key, value) === 'property-new'"
+															v-tooltip="getPropertyNewMessage(key)"
+															class="validation-icon new-icon"
+															:size="16" />
+														<LockOutline v-else-if="!isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)"
+															v-tooltip="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
+															class="validation-icon lock-icon"
+															:size="16" />
+														<span
+															v-tooltip="getPropertyTooltip(key)">
+															{{ getPropertyDisplayName(key) }}
+														</span>
 													</div>
 												</td>
 												<td class="tableColumnExpanded value-cell">
-													<pre
-														v-if="typeof value === 'object' && value !== null"
-														class="json-value">{{ formatValue(value) }}</pre>
-													<span v-else-if="isValidDate(value)">{{ new Date(value).toLocaleString() }}</span>
-													<span v-else>{{ value }}</span>
+													<div v-if="selectedProperty === key && isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)" class="value-input-container" @click.stop>
+														<!-- Boolean properties -->
+														<NcCheckboxRadioSwitch
+															v-if="getPropertyInputComponent(key) === 'NcCheckboxRadioSwitch'"
+															:checked="formData[key] !== undefined ? formData[key] : value"
+															type="switch"
+															@update:checked="updatePropertyValue(key, $event)">
+															{{ getPropertyDisplayName(key) }}
+														</NcCheckboxRadioSwitch>
+
+														<!-- Date/Time properties -->
+														<NcDateTimePickerNative
+															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
+															:value="formData[key] !== undefined ? formData[key] : value"
+															:type="getPropertyInputType(key)"
+															:label="getPropertyDisplayName(key)"
+															@update:value="updatePropertyValue(key, $event)" />
+
+														<!-- Text/Number properties -->
+														<NcTextField
+															v-else
+															ref="propertyValueInput"
+															:value="String(formData[key] !== undefined ? formData[key] : value || '')"
+															:type="getPropertyInputType(key)"
+															:placeholder="getPropertyDisplayName(key)"
+															:min="getPropertyMinimum(key)"
+															:max="getPropertyMaximum(key)"
+															:step="getPropertyStep(key)"
+															@update:value="updatePropertyValue(key, $event)" />
+													</div>
+													<div v-else>
+														<template v-if="formData[key] !== undefined">
+															<!-- Show edited value -->
+															<pre
+																v-if="typeof formData[key] === 'object' && formData[key] !== null"
+																v-tooltip="'JSON object (edited)'"
+																class="json-value">{{ formatValue(formData[key]) }}</pre>
+															<span
+																v-else-if="isValidDate(formData[key])"
+																v-tooltip="`Date: ${new Date(formData[key]).toISOString()} (edited)`">{{ new Date(formData[key]).toLocaleString() }}</span>
+															<span
+																v-else
+																v-tooltip="currentSchema?.properties?.[key]?.description || `Property: ${key} (edited)`">{{ getDisplayValue(key, value) }}</span>
+														</template>
+														<template v-else>
+															<!-- Show original value -->
+															<pre
+																v-if="typeof value === 'object' && value !== null"
+																v-tooltip="'JSON object'"
+																class="json-value">{{ formatValue(value) }}</pre>
+															<span
+																v-else-if="isValidDate(value)"
+																v-tooltip="`Date: ${new Date(value).toISOString()}`">{{ new Date(value).toLocaleString() }}</span>
+															<span
+																v-else
+																v-tooltip="currentSchema?.properties?.[key]?.description || `Property: ${key}`">{{ getDisplayValue(key, value) }}</span>
+														</template>
+													</div>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</BTab>
+							<BTab title="Metadata">
+								<div class="viewTableContainer">
+									<table class="viewTable">
+										<thead>
+											<tr class="viewTableRow">
+												<th class="tableColumnConstrained">
+													Metadata
+												</th>
+												<th class="tableColumnExpanded">
+													Value
+												</th>
+												<th class="tableColumnActions">
+													Actions
+												</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr
+												v-for="([key, value, hasAction]) in metadataProperties"
+												:key="key"
+												class="viewTableRow">
+												<td class="tableColumnConstrained">
+													{{ key }}
+												</td>
+												<td class="tableColumnExpanded">
+													{{ value }}
+												</td>
+												<td class="tableColumnActions">
+													<NcButton
+														v-if="hasAction && key === 'ID'"
+														class="copy-button"
+														size="small"
+														@click="copyToClipboard(objectStore.objectItem.id)">
+														<template #icon>
+															<Check v-if="isCopied" :size="16" />
+															<ContentCopy v-else :size="16" />
+														</template>
+														{{ isCopied ? 'Copied' : 'Copy' }}
+													</NcButton>
+													<NcButton
+														v-else-if="hasAction && key === 'Published'"
+														:disabled="isPublishing"
+														size="small"
+														@click="openPublishModal">
+														<template #icon>
+															<NcLoadingIcon v-if="isPublishing" :size="16" />
+															<Publish v-else :size="16" />
+														</template>
+														Change
+													</NcButton>
+													<NcButton
+														v-else-if="hasAction && key === 'Depublished'"
+														:disabled="isDepublishing"
+														size="small"
+														@click="openDepublishModal">
+														<template #icon>
+															<NcLoadingIcon v-if="isDepublishing" :size="16" />
+															<PublishOff v-else :size="16" />
+														</template>
+														Change
+													</NcButton>
 												</td>
 											</tr>
 										</tbody>
@@ -152,150 +205,34 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</div>
 							</BTab>
 							<BTab title="Data">
+								<NcNoteCard v-if="success" type="success" class="note-card">
+									<p>Object successfully modified</p>
+								</NcNoteCard>
 								<div class="json-editor">
-									<label>Object (JSON)</label>
 									<div :class="`codeMirrorContainer ${getTheme()}`">
 										<CodeMirror
-											:model-value="editorContent"
+											v-model="jsonData"
 											:basic="true"
+											placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+											:dark="getTheme() === 'dark'"
 											:linter="jsonParseLinter()"
 											:lang="json()"
-											:readonly="true"
-											:dark="getTheme() === 'dark'"
+											:extensions="[json()]"
 											:tab-size="2"
 											style="height: 400px" />
+										<NcButton
+											class="format-json-button"
+											type="secondary"
+											size="small"
+											@click="formatJSON">
+											Format JSON
+										</NcButton>
 									</div>
+									<span v-if="!isValidJson(jsonData)" class="error-message">
+										Invalid JSON format
+									</span>
 								</div>
 							</BTab>
-							<BTab title="Edit">
-								<div class="tabContainer">
-									<BTabs v-model="editorTab" content-class="mt-3" justified>
-										<BTab title="Form Editor" active>
-											<div v-if="currentSchema && currentSchema.properties" class="form-editor">
-												<NcNoteCard v-if="success" type="success" class="note-card">
-													<p>Object successfully modified</p>
-												</NcNoteCard>
-												<div v-for="(value, key) in formFields"
-													:key="key"
-													class="form-field">
-													<div v-if="value && value.type === 'string'" class="field-label-row">
-														<NcTextField
-															:model-value="formData[key] || ''"
-															:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
-															:placeholder="key"
-															:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || value.description || key"
-															@update:model-value="val => setFieldValue(key, val)" />
-														<NcButton
-															v-if="(key === 'id' || key === 'uri') && formData[key]"
-															class="copy-button"
-															size="small"
-															@click="copyToClipboard(formData[key])">
-															<template #icon>
-																<ContentCopy :size="16" />
-															</template>
-														</NcButton>
-													</div>
-
-													<NcCheckboxRadioSwitch v-else-if="value && value.type === 'boolean'"
-														:model-value="formData[key] || false"
-														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
-														type="switch"
-														@update:model-value="val => setFieldValue(key, val)" />
-													<NcTextField v-else-if="value && value.type === 'number'"
-														:model-value="formData[key] || 0"
-														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
-														type="number"
-														@update:model-value="val => setFieldValue(key, Number(val))" />
-
-													<template v-else-if="value && value.type === 'array'">
-														<label class="field-label">
-															{{ objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key }}
-														</label>
-														<ul class="array-editor">
-															<li v-for="(item, i) in formData[key] || []" :key="i">
-																<NcTextField
-																	:model-value="formData[key] ? formData[key][i] || '' : ''"
-																	class="array-item-input"
-																	@update:model-value="val => updateArrayItem(key, i, val)" />
-																<NcButton size="small"
-																	@click="removeArrayItem(key, i)">
-																	<template #icon>
-																		<Delete :size="16" />
-																	</template>
-																</NcButton>
-															</li>
-														</ul>
-														<NcButton size="small"
-															@click="addArrayItem(key)">
-															<template #icon>
-																<Plus :size="16" />
-															</template>
-															Add element
-														</NcButton>
-													</template>
-
-													<template v-else-if="value && value.type === 'object' && value !== null">
-														<label class="field-label">
-															{{ objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key }}
-														</label>
-														<CodeMirror
-															:model-value="objectEditors[key] || '{}'"
-															:basic="true"
-															:dark="getTheme() === 'dark'"
-															:lang="json()"
-															:tab-size="2"
-															@update:model-value="val => updateObjectField(key, val)" />
-													</template>
-
-													<NcTextField v-else
-														:model-value="formData[key] || ''"
-														:label="objectStore.enabledColumns.find(c => c.key === key)?.label || value.title || key"
-														:placeholder="key"
-														:helper-text="objectStore.enabledColumns.find(c => c.key === key)?.description || value.description || key"
-														@update:model-value="val => setFieldValue(key, val)" />
-												</div>
-											</div>
-											<NcEmptyContent v-else>
-												<template v-if="!currentSchema">
-													Please select a schema to edit the object
-												</template>
-												<template v-else>
-													This schema has no properties defined for editing
-												</template>
-											</NcEmptyContent>
-										</BTab>
-										<BTab title="JSON Editor">
-											<NcNoteCard v-if="success" type="success" class="note-card">
-												<p>Object successfully modified</p>
-											</NcNoteCard>
-											<div class="json-editor">
-												<div :class="`codeMirrorContainer ${getTheme()}`">
-													<CodeMirror
-														v-model="jsonData"
-														:basic="true"
-														placeholder="{ &quot;key&quot;: &quot;value&quot; }"
-														:dark="getTheme() === 'dark'"
-														:linter="jsonParseLinter()"
-														:lang="json()"
-														:extensions="[json()]"
-														:tab-size="2"
-														style="height: 400px" />
-													<NcButton
-														class="format-json-button"
-														type="secondary"
-														size="small"
-														@click="formatJSON">
-														Format JSON
-													</NcButton>
-												</div>
-												<span v-if="!isValidJson(jsonData)" class="error-message">
-													Invalid JSON format
-												</span>
-											</div>
-										</BTab>
-									</BTabs>
-								</div>
-							</Btab>
 							<BTab title="Uses">
 								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 									<table class="table">
@@ -429,14 +366,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</th>
 												<th class="tableColumnActions">
 													<NcActions
-														force-menu
-														:disabled="selectedAttachments.length === 0">
+														:force-name="true"
+														:disabled="selectedAttachments.length === 0"
+														:title="selectedAttachments.length === 0 ? 'Select one or more files to use mass actions' : `Mass actions (${selectedAttachments.length} selected)`"
+														:menu-name="`Mass Actions (${selectedAttachments.length})`">
 														<template #icon>
-															<DotsHorizontal :size="20" />
+															<FormatListChecks :size="20" />
 														</template>
-														Bulk Actions
 														<NcActionButton
-															close-after-click
 															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="publishSelectedFiles">
 															<template #icon>
@@ -446,7 +383,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="depublishLoading.length > 0 || selectedAttachments.length === 0"
 															@click="depublishSelectedFiles">
 															<template #icon>
@@ -456,7 +392,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
 															@click="deleteSelectedFiles">
 															<template #icon>
@@ -484,14 +419,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														@update:checked="(checked) => toggleFileSelection(attachment.id, checked)" />
 												</td>
 												<td class="tableColumnExpanded table-row-title">
-													<!-- Show lock icon if file is not shared -->
-													<LockOutline v-if="!attachment.accessUrl && !attachment.downloadUrl"
+													<!-- Show warning icon if file is not shared -->
+													<ExclamationThick v-if="!attachment.accessUrl && !attachment.downloadUrl"
 														v-tooltip="'Not shared'"
-														class="notSharedIcon"
+														class="warningIcon"
 														:size="20" />
 													<!-- Show published icon if file is shared -->
 													<FileOutline v-else class="publishedIcon" :size="20" />
-													{{ attachment.name ?? attachment?.title }}
+													{{ truncateFileName(attachment.name ?? attachment?.title) }}
 												</td>
 												<td class="tableColumnConstrained">
 													{{ formatFileSize(attachment?.size) }}
@@ -508,13 +443,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</td>
 												<td class="tableColumnActions">
 													<NcActions>
-														<NcActionButton close-after-click @click="openFile(attachment)">
+														<NcActionButton @click="openFile(attachment)">
 															<template #icon>
 																<OpenInNew :size="20" />
 															</template>
 															View
 														</NcActionButton>
-														<NcActionButton close-after-click @click="editFileLabels(attachment)">
+														<NcActionButton @click="editFileLabels(attachment)">
 															<template #icon>
 																<Tag :size="20" />
 															</template>
@@ -522,7 +457,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</NcActionButton>
 														<NcActionButton
 															v-if="!attachment.accessUrl && !attachment.downloadUrl"
-															close-after-click
 															:disabled="publishLoading.includes(attachment.id)"
 															@click="publishFile(attachment)">
 															<template #icon>
@@ -533,7 +467,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														</NcActionButton>
 														<NcActionButton
 															v-else
-															close-after-click
 															:disabled="depublishLoading.includes(attachment.id)"
 															@click="depublishFile(attachment)">
 															<template #icon>
@@ -543,7 +476,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															Depublish
 														</NcActionButton>
 														<NcActionButton
-															close-after-click
 															:disabled="fileIdsLoading.includes(attachment.id)"
 															@click="deleteFile(attachment)">
 															<template #icon>
@@ -558,9 +490,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-								<NcNoteCard v-else type="info">
-									<p>No files have been attached to this object</p>
-								</NcNoteCard>
+								<NcEmptyContent v-else
+									name="No files attached"
+									:description="isNewObject ? 'Save the object first to attach files' : 'No files have been attached to this object'">
+									<template #icon>
+										<FileOutline :size="64" />
+									</template>
+								</NcEmptyContent>
 
 								<!-- Files Pagination -->
 								<PaginationComponent
@@ -579,19 +515,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</div>
 
 			<template #actions>
-				<NcButton v-if="activeTab !== 2" @click="activeTab = 2">
+				<NcButton @click="closeModal">
 					<template #icon>
-						<Pencil :size="20" />
+						<Cancel :size="20" />
 					</template>
-					Edit Object
+					Close
 				</NcButton>
-				<NcButton v-if="activeTab === 2" @click="saveObject">
-					<template #icon>
-						<ContentSave :size="20" />
-					</template>
-					Save
-				</NcButton>
-				<NcButton @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
+				<NcButton v-if="!isNewObject" @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
 					<template #icon>
 						<Upload :size="20" />
 					</template>
@@ -603,11 +533,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Audit Trails
 				</NcButton>
-				<NcButton type="primary" @click="closeModal">
+				<NcButton type="primary" :disabled="isSaving" @click="saveObject">
 					<template #icon>
-						<Cancel :size="20" />
+						<NcLoadingIcon v-if="isSaving" :size="20" />
+						<ContentSave v-else :size="20" />
 					</template>
-					Close
+					{{ isSaving ? (isNewObject ? 'Creating...' : 'Saving...') : (isNewObject ? 'Create' : 'Save') }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -641,7 +572,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isPublishing" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					Save
+					{{ isPublishing ? 'Publishing...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -675,7 +606,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isDepublishing" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					Save
+					{{ isDepublishing ? 'Depublishing...' : 'Save' }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -692,9 +623,9 @@ import {
 	NcCounterBubble,
 	NcTextField,
 	NcCheckboxRadioSwitch,
-	NcEmptyContent,
 	NcLoadingIcon,
 	NcDateTimePickerNative,
+	NcEmptyContent,
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
@@ -704,21 +635,21 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Alert from 'vue-material-design-icons/Alert.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import Publish from 'vue-material-design-icons/Publish.vue'
 import PublishOff from 'vue-material-design-icons/PublishOff.vue'
+import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 export default {
 	name: 'ViewObject',
@@ -729,11 +660,11 @@ export default {
 		NcCounterBubble,
 		NcTextField,
 		NcCheckboxRadioSwitch,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
 		NcDateTimePickerNative,
+		NcEmptyContent,
 		CodeMirror,
 		BTabs,
 		BTab,
@@ -741,21 +672,21 @@ export default {
 		FileOutline,
 		OpenInNew,
 		Eye,
-		Pencil,
+		Delete,
 		Upload,
 		LockOutline,
 		ContentCopy,
 		Check,
-		Plus,
-		Delete,
 		ContentSave,
 		TextBoxOutline,
 		Tag,
-		DotsHorizontal,
+		FormatListChecks,
 		Alert,
 		AlertCircle,
+		Plus,
 		Publish,
 		PublishOff,
+		ExclamationThick,
 		PaginationComponent,
 	},
 	data() {
@@ -773,7 +704,7 @@ export default {
 			editorTab: 0,
 			activeTab: 0,
 			objectEditors: {},
-			tabOptions: ['Properties', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
+			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
 			publishLoading: [],
 			depublishLoading: [],
@@ -787,13 +718,54 @@ export default {
 			depublishDate: null,
 			isPublishing: false,
 			isDepublishing: false,
+			selectedProperty: null,
+			isSaving: false,
 		}
 	},
 	computed: {
 		objectProperties() {
-			// Return array of [key, value] pairs, excluding '@self'
+			// Return array of [key, value] pairs, excluding '@self' and 'id'
 			if (!objectStore?.objectItem) return []
-			return Object.entries(objectStore.objectItem).filter(([key]) => key !== '@self')
+
+			const objectData = objectStore.objectItem
+			const schemaProperties = this.currentSchema?.properties || {}
+
+			// Start with properties that exist in the object
+			const existingProperties = Object.entries(objectData)
+				.filter(([key]) => key !== '@self' && key !== 'id')
+
+			// Add schema properties that don't exist in the object yet
+			const missingSchemaProperties = []
+			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
+				if (!Object.prototype.hasOwnProperty.call(objectData, key)) {
+					// Add with appropriate default value based on type
+					let defaultValue
+					switch (schemaProperty.type) {
+					case 'string':
+						defaultValue = schemaProperty.const || ''
+						break
+					case 'number':
+					case 'integer':
+						defaultValue = 0
+						break
+					case 'boolean':
+						defaultValue = false
+						break
+					case 'array':
+						defaultValue = []
+						break
+					case 'object':
+						defaultValue = {}
+						break
+					default:
+						defaultValue = ''
+					}
+					missingSchemaProperties.push([key, defaultValue])
+				}
+			}
+
+			// Combine existing properties and missing schema properties
+			return [...existingProperties, ...missingSchemaProperties]
 		},
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
@@ -904,6 +876,107 @@ export default {
 
 			return fields
 		},
+		metadataProperties() {
+			// Return array of [key, value, hasAction] for metadata display
+			if (!objectStore?.objectItem) return []
+
+			const obj = objectStore.objectItem
+			const metadata = []
+
+			// ID with copy action
+			metadata.push([
+				'ID',
+				obj.id || 'Not set',
+				true,
+			])
+
+			// Register
+			metadata.push([
+				'Register',
+				this.registerTitle || 'Not set',
+				false,
+			])
+
+			// Schema
+			metadata.push([
+				'Schema',
+				this.schemaTitle || 'Not set',
+				false,
+			])
+
+			// Version
+			metadata.push([
+				'Version',
+				obj['@self']?.version || 'Not set',
+				false,
+			])
+
+			// Created
+			metadata.push([
+				'Created',
+				obj['@self']?.created ? new Date(obj['@self'].created).toLocaleString() : 'Not set',
+				false,
+			])
+
+			// Updated
+			metadata.push([
+				'Updated',
+				obj['@self']?.updated ? new Date(obj['@self'].updated).toLocaleString() : 'Not set',
+				false,
+			])
+
+			// Published with change action
+			metadata.push([
+				'Published',
+				obj['@self']?.published ? new Date(obj['@self'].published).toLocaleString() : 'Not published',
+				true,
+			])
+
+			// Depublished with change action
+			metadata.push([
+				'Depublished',
+				obj['@self']?.depublished ? new Date(obj['@self'].depublished).toLocaleString() : 'Not depublished',
+				true,
+			])
+
+			// Validation
+			let validationText = 'Not validated'
+			if (obj['@self']?.validation !== null) {
+				validationText = obj['@self'].validation ? 'Valid' : 'Invalid'
+			}
+			metadata.push([
+				'Validation',
+				validationText,
+				false,
+			])
+
+			// Owner
+			metadata.push([
+				'Owner',
+				obj['@self']?.owner || 'Not set',
+				false,
+			])
+
+			// Application
+			metadata.push([
+				'Application',
+				obj['@self']?.application || 'Not set',
+				false,
+			])
+
+			// Organisation
+			metadata.push([
+				'Organisation',
+				obj['@self']?.organisation || 'Not set',
+				false,
+			])
+
+			return metadata
+		},
+		isNewObject() {
+			return !objectStore?.objectItem?.id
+		},
+
 	},
 	watch: {
 		objectStore: {
@@ -952,6 +1025,29 @@ export default {
 		}
 	},
 	methods: {
+		getModalTitle() {
+			if (!objectStore?.objectItem) return 'View Object'
+
+			const name = objectStore.objectItem['@self']?.name
+				|| objectStore.objectItem.name
+				|| objectStore.objectItem.id
+
+			const schemaName = this.currentSchema?.title
+				|| this.currentSchema?.name
+				|| 'Unknown Schema'
+
+			// Add status icon before the title
+			let statusIcon = ''
+			if (objectStore.objectItem['@self']?.published) {
+				statusIcon = '📄 ' // Published
+			} else if (objectStore.objectItem['@self']?.depublished) {
+				statusIcon = '⚠️ ' // Depublished
+			} else {
+				statusIcon = '✏️ ' // Draft/Unpublished
+			}
+
+			return `${statusIcon}${name} (${schemaName})`
+		},
 		async loadTitles() {
 			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
 			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
@@ -960,10 +1056,37 @@ export default {
 			this.schemaTitle = schema?.title || 'Not set'
 		},
 		closeModal() {
-			navigationStore.setModal(null)
+			// Clear state first
 			this.isUpdated = false
 			this.registerTitle = ''
 			this.schemaTitle = ''
+			this.activeTab = 0
+			this.editorTab = 0
+			this.selectedAttachments = []
+			this.activeAttachment = null
+			this.success = null
+			this.error = null
+			this.isCopied = false
+
+			// Clear publish/depublish modal states
+			this.showPublishModal = false
+			this.showDepublishModal = false
+			this.publishDate = null
+			this.depublishDate = null
+			this.isPublishing = false
+			this.isDepublishing = false
+
+			// Clear any timeouts
+			clearTimeout(this.closeModalTimeout)
+
+			// Close modal and dialog
+			navigationStore.setModal(null)
+			navigationStore.setDialog(null)
+		},
+		handleDialogClose(isOpen) {
+			if (!isOpen) {
+				this.closeModal()
+			}
 		},
 		/**
 		 * Open a file in the Nextcloud Files app
@@ -987,6 +1110,16 @@ export default {
 			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
 			if (i === 0) return bytes + ' ' + sizes[i]
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		},
+		/**
+		 * Truncate file name to prevent dialog alignment issues
+		 * @param {string} fileName - The file name to truncate
+		 * @return {string} The truncated file name (22 chars + ... if longer than 25)
+		 */
+		truncateFileName(fileName) {
+			if (!fileName) return ''
+			if (fileName.length <= 25) return fileName
+			return fileName.substring(0, 22) + '...'
 		},
 		isValidDate(value) {
 			if (!value) return false
@@ -1018,7 +1151,13 @@ export default {
 			const filtered = {}
 			for (const key in initial) {
 				if (key !== '@self' && key !== 'id') {
-					filtered[key] = initial[key]
+					// Ensure we have a safe copy of the value
+					try {
+						filtered[key] = JSON.parse(JSON.stringify(initial[key]))
+					} catch (e) {
+						// If JSON serialization fails, use the original value
+						filtered[key] = initial[key]
+					}
 				}
 			}
 
@@ -1056,7 +1195,13 @@ export default {
 				}
 			})
 
-			this.formData = JSON.parse(JSON.stringify(filtered))
+			// Create a safe copy for formData
+			try {
+				this.formData = JSON.parse(JSON.stringify(filtered))
+			} catch (e) {
+				// Fallback if JSON serialization fails
+				this.formData = { ...filtered }
+			}
 			this.jsonData = JSON.stringify(filtered, null, 2)
 		},
 
@@ -1066,7 +1211,7 @@ export default {
 				return
 			}
 
-			this.loading = true
+			this.isSaving = true
 			this.error = null
 
 			try {
@@ -1102,7 +1247,7 @@ export default {
 				this.error = e.message || 'Failed to save object'
 				this.success = false
 			} finally {
-				this.loading = false
+				this.isSaving = false
 			}
 		},
 		updateFormFromJson() {
@@ -1222,21 +1367,15 @@ export default {
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Publish each file individually
+				// Publish each file individually using the store method
 				for (const file of selectedFiles) {
-					const endpoint = `/index.php/apps/openregister/api/objects/${objectStore.objectItem['@self'].register}/${objectStore.objectItem['@self'].schema}/${objectStore.objectItem.id}/files/${encodeURIComponent(file.title || file.name || file.path)}/publish`
-
-					const response = await fetch(endpoint, {
-						method: 'POST',
+					await objectStore.publishFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						fileId: file.id,
 					})
-
-					if (!response.ok) {
-						throw new Error(`Failed to publish file ${file.title || file.name}: ${response.statusText}`)
-					}
 				}
-
-				// Refresh files list once after all operations
-				await objectStore.getFiles(objectStore.objectItem)
 
 				// Clear selection after successful operation
 				this.selectedAttachments = []
@@ -1259,21 +1398,15 @@ export default {
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Depublish each file individually
+				// Depublish each file individually using the store method
 				for (const file of selectedFiles) {
-					const endpoint = `/index.php/apps/openregister/api/objects/${objectStore.objectItem['@self'].register}/${objectStore.objectItem['@self'].schema}/${objectStore.objectItem.id}/files/${encodeURIComponent(file.title || file.name || file.path)}/depublish`
-
-					const response = await fetch(endpoint, {
-						method: 'POST',
+					await objectStore.unpublishFile({
+						register: objectStore.objectItem['@self'].register,
+						schema: objectStore.objectItem['@self'].schema,
+						objectId: objectStore.objectItem.id,
+						fileId: file.id,
 					})
-
-					if (!response.ok) {
-						throw new Error(`Failed to depublish file ${file.title || file.name}: ${response.statusText}`)
-					}
 				}
-
-				// Refresh files list once after all operations
-				await objectStore.getFiles(objectStore.objectItem)
 
 				// Clear selection after successful operation
 				this.selectedAttachments = []
@@ -1302,7 +1435,7 @@ export default {
 						register: objectStore.objectItem['@self'].register,
 						schema: objectStore.objectItem['@self'].schema,
 						objectId: objectStore.objectItem.id,
-						filePath: file.title || file.name || file.path,
+						fileId: file.id,
 					})
 				}
 
@@ -1323,7 +1456,7 @@ export default {
 					register: objectStore.objectItem['@self'].register,
 					schema: objectStore.objectItem['@self'].schema,
 					objectId: objectStore.objectItem.id,
-					filePath: file.title || file.name || file.path,
+					fileId: file.id,
 				})
 
 				// Files list is automatically refreshed by the store method
@@ -1342,7 +1475,7 @@ export default {
 					register: objectStore.objectItem['@self'].register,
 					schema: objectStore.objectItem['@self'].schema,
 					objectId: objectStore.objectItem.id,
-					filePath: file.title || file.name || file.path,
+					fileId: file.id,
 				})
 
 				// Files list is automatically refreshed by the store method
@@ -1361,7 +1494,7 @@ export default {
 					register: objectStore.objectItem['@self'].register,
 					schema: objectStore.objectItem['@self'].schema,
 					objectId: objectStore.objectItem.id,
-					filePath: file.title || file.name || file.path,
+					fileId: file.id,
 				})
 
 				// Files list is automatically refreshed by the store method
@@ -1387,13 +1520,19 @@ export default {
 
 			// Check if property exists in schema
 			const schemaProperty = this.currentSchema?.properties?.[key]
+			const existsInObject = Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
 
 			if (!schemaProperty) {
-				// Property not defined in schema - warning (yellow)
+				// Property exists in object but not in schema - warning (yellow)
 				return 'property-warning'
 			}
 
-			// Property exists in schema, validate the value
+			if (!existsInObject) {
+				// Property exists in schema but not in object yet - neutral (no special class)
+				return 'property-new'
+			}
+
+			// Property exists in both schema and object, validate the value
 			if (this.isValidPropertyValue(key, value, schemaProperty)) {
 				// Valid property - success (green)
 				return 'property-valid'
@@ -1444,7 +1583,7 @@ export default {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
 			if (!schemaProperty) {
-				return `Property '${key}' is not defined in the schema`
+				return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 			}
 
 			// Check if required but empty
@@ -1474,7 +1613,35 @@ export default {
 			return `Property '${key}' has an invalid value`
 		},
 		getPropertyWarningMessage(key, value) {
-			return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
+			return `Property '${key}' exists in the object but is not defined in the current schema. This might happen when property names are changed in the schema.`
+		},
+		getPropertyNewMessage(key) {
+			return `Property '${key}' is defined in the schema but doesn't have a value yet. Click to add a value.`
+		},
+		/**
+		 * Convert any value to a string suitable for NcTextField
+		 * @param {*} value - The value to convert
+		 * @return {string} The string representation
+		 */
+		getStringValue(value) {
+			if (value === null || value === undefined) {
+				return ''
+			}
+			if (typeof value === 'string') {
+				return value
+			}
+			if (typeof value === 'number' || typeof value === 'boolean') {
+				return String(value)
+			}
+			if (typeof value === 'object') {
+				// For objects and arrays, return JSON string
+				try {
+					return JSON.stringify(value)
+				} catch (e) {
+					return String(value)
+				}
+			}
+			return String(value)
 		},
 		/**
 		 * Open the publish modal and pre-fill current value
@@ -1587,53 +1754,347 @@ export default {
 				this.isDepublishing = false
 			}
 		},
+		handleRowClick(key, event) {
+			// Don't select if clicking on an input or button
+			if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('.value-input-container')) {
+				return
+			}
+
+			// Don't deselect if already selected
+			if (this.selectedProperty === key) {
+				return
+			}
+
+			// Check if property is editable
+			const value = this.formData[key] !== undefined ? this.formData[key] : this.objectProperties.find(([k]) => k === key)?.[1]
+			if (!this.isPropertyEditable(key, value)) {
+				// Show warning for non-editable properties
+				const warning = this.getEditabilityWarning(key, value)
+				if (warning) {
+					this.showWarningNotification(warning)
+				}
+				return
+			}
+
+			// Only allow editing for supported property types (same as EditObject.vue)
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (schemaProperty && ['string', 'number', 'integer', 'boolean'].includes(schemaProperty.type)) {
+				this.selectProperty(key)
+			} else if (!schemaProperty) {
+				// Allow editing for properties not in schema (free-form)
+				this.selectProperty(key)
+			} else {
+				// Show info for unsupported types
+				this.showWarningNotification(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
+			}
+		},
+		selectProperty(key) {
+			this.selectedProperty = key
+
+			// Focus the input field after Vue updates the DOM
+			this.$nextTick(() => {
+				if (this.$refs.propertyValueInput && this.$refs.propertyValueInput[0]) {
+					const input = this.$refs.propertyValueInput[0].$el.querySelector('input')
+					if (input) {
+						input.focus()
+						input.select()
+					}
+				}
+			})
+		},
+		updatePropertyValue(key, newValue) {
+			// Get the old value for comparison
+			const oldValue = this.formData[key] !== undefined
+				? this.formData[key]
+				: this.objectProperties.find(([k]) => k === key)?.[1]
+
+			// Convert value based on schema property type
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			let convertedValue = newValue
+
+			if (schemaProperty) {
+				switch (schemaProperty.type) {
+				case 'number':
+					convertedValue = newValue === '' ? null : parseFloat(newValue)
+					if (isNaN(convertedValue)) convertedValue = null
+					break
+				case 'integer':
+					convertedValue = newValue === '' ? null : parseInt(newValue, 10)
+					if (isNaN(convertedValue)) convertedValue = null
+					break
+				case 'boolean':
+					convertedValue = Boolean(newValue)
+					break
+				case 'string':
+				default:
+					convertedValue = newValue
+					break
+				}
+			}
+
+			// Update the form data using Vue 3 reactivity
+			this.formData = { ...this.formData, [key]: convertedValue }
+
+			// Show notification if value actually changed
+			if (oldValue !== convertedValue) {
+				this.showPropertyChangeNotification(key, oldValue, convertedValue)
+			}
+		},
+		showPropertyChangeNotification(key, oldValue, newValue) {
+			// Create a simple notification - you could replace this with a proper toast library
+			const notification = document.createElement('div')
+			notification.style.cssText = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: var(--color-success);
+				color: white;
+				padding: 12px 16px;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+				z-index: 10000;
+				font-size: 14px;
+				max-width: 300px;
+			`
+			notification.textContent = `Property '${key}' changed from '${oldValue}' to '${newValue}'`
+
+			document.body.appendChild(notification)
+
+			// Remove notification after 3 seconds
+			setTimeout(() => {
+				if (notification.parentNode) {
+					notification.parentNode.removeChild(notification)
+				}
+			}, 3000)
+		},
+		isStringProperty(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.type === 'string'
+		},
+		isPropertyEditable(key, value) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			// If no schema property, allow editing (it's a free-form property)
+			if (!schemaProperty) return true
+
+			// Check if property is const
+			if (schemaProperty.const !== undefined) {
+				return false // Const properties cannot be edited
+			}
+
+			// Check if property is immutable and already has a value
+			if (schemaProperty.immutable && (value !== null && value !== undefined && value !== '')) {
+				return false // Immutable properties with values cannot be edited
+			}
+
+			return true
+		},
+		getEditabilityWarning(key, value) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			if (schemaProperty?.const !== undefined) {
+				return `This property is constant and must always be '${schemaProperty.const}'. Const properties cannot be modified to maintain data integrity.`
+			}
+
+			if (schemaProperty?.immutable && (value !== null && value !== undefined && value !== '')) {
+				return `This property is immutable and cannot be changed once it has a value. Current value: '${value}'. Immutable properties preserve data consistency.`
+			}
+
+			return null
+		},
+		getPropertyInputType(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (!schemaProperty) return 'text'
+
+			const type = schemaProperty.type
+			const format = schemaProperty.format
+
+			// Handle different types and formats
+			switch (type) {
+			case 'string':
+				if (format === 'date') return 'date'
+				if (format === 'time') return 'time'
+				if (format === 'date-time') return 'datetime-local'
+				if (format === 'email') return 'email'
+				if (format === 'url' || format === 'uri') return 'url'
+				if (format === 'password') return 'password'
+				return 'text'
+			case 'number':
+			case 'integer':
+				return 'number'
+			case 'boolean':
+				return 'checkbox'
+			default:
+				return 'text'
+			}
+		},
+		getPropertyInputComponent(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (!schemaProperty) return 'NcTextField'
+
+			const type = schemaProperty.type
+			const format = schemaProperty.format
+
+			// Handle different types and formats
+			switch (type) {
+			case 'boolean':
+				return 'NcCheckboxRadioSwitch'
+			case 'string':
+				if (format === 'date' || format === 'time' || format === 'date-time') {
+					return 'NcDateTimePickerNative'
+				}
+				return 'NcTextField'
+			case 'number':
+			case 'integer':
+				return 'NcTextField'
+			default:
+				return 'NcTextField'
+			}
+		},
+		/**
+		 * Get the display name for a property (title if available, otherwise key)
+		 * @param {string} key - The property key
+		 * @return {string} The display name
+		 */
+		getPropertyDisplayName(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.title || key
+		},
+		/**
+		 * Get the tooltip text for a property
+		 * @param {string} key - The property key
+		 * @return {string} The tooltip text
+		 */
+		getPropertyTooltip(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			if (schemaProperty?.description) {
+				// If we have both title and description, show both
+				if (schemaProperty.title && schemaProperty.title !== key) {
+					return `${schemaProperty.title}: ${schemaProperty.description}`
+				}
+				// If only description or title same as key, just show description
+				return schemaProperty.description
+			}
+
+			// Fallback to property key info
+			return `Property: ${key}`
+		},
+		/**
+		 * Get the minimum value for a property
+		 * @param {string} key - The property key
+		 * @return {number|undefined} The minimum value
+		 */
+		getPropertyMinimum(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.minimum
+		},
+		/**
+		 * Get the maximum value for a property
+		 * @param {string} key - The property key
+		 * @return {number|undefined} The maximum value
+		 */
+		getPropertyMaximum(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			return schemaProperty?.maximum
+		},
+		/**
+		 * Get the step value for a property
+		 * @param {string} key - The property key
+		 * @return {string|undefined} The step value
+		 */
+		getPropertyStep(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (schemaProperty?.type === 'integer') {
+				return '1'
+			}
+			if (schemaProperty?.type === 'number') {
+				return 'any'
+			}
+			return undefined
+		},
+		getDisplayValue(key, value) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+
+			// If property is const, always show the const value
+			if (schemaProperty?.const !== undefined) {
+				return schemaProperty.const
+			}
+
+			// If we have an edited value in formData, use that
+			if (this.formData[key] !== undefined) {
+				return this.formData[key]
+			}
+
+			// If this is a schema property that doesn't exist in the object yet, show placeholder
+			if (!Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) && schemaProperty) {
+				return value // This will be the default value we set in objectProperties
+			}
+
+			// Otherwise use the original value
+			return value
+		},
+		showWarningNotification(warning) {
+			// Create a warning notification
+			const notification = document.createElement('div')
+			notification.style.cssText = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: var(--color-warning);
+				color: white;
+				padding: 12px 16px;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+				z-index: 10000;
+				font-size: 14px;
+				max-width: 350px;
+				line-height: 1.4;
+			`
+			notification.innerHTML = `
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A1.25,1.25 0 0,1 13.25,8.25A1.25,1.25 0 0,1 12,9.5A1.25,1.25 0 0,1 10.75,8.25A1.25,1.25 0 0,1 12,7M11,11H13V17H11V11Z"/>
+					</svg>
+					<span>${warning}</span>
+				</div>
+			`
+
+			document.body.appendChild(notification)
+
+			// Remove notification after 5 seconds (longer for warnings)
+			setTimeout(() => {
+				if (notification.parentNode) {
+					notification.parentNode.removeChild(notification)
+				}
+			}, 5000)
+		},
 	},
 }
 </script>
 
-<style>
-.modal-container:has(.viewObjectDialog) {
-	width: 1000px !important;
-}
-
-/* Ensure publish/depublish modals appear above the main modal */
-.modal-container:has([data-v-*] .modal-content) {
-	z-index: 10001 !important;
-}
-</style>
-
 <style scoped>
-.json-editor {
-    position: relative;
-	margin-bottom: 2.5rem;
+/* Property table row border colors matching validation states */
+.viewTableRow.property-invalid {
+	background-color: var(--color-error-light);
+	border-left: 4px solid var(--color-error);
 }
 
-.json-editor label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: bold;
+.viewTableRow.property-warning {
+	background-color: var(--color-warning-light);
+	border-left: 4px solid var(--color-warning);
 }
 
-/* CodeMirror */
-.codeMirrorContainer {
-	margin-block-start: 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
+.viewTableRow.property-new {
+	background-color: var(--color-primary-element-light);
+	border-left: 4px solid var(--color-primary-element);
 }
 
-.codeMirrorContainer :deep(.cm-editor) {
-	height: 100%;
+.viewTableRow.property-valid {
+	border-left: 4px solid var(--color-success);
 }
 
-.codeMirrorContainer :deep(.cm-scroller) {
-	overflow: auto;
-}
-
-.fileLabelsContainer {
-	display: inline-flex;
-	gap: 3px;
-}
-
+/* Icon colors for file status */
 .warningIcon {
 	color: var(--color-warning);
 }
@@ -1642,408 +2103,183 @@ export default {
 	color: var(--color-success);
 }
 
-/* Table styles matching AuditTrailIndex */
-.viewTableContainer {
-	overflow-x: auto;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	margin-bottom: 20px;
+/* Validation icons */
+.validation-icon {
+	flex-shrink: 0;
 }
 
-.viewTable {
-	width: 100%;
-	border-collapse: collapse;
-	background-color: var(--color-main-background);
+.error-icon {
+	color: var(--color-error);
 }
 
+.warning-icon {
+	color: var(--color-warning);
+}
+
+.lock-icon {
+	color: var(--color-text-lighter);
+}
+
+.new-icon {
+	color: var(--color-primary-element);
+}
+
+.prop-cell-content {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Other necessary styles */
 .viewTableRow {
-	border-bottom: 1px solid var(--color-border);
+	cursor: pointer;
+	transition: background-color 0.2s ease;
 }
 
 .viewTableRow:hover {
 	background-color: var(--color-background-hover);
 }
 
-.viewTableRow.active {
+.viewTableRow.selected-row {
 	background-color: var(--color-primary-light);
 }
 
-.viewTableRow th {
+.viewTableRow.edited-row {
+	background-color: var(--color-success-light);
+	border-left: 3px solid var(--color-success);
+}
+
+.viewTableRow.edited-row.selected-row {
+	background-color: var(--color-primary-light);
+	border-left: 3px solid var(--color-success);
+}
+
+.viewTableRow.non-editable-row {
 	background-color: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-	font-weight: bold;
-	padding: 12px;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
+	cursor: not-allowed;
+	opacity: 0.7;
 }
 
-.viewTableRow td {
-	padding: 12px;
-	vertical-align: middle;
+.viewTableRow.non-editable-row:hover {
+	background-color: var(--color-background-dark);
 }
+</style>
 
-.tableColumnCheckbox {
-	width: 50px;
-	text-align: center;
-}
-
-.tableColumnConstrained {
-	width: 150px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.tableColumnExpanded {
-	width: auto;
-	min-width: 200px;
-}
-
+<style scoped>
+/* ViewObject-specific overrides only */
 .tableColumnActions {
 	width: 100px;
 	text-align: center;
 }
 
-.table-row-title {
-	display: flex;
-	align-items: center;
-	gap: 10px;
+/* Inline editing styles */
+.viewTableRow {
+	cursor: pointer;
+	transition: background-color 0.2s ease;
 }
 
-.detail-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive columns */
-	gap: 16px;
-	margin-bottom: 20px; /* Remove auto, use 0 for left/right */
-	padding: 0 20px; /* Add horizontal padding to match modal */
-	width: 100%;
-	box-sizing: border-box;
-}
-
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	padding: 12px;  /* Slightly increased padding */
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-	border-left: 3px solid var(--color-primary);
-}
-
-.id-card-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 4px;
-}
-
-.id-card .detail-value {
-	word-break: break-all;
-	margin-top: 4px;
-}
-
-.copy-button {
-	flex-shrink: 0;
-}
-
-.detail-value-with-copy {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	justify-content: space-between;
-}
-
-.detail-value-with-copy .detail-value {
-	flex: 1;
-	word-break: break-all;
-}
-
-.prop-cell   {
-	width: 30%;
-	font-weight: 600;
-	border-left: 3px solid var(--color-primary);
-}
-.value-cell  {
-	width: 70%;
-	word-break: break-word;
-	border-radius: 4px;
-}
-
-.json-value {
-	background: var(--color-background-dark);
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-	padding: 6px 8px;
-	margin: 6px;
-	white-space: pre-wrap;
-	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-	font-size: .875rem;
-	line-height: 1.35;
-}
-
-.detail-item.empty-value {
-	border-left-color: var(--color-warning);
-}
-
-.detail-label {
-	font-weight: bold;
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 4px;
-}
-
-.detail-value {
-	word-break: break-word;
-}
-
-/* Remove the old section container and metadata styles */
-.section-container,
-.metadata-grid,
-.metadata-item,
-.label,
-.value {
-	display: none;
-}
-
-.format-json-button {
-	position: absolute;
-	bottom: 0;
-	right: 0;
-	transform: translateY(100%);
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-}
-
-.copy-button {
-	margin-top: 5px;
-}
-
-.error-message {
-	position: absolute;
-	bottom: 0;
-	right: 50%;
-	transform: translateY(100%) translateX(50%);
-	color: var(--color-error);
-	font-size: 0.8rem;
-	padding-top: 0.25rem;
-}
-
-/* Dark mode specific styles */
-.codeMirrorContainer.dark :deep(.cm-editor) {
-	background-color: var(--color-background-darker);
-}
-
-.codeMirrorContainer.light :deep(.cm-editor) {
+.viewTableRow:hover {
 	background-color: var(--color-background-hover);
 }
 
-/* Add tab container styles */
-.tabContainer {
-	margin-top: 20px;
+.viewTableRow.selected-row {
+	background-color: var(--color-primary-light);
 }
 
-/* Style the tabs to match ViewObject */
-:deep(.nav-tabs) {
-	border-bottom: 1px solid var(--color-border);
-	margin-bottom: 15px;
+.viewTableRow.edited-row {
+	background-color: var(--color-success-light);
+	border-left: 3px solid var(--color-success);
 }
 
-:deep(.nav-tabs .nav-link) {
-	border: none;
-	border-bottom: 2px solid transparent;
-	color: var(--color-text-maxcontrast);
-	padding: 8px 16px;
+.viewTableRow.edited-row.selected-row {
+	background-color: var(--color-primary-light);
+	border-left: 3px solid var(--color-success);
 }
 
-:deep(.nav-tabs .nav-link.active) {
-	color: var(--color-main-text);
-	border-bottom: 2px solid var(--color-primary);
-	background-color: transparent;
+.viewTableRow.property-invalid {
+	background-color: var(--color-error-light);
+	border-left: 4px solid var(--color-error);
 }
 
-:deep(.nav-tabs .nav-link:hover) {
-	border-bottom: 2px solid var(--color-border);
+.viewTableRow.property-warning {
+	background-color: var(--color-warning-light);
+	border-left: 4px solid var(--color-warning);
 }
 
-:deep(.tab-content) {
-	padding: 16px;
-	background-color: var(--color-main-background);
-}
-
-/* Form editor specific styles */
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px;
-}
-
-.field-label-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.array-editor {
-  list-style: none;
-  padding-left: 0;
-  margin-bottom: 6px;
-}
-.array-editor li {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-/* CodeMirror */
-.codeMirrorContainer {
-	margin-block-start: 6px;
-}
-
-.codeMirrorContainer :deep(.cm-content) {
-	border-radius: 0 !important;
-	border: none !important;
-}
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
-
-/* value text color */
-/* string */
-.codeMirrorContainer.light :deep(.ͼe) {
-	color: #448c27;
-}
-.codeMirrorContainer.dark :deep(.ͼe) {
-	color: #88c379;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.ͼc) {
-	color: #221199;
-}
-.codeMirrorContainer.dark :deep(.ͼc) {
-	color: #8d64f7;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.ͼb) {
-	color: #770088;
-}
-.codeMirrorContainer.dark :deep(.ͼb) {
-	color: #be55cd;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-    color: black;
-}
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-    color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-    color: #2d770f;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-    color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
-}
-
-/* Property validation indicators */
-.property-valid {
-	border-left: 4px solid var(--color-success) !important;
-}
-
-.property-invalid {
-	border-left: 4px solid var(--color-error) !important;
-}
-
-.property-warning {
-	border-left: 4px solid var(--color-warning) !important;
-}
-
-.prop-cell {
-	width: 30%;
-	font-weight: 600;
-	border-left: 3px solid var(--color-primary);
+.viewTableRow.property-new {
+	background-color: var(--color-primary-element-light);
+	border-left: 4px solid var(--color-primary-element);
 }
 
 .prop-cell-content {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 }
 
 .validation-icon {
 	flex-shrink: 0;
 }
 
-.validation-icon.error-icon {
+.error-icon {
 	color: var(--color-error);
 }
 
-.validation-icon.warning-icon {
+.warning-icon {
 	color: var(--color-warning);
 }
 
-.value-cell {
-	width: 70%;
-	word-break: break-word;
-	border-radius: 4px;
+.lock-icon {
+	color: var(--color-text-lighter);
 }
 
-/* Override the default border for validated properties */
-.property-valid .prop-cell,
-.property-invalid .prop-cell,
-.property-warning .prop-cell {
-	border-left: none;
+.new-icon {
+	color: var(--color-primary-element);
+}
+
+/* Icon colors for file status */
+.warningIcon {
+	color: var(--color-warning);
+}
+
+.publishedIcon {
+	color: var(--color-success);
+}
+
+.viewTableRow.non-editable-row {
+	background-color: var(--color-background-dark);
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.viewTableRow.non-editable-row:hover {
+	background-color: var(--color-background-dark);
+}
+
+.value-cell {
+	position: relative;
+}
+
+.value-input-container {
+	padding: 0;
+	margin: 0;
+	width: 100%;
+}
+
+.value-input-container .text-field {
+	margin: 0;
+	padding: 0;
+}
+
+.json-value {
+	max-height: 200px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	font-family: monospace;
+	font-size: 12px;
+	background: var(--color-background-dark);
+	padding: 8px;
+	border-radius: 4px;
+	margin: 0;
 }
 </style>

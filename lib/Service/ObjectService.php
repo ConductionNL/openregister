@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
@@ -44,6 +45,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
+use OCP\IUserSession;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Service class for managing objects in the OpenRegister application.
@@ -90,6 +93,8 @@ class ObjectService
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
      * @param FileService        $fileService        Service for file operations.
+     * @param IUserSession       $userSession        User session for getting current user.
+     * @param SearchTrailService $searchTrailService Service for search trail operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -102,7 +107,9 @@ class ObjectService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileService $fileService
+        private readonly FileService $fileService,
+        private readonly IUserSession $userSession,
+        private readonly SearchTrailService $searchTrailService
     ) {
 
     }//end __construct()
@@ -323,21 +330,31 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject($object, $this->currentSchema);
-        if ($result->isValid() === false) {
-            throw new ValidationException($result->error()->message(), errors: $result->error());
+        // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
+
+        // Create a temporary object entity to generate UUID and create folder
+        $tempObject = new ObjectEntity();
+        $tempObject->setRegister($this->currentRegister->getId());
+        $tempObject->setSchema($this->currentSchema->getId());
+        $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        
+        // Create folder before saving to avoid double update
+        $folderId = null;
+        try {
+            $folderId = $this->fileService->createObjectFolderWithoutUpdate($tempObject);
+        } catch (\Exception $e) {
+            // Log error but continue - object can function without folder
+            error_log("Failed to create folder for new object: " . $e->getMessage());
         }
 
-        // Save the object using the current register and schema.
+        // Save the object using the current register and schema with folder ID
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
-            $object
+            $object,
+            $tempObject->getUuid(),
+            $folderId
         );
-
-        // Ensure folder exists for the saved object
-        $this->ensureObjectFolderExists($savedObject);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -387,7 +404,7 @@ class ObjectService
         // Retrieve the existing object by its UUID.
         $existingObject = $this->getHandler->find(id: $id);
         if ($existingObject === null) {
-            throw new DoesNotExistException('Object not found');
+            throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
 
         // If patch is true, merge the existing object with the new data.
@@ -395,10 +412,17 @@ class ObjectService
             $object = array_merge($existingObject->getObject(), $object);
         }
 
-        // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
-        if ($result->isValid() === false) {
-            throw new ValidationException($result->error()->message(), errors: $result->error());
+        // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
+
+        // Create folder before saving if object doesn't have one
+        $folderId = null;
+        if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
+            try {
+                $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
+            } catch (\Exception $e) {
+                // Log error but continue - object can function without folder
+                error_log("Failed to create folder for updated object: " . $e->getMessage());
+            }
         }
 
         // Save the object using the current register and schema.
@@ -406,11 +430,9 @@ class ObjectService
             register: $this->currentRegister,
             schema: $this->currentSchema,
             data: $object,
-            uuid: $id
+            uuid: $id,
+            folderId: $folderId
         );
-
-        // Ensure folder exists for the saved object
-        $this->ensureObjectFolderExists($savedObject);
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -614,9 +636,9 @@ class ObjectService
 
 
     /**
-     * Saves an object from an array.
+     * Saves an object from an array or ObjectEntity.
      *
-     * @param array                    $object   The object data to save.
+     * @param array|ObjectEntity       $object   The object data to save or ObjectEntity instance.
      * @param array|null               $extend   Properties to extend the object with.
      * @param Register|string|int|null $register The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
@@ -627,7 +649,7 @@ class ObjectService
      * @throws Exception If there is an error during save.
      */
     public function saveObject(
-        array $object,
+        array | ObjectEntity $object,
         ?array $extend=[],
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
@@ -643,24 +665,76 @@ class ObjectService
             $this->setSchema($schema);
         }
 
+        // Debug logging can be added here if needed
+        // echo "=== SAVEOBJECT START ===\n";
+        
+        // Handle ObjectEntity input - extract UUID and convert to array
+        if ($object instanceof ObjectEntity) {
+            // If no UUID was passed, use the UUID from the existing object
+            if ($uuid === null) {
+                $uuid = $object->getUuid();
+            }
+            $object = $object->getObject(); // Get the object data array
+        }
+
+        // Store the parent object's register and schema context before cascading
+        // This prevents nested object creation from corrupting the main object's context
+        $parentRegister = $this->currentRegister;
+        $parentSchema = $this->currentSchema;
+        
+        // Pre-validation cascading: Handle inversedBy properties BEFORE validation
+        // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects
+        [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
+        
+        // Restore the parent object's register and schema context after cascading
+        $this->currentRegister = $parentRegister;
+        $this->currentSchema = $parentSchema;
+
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
             $result = $this->validateHandler->validateObject($object, $this->currentSchema);
             if ($result->isValid() === false) {
-                throw new ValidationException($result->error()->message(), errors: $result->error());
+                $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
+                throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
+            // error_log('[ObjectService] Object validation passed'); // Removed info log
+        } else {
+            // error_log('[ObjectService] Hard validation disabled, skipping validation'); // Removed info log
         }
 
+        // Handle folder creation for existing objects or new objects with UUIDs
+        $folderId = null;
+        if ($uuid !== null) {
+            // For existing objects or objects with specific UUIDs, check if folder needs to be created
+            try {
+                $existingObject = $this->objectEntityMapper->find($uuid);
+                if ($existingObject->getFolder() === null || $existingObject->getFolder() === '' || is_string($existingObject->getFolder())) {
+                    try {
+                        $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
+                    } catch (\Exception $e) {
+                        // Log error but continue - object can function without folder
+                        error_log("Failed to create folder for existing object: " . $e->getMessage());
+                    }
+                }
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Object not found, will create new one with the specified UUID
+                // Let SaveObject handle the creation with the provided UUID
+            } catch (\Exception $e) {
+                // Other errors - let SaveObject handle the creation
+                error_log("Error checking for existing object: " . $e->getMessage());
+            }
+        }
+        // For new objects without UUID, let SaveObject generate the UUID and handle folder creation
+
         // Save the object using the current register and schema.
+        // Let SaveObject handle the UUID logic completely
         $savedObject = $this->saveHandler->saveObject(
             $this->currentRegister,
             $this->currentSchema,
             $object,
-            $uuid
+            $uuid,
+            $folderId
         );
-
-        // Ensure folder exists for the saved object
-        $this->ensureObjectFolderExists($savedObject);
 
         // Determine if register and schema should be passed to renderEntity.
         if (isset($config['filters']['register']) === true) {
@@ -728,12 +802,16 @@ class ObjectService
             if (isset($registerArray['schemas']) === true && is_array($registerArray['schemas']) === true) {
                 $registerArray['schemas'] = array_map(
                     function ($schemaId) {
-                        try {
-                            return $this->schemaMapper->find($schemaId)->jsonSerialize();
-                        } catch (Exception $e) {
-                            // If schema can't be found, return the ID.
-                            return $schemaId;
+                        // Only expand if it's an int or string (ID/UUID/slug)
+                        if (is_int($schemaId) || is_string($schemaId)) {
+                            try {
+                                return $this->schemaMapper->find($schemaId)->jsonSerialize();
+                            } catch (Exception $e) {
+                                return $schemaId;
+                            }
                         }
+                        // If it's already an array/object, return as-is
+                        return $schemaId;
                     },
                     $registerArray['schemas']
                 );
@@ -767,6 +845,7 @@ class ObjectService
         $search = $requestParams['_search'] ?? null;
         $fields = $requestParams['_fields'] ?? null;
         $published = $requestParams['_published'] ?? false;
+        $facetable = $requestParams['_facetable'] ?? false;
 
         if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
@@ -786,7 +865,7 @@ class ObjectService
         $filters = $requestParams;
         unset($filters['_route']);
         // TODO: Investigate why this is here and if it's needed.
-        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search']);
+        unset($filters['_extend'], $filters['_limit'], $filters['_offset'], $filters['_order'], $filters['_page'], $filters['_search'], $filters['_facetable']);
         unset($filters['extend'], $filters['limit'], $filters['offset'], $filters['order'], $filters['page']);
 
         if (isset($filters['register']) === false) {
@@ -845,13 +924,24 @@ class ObjectService
         
         $facets = $this->getFacetsForObjects($facetQuery);
 
-        return [
+        // Build the result array with pagination and faceting data
+        $result = [
             'results' => $objects,
             'facets'  => $facets,
             'total'   => $total,
             'page'    => $page ?? 1,
             'pages'   => $pages,
         ];
+
+        // Add facetable field discovery if requested
+        if ($facetable === true || $facetable === 'true') {
+            $baseQuery = $facetQuery; // Use the same base query as for facets
+            $sampleSize = (int) ($requestParams['_sample_size'] ?? 100);
+            
+            $result['facetable'] = $this->getFacetableFields($baseQuery, $sampleSize);
+        }
+
+        return $result;
 
     }//end findAllPaginated()
 
@@ -1068,10 +1158,12 @@ class ObjectService
 
 
     /**
-     * Get facets for objects using clean query structure
+     * Get facets for objects matching the given criteria
      *
-     * This method provides facets for objects that match the search query structure.
-     * It uses the new faceting system exclusively and requires _facets configuration.
+     * This method provides comprehensive faceting capabilities for object data,
+     * supporting both metadata facets (like register, schema, dates) and object
+     * field facets (like status, category, priority). It uses the new facet
+     * handlers for optimal performance and consistency.
      *
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
@@ -1090,12 +1182,12 @@ class ObjectService
     public function getFacetsForObjects(array $query = []): array
     {
         // Always use the new comprehensive faceting system via ObjectEntityMapper
-        $result = $this->objectEntityMapper->getSimpleFacets($query);
+        $facets = $this->objectEntityMapper->getSimpleFacets($query);
         
         // Load register and schema context for enhanced metadata
         $this->loadRegistersAndSchemas($query);
         
-        return $result;
+        return ['facets' => $facets];
 
     }//end getFacetsForObjects()
 
@@ -1103,12 +1195,16 @@ class ObjectService
     /**
      * Get facetable fields for discovery
      *
-     * This method provides comprehensive information about which fields can be used
-     * for faceting, including their types, available facet types, and sample data.
-     * It's designed to help frontends understand what faceting options are available.
+     * This method provides a comprehensive list of fields that can be used for faceting
+     * by analyzing schema definitions instead of object data. This approach is more
+     * efficient and provides consistent faceting based on schema property definitions.
+     *
+     * Fields are marked as facetable in schema properties by setting 'facetable': true.
+     * This method will return configuration for both metadata fields (@self) and
+     * object fields based on their schema definitions.
      *
      * @param array $baseQuery Base query filters to apply for context
-     * @param int   $sampleSize Maximum number of objects to analyze for object fields
+     * @param int   $sampleSize Unused parameter, kept for backward compatibility
      *
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-param int $sampleSize
@@ -1116,16 +1212,17 @@ class ObjectService
      * @psalm-param array<string, mixed> $baseQuery
      * @psalm-param int $sampleSize
      *
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If facetable field discovery fails
      *
-     * @return array Comprehensive facetable field information with structure:
-     *               - @self: Metadata fields (register, schema, dates, etc.)
-     *               - object_fields: JSON object fields discovered from data
+     * @return array Comprehensive facetable field information from schemas
      */
     public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
     {
-        // Use the ObjectEntityMapper to get facetable fields from both handlers
-        return $this->objectEntityMapper->getFacetableFields($baseQuery, $sampleSize);
+        try {
+            return $this->objectEntityMapper->getFacetableFields($baseQuery);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to get facetable fields from schemas: ' . $e->getMessage(), 0, $e);
+        }
 
     }//end getFacetableFields()
 
@@ -1266,6 +1363,9 @@ class ObjectService
      */
     public function searchObjectsPaginated(array $query = []): array
     {
+        // Start timing execution
+        $startTime = microtime(true);
+        
         // Extract pagination parameters
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1355,6 +1455,12 @@ class ObjectService
             $paginatedResults['prev'] = $prevUrl;
         }
 
+        // Calculate execution time in milliseconds
+        $executionTime = (microtime(true) - $startTime) * 1000;
+
+        // Log the search trail with actual execution time
+        $this->logSearchTrail($query, count($results), $total, $executionTime, 'sync');
+
         return $paginatedResults;
 
     }//end searchObjectsPaginated()
@@ -1398,6 +1504,9 @@ class ObjectService
      */
     public function searchObjectsPaginatedAsync(array $query = []): PromiseInterface
     {
+        // Start timing execution
+        $startTime = microtime(true);
+        
         // Extract pagination parameters (same as synchronous version)
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1479,7 +1588,7 @@ class ObjectService
         });
 
         // Execute all promises concurrently and combine results
-        return \React\Promise\all($promises)->then(function ($results) use ($page, $limit, $offset) {
+        return \React\Promise\all($promises)->then(function ($results) use ($page, $limit, $offset, $query, $startTime) {
             // Extract results from promises
             $searchResults = $results['search'];
             $total = $results['count'];
@@ -1528,6 +1637,12 @@ class ObjectService
                 $paginatedResults['prev'] = $prevUrl;
             }
 
+            // Calculate execution time in milliseconds
+            $executionTime = (microtime(true) - $startTime) * 1000;
+
+            // Log the search trail with actual execution time
+            $this->logSearchTrail($query, count($searchResults), $total, $executionTime, 'async');
+
             return $paginatedResults;
         });
 
@@ -1558,6 +1673,7 @@ class ObjectService
         $promise = $this->searchObjectsPaginatedAsync($query);
         
         // Use React's await functionality to get the result synchronously
+        // Note: The async version already logs the search trail, so we don't need to log again
         return \React\Async\await($promise);
 
     }//end searchObjectsPaginatedSync()
@@ -1769,5 +1885,916 @@ class ObjectService
 	{
 		return $this->objectEntityMapper->unlockObject(identifier: $identifier);
 	}
+
+
+    /**
+     * Merge two objects within the same register and schema
+     *
+     * This method merges a source object into a target object, handling properties,
+     * files, and relations according to the specified actions. The source object
+     * is deleted after successful merge.
+     *
+     * @param string $sourceObjectId The ID/UUID of the source object (object A)
+     * @param array $mergeData Merge request data containing:
+     *                        - target: Target object ID (object to merge into)
+     *                        - object: Merged object data (without id)
+     *                        - fileAction: File action ('transfer' or 'delete')
+     *                        - relationAction: Relation action ('transfer' or 'drop')
+     *
+     * @return array The merge report containing results and statistics
+     *
+     * @throws DoesNotExistException If either object doesn't exist
+     * @throws \InvalidArgumentException If objects are not in the same register/schema or required data is missing
+     * @throws \Exception If there's an error during the merge process
+     *
+     * @phpstan-param array<string, mixed> $mergeData
+     * @phpstan-return array<string, mixed>
+     * @psalm-param array<string, mixed> $mergeData
+     * @psalm-return array<string, mixed>
+     */
+    public function mergeObjects(string $sourceObjectId, array $mergeData): array {
+        // Extract parameters from merge data
+        $targetObjectId = $mergeData['target'] ?? null;
+        $mergedData = $mergeData['object'] ?? [];
+        $fileAction = $mergeData['fileAction'] ?? 'transfer';
+        $relationAction = $mergeData['relationAction'] ?? 'transfer';
+
+        if (!$targetObjectId) {
+            throw new \InvalidArgumentException('Target object ID is required');
+        }
+        
+        // Initialize merge report
+        $mergeReport = [
+            'success' => false,
+            'sourceObject' => null,
+            'targetObject' => null,
+            'mergedObject' => null,
+            'actions' => [
+                'properties' => [],
+                'files' => [],
+                'relations' => [],
+                'references' => []
+            ],
+            'statistics' => [
+                'propertiesChanged' => 0,
+                'filesTransferred' => 0,
+                'filesDeleted' => 0,
+                'relationsTransferred' => 0,
+                'relationsDropped' => 0,
+                'referencesUpdated' => 0
+            ],
+            'warnings' => [],
+            'errors' => []
+        ];
+
+        try {
+            // Fetch both objects directly from mapper for updating (not rendered)
+            
+            try {
+                $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
+            } catch (\Exception $e) {
+                $sourceObject = null;
+            }
+            
+            try {
+                $targetObject = $this->objectEntityMapper->find($targetObjectId);
+            } catch (\Exception $e) {
+                $targetObject = null;
+            }
+
+            if ($sourceObject === null) {
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Source object not found');
+            }
+
+            if ($targetObject === null) {
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Target object not found');
+            }
+
+            // Store original objects in report
+            $mergeReport['sourceObject'] = $sourceObject->jsonSerialize();
+            $mergeReport['targetObject'] = $targetObject->jsonSerialize();
+
+            // Validate objects are in same register and schema
+            if ($sourceObject->getRegister() !== $targetObject->getRegister()) {
+                throw new \InvalidArgumentException('Objects must be in the same register');
+            }
+
+            if ($sourceObject->getSchema() !== $targetObject->getSchema()) {
+                throw new \InvalidArgumentException('Objects must conform to the same schema');
+            }
+
+            // Merge properties
+            $targetObjectData = $targetObject->getObject();
+            $changedProperties = [];
+
+            foreach ($mergedData as $property => $value) {
+                $oldValue = $targetObjectData[$property] ?? null;
+                
+                if ($oldValue !== $value) {
+                    $targetObjectData[$property] = $value;
+                    $changedProperties[] = [
+                        'property' => $property,
+                        'oldValue' => $oldValue,
+                        'newValue' => $value
+                    ];
+                    $mergeReport['statistics']['propertiesChanged']++;
+                }
+            }
+
+            $mergeReport['actions']['properties'] = $changedProperties;
+
+            // Handle files
+            if ($fileAction === 'transfer' && $sourceObject->getFolder() !== null) {
+                try {
+                    $fileResult = $this->transferObjectFiles($sourceObject, $targetObject);
+                    $mergeReport['actions']['files'] = $fileResult['files'];
+                    $mergeReport['statistics']['filesTransferred'] = $fileResult['transferred'];
+                    
+                    if (!empty($fileResult['errors'])) {
+                        $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
+                    }
+                } catch (\Exception $e) {
+                    $mergeReport['warnings'][] = 'Failed to transfer files: ' . $e->getMessage();
+                }
+            } elseif ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+                try {
+                    $deleteResult = $this->deleteObjectFiles($sourceObject);
+                    $mergeReport['actions']['files'] = $deleteResult['files'];
+                    $mergeReport['statistics']['filesDeleted'] = $deleteResult['deleted'];
+                    
+                    if (!empty($deleteResult['errors'])) {
+                        $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
+                    }
+                } catch (\Exception $e) {
+                    $mergeReport['warnings'][] = 'Failed to delete files: ' . $e->getMessage();
+                }
+            }
+
+            // Handle relations
+            if ($relationAction === 'transfer') {
+                $sourceRelations = $sourceObject->getRelations();
+                $targetRelations = $targetObject->getRelations();
+                
+                $transferredRelations = [];
+                foreach ($sourceRelations as $relation) {
+                    if (!in_array($relation, $targetRelations)) {
+                        $targetRelations[] = $relation;
+                        $transferredRelations[] = $relation;
+                        $mergeReport['statistics']['relationsTransferred']++;
+                    }
+                }
+                
+                $targetObject->setRelations($targetRelations);
+                $mergeReport['actions']['relations'] = [
+                    'action' => 'transferred',
+                    'relations' => $transferredRelations
+                ];
+            } else {
+                $mergeReport['actions']['relations'] = [
+                    'action' => 'dropped',
+                    'relations' => $sourceObject->getRelations()
+                ];
+                $mergeReport['statistics']['relationsDropped'] = count($sourceObject->getRelations());
+            }
+
+            // Update target object with merged data
+            $targetObject->setObject($targetObjectData);
+            $updatedObject = $this->objectEntityMapper->update($targetObject);
+
+            // Update references to source object
+            $referencingObjects = $this->findByRelations($sourceObject->getUuid());
+            $updatedReferences = [];
+
+            foreach ($referencingObjects as $referencingObject) {
+                $relations = $referencingObject->getRelations();
+                $updated = false;
+
+                for ($i = 0; $i < count($relations); $i++) {
+                    if ($relations[$i] === $sourceObject->getUuid()) {
+                        $relations[$i] = $targetObject->getUuid();
+                        $updated = true;
+                        $mergeReport['statistics']['referencesUpdated']++;
+                    }
+                }
+
+                if ($updated) {
+                    $referencingObject->setRelations($relations);
+                    $this->objectEntityMapper->update($referencingObject);
+                    $updatedReferences[] = [
+                        'objectId' => $referencingObject->getUuid(),
+                        'title' => $referencingObject->getTitle() ?? $referencingObject->getUuid()
+                    ];
+                }
+            }
+
+            $mergeReport['actions']['references'] = $updatedReferences;
+
+            // Soft delete source object using the entity's delete method
+            $sourceObject->delete($this->userSession, 'Merged into object ' . $targetObject->getUuid());
+            $this->objectEntityMapper->update($sourceObject);
+
+            // Set success and add merged object to report
+            $mergeReport['success'] = true;
+            $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
+            
+            // Merge completed successfully
+
+        } catch (\Exception $e) {
+            // Handle merge error
+            $mergeReport['errors'][] = "Merge failed: " . $e->getMessage();
+            $mergeReport['errors'][] = $e->getMessage();
+            throw $e;
+        }
+
+        return $mergeReport;
+
+    }//end mergeObjects()
+
+
+    /**
+     * Transfer files from source object to target object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     * @param ObjectEntity $targetObject The target object
+     *
+     * @return array Result of file transfer operation
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
+    {
+        $result = [
+            'files' => [],
+            'transferred' => 0,
+            'errors' => []
+        ];
+
+        try {
+            // Ensure target object has a folder
+            $this->ensureObjectFolderExists($targetObject);
+
+            // Get files from source folder
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+            
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    // Get file content and create new file in target object
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+                    
+                    // Create new file in target object folder
+                    $this->fileService->addFile(
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
+                        content: $fileContent,
+                        share: false,
+                        tags: []
+                    );
+                    
+                    // Delete original file from source
+                    $this->fileService->deleteFile($file, $sourceObject);
+                    
+                    $result['files'][] = [
+                        'name' => $fileName,
+                        'action' => 'transferred',
+                        'success' => true
+                    ];
+                    $result['transferred']++;
+                } catch (\Exception $e) {
+                    $result['files'][] = [
+                        'name' => $file->getName(),
+                        'action' => 'transfer_failed',
+                        'success' => false,
+                        'error' => $e->getMessage()
+                    ];
+                    $result['errors'][] = 'Failed to transfer file ' . $file->getName() . ': ' . $e->getMessage();
+                }
+            }
+        } catch (\Exception $e) {
+            $result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+        }
+
+        return $result;
+
+    }//end transferObjectFiles()
+
+
+    /**
+     * Delete files from source object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     *
+     * @return array Result of file deletion operation
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    private function deleteObjectFiles(ObjectEntity $sourceObject): array
+    {
+        $result = [
+            'files' => [],
+            'deleted' => 0,
+            'errors' => []
+        ];
+
+        try {
+            // Get files from source folder
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+            
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    $fileName = $file->getName();
+                    
+                    // Delete the file using FileService
+                    $this->fileService->deleteFile($file, $sourceObject);
+                    
+                    $result['files'][] = [
+                        'name' => $fileName,
+                        'action' => 'deleted',
+                        'success' => true
+                    ];
+                    $result['deleted']++;
+                } catch (\Exception $e) {
+                    $result['files'][] = [
+                        'name' => $file->getName(),
+                        'action' => 'delete_failed',
+                        'success' => false,
+                        'error' => $e->getMessage()
+                    ];
+                    $result['errors'][] = 'Failed to delete file ' . $file->getName() . ': ' . $e->getMessage();
+                }
+            }
+        } catch (\Exception $e) {
+            $result['errors'][] = 'Failed to access source files: ' . $e->getMessage();
+        }
+
+        return $result;
+
+    }//end deleteObjectFiles()
+
+
+
+
+    /**
+     * Handles pre-validation cascading for inversedBy properties
+     *
+     * This method processes properties with inversedBy configuration BEFORE validation.
+     * It creates related objects from nested object data and replaces them with UUIDs
+     * so that validation sees UUIDs instead of objects.
+     *
+     * @param array       $object The object data to process
+     * @param Schema      $schema The schema containing property definitions
+     * @param string|null $uuid   The UUID of the parent object (will be generated if null)
+     *
+     * @return array Array containing [processedObject, parentUuid]
+     *
+     * @throws Exception If there's an error during object creation
+     */
+    private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
+    {
+        // Pre-validation cascading to handle nested objects
+        
+        try {
+            // Get the URL generator from the SaveObject handler
+            $urlGenerator = new \ReflectionClass($this->saveHandler);
+            $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
+            $urlGeneratorProperty->setAccessible(true);
+            $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
+            
+            $schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
+            $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+            // Process schema properties for inversedBy relationships
+        } catch (Exception $e) {
+            // Handle error in schema processing
+            return [$object, $uuid];
+        }
+
+        // Find properties that have inversedBy configuration
+        $inversedByProperties = array_filter(
+            $properties,
+            function (array $property) {
+                // Check for inversedBy in array items
+                if ($property['type'] === 'array' && isset($property['items']['inversedBy'])) {
+                    return true;
+                }
+                // Check for inversedBy in direct object properties
+                if (isset($property['inversedBy'])) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        // Check if we have any inversedBy properties to process
+        if (empty($inversedByProperties)) {
+            return [$object, $uuid];
+        }
+
+        // Generate UUID for parent object if not provided
+        if ($uuid === null) {
+            $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+        }
+
+        foreach ($inversedByProperties as $propertyName => $definition) {
+            // Skip if property not present in data or is empty
+            if (!isset($object[$propertyName]) || empty($object[$propertyName])) {
+                continue;
+            }
+
+            $propertyValue = $object[$propertyName];
+
+            // Handle array properties
+            if ($definition['type'] === 'array' && isset($definition['items']['inversedBy'])) {
+                if (is_array($propertyValue) && !empty($propertyValue)) {
+                    $createdUuids = [];
+                    foreach ($propertyValue as $item) {
+                        if (is_array($item) && !$this->isUuid($item)) {
+                            // This is a nested object, create it first
+                            $createdUuid = $this->createRelatedObject($item, $definition['items'], $uuid);
+                            if ($createdUuid) {
+                                $createdUuids[] = $createdUuid;
+                            }
+                        } elseif (is_string($item) && $this->isUuid($item)) {
+                            // This is already a UUID, keep it
+                            $createdUuids[] = $item;
+                        }
+                    }
+                    $object[$propertyName] = $createdUuids;
+                }
+            }
+            // Handle single object properties
+            elseif (isset($definition['inversedBy']) && !($definition['type'] === 'array')) {
+                if (is_array($propertyValue) && !$this->isUuid($propertyValue)) {
+                    // This is a nested object, create it first
+                    $createdUuid = $this->createRelatedObject($propertyValue, $definition, $uuid);
+                    if ($createdUuid) {
+                        $object[$propertyName] = $createdUuid;
+                    }
+                }
+            }
+        }
+
+        return [$object, $uuid];
+    }
+
+    /**
+     * Creates a related object and returns its UUID
+     *
+     * @param array  $objectData The object data to create
+     * @param array  $definition The property definition containing schema reference
+     * @param string $parentUuid The UUID of the parent object
+     *
+     * @return string|null The UUID of the created object or null if creation failed
+     */
+    private function createRelatedObject(array $objectData, array $definition, string $parentUuid): ?string
+    {
+        try {
+            // Resolve schema reference to actual schema ID
+            $schemaRef = $definition['$ref'] ?? null;
+            if (!$schemaRef) {
+                return null;
+            }
+
+            // Extract schema slug from reference
+            $schemaSlug = null;
+            if (str_contains($schemaRef, '#/components/schemas/')) {
+                $schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
+            }
+
+            if (!$schemaSlug) {
+                return null;
+            }
+
+            // Find the schema - use the same logic as SaveObject.resolveSchemaReference
+            $targetSchema = null;
+            
+            // First try to find by slug using findAll and filtering
+            $allSchemas = $this->schemaMapper->findAll();
+            foreach ($allSchemas as $schema) {
+                if (strcasecmp($schema->getSlug(), $schemaSlug) === 0) {
+                    $targetSchema = $schema;
+                    break;
+                }
+            }
+            
+            if (!$targetSchema) {
+                return null;
+            }
+
+            // Get the register (use the same register as the parent object)
+            $targetRegister = $this->currentRegister;
+
+            // Add the inverse relationship to the parent object
+            $inversedBy = $definition['inversedBy'] ?? null;
+            if ($inversedBy) {
+                $objectData[$inversedBy] = $parentUuid;
+            }
+
+            // Create the object
+            $createdObject = $this->saveHandler->saveObject(
+                register: $targetRegister,
+                schema: $targetSchema,
+                data: $objectData,
+                uuid: null // Let it generate a new UUID
+            );
+
+            return $createdObject->getUuid();
+        } catch (Exception $e) {
+            // Log error but don't expose details
+            return null;
+        }
+    }
+
+    /**
+     * Checks if a value is a UUID string
+     *
+     * @param mixed $value The value to check
+     *
+     * @return bool True if the value is a UUID string
+     */
+    private function isUuid($value): bool
+    {
+        if (!is_string($value)) {
+            return false;
+        }
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
+    }
+
+    /**
+     * Migrate objects between registers and/or schemas
+     *
+     * This method migrates multiple objects from one register/schema combination
+     * to another register/schema combination with property mapping.
+     *
+     * @param string|int $sourceRegister    The source register ID or slug
+     * @param string|int $sourceSchema      The source schema ID or slug  
+     * @param string|int $targetRegister    The target register ID or slug
+     * @param string|int $targetSchema      The target schema ID or slug
+     * @param array      $objectIds         Array of object IDs to migrate
+     * @param array      $mapping           Simple mapping where keys are target properties, values are source properties
+     *
+     * @return array Migration result with statistics and details
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     *
+     * @throws DoesNotExistException If register or schema not found
+     * @throws \InvalidArgumentException If invalid parameters provided
+     */
+    public function migrateObjects(
+        string|int $sourceRegister,
+        string|int $sourceSchema,
+        string|int $targetRegister,
+        string|int $targetSchema,
+        array $objectIds,
+        array $mapping
+    ): array {
+        // Initialize migration report
+        $migrationReport = [
+            'success' => false,
+            'statistics' => [
+                'objectsMigrated' => 0,
+                'objectsFailed' => 0,
+                'propertiesMapped' => 0,
+                'propertiesDiscarded' => 0,
+            ],
+            'details' => [],
+            'warnings' => [],
+            'errors' => []
+        ];
+
+        try {
+            // Load source and target registers/schemas
+            $sourceRegisterEntity = is_string($sourceRegister) || is_int($sourceRegister) 
+                ? $this->registerMapper->find($sourceRegister) 
+                : $sourceRegister;
+            $sourceSchemaEntity = is_string($sourceSchema) || is_int($sourceSchema) 
+                ? $this->schemaMapper->find($sourceSchema) 
+                : $sourceSchema;
+            $targetRegisterEntity = is_string($targetRegister) || is_int($targetRegister) 
+                ? $this->registerMapper->find($targetRegister) 
+                : $targetRegister;
+            $targetSchemaEntity = is_string($targetSchema) || is_int($targetSchema) 
+                ? $this->schemaMapper->find($targetSchema) 
+                : $targetSchema;
+
+            // Validate entities exist
+            if (!$sourceRegisterEntity || !$sourceSchemaEntity || !$targetRegisterEntity || !$targetSchemaEntity) {
+                throw new \OCP\AppFramework\Db\DoesNotExistException('One or more registers/schemas not found');
+            }
+
+            // Get all source objects at once using ObjectEntityMapper
+            $sourceObjects = $this->objectEntityMapper->findMultiple($objectIds);
+
+            
+            // Keep track of remaining object IDs to find which ones weren't found
+            $remainingObjectIds = $objectIds;
+
+            // Set target context for saving
+            $this->setRegister($targetRegisterEntity);
+            $this->setSchema($targetSchemaEntity);
+
+            // Process each found source object
+            foreach ($sourceObjects as $sourceObject) {
+                $objectId = $sourceObject->getUuid();
+                $objectDetail = [
+                    'objectId' => $objectId,
+                    'objectTitle' => null,
+                    'success' => false,
+                    'error' => null
+                ];
+
+                // Remove this object from the remaining list (it was found) - do this BEFORE try-catch
+                $remainingObjectIds = array_filter($remainingObjectIds, function($id) use ($sourceObject) {
+                    return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
+                });
+
+                try {
+
+                    $objectDetail['objectTitle'] =  $sourceObject->getName() ?? $sourceObject->getUuid();
+
+                    // Verify the source object belongs to the expected register/schema (cast to int for comparison)
+                    if ((int)$sourceObject->getRegister() !== (int)$sourceRegister || 
+                    (int)$sourceObject->getSchema() !== (int)$sourceSchema) {
+                        $actualRegister = $sourceObject->getRegister();
+                        $actualSchema = $sourceObject->getSchema();
+                        throw new \InvalidArgumentException(
+                            "Object {$objectId} does not belong to the specified source register/schema. " .
+                            "Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. " .
+                            "Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                        );
+                    }
+
+                    // Get source object data (the JSON object property)
+                    $sourceData = $sourceObject->getObject();
+
+                    // Map properties according to mapping configuration  
+                    $mappedData = $this->mapObjectProperties($sourceData, $mapping);
+                    $migrationReport['statistics']['propertiesMapped'] += count($mappedData);
+                    $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
+
+                    // Log the mapping result for debugging
+                    error_log("Migration mapping for object {$objectId}: " . json_encode([
+                        'sourceData' => $sourceData,
+                        'mapping' => $mapping,
+                        'mappedData' => $mappedData
+                    ]));
+
+                    // Store original files and relations before altering the object
+                    $originalFiles = $sourceObject->getFolder();
+                    $originalRelations = $sourceObject->getRelations();
+                    
+                    // Alter the existing object to migrate it to the target register/schema
+                    $sourceObject->setRegister($targetRegisterEntity->getId());
+                    
+                    $sourceObject->setSchema($targetSchemaEntity->getId());
+                    
+                    $sourceObject->setObject($mappedData);
+                    
+                    // Update the object using the mapper
+                    $savedObject = $this->objectEntityMapper->update($sourceObject);
+
+                    // Log the save response for debugging
+                    error_log("Migration save response for object {$objectId}: " . json_encode($savedObject->jsonSerialize()));
+
+                    // Handle file migration (files should already be attached to the object)
+                    if ($originalFiles !== null) {
+                        // Files are already associated with this object, no migration needed
+                        error_log("Files preserved for migrated object {$objectId}");
+                    }
+
+                    // Handle relations migration (relations are already on the object)
+                    if (!empty($originalRelations)) {
+                        // Relations are preserved on the object, no additional migration needed
+                        error_log("Relations preserved for migrated object {$objectId}");
+                    }
+
+                    $objectDetail['success'] = true;
+                    $objectDetail['newObjectId'] = $savedObject->getUuid(); // Same UUID, but migrated
+                    $migrationReport['statistics']['objectsMigrated']++;
+
+                } catch (\Exception $e) {
+                    $objectDetail['error'] = $e->getMessage();
+                    $migrationReport['statistics']['objectsFailed']++;
+                    $migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
+                    
+                    // Log the full exception for debugging
+                    error_log("Migration error for object {$objectId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+                }
+
+                $migrationReport['details'][] = $objectDetail;
+            }
+
+            // Handle objects that weren't found
+            foreach ($remainingObjectIds as $notFoundId) {
+                $objectDetail = [
+                    'objectId' => $notFoundId,
+                    'objectTitle' => null,
+                    'success' => false,
+                    'error' => "Object with ID {$notFoundId} not found"
+                ];
+                
+                $migrationReport['details'][] = $objectDetail;
+                $migrationReport['statistics']['objectsFailed']++;
+                $migrationReport['errors'][] = "Failed to migrate object {$notFoundId}: Object not found";
+            }
+
+            // Set overall success if at least one object was migrated
+            $migrationReport['success'] = $migrationReport['statistics']['objectsMigrated'] > 0;
+
+            // Add warnings if some objects failed
+            if ($migrationReport['statistics']['objectsFailed'] > 0) {
+                $migrationReport['warnings'][] = "Some objects failed to migrate. Check details for specific errors.";
+            }
+
+        } catch (\Exception $e) {
+            $migrationReport['errors'][] = $e->getMessage();
+            error_log("Migration process error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            throw $e;
+        }
+
+        return $migrationReport;
+
+    }//end migrateObjects()
+
+
+    /**
+     * Map object properties using simple mapping configuration
+     *
+     * Maps properties from source object data to target object data using a simple mapping array.
+     * The mapping array has target properties as keys and source properties as values.
+     * Only properties that exist in the source data and are mapped will be included.
+     *
+     * @param array $sourceData The source object data
+     * @param array $mapping    Simple mapping array where:
+     *                          - Keys are target property names
+     *                          - Values are source property names
+     *                          Example: ['targetProp' => 'sourceProp', 'Test' => 'titel']
+     *
+     * @return array The mapped object data containing only the mapped properties
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return array<string, mixed>
+     */
+    private function mapObjectProperties(array $sourceData, array $mapping): array
+    {
+        $mappedData = [];
+
+        // Simple mapping: keys are target properties, values are source properties
+        foreach ($mapping as $targetProperty => $sourceProperty) {
+            // Only map if the source property exists in the source data
+            if (array_key_exists($sourceProperty, $sourceData)) {
+                $mappedData[$targetProperty] = $sourceData[$sourceProperty];
+            }
+        }
+
+        return $mappedData;
+
+    }//end mapObjectProperties()
+
+
+    /**
+     * Migrate files from source object to target object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     * @param ObjectEntity $targetObject The target object
+     *
+     * @return void
+     *
+     * @phpstan-return void
+     * @psalm-return void
+     */
+    private function migrateObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): void
+    {
+        try {
+            // Ensure target object has a folder
+            $this->ensureObjectFolderExists($targetObject);
+
+            // Get files from source folder
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+            
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file
+                    if (!($file instanceof \OCP\Files\File)) {
+                        continue;
+                    }
+                    
+                    // Copy file content to target object (don't delete from source yet)
+                    $fileContent = $file->getContent();
+                    $fileName = $file->getName();
+                    
+                    // Create copy of file in target object folder
+                    $this->fileService->addFile(
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
+                        content: $fileContent,
+                        share: false,
+                        tags: []
+                    );
+                } catch (\Exception $e) {
+                    // Log error but continue with other files
+                    error_log("Failed to migrate file {$file->getName()}: " . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the migration
+            error_log("Failed to migrate files for object {$sourceObject->getUuid()}: " . $e->getMessage());
+        }
+
+    }//end migrateObjectFiles()
+
+
+    /**
+     * Migrate relations from source object to target object
+     *
+     * @param ObjectEntity $sourceObject The source object
+     * @param ObjectEntity $targetObject The target object
+     *
+     * @return void
+     *
+     * @phpstan-return void
+     * @psalm-return void
+     */
+    private function migrateObjectRelations(ObjectEntity $sourceObject, ObjectEntity $targetObject): void
+    {
+        try {
+            // Copy relations from source to target
+            $sourceRelations = $sourceObject->getRelations();
+            if (!empty($sourceRelations)) {
+                $targetObject->setRelations($sourceRelations);
+                $this->objectEntityMapper->update($targetObject);
+            }
+
+            // Update references to source object to point to target object
+            $referencingObjects = $this->findByRelations($sourceObject->getUuid());
+
+            foreach ($referencingObjects as $referencingObject) {
+                $relations = $referencingObject->getRelations();
+                $updated = false;
+
+                for ($i = 0; $i < count($relations); $i++) {
+                    if ($relations[$i] === $sourceObject->getUuid()) {
+                        $relations[$i] = $targetObject->getUuid();
+                        $updated = true;
+                    }
+                }
+
+                if ($updated) {
+                    $referencingObject->setRelations($relations);
+                    $this->objectEntityMapper->update($referencingObject);
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the migration
+            error_log("Failed to migrate relations for object {$sourceObject->getUuid()}: " . $e->getMessage());
+        }
+
+    }//end migrateObjectRelations()
+
+
+    /**
+     * Log a search trail for analytics
+     *
+     * This method creates a search trail entry to track search operations,
+     * including search terms, parameters, results, and performance metrics.
+     * System parameters (starting with _) are excluded from tracking.
+     *
+     * @param array  $query         The search query parameters
+     * @param int    $resultCount   The number of results returned
+     * @param int    $totalResults  The total number of matching results
+     * @param float  $executionTime The actual execution time in milliseconds
+     * @param string $executionType The execution type ('sync' or 'async')
+     *
+     * @return void
+     */
+    private function logSearchTrail(array $query, int $resultCount, int $totalResults, float $executionTime, string $executionType = 'sync'): void
+    {
+        try {
+            // Create the search trail entry using the service with actual execution time
+            $this->searchTrailService->createSearchTrail(
+                $query,
+                $resultCount,
+                $totalResults,
+                $executionTime,
+                $executionType
+            );
+        } catch (\Exception $e) {
+            // Log the error but don't fail the request
+            error_log("Failed to log search trail: " . $e->getMessage());
+        }
+
+    }//end logSearchTrail()
 
 }//end class

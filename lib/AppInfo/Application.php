@@ -23,6 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppInfo;
 
+use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -75,6 +79,24 @@ class Application extends App implements IBootstrap
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
+
+        // @TODO: Usually, services are autowired. Les figure out why we need to do this
+        // Register SearchTrail components
+        $context->registerService(SearchTrailMapper::class, function ($container) {
+            return new SearchTrailMapper(
+                $container->get('OCP\IDBConnection'),
+                $container->get('OCP\IRequest'),
+                $container->get('OCP\IUserSession')
+            );
+        });
+
+        $context->registerService(SearchTrailService::class, function ($container) {
+            return new SearchTrailService(
+                $container->get(SearchTrailMapper::class),
+                $container->get(RegisterMapper::class),
+                $container->get(SchemaMapper::class)
+            );
+        });
 
     }//end register()
 

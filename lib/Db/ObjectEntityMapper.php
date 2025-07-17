@@ -68,6 +68,13 @@ class ObjectEntityMapper extends QBMapper
      */
     private IUserSession $userSession;
 
+    /**
+     * Schema mapper instance
+     *
+     * @var SchemaMapper
+     */
+    private SchemaMapper $schemaMapper;
+
 
 
     /**
@@ -111,6 +118,7 @@ class ObjectEntityMapper extends QBMapper
         MySQLJsonService $mySQLJsonService,
         IEventDispatcher $eventDispatcher,
         IUserSession $userSession,
+        SchemaMapper $schemaMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
@@ -123,6 +131,7 @@ class ObjectEntityMapper extends QBMapper
 
         $this->eventDispatcher = $eventDispatcher;
         $this->userSession     = $userSession;
+        $this->schemaMapper    = $schemaMapper;
 
     }//end __construct()
 
@@ -371,12 +380,75 @@ class ObjectEntityMapper extends QBMapper
             $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
         }
 
-
-        // var_dump($qb->getSQL());
-
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+
+    /**
+     * Process search parameter to handle multiple search words
+     *
+     * This method handles the _search parameter which can be:
+     * - A string with comma-separated values
+     * - An array of search terms
+     * - A single search term
+     *
+     * @param mixed $search The search parameter (string or array)
+     *
+     * @return string|null The processed search string ready for the search handler
+     */
+    private function processSearchParameter(mixed $search): ?string
+    {
+        if ($search === null) {
+            return null;
+        }
+
+        $searchTerms = [];
+
+        // Handle array search terms
+        if (is_array($search) === true) {
+            $searchTerms = array_filter(
+                array_map('trim', $search),
+                function ($term) {
+                    return empty($term) === false;
+                }
+            );
+        } else if (is_string($search) === true) {
+            // Handle comma-separated values in string
+            $searchTerms = array_filter(
+                array_map('trim', explode(',', $search)),
+                function ($term) {
+                    return empty($term) === false;
+                }
+            );
+        }
+
+        // If no valid search terms, return null
+        if (empty($searchTerms) === true) {
+            return null;
+        }
+
+        // Process each search term to make them case-insensitive and support partial matches
+        $processedTerms = [];
+        foreach ($searchTerms as $term) {
+            // Convert to lowercase for case-insensitive matching
+            $lowerTerm = strtolower(trim($term));
+            
+            // Add wildcards for partial matching if not already present
+            if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
+                $lowerTerm = '*' . $lowerTerm;
+            }
+            if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
+                $lowerTerm = $lowerTerm . '*';
+            }
+            
+            $processedTerms[] = $lowerTerm;
+        }
+
+        // Join multiple terms with OR logic (any term can match)
+        return implode(' OR ', $processedTerms);
+
+    }//end processSearchParameter()
 
 
     /**
@@ -476,10 +548,16 @@ class ObjectEntityMapper extends QBMapper
      * ]
      * ```
      *
-     * ### `_search` (string|null)
+     * ### `_search` (string|array|null)
      * Full-text search within JSON object data
+     * Supports multiple search words:
+     * - String with comma-separated values: `'_search' => 'customer,service,important'`
+     * - Array of search terms: `'_search' => ['customer', 'service', 'important']`
+     * - Single search term: `'_search' => 'customer service important'`
      * ```php
      * '_search' => 'customer service important'
+     * '_search' => ['customer', 'service', 'important']
+     * '_search' => 'customer,service,important'
      * ```
      *
      * ### `_includeDeleted` (bool)
@@ -586,7 +664,7 @@ class ObjectEntityMapper extends QBMapper
         $limit = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
         $order = $query['_order'] ?? [];
-        $search = $query['_search'] ?? null;
+        $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
         $ids = $query['_ids'] ?? null;
@@ -603,15 +681,15 @@ class ObjectEntityMapper extends QBMapper
             // Process register: convert objects to IDs and handle arrays
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['register']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['register'] = $register;
             }
             
             // Process schema: convert objects to IDs and handle arrays  
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['schema']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['schema'] = $schema;
             }
         }
 
@@ -665,8 +743,10 @@ class ObjectEntityMapper extends QBMapper
                 ->setFirstResult($offset);
         }
 
-        // Handle basic filters
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema);
 
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {
@@ -747,7 +827,7 @@ class ObjectEntityMapper extends QBMapper
      * @param array $query The search query array containing filters and options
      *                     - @self: Metadata filters (register, schema, uuid, etc.)
      *                     - Direct keys: Object field filters for JSON data
-     *                     - _search: Full-text search term
+     *                     - _search: Full-text search term (string or array)
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
      *                     - _ids: Array of IDs/UUIDs to filter by
@@ -763,7 +843,7 @@ class ObjectEntityMapper extends QBMapper
     public function countSearchObjects(array $query = []): int
     {
         // Extract options from query (prefixed with _)
-        $search = $query['_search'] ?? null;
+        $search = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $published = $query['_published'] ?? false;
         $ids = $query['_ids'] ?? null;
@@ -779,15 +859,15 @@ class ObjectEntityMapper extends QBMapper
             // Process register: convert objects to IDs and handle arrays
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['register']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['register'] = $register;
             }
             
             // Process schema: convert objects to IDs and handle arrays  
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
-                // Remove from metadataFilters as we'll handle it separately
-                unset($metadataFilters['schema']);
+                // Keep in metadataFilters for search handler to process properly with other filters
+                $metadataFilters['schema'] = $schema;
             }
         }
 
@@ -816,8 +896,10 @@ class ObjectEntityMapper extends QBMapper
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects');
 
-        // Handle basic filters (same as searchObjects)
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema);
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema);
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
@@ -1127,8 +1209,6 @@ class ObjectEntityMapper extends QBMapper
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
 
-//        var_dump($qb->getSQL());
-
         $result = $qb->executeQuery();
 
         return $result->fetchAll()[0]['count'];
@@ -1151,11 +1231,13 @@ class ObjectEntityMapper extends QBMapper
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $this->hydrateNameAndDescription($entity);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
         
         // Dispatch creation event.
+        // error_log("ObjectEntityMapper: Dispatching ObjectCreatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
 
         return $entity;
@@ -1202,17 +1284,35 @@ class ObjectEntityMapper extends QBMapper
      */
     public function update(Entity $entity, bool $includeDeleted = false): Entity
     {
-        $oldObject = $this->find($entity->getId(), null, null, $includeDeleted);
+        // For ObjectEntity, we need to find by the internal database ID, not UUID
+        // The getId() method returns the database primary key
+        error_log("ObjectEntityMapper->update() called with entity ID: " . ($entity->getId() ?? 'NULL'));
+        error_log("ObjectEntityMapper->update() entity type: " . get_class($entity));
+        
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
+        
+        if (!$includeDeleted) {
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
+        
+        error_log("ObjectEntityMapper->update() about to execute findEntity with internal ID");
+        $oldObject = $this->findEntity($qb);
+        error_log("ObjectEntityMapper->update() successfully found old object for update");
 
         // Lets make sure that @self and id never enter the database.
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
+        $this->hydrateNameAndDescription($entity);
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::update($entity);
 
         // Dispatch update event.
+        // error_log("ObjectEntityMapper: Dispatching ObjectUpdatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
 
         return $entity;
@@ -1265,6 +1365,7 @@ class ObjectEntityMapper extends QBMapper
         $result = parent::delete($object);
 
         // Dispatch deletion event.
+        // error_log("ObjectEntityMapper: Dispatching ObjectDeletedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(
             new ObjectDeletedEvent($object)
         );
@@ -1403,10 +1504,8 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch lock event.
-        $this->eventDispatcher->dispatch(
-            ObjectLockedEvent::class,
-            new ObjectLockedEvent($object)
-        );
+        // error_log("ObjectEntityMapper: Dispatching ObjectLockedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL') . ", Process: " . ($process ?? 'NULL'));
+        $this->eventDispatcher->dispatchTyped(new ObjectLockedEvent($object));
 
         return $object;
 
@@ -1439,10 +1538,8 @@ class ObjectEntityMapper extends QBMapper
         $object = $this->update($object);
 
         // Dispatch unlock event.
-        $this->eventDispatcher->dispatch(
-            ObjectUnlockedEvent::class,
-            new ObjectUnlockedEvent($object)
-        );
+        // error_log("ObjectEntityMapper: Dispatching ObjectUnlockedEvent for object ID: " . ($object->getId() ?? 'NULL') . ", UUID: " . ($object->getUuid() ?? 'NULL'));
+        $this->eventDispatcher->dispatchTyped(new ObjectUnlockedEvent($object));
 
         return $object;
 
@@ -1803,13 +1900,13 @@ class ObjectEntityMapper extends QBMapper
     {
         // Check if handlers are available
         if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
-            return ['facets' => []];
+            return [];
         }
 
         // Extract facet configuration
         $facetConfig = $query['_facets'] ?? [];
         if (empty($facetConfig)) {
-            return ['facets' => []];
+            return [];
         }
 
         // Extract base query (without facet config)
@@ -1855,7 +1952,7 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        return ['facets' => $facets];
+        return $facets;
 
     }//end getSimpleFacets()
 
@@ -1892,13 +1989,375 @@ class ObjectEntityMapper extends QBMapper
             $facetableFields['@self'] = $this->metaDataFacetHandler->getFacetableFields($baseQuery);
         }
 
-        // Get object field facetable fields if handler is available
-        if ($this->mariaDbFacetHandler !== null) {
-            $facetableFields['object_fields'] = $this->mariaDbFacetHandler->getFacetableFields($baseQuery, $sampleSize);
-        }
+        // Get object field facetable fields from schemas instead of analyzing objects
+        $facetableFields['object_fields'] = $this->getFacetableFieldsFromSchemas($baseQuery);
 
         return $facetableFields;
 
     }//end getFacetableFields()
+
+
+    /**
+     * Hydrates the name and description of the entity from the object data based on schema configuration.
+     *
+     * This method will only fetch the schema from the database if name and description are not already set.
+     * This optimization prevents unnecessary database calls when the SaveObject handler has already
+     * hydrated these fields using the schema that was already available.
+     *
+     * @param ObjectEntity $entity The entity to hydrate.
+     *
+     * @return void
+     */
+    private function hydrateNameAndDescription(ObjectEntity &$entity): void
+    {
+        if (!$entity->getSchema()) {
+            return;
+        }
+
+        // Check if name and description are already set - if so, skip hydration to avoid extra DB call
+        $needsName = $entity->getName() === null || $entity->getName() === '';
+        $needsDescription = $entity->getDescription() === null || $entity->getDescription() === '';
+        
+        if (!$needsName && !$needsDescription) {
+            // Both name and description are already set, no need to hydrate
+            return;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($entity->getSchema());
+        } catch (\Exception $e) {
+            // Schema not found, can't hydrate.
+            return;
+        }
+
+        $config     = $schema->getConfiguration();
+        $objectData = $entity->getObject();
+
+        if ($needsName && isset($config['objectNameField']) === true) {
+            $name = $this->getValueFromPath($objectData, $config['objectNameField']);
+            if ($name !== null) {
+                $entity->setName($name);
+            }
+        }
+
+        if ($needsDescription && isset($config['objectDescriptionField']) === true) {
+            $description = $this->getValueFromPath($objectData, $config['objectDescriptionField']);
+            if ($description !== null) {
+                $entity->setDescription($description);
+            }
+        }
+
+    }//end hydrateNameAndDescription()
+
+
+    /**
+     * Gets a value from a nested array using a dot-notation path.
+     *
+     * @param array  $data The array to search in.
+     * @param string $path The dot-notation path.
+     *
+     * @return string|null The value if found and is a string, otherwise null.
+     */
+    private function getValueFromPath(array $data, string $path): ?string
+    {
+        $keys  = explode('.', $path);
+        $value = $data;
+        foreach ($keys as $key) {
+            if (is_array($value) === false || isset($value[$key]) === false) {
+                return null;
+            }
+
+            $value = $value[$key];
+        }
+
+        return is_string($value) ? $value : null;
+
+    }//end getValueFromPath()
+
+
+    /**
+     * Get facetable fields from schemas
+     *
+     * This method analyzes schema properties to determine which fields
+     * are marked as facetable in the schema definitions. This is more
+     * efficient than analyzing object data and provides consistent
+     * faceting based on schema definitions.
+     *
+     * @param array $baseQuery Base query filters to apply for context
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Facetable fields with their configuration based on schema definitions
+     */
+    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
+    {
+        $facetableFields = [];
+
+        // Get schemas to analyze based on query context
+        $schemas = $this->getSchemasForQuery($baseQuery);
+        
+        if (empty($schemas)) {
+            return [];
+        }
+
+        // Process each schema's properties
+        foreach ($schemas as $schema) {
+            $properties = $schema->getProperties();
+            
+            if (empty($properties)) {
+                continue;
+            }
+
+            // Analyze each property for facetable configuration
+            foreach ($properties as $propertyKey => $property) {
+                if ($this->isPropertyFacetable($property)) {
+                    $fieldConfig = $this->generateFieldConfigFromProperty($propertyKey, $property);
+                    
+                    if ($fieldConfig !== null) {
+                        // If field already exists from another schema, merge configurations
+                        if (isset($facetableFields[$propertyKey])) {
+                            $facetableFields[$propertyKey] = $this->mergeFieldConfigs(
+                                $facetableFields[$propertyKey],
+                                $fieldConfig
+                            );
+                        } else {
+                            $facetableFields[$propertyKey] = $fieldConfig;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $facetableFields;
+
+    }//end getFacetableFieldsFromSchemas()
+
+
+    /**
+     * Get schemas for query context
+     *
+     * Returns schemas that are relevant for the current query context.
+     * If specific schemas are filtered in the query, only those are returned.
+     * Otherwise, all schemas are returned.
+     *
+     * @param array $baseQuery Base query filters to apply
+     *
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @return array Array of Schema objects
+     */
+    private function getSchemasForQuery(array $baseQuery): array
+    {
+        $schemaFilters = [];
+        
+        // Check if specific schemas are requested in the query
+        if (isset($baseQuery['@self']['schema'])) {
+            $schemaValue = $baseQuery['@self']['schema'];
+            if (is_array($schemaValue)) {
+                $schemaFilters = $schemaValue;
+            } else {
+                $schemaFilters = [$schemaValue];
+            }
+        }
+
+        // Get schemas from the schema mapper
+        if (empty($schemaFilters)) {
+            // Get all schemas
+            return $this->schemaMapper->findAll();
+        } else {
+            // Get specific schemas
+            return $this->schemaMapper->findMultiple($schemaFilters);
+        }
+
+    }//end getSchemasForQuery()
+
+
+    /**
+     * Check if a property is facetable
+     *
+     * @param array $property The property definition
+     *
+     * @phpstan-param array<string, mixed> $property
+     *
+     * @psalm-param array<string, mixed> $property
+     *
+     * @return bool True if the property is facetable
+     */
+    private function isPropertyFacetable(array $property): bool
+    {
+        return isset($property['facetable']) && $property['facetable'] === true;
+
+    }//end isPropertyFacetable()
+
+
+    /**
+     * Generate field configuration from property definition
+     *
+     * @param string $propertyKey The property key
+     * @param array  $property    The property definition
+     *
+     * @phpstan-param string $propertyKey
+     * @phpstan-param array<string, mixed> $property
+     *
+     * @psalm-param string $propertyKey
+     * @psalm-param array<string, mixed> $property
+     *
+     * @return array|null Field configuration or null if not suitable for faceting
+     */
+    private function generateFieldConfigFromProperty(string $propertyKey, array $property): ?array
+    {
+        $type = $property['type'] ?? 'string';
+        $format = $property['format'] ?? '';
+        $title = $property['title'] ?? $propertyKey;
+        $description = $property['description'] ?? "Schema field: $propertyKey";
+        $example = $property['example'] ?? null;
+
+        // Determine appropriate facet types based on property type and format
+        $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
+        
+        if (empty($facetTypes)) {
+            return null;
+        }
+
+        $config = [
+            'type' => $type,
+            'format' => $format,
+            'title' => $title,
+            'description' => $description,
+            'facet_types' => $facetTypes,
+            'source' => 'schema'
+        ];
+
+        // Add example if available
+        if ($example !== null) {
+            $config['example'] = $example;
+        }
+
+        // Add additional configuration based on type
+        switch ($type) {
+            case 'string':
+                if ($format === 'date' || $format === 'date-time') {
+                    $config['intervals'] = ['day', 'week', 'month', 'year'];
+                } else {
+                    $config['cardinality'] = 'text';
+                }
+                break;
+                
+            case 'integer':
+            case 'number':
+                $config['cardinality'] = 'numeric';
+                if (isset($property['minimum'])) {
+                    $config['minimum'] = $property['minimum'];
+                }
+                if (isset($property['maximum'])) {
+                    $config['maximum'] = $property['maximum'];
+                }
+                break;
+                
+            case 'boolean':
+                $config['cardinality'] = 'binary';
+                break;
+                
+            case 'array':
+                $config['cardinality'] = 'array';
+                break;
+        }
+
+        return $config;
+
+    }//end generateFieldConfigFromProperty()
+
+
+    /**
+     * Determine facet types based on property type and format
+     *
+     * @param string $type   The property type
+     * @param string $format The property format
+     *
+     * @phpstan-param string $type
+     * @phpstan-param string $format
+     *
+     * @psalm-param string $type
+     * @psalm-param string $format
+     *
+     * @return array Array of suitable facet types
+     */
+    private function determineFacetTypesFromProperty(string $type, string $format): array
+    {
+        switch ($type) {
+            case 'string':
+                if ($format === 'date' || $format === 'date-time') {
+                    return ['date_histogram', 'range'];
+                } else if ($format === 'email' || $format === 'uri' || $format === 'uuid') {
+                    return ['terms'];
+                } else {
+                    return ['terms'];
+                }
+                
+            case 'integer':
+            case 'number':
+                return ['range', 'terms'];
+                
+            case 'boolean':
+                return ['terms'];
+                
+            case 'array':
+                return ['terms'];
+                
+            default:
+                return ['terms'];
+        }
+
+    }//end determineFacetTypesFromProperty()
+
+
+    /**
+     * Merge field configurations from multiple schemas
+     *
+     * @param array $existing The existing field configuration
+     * @param array $new      The new field configuration
+     *
+     * @phpstan-param array<string, mixed> $existing
+     * @phpstan-param array<string, mixed> $new
+     *
+     * @psalm-param array<string, mixed> $existing
+     * @psalm-param array<string, mixed> $new
+     *
+     * @return array Merged field configuration
+     */
+    private function mergeFieldConfigs(array $existing, array $new): array
+    {
+        // Merge facet types
+        $existingFacetTypes = $existing['facet_types'] ?? [];
+        $newFacetTypes = $new['facet_types'] ?? [];
+        $merged = $existing;
+        
+        $merged['facet_types'] = array_unique(array_merge($existingFacetTypes, $newFacetTypes));
+        
+        // Use the more descriptive title and description if available
+        if (empty($existing['title']) && !empty($new['title'])) {
+            $merged['title'] = $new['title'];
+        }
+        
+        if (empty($existing['description']) && !empty($new['description'])) {
+            $merged['description'] = $new['description'];
+        }
+        
+        // Add example if not already present
+        if (!isset($existing['example']) && isset($new['example'])) {
+            $merged['example'] = $new['example'];
+        }
+        
+        return $merged;
+
+    }//end mergeFieldConfigs()
 
 }//end class

@@ -218,7 +218,90 @@ class ObjectsController extends Controller
 
 
     /**
-     * Helper method to get configuration array from the current request
+     * Helper method to get query array from the current request for faceting-enabled methods
+     *
+     * This method builds a query structure compatible with the searchObjectsPaginated method
+     * which supports faceting, facetable field discovery, and all other search features.
+     *
+     * @param int|string|null $register Optional register identifier (should be resolved numeric ID)
+     * @param int|string|null $schema   Optional schema identifier (should be resolved numeric ID)
+     * @param array|null      $ids      Optional array of specific IDs to filter
+     *
+     * @return array Query array containing:
+     *               - @self: Metadata filters (register, schema, etc.)
+     *               - Direct keys: Object field filters
+     *               - _limit: Maximum number of items per page
+     *               - _offset: Number of items to skip
+     *               - _page: Current page number
+     *               - _order: Sort parameters
+     *               - _search: Search term
+     *               - _extend: Properties to extend
+     *               - _fields: Fields to include
+     *               - _filter/_unset: Fields to exclude
+     *               - _facets: Facet configuration
+     *               - _facetable: Include facetable field discovery
+     *               - _ids: Specific IDs to filter
+     */
+    private function buildSearchQuery(int | string | null $register=null, int | string | null $schema=null, ?array $ids=null): array
+    {
+        $params = $this->request->getParams();
+
+        // Remove system parameters that shouldn't be used as filters
+        unset($params['id'], $params['_route']);
+
+        // Build the query structure for searchObjectsPaginated
+        $query = [];
+
+        // Extract metadata filters into @self
+        $metadataFields = ['register', 'schema', 'uuid', 'created', 'updated', 'published', 'depublished', 'deleted'];
+        $query['@self'] = [];
+        
+        // Add register and schema to @self if provided (ensure they are integers)
+        if ($register !== null) {
+            $query['@self']['register'] = (int) $register;
+        }
+        if ($schema !== null) {
+            $query['@self']['schema'] = (int) $schema;
+        }
+
+        // Extract special underscore parameters
+        $specialParams = [];
+        $objectFilters = [];
+
+        foreach ($params as $key => $value) {
+            if (str_starts_with($key, '_')) {
+                $specialParams[$key] = $value;
+            } elseif (in_array($key, $metadataFields)) {
+                // Only add to @self if not already set from function parameters
+                if (!isset($query['@self'][$key])) {
+                    $query['@self'][$key] = $value;
+                }
+            } else {
+                // This is an object field filter
+                $objectFilters[$key] = $value;
+            }
+        }
+
+        // Add object field filters directly to query
+        $query = array_merge($query, $objectFilters);
+
+        // Add IDs if provided
+        if ($ids !== null) {
+            $query['_ids'] = $ids;
+        }
+
+        // Add all special parameters (they'll be handled by searchObjectsPaginated)
+        $query = array_merge($query, $specialParams);
+
+        return $query;
+
+    }//end buildSearchQuery()
+
+
+    /**
+     * Helper method to get configuration array from the current request (LEGACY)
+     *
+     * @deprecated Use buildSearchQuery() instead for faceting-enabled endpoints
      *
      * @param string|null $register Optional register identifier
      * @param string|null $schema   Optional schema identifier
@@ -275,13 +358,22 @@ class ObjectsController extends Controller
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
-     * It supports filtering, sorting, and pagination through query parameters.
+     * It supports filtering, sorting, pagination, faceting, and facetable field discovery through query parameters.
+     *
+     * Supported parameters:
+     * - Standard filters: Any object field (e.g., name, status, etc.)
+     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Pagination: _limit, _offset, _page
+     * - Search: _search
+     * - Rendering: _extend, _fields, _filter/_unset
+     * - Faceting: _facets (facet configuration), _facetable (facetable field discovery)
+     * - Sorting: _order
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the list of objects
+     * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
      *
      * @NoAdminRequired
      *
@@ -289,31 +381,31 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Get config and fetch objects.
-        $config = $this->getConfig($register, $schema);
-
+        // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
+        // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
+        // external frontend calls (/api/objects/petstore/dogs)
         $objectService->setRegister($register)->setSchema($schema);
 
-        // @TODO dit moet netter
-        foreach ($config['filters'] as $key => $filter) {
-            switch ($key) {
-                case 'register':
-                    $config['filters'][$key] = $objectService->getRegister();
-                    break;
-                case 'schema':
-                    $config['filters'][$key] = $objectService->getSchema();
-                    break;
-                default:
-                    break;
-            }
+        // Get resolved numeric IDs for the search query
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId = $objectService->getSchema();
+
+        // Build search query with resolved numeric IDs
+        $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
+
+        try {
+            // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
+            $result = $objectService->searchObjectsPaginated($query);
+            
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            // Fallback to legacy method if something goes wrong
+            // Use findAllPaginated which now supports _facetable parameter
+            $requestParams = $this->request->getParams();
+            $result = $objectService->findAllPaginated($requestParams);
+            
+            return new JSONResponse($result);
         }
-
-        $objects = $objectService->findAll($config);
-
-        // Get total count for pagination.
-        // $total = $objectService->count($config['filters'], $config['search']);
-        $total = $objectService->count($config);
-        return new JSONResponse($this->paginate($objects, $total, $config['limit'], $config['offset'], $config['page']));
 
     }//end index()
 
@@ -353,6 +445,11 @@ class ObjectsController extends Controller
         $filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
         $fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
 
+        // Convert extend to array if it's a string
+        if (is_string($extend)) {
+            $extend = explode(',', $extend);
+        }
+
         // Find and validate the object.
         try {
             $object = $this->objectService->find($id, $extend);
@@ -387,6 +484,7 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+
         // Set the schema and register to the object service.
         $objectService->setSchema($schema);
         $objectService->setRegister($register);
@@ -530,6 +628,114 @@ class ObjectsController extends Controller
         }
 
     }//end update()
+
+
+    /**
+     * Patches (partially updates) an existing object
+     *
+     * Takes the request data, merges it with the existing object data, validates it against 
+     * the schema, and updates the object in the database. Only the provided fields are updated,
+     * while other fields remain unchanged. Handles validation errors appropriately.
+     *
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param string        $id            The object ID or UUID
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the updated object
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function patch(
+        string $register,
+        string $schema,
+        string $id,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service.
+        $objectService->setSchema($schema);
+        $objectService->setRegister($register);
+
+        // Get patch data from request parameters.
+        $patchData = $this->request->getParams();
+
+        // Filter out special parameters and reserved fields.
+        // @todo shouldn't this be part of the object service?
+        $patchData = array_filter(
+            $patchData,
+            fn ($key) => !str_starts_with($key, '_')
+                && !str_starts_with($key, '@')
+                && !in_array($key, ['id', 'uuid', 'register', 'schema']),
+            ARRAY_FILTER_USE_KEY
+        );
+
+        // Check if the object exists and can be updated.
+        // @todo shouldn't this be part of the object service?
+        try {
+            $existingObject = $this->objectService->find($id);
+
+            // Get the resolved register and schema IDs from the ObjectService
+            // This ensures proper handling of both numeric IDs and slug identifiers
+            $resolvedRegisterId = $objectService->getRegister(); // Returns the current register ID
+            $resolvedSchemaId = $objectService->getSchema();     // Returns the current schema ID
+
+            // Verify that the object belongs to the specified register and schema.
+            if ((int) $existingObject->getRegister() !== (int) $resolvedRegisterId
+                || (int) $existingObject->getSchema() !== (int) $resolvedSchemaId
+            ) {
+                return new JSONResponse(
+                    ['error' => 'Object not found in specified register/schema'],
+                    404
+                );
+            }
+
+            // Check if the object is locked.
+            if ($existingObject->isLocked() === true
+                && $existingObject->getLockedBy() !== $this->container->get('userId')
+            ) {
+                // Return a "locked" error with the user who has the lock.
+                return new JSONResponse(
+                    [
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                        'lockedBy' => $existingObject->getLockedBy(),
+                    ],
+                    423
+                );
+            }
+
+            // Get the existing object data and merge with patch data
+            $existingData = $existingObject->getObject();
+            $mergedData = array_merge($existingData, $patchData);
+            $existingObject->setObject($mergedData);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Not Found'], 404);
+        } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
+            // If there's an issue getting the user ID, continue without the lock check.
+        }//end try
+
+        // Update the object with merged data.
+        try {
+            // Use the object service to validate and update the object.
+            $objectEntity = $objectService->saveObject($existingObject);
+
+            // Unlock the object after saving.
+            try {
+                $this->objectEntityMapper->unlockObject($objectEntity->getId());
+            } catch (\Exception $e) {
+                // Ignore unlock errors since the update was successful.
+            }
+
+            // Return the updated object as JSON.
+            return new JSONResponse($objectEntity->jsonSerialize());
+        } catch (ValidationException | CustomValidationException $exception) {
+            // Handle validation errors.
+            return $objectService->handleValidationException(exception: $exception);
+        }
+
+    }//end patch()
 
 
     /**
@@ -909,42 +1115,95 @@ class ObjectsController extends Controller
     /**
      * Import objects into a register
      *
-     * @param int $registerId The ID of the register to import into
+     * @param int $register The ID of the register to import into
      *
      * @return JSONResponse The result of the import operation
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $registerId): JSONResponse
+    public function import(int $register): JSONResponse
     {
         try {
+            error_log("[ObjectsController] Starting import for register ID: $register");
+            
             // Get the uploaded file
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
+                error_log("[ObjectsController] No file uploaded");
                 return new JSONResponse(['error' => 'No file uploaded'], 400);
             }
 
-            // Get include objects parameter
-            $includeObjects = $this->request->getParam('includeObjects', false);
+            error_log("[ObjectsController] File uploaded: " . $uploadedFile['name'] . " (size: " . $uploadedFile['size'] . " bytes)");
 
             // Find the register
-            $register = $this->registerMapper->find($registerId);
+            $registerEntity = $this->registerMapper->find($register);
+            error_log("[ObjectsController] Found register: " . $registerEntity->getTitle());
 
-            // Import the data
-            $result = $this->importService->importFromJson(
-                $uploadedFile->getTempName(),
-                $register,
-                $includeObjects
-            );
+            // Determine file type from extension
+            $filename = $uploadedFile['name'];
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            
+            error_log("[ObjectsController] File extension: $extension");
+
+            // Handle different file types
+            switch ($extension) {
+                case 'xlsx':
+                case 'xls':
+                    error_log("[ObjectsController] Processing Excel file");
+                    $summary = $this->importService->importFromExcel(
+                        $uploadedFile['tmp_name'],
+                        $registerEntity,
+                        null // Schema will be determined from sheet names
+                    );
+                    break;
+                    
+                case 'csv':
+                    error_log("[ObjectsController] Processing CSV file");
+                    
+                    // For CSV, schema can be specified in the request
+                    $schemaId = $this->request->getParam('schema');
+                    
+                    if (!$schemaId) {
+                        // If no schema specified, get the first available schema from the register
+                        $schemas = $registerEntity->getSchemas();
+                        if (empty($schemas)) {
+                            error_log("[ObjectsController] No schemas found for register");
+                            return new JSONResponse(['error' => 'No schema found for register'], 400);
+                        }
+                        $schemaId = is_array($schemas) ? reset($schemas) : $schemas;
+                    }
+                    
+                    $schema = $this->schemaMapper->find($schemaId);
+                    
+                    error_log("[ObjectsController] Using schema: " . $schema->getTitle());
+                    
+                    $summary = $this->importService->importFromCsv(
+                        $uploadedFile['tmp_name'],
+                        $registerEntity,
+                        $schema
+                    );
+                    break;
+                    
+                default:
+                    error_log("[ObjectsController] Unsupported file type: $extension");
+                    return new JSONResponse(['error' => "Unsupported file type: $extension"], 400);
+            }
+
+            error_log("[ObjectsController] Import completed successfully");
+            error_log("[ObjectsController] Summary: " . json_encode($summary));
 
             return new JSONResponse([
                 'message' => 'Import successful',
-                'imported' => $result
+                'summary' => $summary
             ]);
 
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 400);
+            error_log("[ObjectsController] Import failed with error: " . $e->getMessage());
+            error_log("[ObjectsController] Exception type: " . get_class($e));
+            error_log("[ObjectsController] Stack trace: " . $e->getTraceAsString());
+            
+            return new JSONResponse(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -1029,6 +1288,129 @@ class ObjectsController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
     }
+
+    /**
+     * Merge two objects
+     *
+     * This method merges object A into object B within the same register and schema.
+     * It handles merging of properties, files, and relations based on user preferences.
+     *
+     * @param string        $id            The ID of object A (source object to merge from)
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the merge result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function merge(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        // Set the schema and register to the object service
+        $objectService->setRegister($register);
+        $objectService->setSchema($schema);
+
+        try {
+            // Get merge data from request body
+            $requestParams = $this->request->getParams();
+            
+            // Validate required parameters
+            if (!isset($requestParams['target'])) {
+                return new JSONResponse(['error' => 'Target object ID is required'], 400);
+            }
+
+            if (!isset($requestParams['object']) || empty($requestParams['object'])) {
+                return new JSONResponse(['error' => 'Object data is required'], 400);
+            }
+
+            // Perform the merge operation with the new payload structure
+            $mergeResult = $objectService->mergeObjects($id, $requestParams);
+            return new JSONResponse($mergeResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Object not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to merge objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end merge()
+
+
+    /**
+     * Migrate objects between registers and/or schemas
+     *
+     * This method migrates multiple objects from one register/schema combination
+     * to another register/schema combination with property mapping.
+     *
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse A JSON response containing the migration result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function migrate(ObjectService $objectService): JSONResponse
+    {
+        try {
+            // Get migration parameters from request
+            $requestParams = $this->request->getParams();
+            $sourceRegister = $requestParams['sourceRegister'] ?? null;
+            $sourceSchema = $requestParams['sourceSchema'] ?? null;
+            $targetRegister = $requestParams['targetRegister'] ?? null;
+            $targetSchema = $requestParams['targetSchema'] ?? null;
+            $objectIds = $requestParams['objects'] ?? [];
+            $mapping = $requestParams['mapping'] ?? [];
+
+            // Validate required parameters
+            if ($sourceRegister === null || $sourceSchema === null) {
+                return new JSONResponse(['error' => 'Source register and schema are required'], 400);
+            }
+
+            if ($targetRegister === null || $targetSchema === null) {
+                return new JSONResponse(['error' => 'Target register and schema are required'], 400);
+            }
+
+            if (empty($objectIds)) {
+                return new JSONResponse(['error' => 'At least one object ID is required'], 400);
+            }
+
+            if (empty($mapping)) {
+                return new JSONResponse(['error' => 'Property mapping is required'], 400);
+            }
+
+            // Perform the migration operation
+            $migrationResult = $objectService->migrateObjects(
+                sourceRegister: $sourceRegister,
+                sourceSchema: $sourceSchema,
+                targetRegister: $targetRegister,
+                targetSchema: $targetSchema,
+                objectIds: $objectIds,
+                mapping: $mapping
+            );
+
+            return new JSONResponse($migrationResult);
+
+        } catch (DoesNotExistException $exception) {
+            return new JSONResponse(['error' => 'Register or schema not found'], 404);
+        } catch (\InvalidArgumentException $exception) {
+            return new JSONResponse(['error' => $exception->getMessage()], 400);
+        } catch (\Exception $exception) {
+            return new JSONResponse([
+                'error' => 'Failed to migrate objects: ' . $exception->getMessage()
+            ], 500);
+        }
+
+    }//end migrate()
+
 
     /**
      * Download all files of an object as a ZIP archive
