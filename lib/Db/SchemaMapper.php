@@ -53,32 +53,22 @@ class SchemaMapper extends QBMapper
      */
     private $validator;
 
-    /**
-     * The object entity mapper instance
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
 
     /**
      * Constructor for the SchemaMapper
      *
-     * @param IDBConnection                  $db                 The database connection
-     * @param IEventDispatcher               $eventDispatcher    The event dispatcher
-     * @param SchemaPropertyValidatorService $validator          The schema property validator
-     * @param ObjectEntityMapper             $objectEntityMapper The object entity mapper
+     * @param IDBConnection                  $db              The database connection
+     * @param IEventDispatcher               $eventDispatcher The event dispatcher
+     * @param SchemaPropertyValidatorService $validator       The schema property validator
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator,
-        ObjectEntityMapper $objectEntityMapper
+        SchemaPropertyValidatorService $validator
     ) {
         parent::__construct($db, 'openregister_schemas');
         $this->eventDispatcher    = $eventDispatcher;
         $this->validator          = $validator;
-        $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
 
@@ -218,6 +208,11 @@ class SchemaMapper extends QBMapper
      */
     private function cleanObject(Schema $schema): void
     {
+        // Enforce $ref is always a string in all properties and array items
+        $properties = $schema->getProperties() ?? [];
+        $this->enforceRefIsStringRecursive($properties);
+        $schema->setProperties($properties);
+
         // Check if UUID is set, if not, generate a new one.
         if ($schema->getUuid() === null) {
             $schema->setUuid(Uuid::v4());
@@ -243,7 +238,116 @@ class SchemaMapper extends QBMapper
             $schema->setVersion('0.0.1');
         }
 
+        // Ensure the object has a source set to 'internal' by default.
+        if ($schema->getSource() === null || $schema->getSource() === '') {
+            $schema->setSource('internal');
+        }
+
+        $properties             = ($schema->getProperties() ?? []);
+        $propertyKeys           = array_keys($properties);
+        $configuration          = $schema->getConfiguration() ?? [];
+        $objectNameField        = $configuration['objectNameField'] ?? '';
+        $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
+
+        // If an object name field is provided, it must exist in the properties
+        if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
+        }
+
+        // If an object description field is provided, it must exist in the properties
+        if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
+            throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
+        }
+
+        // Establish the required fields based on the properties
+        // Empty the required array and rebuild it based on property requirements
+        $requiredFields = [];
+        foreach ($properties as $propertyKey => $property) {
+            // Check if the property has a 'required' field set to true or the string 'true'
+            if (isset($property['required']) === true) {
+                $requiredValue = $property['required'];
+                if ($requiredValue === true || 
+                    $requiredValue === 'true' || 
+                    (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')) {
+                    $requiredFields[] = $propertyKey;
+                }
+            }
+        }
+        // Set the required fields on the schema
+        $schema->setRequired($requiredFields);
+
+        // If the object name field is empty, try to find a logical key
+        if (empty($objectNameField) === true) {
+            $nameKeys = [
+                'name',
+                'naam',
+                'title',
+                'titel',
+            ];
+            foreach ($nameKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectNameField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
+        }
+
+        // If the object description field is empty, try to find a logical key
+        if (empty($objectDescriptionField) === true) {
+            $descriptionKeys = [
+                'description',
+                'beschrijving',
+                'omschrijving',
+                'summary',
+            ];
+            foreach ($descriptionKeys as $key) {
+                if (in_array($key, $propertyKeys) === true) {
+                    // Update the configuration array
+                    $configuration['objectDescriptionField'] = $key;
+                    $schema->setConfiguration($configuration);
+                    break;
+                }
+            }
+        }
+
     }//end cleanObject()
+
+
+    /**
+     * Recursively enforce that $ref is always a string in all properties and array items
+     *
+     * @param array &$properties The properties array to check
+     * @throws \Exception If $ref is not a string or cannot be converted
+     */
+    private function enforceRefIsStringRecursive(array &$properties): void
+    {
+        foreach ($properties as $key => &$property) {
+            // If property is not an array, skip
+            if (!is_array($property)) {
+                continue;
+            }
+            // Check $ref at this level
+            if (isset($property['$ref'])) {
+                if (is_array($property['$ref']) && isset($property['$ref']['id'])) {
+                    $property['$ref'] = $property['$ref']['id'];
+                } elseif (is_object($property['$ref']) && isset($property['$ref']->id)) {
+                    $property['$ref'] = $property['$ref']->id;
+                } elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                    throw new \Exception("Schema property '$key' has a $ref that is not a string or empty: " . print_r($property['$ref'], true));
+                }
+            }
+            // Check array items recursively
+            if (isset($property['items']) && is_array($property['items'])) {
+                $this->enforceRefIsStringRecursive($property['items']);
+            }
+            // Check nested properties recursively
+            if (isset($property['properties']) && is_array($property['properties'])) {
+                $this->enforceRefIsStringRecursive($property['properties']);
+            }
+        }
+    }
 
 
     /**

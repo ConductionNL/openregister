@@ -1,6 +1,7 @@
 /.idea/
 /*.iml
 *.Identifier
+.phphunit.result.cache
 
 /vendor/
 /vendor-bin/*/vendor/
@@ -9,6 +10,7 @@
 /tests/.phpunit.cache
 
 /node_modules/
+/website/node_modules/
 /js/
 /custom_apps/
 /config/

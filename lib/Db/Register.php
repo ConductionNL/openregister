@@ -139,6 +139,27 @@ class Register extends Entity implements JsonSerializable
     protected ?array $authorization = [];
 
     /**
+     * An array defining group-based permissions for CRUD actions.
+     * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
+     * and the values are arrays of group IDs that are permitted to perform that action.
+     * If an action is not present as a key, or its value is an empty array,
+     * it is assumed that all users have permission for that action.
+     *
+     * Example:
+     * [
+     *   'create' => ['group-admin', 'group-editors'],
+     *   'read'   => ['group-viewers'],
+     *   'update' => ['group-editors'],
+     *   'delete' => ['group-admin']
+     * ]
+     *
+     * @var array|null
+     * @phpstan-var array<string, array<string>>|null
+     * @psalm-var array<string, list<string>>|null
+     */
+    protected ?array $groups = [];
+
+    /**
      * Deletion timestamp
      *
      * @var DateTime|null Deletion timestamp
@@ -168,6 +189,7 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'application', type: 'string');
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'deleted', type: 'datetime');
 
     }//end __construct()
@@ -183,6 +205,29 @@ class Register extends Entity implements JsonSerializable
         return ($this->schemas ?? []);
 
     }//end getSchemas()
+
+
+    /**
+     * Set the schemas data
+     *
+     * @param array|string $schemas Array of schema IDs or JSON string
+     *
+     * @return self
+     */
+    public function setSchemas($schemas): self
+    {
+        if (is_string($schemas)) {
+            $schemas = json_decode($schemas, true) ?: [];
+        }
+        if (!is_array($schemas)) {
+            $schemas = [];
+        }
+        // Only keep IDs (int or string)
+        $this->schemas = array_filter($schemas, function ($item) {
+            return is_int($item) || is_string($item);
+        });
+        return $this;
+    }
 
 
     /**
@@ -266,6 +311,11 @@ class Register extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
+        // Always return schemas as array of IDs (int/string)
+        $schemas = array_filter($this->schemas ?? [], function ($item) {
+            return is_int($item) || is_string($item);
+        });
+
         return [
             'id'            => $this->id,
             'uuid'          => $this->uuid,
@@ -273,7 +323,7 @@ class Register extends Entity implements JsonSerializable
             'title'         => $this->title,
             'version'       => $this->version,
             'description'   => $this->description,
-            'schemas'       => $this->schemas,
+            'schemas'       => $schemas,
             'source'        => $this->source,
             'tablePrefix'   => $this->tablePrefix,
             'folder'        => $this->folder,
@@ -283,6 +333,7 @@ class Register extends Entity implements JsonSerializable
             'application'   => $this->application,
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
+            'groups'        => $this->groups,
             'deleted'       => $deleted,
         ];
 

@@ -1,6 +1,8 @@
 export type TObject = {
     '@self': {
         id: string
+        name: string | null
+        description: string | null
         uuid: string
         uri: string
         version: string | null
@@ -16,6 +18,7 @@ export type TObject = {
         authorization: Array<unknown> | null
         application: string | null
         organisation: string | null
+        groups: Array<unknown> | null
         validation: Array<unknown> | null
         deleted: Array<unknown> | null
         geo: Array<unknown> | null

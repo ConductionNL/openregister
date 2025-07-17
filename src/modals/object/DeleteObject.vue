@@ -4,11 +4,11 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'deleteObject'"
-		name="Delete Object"
+		:name="'Delete ' + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			Do you want to permanently delete <b>{{ objectStore.objectItem?.['@self']?.title }}</b>? This action cannot be undone.
+			Do you want to permanently delete <b>{{ objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">

@@ -203,7 +203,11 @@ export default {
 			return !objectStore.objectItem || !objectStore.objectItem?.['@self']?.id
 		},
 		dialogTitle() {
-			return this.isNewObject ? 'Add Object' : 'Edit Object'
+			if (this.isNewObject) {
+				return 'Add Object'
+			}
+			const objectName = objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object'
+			return 'Edit ' + objectName
 		},
 	},
 	watch: {
@@ -382,38 +386,6 @@ export default {
 /* Update note card margins */
 :deep(.note-card) {
 	margin: 20px 0;
-}
-
-/* Update detail grid margins */
-.detail-grid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 12px;
-	margin: 20px 0;
-	max-width: 100%;
-}
-
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	padding: 12px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-	border-left: 3px solid var(--color-primary);
-}
-
-.detail-item.empty-value {
-	border-left-color: var(--color-warning);
-}
-
-.detail-label {
-	font-weight: bold;
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 4px;
-}
-
-.detail-value {
-	word-break: break-word;
 }
 
 .edit-tabs {

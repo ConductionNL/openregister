@@ -249,6 +249,11 @@ class RegisterMapper extends QBMapper
             $register->setVersion('0.0.1');
         }
 
+        // Ensure the object has a source set to 'internal' by default.
+        if ($register->getSource() === null || $register->getSource() === '') {
+            $register->setSource('internal');
+        }
+
     }//end cleanObject()
 
 

@@ -17,6 +17,7 @@ import { navigationStore } from '../store/store.js'
 			<ConfigurationsIndex v-if="navigationStore.selected === 'configurations'" />
 			<DeletedIndex v-if="navigationStore.selected === 'deleted'" />
 			<AuditTrailIndex v-if="navigationStore.selected === 'auditTrails'" />
+			<SearchTrailIndex v-if="navigationStore.selected === 'searchTrails'" />
 		</template>
 	</NcAppContent>
 </template>
@@ -34,6 +35,7 @@ import ConfigurationsIndex from './configuration/ConfigurationsIndex.vue'
 import RegisterDetail from './register/RegisterDetail.vue'
 import DeletedIndex from './deleted/DeletedIndex.vue'
 import AuditTrailIndex from './logs/AuditTrailIndex.vue'
+import SearchTrailIndex from './logs/SearchTrailIndex.vue'
 
 export default {
 	name: 'Views',
@@ -50,6 +52,7 @@ export default {
 		RegisterDetail,
 		DeletedIndex,
 		AuditTrailIndex,
+		SearchTrailIndex,
 	},
 }
 </script>

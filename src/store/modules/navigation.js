@@ -18,6 +18,8 @@ export const useNavigationStore = defineStore('ui', {
 			search: true,
 			deleted: true,
 			logs: true,
+			searchTrail: true,
+			auditTrail: true,
 		},
 	}),
 	actions: {
@@ -34,15 +36,20 @@ export const useNavigationStore = defineStore('ui', {
 			this.modal = modal
 		},
 		setDialog(dialog) {
+			console.log('NavigationStore - setDialog() called with:', dialog)
 			this.dialog = dialog
 		},
 		setTransferData(data) {
+			console.log('NavigationStore - setTransferData() called with:', data)
 			this.transferData = data
+			console.log('NavigationStore - transferData set to:', this.transferData)
 		},
 		getTransferData() {
+			console.log('NavigationStore - getTransferData() called, returning:', this.transferData)
 			return this.transferData
 		},
 		clearTransferData() {
+			console.log('NavigationStore - clearTransferData() called')
 			this.transferData = null
 		},
 	},
