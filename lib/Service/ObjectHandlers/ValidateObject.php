@@ -266,6 +266,45 @@ class ValidateObject
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
+        // Handle inversedBy relationships for validation
+        if (isset($propertySchema->inversedBy)) {
+            // Check if this is an array property
+            if (isset($propertySchema->type) && $propertySchema->type === 'array') {
+                // For inversedBy array properties, allow objects or UUIDs (pre-validation cascading will handle transformation)
+                $propertySchema->items = (object)[
+                    'oneOf' => [
+                        (object)[
+                            'type' => 'string',
+                            'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                            'description' => 'UUID reference to a related object'
+                        ],
+                        (object)[
+                            'type' => 'object',
+                            'description' => 'Nested object that will be created separately'
+                        ]
+                    ]
+                ];
+            } else if (isset($propertySchema->type) && $propertySchema->type === 'object') {
+                // For inversedBy object properties, allow objects, UUIDs, or null (pre-validation cascading will handle transformation)
+                $propertySchema->oneOf = [
+                    (object)[
+                        'type' => 'null',
+                        'description' => 'No related object (inversedBy - managed by other side)'
+                    ],
+                    (object)[
+                        'type' => 'string',
+                        'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                        'description' => 'UUID reference to a related object'
+                    ],
+                    (object)[
+                        'type' => 'object',
+                        'description' => 'Nested object that will be created separately'
+                    ]
+                ];
+                unset($propertySchema->type, $propertySchema->pattern, $propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
+            }
+        }
+        
         // Handle array properties with object items
         if (isset($propertySchema->type) && $propertySchema->type === 'array' && isset($propertySchema->items)) {
             $this->transformArrayItemsForOpenRegister($propertySchema->items);
@@ -297,6 +336,18 @@ class ValidateObject
     {
         // Handle case where items might be an array or not an object
         if (!is_object($itemsSchema)) {
+            return;
+        }
+
+        // Handle inversedBy relationships for array items
+        if (isset($itemsSchema->inversedBy)) {
+            // For inversedBy array items, transform to UUID string validation
+            // But since this is an inversedBy relationship, the parent array should be empty
+            // The transformation is handled at the parent array level
+            $itemsSchema->type = 'string';
+            $itemsSchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+            $itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
+            unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
             return;
         }
 
@@ -500,10 +551,31 @@ class ValidateObject
                     isset($propertySchema->objectConfiguration->handling) && 
                     $propertySchema->objectConfiguration->handling === 'related-object') {
                     
-                    // Transform to UUID string type
-                    $propertySchema->type = 'string';
-                    $propertySchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
-                    $propertySchema->description = 'UUID reference to a related object (self-reference)';
+                    // Handle inversedBy relationships for single objects
+                    if (isset($propertySchema->inversedBy)) {
+                        // For inversedBy properties, allow objects, UUIDs, or null (pre-validation cascading will handle transformation)
+                        $propertySchema->oneOf = [
+                            (object)[
+                                'type' => 'null',
+                                'description' => 'No related object (inversedBy - managed by other side)'
+                            ],
+                            (object)[
+                                'type' => 'string',
+                                'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                                'description' => 'UUID reference to a related object'
+                            ],
+                            (object)[
+                                'type' => 'object',
+                                'description' => 'Nested object that will be created separately'
+                            ]
+                        ];
+                        unset($propertySchema->type, $propertySchema->pattern);
+                    } else {
+                        // For non-inversedBy properties, expect string UUID
+                        $propertySchema->type = 'string';
+                        $propertySchema->pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+                        $propertySchema->description = 'UUID reference to a related object (self-reference)';
+                    }
                     unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
                     // error_log('[ValidateObject] Transformed ' . $propertyName . ' to UUID string property'); // Remove info log
                 } else if (isset($propertySchema->type) && $propertySchema->type === 'array' && 
@@ -512,22 +584,25 @@ class ValidateObject
                     // Check if array items are self-referencing
                     $propertySchema->type = 'array';
                     
-                    // If the array items have inversedBy, create a union type
+                    // Handle inversedBy relationships differently for validation
                     if (isset($propertySchema->items->inversedBy)) {
+                        // For inversedBy properties, allow objects or UUIDs (pre-validation cascading will handle transformation)
+                        $propertySchema->type = 'array';
                         $propertySchema->items = (object)[
                             'oneOf' => [
-                                (object)[
-                                    'type' => 'object',
-                                    'description' => 'Full object for creation'
-                                ],
                                 (object)[
                                     'type' => 'string',
                                     'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
                                     'description' => 'UUID reference to a related object'
+                                ],
+                                (object)[
+                                    'type' => 'object',
+                                    'description' => 'Nested object that will be created separately'
                                 ]
                             ]
                         ];
                     } else {
+                        // For non-inversedBy properties, expect array of UUIDs
                         $propertySchema->items = (object)[
                             'type' => 'string',
                             'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',

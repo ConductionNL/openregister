@@ -330,12 +330,7 @@ class ObjectService
             $this->setSchema($schema);
         }
 
-        // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject($object, $this->currentSchema);
-        if ($result->isValid() === false) {
-            $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
-            throw new ValidationException($meaningfulMessage, errors: $result->error());
-        }
+        // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
 
         // Create a temporary object entity to generate UUID and create folder
         $tempObject = new ObjectEntity();
@@ -417,12 +412,7 @@ class ObjectService
             $object = array_merge($existingObject->getObject(), $object);
         }
 
-        // Validate the object against the current schema.
-        $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
-        if ($result->isValid() === false) {
-            $meaningfulMessage = $this->validateHandler->generateErrorMessage($result);
-            throw new ValidationException($meaningfulMessage, errors: $result->error());
-        }
+        // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
 
         // Create folder before saving if object doesn't have one
         $folderId = null;
