@@ -282,9 +282,7 @@ export default {
 			if (option) {
 				objectStore.initializeProperties(option)
 				// First: Load facetable fields to discover what facets are available
-				console.log('Schema changed, loading facetable fields...')
 				await this.loadFacetableFields()
-				console.log('Facetable fields loaded:', this.facetableFields)
 				// Second: Refresh object list with facet configuration to get both results and facet data
 				await this.performSearchWithFacets()
 			}
@@ -347,10 +345,8 @@ export default {
 					time: executionTime,
 				}
 
-				console.log(`Search completed: ${this.lastSearchStats.total} results in ${executionTime}ms`)
-
 			} catch (error) {
-				console.error('Search failed:', error)
+				// Search failed - error is handled by setting lastSearchStats to defaults
 				this.lastSearchStats = {
 					total: 0,
 					time: 0,
@@ -375,12 +371,8 @@ export default {
 
 				this.facetableFields = facetableFields || {}
 
-				console.log('Facetable fields loaded:', {
-					facetableFields: this.facetableFields,
-				})
-
 			} catch (error) {
-				console.error('Error loading facetable fields:', error)
+				// Error loading facetable fields - set to null to handle gracefully
 				this.facetableFields = null
 			} finally {
 				this.facetsLoading = false
@@ -408,30 +400,8 @@ export default {
 				// The API response has facets nested under facets.facets
 				this.facetData = objectStore.facets?.facets || {}
 
-				console.log('Search with facets completed:', {
-					facetData: this.facetData,
-					objectStoreFacets: objectStore.facets,
-					rawFacetData: objectStore.facets?.facets,
-					totalResults: objectStore.pagination.total,
-				})
-
-				// Debug facet buckets to ensure counts are properly displayed
-				Object.entries(this.facetData || {}).forEach(([fieldName, facet]) => {
-					if (facet?.buckets && facet.buckets.length > 0) {
-						console.log(`Facet ${fieldName}:`, {
-							type: facet.type,
-							buckets: facet.buckets.map(bucket => ({
-								key: bucket.key,
-								originalLabel: bucket.label || bucket.key,
-								results: bucket.results,
-								finalLabel: (bucket.label || bucket.key) + ' (' + (bucket.results || bucket.doc_count || 0) + ')',
-							})),
-						})
-					}
-				})
-
 			} catch (error) {
-				console.error('Error performing search with facets:', error)
+				// Error performing search with facets - set to null to handle gracefully
 				this.facetData = null
 			} finally {
 				this.searchLoading = false
@@ -488,11 +458,6 @@ export default {
 			// Apply filters to object store using the existing activeFilters system
 			objectStore.setActiveFilters(activeFilters)
 			objectStore.setFilters(filters)
-
-			console.log('Filters applied to objectStore:', {
-				activeFilters,
-				filters,
-			})
 		},
 
 		async applyFacetFilters() {
