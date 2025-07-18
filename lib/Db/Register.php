@@ -223,9 +223,12 @@ class Register extends Entity implements JsonSerializable
             $schemas = [];
         }
         // Only keep IDs (int or string)
-        $this->schemas = array_filter($schemas, function ($item) {
+        $schemas = array_filter($schemas, function ($item) {
             return is_int($item) || is_string($item);
         });
+
+        parent::setSchemas($schemas);
+
         return $this;
     }
 
