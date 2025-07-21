@@ -1001,6 +1001,217 @@ Use two-way relationships when:
 - Monitor database performance with large relationship sets
 - Use `removeAfterWriteBack` to reduce storage overhead
 
+## Default Values Configuration
+
+Open Register provides enhanced default value functionality that allows you to configure how and when default values are applied to object properties.
+
+### Basic Default Values
+
+Default values can be set for any property type to provide fallback values when data is not provided:
+
+```json
+{
+  'properties': {
+    'status': {
+      'type': 'string',
+      'default': 'pending',
+      'description': 'Object status'
+    },
+    'priority': {
+      'type': 'integer',
+      'default': 1,
+      'description': 'Priority level'
+    },
+    'active': {
+      'type': 'boolean',
+      'default': true,
+      'description': 'Whether object is active'
+    }
+  }
+}
+```
+
+### Array Default Values
+
+For array properties with string items, you can set default values that will be applied as arrays:
+
+```json
+{
+  'properties': {
+    'tags': {
+      'type': 'array',
+      'items': {
+        'type': 'string'
+      },
+      'default': ['general', 'untagged'],
+      'description': 'Default tags applied to objects'
+    },
+    'categories': {
+      'type': 'array',
+      'items': {
+        'type': 'string'
+      },
+      'default': ['uncategorized'],
+      'description': 'Object categories'
+    }
+  }
+}
+```
+
+### Object Default Values
+
+Object properties can have default JSON values:
+
+```json
+{
+  'properties': {
+    'metadata': {
+      'type': 'object',
+      'default': {
+        'version': '1.0',
+        'author': 'system',
+        'created': true
+      },
+      'description': 'Default metadata object'
+    }
+  }
+}
+```
+
+### Default Behavior Configuration
+
+Open Register supports two modes for applying default values via the `defaultBehavior` property:
+
+#### Mode 1: 'false' (Default Behavior)
+
+Default values are only applied when the property is **missing** or **null**:
+
+```json
+{
+  'properties': {
+    'status': {
+      'type': 'string',
+      'default': 'pending',
+      'defaultBehavior': 'false'
+    }
+  }
+}
+```
+
+**Application Logic:**
+- Property not provided → Apply default
+- Property is `null` → Apply default  
+- Property is empty string `''` → Keep empty string
+- Property has value → Keep existing value
+
+#### Mode 2: 'falsy' (Enhanced Behavior)
+
+Default values are applied when the property is **missing**, **null**, **empty string**, or **empty array/object**:
+
+```json
+{
+  'properties': {
+    'description': {
+      'type': 'string',
+      'default': 'No description provided',
+      'defaultBehavior': 'falsy'
+    },
+    'tags': {
+      'type': 'array',
+      'items': { 'type': 'string' },
+      'default': ['untagged'],
+      'defaultBehavior': 'falsy'
+    }
+  }
+}
+```
+
+**Application Logic:**
+- Property not provided → Apply default
+- Property is `null` → Apply default
+- Property is empty string `''` → Apply default
+- Property is empty array `[]` → Apply default
+- Property is empty object `{}` → Apply default
+- Property has meaningful value → Keep existing value
+
+### Practical Use Cases
+
+#### Preventing Empty Values
+
+Use `defaultBehavior: 'falsy'` when you want to ensure properties always have meaningful values:
+
+```json
+{
+  'properties': {
+    'title': {
+      'type': 'string',
+      'default': 'Untitled',
+      'defaultBehavior': 'falsy',
+      'description': 'Ensures every object has a title'
+    }
+  }
+}
+```
+
+#### Optional Fields with Fallbacks
+
+Use `defaultBehavior: 'false'` when empty values should be preserved but missing values need defaults:
+
+```json
+{
+  'properties': {
+    'notes': {
+      'type': 'string',
+      'default': 'No notes',
+      'defaultBehavior': 'false',
+      'description': 'User can intentionally leave empty'
+    }
+  }
+}
+```
+
+### Template Support
+
+Default values support Twig templating for dynamic defaults:
+
+```json
+{
+  'properties': {
+    'created_by': {
+      'type': 'string',
+      'default': '{{ user.name }}',
+      'description': 'Auto-filled with current user'
+    },
+    'reference': {
+      'type': 'string', 
+      'default': 'REF-{{ uuid }}',
+      'description': 'Generated reference number'
+    }
+  }
+}
+```
+
+### Processing Order
+
+Default values are applied during object saving in this order:
+
+1. **Sanitization**: Clean empty values based on schema
+2. **Write-Back**: Process inverse relationships  
+3. **Cascading**: Handle object cascading
+4. **Default Values**: Apply defaults based on behavior configuration
+5. **Constants**: Apply constant values (always override)
+
+### Frontend Configuration
+
+In the OpenRegister frontend, default values can be configured through the schema editor:
+
+1. **Basic Defaults**: Set default values for string, number, boolean properties
+2. **Array Defaults**: Comma-separated values for string arrays  
+3. **Object Defaults**: JSON object notation for object properties
+4. **Behavior Toggle**: Choose between 'false' and 'falsy' behavior modes
+
+The behavior toggle appears when a default value is set and shows helpful hints about when defaults will be applied.
+
 ## Troubleshooting
 
 ### Common Issues
