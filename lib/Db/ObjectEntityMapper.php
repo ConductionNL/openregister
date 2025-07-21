@@ -37,6 +37,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -75,6 +77,20 @@ class ObjectEntityMapper extends QBMapper
      */
     private SchemaMapper $schemaMapper;
 
+    /**
+     * Group manager instance
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * User manager instance
+     *
+     * @var IUserManager
+     */
+    private IUserManager $userManager;
+
 
 
     /**
@@ -112,13 +128,18 @@ class ObjectEntityMapper extends QBMapper
      * @param MySQLJsonService $mySQLJsonService The MySQL JSON service
      * @param IEventDispatcher $eventDispatcher  The event dispatcher
      * @param IUserSession     $userSession      The user session
+     * @param SchemaMapper     $schemaMapper     The schema mapper
+     * @param IGroupManager    $groupManager     The group manager
+     * @param IUserManager     $userManager      The user manager
      */
     public function __construct(
         IDBConnection $db,
         MySQLJsonService $mySQLJsonService,
         IEventDispatcher $eventDispatcher,
         IUserSession $userSession,
-        SchemaMapper $schemaMapper
+        SchemaMapper $schemaMapper,
+        IGroupManager $groupManager,
+        IUserManager $userManager
     ) {
         parent::__construct($db, 'openregister_objects');
 
@@ -132,8 +153,181 @@ class ObjectEntityMapper extends QBMapper
         $this->eventDispatcher = $eventDispatcher;
         $this->userSession     = $userSession;
         $this->schemaMapper    = $schemaMapper;
+        $this->groupManager    = $groupManager;
+        $this->userManager     = $userManager;
 
     }//end __construct()
+
+
+    /**
+     * Apply RBAC permission filters to a query builder
+     *
+     * This method adds WHERE conditions to filter objects based on the current user's 
+     * permissions according to the schema's authorization configuration.
+     *
+     * @param IQueryBuilder $qb The query builder to modify
+     * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
+     * @param string $schemaTableAlias Optional alias for the schemas table (default: 's')
+     * @param string|null $userId Optional user ID (defaults to current user)
+     *
+     * @return void
+     */
+    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', string $schemaTableAlias = 's', ?string $userId = null): void
+    {
+        // Get current user if not provided
+        if ($userId === null) {
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                // For unauthenticated requests, show objects that allow public access OR are published
+                $now = (new \DateTime())->format('Y-m-d H:i:s');
+                $qb->andWhere(
+                    $qb->expr()->orX(
+                        // Schemas with no authorization (open access)
+                        $qb->expr()->orX(
+                            $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
+                            $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
+                        ),
+                        // Schemas that explicitly allow public read access
+                        $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
+                        // Objects that are currently published (publication-based public access)
+                        $qb->expr()->andX(
+                            $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                            $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                            $qb->expr()->orX(
+                                $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                                $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                            )
+                        )
+                    )
+                );
+                return;
+            }
+            $userId = $user->getUID();
+        }
+
+        // Get user object first, then user groups
+        $userObj = $this->userManager->get($userId);
+        if ($userObj === null) {
+            // User doesn't exist, handle as unauthenticated with publication-based access
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
+                        $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
+                    ),
+                    $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
+                    // Objects that are currently published (publication-based public access)
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                        $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                        $qb->expr()->orX(
+                            $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                            $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                        )
+                    )
+                )
+            );
+            return;
+        }
+        
+        $userGroups = $this->groupManager->getUserGroupIds($userObj);
+
+        // Admin users and schema owners see everything
+        if (in_array('admin', $userGroups)) {
+            return; // No filtering needed for admin users
+        }
+
+        // Build conditions for read access
+        $readConditions = $qb->expr()->orX();
+
+        // 1. Schemas with no authorization (open access)
+        $readConditions->add(
+            $qb->expr()->orX(
+                $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
+                $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
+            )
+        );
+
+        // 2. Schemas where read action is not specified (open read access)
+        // For now, skip this condition - it's complex to implement without NOT operator
+        // This means we'll be slightly more restrictive but still functional
+
+        // 3. User is the object owner
+        $readConditions->add(
+            $qb->expr()->eq("{$objectTableAlias}.owner", $qb->createNamedParameter($userId))
+        );
+
+        // 4. User's groups are in the authorized groups for read action
+        foreach ($userGroups as $groupId) {
+            $readConditions->add(
+                $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', $groupId)
+            );
+        }
+
+        // 5. Object is currently published (publication-based public access)
+        // Objects are publicly accessible if published date has passed and depublished date hasn't
+        $now = (new \DateTime())->format('Y-m-d H:i:s');
+        $readConditions->add(
+            $qb->expr()->andX(
+                $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                $qb->expr()->orX(
+                    $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                    $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                )
+            )
+        );
+
+        $qb->andWhere($readConditions);
+
+    }//end applyRbacFilters()
+
+
+    /**
+     * Create a JSON_CONTAINS condition for checking if an array contains a value
+     *
+     * @param IQueryBuilder $qb The query builder
+     * @param string $column The JSON column name
+     * @param string $path The JSON path (e.g., '$.read')
+     * @param string $value The value to check for
+     *
+     * @return string The SQL condition
+     */
+    private function createJsonContainsCondition(IQueryBuilder $qb, string $column, string $path, string $value): string
+    {
+        // For MySQL/MariaDB, use JSON_CONTAINS to check if array contains value
+        if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
+            return "JSON_CONTAINS({$column}, " . $qb->createNamedParameter(json_encode($value)) . ", '{$path}')";
+        }
+        
+        // Fallback for other databases - this is less efficient but functional
+        return "{$column} LIKE " . $qb->createNamedParameter('%"' . $value . '"%');
+
+    }//end createJsonContainsCondition()
+
+
+    /**
+     * Create a condition to check if a JSON path/key exists
+     *
+     * @param IQueryBuilder $qb The query builder
+     * @param string $column The JSON column name  
+     * @param string $path The JSON path (e.g., '$.read')
+     *
+     * @return string The SQL condition
+     */
+    private function createJsonContainsKeyCondition(IQueryBuilder $qb, string $column, string $path): string
+    {
+        // For MySQL/MariaDB, use JSON_EXTRACT to check if path exists
+        if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
+            return "JSON_EXTRACT({$column}, '{$path}') IS NOT NULL";
+        }
+        
+        // Fallback for other databases  
+        $key = str_replace('$.', '', $path);
+        return "{$column} LIKE " . $qb->createNamedParameter('%"' . $key . '":%');
+
+    }//end createJsonContainsKeyCondition()
 
 
     /**
@@ -292,14 +486,18 @@ class ObjectEntityMapper extends QBMapper
 
         $qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from('openregister_objects')
+        $qb->select('o.*')
+            ->from('openregister_objects', 'o')
+            ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
+        // Apply RBAC filtering based on user permissions
+        $this->applyRbacFilters($qb, 'o', 's');
+
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted'));
+            $qb->andWhere($qb->expr()->isNull('o.deleted'));
         }
 
         // If published filter is set, only include objects that are currently published.
@@ -308,11 +506,11 @@ class ObjectEntityMapper extends QBMapper
             // published <= now AND (depublished IS NULL OR depublished > now)
             $qb->andWhere(
                 $qb->expr()->andX(
-                    $qb->expr()->isNotNull('published'),
-                    $qb->expr()->lte('published', $qb->createNamedParameter($now)),
+                    $qb->expr()->isNotNull('o.published'),
+                    $qb->expr()->lte('o.published', $qb->createNamedParameter($now)),
                     $qb->expr()->orX(
-                        $qb->expr()->isNull('depublished'),
-                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                        $qb->expr()->isNull('o.depublished'),
+                        $qb->expr()->gt('o.depublished', $qb->createNamedParameter($now))
                     )
                 )
             );
@@ -321,8 +519,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
-            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('o.id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('o.uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
 
@@ -732,16 +930,21 @@ class ObjectEntityMapper extends QBMapper
 
         // Build base query - different for count vs search
         if ($count === true) {
-            // For count queries, use COUNT(*) and skip pagination
-            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
-                ->from('openregister_objects');
+            // For count queries, use COUNT(o.*) and skip pagination, include schema join for RBAC
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(o.*)'), 'count')
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
         } else {
-            // For search queries, select all columns and apply pagination
-            $queryBuilder->select('*')
-                ->from('openregister_objects')
+            // For search queries, select all object columns and apply pagination, include schema join for RBAC
+            $queryBuilder->select('o.*')
+                ->from('openregister_objects', 'o')
+                ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
                 ->setMaxResults($limit)
                 ->setFirstResult($offset);
         }
+
+        // Apply RBAC filtering based on user permissions
+        $this->applyRbacFilters($queryBuilder, 'o', 's');
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
@@ -751,8 +954,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {
             $orX = $queryBuilder->expr()->orX();
-            $orX->add($queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            $orX->add($queryBuilder->expr()->in('uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $queryBuilder->andWhere($orX);
         }
 

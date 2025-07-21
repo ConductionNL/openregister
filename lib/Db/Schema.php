@@ -343,6 +343,120 @@ class Schema extends Entity implements JsonSerializable
 
     }//end validateProperties()
 
+
+    /**
+     * Validate the authorization structure for RBAC
+     *
+     * Validates that the authorization array follows the correct structure:
+     * - Keys must be valid CRUD actions (create, read, update, delete)
+     * - Values must be arrays of group IDs (strings)
+     * - Group IDs must be non-empty strings
+     *
+     * @throws \InvalidArgumentException If the authorization structure is invalid
+     *
+     * @return bool True if the authorization structure is valid
+     */
+    public function validateAuthorization(): bool
+    {
+        if (empty($this->authorization) === true) {
+            return true;
+        }
+
+        $validActions = ['create', 'read', 'update', 'delete'];
+
+        foreach ($this->authorization as $action => $groups) {
+            // Validate action is a valid CRUD operation
+            if (in_array($action, $validActions) === false) {
+                throw new \InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: " . implode(', ', $validActions));
+            }
+
+            // Validate groups is an array
+            if (is_array($groups) === false) {
+                throw new \InvalidArgumentException("Authorization groups for action '{$action}' must be an array");
+            }
+
+            // Validate each group ID is a non-empty string
+            foreach ($groups as $groupId) {
+                if (is_string($groupId) === false || trim($groupId) === '') {
+                    throw new \InvalidArgumentException("Group ID in authorization for action '{$action}' must be a non-empty string");
+                }
+            }
+        }
+
+        return true;
+
+    }//end validateAuthorization()
+
+
+    /**
+     * Check if a user group has permission for a specific CRUD action
+     *
+     * Rules:
+     * - If no authorization is set, all groups have all permissions
+     * - If authorization is set but action is not specified, all groups have permission for that action
+     * - The 'admin' group always has all permissions
+     * - Object owner always has all permissions for their specific objects
+     *
+     * @param string $groupId     The group ID to check
+     * @param string $action      The CRUD action (create, read, update, delete)
+     * @param string $userId      Optional user ID for owner check
+     * @param string $userGroup   Optional user group for admin check
+     * @param string $objectOwner Optional object owner for ownership check
+     *
+     * @return bool True if the group has permission for the action
+     */
+    public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null): bool
+    {
+        // Admin group always has all permissions
+        if ($groupId === 'admin' || $userGroup === 'admin') {
+            return true;
+        }
+
+        // Object owner always has all permissions for their specific objects
+        if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
+            return true;
+        }
+
+        // If no authorization is set, everyone has all permissions
+        if (empty($this->authorization) === true) {
+            return true;
+        }
+
+        // If action is not specified in authorization, everyone has permission
+        if (isset($this->authorization[$action]) === false) {
+            return true;
+        }
+
+        // Check if group is in the allowed groups for this action
+        return in_array($groupId, $this->authorization[$action] ?? []);
+
+    }//end hasPermission()
+
+
+    /**
+     * Get all groups that have permission for a specific action
+     *
+     * @param string $action The CRUD action to check
+     *
+     * @return array Array of group IDs that have permission, or empty array if all groups have permission
+     */
+    public function getAuthorizedGroups(string $action): array
+    {
+        // If no authorization is set, return empty array (meaning all groups)
+        if (empty($this->authorization) === true) {
+            return [];
+        }
+
+        // If action is not specified, return empty array (meaning all groups)
+        if (isset($this->authorization[$action]) === false) {
+            return [];
+        }
+
+        // Return the specific groups that have permission
+        return $this->authorization[$action] ?? [];
+
+    }//end getAuthorizedGroups()
+
     /**
      * Normalize inversedBy properties to ensure they are always strings
      *
@@ -415,6 +529,11 @@ class Schema extends Entity implements JsonSerializable
         // Validate properties if validator is provided.
         if ($validator !== null && isset($object['properties']) === true) {
             $this->validateProperties($validator);
+        }
+
+        // Validate authorization structure
+        if (isset($object['authorization']) === true) {
+            $this->validateAuthorization();
         }
 
         return $this;

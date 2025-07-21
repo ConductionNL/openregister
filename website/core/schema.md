@@ -154,3 +154,227 @@ Create articles with embedded media, tags, and author information.
 Create products with variants, suppliers, and pricing information.
 
 The nested object creation feature provides a powerful way to build complex data structures while maintaining data integrity and proper relationship management across your OpenRegister application.
+
+## Role-Based Access Control (RBAC)
+
+OpenRegister implements a comprehensive Role-Based Access Control system that allows you to restrict access to objects based on the schema's authorization configuration and the user's Nextcloud group membership.
+
+### Authorization Structure
+
+RBAC permissions are defined in the schema's 'authorization' property using a CRUD-based structure:
+
+```json
+{
+  'authorization': {
+    'create': ['editors', 'managers'],
+    'read': ['viewers', 'editors', 'managers'], 
+    'update': ['editors', 'managers'],
+    'delete': ['managers']
+  }
+}
+```
+
+### Permission Rules
+
+The RBAC system follows these fundamental rules:
+
+1. **Open Access by Default**: If no authorization is configured, all users have full CRUD access
+2. **Action-Level Control**: Permissions are granted per CRUD action (create, read, update, delete)
+3. **Group-Based Access**: Users must belong to specified Nextcloud groups to perform actions
+4. **Admin Override**: Users in the 'admin' group always have full access to all schemas
+5. **Owner Privilege**: Object owners always have full access to their specific objects regardless of group restrictions
+
+### Special Groups
+
+#### Admin Group
+- Always has full CRUD access to all schemas
+- Cannot be restricted through authorization configuration  
+- Represents system administrators with unrestricted access
+
+#### Public Group
+- Represents unauthenticated/anonymous access
+- Can be explicitly granted permissions for public-facing schemas
+- Useful for read-only public data or anonymous submissions
+
+#### Object Owner
+- The Nextcloud user who created or owns a specific object
+- Has full CRUD access to their own objects regardless of schema authorization restrictions
+- Different objects in the same schema can have different owners
+- Object ownership cannot be overridden by group restrictions
+
+### Permission Logic
+
+The system evaluates permissions in this order:
+
+1. **Admin Check**: If user is in 'admin' group → Allow all actions
+2. **Owner Check**: If user is the object owner → Allow all actions on that specific object  
+3. **Authorization Check**: If no authorization configured → Allow all actions
+4. **Action Check**: If specific action not configured → Allow action
+5. **Group Check**: If user's group is in authorized list → Allow action
+6. **Default**: Deny action
+
+### Configuration Examples
+
+#### Fully Open Schema
+```json
+{
+  'authorization': {}
+}
+```
+*All users can perform all CRUD operations*
+
+#### Read-Only Public Schema  
+```json
+{
+  'authorization': {
+    'create': ['editors'],
+    'read': ['public'],
+    'update': ['editors'],
+    'delete': ['managers']
+  }
+}
+```
+*Anyone can read, only editors can create/update, only managers can delete*
+
+#### Restricted Internal Schema
+```json
+{
+  'authorization': {
+    'create': ['staff'],
+    'read': ['staff'],
+    'update': ['staff'], 
+    'delete': ['managers']
+  }
+}
+```
+*Only staff can access, only managers can delete*
+
+#### Collaborative Schema
+```json
+{
+  'authorization': {
+    'create': ['contributors', 'editors'],
+    'read': ['viewers', 'contributors', 'editors'],
+    'update': ['editors'],
+    'delete': ['editors']
+  }
+}
+```
+*Multiple groups with different permission levels*
+
+### Query Filtering
+
+When searching or listing objects, the RBAC system automatically filters results based on the user's read permissions:
+
+- Objects from schemas with no read restrictions are always included
+- Objects from restricted schemas are only included if the user has read permission
+- Admin users see all objects regardless of restrictions
+- Object owners see their own objects regardless of restrictions
+- **Published objects** are accessible to everyone if their published date has passed and depublished date hasn't
+- Filtering is applied at the database query level for optimal performance
+
+### Publication-Based Public Access
+
+OpenRegister supports automatic public access for published objects, regardless of schema authorization restrictions:
+
+#### Publication Logic
+Objects become publicly accessible when:
+- The 'published' field is set to a date/time in the past or present
+- The 'depublished' field is either null or set to a future date/time
+
+#### Publication Examples
+```json
+{
+  'name': 'Public Article',
+  'content': 'This article is publicly accessible',
+  'published': '2025-01-01T00:00:00+00:00',
+  'depublished': null
+}
+```
+
+```json
+{
+  'name': 'Temporary Public Content',
+  'content': 'Available for limited time',
+  'published': '2025-01-01T00:00:00+00:00',
+  'depublished': '2025-12-31T23:59:59+00:00'
+}
+```
+
+#### Use Cases
+- **Public Documentation**: Make help articles accessible to all users
+- **Announcements**: Publish news that everyone should see
+- **Time-Limited Content**: Create content with automatic expiration dates
+- **Progressive Disclosure**: Gradually release content based on publication schedules
+
+### Best Practices
+
+1. **Principle of Least Privilege**: Only grant necessary permissions to each group
+2. **Clear Group Names**: Use descriptive group names that reflect their intended access level
+3. **Regular Review**: Periodically review and update authorization configurations
+4. **Test Thoroughly**: Verify permissions work as expected before deploying to production
+5. **Document Decisions**: Maintain clear documentation about why specific permissions were granted
+
+### API Error Responses
+
+When RBAC blocks an unauthorized operation, the API returns consistent JSON error responses:
+
+#### Successful Operation
+```json
+{
+  'id': 'abc123',
+  'name': 'My Object',
+  'description': 'Created successfully'
+}
+```
+
+#### Permission Denied
+```json
+{
+  'error': 'User 'username' does not have permission to 'create' objects in schema 'Schema Name''
+}
+```
+
+All RBAC-related errors return HTTP status code 403 (Forbidden) with descriptive error messages.
+
+### Testing RBAC Permissions
+
+#### Positive Testing
+Verify users CAN perform authorized operations:
+```bash
+# Test authorized user can create
+curl -u 'editor:password' -X POST '/api/objects/1/49' -d '{'name': 'Test'}'
+
+# Expected: 200 OK with object data
+```
+
+#### Negative Testing  
+Verify users CANNOT perform unauthorized operations:
+```bash
+# Test unauthorized user cannot create
+curl -u 'viewer:password' -X POST '/api/objects/1/49' -d '{'name': 'Should Fail'}'
+
+# Expected: 403 Forbidden with error message
+```
+
+#### Query Filtering Testing
+Test that READ operations filter results appropriately:
+```bash
+# Authorized user sees objects
+curl -u 'staff:password' '/api/objects/1/staff-schema'
+# Expected: Array of accessible objects
+
+# Unauthorized user sees empty results
+curl -u 'guest:password' '/api/objects/1/staff-schema' 
+# Expected: Empty results array
+```
+
+### Security Considerations
+
+- RBAC permissions are enforced at the API level, not just the UI
+- Direct database access bypasses RBAC controls
+- Group membership changes in Nextcloud immediately affect OpenRegister permissions
+- Schema modifications require appropriate permissions to prevent privilege escalation
+- Always validate user permissions before performing any CRUD operations
+- **Comprehensive Testing**: Test both positive (authorized) and negative (unauthorized) scenarios
+- **JSON Responses**: All API errors return structured JSON, never HTML error pages

@@ -26,7 +26,18 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\MySQLJsonService;
+use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
+use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
+use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
+use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
+use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
+use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
+use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -95,6 +106,40 @@ class Application extends App implements IBootstrap
                 $container->get(SearchTrailMapper::class),
                 $container->get(RegisterMapper::class),
                 $container->get(SchemaMapper::class)
+            );
+        });
+
+        // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies
+        $context->registerService(ObjectEntityMapper::class, function ($container) {
+            return new ObjectEntityMapper(
+                $container->get('OCP\IDBConnection'),
+                $container->get(MySQLJsonService::class),
+                $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                $container->get('OCP\IUserSession'),
+                $container->get(SchemaMapper::class),
+                $container->get('OCP\IGroupManager'),
+                $container->get('OCP\IUserManager')
+            );
+        });
+
+        // Register ObjectService with IGroupManager and IUserManager dependencies
+        $context->registerService(ObjectService::class, function ($container) {
+            return new ObjectService(
+                $container->get(DeleteObject::class),
+                $container->get(GetObject::class),
+                $container->get(RenderObject::class),
+                $container->get(SaveObject::class),
+                $container->get(ValidateObject::class),
+                $container->get(PublishObject::class),
+                $container->get(DepublishObject::class),
+                $container->get(RegisterMapper::class),
+                $container->get(SchemaMapper::class),
+                $container->get(ObjectEntityMapper::class),
+                $container->get(FileService::class),
+                $container->get('OCP\IUserSession'),
+                $container->get(SearchTrailService::class),
+                $container->get('OCP\IGroupManager'),
+                $container->get('OCP\IUserManager')
             );
         });
 

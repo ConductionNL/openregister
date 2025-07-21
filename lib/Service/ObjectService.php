@@ -46,6 +46,8 @@ use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
 use OCP\IUserSession;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -95,6 +97,8 @@ class ObjectService
      * @param FileService        $fileService        Service for file operations.
      * @param IUserSession       $userSession        User session for getting current user.
      * @param SearchTrailService $searchTrailService Service for search trail operations.
+     * @param IGroupManager      $groupManager       Group manager for checking user groups.
+     * @param IUserManager       $userManager        User manager for getting user objects.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -109,10 +113,94 @@ class ObjectService
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
-        private readonly SearchTrailService $searchTrailService
+        private readonly SearchTrailService $searchTrailService,
+        private readonly IGroupManager $groupManager,
+        private readonly IUserManager $userManager
     ) {
 
     }//end __construct()
+
+
+    /**
+     * Check if the current user has permission to perform a specific CRUD action on objects of a given schema
+     *
+     * This method implements the RBAC permission checking logic:
+     * - Admin group always has all permissions
+     * - Object owner always has all permissions for their specific objects
+     * - If no authorization configured, all users have all permissions
+     * - Otherwise, check if user's groups match the required groups for the action
+     *
+     * @param Schema $schema The schema to check permissions for
+     * @param string $action The CRUD action (create, read, update, delete)
+     * @param string|null $userId Optional user ID (defaults to current user)
+     * @param string|null $objectOwner Optional object owner for ownership check
+     *
+     * @return bool True if user has permission, false otherwise
+     *
+     * @throws \Exception If user session is invalid or user groups cannot be determined
+     */
+    private function hasPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null): bool
+    {
+        // Get current user if not provided
+        if ($userId === null) {
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                // For unauthenticated requests, check if 'public' group has permission
+                return $schema->hasPermission('public', $action, null, null, $objectOwner);
+            }
+            $userId = $user->getUID();
+        }
+
+        // Get user object from user ID
+        $userObj = $this->userManager->get($userId);
+        if ($userObj === null) {
+            // User doesn't exist, treat as public
+            return $schema->hasPermission('public', $action, null, null, $objectOwner);
+        }
+        
+        $userGroups = $this->groupManager->getUserGroupIds($userObj);
+        
+        // Check if user is admin (admin group always has all permissions)
+        if (in_array('admin', $userGroups)) {
+            return true;
+        }
+
+        // Object owner permission check is now handled in schema->hasPermission() call below
+
+        // Check schema permissions for each user group
+        foreach ($userGroups as $groupId) {
+            if ($schema->hasPermission($groupId, $action, $userId, in_array('admin', $userGroups) ? 'admin' : null, $objectOwner)) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end hasPermission()
+
+
+    /**
+     * Validate user has permission for a specific action, throw exception if not
+     *
+     * @param Schema $schema The schema to check permissions for
+     * @param string $action The CRUD action (create, read, update, delete)
+     * @param string|null $userId Optional user ID (defaults to current user)
+     * @param string|null $objectOwner Optional object owner for ownership check
+     *
+     * @throws \Exception If user does not have permission
+     *
+     * @return void
+     */
+    private function checkPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null): void
+    {
+        if (!$this->hasPermission($schema, $action, $userId, $objectOwner)) {
+            $user = $this->userSession->getUser();
+            $userName = $user ? $user->getDisplayName() : 'Anonymous';
+            throw new \Exception("User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'");
+        }
+
+    }//end checkPermission()
+
 
     /**
      * Ensure folder exists for an ObjectEntity.
@@ -281,6 +369,9 @@ class ObjectService
             return null;
         }
 
+        // Check user has permission to read this specific object (includes object owner check)
+        $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
+
         // Render the object before returning.
         $registers = null;
         if ($this->currentRegister !== null) {
@@ -329,6 +420,9 @@ class ObjectService
         if ($schema !== null) {
             $this->setSchema($schema);
         }
+
+        // Check user has permission to create objects in this schema
+        $this->checkPermission($this->currentSchema, 'create');
 
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
 
@@ -406,6 +500,9 @@ class ObjectService
         if ($existingObject === null) {
             throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
+
+        // Check user has permission to update this specific object
+        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
 
         // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
@@ -677,6 +774,23 @@ class ObjectService
             $object = $object->getObject(); // Get the object data array
         }
 
+        // Determine if this is a CREATE or UPDATE operation and check permissions
+        $isUpdate = false;
+        if ($uuid !== null) {
+            try {
+                $existingObject = $this->objectEntityMapper->find($uuid);
+                $isUpdate = true;
+                // This is an UPDATE operation
+                $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Object not found, this is a CREATE operation with specific UUID
+                $this->checkPermission($this->currentSchema, 'create');
+            }
+        } else {
+            // No UUID provided, this is a CREATE operation  
+            $this->checkPermission($this->currentSchema, 'create');
+        }
+
         // Store the parent object's register and schema context before cascading
         // This prevents nested object creation from corrupting the main object's context
         $parentRegister = $this->currentRegister;
@@ -766,9 +880,21 @@ class ObjectService
      * @param string $uuid The UUID of the object to delete
      *
      * @return bool Whether the deletion was successful
+     * 
+     * @throws \Exception If user does not have delete permission
      */
     public function deleteObject(string $uuid): bool
     {
+        // Find the object to get its owner for permission check (include soft-deleted objects)
+        try {
+            $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
+            // Check user has permission to delete this specific object
+            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Object doesn't exist, no permission check needed but let the deleteHandler handle this
+            $this->checkPermission($this->currentSchema, 'delete');
+        }
+
         return $this->deleteHandler->deleteObject(
             $this->currentRegister,
             $this->currentSchema,
