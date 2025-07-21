@@ -167,15 +167,20 @@ class ObjectService
     /**
      * Set the current register context.
      *
-     * @param Register|string|int $register The register object or its ID/UUID
+     * @param Register|string|int $register The register object or its ID/UUID/slug
      *
      * @return self
+     * @throws \InvalidArgumentException If the register is not found
      */
     public function setRegister(Register | string | int $register): self
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // Look up the register by ID or UUID.
-            $register = $this->registerMapper->find($register);
+            try {
+                // Look up the register by ID, UUID, or slug.
+                $register = $this->registerMapper->find($register);
+            } catch (DoesNotExistException $e) {
+                throw new \InvalidArgumentException("Register not found: {$register}");
+            }
         }
 
         $this->currentRegister = $register;
@@ -187,15 +192,20 @@ class ObjectService
     /**
      * Set the current schema context.
      *
-     * @param Schema|string|int $schema The schema object or its ID/UUID
+     * @param Schema|string|int $schema The schema object or its ID/UUID/slug
      *
      * @return self
+     * @throws \InvalidArgumentException If the schema is not found
      */
     public function setSchema(Schema | string | int $schema): self
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // Look up the schema by ID or UUID.
-            $schema = $this->schemaMapper->find($schema);
+            try {
+                // Look up the schema by ID, UUID, or slug.
+                $schema = $this->schemaMapper->find($schema);
+            } catch (DoesNotExistException $e) {
+                throw new \InvalidArgumentException("Schema not found: {$schema}");
+            }
         }
 
         $this->currentSchema = $schema;

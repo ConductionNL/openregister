@@ -170,7 +170,94 @@ curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' \
 
 **Note:** External calls require proper DNS resolution and may not work in all local development environments.
 
-#### 3. Required Headers for API Testing
+#### 3. Online Environment URL Patterns
+
+For online environments (test, staging, production), the URL patterns are different from local development:
+
+**✅ Online Environment URLs:**
+```bash
+# Test Environment (VNG)
+https://vng.test.commonground.nu/index.php/apps/openregister/api/schemas
+https://vng.test.commonground.nu/index.php/apps/openregister/api/objects/{register}/{schema}
+
+# Staging Environment (VNG)
+https://vng.accept.commonground.nu/index.php/apps/openregister/api/schemas
+https://vng.accept.commonground.nu/index.php/apps/openregister/api/objects/{register}/{schema}
+
+# Production Environment (VNG)
+https://vng.commonground.nu/index.php/apps/openregister/api/schemas
+https://vng.commonground.nu/index.php/apps/openregister/api/objects/{register}/{schema}
+```
+
+**❌ Local Development URLs (DO NOT use for online environments):**
+```bash
+# These only work from within Docker containers
+http://localhost/index.php/apps/openregister/api/schemas
+http://localhost/index.php/apps/openregister/api/objects/{register}/{schema}
+```
+
+**Key Differences:**
+1. **Protocol**: Online environments use `https://` instead of `http://`
+2. **Domain**: Use the specific environment domain (test/accept/production)
+3. **Authentication**: Use proper credentials for each environment
+4. **Network Access**: Online environments are accessible from external networks
+5. **Register IDs**: Different environments may have different register and schema IDs
+
+**⚠️ Important: Register and Schema IDs Vary by Environment**
+
+Register and schema IDs are **NOT** consistent across environments. Always check the available registers and schemas in each environment:
+
+```bash
+# Check available registers in test environment
+curl -u 'username:password' -H 'OCS-APIREQUEST: true' \
+     'https://vng.test.commonground.nu/index.php/apps/openregister/api/registers'
+
+# Check available schemas in test environment  
+curl -u 'username:password' -H 'OCS-APIREQUEST: true' \
+     'https://vng.test.commonground.nu/index.php/apps/openregister/api/schemas'
+```
+
+**Example Environment and Schema Differences (as of July 2025):**
+
+- **Local Development (Docker):**
+  - Voorzieningen register ID: 6
+  - Organisatie Schema ID: 35
+  - Contactpersoon Schema ID: 34
+
+- **Test Environment:**
+  - Voorzieningen register ID: 14
+  - Organisatie Schema ID: 37
+  - Contactpersoon Schema ID: 36
+
+- **Accept Environment:**
+  - Voorzieningen register ID: 14
+  - Organisatie Schema ID: 37
+  - Contactpersoon Schema ID: 46
+
+- **Production:**
+  - Voorzieningen register ID: 8
+
+**Note:** Register and schema IDs can differ between environments. Always verify the correct IDs before testing.
+
+Always verify the correct IDs before testing!
+
+**Example Online Environment Testing:**
+```bash
+# Test environment with proper credentials
+curl -u 'username:password' \
+     -H 'OCS-APIREQUEST: true' \
+     -H 'Content-Type: application/json' \
+     'https://vng.test.commonground.nu/index.php/apps/openregister/api/schemas'
+
+# Create object in test environment
+curl -u 'username:password' \
+     -H 'OCS-APIREQUEST: true' \
+     -H 'Content-Type: application/json' \
+     -X POST 'https://vng.test.commonground.nu/index.php/apps/openregister/api/objects/6/37' \
+     -d '{"naam": "Test Organisation", "website": "https://example.com", "type": "Leverancier"}'
+```
+
+#### 4. Required Headers for API Testing
 Always include these headers when testing:
 ```bash
 # Test with authentication headers (REQUIRED)
@@ -180,7 +267,7 @@ curl -u 'admin:admin' \
      'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
 ```
 
-#### 4. Testing Object Creation and Relationships
+#### 5. Testing Object Creation and Relationships
 
 **Create Test Objects:**
 ```bash
@@ -213,13 +300,10 @@ curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' \
   'http://nextcloud.local/index.php/apps/openregister/api/schemas/35'
 ```
 
-**Schema ID Reference:**
-- Organisatie schema: ID 35 (UUID: 94cd5186-b6d3-4d9d-91c8-a109083a7f88)
-- Contactgegevens schema: ID 34
 
 ### Debugging API Endpoint Issues
 
-#### 1. Check App Status
+#### 1. Check App Status (local only)
 Ensure the app is enabled in Nextcloud:
 ```bash
 # Check if app is enabled (replace 'master-nextcloud-1' with your container name)
@@ -232,7 +316,7 @@ docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregist
 docker exec -u 33 master-nextcloud-1 php /var/www/html/occ app:enable openregister
 ```
 
-#### 2. View Debug Logs (CORRECT METHOD)
+#### 2. View Debug Logs (Local Only)
 For local development, debug logs appear in the Docker container's stdout, not in the Nextcloud log file:
 
 ```bash
@@ -292,75 +376,10 @@ var_dump(\$pdo->query('SELECT COUNT(*) FROM oc_search_trails')->fetchColumn());
 "
 ```
 
-### Recent Fixes and Improvements
-
-#### 🔧 IN PROGRESS: Inverse Relations Write-Back Issue
-**Problem**: The `deelnemers` property was not triggering write-back to update the `deelnames` property on referenced organizations.
-
-**Root Cause**: The `handleInverseRelationsWriteBack` method was not correctly detecting `writeBack` properties in array configurations. The schema structure has `writeBack` at the array level, but the code was only checking at the items level.
-
-**Schema Structure**:
-```json
-"deelnemers": {
-  "type": "array",
-  "items": {
-    "type": "object",
-    "objectConfiguration": {"handling": "related-object"},
-    "$ref": "#/components/schemas/organisatie",
-    "inversedBy": "deelnames",
-    "writeBack": true,           // ← This is at array level
-    "removeAfterWriteBack": true
-  }
-}
-```
-
-**Difference between `writeBack` and `inversedBy`**:
-- **`inversedBy`**: Declarative property that defines the relationship direction ("referenced objects have a 'deelnames' property")
-- **`writeBack`**: Action property that triggers the actual update ("when I set deelnemers, update the referenced objects' deelnames")
-
-**Solution Implemented**: 
-1. **Fixed property detection**: Added logic to check for `writeBack` at both property level and array level
-2. **Enhanced configuration extraction**: Updated logic to handle array of objects with `writeBack` at array level
-3. **Improved error handling**: Better logging and error handling for write-back operations
-
-**Testing Status**: 
-- ✅ Schema configuration is correct
-- ✅ API calls work properly
-- 🔄 Debug logging needs investigation (logs not appearing in Docker stdout)
-- 🔄 Write-back functionality needs verification
-
-#### ✅ RESOLVED: Inverse Relations Population Issue
-**Problem**: The `deelnemers` property was not being populated when using `_extend` parameter.
-
-**Root Cause**: The `handleInversedProperties` method in `RenderObject.php` had several bugs:
-1. Incorrect handling of inversedBy configuration structure
-2. Wrong property access patterns for array vs object properties
-3. Improper schema reference resolution
-
-**Solution Implemented**: 
-1. **Fixed property configuration extraction**: Properly handle both array items and direct object properties with inversedBy
-2. **Improved schema reference resolution**: Added `resolveSchemaReference` method to handle various schema reference formats
-3. **Enhanced UUID matching**: Better handling of both array and single value references
-4. **Corrected property structure handling**: Distinguish between array properties and single object properties
-
-**Testing Results**:
-- ✅ API calls work correctly from within Docker container
-- ✅ Object creation successful with proper UUID generation
-- ✅ Schema inspection working properly
-- ✅ Authentication and headers working as expected
-
-**Example Working Commands**:
-```bash
-# Test object creation
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' -H 'Content-Type: application/json' -X POST 'http://localhost/index.php/apps/openregister/api/objects/6/35' -d '{\"naam\": \"Test Organisatie\", \"website\": \"https://test.nl\", \"type\": \"Leverancier\"}'"
-
-# Test inverse relations
-docker exec -it -u 33 master-nextcloud-1 bash -c "curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps/openregister/api/objects/6/35?extend=deelnemers'"
-```
 
 # Unit Testing
 
-Unit testing is crucial for maintaining code quality and ensuring that changes don't break existing functionality. The OpenRegister project uses PHPUnit for testing.
+Unit testing is crucial for maintaining code quality and ensuring that changes don't break existing functionality. The OpenRegister project uses PHPUnit for testing conform nextcloud uni testing (see https://docs.nextcloud.com/server/latest/developer_manual/server/unit-testing.html and https://docs.nextcloud.com/server/19/developer_manual/app/tutorial.html).
 
 ## Test Structure
 
@@ -805,64 +824,3 @@ The Organisatie schema has been updated with the following key relationships:
    - deelnemers array gets emptied after cascading
    - Referenced organisations get the parent UUID added to their deelnames array
    - Proper UUID handling and relationship establishment
-
-### Current Issues
-
-#### ✅ RESOLVED: Duplicate Schema ID Error  
-**Error**: 'Duplicate schema id: http://localhost/apps/openregister/api/v1/schemas/94cd5186-b6d3-4d9d-91c8-a109083a7f88#'
-
-**Root Cause**: Circular references in the Organisatie schema where `deelnames` and `deelnemers` properties both referenced `#/components/schemas/organisatie`, causing the Opis JSON Schema validator to encounter the same schema ID multiple times.
-
-**Solution Implemented**: Added OpenRegister-specific schema transformation in `ValidateObject.php` that:
-1. **Transforms schemas before validation**: Processes schema objects before they reach the Opis JSON Schema validator
-2. **Handles related vs nested objects**: 
-   - Related objects (`handling: 'related-object'`) → Converted to UUID string validation
-   - Nested objects (`handling: 'nested-object'`) → Keeps object structure but prevents circular refs
-3. **Prevents circular references**: Removes `$ref` properties that would cause infinite validation loops
-4. **Maintains OpenRegister logic**: Ensures related objects expect UUID strings while nested objects expect full objects
-
-**Impact**: Organisation creation now works correctly, enabling testing of cascading relationships between `deelnemers` and `deelnames`.
-
-### Next Steps
-
-1. **Resolve Schema Validation Issues**: Fix the duplicate schema ID error
-2. **Complete Cascading Tests**: Once schema is fixed, test the deelnemers/deelnames relationship
-3. **Verify InversedBy Logic**: Ensure proper handling of inversedBy relationships
-4. **Document Test Results**: Record successful test scenarios and edge cases
-5. **Update Documentation**: Document the new cascading behavior and UI improvements
-
-### Test Commands for Manual Verification
-
-Once schema issues are resolved, use these commands:
-
-```bash
-# Create test organisations
-curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' -H 'Content-Type: application/json' \
-  -X POST 'http://localhost/index.php/apps/openregister/api/objects/6/35' \
-  -d '{"naam": "Test Organisatie 1", "website": "https://test1.nl", "type": "Leverancier"}'
-
-# Create samenwerking with deelnemers
-curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' -H 'Content-Type: application/json' \
-  -X POST 'http://localhost/index.php/apps/openregister/api/objects/6/35' \
-  -d '{
-    "naam": "Test Samenwerking",
-    "website": "https://samenwerking.nl", 
-    "type": "Samenwerking",
-    "deelnemers": [
-      "uuid-of-org-1",
-      "uuid-of-org-2"
-    ]
-  }'
-
-# Verify cascading results
-curl -u 'admin:admin' -H 'OCS-APIREQUEST: true' \
-  'http://localhost/index.php/apps/openregister/api/objects/6/35/uuid-of-org-1'
-```
-
-### Code Quality Improvements
-
-- All new code follows PSR-12 standards
-- Proper error handling with try-catch blocks
-- Comprehensive inline documentation
-- Type hints and return types specified
-- PHPStan and Psalm compatible annotations
