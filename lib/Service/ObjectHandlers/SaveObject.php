@@ -292,6 +292,10 @@ class SaveObject
     /**
      * Set default values and constant values for properties based on the schema.
      *
+     * This method now supports different default value behaviors:
+     * - 'false' (default): Only apply defaults when property is missing or null
+     * - 'falsy': Also apply defaults when property is empty string or empty array/object
+     *
      * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
      * @param Schema       $schema       The schema the objectEntity belongs to.
      * @param array        $data         The data that is written to the object.
@@ -334,11 +338,36 @@ class SaveObject
             }
         }
 
-        // Handle default values - only set if not already present in data
-        $defaultValues = array_filter(array_column($properties, 'default', 'title'));
+        // Handle default values with new behavior support
+        $defaultValues = [];
+        foreach ($properties as $property) {
+            $key = $property['title'];
+            $defaultValue = $property['default'] ?? null;
+            
+            // Skip if no default value is defined
+            if ($defaultValue === null) {
+                continue;
+            }
 
-        // Remove all keys from array for which a value has already been set in $data.
-        $defaultValues = array_diff_key($defaultValues, $data);
+            $defaultBehavior = $property['defaultBehavior'] ?? 'false';
+            $shouldApplyDefault = false;
+
+            // Determine if default should be applied based on behavior
+            if ($defaultBehavior === 'falsy') {
+                // Apply default if property is missing, null, empty string, or empty array/object
+                $shouldApplyDefault = !isset($data[$key]) 
+                    || $data[$key] === null 
+                    || $data[$key] === '' 
+                    || (is_array($data[$key]) && empty($data[$key]));
+            } else {
+                // Default behavior: only apply if property is missing or null
+                $shouldApplyDefault = !isset($data[$key]) || $data[$key] === null;
+            }
+
+            if ($shouldApplyDefault) {
+                $defaultValues[$key] = $defaultValue;
+            }
+        }
 
         // Render twig templated default values.
         $renderedDefaultValues = [];
@@ -356,10 +385,10 @@ class SaveObject
         }
 
         // Merge in this order:
-        // 1. Start with rendered default values (only for properties not in $data)
-        // 2. Add existing data (this preserves user input)
+        // 1. Start with existing data
+        // 2. Apply rendered default values (only for properties that should get defaults)
         // 3. Override with constant values (constants always take precedence)
-        $mergedData = array_merge($renderedDefaultValues, $data, $constantValues);
+        $mergedData = array_merge($data, $renderedDefaultValues, $constantValues);
 
         return $mergedData;
 
