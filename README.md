@@ -17,6 +17,7 @@ Registers can also apply additional logic to objects, such as validation that is
 - 📦 **Object Management**: Work with objects based on [`schema.json`](https://json-schema.org/).
 - 🗂️ **Register System**: Manage collections of object types.
 - 🛡️ **Validation**: Validate objects against their types.
+- 🏢 **Multi-Tenancy**: Complete organisation-based data isolation with user management and role-based access control.
 - 💾 **Flexible Storage**: Store objects in Nextcloud, external databases, or object stores.
 - 🔄 **APIs**: Provide APIs for consumption.
 - 🧩 **Additional Logic**: Apply extra validation and logic beyond [`schema.json`](https://json-schema.org/).

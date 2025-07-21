@@ -25,7 +25,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use Ramsey\Uuid\Uuid;
+
 
 /**
  * OrganisationMapper
@@ -127,7 +127,7 @@ class OrganisationMapper extends QBMapper
     public function createDefault(): Organisation
     {
         $organisation = new Organisation();
-        $organisation->setUuid(Uuid::v4()->toString());
+        $organisation->setUuid(bin2hex(random_bytes(16)));
         $organisation->setName('Default Organisation');
         $organisation->setDescription('Default organisation for users without specific organisation membership');
         $organisation->setIsDefault(true);
@@ -173,7 +173,7 @@ class OrganisationMapper extends QBMapper
     {
         // Generate UUID if not present
         if ($organisation->getUuid() === null) {
-            $organisation->setUuid(Uuid::v4()->toString());
+            $organisation->setUuid(bin2hex(random_bytes(16)));
         }
 
         // Set timestamps

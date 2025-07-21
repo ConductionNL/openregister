@@ -129,9 +129,8 @@ class OrganisationService
     /**
      * Get organisations for the current user
      * 
-     * @param bool $useCache Whether to use cached organisations from session
-     * 
-     * @return array Array of Organisation entities
+     * @param bool $useCache Whether to use session cache (temporarily disabled)
+     * @return array Array of Organisation objects
      */
     public function getUserOrganisations(bool $useCache = true): array
     {
@@ -141,19 +140,10 @@ class OrganisationService
         }
 
         $userId = $user->getUID();
-        $cacheKey = self::SESSION_USER_ORGANISATIONS . '_' . $userId;
-
-        // Try to get from cache first
-        if ($useCache) {
-            $cachedData = $this->session->get($cacheKey);
-            if ($cachedData && isset($cachedData['timestamp'], $cachedData['organisations'])) {
-                $age = time() - $cachedData['timestamp'];
-                if ($age < self::CACHE_TIMEOUT) {
-                    return $cachedData['organisations'];
-                }
-            }
-        }
-
+        
+        // Temporarily disable caching to avoid serialization issues
+        // TODO: Implement proper object serialization/deserialization later
+        
         // Get from database
         $organisations = $this->organisationMapper->findByUserId($userId);
         
@@ -164,12 +154,6 @@ class OrganisationService
             $this->organisationMapper->update($defaultOrg);
             $organisations = [$defaultOrg];
         }
-
-        // Cache the results
-        $this->session->set($cacheKey, [
-            'timestamp' => time(),
-            'organisations' => $organisations
-        ]);
 
         return $organisations;
     }
@@ -415,7 +399,7 @@ class OrganisationService
     }
 
     /**
-     * Get organisation statistics for current user
+     * Get user organisation statistics
      * 
      * @return array Statistics about user's organisations
      */
@@ -423,7 +407,7 @@ class OrganisationService
     {
         $user = $this->getCurrentUser();
         if ($user === null) {
-            return ['total' => 0, 'active' => null];
+            return ['total' => 0, 'active' => null, 'results' => []];
         }
 
         $organisations = $this->getUserOrganisations();
@@ -432,7 +416,7 @@ class OrganisationService
         return [
             'total' => count($organisations),
             'active' => $activeOrg ? $activeOrg->jsonSerialize() : null,
-            'list' => array_map(function($org) { return $org->jsonSerialize(); }, $organisations)
+            'results' => array_map(function($org) { return $org->jsonSerialize(); }, $organisations)
         ];
     }
 
