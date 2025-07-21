@@ -388,29 +388,43 @@ export default {
 		},
 	},
 	async mounted() {
-		await organisationStore.refreshOrganisationList()
-		await organisationStore.getActiveOrganisation()
+		try {
+			await organisationStore.refreshOrganisationList()
+			
+			// Check if the method exists before calling it
+			if (typeof organisationStore.getActiveOrganisation === 'function') {
+				await organisationStore.getActiveOrganisation()
+			} else {
+				console.warn('getActiveOrganisation method not available in organisationStore')
+			}
+		} catch (error) {
+			console.error('Error loading organisation data:', error)
+		}
 	},
 	methods: {
 		isActiveOrganisation(organisation) {
 			return organisationStore.userStats.active
 				   && organisationStore.userStats.active.uuid === organisation.uuid
 		},
+		getCurrentUser() {
+			// Get current user from global OC object (Nextcloud's way)
+			return window.OC?.getCurrentUser?.()?.uid || 'unknown'
+		},
 		canEditOrganisation(organisation) {
 			// Only the owner can edit the organisation (or system for default org)
 			return organisation.owner === 'system'
-				   || organisation.owner === this.$route.meta?.user?.uid // Nextcloud user ID
+				   || organisation.owner === this.getCurrentUser()
 		},
 		canLeaveOrganisation(organisation) {
 			// Can't leave if it's your only organisation or if you're the owner
 			return organisationStore.userStats.total > 1
 				   && !organisation.isDefault
-				   && organisation.owner !== this.$route.meta?.user?.uid
+				   && organisation.owner !== this.getCurrentUser()
 		},
 		canDeleteOrganisation(organisation) {
 			// Only owners can delete, and can't delete default organisation
 			return !organisation.isDefault
-				   && organisation.owner === this.$route.meta?.user?.uid
+				   && organisation.owner === this.getCurrentUser()
 		},
 		async setActiveOrganisation(uuid) {
 			try {
