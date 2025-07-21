@@ -270,7 +270,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															label="Default Value (JSON)"
 															@update:value="updateObjectDefault(key, $event)" />
 													</template>
-													
+
 													<!-- Default Behavior Toggle -->
 													<template v-if="property.default !== undefined && property.default !== null && property.default !== ''">
 														<NcActionCheckbox
@@ -278,11 +278,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															@update:checked="updatePropertySetting(key, 'defaultBehavior', $event ? 'falsy' : 'false')">
 															Apply default for empty values
 														</NcActionCheckbox>
-														<NcActionCaption 
+														<NcActionCaption
 															v-if="property.defaultBehavior === 'falsy'"
 															name="ℹ️ Default will be applied when value is missing, null, or empty string"
 															style="color: var(--color-text-lighter); font-size: 11px;" />
-														<NcActionCaption 
+														<NcActionCaption
 															v-else
 															name="ℹ️ Default will only be applied when value is missing or null"
 															style="color: var(--color-text-lighter); font-size: 11px;" />
@@ -1430,9 +1430,9 @@ export default {
 		},
 		/**
 		 * Helper method to convert array default value to comma-separated string for display
-		 * 
+		 *
 		 * @param {Array|null|undefined} defaultValue The array default value to convert
-		 * @returns {string} Comma-separated string representation of the array
+		 * @return {string} Comma-separated string representation of the array
 		 */
 		getArrayDefaultAsString(defaultValue) {
 			if (!defaultValue || !Array.isArray(defaultValue)) {
@@ -1443,7 +1443,7 @@ export default {
 
 		/**
 		 * Update array default value from comma-separated string input
-		 * 
+		 *
 		 * @param {string} key The property key to update
 		 * @param {string} value The comma-separated string of values
 		 */
@@ -1451,7 +1451,7 @@ export default {
 			if (!this.schemaItem.properties[key]) {
 				return
 			}
-			
+
 			if (!value || value.trim() === '') {
 				// Clear the default value if empty
 				this.$set(this.schemaItem.properties[key], 'default', undefined)
@@ -1460,13 +1460,13 @@ export default {
 				const arrayValues = value.split(',').map(item => item.trim()).filter(item => item !== '')
 				this.$set(this.schemaItem.properties[key], 'default', arrayValues)
 			}
-			
+
 			this.checkPropertiesModified()
 		},
 
 		/**
 		 * Update object default value from JSON string input
-		 * 
+		 *
 		 * @param {string} key The property key to update
 		 * @param {string} value The JSON string representation of the object
 		 */
@@ -1474,14 +1474,14 @@ export default {
 			if (!this.schemaItem.properties[key]) {
 				return
 			}
-			
+
 			if (!value || value.trim() === '' || value.trim() === '{}') {
 				// Clear the default value if empty or empty object
 				this.$set(this.schemaItem.properties[key], 'default', undefined)
 				this.checkPropertiesModified()
 				return
 			}
-			
+
 			try {
 				// Try to parse as JSON
 				const parsedValue = JSON.parse(value)
