@@ -25,6 +25,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\OrganisationService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,14 +40,16 @@ class RegisterService
     /**
      * Constructor for RegisterService.
      *
-     * @param RegisterMapper  $registerMapper  Mapper for register operations.
-     * @param FileService     $fileService     Service for file operations.
-     * @param LoggerInterface $logger          Logger for error handling.
+     * @param RegisterMapper     $registerMapper      Mapper for register operations.
+     * @param FileService        $fileService         Service for file operations.
+     * @param LoggerInterface    $logger              Logger for error handling.
+     * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly FileService $fileService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly OrganisationService $organisationService
     ) {
 
     }//end __construct()
@@ -130,6 +133,13 @@ class RegisterService
     {
         // Create the register first
         $register = $this->registerMapper->createFromArray($data);
+
+        // Set organisation from active organisation for multi-tenancy (if not already set)
+        if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
+            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $register->setOrganisation($organisationUuid);
+            $register = $this->registerMapper->update($register);
+        }
 
         // Ensure folder exists for the new register
         $this->ensureRegisterFolderExists($register);
