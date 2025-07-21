@@ -234,6 +234,60 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 														@update:value="enumInputValue = $event"
 														@keydown.enter.prevent="addEnumValueAndClear(key)" />
 
+													<!-- Default Value Configuration -->
+													<NcActionSeparator />
+													<NcActionCaption name="Default Value Configuration" />
+													<template v-if="property.type === 'string'">
+														<NcActionInput
+															:value="property.default || ''"
+															label="Default Value"
+															@update:value="updatePropertySetting(key, 'default', $event === '' ? undefined : $event)" />
+													</template>
+													<template v-else-if="property.type === 'number' || property.type === 'integer'">
+														<NcActionInput
+															:value="property.default || 0"
+															type="number"
+															label="Default Value"
+															@update:value="updatePropertySetting(key, 'default', Number($event))" />
+													</template>
+													<template v-else-if="property.type === 'boolean'">
+														<NcActionCheckbox
+															:checked="property.default === true"
+															@update:checked="updatePropertySetting(key, 'default', $event)">
+															Default Value
+														</NcActionCheckbox>
+													</template>
+													<template v-else-if="property.type === 'array' && property.items && property.items.type === 'string'">
+														<NcActionInput
+															:value="getArrayDefaultAsString(property.default)"
+															label="Default Values (comma separated)"
+															placeholder="value1, value2, value3"
+															@update:value="updateArrayDefault(key, $event)" />
+													</template>
+													<template v-else-if="property.type === 'object'">
+														<NcActionInput
+															:value="typeof property.default === 'object' ? JSON.stringify(property.default, null, 2) : (property.default || '{}')"
+															label="Default Value (JSON)"
+															@update:value="updateObjectDefault(key, $event)" />
+													</template>
+													
+													<!-- Default Behavior Toggle -->
+													<template v-if="property.default !== undefined && property.default !== null && property.default !== ''">
+														<NcActionCheckbox
+															:checked="property.defaultBehavior === 'falsy'"
+															@update:checked="updatePropertySetting(key, 'defaultBehavior', $event ? 'falsy' : 'false')">
+															Apply default for empty values
+														</NcActionCheckbox>
+														<NcActionCaption 
+															v-if="property.defaultBehavior === 'falsy'"
+															name="ℹ️ Default will be applied when value is missing, null, or empty string"
+															style="color: var(--color-text-lighter); font-size: 11px;" />
+														<NcActionCaption 
+															v-else
+															name="ℹ️ Default will only be applied when value is missing or null"
+															style="color: var(--color-text-lighter); font-size: 11px;" />
+													</template>
+
 													<!-- Type-specific configurations -->
 													<template v-if="property.type === 'string'">
 														<NcActionSeparator />
@@ -1373,6 +1427,70 @@ export default {
 			}
 			const rawRef = typeof property.items.$ref === 'object' ? property.items.$ref.id : property.items.$ref
 			return typeof rawRef === 'number'
+		},
+		/**
+		 * Helper method to convert array default value to comma-separated string for display
+		 * 
+		 * @param {Array|null|undefined} defaultValue The array default value to convert
+		 * @returns {string} Comma-separated string representation of the array
+		 */
+		getArrayDefaultAsString(defaultValue) {
+			if (!defaultValue || !Array.isArray(defaultValue)) {
+				return ''
+			}
+			return defaultValue.join(', ')
+		},
+
+		/**
+		 * Update array default value from comma-separated string input
+		 * 
+		 * @param {string} key The property key to update
+		 * @param {string} value The comma-separated string of values
+		 */
+		updateArrayDefault(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+			
+			if (!value || value.trim() === '') {
+				// Clear the default value if empty
+				this.$set(this.schemaItem.properties[key], 'default', undefined)
+			} else {
+				// Parse comma-separated values and trim whitespace
+				const arrayValues = value.split(',').map(item => item.trim()).filter(item => item !== '')
+				this.$set(this.schemaItem.properties[key], 'default', arrayValues)
+			}
+			
+			this.checkPropertiesModified()
+		},
+
+		/**
+		 * Update object default value from JSON string input
+		 * 
+		 * @param {string} key The property key to update
+		 * @param {string} value The JSON string representation of the object
+		 */
+		updateObjectDefault(key, value) {
+			if (!this.schemaItem.properties[key]) {
+				return
+			}
+			
+			if (!value || value.trim() === '' || value.trim() === '{}') {
+				// Clear the default value if empty or empty object
+				this.$set(this.schemaItem.properties[key], 'default', undefined)
+				this.checkPropertiesModified()
+				return
+			}
+			
+			try {
+				// Try to parse as JSON
+				const parsedValue = JSON.parse(value)
+				this.$set(this.schemaItem.properties[key], 'default', parsedValue)
+				this.checkPropertiesModified()
+			} catch (e) {
+				// Invalid JSON - don't update the value
+				console.warn('Invalid JSON for default value:', e.message)
+			}
 		},
 	},
 }
