@@ -48,6 +48,7 @@ use React\Async;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\OrganisationService;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -99,6 +100,7 @@ class ObjectService
      * @param SearchTrailService $searchTrailService Service for search trail operations.
      * @param IGroupManager      $groupManager       Group manager for checking user groups.
      * @param IUserManager       $userManager        User manager for getting user objects.
+     * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -115,7 +117,8 @@ class ObjectService
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
-        private readonly IUserManager $userManager
+        private readonly IUserManager $userManager,
+        private readonly OrganisationService $organisationService
     ) {
 
     }//end __construct()
@@ -431,6 +434,10 @@ class ObjectService
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
         $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        
+        // Set organisation from active organisation for multi-tenancy
+        $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+        $tempObject->setOrganisation($organisationUuid);
         
         // Create folder before saving to avoid double update
         $folderId = null;

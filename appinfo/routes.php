@@ -95,6 +95,18 @@ return [
         ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
         // Search
         ['name' => 'search#search', 'url' => '/api/search', 'verb' => 'GET'],
+        // Organisations - Multi-tenancy management
+        ['name' => 'organisation#index', 'url' => '/api/organisations', 'verb' => 'GET'],
+        ['name' => 'organisation#create', 'url' => '/api/organisations', 'verb' => 'POST'],
+        ['name' => 'organisation#search', 'url' => '/api/organisations/search', 'verb' => 'GET'],
+        ['name' => 'organisation#stats', 'url' => '/api/organisations/stats', 'verb' => 'GET'],
+        ['name' => 'organisation#clearCache', 'url' => '/api/organisations/clear-cache', 'verb' => 'POST'],
+        ['name' => 'organisation#getActive', 'url' => '/api/organisations/active', 'verb' => 'GET'],
+        ['name' => 'organisation#show', 'url' => '/api/organisations/{uuid}', 'verb' => 'GET'],
+        ['name' => 'organisation#update', 'url' => '/api/organisations/{uuid}', 'verb' => 'PUT'],
+        ['name' => 'organisation#setActive', 'url' => '/api/organisations/{uuid}/set-active', 'verb' => 'POST'],
+        ['name' => 'organisation#join', 'url' => '/api/organisations/{uuid}/join', 'verb' => 'POST'],
+        ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags
 		['name' => 'tags#getAllTags', 'url' => 'api/tags', 'verb' => 'GET'],
     ],
