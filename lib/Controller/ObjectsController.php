@@ -381,10 +381,14 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
-        // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
-        // external frontend calls (/api/objects/petstore/dogs)
-        $objectService->setRegister($register)->setSchema($schema);
+        try {
+            // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
+            // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
+            // external frontend calls (/api/objects/petstore/dogs)
+            $objectService->setRegister($register)->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get resolved numeric IDs for the search query
         $resolvedRegisterId = $objectService->getRegister();
@@ -433,9 +437,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
@@ -485,9 +493,13 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
 
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
@@ -549,9 +561,13 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
@@ -654,9 +670,13 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get patch data from request parameters.
         $patchData = $this->request->getParams();
@@ -794,9 +814,13 @@ class ObjectsController extends Controller
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
@@ -838,9 +862,13 @@ class ObjectsController extends Controller
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the register and schema context first.
-        $objectService->setRegister($register);
-        $objectService->setSchema($schema);
+        try {
+            // Set the register and schema context first.
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get the relations for the object.
         $relationsArray = $objectService->find($id)->getRelations();
@@ -900,9 +928,13 @@ class ObjectsController extends Controller
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get the relations for the object.
         $relationsArray = $objectService->findByRelations($id);
@@ -962,9 +994,13 @@ class ObjectsController extends Controller
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the register and schema context first.
-        $objectService->setRegister($register);
-        $objectService->setSchema($schema);
+        try {
+            // Set the register and schema context first.
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get config and fetch logs.
         $config = $this->getConfig($register, $schema);
@@ -992,9 +1028,13 @@ class ObjectsController extends Controller
      */
     public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service.
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         $data    = $this->request->getParams();
         $process = ($data['process'] ?? null);
@@ -1030,8 +1070,12 @@ class ObjectsController extends Controller
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
-        $this->objectService->setRegister($register);
-        $this->objectService->setSchema($schema);
+        try {
+            $this->objectService->setRegister($register);
+            $this->objectService->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
         $this->objectService->unlock($id);
         return new JSONResponse(['message' => 'Object unlocked successfully']);
 
@@ -1050,11 +1094,15 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
+    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse
     {
-        // Set the register and schema context
-        $objectService->setRegister($register);
-        $objectService->setSchema($schema);
+        try {
+            // Set the register and schema context
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         // Get filters and type from request
         $filters = $this->request->getParams();
@@ -1228,9 +1276,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         try {
             // Get the publication date from request if provided
@@ -1269,9 +1321,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        try {
+            // Set the schema and register to the object service
+            $objectService->setSchema($schema);
+            $objectService->setRegister($register);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         try {
             // Get the depublication date from request if provided
@@ -1311,9 +1367,13 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service
-        $objectService->setRegister($register);
-        $objectService->setSchema($schema);
+        try {
+            // Set the schema and register to the object service
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
 
         try {
             // Get merge data from request body
@@ -1442,6 +1502,11 @@ class ObjectsController extends Controller
             // Set the context for the object service
             $objectService->setRegister($register);
             $objectService->setSchema($schema);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], 404);
+        }
+
+        try {
 
             // Get the object to ensure it exists and we have access
             $object = $objectService->find($id);
