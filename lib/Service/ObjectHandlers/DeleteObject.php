@@ -126,7 +126,7 @@ class DeleteObject
         ?string $originalObjectId=null
     ): bool {
         try {
-            $object = $this->objectEntityMapper->findByUuid($uuid);
+            $object = $this->objectEntityMapper->find($uuid, null, null, true);
 
             // Handle cascading deletes if this is the root object.
             if ($originalObjectId === null) {

@@ -21,6 +21,7 @@ export class Schema implements TSchema {
 
 	public hardValidation: boolean
 	public maxDepth: number
+	public authorization?: Record<string, string[]>
 	public stats?: TSchema['stats']
 
 	constructor(schema: TSchema) {
@@ -41,6 +42,7 @@ export class Schema implements TSchema {
 		}
 		this.hardValidation = schema.hardValidation || false
 		this.maxDepth = schema.maxDepth || 0
+		this.authorization = schema.authorization || {}
 		this.stats = schema.stats
 	}
 
@@ -63,6 +65,7 @@ export class Schema implements TSchema {
 			}).optional(),
 			hardValidation: z.boolean(),
 			maxDepth: z.number().int().min(0),
+			authorization: z.record(z.array(z.string())).optional(),
 		})
 
 		return schema.safeParse(this)
