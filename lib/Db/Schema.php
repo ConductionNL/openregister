@@ -531,6 +531,9 @@ class Schema extends Entity implements JsonSerializable
 
                         $nestedProp = new stdClass();
                         foreach ($subProperty as $key => $value) {
+							if($key === 'oneOf' && empty($value) === true) {
+								continue;
+							}
                             $nestedProp->{$key} = $value;
                         }
 
@@ -544,7 +547,7 @@ class Schema extends Entity implements JsonSerializable
                 $prop = new stdClass();
                 foreach ($property as $key => $value) {
                     // Skip 'required' property on this level.
-                    if ($key !== 'required' && ($value !== null && $value !== '')) {
+                    if ($key !== 'required' && (empty($value) === false)) {
                         $prop->{$key} = $value;
                     }
                 }
