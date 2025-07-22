@@ -949,7 +949,7 @@ class ObjectEntityMapper extends QBMapper
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema);
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
 
         // Handle filtering by IDs/UUIDs if provided
         if ($ids !== null && empty($ids) === false) {
@@ -1102,7 +1102,7 @@ class ObjectEntityMapper extends QBMapper
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema);
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, '');
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
@@ -1148,18 +1148,21 @@ class ObjectEntityMapper extends QBMapper
      * @param bool|null         $published      If true, only return currently published objects
      * @param mixed             $register       Optional register(s) to filter by (single/array, string/int/object)
      * @param mixed             $schema         Optional schema(s) to filter by (single/array, string/int/object)
+     * @param string            $tableAlias     The table alias to use (default: '')
      *
      * @phpstan-param IQueryBuilder $queryBuilder
      * @phpstan-param bool $includeDeleted
      * @phpstan-param bool|null $published
      * @phpstan-param mixed $register
      * @phpstan-param mixed $schema
+     * @phpstan-param string $tableAlias
      *
      * @psalm-param IQueryBuilder $queryBuilder
      * @psalm-param bool $includeDeleted
      * @psalm-param bool|null $published
      * @psalm-param mixed $register
      * @psalm-param mixed $schema
+     * @psalm-param string $tableAlias
      *
      * @return void
      */
@@ -1168,23 +1171,27 @@ class ObjectEntityMapper extends QBMapper
         bool $includeDeleted,
         ?bool $published,
         mixed $register,
-        mixed $schema
+        mixed $schema,
+        string $tableAlias = ''
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+        $deletedColumn = $tableAlias ? $tableAlias . '.deleted' : 'deleted';
         if ($includeDeleted === false) {
-            $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
+            $queryBuilder->andWhere($queryBuilder->expr()->isNull($deletedColumn));
         }
 
         // If published filter is set, only include objects that are currently published
         if ($published === true) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
+            $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
+                    $queryBuilder->expr()->isNotNull($publishedColumn),
+                    $queryBuilder->expr()->lte($publishedColumn, $queryBuilder->createNamedParameter($now)),
                     $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
+                        $queryBuilder->expr()->isNull($depublishedColumn),
+                        $queryBuilder->expr()->gt($depublishedColumn, $queryBuilder->createNamedParameter($now))
                     )
                 )
             );
@@ -1192,40 +1199,42 @@ class ObjectEntityMapper extends QBMapper
 
         // Add register filter if provided
         if ($register !== null) {
+            $registerColumn = $tableAlias ? $tableAlias . '.register' : 'register';
             if (is_array($register) === true) {
                 // Handle array of register IDs
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->in('register', $queryBuilder->createNamedParameter($register, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+                    $queryBuilder->expr()->in($registerColumn, $queryBuilder->createNamedParameter($register, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
                 );
             } else if (is_object($register) === true && method_exists($register, 'getId') === true) {
                 // Handle single register object
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
+                    $queryBuilder->expr()->eq($registerColumn, $queryBuilder->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT))
                 );
             } else {
                 // Handle single register ID (string/int)
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->eq('register', $queryBuilder->createNamedParameter($register, IQueryBuilder::PARAM_INT))
+                    $queryBuilder->expr()->eq($registerColumn, $queryBuilder->createNamedParameter($register, IQueryBuilder::PARAM_INT))
                 );
             }
         }
 
         // Add schema filter if provided
         if ($schema !== null) {
+            $schemaColumn = $tableAlias ? $tableAlias . '.schema' : 'schema';
             if (is_array($schema) === true) {
                 // Handle array of schema IDs
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->in('schema', $queryBuilder->createNamedParameter($schema, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+                    $queryBuilder->expr()->in($schemaColumn, $queryBuilder->createNamedParameter($schema, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
                 );
             } else if (is_object($schema) === true && method_exists($schema, 'getId') === true) {
                 // Handle single schema object
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
+                    $queryBuilder->expr()->eq($schemaColumn, $queryBuilder->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT))
                 );
             } else {
                 // Handle single schema ID (string/int)
                 $queryBuilder->andWhere(
-                    $queryBuilder->expr()->eq('schema', $queryBuilder->createNamedParameter($schema, IQueryBuilder::PARAM_INT))
+                    $queryBuilder->expr()->eq($schemaColumn, $queryBuilder->createNamedParameter($schema, IQueryBuilder::PARAM_INT))
                 );
             }
         }
