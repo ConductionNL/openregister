@@ -3,10 +3,9 @@
  * OpenRegister Multi-Tenancy Migration
  *
  * This migration completes the multi-tenancy implementation by:
- * 1. Adding users, isDefault, and owner fields to Organisation table
- * 2. Creating a default organisation if none exists
- * 3. Setting all existing registers, schemas, and objects to the default organisation
- * 4. Making organisation and owner fields mandatory (non-nullable)
+ * 1. Adding users and owner fields to Organisation table
+ * 2. Setting all existing registers, schemas, and objects to have an organisation and owner
+ * 3. Making organisation and owner fields mandatory (non-nullable)
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -94,15 +93,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 $output->info('Added users column to organisations table');
             }
 
-            // Add isDefault field (boolean flag for default organisation)
-            if (!$table->hasColumn('isDefault')) {
-                $table->addColumn('isDefault', Types::BOOLEAN, [
-                    'notnull' => true,
-                    'default' => false
-                ]);
-                $output->info('Added isDefault column to organisations table');
-            }
-
             // Add owner field (user ID who owns the organisation)
             if (!$table->hasColumn('owner')) {
                 $table->addColumn('owner', Types::STRING, [
@@ -127,8 +117,8 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Step 1: Ensure default organisation exists
-        $defaultOrgId = $this->ensureDefaultOrganisation($output);
+        // Step 1: Ensure at least one organisation exists
+        $defaultOrgId = $this->ensureOrganisationExists($output);
 
         // Step 2: Update existing records to have organisation and owner
         $this->updateExistingRecords($output, $defaultOrgId);
@@ -140,30 +130,30 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     }
 
     /**
-     * Ensure a default organisation exists
+     * Ensure at least one organisation exists
      *
      * @param IOutput $output Migration output
      *
-     * @return int The ID of the default organisation
+     * @return int The ID of the organisation
      */
-    private function ensureDefaultOrganisation(IOutput $output): int
+    private function ensureOrganisationExists(IOutput $output): int
     {
-        // Check if default organisation already exists
+        // Check if any organisation exists
         $qb = $this->connection->getQueryBuilder();
         $qb->select('id')
            ->from('openregister_organisations')
-           ->where($qb->expr()->eq('isDefault', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)));
+           ->setMaxResults(1);
 
         $result = $qb->executeQuery();
-        $defaultOrg = $result->fetchOne();
+        $orgId = $result->fetchOne();
         $result->closeCursor();
 
-        if ($defaultOrg) {
-            $output->info('Default organisation already exists with ID: ' . $defaultOrg);
-            return (int) $defaultOrg;
+        if ($orgId) {
+            $output->info('Organisation already exists with ID: ' . $orgId);
+            return (int) $orgId;
         }
 
-        // Create default organisation
+        // Create a default organisation
         $uuid = bin2hex(random_bytes(16));
         $uuid = sprintf('%08s-%04s-%04x-%04x-%12s',
             substr($uuid, 0, 8),
@@ -181,59 +171,58 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                'name' => $qb->createNamedParameter('Default Organisation'),
                'description' => $qb->createNamedParameter('Default organisation for users without specific organisation membership'),
                'users' => $qb->createNamedParameter('[]'),
-               'isDefault' => $qb->createNamedParameter(true, \PDO::PARAM_BOOL),
                'owner' => $qb->createNamedParameter('system'),
                'created' => $qb->createNamedParameter($now, Types::DATETIME),
                'updated' => $qb->createNamedParameter($now, Types::DATETIME)
            ]);
 
         $qb->executeStatement();
-        $defaultOrgId = $this->connection->lastInsertId('openregister_organisations');
+        $orgId = $this->connection->lastInsertId('openregister_organisations');
 
-        $output->info('Created default organisation with ID: ' . $defaultOrgId);
-        return (int) $defaultOrgId;
+        $output->info('Created organisation with ID: ' . $orgId);
+        return (int) $orgId;
     }
 
     /**
      * Update existing records to have organisation and owner
      *
      * @param IOutput $output        Migration output
-     * @param int     $defaultOrgId  ID of the default organisation
+     * @param int     $orgId         ID of the organisation
      *
      * @return void
      */
-    private function updateExistingRecords(IOutput $output, int $defaultOrgId): void
+    private function updateExistingRecords(IOutput $output, int $orgId): void
     {
-        $defaultOrgUuid = $this->getOrganisationUuid($defaultOrgId);
+        $orgUuid = $this->getOrganisationUuid($orgId);
 
         // Update registers without organisation
-        $updated = $this->updateTable('openregister_registers', $defaultOrgUuid, $output);
-        $output->info("Updated $updated registers with default organisation");
+        $updated = $this->updateTable('openregister_registers', $orgUuid, $output);
+        $output->info("Updated $updated registers with organisation");
 
         // Update schemas without organisation
-        $updated = $this->updateTable('openregister_schemas', $defaultOrgUuid, $output);
-        $output->info("Updated $updated schemas with default organisation");
+        $updated = $this->updateTable('openregister_schemas', $orgUuid, $output);
+        $output->info("Updated $updated schemas with organisation");
 
         // Update objects without organisation
-        $updated = $this->updateTable('openregister_objects', $defaultOrgUuid, $output);
-        $output->info("Updated $updated objects with default organisation");
+        $updated = $this->updateTable('openregister_objects', $orgUuid, $output);
+        $output->info("Updated $updated objects with organisation");
     }
 
     /**
-     * Update a specific table with default organisation
+     * Update a specific table with organisation
      *
      * @param string  $tableName      Table to update
-     * @param string  $defaultOrgUuid UUID of default organisation
+     * @param string  $orgUuid        UUID of organisation
      * @param IOutput $output         Migration output
      *
      * @return int Number of updated records
      */
-    private function updateTable(string $tableName, string $defaultOrgUuid, IOutput $output): int
+    private function updateTable(string $tableName, string $orgUuid, IOutput $output): int
     {
         // Set organisation for records without one
         $qb = $this->connection->getQueryBuilder();
         $qb->update($tableName)
-           ->set('organisation', $qb->createNamedParameter($defaultOrgUuid))
+           ->set('organisation', $qb->createNamedParameter($orgUuid))
            ->where($qb->expr()->orX(
                $qb->expr()->isNull('organisation'),
                $qb->expr()->eq('organisation', $qb->createNamedParameter(''))

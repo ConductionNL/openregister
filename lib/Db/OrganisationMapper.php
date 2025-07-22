@@ -87,59 +87,6 @@ class OrganisationMapper extends QBMapper
     }
 
     /**
-     * Find the default organisation
-     * 
-     * @return Organisation The default organisation
-     * 
-     * @throws DoesNotExistException If no default organisation exists
-     */
-    public function findDefault(): Organisation
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-           ->from($this->getTableName())
-           ->where($qb->expr()->eq('isDefault', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
-
-        return $this->findEntity($qb);
-    }
-
-    /**
-     * Check if the default organisation exists
-     * 
-     * @return bool True if default organisation exists
-     */
-    public function hasDefault(): bool
-    {
-        try {
-            $this->findDefault();
-            return true;
-        } catch (DoesNotExistException $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Create the default organisation
-     * 
-     * @return Organisation The created default organisation
-     */
-    public function createDefault(): Organisation
-    {
-        $organisation = new Organisation();
-        $organisation->setUuid(bin2hex(random_bytes(16)));
-        $organisation->setName('Default Organisation');
-        $organisation->setDescription('Default organisation for users without specific organisation membership');
-        $organisation->setIsDefault(true);
-        $organisation->setOwner('system');
-        $organisation->setUsers([]);
-        $organisation->setCreated(new \DateTime());
-        $organisation->setUpdated(new \DateTime());
-
-        return $this->insert($organisation);
-    }
-
-    /**
      * Get all organisations with user count
      * 
      * @return array Array of organisations with additional user count information
@@ -225,19 +172,8 @@ class OrganisationMapper extends QBMapper
         $total = (int) $result->fetchColumn();
         $result->closeCursor();
 
-        // Default organisations
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->createFunction('COUNT(*) as default_count'))
-           ->from($this->getTableName())
-           ->where($qb->expr()->eq('isDefault', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
-        $result = $qb->execute();
-        $defaultCount = (int) $result->fetchColumn();
-        $result->closeCursor();
-
         return [
-            'total' => $total,
-            'default' => $defaultCount,
-            'custom' => $total - $defaultCount
+            'total' => $total
         ];
     }
 

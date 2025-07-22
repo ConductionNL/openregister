@@ -63,13 +63,6 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $users = [];
 
     /**
-     * Flag indicating if this is the default organisation
-     * 
-     * @var bool Whether this is the default organisation
-     */
-    protected bool $isDefault = false;
-
-    /**
      * Owner of the organisation (user ID)
      * 
      * @var string|null The user ID who owns this organisation
@@ -101,7 +94,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('name', 'string');
         $this->addType('description', 'string');
         $this->addType('users', 'json');
-        $this->addType('isDefault', 'boolean');
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
@@ -170,29 +162,6 @@ class Organisation extends Entity implements JsonSerializable
     }
 
     /**
-     * Set whether this is the default organisation
-     * 
-     * @param bool $isDefault Whether this should be the default organisation
-     * 
-     * @return self Returns this organisation for method chaining
-     */
-    public function setIsDefault(bool $isDefault): self
-    {
-        $this->isDefault = $isDefault;
-        return $this;
-    }
-
-    /**
-     * Check if this is the default organisation
-     * 
-     * @return bool True if this is the default organisation
-     */
-    public function getIsDefault(): bool
-    {
-        return $this->isDefault;
-    }
-
-    /**
      * JSON serialization for API responses
      * 
      * @return array Serialized organisation data
@@ -206,7 +175,6 @@ class Organisation extends Entity implements JsonSerializable
             'description' => $this->description,
             'users' => $this->getUserIds(),
             'userCount' => count($this->getUserIds()),
-            'isDefault' => $this->isDefault,
             'owner' => $this->owner,
             'created' => $this->created ? $this->created->format('c') : null,
             'updated' => $this->updated ? $this->updated->format('c') : null,
