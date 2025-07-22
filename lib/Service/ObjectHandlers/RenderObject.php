@@ -865,6 +865,11 @@ class RenderObject
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema = $propertyConfig['$ref'] ?? null;
                 $isArray = false;
+
+				// Fallback for misconfigured arrays
+				if($propertyConfig['type'] === 'array') {
+					$isArray = true;
+            }
             }
             // Skip if no inversedBy configuration found
             else {
@@ -893,10 +898,10 @@ class RenderObject
                         // Handle both array and single value references
                         if (is_array($referenceValue)) {
                             // Check if the current entity's UUID is in the array
-                            return in_array($entity->getUuid(), $referenceValue, true);
+                            return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
                         } else {
                             // Check if the reference value matches the current entity's UUID
-                            return $referenceValue === $entity->getUuid();
+                            return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
                         }
                     }
                     ));
@@ -965,6 +970,13 @@ class RenderObject
                 // If not found by slug, continue
             }
         }
+
+		// If it's a slug, try to find the schema by slug
+		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $schemaRef]);
+
+		if(count($schemas) === 1) {
+			return (string) array_shift($schemas)->getId();
+		}
 
         // If all else fails, try to use the reference as-is
         return $schemaRef;
