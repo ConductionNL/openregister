@@ -518,6 +518,9 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
            return new JSONResponse($exception->getMessage(), 400);
+        } catch (\Exception $exception) {
+            // Handle all other exceptions (including RBAC permission errors)
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
         }
 
         // Return the created object.
@@ -601,6 +604,9 @@ class ObjectsController extends Controller
             }
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(['error' => 'Not Found'], 404);
+        } catch (\Exception $exception) {
+            // Handle RBAC permission errors and other exceptions
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -625,6 +631,9 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\Exception $exception) {
+            // Handle all other exceptions (including RBAC permission errors)
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
         }
 
     }//end update()
@@ -733,6 +742,9 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\Exception $exception) {
+            // Handle all other exceptions (including RBAC permission errors)
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
         }
 
     }//end patch()
@@ -753,23 +765,35 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function destroy(string $id, ObjectService $objectService): JSONResponse
+    public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // Create a log entry.
-        $oldObject = $this->objectEntityMapper->find($id);
+        try {
+            // Set the register and schema context for ObjectService
+            $objectService->setRegister($register);
+            $objectService->setSchema($schema);
 
-        // Clone the object to pass as the new state.
-        $newObject = clone $oldObject;
-        $newObject->delete($this->userSession, $this->request->getParam('deletedReason'), $this->request->getParam('retentionPeriod'));
+            // Get the object before deletion for response (include soft-deleted objects)
+            $oldObject = $this->objectEntityMapper->find($id, null, null, true);
+            
+            // Use ObjectService to delete the object (includes RBAC permission checks)
+            $objectService->deleteObject($id);
 
-        // Update the object in the mapper instead of deleting.
-        $this->objectEntityMapper->update($newObject);
+            // Clone the object to pass as the new state for response
+            $newObject = clone $oldObject;
+            $newObject->delete($this->userSession, $this->request->getParam('deletedReason'), $this->request->getParam('retentionPeriod'));
 
-        // Create an audit trail with both old and new states.
-        $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
+            // Update the object in the mapper (soft delete)
+            $this->objectEntityMapper->update($newObject);
 
-        // Return the deleted object.
-        return new JSONResponse($newObject->jsonSerialize());
+            // Create an audit trail with both old and new states
+            $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
+
+            // Return the deleted object
+            return new JSONResponse($newObject->jsonSerialize());
+        } catch (\Exception $exception) {
+            // Handle all exceptions (including RBAC permission errors)
+            return new JSONResponse(['error' => $exception->getMessage()], 403);
+        }
 
     }//end destroy()
 

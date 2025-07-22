@@ -513,9 +513,132 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 						</div>
 					</BTab>
 					<BTab title="Security">
-						<NcNoteCard type="info">
-							<p>Security options for schemas are not yet implemented.</p>
-						</NcNoteCard>
+						<div class="security-section">
+							<NcNoteCard type="info">
+								<p><strong>Role-Based Access Control (RBAC)</strong></p>
+								<p>Configure which Nextcloud user groups can perform CRUD operations on objects of this schema.</p>
+								<ul>
+									<li>If no groups are specified for an operation, all users can perform it</li>
+									<li>The 'admin' group always has full access (cannot be changed)</li>
+									<li>The object owner always has full access</li>
+									<li>'public' represents unauthenticated access</li>
+								</ul>
+							</NcNoteCard>
+
+							<div v-if="loadingGroups" class="loading-groups">
+								<NcLoadingIcon :size="20" />
+								<span>Loading user groups...</span>
+							</div>
+
+							<div v-else class="rbac-table-container">
+								<h3>Group Permissions</h3>
+								<table class="rbac-table">
+									<thead>
+										<tr>
+											<th>Group</th>
+											<th>Create</th>
+											<th>Read</th>
+											<th>Update</th>
+											<th>Delete</th>
+										</tr>
+									</thead>
+									<tbody>
+										<!-- Public group at top -->
+										<tr class="public-row">
+											<td class="group-name">
+												<span class="group-badge public">public</span>
+												<small>Unauthenticated users</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'create')"
+													@update:checked="updateGroupPermission('public', 'create', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'read')"
+													@update:checked="updateGroupPermission('public', 'read', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'update')"
+													@update:checked="updateGroupPermission('public', 'update', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission('public', 'delete')"
+													@update:checked="updateGroupPermission('public', 'delete', $event)" />
+											</td>
+										</tr>
+
+										<!-- Regular user groups -->
+										<tr v-for="group in sortedUserGroups" :key="group.id" class="group-row">
+											<td class="group-name">
+												<span class="group-badge">{{ group.displayname || group.id }}</span>
+												<small v-if="group.displayname && group.displayname !== group.id">{{ group.id }}</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'create')"
+													@update:checked="updateGroupPermission(group.id, 'create', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'read')"
+													@update:checked="updateGroupPermission(group.id, 'read', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'update')"
+													@update:checked="updateGroupPermission(group.id, 'update', $event)" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="hasGroupPermission(group.id, 'delete')"
+													@update:checked="updateGroupPermission(group.id, 'delete', $event)" />
+											</td>
+										</tr>
+
+										<!-- Admin group at bottom (disabled) -->
+										<tr class="admin-row">
+											<td class="group-name">
+												<span class="group-badge admin">admin</span>
+												<small>Always has full access</small>
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+											<td>
+												<NcCheckboxRadioSwitch
+													:checked="true"
+													:disabled="true" />
+											</td>
+										</tr>
+									</tbody>
+								</table>
+
+								<div class="rbac-summary">
+									<NcNoteCard v-if="!hasAnyPermissions" type="success">
+										<p><strong>Open Access:</strong> No specific permissions set - all users can perform all operations.</p>
+									</NcNoteCard>
+									<NcNoteCard v-else-if="isRestrictiveSchema" type="warning">
+										<p><strong>Restrictive Schema:</strong> Access is limited to specified groups only.</p>
+									</NcNoteCard>
+								</div>
+							</div>
+						</div>
 					</BTab>
 				</BTabs>
 			</div>
@@ -628,6 +751,7 @@ export default {
 					objectNameField: '',
 					objectDescriptionField: '',
 				},
+				authorization: {},
 				hardValidation: false,
 				immutable: false,
 				maxDepth: 0,
@@ -637,6 +761,8 @@ export default {
 			loading: false,
 			error: false,
 			closeModalTimeout: null,
+			loadingGroups: false,
+			userGroups: [], // List of Nextcloud user groups
 			typeOptions: [
 				{ label: 'String', value: 'string' },
 				{ label: 'Number', value: 'number' },
@@ -669,6 +795,30 @@ export default {
 						return acc
 					}, {})
 			}
+		},
+		sortedUserGroups() {
+			// Filter out admin and public groups, sort alphabetically
+			return this.userGroups
+				.filter(group => group.id !== 'admin' && group.id !== 'public')
+				.sort((a, b) => {
+					const nameA = a.displayname || a.id
+					const nameB = b.displayname || b.id
+					return nameA.localeCompare(nameB)
+				})
+		},
+		hasAnyPermissions() {
+			const auth = this.schemaItem.authorization || {}
+			return Object.keys(auth).some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0,
+			)
+		},
+		isRestrictiveSchema() {
+			const auth = this.schemaItem.authorization || {}
+			const actions = ['create', 'read', 'update', 'delete']
+			return actions.some(action =>
+				Array.isArray(auth[action]) && auth[action].length > 0
+					&& !auth[action].includes('public'),
+			)
 		},
 		typeOptionsForSelect() {
 			return [
@@ -774,6 +924,7 @@ export default {
 	mounted() {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
+		this.loadUserGroups()
 	},
 	methods: {
 		async loadRegistersAndSchemas() {
@@ -820,13 +971,18 @@ export default {
 						objectDescriptionField: '',
 					}
 				} else {
-					// Ensure all configuration fields exist
+				// Ensure all configuration fields exist
 					if (!this.schemaItem.configuration.objectNameField) {
 						this.schemaItem.configuration.objectNameField = ''
 					}
 					if (!this.schemaItem.configuration.objectDescriptionField) {
 						this.schemaItem.configuration.objectDescriptionField = ''
 					}
+				}
+
+				// Ensure authorization object exists
+				if (!this.schemaItem.authorization) {
+					this.schemaItem.authorization = {}
 				}
 
 				// Ensure existing properties have facetable set to false by default if not specified
@@ -1492,6 +1648,100 @@ export default {
 				console.warn('Invalid JSON for default value:', e.message)
 			}
 		},
+
+		// RBAC Methods
+		async loadUserGroups() {
+			this.loadingGroups = true
+			try {
+				// Use Nextcloud's OCS API to get groups
+				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
+					headers: {
+						'OCS-APIRequest': 'true',
+					},
+				})
+
+				if (response.ok) {
+					const data = await response.json()
+
+					if (data.ocs && data.ocs.data && data.ocs.data.groups) {
+						// Transform group list to include display names
+						this.userGroups = data.ocs.data.groups.map(groupId => ({
+							id: groupId,
+							displayname: groupId, // In a real implementation, you might want to fetch display names separately
+						}))
+					} else {
+						console.warn('Invalid API response structure:', data)
+						this.setFallbackGroups()
+					}
+				} else {
+					console.warn('Failed to load user groups:', response.statusText)
+					this.setFallbackGroups()
+				}
+			} catch (error) {
+				console.error('Error loading user groups:', error)
+				this.setFallbackGroups()
+			} finally {
+				this.loadingGroups = false
+			}
+		},
+
+		setFallbackGroups() {
+			// Fallback groups including our test groups
+			this.userGroups = [
+				{ id: 'users', displayname: 'All Users' },
+				{ id: 'editors', displayname: 'Editors' },
+				{ id: 'managers', displayname: 'Managers' },
+				{ id: 'viewers', displayname: 'Viewers' },
+			]
+		},
+
+		hasGroupPermission(groupId, action) {
+			const auth = this.schemaItem.authorization || {}
+			if (!auth[action] || !Array.isArray(auth[action])) {
+				return false
+			}
+			return auth[action].includes(groupId)
+		},
+
+		updateGroupPermission(groupId, action, hasPermission) {
+			// Initialize authorization object if it doesn't exist
+			if (!this.schemaItem.authorization) {
+				this.$set(this.schemaItem, 'authorization', {})
+			}
+
+			// Initialize action array if it doesn't exist
+			if (!this.schemaItem.authorization[action]) {
+				this.$set(this.schemaItem.authorization, action, [])
+			}
+
+			const currentPermissions = this.schemaItem.authorization[action]
+			const groupIndex = currentPermissions.indexOf(groupId)
+
+			if (hasPermission && groupIndex === -1) {
+				// Add permission
+				currentPermissions.push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
+				// Remove permission
+				currentPermissions.splice(groupIndex, 1)
+			}
+
+			// Clean up empty arrays to keep the data structure clean
+			if (currentPermissions.length === 0) {
+				this.$delete(this.schemaItem.authorization, action)
+			}
+
+			// If authorization object is empty, remove it entirely
+			if (Object.keys(this.schemaItem.authorization).length === 0) {
+				this.$set(this.schemaItem, 'authorization', {})
+			}
+		},
+
+		initializeAuthorizationIfNeeded() {
+			// Ensure authorization object exists with proper structure
+			if (!this.schemaItem.authorization) {
+				this.$set(this.schemaItem, 'authorization', {})
+			}
+		},
 	},
 }
 </script>
@@ -1561,5 +1811,118 @@ export default {
 
 .enum-action-chip .action-button__icon {
 	color: var(--color-primary-text) !important;
+}
+
+/* RBAC Security Tab Styling */
+.security-section {
+	padding: 20px 0;
+}
+
+.loading-groups {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 20px;
+	justify-content: center;
+}
+
+.rbac-table-container {
+	margin-top: 20px;
+}
+
+.rbac-table-container h3 {
+	margin-bottom: 15px;
+	color: var(--color-text-dark);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.rbac-table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid var(--color-border-dark);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rbac-table th {
+	background: var(--color-background-dark);
+	color: var(--color-text-dark);
+	font-weight: 600;
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 2px solid var(--color-border-dark);
+}
+
+.rbac-table th:first-child {
+	width: 40%;
+}
+
+.rbac-table th:not(:first-child) {
+	width: 15%;
+	text-align: center;
+}
+
+.rbac-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--color-border);
+	vertical-align: middle;
+}
+
+.rbac-table td:not(.group-name) {
+	text-align: center;
+}
+
+.rbac-table tr:hover {
+	background: var(--color-background-hover);
+}
+
+.public-row {
+	background: var(--color-primary-light) !important;
+}
+
+.admin-row {
+	background: var(--color-success-light) !important;
+}
+
+.admin-row:hover {
+	background: var(--color-success-light) !important;
+}
+
+.group-name {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.group-badge {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-text);
+}
+
+.group-badge.public {
+	background: var(--color-info);
+	color: white;
+}
+
+.group-badge.admin {
+	background: var(--color-success);
+	color: white;
+}
+
+.group-name small {
+	color: var(--color-text-lighter);
+	font-size: 11px;
+	font-style: italic;
+}
+
+.rbac-summary {
+	margin-top: 20px;
 }
 </style>
