@@ -373,7 +373,9 @@ class ObjectService
         }
 
         // Check user has permission to read this specific object (includes object owner check)
-        $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
+        if ($this->currentSchema !== null) {
+            $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
+        }
 
         // Render the object before returning.
         $registers = null;
@@ -425,7 +427,9 @@ class ObjectService
         }
 
         // Check user has permission to create objects in this schema
-        $this->checkPermission($this->currentSchema, 'create');
+        if ($this->currentSchema !== null) {
+            $this->checkPermission($this->currentSchema, 'create');
+        }
 
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
 
@@ -509,7 +513,9 @@ class ObjectService
         }
 
         // Check user has permission to update this specific object
-        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+        if ($this->currentSchema !== null) {
+            $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+        }
 
         // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
@@ -788,14 +794,20 @@ class ObjectService
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 $isUpdate = true;
                 // This is an UPDATE operation
-                $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+                if ($this->currentSchema !== null) {
+                    $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+                }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, this is a CREATE operation with specific UUID
-                $this->checkPermission($this->currentSchema, 'create');
+                if ($this->currentSchema !== null) {
+                    $this->checkPermission($this->currentSchema, 'create');
+                }
             }
         } else {
             // No UUID provided, this is a CREATE operation  
-            $this->checkPermission($this->currentSchema, 'create');
+            if ($this->currentSchema !== null) {
+                $this->checkPermission($this->currentSchema, 'create');
+            }
         }
 
         // Store the parent object's register and schema context before cascading
@@ -896,10 +908,14 @@ class ObjectService
         try {
             $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
             // Check user has permission to delete this specific object
-            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
+            if ($this->currentSchema !== null) {
+                $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
+            }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this
-            $this->checkPermission($this->currentSchema, 'delete');
+            if ($this->currentSchema !== null) {
+                $this->checkPermission($this->currentSchema, 'delete');
+            }
         }
 
         return $this->deleteHandler->deleteObject(
