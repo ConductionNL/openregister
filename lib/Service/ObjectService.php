@@ -442,12 +442,12 @@ class ObjectService
         }
 
         // Save the object using the current register and schema with folder ID
-        $savedObject = $this->saveHandler->saveObject(
-            $this->currentRegister,
-            $this->currentSchema,
-            $object,
-            $tempObject->getUuid(),
-            $folderId
+        $savedObject = $this->saveObject(
+			object: $object,
+			register:$this->currentRegister,
+			schema: $this->currentSchema,
+            uuid: $tempObject->getUuid(),
+//            $folderId
         );
 
         // Render and return the saved object.
