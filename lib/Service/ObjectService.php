@@ -372,10 +372,13 @@ class ObjectService
             return null;
         }
 
-        // Check user has permission to read this specific object (includes object owner check)
-        if ($this->currentSchema !== null) {
-            $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
+        // If no schema was provided but we have an object, derive the schema from the object
+        if ($this->currentSchema === null) {
+            $this->setSchema($object->getSchema());
         }
+
+        // Check user has permission to read this specific object (includes object owner check)
+        $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
 
         // Render the object before returning.
         $registers = null;
@@ -383,10 +386,8 @@ class ObjectService
             $registers = [$this->currentRegister->getId() => $this->currentRegister];
         }
 
-        $schemas = null;
-        if ($this->currentSchema !== null) {
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-        }
+        // Always use the current schema (either provided or derived from object)
+        $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
         return $this->renderHandler->renderEntity(
             entity: $object,
@@ -512,10 +513,13 @@ class ObjectService
             throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
         }
 
-        // Check user has permission to update this specific object
-        if ($this->currentSchema !== null) {
-            $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+        // If no schema was provided but we have an existing object, derive the schema from the object
+        if ($this->currentSchema === null) {
+            $this->setSchema($existingObject->getSchema());
         }
+
+        // Check user has permission to update this specific object
+        $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
 
         // If patch is true, merge the existing object with the new data.
         if ($patch === true) {
@@ -907,10 +911,14 @@ class ObjectService
         // Find the object to get its owner for permission check (include soft-deleted objects)
         try {
             $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
-            // Check user has permission to delete this specific object
-            if ($this->currentSchema !== null) {
-                $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
+            
+            // If no schema was provided but we have an object, derive the schema from the object
+            if ($this->currentSchema === null) {
+                $this->setSchema($objectToDelete->getSchema());
             }
+            
+            // Check user has permission to delete this specific object
+            $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this
             if ($this->currentSchema !== null) {
