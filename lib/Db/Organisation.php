@@ -91,6 +91,13 @@ class Organisation extends Entity implements JsonSerializable
     protected ?DateTime $updated = null;
 
     /**
+     * Whether this organisation is the default organisation
+     * 
+     * @var bool|null Whether this is the default organisation
+     */
+    protected ?bool $isDefault = false;
+
+    /**
      * Organisation constructor
      * 
      * Sets up the entity type mappings for proper database handling.
@@ -105,6 +112,7 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
+        $this->addType('is_default', 'boolean');
     }
 
     /**
@@ -170,6 +178,29 @@ class Organisation extends Entity implements JsonSerializable
     }
 
     /**
+     * Get whether this organisation is the default
+     * 
+     * @return bool Whether this is the default organisation
+     */
+    public function getIsDefault(): bool
+    {
+        return $this->isDefault ?? false;
+    }
+
+    /**
+     * Set whether this organisation is the default
+     * 
+     * @param bool $isDefault Whether this should be the default organisation
+     * 
+     * @return self Returns this organisation for method chaining
+     */
+    public function setIsDefault(bool $isDefault): self
+    {
+        $this->isDefault = $isDefault;
+        return $this;
+    }
+
+    /**
      * JSON serialization for API responses
      * 
      * @return array Serialized organisation data
@@ -185,6 +216,7 @@ class Organisation extends Entity implements JsonSerializable
             'users' => $this->getUserIds(),
             'userCount' => count($this->getUserIds()),
             'owner' => $this->owner,
+            'isDefault' => $this->getIsDefault(),
             'created' => $this->created ? $this->created->format('c') : null,
             'updated' => $this->updated ? $this->updated->format('c') : null,
         ];

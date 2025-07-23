@@ -821,6 +821,7 @@ class ObjectService
         
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
         
         // Restore the parent object's register and schema context after cascading
@@ -2438,6 +2439,8 @@ class ObjectService
      * It creates related objects from nested object data and replaces them with UUIDs
      * so that validation sees UUIDs instead of objects.
      *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+     *
      * @param array       $object The object data to process
      * @param Schema      $schema The schema containing property definitions
      * @param string|null $uuid   The UUID of the parent object (will be generated if null)
@@ -2466,6 +2469,7 @@ class ObjectService
         }
 
         // Find properties that have inversedBy configuration
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $inversedByProperties = array_filter(
             $properties,
             function (array $property) {
