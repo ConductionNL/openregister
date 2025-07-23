@@ -111,6 +111,8 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 $output->info('Added slug column to organisations table');
             }
 
+
+
             // Add unique constraints for uuid and slug
             if ($table->hasColumn('uuid') && !$table->hasIndex('organisations_uuid_unique')) {
                 $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
@@ -137,7 +139,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Step 1: Ensure at least one organisation exists
+        // Step 1: Get or create a basic organisation for existing data
         $defaultOrgId = $this->ensureOrganisationExists($output);
 
         // Step 2: Update existing records to have organisation and owner
@@ -153,7 +155,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     }
 
     /**
-     * Ensure at least one organisation exists
+     * Get the first organisation or create one if none exists
      *
      * @param IOutput $output Migration output
      *
@@ -176,7 +178,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
             return (int) $orgId;
         }
 
-        // Create a default organisation
+        // Create a basic organisation (default handling moved to OrganisationService)
         $uuid = bin2hex(random_bytes(16));
         $uuid = sprintf('%08s-%04s-%04x-%04x-%12s',
             substr($uuid, 0, 8),
@@ -191,9 +193,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         $qb->insert('openregister_organisations')
            ->values([
                'uuid' => $qb->createNamedParameter($uuid),
-               'slug' => $qb->createNamedParameter('default-organisation'),
-               'name' => $qb->createNamedParameter('Default Organisation'),
-               'description' => $qb->createNamedParameter('Default organisation for users without specific organisation membership'),
+               'slug' => $qb->createNamedParameter('organisation'),
+               'name' => $qb->createNamedParameter('Organisation'),
+               'description' => $qb->createNamedParameter('Organisation for existing data'),
                'users' => $qb->createNamedParameter('[]'),
                'owner' => $qb->createNamedParameter('system'),
                'created' => $qb->createNamedParameter($now, Types::DATETIME),
@@ -203,12 +205,13 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         $qb->executeStatement();
         $orgId = $this->connection->lastInsertId('openregister_organisations');
 
-        $output->info('Created organisation with ID: ' . $orgId);
+        $output->info('Created basic organisation with ID: ' . $orgId . ' (default handling moved to OrganisationService)');
         return (int) $orgId;
     }
 
     /**
      * Update existing records to have organisation and owner
+     * Note: Default organisation handling is now managed by OrganisationService
      *
      * @param IOutput $output        Migration output
      * @param int     $orgId         ID of the organisation
