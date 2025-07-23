@@ -17,11 +17,15 @@ namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\MySQLJsonService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use DateTime;
 
@@ -64,6 +68,26 @@ class ObjectEntityMapperTest extends TestCase
     private $userSession;
 
     /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|SchemaMapper
+     */
+    private $schemaMapper;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IGroupManager
+     */
+    private $groupManager;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IUserManager
+     */
+    private $userManager;
+
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|OrganisationService
+     */
+    private $organisationService;
+
+    /**
      * Set up the test environment
      *
      * @return void
@@ -75,11 +99,19 @@ class ObjectEntityMapperTest extends TestCase
         $this->jsonService = $this->createMock(MySQLJsonService::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
         $this->userSession = $this->createMock(IUserSession::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userManager = $this->createMock(IUserManager::class);
+        $this->organisationService = $this->createMock(OrganisationService::class);
         $this->mapper = new ObjectEntityMapper(
             $this->db,
             $this->jsonService,
             $this->eventDispatcher,
-            $this->userSession
+            $this->userSession,
+            $this->schemaMapper,
+            $this->groupManager,
+            $this->userManager,
+            $this->organisationService
         );
     }
 
