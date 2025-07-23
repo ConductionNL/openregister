@@ -63,8 +63,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('Starting multi-tenancy migration...');
-    }
+        // No pre-schema changes required
+
+    }//end preSchemaChange()
 
     /**
      * Apply schema changes for multi-tenancy
@@ -111,8 +112,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 $output->info('Added slug column to organisations table');
             }
 
-
-
             // Add unique constraints for uuid and slug
             if ($table->hasColumn('uuid') && !$table->hasIndex('organisations_uuid_unique')) {
                 $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
@@ -128,8 +127,9 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         return $schema;
     }
 
+
     /**
-     * Post-schema change operations - Data migration and constraints
+     * Post-schema change operations
      *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -139,304 +139,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Step 1: Get or create a basic organisation for existing data
-        $defaultOrgId = $this->ensureOrganisationExists($output);
+        // No post-schema changes required
 
-        // Step 2: Update existing records to have organisation and owner
-        $this->updateExistingRecords($output, $defaultOrgId);
-
-        // Step 3: Generate slugs for existing organisations
-        $this->generateOrganisationSlugs($output);
-
-        // Step 4: Make organisation and owner fields mandatory
-        $this->makeFieldsMandatory($output, $schemaClosure);
-
-        $output->info('Multi-tenancy migration completed successfully!');
-    }
-
-    /**
-     * Get the first organisation or create one if none exists
-     *
-     * @param IOutput $output Migration output
-     *
-     * @return int The ID of the organisation
-     */
-    private function ensureOrganisationExists(IOutput $output): int
-    {
-        // Check if any organisation exists
-        $qb = $this->connection->getQueryBuilder();
-        $qb->select('id')
-           ->from('openregister_organisations')
-           ->setMaxResults(1);
-
-        $result = $qb->executeQuery();
-        $orgId = $result->fetchOne();
-        $result->closeCursor();
-
-        if ($orgId) {
-            $output->info('Organisation already exists with ID: ' . $orgId);
-            return (int) $orgId;
-        }
-
-        // Create a basic organisation (default handling moved to OrganisationService)
-        $uuid = bin2hex(random_bytes(16));
-        $uuid = sprintf('%08s-%04s-%04x-%04x-%12s',
-            substr($uuid, 0, 8),
-            substr($uuid, 8, 4),
-            (hexdec(substr($uuid, 12, 4)) & 0x0fff) | 0x4000,
-            (hexdec(substr($uuid, 16, 4)) & 0x3fff) | 0x8000,
-            substr($uuid, 20, 12)
-        );
-        $now = new \DateTime();
-
-        $qb = $this->connection->getQueryBuilder();
-        $qb->insert('openregister_organisations')
-           ->values([
-               'uuid' => $qb->createNamedParameter($uuid),
-               'slug' => $qb->createNamedParameter('organisation'),
-               'name' => $qb->createNamedParameter('Organisation'),
-               'description' => $qb->createNamedParameter('Organisation for existing data'),
-               'users' => $qb->createNamedParameter('[]'),
-               'owner' => $qb->createNamedParameter('system'),
-               'created' => $qb->createNamedParameter($now, Types::DATETIME),
-               'updated' => $qb->createNamedParameter($now, Types::DATETIME)
-           ]);
-
-        $qb->executeStatement();
-        $orgId = $this->connection->lastInsertId('openregister_organisations');
-
-        $output->info('Created basic organisation with ID: ' . $orgId . ' (default handling moved to OrganisationService)');
-        return (int) $orgId;
-    }
-
-    /**
-     * Update existing records to have organisation and owner
-     * Note: Default organisation handling is now managed by OrganisationService
-     *
-     * @param IOutput $output        Migration output
-     * @param int     $orgId         ID of the organisation
-     *
-     * @return void
-     */
-    private function updateExistingRecords(IOutput $output, int $orgId): void
-    {
-        $orgUuid = $this->getOrganisationUuid($orgId);
-
-        // Update registers without organisation
-        $updated = $this->updateTable('openregister_registers', $orgUuid, $output);
-        $output->info("Updated $updated registers with organisation");
-
-        // Update schemas without organisation
-        $updated = $this->updateTable('openregister_schemas', $orgUuid, $output);
-        $output->info("Updated $updated schemas with organisation");
-
-        // Update objects without organisation
-        $updated = $this->updateTable('openregister_objects', $orgUuid, $output);
-        $output->info("Updated $updated objects with organisation");
-    }
-
-    /**
-     * Update a specific table with organisation
-     *
-     * @param string  $tableName      Table to update
-     * @param string  $orgUuid        UUID of organisation
-     * @param IOutput $output         Migration output
-     *
-     * @return int Number of updated records
-     */
-    private function updateTable(string $tableName, string $orgUuid, IOutput $output): int
-    {
-        // Set organisation for records without one
-        $qb = $this->connection->getQueryBuilder();
-        $qb->update($tableName)
-           ->set('organisation', $qb->createNamedParameter($orgUuid))
-           ->where($qb->expr()->orX(
-               $qb->expr()->isNull('organisation'),
-               $qb->expr()->eq('organisation', $qb->createNamedParameter(''))
-           ));
-
-        $organisationUpdated = $qb->executeStatement();
-
-        // Set owner for records without one (use 'system' as default)
-        $qb = $this->connection->getQueryBuilder();
-        $qb->update($tableName)
-           ->set('owner', $qb->createNamedParameter('system'))
-           ->where($qb->expr()->orX(
-               $qb->expr()->isNull('owner'),
-               $qb->expr()->eq('owner', $qb->createNamedParameter(''))
-           ));
-
-        $ownerUpdated = $qb->executeStatement();
-
-        $output->info("Table $tableName: $organisationUpdated records updated with organisation, $ownerUpdated with owner");
-        
-        return $organisationUpdated;
-    }
-
-    /**
-     * Get organisation UUID by ID
-     *
-     * @param int $organisationId Organisation ID
-     *
-     * @return string Organisation UUID
-     */
-    private function getOrganisationUuid(int $organisationId): string
-    {
-        $qb = $this->connection->getQueryBuilder();
-        $qb->select('uuid')
-           ->from('openregister_organisations')
-           ->where($qb->expr()->eq('id', $qb->createNamedParameter($organisationId, \PDO::PARAM_INT)));
-
-        $result = $qb->executeQuery();
-        $uuid = $result->fetchOne();
-        $result->closeCursor();
-
-        return (string) $uuid;
-    }
-
-    /**
-     * Generate slugs for existing organisations that don't have one
-     *
-     * @param IOutput $output Migration output
-     *
-     * @return void
-     */
-    private function generateOrganisationSlugs(IOutput $output): void
-    {
-        // Get all organisations without slugs
-        $qb = $this->connection->getQueryBuilder();
-        $qb->select('id', 'name')
-           ->from('openregister_organisations')
-           ->where($qb->expr()->orX(
-               $qb->expr()->isNull('slug'),
-               $qb->expr()->eq('slug', $qb->createNamedParameter(''))
-           ));
-
-        $result = $qb->executeQuery();
-        $organisations = $result->fetchAll();
-        $result->closeCursor();
-
-        $updated = 0;
-        foreach ($organisations as $org) {
-            $slug = $this->generateSlug($org['name']);
-            
-            // Ensure slug is unique
-            $counter = 1;
-            $originalSlug = $slug;
-            while ($this->slugExists($slug, $org['id'])) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-
-            // Update the organisation with the generated slug
-            $updateQb = $this->connection->getQueryBuilder();
-            $updateQb->update('openregister_organisations')
-                     ->set('slug', $updateQb->createNamedParameter($slug))
-                     ->where($updateQb->expr()->eq('id', $updateQb->createNamedParameter($org['id'], \PDO::PARAM_INT)));
-
-            $updateQb->executeStatement();
-            $updated++;
-        }
-
-        $output->info("Generated slugs for $updated organisations");
-    }
-
-    /**
-     * Generate a URL-friendly slug from a string
-     *
-     * @param string $string The string to convert to a slug
-     *
-     * @return string The generated slug
-     */
-    private function generateSlug(string $string): string
-    {
-        // Convert to lowercase
-        $slug = strtolower($string);
-        
-        // Replace spaces and special characters with hyphens
-        $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug);
-        $slug = preg_replace('/[\s-]+/', '-', $slug);
-        
-        // Remove leading and trailing hyphens
-        $slug = trim($slug, '-');
-        
-        // Ensure slug is not empty
-        if (empty($slug)) {
-            $slug = 'organisation';
-        }
-        
-        return $slug;
-    }
-
-    /**
-     * Check if a slug already exists (excluding a specific organisation ID)
-     *
-     * @param string $slug The slug to check
-     * @param int    $excludeId Organisation ID to exclude from the check
-     *
-     * @return bool True if slug exists
-     */
-    private function slugExists(string $slug, int $excludeId): bool
-    {
-        $qb = $this->connection->getQueryBuilder();
-        $qb->select('id')
-           ->from('openregister_organisations')
-           ->where($qb->expr()->andX(
-               $qb->expr()->eq('slug', $qb->createNamedParameter($slug)),
-               $qb->expr()->neq('id', $qb->createNamedParameter($excludeId, \PDO::PARAM_INT))
-           ))
-           ->setMaxResults(1);
-
-        $result = $qb->executeQuery();
-        $exists = $result->fetchOne() !== false;
-        $result->closeCursor();
-
-        return $exists;
-    }
-
-    /**
-     * Make organisation and owner fields mandatory
-     *
-     * @param IOutput                   $output        Migration output
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     *
-     * @return void
-     */
-    private function makeFieldsMandatory(IOutput $output, Closure $schemaClosure): void
-    {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
-
-        $tables = ['openregister_registers', 'openregister_schemas', 'openregister_objects'];
-
-        foreach ($tables as $tableName) {
-            if ($schema->hasTable($tableName)) {
-                $table = $schema->getTable($tableName);
-
-                // Make organisation field mandatory (change from nullable to not null)
-                if ($table->hasColumn('organisation')) {
-                    $organisationColumn = $table->getColumn('organisation');
-                    $organisationColumn->setNotnull(true);
-                    $output->info("Made organisation field mandatory in $tableName");
-                }
-
-                // Make owner field mandatory (change from nullable to not null)  
-                if ($table->hasColumn('owner')) {
-                    $ownerColumn = $table->getColumn('owner');
-                    $ownerColumn->setNotnull(true);
-                    $output->info("Made owner field mandatory in $tableName");
-                }
-            }
-        }
-
-        // Also ensure Organisation table owner is not null
-        if ($schema->hasTable('openregister_organisations')) {
-            $table = $schema->getTable('openregister_organisations');
-            if ($table->hasColumn('owner')) {
-                $ownerColumn = $table->getColumn('owner');
-                $ownerColumn->setNotnull(true);
-                $output->info("Made owner field mandatory in organisations table");
-            }
-        }
-    }
+    }//end postSchemaChange()
 } 
