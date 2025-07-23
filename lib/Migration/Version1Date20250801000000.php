@@ -101,6 +101,26 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                 ]);
                 $output->info('Added owner column to organisations table');
             }
+
+            // Add slug field (URL-friendly identifier)
+            if (!$table->hasColumn('slug')) {
+                $table->addColumn('slug', Types::STRING, [
+                    'notnull' => false,
+                    'length' => 255
+                ]);
+                $output->info('Added slug column to organisations table');
+            }
+
+            // Add unique constraints for uuid and slug
+            if ($table->hasColumn('uuid') && !$table->hasIndex('organisations_uuid_unique')) {
+                $table->addUniqueIndex(['uuid'], 'organisations_uuid_unique');
+                $output->info('Added unique constraint on uuid column');
+            }
+
+            if ($table->hasColumn('slug') && !$table->hasIndex('organisations_slug_unique')) {
+                $table->addUniqueIndex(['slug'], 'organisations_slug_unique');
+                $output->info('Added unique constraint on slug column');
+            }
         }
 
         return $schema;
@@ -123,7 +143,10 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         // Step 2: Update existing records to have organisation and owner
         $this->updateExistingRecords($output, $defaultOrgId);
 
-        // Step 3: Make organisation and owner fields mandatory
+        // Step 3: Generate slugs for existing organisations
+        $this->generateOrganisationSlugs($output);
+
+        // Step 4: Make organisation and owner fields mandatory
         $this->makeFieldsMandatory($output, $schemaClosure);
 
         $output->info('Multi-tenancy migration completed successfully!');
@@ -168,6 +191,7 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         $qb->insert('openregister_organisations')
            ->values([
                'uuid' => $qb->createNamedParameter($uuid),
+               'slug' => $qb->createNamedParameter('default-organisation'),
                'name' => $qb->createNamedParameter('Default Organisation'),
                'description' => $qb->createNamedParameter('Default organisation for users without specific organisation membership'),
                'users' => $qb->createNamedParameter('[]'),
@@ -265,6 +289,106 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         $result->closeCursor();
 
         return (string) $uuid;
+    }
+
+    /**
+     * Generate slugs for existing organisations that don't have one
+     *
+     * @param IOutput $output Migration output
+     *
+     * @return void
+     */
+    private function generateOrganisationSlugs(IOutput $output): void
+    {
+        // Get all organisations without slugs
+        $qb = $this->connection->getQueryBuilder();
+        $qb->select('id', 'name')
+           ->from('openregister_organisations')
+           ->where($qb->expr()->orX(
+               $qb->expr()->isNull('slug'),
+               $qb->expr()->eq('slug', $qb->createNamedParameter(''))
+           ));
+
+        $result = $qb->executeQuery();
+        $organisations = $result->fetchAll();
+        $result->closeCursor();
+
+        $updated = 0;
+        foreach ($organisations as $org) {
+            $slug = $this->generateSlug($org['name']);
+            
+            // Ensure slug is unique
+            $counter = 1;
+            $originalSlug = $slug;
+            while ($this->slugExists($slug, $org['id'])) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
+            // Update the organisation with the generated slug
+            $updateQb = $this->connection->getQueryBuilder();
+            $updateQb->update('openregister_organisations')
+                     ->set('slug', $updateQb->createNamedParameter($slug))
+                     ->where($updateQb->expr()->eq('id', $updateQb->createNamedParameter($org['id'], \PDO::PARAM_INT)));
+
+            $updateQb->executeStatement();
+            $updated++;
+        }
+
+        $output->info("Generated slugs for $updated organisations");
+    }
+
+    /**
+     * Generate a URL-friendly slug from a string
+     *
+     * @param string $string The string to convert to a slug
+     *
+     * @return string The generated slug
+     */
+    private function generateSlug(string $string): string
+    {
+        // Convert to lowercase
+        $slug = strtolower($string);
+        
+        // Replace spaces and special characters with hyphens
+        $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug);
+        $slug = preg_replace('/[\s-]+/', '-', $slug);
+        
+        // Remove leading and trailing hyphens
+        $slug = trim($slug, '-');
+        
+        // Ensure slug is not empty
+        if (empty($slug)) {
+            $slug = 'organisation';
+        }
+        
+        return $slug;
+    }
+
+    /**
+     * Check if a slug already exists (excluding a specific organisation ID)
+     *
+     * @param string $slug The slug to check
+     * @param int    $excludeId Organisation ID to exclude from the check
+     *
+     * @return bool True if slug exists
+     */
+    private function slugExists(string $slug, int $excludeId): bool
+    {
+        $qb = $this->connection->getQueryBuilder();
+        $qb->select('id')
+           ->from('openregister_organisations')
+           ->where($qb->expr()->andX(
+               $qb->expr()->eq('slug', $qb->createNamedParameter($slug)),
+               $qb->expr()->neq('id', $qb->createNamedParameter($excludeId, \PDO::PARAM_INT))
+           ))
+           ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $exists = $result->fetchOne() !== false;
+        $result->closeCursor();
+
+        return $exists;
     }
 
     /**

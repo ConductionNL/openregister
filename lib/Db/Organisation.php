@@ -42,6 +42,13 @@ class Organisation extends Entity implements JsonSerializable
     protected ?string $uuid = null;
 
     /**
+     * Slug of the organisation (URL-friendly identifier)
+     * 
+     * @var string|null Slug of the organisation
+     */
+    protected ?string $slug = null;
+
+    /**
      * Name of the organisation
      * 
      * @var string|null The organisation name
@@ -91,6 +98,7 @@ class Organisation extends Entity implements JsonSerializable
     public function __construct()
     {
         $this->addType('uuid', 'string');
+        $this->addType('slug', 'string');
         $this->addType('name', 'string');
         $this->addType('description', 'string');
         $this->addType('users', 'json');
@@ -171,6 +179,7 @@ class Organisation extends Entity implements JsonSerializable
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
+            'slug' => $this->slug,
             'name' => $this->name,
             'description' => $this->description,
             'users' => $this->getUserIds(),

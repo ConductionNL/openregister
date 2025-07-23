@@ -1126,6 +1126,28 @@ class ObjectService
 
 
     /**
+     * Get the active organization for the current user
+     * 
+     * This method determines the active organization using the same logic as SaveObject
+     * to ensure consistency between save and retrieval operations.
+     *
+     * @return string|null The active organization UUID or null if none found
+     */
+    private function getActiveOrganisationForContext(): ?string
+    {
+        try {
+            $activeOrganisation = $this->organisationService->getActiveOrganisation();
+            if ($activeOrganisation !== null) {
+                return $activeOrganisation->getUuid();
+            }
+        } catch (Exception $e) {
+            // Log error but continue without organization context
+        }
+        
+        return null;
+    }
+
+    /**
      * Search objects using clean query structure
      *
      * This method provides a cleaner search interface that uses the new searchObjects
@@ -1154,8 +1176,11 @@ class ObjectService
      */
     public function searchObjects(array $query = []): array|int
     {
-        // Use the new searchObjects method from ObjectEntityMapper
-        $result = $this->objectEntityMapper->searchObjects($query);
+        // Get active organization context for multi-tenancy
+        $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        
+        // Use the new searchObjects method from ObjectEntityMapper with organization context
+        $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid);
 
         // If _count option was used, return the integer count directly
         if (isset($query['_count']) && $query['_count'] === true) {
@@ -1242,8 +1267,11 @@ class ObjectService
      */
     public function countSearchObjects(array $query = []): int
     {
-        // Use the new optimized countSearchObjects method from ObjectEntityMapper
-        return $this->objectEntityMapper->countSearchObjects($query);
+        // Get active organization context for multi-tenancy
+        $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        
+        // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context
+        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid);
 
     }//end countSearchObjects()
 
