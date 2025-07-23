@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handler class for deleting objects in the OpenRegister application.
@@ -56,18 +57,26 @@ class DeleteObject
     private AuditTrailMapper $auditTrailMapper;
 
     /**
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
      * Constructor for DeleteObject handler.
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param FileService        $fileService        File service for managing files.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
+     * @param LoggerInterface    $logger             Logger for error handling.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly FileService $fileService,
-        AuditTrailMapper $auditTrailMapper
+        AuditTrailMapper $auditTrailMapper,
+        LoggerInterface $logger
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
+        $this->logger = $logger;
     }//end __construct()
 
 
@@ -94,6 +103,9 @@ class DeleteObject
         foreach ($files as $file) {
             $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
         }
+
+        // Delete the object folder if it exists (for hard deletes)
+        $this->deleteObjectFolder($objectEntity);
 
         // Delete the object from database.
         $result = $this->objectEntityMapper->delete($objectEntity) !== null;
@@ -179,5 +191,25 @@ class DeleteObject
 
     }//end cascadeDeleteObjects()
 
+    /**
+     * Delete the object folder when performing hard delete
+     *
+     * @param ObjectEntity $objectEntity The object entity to delete folder for
+     *
+     * @return void
+     */
+    private function deleteObjectFolder(ObjectEntity $objectEntity): void
+    {
+        try {
+            $folder = $this->fileService->getObjectFolder($objectEntity);
+            if ($folder !== null) {
+                $folder->delete();
+                $this->logger->info('Deleted object folder for hard deleted object: ' . $objectEntity->getId());
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the deletion process
+            $this->logger->warning('Failed to delete object folder for object ' . $objectEntity->getId() . ': ' . $e->getMessage());
+        }
+    }//end deleteObjectFolder()
 
 }//end class
