@@ -405,6 +405,16 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																:disabled="!schemaItem.properties[key].items.$ref"
 																@update:value="updateInversedByForArrayItems(key, $event)" />
 															<NcActionCheckbox
+																:checked="property.items.writeBack || false"
+																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'writeBack', $event)">
+																Write Back
+															</NcActionCheckbox>
+															<NcActionCheckbox
+																:checked="property.items.removeAfterWriteBack || false"
+																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'removeAfterWriteBack', $event)">
+																Remove After Write Back
+															</NcActionCheckbox>
+															<NcActionCheckbox
 																:checked="property.items.cascadeDelete || false"
 																@update:checked="updateArrayItemObjectConfigurationSetting(key, 'cascadeDelete', $event)">
 																Cascade Delete
@@ -451,6 +461,16 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															label="Inversed By"
 															:disabled="!schemaItem.properties[key].$ref"
 															@update:value="updateInversedBy(key, $event)" />
+														<NcActionCheckbox
+															:checked="property.writeBack || false"
+															@update:checked="updatePropertySetting(key, 'writeBack', $event)">
+															Write Back
+														</NcActionCheckbox>
+														<NcActionCheckbox
+															:checked="property.removeAfterWriteBack || false"
+															@update:checked="updatePropertySetting(key, 'removeAfterWriteBack', $event)">
+															Remove After Write Back
+														</NcActionCheckbox>
 														<NcActionCheckbox
 															:checked="property.cascadeDelete || false"
 															@update:checked="updatePropertySetting(key, 'cascadeDelete', $event)">
