@@ -50,6 +50,7 @@ class Version1Date20250723110323 extends SimpleMigrationStep
         $this->connection = $connection;
     }
 
+
     /**
      * Pre-schema change operations
      *
@@ -61,8 +62,9 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('Starting is_default column migration...');
-    }
+        // No pre-schema changes required
+
+    }//end preSchemaChange()
 
     /**
      * Apply schema changes for is_default column
@@ -95,8 +97,9 @@ class Version1Date20250723110323 extends SimpleMigrationStep
         return $schema;
     }
 
+
     /**
-     * Post-schema change operations - Set default organisation
+     * Post-schema change operations
      *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
@@ -106,57 +109,7 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Ensure at least one organisation is marked as default
-        $this->ensureDefaultOrganisation($output);
+        // No post-schema changes required
 
-        $output->info('is_default column migration completed successfully!');
-    }
-
-    /**
-     * Ensure at least one organisation is marked as default
-     *
-     * @param IOutput $output Migration output
-     *
-     * @return void
-     */
-    private function ensureDefaultOrganisation(IOutput $output): void
-    {
-        // Check if any organisation is already marked as default
-        $qb = $this->connection->getQueryBuilder();
-        $qb->select('COUNT(*)')
-           ->from('openregister_organisations')
-           ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, Types::BOOLEAN)));
-
-        $result = $qb->executeQuery();
-        $defaultCount = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        if ($defaultCount > 0) {
-            $output->info('Default organisation already exists');
-            return;
-        }
-
-        // No default organisation exists, set the first one as default
-        $qb = $this->connection->getQueryBuilder();
-        $qb->select('id', 'name')
-           ->from('openregister_organisations')
-           ->orderBy('created', 'ASC')
-           ->setMaxResults(1);
-
-        $result = $qb->executeQuery();
-        $organisation = $result->fetch();
-        $result->closeCursor();
-
-        if ($organisation) {
-            $qb = $this->connection->getQueryBuilder();
-            $qb->update('openregister_organisations')
-               ->set('is_default', $qb->createNamedParameter(true, Types::BOOLEAN))
-               ->where($qb->expr()->eq('id', $qb->createNamedParameter($organisation['id'])));
-
-            $qb->executeStatement();
-            $output->info('Set organisation "' . $organisation['name'] . '" as default');
-        } else {
-            $output->warning('No organisations found to set as default');
-        }
-    }
+    }//end postSchemaChange()
 } 
