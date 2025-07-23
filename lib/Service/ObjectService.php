@@ -570,6 +570,8 @@ class ObjectService
      */
     public function delete(array | JsonSerializable $object): bool
     {
+        // TODO: Add nightly cron job to cleanup orphaned folders and logs
+        // This should scan for folders without corresponding objects and clean them up
         return $this->deleteHandler->delete($object);
 
     }//end delete()
