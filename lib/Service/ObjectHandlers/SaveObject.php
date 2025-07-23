@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -72,6 +73,7 @@ class SaveObject
      * @param FileService        $fileService        File service for managing files.
      * @param IUserSession       $userSession        User session service.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging changes.
+     * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -81,6 +83,7 @@ class SaveObject
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
+        private readonly OrganisationService $organisationService,
         ArrayLoader $arrayLoader,
     ) {
         $this->twig = new Environment($arrayLoader);
@@ -1159,6 +1162,12 @@ class SaveObject
         $user = $this->userSession->getUser();
         if ($user !== null) {
             $objectEntity->setOwner($user->getUID());
+        }
+
+        // Set organisation from active organisation for multi-tenancy (if not already set)
+        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
+            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $objectEntity->setOrganisation($organisationUuid);
         }
 
         // Update object relations.

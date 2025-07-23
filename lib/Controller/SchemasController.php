@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
@@ -51,9 +52,10 @@ class SchemasController extends Controller
      * @param IAppConfig         $config             The app configuration object
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param DownloadService    $downloadService    The download service
-     * @param UploadService      $uploadService      The upload service
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
+     * @param DownloadService      $downloadService      The download service
+     * @param UploadService        $uploadService        The upload service
+     * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
+     * @param OrganisationService  $organisationService  The organisation service
      *
      * @return void
      */
@@ -65,7 +67,8 @@ class SchemasController extends Controller
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly DownloadService $downloadService,
         private readonly UploadService $uploadService,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly OrganisationService $organisationService
     ) {
         parent::__construct($appName, $request);
 
@@ -209,7 +212,16 @@ class SchemasController extends Controller
 
         try {
             // Create a new schema from the data.
-            return new JSONResponse($this->schemaMapper->createFromArray(object: $data));
+            $schema = $this->schemaMapper->createFromArray(object: $data);
+
+            // Set organisation from active organisation for multi-tenancy (if not already set)
+            if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
+                $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+                $schema->setOrganisation($organisationUuid);
+                $schema = $this->schemaMapper->update($schema);
+            }
+
+            return new JSONResponse($schema);
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 
@@ -374,6 +386,13 @@ class SchemasController extends Controller
             if ($schema->getId() === null) {
                 // Insert a new schema if no ID is set.
                 $schema = $this->schemaMapper->insert($schema);
+                
+                // Set organisation from active organisation for multi-tenancy (if not already set)
+                if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
+                    $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+                    $schema->setOrganisation($organisationUuid);
+                    $schema = $this->schemaMapper->update($schema);
+                }
             } else {
                 // Update the existing schema.
                 $schema = $this->schemaMapper->update($schema);

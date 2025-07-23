@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
@@ -139,7 +140,8 @@ class Application extends App implements IBootstrap
                 $container->get('OCP\IUserSession'),
                 $container->get(SearchTrailService::class),
                 $container->get('OCP\IGroupManager'),
-                $container->get('OCP\IUserManager')
+                $container->get('OCP\IUserManager'),
+                $container->get(OrganisationService::class)
             );
         });
 

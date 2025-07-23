@@ -48,6 +48,7 @@ use React\Async;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\OrganisationService;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -99,6 +100,7 @@ class ObjectService
      * @param SearchTrailService $searchTrailService Service for search trail operations.
      * @param IGroupManager      $groupManager       Group manager for checking user groups.
      * @param IUserManager       $userManager        User manager for getting user objects.
+     * @param OrganisationService $organisationService Service for organisation operations.
      */
     public function __construct(
         private readonly DeleteObject $deleteHandler,
@@ -115,7 +117,8 @@ class ObjectService
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
-        private readonly IUserManager $userManager
+        private readonly IUserManager $userManager,
+        private readonly OrganisationService $organisationService
     ) {
 
     }//end __construct()
@@ -369,6 +372,11 @@ class ObjectService
             return null;
         }
 
+        // If no schema was provided but we have an object, derive the schema from the object
+        if ($this->currentSchema === null) {
+            $this->setSchema($object->getSchema());
+        }
+
         // Check user has permission to read this specific object (includes object owner check)
         $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner());
 
@@ -378,10 +386,8 @@ class ObjectService
             $registers = [$this->currentRegister->getId() => $this->currentRegister];
         }
 
-        $schemas = null;
-        if ($this->currentSchema !== null) {
-            $schemas = [$this->currentSchema->getId() => $this->currentSchema];
-        }
+        // Always use the current schema (either provided or derived from object)
+        $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
         return $this->renderHandler->renderEntity(
             entity: $object,
@@ -422,7 +428,9 @@ class ObjectService
         }
 
         // Check user has permission to create objects in this schema
-        $this->checkPermission($this->currentSchema, 'create');
+        if ($this->currentSchema !== null) {
+            $this->checkPermission($this->currentSchema, 'create');
+        }
 
         // Skip validation here - let saveObject handle the proper order of pre-validation cascading then validation
 
@@ -431,6 +439,10 @@ class ObjectService
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
         $tempObject->setUuid(Uuid::v4()->toRfc4122());
+        
+        // Set organisation from active organisation for multi-tenancy
+        $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+        $tempObject->setOrganisation($organisationUuid);
         
         // Create folder before saving to avoid double update
         $folderId = null;
@@ -499,6 +511,11 @@ class ObjectService
         $existingObject = $this->getHandler->find(id: $id);
         if ($existingObject === null) {
             throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
+        }
+
+        // If no schema was provided but we have an existing object, derive the schema from the object
+        if ($this->currentSchema === null) {
+            $this->setSchema($existingObject->getSchema());
         }
 
         // Check user has permission to update this specific object
@@ -781,14 +798,20 @@ class ObjectService
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 $isUpdate = true;
                 // This is an UPDATE operation
-                $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+                if ($this->currentSchema !== null) {
+                    $this->checkPermission($this->currentSchema, 'update', null, $existingObject->getOwner());
+                }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, this is a CREATE operation with specific UUID
-                $this->checkPermission($this->currentSchema, 'create');
+                if ($this->currentSchema !== null) {
+                    $this->checkPermission($this->currentSchema, 'create');
+                }
             }
         } else {
             // No UUID provided, this is a CREATE operation  
-            $this->checkPermission($this->currentSchema, 'create');
+            if ($this->currentSchema !== null) {
+                $this->checkPermission($this->currentSchema, 'create');
+            }
         }
 
         // Store the parent object's register and schema context before cascading
@@ -888,11 +911,19 @@ class ObjectService
         // Find the object to get its owner for permission check (include soft-deleted objects)
         try {
             $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
+            
+            // If no schema was provided but we have an object, derive the schema from the object
+            if ($this->currentSchema === null) {
+                $this->setSchema($objectToDelete->getSchema());
+            }
+            
             // Check user has permission to delete this specific object
             $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this
-            $this->checkPermission($this->currentSchema, 'delete');
+            if ($this->currentSchema !== null) {
+                $this->checkPermission($this->currentSchema, 'delete');
+            }
         }
 
         return $this->deleteHandler->deleteObject(

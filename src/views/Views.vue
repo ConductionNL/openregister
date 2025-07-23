@@ -12,6 +12,7 @@ import { navigationStore } from '../store/store.js'
 			<SourcesIndex v-if="navigationStore.selected === 'sources'" />
 			<SchemasIndex v-if="navigationStore.selected === 'schemas'" />
 			<SchemaDetails v-if="navigationStore.selected === 'schemaDetails'" />
+			<OrganisationsIndex v-if="navigationStore.selected === 'organisations'" />
 			<ObjectsIndex v-if="navigationStore.selected === 'objects'" />
 			<SearchIndex v-if="navigationStore.selected === 'tableSearch'" />
 			<ConfigurationsIndex v-if="navigationStore.selected === 'configurations'" />
@@ -29,6 +30,7 @@ import RegistersIndex from './register/RegistersIndex.vue'
 import SourcesIndex from './source/SourcesIndex.vue'
 import SchemasIndex from './schema/SchemasIndex.vue'
 import SchemaDetails from './schema/SchemaDetails.vue'
+import OrganisationsIndex from './organisation/OrganisationsIndex.vue'
 import ObjectsIndex from './object/ObjectsIndex.vue'
 import SearchIndex from './search/SearchIndex.vue'
 import ConfigurationsIndex from './configuration/ConfigurationsIndex.vue'
@@ -46,6 +48,7 @@ export default {
 		SourcesIndex,
 		SchemasIndex,
 		SchemaDetails,
+		OrganisationsIndex,
 		ObjectsIndex,
 		SearchIndex,
 		ConfigurationsIndex,
