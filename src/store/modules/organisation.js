@@ -231,7 +231,7 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 
 			const response = await fetch(endpoint, {
-				method: method,
+				method,
 				headers: {
 					'Content-Type': 'application/json',
 				},
