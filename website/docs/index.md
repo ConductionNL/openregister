@@ -85,6 +85,10 @@ Open Register operates on three fundamental principles:
     @enduml
     ```
 
+## Troubleshooting & Fixes
+
+For information about recent fixes and solutions to common issues, see the [Fixes section](fixes/).
+
 ## Contributing
 
 1. Create a new branch from 'documentation'

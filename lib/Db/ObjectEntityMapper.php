@@ -1435,8 +1435,9 @@ class ObjectEntityMapper extends QBMapper
     ): int {
         $qb = $this->db->getQueryBuilder();
 
-        $qb->selectAlias(select: $qb->createFunction(call: 'count(id)'), alias: 'count')
-            ->from(from: 'openregister_objects');
+        $qb->selectAlias(select: $qb->createFunction(call: 'count(o.id)'), alias: 'count')
+            ->from('openregister_objects', 'o')
+            ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
 
         // Filter out system variables (starting with _)
         $filters = array_filter(
@@ -1466,9 +1467,12 @@ class ObjectEntityMapper extends QBMapper
             $filters['schema'] = $schema;
         }
 
+        // Apply RBAC filtering based on user permissions
+        $this->applyRbacFilters($qb, 'o', 's');
+
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
-            $qb->andWhere($qb->expr()->isNull('deleted'));
+            $qb->andWhere($qb->expr()->isNull('o.deleted'));
         }
 
         // If published filter is set, only include objects that are currently published.
@@ -1477,11 +1481,11 @@ class ObjectEntityMapper extends QBMapper
             // published <= now AND (depublished IS NULL OR depublished > now)
             $qb->andWhere(
                 $qb->expr()->andX(
-                    $qb->expr()->isNotNull('published'),
-                    $qb->expr()->lte('published', $qb->createNamedParameter($now)),
+                    $qb->expr()->isNotNull('o.published'),
+                    $qb->expr()->lte('o.published', $qb->createNamedParameter($now)),
                     $qb->expr()->orX(
-                        $qb->expr()->isNull('depublished'),
-                        $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
+                        $qb->expr()->isNull('o.depublished'),
+                        $qb->expr()->gt('o.depublished', $qb->createNamedParameter($now))
                     )
                 )
             );
@@ -1491,8 +1495,8 @@ class ObjectEntityMapper extends QBMapper
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
             $orX = $qb->expr()->orX();
-            $orX->add($qb->expr()->in('id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-            $orX->add($qb->expr()->in('uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('o.id', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($qb->expr()->in('o.uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             $qb->andWhere($orX);
         }
 
@@ -1510,17 +1514,17 @@ class ObjectEntityMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 // Add condition for IS NOT NULL
-                $qb->andWhere($qb->expr()->isNotNull($filter));
+                $qb->andWhere($qb->expr()->isNotNull('o.' . $filter));
             } else if ($value === 'IS NULL' && in_array($filter, self::MAIN_FILTERS) === true) {
                 // Add condition for IS NULL
-                $qb->andWhere($qb->expr()->isNull($filter));
+                $qb->andWhere($qb->expr()->isNull('o.' . $filter));
             } else if (in_array($filter, self::MAIN_FILTERS) === true) {
                 if (is_array($value)) {
                     // If the value is an array, use IN to search for any of the values in the array
-                    $qb->andWhere($qb->expr()->in($filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+                    $qb->andWhere($qb->expr()->in('o.' . $filter, $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     // Otherwise, use equality for the filter
-                    $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                    $qb->andWhere($qb->expr()->eq('o.' . $filter, $qb->createNamedParameter($value)));
                 }
             }
         }
