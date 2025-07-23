@@ -776,7 +776,12 @@ class ObjectsController extends Controller
             $oldObject = $this->objectEntityMapper->find($id, null, null, true);
             
             // Use ObjectService to delete the object (includes RBAC permission checks)
-            $objectService->deleteObject($id);
+            $deleteResult = $objectService->deleteObject($id);
+            
+            if (!$deleteResult) {
+                // If delete operation failed, return error
+                return new JSONResponse(['error' => 'Failed to delete object'], 500);
+            }
 
             // Clone the object to pass as the new state for response
             $newObject = clone $oldObject;
@@ -788,8 +793,8 @@ class ObjectsController extends Controller
             // Create an audit trail with both old and new states
             $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $newObject);
 
-            // Return the deleted object
-            return new JSONResponse($newObject->jsonSerialize());
+            // Return 204 No Content for successful delete (REST convention)
+            return new JSONResponse(null, 204);
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors)
             return new JSONResponse(['error' => $exception->getMessage()], 403);
