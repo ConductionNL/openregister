@@ -33,6 +33,11 @@ import { navigationStore } from '../store/store.js'
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
+			<NcAppNavigationItem :active="navigationStore.selected === 'organisations'" :name="t('openregister', 'Organisations')" @click="navigationStore.setSelected('organisations')">
+				<template #icon>
+					<OfficeBuildingOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="navigationStore.selected === 'sources'" :name="t('openregister', 'Data sources')" @click="navigationStore.setSelected('sources')">
 				<template #icon>
 					<DatabaseArrowRightOutline :size="20" />
@@ -74,6 +79,7 @@ import {
 import Finance from 'vue-material-design-icons/Finance.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 // import LayersSearchOutline from 'vue-material-design-icons/LayersSearchOutline.vue'
 import TableMultiple from 'vue-material-design-icons/TableMultiple.vue'
@@ -95,6 +101,7 @@ export default {
 		DatabaseOutline,
 		DatabaseArrowRightOutline,
 		FileTreeOutline,
+		OfficeBuildingOutline,
 		TableMultiple,
 		// LayersSearchOutline,
 		CogOutline,
