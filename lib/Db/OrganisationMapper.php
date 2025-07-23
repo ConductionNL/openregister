@@ -231,4 +231,106 @@ class OrganisationMapper extends QBMapper
         $organisation->removeUser($userId);
         return $this->update($organisation);
     }
+
+    /**
+     * Find the default organisation
+     * 
+     * @return Organisation The default organisation
+     * 
+     * @throws DoesNotExistException If no default organisation found
+     */
+    public function findDefault(): Organisation
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+           ->from($this->getTableName())
+           ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+           ->setMaxResults(1);
+
+        return $this->findEntity($qb);
+    }
+
+    /**
+     * Find the default organisation for a specific user
+     * 
+     * @param string $userId The user ID
+     * 
+     * @return Organisation The default organisation for the user
+     * 
+     * @throws DoesNotExistException If no default organisation found for user
+     */
+    public function findDefaultForUser(string $userId): Organisation
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+           ->from($this->getTableName())
+           ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+           ->andWhere($qb->expr()->like('users', $qb->createNamedParameter('%"' . $userId . '"%')))
+           ->setMaxResults(1);
+
+        return $this->findEntity($qb);
+    }
+
+    /**
+     * Create a default organisation
+     * 
+     * @return Organisation The created default organisation
+     */
+    public function createDefault(): Organisation
+    {
+        $organisation = new Organisation();
+        $organisation->setName('Default Organisation');
+        $organisation->setDescription('Default organisation for the system');
+        $organisation->setIsDefault(true);
+        $organisation->setOwner('admin');
+        $organisation->setUsers(['admin']);
+
+        return $this->save($organisation);
+    }
+
+    /**
+     * Set an organisation as the default and update all entities without organisation
+     * 
+     * @param Organisation $organisation The organisation to set as default
+     * 
+     * @return bool True if successful
+     */
+    public function setAsDefault(Organisation $organisation): bool
+    {
+        // First, unset any existing default organisation
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($this->getTableName())
+           ->set('is_default', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+           ->where($qb->expr()->eq('is_default', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
+        $qb->execute();
+
+        // Set the new default organisation
+        $organisation->setIsDefault(true);
+        $this->update($organisation);
+
+        // Update all registers without organisation
+        $qb = $this->db->getQueryBuilder();
+        $qb->update('openregister_registers')
+           ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
+           ->where($qb->expr()->isNull('organisation'));
+        $qb->execute();
+
+        // Update all schemas without organisation
+        $qb = $this->db->getQueryBuilder();
+        $qb->update('openregister_schemas')
+           ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
+           ->where($qb->expr()->isNull('organisation'));
+        $qb->execute();
+
+        // Update all objects without organisation
+        $qb = $this->db->getQueryBuilder();
+        $qb->update('openregister_objects')
+           ->set('organisation', $qb->createNamedParameter($organisation->getUuid()))
+           ->where($qb->expr()->isNull('organisation'));
+        $qb->execute();
+
+        return true;
+    }
 } 

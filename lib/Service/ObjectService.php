@@ -821,6 +821,7 @@ class ObjectService
         
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
         
         // Restore the parent object's register and schema context after cascading
@@ -1126,6 +1127,28 @@ class ObjectService
 
 
     /**
+     * Get the active organization for the current user
+     * 
+     * This method determines the active organization using the same logic as SaveObject
+     * to ensure consistency between save and retrieval operations.
+     *
+     * @return string|null The active organization UUID or null if none found
+     */
+    private function getActiveOrganisationForContext(): ?string
+    {
+        try {
+            $activeOrganisation = $this->organisationService->getActiveOrganisation();
+            if ($activeOrganisation !== null) {
+                return $activeOrganisation->getUuid();
+            }
+        } catch (Exception $e) {
+            // Log error but continue without organization context
+        }
+        
+        return null;
+    }
+
+    /**
      * Search objects using clean query structure
      *
      * This method provides a cleaner search interface that uses the new searchObjects
@@ -1154,8 +1177,11 @@ class ObjectService
      */
     public function searchObjects(array $query = []): array|int
     {
-        // Use the new searchObjects method from ObjectEntityMapper
-        $result = $this->objectEntityMapper->searchObjects($query);
+        // Get active organization context for multi-tenancy
+        $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        
+        // Use the new searchObjects method from ObjectEntityMapper with organization context
+        $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid);
 
         // If _count option was used, return the integer count directly
         if (isset($query['_count']) && $query['_count'] === true) {
@@ -1242,8 +1268,11 @@ class ObjectService
      */
     public function countSearchObjects(array $query = []): int
     {
-        // Use the new optimized countSearchObjects method from ObjectEntityMapper
-        return $this->objectEntityMapper->countSearchObjects($query);
+        // Get active organization context for multi-tenancy
+        $activeOrganisationUuid = $this->getActiveOrganisationForContext();
+        
+        // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context
+        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid);
 
     }//end countSearchObjects()
 
@@ -2410,6 +2439,8 @@ class ObjectService
      * It creates related objects from nested object data and replaces them with UUIDs
      * so that validation sees UUIDs instead of objects.
      *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+     *
      * @param array       $object The object data to process
      * @param Schema      $schema The schema containing property definitions
      * @param string|null $uuid   The UUID of the parent object (will be generated if null)
@@ -2438,6 +2469,7 @@ class ObjectService
         }
 
         // Find properties that have inversedBy configuration
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $inversedByProperties = array_filter(
             $properties,
             function (array $property) {

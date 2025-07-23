@@ -411,6 +411,8 @@ class SaveObject
      * Objects with only $ref (like nested objects with objectConfiguration.handling: "nested-object")
      * are kept as-is in the data and not cascaded.
      *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+     *
      * @param ObjectEntity $objectEntity The parent object entity
      * @param Schema       $schema       The schema of the parent object
      * @param array        $data         The object data to process
@@ -431,6 +433,7 @@ class SaveObject
         // 2. objectConfiguration.handling: "cascade" (stores IDs in parent) - results in IDs stored in parent
         // Objects with only $ref and nested-object handling remain in the data
         // BUT skip if they have writeBack enabled (those are handled by write-back method)
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $objectProperties = array_filter(
           $properties,
           function (array $property) {
@@ -448,6 +451,7 @@ class SaveObject
 
         // Same logic for array properties - cascade if they have inversedBy OR cascade handling
         // BUT skip if they have writeBack enabled (those are handled by write-back method)
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $arrayObjectProperties = array_filter(
           $properties,
           function (array $property) {
@@ -697,6 +701,8 @@ class SaveObject
      * For example, when creating a community with a list of deelnemers (participant UUIDs),
      * this method will update each participant's deelnames array to include the community's UUID.
      *
+     * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+     *
      * @param ObjectEntity $objectEntity The current object being saved
      * @param Schema       $schema       The schema of the current object
      * @param array        $data         The data being saved
@@ -715,6 +721,7 @@ class SaveObject
         }
 
         // Find properties that have inversedBy configuration with writeBack enabled
+        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         $writeBackProperties = array_filter(
           $properties,
           function (array $property) {

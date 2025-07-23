@@ -285,6 +285,108 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Apply organization filtering for multi-tenancy
+     *
+     * This method adds WHERE conditions to filter objects based on the user's 
+     * active organization. Users can only see objects that belong to their 
+     * active organization.
+     *
+     * @param IQueryBuilder $qb The query builder to modify
+     * @param string $objectTableAlias Optional alias for the objects table (default: 'o')
+     * @param string|null $activeOrganisationUuid The active organization UUID to filter by
+     *
+     * @return void
+     */
+    private function applyOrganizationFilters(IQueryBuilder $qb, string $objectTableAlias = 'o', ?string $activeOrganisationUuid = null): void
+    {
+        // Get current user to check if they're admin
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+            
+            // Admin users see all objects - no filtering needed
+            if (in_array('admin', $userGroups)) {
+                return;
+            }
+        }
+
+        // Get user's organizations directly from database
+        $userId = $user ? $user->getUID() : null;
+        if ($userId === null) {
+            // For unauthenticated requests, show objects that are currently published
+            // This provides publication-based public access similar to RBAC filters
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $qb->andWhere(
+                $qb->expr()->andX(
+                    $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                    $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                        $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                    )
+                )
+            );
+            return;
+        }
+
+        // Use provided active organization UUID or fall back to null (no filtering)
+        if ($activeOrganisationUuid === null) {
+            // If no active organization provided, don't apply organization filtering
+            // This maintains backward compatibility when organization context isn't available
+            return;
+        }
+        
+        $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
+
+        // Check if this is the user's default (oldest) organization
+        $isDefaultOrgQb = $this->db->getQueryBuilder();
+        $isDefaultOrgQb->select('uuid')
+                       ->from('openregister_organisations')
+                       ->where($isDefaultOrgQb->expr()->like('users', $isDefaultOrgQb->createNamedParameter('%"' . $userId . '"%')))
+                       ->orderBy('created', 'ASC')
+                       ->setMaxResults(1);
+        
+        $defaultResult = $isDefaultOrgQb->executeQuery();
+        $defaultOrgUuid = $defaultResult->fetchColumn();
+        $defaultResult->closeCursor();
+        
+        $isDefaultOrg = ($activeOrganisationUuid === $defaultOrgUuid);
+
+        // Build organization filter conditions
+        $orgConditions = $qb->expr()->orX();
+        
+        // Objects explicitly belonging to the user's organization
+        $orgConditions->add(
+            $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
+        );
+
+        // If this is the default organization, also include objects with NULL organization
+        if ($isDefaultOrg) {
+            $orgConditions->add(
+                $qb->expr()->isNull($organizationColumn)
+            );
+        }
+
+        // Objects that are currently published (publication-based public access)
+        // Published objects should always be visible regardless of organization restrictions
+        $now = (new \DateTime())->format('Y-m-d H:i:s');
+        $orgConditions->add(
+            $qb->expr()->andX(
+                $qb->expr()->isNotNull("{$objectTableAlias}.published"),
+                $qb->expr()->lte("{$objectTableAlias}.published", $qb->createNamedParameter($now)),
+                $qb->expr()->orX(
+                    $qb->expr()->isNull("{$objectTableAlias}.depublished"),
+                    $qb->expr()->gt("{$objectTableAlias}.depublished", $qb->createNamedParameter($now))
+                )
+            )
+        );
+
+        $qb->andWhere($orgConditions);
+
+    }//end applyOrganizationFilters()
+
+
+    /**
      * Create a JSON_CONTAINS condition for checking if an array contains a value
      *
      * @param IQueryBuilder $qb The query builder
@@ -857,7 +959,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      */
-    public function searchObjects(array $query = []): array|int {
+    public function searchObjects(array $query = [], ?string $activeOrganisationUuid = null): array|int {
         // Extract options from query (prefixed with _)
         $limit = $query['_limit'] ?? null;
         $offset = $query['_offset'] ?? null;
@@ -945,6 +1047,9 @@ class ObjectEntityMapper extends QBMapper
 
         // Apply RBAC filtering based on user permissions
         $this->applyRbacFilters($queryBuilder, 'o', 's');
+
+        // Apply organization filtering for multi-tenancy
+        $this->applyOrganizationFilters($queryBuilder, 'o', $activeOrganisationUuid);
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
@@ -1043,7 +1148,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query = []): int
+    public function countSearchObjects(array $query = [], ?string $activeOrganisationUuid = null): int
     {
         // Extract options from query (prefixed with _)
         $search = $this->processSearchParameter($query['_search'] ?? null);
@@ -1103,6 +1208,9 @@ class ObjectEntityMapper extends QBMapper
         $basicRegister = isset($metadataFilters['register']) ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
         $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, '');
+
+        // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join)
+        $this->applyOrganizationFilters($queryBuilder, '', $activeOrganisationUuid);
 
         // Handle filtering by IDs/UUIDs if provided (same as searchObjects)
         if ($ids !== null && empty($ids) === false) {
