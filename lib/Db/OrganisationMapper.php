@@ -25,6 +25,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use Symfony\Component\Uid\Uuid;
 
 
 /**
@@ -115,12 +116,22 @@ class OrganisationMapper extends QBMapper
      * @param Organisation $organisation The organisation to save
      * 
      * @return Organisation The saved organisation
+     * 
+     * @throws \Exception If UUID is invalid or already exists
      */
     public function save(Organisation $organisation): Organisation
     {
-        // Generate UUID if not present
-        if ($organisation->getUuid() === null) {
-            $organisation->setUuid(bin2hex(random_bytes(16)));
+        // Validate UUID if provided
+        $this->validateUuid($organisation);
+
+        // Generate UUID if not present and not explicitly set
+        if ($organisation->getUuid() === null || $organisation->getUuid() === '') {
+            $generatedUuid = $this->generateUuid();
+            $organisation->setUuid($generatedUuid);
+            
+            // Debug logging
+            error_log('[OrganisationMapper] Generated UUID: ' . $generatedUuid);
+            error_log('[OrganisationMapper] Organisation UUID after setting: ' . $organisation->getUuid());
         }
 
         // Set timestamps
@@ -130,10 +141,115 @@ class OrganisationMapper extends QBMapper
         }
         $organisation->setUpdated($now);
 
+        // Debug logging before insert/update
+        \OC::$server->getLogger()->info('[OrganisationMapper] About to save organisation with UUID: ' . $organisation->getUuid());
+        \OC::$server->getLogger()->info('[OrganisationMapper] Organisation object properties:', [
+            'uuid' => $organisation->getUuid(),
+            'name' => $organisation->getName(),
+            'description' => $organisation->getDescription(),
+            'owner' => $organisation->getOwner(),
+            'users' => $organisation->getUsers(),
+            'isDefault' => $organisation->getIsDefault()
+        ]);
+
         if ($organisation->getId() === null) {
-            return $this->insert($organisation);
+            \OC::$server->getLogger()->info('[OrganisationMapper] Calling insert() method');
+            
+            // Debug: Log the entity state before insert
+            \OC::$server->getLogger()->info('[OrganisationMapper] Entity state before insert:', [
+                'id' => $organisation->getId(),
+                'uuid' => $organisation->getUuid(),
+                'name' => $organisation->getName(),
+                'description' => $organisation->getDescription(),
+                'owner' => $organisation->getOwner(),
+                'users' => $organisation->getUsers(),
+                'isDefault' => $organisation->getIsDefault(),
+                'created' => $organisation->getCreated(),
+                'updated' => $organisation->getUpdated()
+            ]);
+            
+            try {
+                $result = $this->insert($organisation);
+                \OC::$server->getLogger()->info('[OrganisationMapper] insert() completed successfully');
+                return $result;
+            } catch (\Exception $e) {
+                \OC::$server->getLogger()->error('[OrganisationMapper] insert() failed: ' . $e->getMessage(), [
+                    'exception' => $e->getMessage(),
+                    'exceptionClass' => get_class($e),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
         } else {
+            \OC::$server->getLogger()->info('[OrganisationMapper] Calling update() method');
             return $this->update($organisation);
+        }
+    }
+
+    /**
+     * Generate a unique UUID for organisations
+     * 
+     * @return string A unique UUID
+     */
+    private function generateUuid(): string
+    {
+        return Uuid::v4()->toRfc4122();
+    }
+
+    /**
+     * Check if a UUID already exists
+     * 
+     * @param string $uuid The UUID to check
+     * @param int|null $excludeId Optional organisation ID to exclude from check (for updates)
+     * 
+     * @return bool True if UUID already exists
+     */
+    public function uuidExists(string $uuid, ?int $excludeId = null): bool
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('id')
+           ->from($this->getTableName())
+           ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
+
+        if ($excludeId !== null) {
+            $qb->andWhere($qb->expr()->neq('id', $qb->createNamedParameter($excludeId, IQueryBuilder::PARAM_INT)));
+        }
+
+        $result = $qb->execute();
+        $exists = $result->fetchColumn() !== false;
+        $result->closeCursor();
+
+        return $exists;
+    }
+
+    /**
+     * Validate and ensure UUID uniqueness
+     * 
+     * @param Organisation $organisation The organisation to validate
+     * 
+     * @throws \Exception If UUID is invalid or already exists
+     * 
+     * @return void
+     */
+    private function validateUuid(Organisation $organisation): void
+    {
+        $uuid = $organisation->getUuid();
+        
+        if ($uuid === null || $uuid === '') {
+            return; // Will be generated in save method
+        }
+
+        // Validate UUID format using Symfony UID
+        try {
+            Uuid::fromString($uuid);
+        } catch (\InvalidArgumentException $e) {
+            throw new \Exception('Invalid UUID format. UUID must be a valid RFC 4122 UUID.');
+        }
+
+        // Check for uniqueness
+        if ($this->uuidExists($uuid, $organisation->getId())) {
+            throw new \Exception('UUID already exists. Please use a different UUID.');
         }
     }
 
@@ -287,6 +403,58 @@ class OrganisationMapper extends QBMapper
         $organisation->setOwner('admin');
         $organisation->setUsers(['admin']);
 
+        return $this->save($organisation);
+    }
+
+    /**
+     * Create an organisation with a specific UUID
+     * 
+     * @param string $name Organisation name
+     * @param string $description Organisation description
+     * @param string $uuid Specific UUID to use
+     * @param string $owner Owner user ID
+     * @param array $users Array of user IDs
+     * @param bool $isDefault Whether this is the default organisation
+     * 
+     * @return Organisation The created organisation
+     * 
+     * @throws \Exception If UUID is invalid or already exists
+     */
+    public function createWithUuid(
+        string $name,
+        string $description = '',
+        string $uuid = '',
+        string $owner = '',
+        array $users = [],
+        bool $isDefault = false
+    ): Organisation {
+        // Debug logging
+        \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] Starting with parameters:', [
+            'name' => $name,
+            'description' => $description,
+            'uuid' => $uuid,
+            'owner' => $owner,
+            'users' => $users,
+            'isDefault' => $isDefault
+        ]);
+        
+        $organisation = new Organisation();
+        $organisation->setName($name);
+        $organisation->setDescription($description);
+        $organisation->setOwner($owner);
+        $organisation->setUsers($users);
+        $organisation->setIsDefault($isDefault);
+
+        // Set UUID if provided, otherwise let save() generate one
+        if ($uuid !== '') {
+            \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] Setting UUID: ' . $uuid);
+            $organisation->setUuid($uuid);
+            \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] UUID after setting: ' . $organisation->getUuid());
+        } else {
+            \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] No UUID provided, will generate in save()');
+        }
+
+        \OC::$server->getLogger()->info('[OrganisationMapper::createWithUuid] About to call save() with UUID: ' . $organisation->getUuid());
         return $this->save($organisation);
     }
 
