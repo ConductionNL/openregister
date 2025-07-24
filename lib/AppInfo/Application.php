@@ -111,10 +111,11 @@ class Application extends App implements IBootstrap
             );
         });
 
-        // Register OrganisationMapper
+        // Register OrganisationMapper with event dispatcher
         $context->registerService(OrganisationMapper::class, function ($container) {
             return new OrganisationMapper(
-                $container->get('OCP\IDBConnection')
+                $container->get('OCP\IDBConnection'),
+                $container->get('OCP\EventDispatcher\IEventDispatcher')
             );
         });
 

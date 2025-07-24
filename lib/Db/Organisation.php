@@ -99,6 +99,13 @@ class Organisation extends Entity implements JsonSerializable
     protected ?bool $isDefault = false;
 
     /**
+     * Whether this organisation is active
+     * 
+     * @var bool|null Whether this organisation is active
+     */
+    protected ?bool $active = true;
+
+    /**
      * Organisation constructor
      * 
      * Sets up the entity type mappings for proper database handling.
@@ -114,6 +121,7 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
         $this->addType('is_default', 'boolean');
+        $this->addType('active', 'boolean');
     }
 
 
@@ -221,6 +229,29 @@ class Organisation extends Entity implements JsonSerializable
     }
 
     /**
+     * Get whether this organisation is active
+     * 
+     * @return bool Whether this organisation is active
+     */
+    public function getActive(): bool
+    {
+        return $this->active ?? true;
+    }
+
+    /**
+     * Set whether this organisation is active
+     * 
+     * @param bool|null $active Whether this should be the active organisation
+     * 
+     * @return self Returns this organisation for method chaining
+     */
+    public function setActive(?bool $active): self
+    {
+        $this->active = $active ?? true;
+        return $this;
+    }
+
+    /**
      * JSON serialization for API responses
      * 
      * @return array Serialized organisation data
@@ -237,6 +268,7 @@ class Organisation extends Entity implements JsonSerializable
             'userCount' => count($this->getUserIds()),
             'owner' => $this->owner,
             'isDefault' => $this->getIsDefault(),
+            'active' => $this->getActive(),
             'created' => $this->created ? $this->created->format('c') : null,
             'updated' => $this->updated ? $this->updated->format('c') : null,
         ];

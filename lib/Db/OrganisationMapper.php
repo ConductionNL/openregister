@@ -25,6 +25,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use Symfony\Component\Uid\Uuid;
 
 
@@ -39,13 +41,22 @@ use Symfony\Component\Uid\Uuid;
 class OrganisationMapper extends QBMapper
 {
     /**
+     * Event dispatcher for firing organisation events
+     *
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
      * OrganisationMapper constructor
      * 
      * @param IDBConnection $db Database connection
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for firing events
      */
-    public function __construct(IDBConnection $db)
+    public function __construct(IDBConnection $db, IEventDispatcher $eventDispatcher)
     {
         parent::__construct($db, 'openregister_organisations', Organisation::class);
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -171,6 +182,15 @@ class OrganisationMapper extends QBMapper
             try {
                 $result = $this->insert($organisation);
                 \OC::$server->getLogger()->info('[OrganisationMapper] insert() completed successfully');
+                
+                // Fire OrganisationCreatedEvent after successful insert
+                $event = new OrganisationCreatedEvent($result);
+                $this->eventDispatcher->dispatchTyped($event);
+                \OC::$server->getLogger()->info('[OrganisationMapper] OrganisationCreatedEvent dispatched', [
+                    'organisationUuid' => $result->getUuid(),
+                    'organisationName' => $result->getName()
+                ]);
+                
                 return $result;
             } catch (\Exception $e) {
                 \OC::$server->getLogger()->error('[OrganisationMapper] insert() failed: ' . $e->getMessage(), [
@@ -500,5 +520,24 @@ class OrganisationMapper extends QBMapper
         $qb->execute();
 
         return true;
+    }
+
+    /**
+     * Find organisations updated after a specific datetime
+     * 
+     * @param \DateTime $cutoffTime The cutoff time to search after
+     * 
+     * @return array Array of Organisation entities updated after the cutoff time
+     */
+    public function findUpdatedAfter(\DateTime $cutoffTime): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        
+        $qb->select('*')
+           ->from($this->getTableName())
+           ->where($qb->expr()->gt('updated', $qb->createNamedParameter($cutoffTime->format('Y-m-d H:i:s'))))
+           ->orderBy('updated', 'DESC');
+        
+        return $this->findEntities($qb);
     }
 } 
