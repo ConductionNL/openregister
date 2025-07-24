@@ -495,84 +495,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
-    /**
-     * Find applicable ids for objects that have an inversed relationship through which a search request is performed.
-     *
-     * @param array $filters The set of filters to find the inversed relationships through.
-     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters. Returns NULL if no filters are found that are applicable.
-     *
-     * @throws \OCP\DB\Exception
-     */
-	private function applyInversedByFilter(array &$filters): ?array
-	{
-		if($filters['schema'] === false) {
-			return null;
-		}
-
-		$schema = $this->schemaMapper->find($filters['schema']);
-
-		$filterKeysWithSub = array_filter(array_keys($filters), function($filter) {
-			if (str_contains($filter, '_')) {
-				return true;
-			}
-
-			return false;
-		});
-
-		$filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
-
-		if(empty($filtersWithSub)) {
-			return null;
-		}
-
-		$filterDot = new Dot(items: $filtersWithSub, parse: true, delimiter: '_');
-
-		$ids = [];
-
-		$iterator = 0;
-		foreach($filterDot as $key => $value) {
-			if (isset($schema->getProperties()[$key]['inversedBy']) === false) {
-				continue;
-			}
-
-			$iterator++;
-			$property = $schema->getProperties()[$key];
-
-			$value = (new Dot($value))->flatten(delimiter: '_');
-
-			// @TODO fix schema finder
-			$value['schema'] = $property['$ref'];
-
-			$objects = $this->findAll(filters: $value);
-			$foundIds = array_map(function(ObjectEntity $object) use ($property, $key) {
-				$idRaw = $object->jsonSerialize()[$property['inversedBy']];
-
-				if (Uuid::isValid($idRaw) === true) {
-					return $idRaw;
-				} else if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
-					$path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
-
-					return end($path);
-				}
-			}, $objects);
-
-			if ($ids === []) {
-				$ids = $foundIds;
-			} else {
-				$ids = array_intersect($ids, $foundIds);
-			}
-
-			foreach($value as $k => $v) {
-				unset($filters[$key.'_'.$k]);
-			}
-		}
-
-		if ($iterator === 0 && $ids === []) {
-			return null;
-		}
-
-		return $ids;
-	}//end applyInversedByFilter
 
 
     /**
@@ -677,16 +599,6 @@ class ObjectEntityMapper extends QBMapper
 
         // Apply RBAC filtering based on user permissions
         $this->applyRbacFilters($qb, 'o', 's');
-
-
-        // @TODO this should be higher up
-		$searchIds = $this->applyInversedByFilter($filters);
-
-		if($ids === null && $searchIds !== null) {
-			$ids = $searchIds;
-		} elseif ($ids !== null && $searchIds !== null) {
-			$ids = array_intersect($ids, $searchIds);
-		}
 
 		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -1560,16 +1472,6 @@ class ObjectEntityMapper extends QBMapper
 
         // Apply RBAC filtering based on user permissions
         $this->applyRbacFilters($qb, 'o', 's');
-
-
-        // @TODO This should be higher up
-        $searchIds = $this->applyInversedByFilter($filters);
-
-        if($ids === null && $searchIds !== null) {
-            $ids = $searchIds;
-        } elseif ($ids !== null && $searchIds !== null) {
-            $ids = array_intersect($ids, $searchIds);
-        }
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
