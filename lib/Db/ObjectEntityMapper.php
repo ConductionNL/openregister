@@ -495,7 +495,15 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
-	private function applySubFilters(array &$filters): ?array
+    /**
+     * Find applicable ids for objects that have an inversed relationship through which a search request is performed.
+     *
+     * @param array $filters The set of filters to find the inversed relationships through.
+     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters. Returns NULL if no filters are found that are applicable.
+     *
+     * @throws \OCP\DB\Exception
+     */
+	private function applyInversedByFilter(array &$filters): ?array
 	{
 		if($filters['schema'] === false) {
 			return null;
@@ -564,7 +572,7 @@ class ObjectEntityMapper extends QBMapper
 		}
 
 		return $ids;
-	}
+	}//end applyInversedByFilter
 
 
     /**
@@ -670,7 +678,9 @@ class ObjectEntityMapper extends QBMapper
         // Apply RBAC filtering based on user permissions
         $this->applyRbacFilters($qb, 'o', 's');
 
-		$searchIds = $this->applySubFilters($filters);
+
+        // @TODO this should be higher up
+		$searchIds = $this->applyInversedByFilter($filters);
 
 		if($ids === null && $searchIds !== null) {
 			$ids = $searchIds;
@@ -1550,6 +1560,16 @@ class ObjectEntityMapper extends QBMapper
 
         // Apply RBAC filtering based on user permissions
         $this->applyRbacFilters($qb, 'o', 's');
+
+
+        // @TODO This should be higher up
+        $searchIds = $this->applyInversedByFilter($filters);
+
+        if($ids === null && $searchIds !== null) {
+            $ids = $searchIds;
+        } elseif ($ids !== null && $searchIds !== null) {
+            $ids = array_intersect($ids, $searchIds);
+        }
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
