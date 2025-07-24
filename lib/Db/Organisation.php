@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Organisation Entity
@@ -115,6 +116,25 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('is_default', 'boolean');
     }
 
+
+
+    /**
+     * Validate UUID format
+     * 
+     * @param string $uuid The UUID to validate
+     * 
+     * @return bool True if UUID format is valid
+     */
+    public static function isValidUuid(string $uuid): bool
+    {
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+    }
+
     /**
      * Add a user to this organisation
      * 
@@ -190,13 +210,13 @@ class Organisation extends Entity implements JsonSerializable
     /**
      * Set whether this organisation is the default
      * 
-     * @param bool $isDefault Whether this should be the default organisation
+     * @param bool|null $isDefault Whether this should be the default organisation
      * 
      * @return self Returns this organisation for method chaining
      */
-    public function setIsDefault(bool $isDefault): self
+    public function setIsDefault(?bool $isDefault): self
     {
-        $this->isDefault = $isDefault;
+        $this->isDefault = $isDefault ?? false;
         return $this;
     }
 
