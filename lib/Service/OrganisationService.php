@@ -25,6 +25,7 @@ use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
 use OCP\IGroupManager;
+use OCP\IConfig;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Exception;
@@ -41,12 +42,17 @@ use Symfony\Component\Uid\Uuid;
 class OrganisationService
 {
     /**
-     * Session key for storing active organisation UUID
+     * App name for user configuration storage
      */
-    private const SESSION_ACTIVE_ORGANISATION = 'openregister_active_organisation';
+    private const APP_NAME = 'openregister';
 
     /**
-     * Session key for storing user's organisations array
+     * Configuration key for active organisation UUID
+     */
+    private const CONFIG_ACTIVE_ORGANISATION = 'active_organisation';
+
+    /**
+     * Session key for storing user's organisations array (cache only)
      */
     private const SESSION_USER_ORGANISATIONS = 'openregister_user_organisations';
 
@@ -77,6 +83,13 @@ class OrganisationService
     private ISession $session;
 
     /**
+     * Configuration interface for persistent user settings
+     * 
+     * @var IConfig
+     */
+    private IConfig $config;
+
+    /**
      * Group manager for accessing Nextcloud groups
      * 
      * @var IGroupManager
@@ -95,7 +108,8 @@ class OrganisationService
      * 
      * @param OrganisationMapper $organisationMapper Organisation database mapper
      * @param IUserSession $userSession User session service
-     * @param ISession $session Session storage service
+     * @param ISession $session Session storage service for caching
+     * @param IConfig $config Configuration service for persistent storage
      * @param IGroupManager $groupManager Group manager service
      * @param LoggerInterface $logger Logger service
      */
@@ -103,12 +117,14 @@ class OrganisationService
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         ISession $session,
+        IConfig $config,
         IGroupManager $groupManager,
         LoggerInterface $logger
     ) {
         $this->organisationMapper = $organisationMapper;
         $this->userSession = $userSession;
         $this->session = $session;
+        $this->config = $config;
         $this->groupManager = $groupManager;
         $this->logger = $logger;
     }
@@ -209,19 +225,41 @@ class OrganisationService
         }
 
         $userId = $user->getUID();
-        $cacheKey = self::SESSION_ACTIVE_ORGANISATION . '_' . $userId;
-        $activeUuid = $this->session->get($cacheKey);
+        
+        // Get active organisation UUID from user configuration (persistent)
+        $activeUuid = $this->config->getUserValue(
+            $userId,
+            self::APP_NAME,
+            self::CONFIG_ACTIVE_ORGANISATION,
+            ''
+        );
 
-        if ($activeUuid) {
+        if ($activeUuid !== '') {
             try {
-                return $this->organisationMapper->findByUuid($activeUuid);
+                $organisation = $this->organisationMapper->findByUuid($activeUuid);
+                
+                // Verify user still has access to this organisation
+                if ($organisation->hasUser($userId)) {
+                    return $organisation;
+                } else {
+                    // User no longer has access, clear the setting
+                    $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
+                    $this->logger->info('Cleared invalid active organisation', [
+                        'userId' => $userId,
+                        'organisationUuid' => $activeUuid
+                    ]);
+                }
             } catch (DoesNotExistException $e) {
-                // Active organisation no longer exists, clear from session
-                $this->session->remove($cacheKey);
+                // Active organisation no longer exists, clear from config
+                $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
+                $this->logger->info('Cleared non-existent active organisation', [
+                    'userId' => $userId,
+                    'organisationUuid' => $activeUuid
+                ]);
             }
         }
 
-        // No active organisation set, try to set the oldest one from user's organisations
+        // No valid active organisation set, try to set the oldest one from user's organisations
         $organisations = $this->getUserOrganisations();
         if (!empty($organisations)) {
             // Sort by created date and take the oldest
@@ -231,9 +269,19 @@ class OrganisationService
             
             $oldestOrg = $organisations[0];
             
-            // Set in session directly (we know user belongs to this org since getUserOrganisations ensures it)
-            $cacheKey = self::SESSION_ACTIVE_ORGANISATION . '_' . $userId;
-            $this->session->set($cacheKey, $oldestOrg->getUuid());
+            // Set in user configuration
+            $this->config->setUserValue(
+                $userId, 
+                self::APP_NAME, 
+                self::CONFIG_ACTIVE_ORGANISATION, 
+                $oldestOrg->getUuid()
+            );
+            
+            $this->logger->info('Auto-set active organisation to oldest', [
+                'userId' => $userId,
+                'organisationUuid' => $oldestOrg->getUuid(),
+                'organisationName' => $oldestOrg->getName()
+            ]);
             
             return $oldestOrg;
         }
@@ -270,15 +318,19 @@ class OrganisationService
             throw new Exception('User does not belong to this organisation');
         }
 
-        // Set in session
-        $cacheKey = self::SESSION_ACTIVE_ORGANISATION . '_' . $userId;
-        $this->session->set($cacheKey, $organisationUuid);
+        // Set in user configuration (persistent across sessions)
+        $this->config->setUserValue(
+            $userId, 
+            self::APP_NAME, 
+            self::CONFIG_ACTIVE_ORGANISATION, 
+            $organisationUuid
+        );
 
         // Clear cached organisations to force refresh
         $orgCacheKey = self::SESSION_USER_ORGANISATIONS . '_' . $userId;
         $this->session->remove($orgCacheKey);
 
-        $this->logger->info('Set active organisation', [
+        $this->logger->info('Set active organisation in user config', [
             'userId' => $userId,
             'organisationUuid' => $organisationUuid,
             'organisationName' => $organisation->getName()
@@ -492,11 +544,12 @@ class OrganisationService
     }
 
     /**
-     * Clear all organisation session cache for current user
+     * Clear all organisation cache for current user
      * 
+     * @param bool $clearPersistent Whether to also clear persistent active organisation setting
      * @return bool True if cache cleared
      */
-    public function clearCache(): bool
+    public function clearCache(bool $clearPersistent = false): bool
     {
         $user = $this->getCurrentUser();
         if ($user === null) {
@@ -504,8 +557,14 @@ class OrganisationService
         }
 
         $userId = $user->getUID();
-        $this->session->remove(self::SESSION_ACTIVE_ORGANISATION . '_' . $userId);
+        
+        // Clear session-based cache
         $this->session->remove(self::SESSION_USER_ORGANISATIONS . '_' . $userId);
+        
+        // Clear persistent configuration if requested
+        if ($clearPersistent) {
+            $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
+        }
 
         return true;
     }

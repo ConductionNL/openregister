@@ -111,11 +111,10 @@ class Application extends App implements IBootstrap
             );
         });
 
-        // Register OrganisationMapper with event dispatcher
+        // Register OrganisationMapper (event dispatching removed - handled by cron job)
         $context->registerService(OrganisationMapper::class, function ($container) {
             return new OrganisationMapper(
-                $container->get('OCP\IDBConnection'),
-                $container->get('OCP\EventDispatcher\IEventDispatcher')
+                $container->get('OCP\IDBConnection')
             );
         });
 
@@ -132,12 +131,13 @@ class Application extends App implements IBootstrap
             );
         });
 
-        // Register OrganisationService with IGroupManager dependency
+        // Register OrganisationService with IConfig and IGroupManager dependencies
         $context->registerService(OrganisationService::class, function ($container) {
             return new OrganisationService(
                 $container->get(OrganisationMapper::class),
                 $container->get('OCP\IUserSession'),
                 $container->get('OCP\ISession'),
+                $container->get('OCP\IConfig'),
                 $container->get('OCP\IGroupManager'),
                 $container->get('Psr\Log\LoggerInterface')
             );

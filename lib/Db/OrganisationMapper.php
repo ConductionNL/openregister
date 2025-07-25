@@ -25,8 +25,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+
+
 use Symfony\Component\Uid\Uuid;
 
 
@@ -41,22 +41,13 @@ use Symfony\Component\Uid\Uuid;
 class OrganisationMapper extends QBMapper
 {
     /**
-     * Event dispatcher for firing organisation events
-     *
-     * @var IEventDispatcher
-     */
-    private IEventDispatcher $eventDispatcher;
-
-    /**
      * OrganisationMapper constructor
      * 
      * @param IDBConnection $db Database connection
-     * @param IEventDispatcher $eventDispatcher Event dispatcher for firing events
      */
-    public function __construct(IDBConnection $db, IEventDispatcher $eventDispatcher)
+    public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_organisations', Organisation::class);
-        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -183,13 +174,7 @@ class OrganisationMapper extends QBMapper
                 $result = $this->insert($organisation);
                 \OC::$server->getLogger()->info('[OrganisationMapper] insert() completed successfully');
                 
-                // Fire OrganisationCreatedEvent after successful insert
-                $event = new OrganisationCreatedEvent($result);
-                $this->eventDispatcher->dispatchTyped($event);
-                \OC::$server->getLogger()->info('[OrganisationMapper] OrganisationCreatedEvent dispatched', [
-                    'organisationUuid' => $result->getUuid(),
-                    'organisationName' => $result->getName()
-                ]);
+                // Organization events are now handled by cron job - no event dispatching needed
                 
                 return $result;
             } catch (\Exception $e) {
