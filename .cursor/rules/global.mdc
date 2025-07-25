@@ -71,7 +71,7 @@ curl -u 'admin:admin' \
      'http://localhost/index.php/apps/openregister/api/search-trails/statistics'
 ```
 
-
+We alwasy test first form the command line, but when the test is completed we should create a newman test in order to protect the functionality against feuture changes. 
 
 ### Debugging API Endpoint Issues
 
