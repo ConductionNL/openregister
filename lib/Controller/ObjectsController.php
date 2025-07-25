@@ -381,16 +381,19 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // IMPORTANT: Set register and schema context first to resolve IDs, slugs, or UUIDs to numeric IDs
-        // This is crucial for supporting both Nextcloud UI calls (/api/objects/4/666) and 
-        // external frontend calls (/api/objects/petstore/dogs)
+        // STEP 1: Resolve slugs/IDs to numeric IDs immediately
+        // This ensures both slug-based and ID-based calls follow identical code paths
         $objectService->setRegister($register)->setSchema($schema);
-
-        // Get resolved numeric IDs for the search query
+        
+        // Get resolved numeric IDs
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId = $objectService->getSchema();
-
-        // Build search query with resolved numeric IDs
+        
+        // STEP 2: Reset the ObjectService with resolved numeric IDs instead of original parameters
+        // This ensures the entire pipeline works with IDs, not slugs
+        $objectService->setRegister((string)$resolvedRegisterId)->setSchema((string)$resolvedSchemaId);
+        
+        // STEP 3: Build search query with resolved numeric IDs
         $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
 
         try {
@@ -402,6 +405,11 @@ class ObjectsController extends Controller
             // Fallback to legacy method if something goes wrong
             // Use findAllPaginated which now supports _facetable parameter
             $requestParams = $this->request->getParams();
+            
+            // IMPORTANT: Override the request parameters with resolved IDs
+            $requestParams['register'] = (string)$resolvedRegisterId;
+            $requestParams['schema'] = (string)$resolvedSchemaId;
+            
             $result = $objectService->findAllPaginated($requestParams);
             
             return new JSONResponse($result);
