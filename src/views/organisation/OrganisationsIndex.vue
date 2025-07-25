@@ -390,7 +390,7 @@ export default {
 	async mounted() {
 		try {
 			await organisationStore.refreshOrganisationList()
-			
+
 			// Check if the method exists before calling it
 			if (typeof organisationStore.getActiveOrganisation === 'function') {
 				await organisationStore.getActiveOrganisation()
