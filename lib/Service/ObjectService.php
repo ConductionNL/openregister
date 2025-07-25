@@ -21,6 +21,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Adbar\Dot;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -160,9 +161,9 @@ class ObjectService
             // User doesn't exist, treat as public
             return $schema->hasPermission('public', $action, null, null, $objectOwner);
         }
-        
+
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
-        
+
         // Check if user is admin (admin group always has all permissions)
         if (in_array('admin', $userGroups)) {
             return true;
@@ -221,17 +222,17 @@ class ObjectService
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
         $folderProperty = $entity->getFolder();
-        
+
         // Check if folder needs to be created (null, empty string, or legacy string path)
         if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty)) {
             try {
                 // Create folder and get the folder node
                 $folderNode = $this->fileService->createEntityFolder($entity);
-                
+
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID
                     $entity->setFolder($folderNode->getId());
-                    
+
                     // Save the entity with the new folder ID
                     $this->objectEntityMapper->update($entity);
                 }
@@ -439,11 +440,11 @@ class ObjectService
         $tempObject->setRegister($this->currentRegister->getId());
         $tempObject->setSchema($this->currentSchema->getId());
         $tempObject->setUuid(Uuid::v4()->toRfc4122());
-        
+
         // Set organisation from active organisation for multi-tenancy
         $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
         $tempObject->setOrganisation($organisationUuid);
-        
+
         // Create folder before saving to avoid double update
         $folderId = null;
         try {
@@ -783,7 +784,7 @@ class ObjectService
 
         // Debug logging can be added here if needed
         // echo "=== SAVEOBJECT START ===\n";
-        
+
         // Handle ObjectEntity input - extract UUID and convert to array
         if ($object instanceof ObjectEntity) {
             // If no UUID was passed, use the UUID from the existing object
@@ -810,7 +811,7 @@ class ObjectService
                 }
             }
         } else {
-            // No UUID provided, this is a CREATE operation  
+            // No UUID provided, this is a CREATE operation
             if ($this->currentSchema !== null) {
                 $this->checkPermission($this->currentSchema, 'create');
             }
@@ -820,12 +821,12 @@ class ObjectService
         // This prevents nested object creation from corrupting the main object's context
         $parentRegister = $this->currentRegister;
         $parentSchema = $this->currentSchema;
-        
+
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
         [$object, $uuid] = $this->handlePreValidationCascading($object, $parentSchema, $uuid);
-        
+
         // Restore the parent object's register and schema context after cascading
         $this->currentRegister = $parentRegister;
         $this->currentSchema = $parentSchema;
@@ -906,7 +907,7 @@ class ObjectService
      * @param string $uuid The UUID of the object to delete
      *
      * @return bool Whether the deletion was successful
-     * 
+     *
      * @throws \Exception If user does not have delete permission
      */
     public function deleteObject(string $uuid): bool
@@ -914,12 +915,12 @@ class ObjectService
         // Find the object to get its owner for permission check (include soft-deleted objects)
         try {
             $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
-            
+
             // If no schema was provided but we have an object, derive the schema from the object
             if ($this->currentSchema === null) {
                 $this->setSchema($objectToDelete->getSchema());
             }
-            
+
             // Check user has permission to delete this specific object
             $this->checkPermission($this->currentSchema, 'delete', null, $objectToDelete->getOwner());
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -988,6 +989,86 @@ class ObjectService
 
 
     /**
+     * Find applicable ids for objects that have an inversed relationship through which a search request is performed.
+     *
+     * @param array $filters The set of filters to find the inversed relationships through.
+     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters. Returns NULL if no filters are found that are applicable.
+     *
+     * @throws \OCP\DB\Exception
+     */
+    private function applyInversedByFilter(array &$filters): ?array
+    {
+        if($filters['schema'] === false) {
+            return null;
+        }
+
+        $schema = $this->schemaMapper->find($filters['schema']);
+
+        $filterKeysWithSub = array_filter(array_keys($filters), function($filter) {
+            if (str_contains($filter, '_')) {
+                return true;
+            }
+
+            return false;
+        });
+
+        $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
+
+        if(empty($filtersWithSub)) {
+            return null;
+        }
+
+        $filterDot = new Dot(items: $filtersWithSub, parse: true, delimiter: '_');
+
+        $ids = [];
+
+        $iterator = 0;
+        foreach($filterDot as $key => $value) {
+            if (isset($schema->getProperties()[$key]['inversedBy']) === false) {
+                continue;
+            }
+
+            $iterator++;
+            $property = $schema->getProperties()[$key];
+
+            $value = (new Dot($value))->flatten(delimiter: '_');
+
+            // @TODO fix schema finder
+            $value['schema'] = $property['$ref'];
+
+            $objects = $this->findAll(config: ['filters' => $value]);
+            $foundIds = array_map(function(ObjectEntity $object) use ($property, $key) {
+                $idRaw = $object->jsonSerialize()[$property['inversedBy']];
+
+                if (Uuid::isValid($idRaw) === true) {
+                    return $idRaw;
+                } else if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
+                    $path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
+
+                    return end($path);
+                }
+            }, $objects);
+
+            if ($ids === []) {
+                $ids = $foundIds;
+            } else {
+                $ids = array_intersect($ids, $foundIds);
+            }
+
+            foreach($value as $k => $v) {
+                unset($filters[$key.'_'.$k]);
+            }
+        }
+
+        if ($iterator === 0 && $ids === []) {
+            return null;
+        }
+
+        return $ids;
+    }//end applyInversedByFilter
+
+
+    /**
      * Find all objects conforming to the request parameters, surrounded with pagination data.
      *
      * @param array $requestParams The request parameters to search with.
@@ -996,6 +1077,8 @@ class ObjectService
      */
     public function findAllPaginated(array $requestParams): array
     {
+        $requestParams = $this->cleanQuery($requestParams);
+
         // Extract specific parameters.
         $limit  = $requestParams['limit'] ?? $requestParams['_limit'] ?? null;
         $offset = $requestParams['offset'] ?? $requestParams['_offset'] ?? null;
@@ -1006,6 +1089,7 @@ class ObjectService
         $fields = $requestParams['_fields'] ?? null;
         $published = $requestParams['_published'] ?? false;
         $facetable = $requestParams['_facetable'] ?? false;
+        $ids = null;
 
         if ($page !== null && isset($limit) === true) {
             $page   = (int) $page;
@@ -1036,7 +1120,36 @@ class ObjectService
             $filters['schema'] = $this->getSchema();
         }
 
-        $objects = $this->findAll(
+        $searchIds = $this->applyInversedByFilter(filters: $filters);
+
+        if($ids === null && $searchIds !== null) {
+            $ids = $searchIds;
+        } elseif ($ids !== null && $searchIds !== null) {
+            $ids = array_intersect($ids, $searchIds);
+        }
+
+        if ($ids !== null) {
+            $objects = $this->findAll(
+                [
+                    "limit"   => $limit,
+                    "offset"  => $offset,
+                    "filters" => $filters,
+                    "sort"    => $order,
+                    "search"  => $search,
+                    "extend"  => $extend,
+                    'fields'  => $fields,
+                    'published' => $published,
+                    'ids' => $ids,
+                ]
+            );
+            $total = $this->count(
+                [
+                    "filters" => $filters,
+                    "ids" => $ids,
+                ]
+            );
+        } else {
+            $objects = $this->findAll(
                 [
                     "limit"   => $limit,
                     "offset"  => $offset,
@@ -1047,13 +1160,13 @@ class ObjectService
                     'fields'  => $fields,
                     'published' => $published,
                 ]
-                );
-
-        $total = $this->count(
+            );
+            $total = $this->count(
                 [
                     "filters" => $filters,
                 ]
-                );
+            );
+        }
 
         if ($limit !== null) {
             $pages = ceil($total / $limit);
@@ -1072,7 +1185,7 @@ class ObjectService
                 ]
             ]
         ];
-        
+
         // Add object field filters to facet query
         $objectFilters = array_diff_key($filters, array_flip(['register', 'schema', 'extend', 'limit', 'offset', 'order', 'page']));
         foreach ($objectFilters as $key => $value) {
@@ -1081,7 +1194,7 @@ class ObjectService
                 $facetQuery['_facets'][$key] = ['type' => 'terms'];
             }
         }
-        
+
         $facets = $this->getFacetsForObjects($facetQuery);
 
         // Build the result array with pagination and faceting data
@@ -1097,7 +1210,7 @@ class ObjectService
         if ($facetable === true || $facetable === 'true') {
             $baseQuery = $facetQuery; // Use the same base query as for facets
             $sampleSize = (int) ($requestParams['_sample_size'] ?? 100);
-            
+
             $result['facetable'] = $this->getFacetableFields($baseQuery, $sampleSize);
         }
 
@@ -1130,7 +1243,7 @@ class ObjectService
 
     /**
      * Get the active organization for the current user
-     * 
+     *
      * This method determines the active organization using the same logic as SaveObject
      * to ensure consistency between save and retrieval operations.
      *
@@ -1146,7 +1259,7 @@ class ObjectService
         } catch (Exception $e) {
             // Log error but continue without organization context
         }
-        
+
         return null;
     }
 
@@ -1181,7 +1294,7 @@ class ObjectService
     {
         // Get active organization context for multi-tenancy
         $activeOrganisationUuid = $this->getActiveOrganisationForContext();
-        
+
         // Use the new searchObjects method from ObjectEntityMapper with organization context
         $result = $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid);
 
@@ -1249,7 +1362,7 @@ class ObjectService
     /**
      * Count objects using clean query structure
      *
-     * This method provides an optimized count interface that mirrors the searchObjects 
+     * This method provides an optimized count interface that mirrors the searchObjects
      * functionality but returns only the count of matching objects. It uses the new
      * countSearchObjects method which is optimized for counting operations.
      *
@@ -1272,7 +1385,7 @@ class ObjectService
     {
         // Get active organization context for multi-tenancy
         $activeOrganisationUuid = $this->getActiveOrganisationForContext();
-        
+
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context
         return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid);
 
@@ -1371,10 +1484,10 @@ class ObjectService
     {
         // Always use the new comprehensive faceting system via ObjectEntityMapper
         $facets = $this->objectEntityMapper->getSimpleFacets($query);
-        
+
         // Load register and schema context for enhanced metadata
         $this->loadRegistersAndSchemas($query);
-        
+
         return ['facets' => $facets];
 
     }//end getFacetsForObjects()
@@ -1493,24 +1606,24 @@ class ObjectService
      * - `_filter/_unset`: Fields to exclude
      *
      * ### Facet Types
-     * 
+     *
      * - **terms**: Categorical data with enumerated values and counts
      * - **date_histogram**: Time-based data with configurable intervals (day, week, month, year)
      * - **range**: Numeric data with custom range buckets
      *
      * ### Disjunctive Faceting
-     * 
+     *
      * Facets use disjunctive logic, meaning each facet shows counts as if its own
      * filter were not applied. This prevents facet options from disappearing when
      * selected, providing a better user experience.
      *
      * ### Performance Impact
-     * 
+     *
      * - Regular queries: Baseline response time
      * - With `_facets`: Adds ~10ms to response time
      * - With `_facetable=true`: Adds ~15ms to response time
      * - Combined: Adds ~25ms total
-     * 
+     *
      * Use faceting and discovery strategically for optimal performance.
      *
      * @param array $query The search query array containing filters and options
@@ -1553,7 +1666,7 @@ class ObjectService
     {
         // Start timing execution
         $startTime = microtime(true);
-        
+
         // Extract pagination parameters
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1598,7 +1711,7 @@ class ObjectService
 
         // Calculate total pages
         $pages = max(1, ceil($total / $limit));
-        
+
         // Initialize the results array with pagination information
         $paginatedResults = [
             'results' => $results,
@@ -1614,7 +1727,7 @@ class ObjectService
         if ($facetable === true || $facetable === 'true') {
             $baseQuery = $countQuery; // Use the same base query as for facets
             $sampleSize = (int) ($query['_sample_size'] ?? 100);
-            
+
             $paginatedResults['facetable'] = $this->getFacetableFields($baseQuery, $sampleSize);
         }
 
@@ -1663,17 +1776,17 @@ class ObjectService
      * operations concurrently instead of sequentially.
      *
      * ### Performance Benefits
-     * 
+     *
      * Instead of sequential execution (~50ms total):
      * 1. Facetable discovery: ~15ms
-     * 2. Search results: ~10ms  
+     * 2. Search results: ~10ms
      * 3. Facets: ~10ms
      * 4. Count: ~5ms
-     * 
+     *
      * Operations run concurrently, reducing total time to ~15ms (longest operation).
      *
      * ### Operation Order
-     * 
+     *
      * Operations are queued in order of expected duration (longest first):
      * 1. **Facetable discovery** (~15ms) - Field analysis and discovery
      * 2. **Search results** (~10ms) - Main object search with pagination
@@ -1694,7 +1807,7 @@ class ObjectService
     {
         // Start timing execution
         $startTime = microtime(true);
-        
+
         // Extract pagination parameters (same as synchronous version)
         $limit = $query['_limit'] ?? 20;
         $offset = $query['_offset'] ?? null;
@@ -1734,7 +1847,7 @@ class ObjectService
         if ($facetable === true || $facetable === 'true') {
             $baseQuery = $countQuery;
             $sampleSize = (int) ($query['_sample_size'] ?? 100);
-            
+
             $promises['facetable'] = new Promise(function ($resolve, $reject) use ($baseQuery, $sampleSize) {
                 try {
                     $result = $this->getFacetableFields($baseQuery, $sampleSize);
@@ -1859,7 +1972,7 @@ class ObjectService
     {
         // Execute the async version and wait for the result
         $promise = $this->searchObjectsPaginatedAsync($query);
-        
+
         // Use React's await functionality to get the result synchronously
         // Note: The async version already logs the search trail, so we don't need to log again
         return \React\Async\await($promise);
@@ -1976,7 +2089,7 @@ class ObjectService
                 ]
             ]
         ];
-        
+
         // Add object field filters and create basic facet config
         foreach ($filters as $key => $value) {
             if (!in_array($key, ['register', 'schema']) && !str_starts_with($key, '_')) {
@@ -2110,7 +2223,7 @@ class ObjectService
         if (!$targetObjectId) {
             throw new \InvalidArgumentException('Target object ID is required');
         }
-        
+
         // Initialize merge report
         $mergeReport = [
             'success' => false,
@@ -2137,13 +2250,13 @@ class ObjectService
 
         try {
             // Fetch both objects directly from mapper for updating (not rendered)
-            
+
             try {
                 $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
             } catch (\Exception $e) {
                 $sourceObject = null;
             }
-            
+
             try {
                 $targetObject = $this->objectEntityMapper->find($targetObjectId);
             } catch (\Exception $e) {
@@ -2177,7 +2290,7 @@ class ObjectService
 
             foreach ($mergedData as $property => $value) {
                 $oldValue = $targetObjectData[$property] ?? null;
-                
+
                 if ($oldValue !== $value) {
                     $targetObjectData[$property] = $value;
                     $changedProperties[] = [
@@ -2197,7 +2310,7 @@ class ObjectService
                     $fileResult = $this->transferObjectFiles($sourceObject, $targetObject);
                     $mergeReport['actions']['files'] = $fileResult['files'];
                     $mergeReport['statistics']['filesTransferred'] = $fileResult['transferred'];
-                    
+
                     if (!empty($fileResult['errors'])) {
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
                     }
@@ -2209,7 +2322,7 @@ class ObjectService
                     $deleteResult = $this->deleteObjectFiles($sourceObject);
                     $mergeReport['actions']['files'] = $deleteResult['files'];
                     $mergeReport['statistics']['filesDeleted'] = $deleteResult['deleted'];
-                    
+
                     if (!empty($deleteResult['errors'])) {
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
                     }
@@ -2222,7 +2335,7 @@ class ObjectService
             if ($relationAction === 'transfer') {
                 $sourceRelations = $sourceObject->getRelations();
                 $targetRelations = $targetObject->getRelations();
-                
+
                 $transferredRelations = [];
                 foreach ($sourceRelations as $relation) {
                     if (!in_array($relation, $targetRelations)) {
@@ -2231,7 +2344,7 @@ class ObjectService
                         $mergeReport['statistics']['relationsTransferred']++;
                     }
                 }
-                
+
                 $targetObject->setRelations($targetRelations);
                 $mergeReport['actions']['relations'] = [
                     'action' => 'transferred',
@@ -2284,7 +2397,7 @@ class ObjectService
             // Set success and add merged object to report
             $mergeReport['success'] = true;
             $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
-            
+
             // Merge completed successfully
 
         } catch (\Exception $e) {
@@ -2324,18 +2437,18 @@ class ObjectService
 
             // Get files from source folder
             $sourceFiles = $this->fileService->getFiles($sourceObject);
-            
+
             foreach ($sourceFiles as $file) {
                 try {
                     // Skip if not a file
                     if (!($file instanceof \OCP\Files\File)) {
                         continue;
                     }
-                    
+
                     // Get file content and create new file in target object
                     $fileContent = $file->getContent();
                     $fileName = $file->getName();
-                    
+
                     // Create new file in target object folder
                     $this->fileService->addFile(
                         objectEntity: $targetObject,
@@ -2344,10 +2457,10 @@ class ObjectService
                         share: false,
                         tags: []
                     );
-                    
+
                     // Delete original file from source
                     $this->fileService->deleteFile($file, $sourceObject);
-                    
+
                     $result['files'][] = [
                         'name' => $fileName,
                         'action' => 'transferred',
@@ -2394,19 +2507,19 @@ class ObjectService
         try {
             // Get files from source folder
             $sourceFiles = $this->fileService->getFiles($sourceObject);
-            
+
             foreach ($sourceFiles as $file) {
                 try {
                     // Skip if not a file
                     if (!($file instanceof \OCP\Files\File)) {
                         continue;
                     }
-                    
+
                     $fileName = $file->getName();
-                    
+
                     // Delete the file using FileService
                     $this->fileService->deleteFile($file, $sourceObject);
-                    
+
                     $result['files'][] = [
                         'name' => $fileName,
                         'action' => 'deleted',
@@ -2454,14 +2567,14 @@ class ObjectService
     private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
     {
         // Pre-validation cascading to handle nested objects
-        
+
         try {
             // Get the URL generator from the SaveObject handler
             $urlGenerator = new \ReflectionClass($this->saveHandler);
             $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
             $urlGeneratorProperty->setAccessible(true);
             $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
-            
+
             $schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
             $properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
             // Process schema properties for inversedBy relationships
@@ -2569,7 +2682,7 @@ class ObjectService
 
             // Find the schema - use the same logic as SaveObject.resolveSchemaReference
             $targetSchema = null;
-            
+
             // First try to find by slug using findAll and filtering
             $allSchemas = $this->schemaMapper->findAll();
             foreach ($allSchemas as $schema) {
@@ -2578,7 +2691,7 @@ class ObjectService
                     break;
                 }
             }
-            
+
             if (!$targetSchema) {
                 return null;
             }
@@ -2629,7 +2742,7 @@ class ObjectService
      * to another register/schema combination with property mapping.
      *
      * @param string|int $sourceRegister    The source register ID or slug
-     * @param string|int $sourceSchema      The source schema ID or slug  
+     * @param string|int $sourceSchema      The source schema ID or slug
      * @param string|int $targetRegister    The target register ID or slug
      * @param string|int $targetSchema      The target schema ID or slug
      * @param array      $objectIds         Array of object IDs to migrate
@@ -2667,17 +2780,17 @@ class ObjectService
 
         try {
             // Load source and target registers/schemas
-            $sourceRegisterEntity = is_string($sourceRegister) || is_int($sourceRegister) 
-                ? $this->registerMapper->find($sourceRegister) 
+            $sourceRegisterEntity = is_string($sourceRegister) || is_int($sourceRegister)
+                ? $this->registerMapper->find($sourceRegister)
                 : $sourceRegister;
-            $sourceSchemaEntity = is_string($sourceSchema) || is_int($sourceSchema) 
-                ? $this->schemaMapper->find($sourceSchema) 
+            $sourceSchemaEntity = is_string($sourceSchema) || is_int($sourceSchema)
+                ? $this->schemaMapper->find($sourceSchema)
                 : $sourceSchema;
-            $targetRegisterEntity = is_string($targetRegister) || is_int($targetRegister) 
-                ? $this->registerMapper->find($targetRegister) 
+            $targetRegisterEntity = is_string($targetRegister) || is_int($targetRegister)
+                ? $this->registerMapper->find($targetRegister)
                 : $targetRegister;
-            $targetSchemaEntity = is_string($targetSchema) || is_int($targetSchema) 
-                ? $this->schemaMapper->find($targetSchema) 
+            $targetSchemaEntity = is_string($targetSchema) || is_int($targetSchema)
+                ? $this->schemaMapper->find($targetSchema)
                 : $targetSchema;
 
             // Validate entities exist
@@ -2688,7 +2801,7 @@ class ObjectService
             // Get all source objects at once using ObjectEntityMapper
             $sourceObjects = $this->objectEntityMapper->findMultiple($objectIds);
 
-            
+
             // Keep track of remaining object IDs to find which ones weren't found
             $remainingObjectIds = $objectIds;
 
@@ -2716,7 +2829,7 @@ class ObjectService
                     $objectDetail['objectTitle'] =  $sourceObject->getName() ?? $sourceObject->getUuid();
 
                     // Verify the source object belongs to the expected register/schema (cast to int for comparison)
-                    if ((int)$sourceObject->getRegister() !== (int)$sourceRegister || 
+                    if ((int)$sourceObject->getRegister() !== (int)$sourceRegister ||
                     (int)$sourceObject->getSchema() !== (int)$sourceSchema) {
                         $actualRegister = $sourceObject->getRegister();
                         $actualSchema = $sourceObject->getSchema();
@@ -2730,7 +2843,7 @@ class ObjectService
                     // Get source object data (the JSON object property)
                     $sourceData = $sourceObject->getObject();
 
-                    // Map properties according to mapping configuration  
+                    // Map properties according to mapping configuration
                     $mappedData = $this->mapObjectProperties($sourceData, $mapping);
                     $migrationReport['statistics']['propertiesMapped'] += count($mappedData);
                     $migrationReport['statistics']['propertiesDiscarded'] += (count($sourceData) - count($mappedData));
@@ -2745,14 +2858,14 @@ class ObjectService
                     // Store original files and relations before altering the object
                     $originalFiles = $sourceObject->getFolder();
                     $originalRelations = $sourceObject->getRelations();
-                    
+
                     // Alter the existing object to migrate it to the target register/schema
                     $sourceObject->setRegister($targetRegisterEntity->getId());
-                    
+
                     $sourceObject->setSchema($targetSchemaEntity->getId());
-                    
+
                     $sourceObject->setObject($mappedData);
-                    
+
                     // Update the object using the mapper
                     $savedObject = $this->objectEntityMapper->update($sourceObject);
 
@@ -2779,7 +2892,7 @@ class ObjectService
                     $objectDetail['error'] = $e->getMessage();
                     $migrationReport['statistics']['objectsFailed']++;
                     $migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
-                    
+
                     // Log the full exception for debugging
                     error_log("Migration error for object {$objectId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
                 }
@@ -2795,7 +2908,7 @@ class ObjectService
                     'success' => false,
                     'error' => "Object with ID {$notFoundId} not found"
                 ];
-                
+
                 $migrationReport['details'][] = $objectDetail;
                 $migrationReport['statistics']['objectsFailed']++;
                 $migrationReport['errors'][] = "Failed to migrate object {$notFoundId}: Object not found";
@@ -2874,18 +2987,18 @@ class ObjectService
 
             // Get files from source folder
             $sourceFiles = $this->fileService->getFiles($sourceObject);
-            
+
             foreach ($sourceFiles as $file) {
                 try {
                     // Skip if not a file
                     if (!($file instanceof \OCP\Files\File)) {
                         continue;
                     }
-                    
+
                     // Copy file content to target object (don't delete from source yet)
                     $fileContent = $file->getContent();
                     $fileName = $file->getName();
-                    
+
                     // Create copy of file in target object folder
                     $this->fileService->addFile(
                         objectEntity: $targetObject,
@@ -2987,5 +3100,51 @@ class ObjectService
         }
 
     }//end logSearchTrail()
+
+
+    private function cleanQuery(array $parameters): array
+    {
+        $newParameters = [];
+
+        // 1. Handle ordering
+        if (isset($parameters['ordering'])) {
+            $ordering = $parameters['ordering'];
+            $direction = str_starts_with($ordering, '-') ? 'DESC' : 'ASC';
+            $field = ltrim($ordering, '-');
+            $newParameters['_order'] = [$field => $direction];
+            unset($parameters['ordering']);
+        }
+
+        // 2. Normalize keys: replace '__' with '_'
+        $normalized = [];
+        foreach ($parameters as $key => $value) {
+            $normalized[str_replace('__', '_', $key)] = $value;
+        }
+
+        // 3. Process parameters (no nested loops)
+        foreach ($normalized as $key => $value) {
+            if (preg_match('/^(.*)_(in|gt|lt|gte|lte|isnull)$/', $key, $matches)) {
+                [$_, $base, $suffix] = $matches;
+
+                switch ($suffix) {
+                    case 'in':
+                    case 'gt':
+                    case 'lt':
+                    case 'gte':
+                    case 'lte':
+                        $newParameters[$base][$suffix] = $value;
+                        break;
+
+                    case 'isnull':
+                        $newParameters[$base] = $value === true ? 'IS NULL' : 'IS NOT NULL';
+                        break;
+                }
+            } else {
+                $newParameters[$key] = $value;
+            }
+        }
+
+        return $newParameters;
+    }
 
 }//end class

@@ -266,8 +266,8 @@ class SchemaMapper extends QBMapper
             // Check if the property has a 'required' field set to true or the string 'true'
             if (isset($property['required']) === true) {
                 $requiredValue = $property['required'];
-                if ($requiredValue === true || 
-                    $requiredValue === 'true' || 
+                if ($requiredValue === true ||
+                    $requiredValue === 'true' ||
                     (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')) {
                     $requiredFields[] = $propertyKey;
                 }
@@ -334,8 +334,11 @@ class SchemaMapper extends QBMapper
                     $property['$ref'] = $property['$ref']['id'];
                 } elseif (is_object($property['$ref']) && isset($property['$ref']->id)) {
                     $property['$ref'] = $property['$ref']->id;
-                } elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
-                    throw new \Exception("Schema property '$key' has a $ref that is not a string or empty: " . print_r($property['$ref'], true));
+                } elseif (is_int($property['$ref'])) {
+
+                }
+                elseif (!is_string($property['$ref']) && $property['$ref'] !== '') {
+                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: " . print_r($property['$ref'], true));
                 }
             }
             // Check array items recursively
@@ -417,7 +420,7 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $schema = $this->find($id);        
+        $schema = $this->find($id);
 
         // Set or update the version.
         if (isset($object['version']) === false) {
