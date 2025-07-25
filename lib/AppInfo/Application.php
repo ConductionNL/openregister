@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -110,6 +111,13 @@ class Application extends App implements IBootstrap
             );
         });
 
+        // Register OrganisationMapper (event dispatching removed - handled by cron job)
+        $context->registerService(OrganisationMapper::class, function ($container) {
+            return new OrganisationMapper(
+                $container->get('OCP\IDBConnection')
+            );
+        });
+
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies
         $context->registerService(ObjectEntityMapper::class, function ($container) {
             return new ObjectEntityMapper(
@@ -120,6 +128,18 @@ class Application extends App implements IBootstrap
                 $container->get(SchemaMapper::class),
                 $container->get('OCP\IGroupManager'),
                 $container->get('OCP\IUserManager')
+            );
+        });
+
+        // Register OrganisationService with IConfig and IGroupManager dependencies
+        $context->registerService(OrganisationService::class, function ($container) {
+            return new OrganisationService(
+                $container->get(OrganisationMapper::class),
+                $container->get('OCP\IUserSession'),
+                $container->get('OCP\ISession'),
+                $container->get('OCP\IConfig'),
+                $container->get('OCP\IGroupManager'),
+                $container->get('Psr\Log\LoggerInterface')
             );
         });
 

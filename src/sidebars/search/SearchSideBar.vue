@@ -268,23 +268,73 @@ export default {
 
 		// Load objects if register and schema are already selected
 		if (registerStore.registerItem && schemaStore.schemaItem) {
+			// Set loading state for initial load
+			objectStore.loading = true
 			objectStore.refreshObjectList()
+				.finally(() => {
+					objectStore.loading = false
+				})
 		}
 	},
 	methods: {
 		t,
 		handleRegisterChange(option) {
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
+			// Set loading state when register changes
+			objectStore.loading = true
+
+			try {
+				registerStore.setRegisterItem(option)
+				schemaStore.setSchemaItem(null)
+
+				// Clear object list when register changes
+				objectStore.setObjectList({
+					results: [],
+					total: 0,
+					page: 1,
+					pages: 0,
+					limit: 20,
+					offset: 0,
+				})
+
+				// Clear facet data
+				this.facetData = null
+				this.facetFilters = {}
+
+			} finally {
+				// Clear loading state after register change is complete
+				objectStore.loading = false
+			}
 		},
 		async handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
-			if (option) {
-				objectStore.initializeProperties(option)
-				// First: Load facetable fields to discover what facets are available
-				await this.loadFacetableFields()
-				// Second: Refresh object list with facet configuration to get both results and facet data
-				await this.performSearchWithFacets()
+			// Set loading state when schema changes
+			objectStore.loading = true
+
+			try {
+				schemaStore.setSchemaItem(option)
+				if (option) {
+					objectStore.initializeProperties(option)
+					// First: Load facetable fields to discover what facets are available
+					await this.loadFacetableFields()
+					// Second: Refresh object list with facet configuration to get both results and facet data
+					await this.performSearchWithFacets()
+				} else {
+					// Clear object list when schema is cleared
+					objectStore.setObjectList({
+						results: [],
+						total: 0,
+						page: 1,
+						pages: 0,
+						limit: 20,
+						offset: 0,
+					})
+
+					// Clear facet data
+					this.facetData = null
+					this.facetFilters = {}
+				}
+			} finally {
+				// Clear loading state after schema change is complete
+				objectStore.loading = false
 			}
 		},
 		handleSearchInput() {
@@ -315,6 +365,7 @@ export default {
 			// Automatically apply filters after removing a term
 			// This will either search with remaining terms or show all results if no terms left
 			if (this.canSearch) {
+				// applyFacetFilters now manages objectStore.loading state
 				await this.applyFacetFilters()
 			}
 		},
@@ -331,6 +382,7 @@ export default {
 
 			try {
 				this.searchLoading = true
+				objectStore.loading = true
 				this.lastSearchStats = null
 
 				// Apply all filters (search terms + facet filters) and perform search with facets
@@ -353,6 +405,7 @@ export default {
 				}
 			} finally {
 				this.searchLoading = false
+				objectStore.loading = false
 			}
 		},
 
@@ -462,7 +515,14 @@ export default {
 
 		async applyFacetFilters() {
 			// Apply facet filters and refresh search with facets
-			await this.performSearchWithFacets()
+			// Note: performSearchWithFacets manages its own searchLoading state
+			// but we also need to manage objectStore.loading for the main view
+			objectStore.loading = true
+			try {
+				await this.performSearchWithFacets()
+			} finally {
+				objectStore.loading = false
+			}
 		},
 	},
 }

@@ -196,7 +196,11 @@ class OrganisationController extends Controller
                 ], Http::STATUS_BAD_REQUEST);
             }
 
-            $organisation = $this->organisationService->createOrganisation($name, $description);
+            // Get UUID from request body if provided
+            $requestData = $this->request->getParams();
+            $uuid = $requestData['uuid'] ?? '';
+
+            $organisation = $this->organisationService->createOrganisation($name, $description, true, $uuid);
             
             return new JSONResponse([
                 'message' => 'Organisation created successfully',
