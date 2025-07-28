@@ -355,6 +355,36 @@ class ObjectsController extends Controller
 
 
     /**
+     * Helper method to resolve register and schema slugs to numeric IDs
+     * 
+     * This ensures consistent slug-to-ID conversion across all controller methods
+     * and prevents the discrepancy between slug-based and ID-based API calls.
+     *
+     * @param string        $register      Register slug or ID
+     * @param string        $schema        Schema slug or ID  
+     * @param ObjectService $objectService Object service instance
+     * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
+     */
+    private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
+    {
+        // STEP 1: Initial resolution - convert slugs/IDs to numeric IDs
+        $objectService->setRegister($register)->setSchema($schema);
+        
+        // STEP 2: Get resolved numeric IDs
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId = $objectService->getSchema();
+        
+        // STEP 3: Reset ObjectService with resolved numeric IDs
+        // This ensures the entire pipeline works with IDs consistently
+        $objectService->setRegister((string)$resolvedRegisterId)->setSchema((string)$resolvedSchemaId);
+        
+        return [
+            'register' => $resolvedRegisterId,
+            'schema' => $resolvedSchemaId
+        ];
+    }
+
+    /**
      * Retrieves a list of all objects for a specific register and schema
      *
      * This method returns a paginated list of objects that match the specified register and schema.
@@ -381,39 +411,16 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
-        // STEP 1: Resolve slugs/IDs to numeric IDs immediately
-        // This ensures both slug-based and ID-based calls follow identical code paths
-        $objectService->setRegister($register)->setSchema($schema);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
         
-        // Get resolved numeric IDs
-        $resolvedRegisterId = $objectService->getRegister();
-        $resolvedSchemaId = $objectService->getSchema();
-        
-        // STEP 2: Reset the ObjectService with resolved numeric IDs instead of original parameters
-        // This ensures the entire pipeline works with IDs, not slugs
-        $objectService->setRegister((string)$resolvedRegisterId)->setSchema((string)$resolvedSchemaId);
-        
-        // STEP 3: Build search query with resolved numeric IDs
-        $query = $this->buildSearchQuery($resolvedRegisterId, $resolvedSchemaId);
+        // Build search query with resolved numeric IDs
+        $query = $this->buildSearchQuery($resolved['register'], $resolved['schema']);
 
-        try {
-            // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
-            $result = $objectService->searchObjectsPaginated($query);
-            
-            return new JSONResponse($result);
-        } catch (\Exception $e) {
-            // Fallback to legacy method if something goes wrong
-            // Use findAllPaginated which now supports _facetable parameter
-            $requestParams = $this->request->getParams();
-            
-            // IMPORTANT: Override the request parameters with resolved IDs
-            $requestParams['register'] = (string)$resolvedRegisterId;
-            $requestParams['schema'] = (string)$resolvedSchemaId;
-            
-            $result = $objectService->findAllPaginated($requestParams);
-            
-            return new JSONResponse($result);
-        }
+        // Use searchObjectsPaginated which handles facets, facetable fields, and all other features
+        $result = $objectService->searchObjectsPaginated($query);
+        
+        return new JSONResponse($result);
 
     }//end index()
 
@@ -441,9 +448,8 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
 
         // Get request parameters for filtering and searching.
         $requestParams = $this->request->getParams();
@@ -493,9 +499,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
 
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
 
         // Get object data from request parameters.
         $object = $this->request->getParams();
@@ -560,9 +565,8 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema($schema);
-        $objectService->setRegister($register);
+        // Resolve slugs to numeric IDs consistently
+        $resolved = $this->resolveRegisterSchemaIds($register, $schema, $objectService);
 
         // Get object data from request parameters.
         $object = $this->request->getParams();

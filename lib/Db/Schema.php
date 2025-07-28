@@ -181,11 +181,8 @@ class Schema extends Entity implements JsonSerializable
      * Configuration of the schema.
      *
      * This array can hold various configuration options for the schema.
-     * Currently supported options:
-     * - 'objectNameField': (string) A dot-notation path to the field within an object's data that should be used as its name.
-     *   Example: 'person.firstName'
-     * - 'objectDescriptionField': (string) A dot-notation path to the field for the object's description.
-     *   Example: 'case.summary'
+     * Use setConfiguration() method to ensure proper validation of configuration values.
+     * See setConfiguration() method documentation for supported options and their validation rules.
      *
      * @var array|null
      * @phpstan-var array<string, mixed>|null
@@ -522,6 +519,29 @@ class Schema extends Entity implements JsonSerializable
                 $value = null;
             }
 
+            // Use special validation for configuration
+            if ($key === 'configuration') {
+                try {
+                    // If it's a JSON string, decode it first
+                    if (is_string($value)) {
+                        $decoded = json_decode($value, true);
+                        // Only use decoded value if JSON was valid
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $value = $decoded;
+                        } else {
+                            // Invalid JSON, set to null
+                            $value = null;
+                        }
+                    }
+                    $this->setConfiguration($value);
+                } catch (\Exception $exception) {
+                    // Silently ignore invalid configuration and set to null
+                    $this->configuration = null;
+                    $this->markFieldUpdated('configuration');
+                }
+                continue;
+            }
+
             $method = 'set'.ucfirst($key);
 
             try {
@@ -726,6 +746,146 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('icon');
 
     }//end setIcon()
+
+
+    /**
+     * Get the configuration for the schema
+     *
+     * Ensures that configuration is always returned as an array,
+     * automatically decoding JSON strings if necessary.
+     *
+     * @return array|null The configuration array or null if not set
+     */
+    public function getConfiguration(): ?array
+    {
+        if ($this->configuration === null) {
+            return null;
+        }
+
+        // If it's already an array, return it
+        if (is_array($this->configuration)) {
+            return $this->configuration;
+        }
+
+        // If it's a JSON string, decode it
+        if (is_string($this->configuration)) {
+            $decoded = json_decode($this->configuration, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        // If we get here, something is wrong - return null
+        return null;
+
+    }//end getConfiguration()
+
+
+    /**
+     * Set the configuration for the schema with validation
+     *
+     * Validates and sets the configuration array for the schema.
+     * 
+     * Supported configuration options:
+     * - 'objectNameField': (string) A dot-notation path to the field within an object's data 
+     *   that should be used as its name. Example: 'person.firstName'
+     * - 'objectDescriptionField': (string) A dot-notation path to the field for the object's description.
+     *   Example: 'case.summary'
+     * - 'objectImageField': (string) A dot-notation path to the field for the object's image.
+     *   Example: 'profile.avatar' (should contain base64 encoded image data)
+     * - 'allowFiles': (bool) Whether this schema allows file attachments
+     * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+     *
+     * @param array|null $configuration The configuration array to validate and set
+     * 
+     * @throws \InvalidArgumentException If configuration contains invalid values
+     * 
+     * @return void
+     */
+    public function setConfiguration($configuration): void
+    {
+        if ($configuration === null) {
+            $this->configuration = null;
+            $this->markFieldUpdated('configuration');
+            return;
+        }
+
+        // Handle JSON strings from database
+        if (is_string($configuration)) {
+            $decoded = json_decode($configuration, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $configuration = $decoded;
+            } else {
+                // Invalid JSON, set to null
+                $this->configuration = null;
+                $this->markFieldUpdated('configuration');
+                return;
+            }
+        }
+
+        // If it's still not an array at this point, set to null
+        if (!is_array($configuration)) {
+            $this->configuration = null;
+            $this->markFieldUpdated('configuration');
+            return;
+        }
+
+        $validatedConfig = [];
+        $allowedKeys = [
+            'objectNameField',
+            'objectDescriptionField', 
+            'objectImageField',
+            'allowFiles',
+            'allowedTags'
+        ];
+
+        foreach ($configuration as $key => $value) {
+            // Skip unknown configuration keys
+            if (!in_array($key, $allowedKeys)) {
+                continue;
+            }
+
+            switch ($key) {
+                case 'objectNameField':
+                case 'objectDescriptionField':
+                case 'objectImageField':
+                    // These should be strings (dot-notation paths) or empty
+                    if ($value !== null && $value !== '' && !is_string($value)) {
+                        throw new \InvalidArgumentException("Configuration '{$key}' must be a string or null");
+                    }
+                    $validatedConfig[$key] = $value === '' ? null : $value;
+                    break;
+
+                case 'allowFiles':
+                    // This should be a boolean
+                    if ($value !== null && !is_bool($value)) {
+                        throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
+                    }
+                    $validatedConfig[$key] = $value;
+                    break;
+
+                case 'allowedTags':
+                    // This should be an array of strings
+                    if ($value !== null) {
+                        if (!is_array($value)) {
+                            throw new \InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
+                        }
+                        // Validate that all tags are strings
+                        foreach ($value as $tag) {
+                            if (!is_string($tag)) {
+                                throw new \InvalidArgumentException("All values in 'allowedTags' must be strings");
+                            }
+                        }
+                    }
+                    $validatedConfig[$key] = $value;
+                    break;
+            }
+        }
+
+        $this->configuration = empty($validatedConfig) ? null : $validatedConfig;
+        $this->markFieldUpdated('configuration');
+
+    }//end setConfiguration()
 
 
 }//end class

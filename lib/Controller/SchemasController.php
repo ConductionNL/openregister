@@ -32,6 +32,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception as DBException;
+use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
@@ -222,6 +223,13 @@ class SchemasController extends Controller
             }
 
             return new JSONResponse($schema);
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 
@@ -272,6 +280,13 @@ class SchemasController extends Controller
         try {
             // Update the schema with the provided data.
             return new JSONResponse($this->schemaMapper->updateFromArray(id: $id, object: $data));
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 
@@ -399,6 +414,13 @@ class SchemasController extends Controller
             }
 
             return new JSONResponse($schema);
+        } catch (DBException $e) {
+            // Handle database constraint violations with user-friendly messages
+            $constraintException = DatabaseConstraintException::fromDatabaseException($e, 'schema');
+            return new JSONResponse(['error' => $constraintException->getMessage()], $constraintException->getHttpStatusCode());
+        } catch (DatabaseConstraintException $e) {
+            // Handle our custom database constraint exceptions
+            return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatusCode());
         } catch (Exception $e) {
             // Check if this is a validation error by examining the message
             if (str_contains($e->getMessage(), 'Invalid') || 
