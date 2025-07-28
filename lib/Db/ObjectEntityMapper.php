@@ -20,7 +20,9 @@
 
 namespace OCA\OpenRegister\Db;
 
+use Adbar\Dot;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
+use OC\DB\QueryBuilder\QueryBuilder;
 use OCA\OpenRegister\Db\ObjectHandlers\MariaDbSearchHandler;
 use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
 use OCA\OpenRegister\Db\ObjectHandlers\MariaDbFacetHandler;
@@ -162,7 +164,7 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Apply RBAC permission filters to a query builder
      *
-     * This method adds WHERE conditions to filter objects based on the current user's 
+     * This method adds WHERE conditions to filter objects based on the current user's
      * permissions according to the schema's authorization configuration.
      *
      * @param IQueryBuilder $qb The query builder to modify
@@ -230,7 +232,7 @@ class ObjectEntityMapper extends QBMapper
             );
             return;
         }
-        
+
         $userGroups = $this->groupManager->getUserGroupIds($userObj);
 
         // Admin users and schema owners see everything
@@ -287,8 +289,8 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Apply organization filtering for multi-tenancy
      *
-     * This method adds WHERE conditions to filter objects based on the user's 
-     * active organization. Users can only see objects that belong to their 
+     * This method adds WHERE conditions to filter objects based on the user's
+     * active organization. Users can only see objects that belong to their
      * active organization.
      *
      * @param IQueryBuilder $qb The query builder to modify
@@ -339,7 +341,7 @@ class ObjectEntityMapper extends QBMapper
         if ($activeOrganisationUuid === null) {
             return;
         }
-        
+
         $organizationColumn = $objectTableAlias ? $objectTableAlias . '.organisation' : 'organisation';
 
         // Check if this is the system-wide default organization (not user's oldest organization)
@@ -357,7 +359,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Build organization filter conditions
         $orgConditions = $qb->expr()->orX();
-        
+
         // Objects explicitly belonging to the user's organization
         $orgConditions->add(
             $qb->expr()->eq($organizationColumn, $qb->createNamedParameter($activeOrganisationUuid))
@@ -405,7 +407,7 @@ class ObjectEntityMapper extends QBMapper
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
             return "JSON_CONTAINS({$column}, " . $qb->createNamedParameter(json_encode($value)) . ", '{$path}')";
         }
-        
+
         // Fallback for other databases - this is less efficient but functional
         return "{$column} LIKE " . $qb->createNamedParameter('%"' . $value . '"%');
 
@@ -416,7 +418,7 @@ class ObjectEntityMapper extends QBMapper
      * Create a condition to check if a JSON path/key exists
      *
      * @param IQueryBuilder $qb The query builder
-     * @param string $column The JSON column name  
+     * @param string $column The JSON column name
      * @param string $path The JSON path (e.g., '$.read')
      *
      * @return string The SQL condition
@@ -427,8 +429,8 @@ class ObjectEntityMapper extends QBMapper
         if ($this->db->getDatabasePlatform() instanceof MySQLPlatform) {
             return "JSON_EXTRACT({$column}, '{$path}') IS NOT NULL";
         }
-        
-        // Fallback for other databases  
+
+        // Fallback for other databases
         $key = str_replace('$.', '', $path);
         return "{$column} LIKE " . $qb->createNamedParameter('%"' . $key . '":%');
 
@@ -495,6 +497,7 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
+
 
 
     /**
@@ -600,7 +603,7 @@ class ObjectEntityMapper extends QBMapper
         // Apply RBAC filtering based on user permissions
         $this->applyRbacFilters($qb, 'o', 's');
 
-        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('o.deleted'));
         }
@@ -736,7 +739,7 @@ class ObjectEntityMapper extends QBMapper
         foreach ($searchTerms as $term) {
             // Convert to lowercase for case-insensitive matching
             $lowerTerm = strtolower(trim($term));
-            
+
             // Add wildcards for partial matching if not already present
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
                 $lowerTerm = '*' . $lowerTerm;
@@ -744,7 +747,7 @@ class ObjectEntityMapper extends QBMapper
             if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
                 $lowerTerm = $lowerTerm . '*';
             }
-            
+
             $processedTerms[] = $lowerTerm;
         }
 
@@ -762,19 +765,19 @@ class ObjectEntityMapper extends QBMapper
      * contains all search criteria, filters, and options organized by purpose.
      *
      * ## Query Structure Overview
-     * 
+     *
      * The query array is organized into three main categories:
      * 1. **Metadata filters** - Via `@self` key for database table columns
-     * 2. **Object field filters** - Direct keys for JSON object data searches  
+     * 2. **Object field filters** - Direct keys for JSON object data searches
      * 3. **Search options** - Underscore-prefixed keys for pagination, sorting, etc.
      *
      * ## Metadata Filters (@self)
-     * 
+     *
      * Metadata filters target database table columns and are specified under the `@self` key:
-     * 
+     *
      * **Supported metadata fields:**
      * - `register` - Filter by register ID(s), objects, or mixed arrays
-     * - `schema` - Filter by schema ID(s), objects, or mixed arrays  
+     * - `schema` - Filter by schema ID(s), objects, or mixed arrays
      * - `uuid` - Filter by UUID(s)
      * - `owner` - Filter by owner user ID(s)
      * - `organisation` - Filter by organisation name(s)
@@ -800,7 +803,7 @@ class ObjectEntityMapper extends QBMapper
      * ```
      *
      * ## Object Field Filters
-     * 
+     *
      * Object field filters search within the JSON `object` column data.
      * These are specified as direct keys in the query array (not under `@self`).
      *
@@ -820,19 +823,19 @@ class ObjectEntityMapper extends QBMapper
      * ```
      *
      * ## Search Options (Underscore-Prefixed)
-     * 
+     *
      * Search options control pagination, sorting, and special behaviors.
      * All options are prefixed with underscore (`_`) to distinguish them from filters.
      *
      * **Available options:**
-     * 
+     *
      * ### `_limit` (int|null)
      * Maximum number of results to return
      * ```php
      * '_limit' => 50
      * ```
      *
-     * ### `_offset` (int|null)  
+     * ### `_offset` (int|null)
      * Number of results to skip (for pagination)
      * ```php
      * '_offset' => 100
@@ -946,7 +949,7 @@ class ObjectEntityMapper extends QBMapper
      * ```
      *
      * ## Performance Notes
-     * 
+     *
      * - Metadata filters are indexed and perform better than object field filters
      * - Use metadata filters when possible for better performance
      * - Full-text search (`_search`) is optimized but can be slower on large datasets
@@ -977,18 +980,18 @@ class ObjectEntityMapper extends QBMapper
         $metadataFilters = [];
         $register = null;
         $schema = null;
-        
+
         if (isset($query['@self']) === true && is_array($query['@self']) === true) {
             $metadataFilters = $query['@self'];
-            
+
             // Process register: convert objects to IDs and handle arrays
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
                 // Keep in metadataFilters for search handler to process properly with other filters
                 $metadataFilters['register'] = $register;
             }
-            
-            // Process schema: convert objects to IDs and handle arrays  
+
+            // Process schema: convert objects to IDs and handle arrays
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
                 // Keep in metadataFilters for search handler to process properly with other filters
@@ -1016,7 +1019,7 @@ class ObjectEntityMapper extends QBMapper
                     published: $published
                 );
             }
-            
+
             return $this->findAll(
                 limit: $limit,
                 offset: $offset,
@@ -1163,18 +1166,18 @@ class ObjectEntityMapper extends QBMapper
         $metadataFilters = [];
         $register = null;
         $schema = null;
-        
+
         if (isset($query['@self']) === true && is_array($query['@self']) === true) {
             $metadataFilters = $query['@self'];
-            
+
             // Process register: convert objects to IDs and handle arrays
             if (isset($metadataFilters['register']) === true) {
                 $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
                 // Keep in metadataFilters for search handler to process properly with other filters
                 $metadataFilters['register'] = $register;
             }
-            
-            // Process schema: convert objects to IDs and handle arrays  
+
+            // Process schema: convert objects to IDs and handle arrays
             if (isset($metadataFilters['schema']) === true) {
                 $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
                 // Keep in metadataFilters for search handler to process properly with other filters
@@ -1493,7 +1496,7 @@ class ObjectEntityMapper extends QBMapper
                 )
             );
         }
-        
+
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -1561,7 +1564,7 @@ class ObjectEntityMapper extends QBMapper
         $entity->setSize(strlen(serialize($entity->jsonSerialize()))); // Set the size to the byte size of the serialized object
 
         $entity = parent::insert($entity);
-        
+
         // Dispatch creation event.
         // error_log("ObjectEntityMapper: Dispatching ObjectCreatedEvent for object ID: " . ($entity->getId() ?? 'NULL') . ", UUID: " . ($entity->getUuid() ?? 'NULL'));
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
@@ -1614,16 +1617,16 @@ class ObjectEntityMapper extends QBMapper
         // The getId() method returns the database primary key
         error_log("ObjectEntityMapper->update() called with entity ID: " . ($entity->getId() ?? 'NULL'));
         error_log("ObjectEntityMapper->update() entity type: " . get_class($entity));
-        
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_objects')
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId())));
-        
+
         if (!$includeDeleted) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
-        
+
         error_log("ObjectEntityMapper->update() about to execute findEntity with internal ID");
         $oldObject = $this->findEntity($qb);
         error_log("ObjectEntityMapper->update() successfully found old object for update");
@@ -2245,7 +2248,7 @@ class ObjectEntityMapper extends QBMapper
             $facets['@self'] = [];
             foreach ($facetConfig['@self'] as $field => $config) {
                 $type = $config['type'] ?? 'terms';
-                
+
                 if ($type === 'terms') {
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getTermsFacet($field, $baseQuery);
                 } else if ($type === 'date_histogram') {
@@ -2265,7 +2268,7 @@ class ObjectEntityMapper extends QBMapper
 
         foreach ($objectFacetConfig as $field => $config) {
             $type = $config['type'] ?? 'terms';
-            
+
             if ($type === 'terms') {
                 $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
             } else if ($type === 'date_histogram') {
@@ -2349,7 +2352,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Get schemas to analyze based on query context
         $schemas = $this->getSchemasForQuery($baseQuery);
-        
+
         if (empty($schemas)) {
             return [];
         }
@@ -2357,7 +2360,7 @@ class ObjectEntityMapper extends QBMapper
         // Process each schema's properties
         foreach ($schemas as $schema) {
             $properties = $schema->getProperties();
-            
+
             if (empty($properties)) {
                 continue;
             }
@@ -2366,7 +2369,7 @@ class ObjectEntityMapper extends QBMapper
             foreach ($properties as $propertyKey => $property) {
                 if ($this->isPropertyFacetable($property)) {
                     $fieldConfig = $this->generateFieldConfigFromProperty($propertyKey, $property);
-                    
+
                     if ($fieldConfig !== null) {
                         // If field already exists from another schema, merge configurations
                         if (isset($facetableFields[$propertyKey])) {
@@ -2407,7 +2410,7 @@ class ObjectEntityMapper extends QBMapper
     private function getSchemasForQuery(array $baseQuery): array
     {
         $schemaFilters = [];
-        
+
         // Check if specific schemas are requested in the query
         if (isset($baseQuery['@self']['schema'])) {
             $schemaValue = $baseQuery['@self']['schema'];
@@ -2472,7 +2475,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Determine appropriate facet types based on property type and format
         $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
-        
+
         if (empty($facetTypes)) {
             return null;
         }
@@ -2500,7 +2503,7 @@ class ObjectEntityMapper extends QBMapper
                     $config['cardinality'] = 'text';
                 }
                 break;
-                
+
             case 'integer':
             case 'number':
                 $config['cardinality'] = 'numeric';
@@ -2511,11 +2514,11 @@ class ObjectEntityMapper extends QBMapper
                     $config['maximum'] = $property['maximum'];
                 }
                 break;
-                
+
             case 'boolean':
                 $config['cardinality'] = 'binary';
                 break;
-                
+
             case 'array':
                 $config['cardinality'] = 'array';
                 break;
@@ -2551,17 +2554,17 @@ class ObjectEntityMapper extends QBMapper
                 } else {
                     return ['terms'];
                 }
-                
+
             case 'integer':
             case 'number':
                 return ['range', 'terms'];
-                
+
             case 'boolean':
                 return ['terms'];
-                
+
             case 'array':
                 return ['terms'];
-                
+
             default:
                 return ['terms'];
         }
@@ -2589,23 +2592,23 @@ class ObjectEntityMapper extends QBMapper
         $existingFacetTypes = $existing['facet_types'] ?? [];
         $newFacetTypes = $new['facet_types'] ?? [];
         $merged = $existing;
-        
+
         $merged['facet_types'] = array_unique(array_merge($existingFacetTypes, $newFacetTypes));
-        
+
         // Use the more descriptive title and description if available
         if (empty($existing['title']) && !empty($new['title'])) {
             $merged['title'] = $new['title'];
         }
-        
+
         if (empty($existing['description']) && !empty($new['description'])) {
             $merged['description'] = $new['description'];
         }
-        
+
         // Add example if not already present
         if (!isset($existing['example']) && isset($new['example'])) {
             $merged['example'] = $new['example'];
         }
-        
+
         return $merged;
 
     }//end mergeFieldConfigs()
