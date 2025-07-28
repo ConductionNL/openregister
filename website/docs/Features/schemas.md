@@ -263,15 +263,27 @@ File properties allow you to attach files directly to specific object properties
 | 'allowedTags' | array | Tags that are allowed on files | '['document', 'public']' |
 | 'autoTags' | array | Tags automatically applied to uploaded files | '['auto-uploaded', 'property-{propertyName}']' |
 
+#### File Input Types
+
+File properties support three types of input:
+
+1. **Base64 Data URIs**: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...'
+2. **URLs**: 'https://example.com/image.jpg' (system fetches the file)
+3. **File Objects**: '{id: '12345', title: 'image.jpg', downloadUrl: '...'}'
+
 #### File Property Processing
 
 When objects are saved:
 
-1. **File Detection**: System detects file data (base64 or data URIs) in file properties
-2. **Validation**: Files are validated against 'allowedTypes' and 'maxSize' constraints
-3. **File Creation**: Files are created and stored in the object's folder
-4. **Auto Tagging**: 'autoTags' are automatically applied to files
-5. **ID Storage**: File IDs replace file content in the object data
+1. **File Detection**: System detects file data (base64, URLs, or file objects) in file properties
+2. **File Processing**: 
+   - Base64: Decoded and validated
+   - URLs: Fetched from remote source
+   - File Objects: Validated against existing files
+3. **Validation**: Files are validated against 'allowedTypes' and 'maxSize' constraints
+4. **File Creation**: Files are created and stored in the object's folder
+5. **Auto Tagging**: 'autoTags' are automatically applied to files
+6. **ID Storage**: File IDs replace file content in the object data
 
 When objects are rendered:
 
@@ -288,10 +300,11 @@ Auto tags support placeholder replacement:
 | '{property}' or '{propertyName}' | Property name | 'property-avatar' |
 | '{index}' | Array index (for array properties) | 'file-0', 'file-1' |
 
-#### File Upload Example
+#### File Upload Examples
 
+**Base64 Input:**
 ```json
-// Input object with file data
+// Input object with base64 file data
 {
   'name': 'John Doe',
   'avatar': 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...',
@@ -300,6 +313,42 @@ Auto tags support placeholder replacement:
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
   ]
 }
+```
+
+**URL Input:**
+```json
+// Input object with URLs (system fetches files)
+{
+  'name': 'Jane Smith',
+  'avatar': 'https://example.com/avatars/jane.jpg',
+  'documents': [
+    'https://example.com/docs/resume.pdf',
+    'https://example.com/certificates/cert.png'
+  ]
+}
+```
+
+**File Object Input:**
+```json
+// Input object with existing file objects
+{
+  'name': 'Bob Wilson',
+  'avatar': {
+    'id': '12345',
+    'title': 'profile.jpg',
+    'downloadUrl': 'https://example.com/s/AbCdEfGh/download'
+  },
+  'documents': [
+    {
+      'id': '12346',
+      'title': 'document1.pdf',
+      'downloadUrl': 'https://example.com/s/XyZwVuTs/download'
+    }
+  ]
+}
+```
+
+**All Input Types - Final Storage:**
 
 // Stored object with file IDs
 {
