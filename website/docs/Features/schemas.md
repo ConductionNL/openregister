@@ -214,6 +214,141 @@ Before diving into schema examples, let's understand the key components of a pro
 
 Properties can also have nested objects and arrays with their own validation rules, allowing for complex data structures while maintaining strict validation. See the [Nesting schema's](#nesting-schemas) section below for more details.
 
+### File Properties
+
+File properties allow you to attach files directly to specific object properties with validation and automatic processing. File properties support both single files and arrays of files.
+
+#### Basic File Property
+
+```json
+{
+  'properties': {
+    'avatar': {
+      'type': 'file',
+      'description': 'User profile picture',
+      'allowedTypes': ['image/jpeg', 'image/png', 'image/gif'],
+      'maxSize': 2097152,
+      'autoTags': ['profile-image', 'auto-uploaded']
+    }
+  }
+}
+```
+
+#### Array of Files Property
+
+```json
+{
+  'properties': {
+    'attachments': {
+      'type': 'array',
+      'description': 'Document attachments',
+      'items': {
+        'type': 'file',
+        'allowedTypes': ['application/pdf', 'image/jpeg', 'image/png'],
+        'maxSize': 10485760,
+        'allowedTags': ['document', 'attachment'],
+        'autoTags': ['auto-uploaded', 'property-attachments']
+      }
+    }
+  }
+}
+```
+
+#### File Property Configuration
+
+| Property | Type | Description | Example |
+|----------|------|-------------|---------|
+| 'allowedTypes' | array | Array of allowed MIME types | '['image/jpeg', 'image/png']' |
+| 'maxSize' | integer | Maximum file size in bytes | '5242880' (5MB) |
+| 'allowedTags' | array | Tags that are allowed on files | '['document', 'public']' |
+| 'autoTags' | array | Tags automatically applied to uploaded files | '['auto-uploaded', 'property-{propertyName}']' |
+
+#### File Property Processing
+
+When objects are saved:
+
+1. **File Detection**: System detects file data (base64 or data URIs) in file properties
+2. **Validation**: Files are validated against 'allowedTypes' and 'maxSize' constraints
+3. **File Creation**: Files are created and stored in the object's folder
+4. **Auto Tagging**: 'autoTags' are automatically applied to files
+5. **ID Storage**: File IDs replace file content in the object data
+
+When objects are rendered:
+
+1. **ID Detection**: System detects file IDs in file properties
+2. **File Hydration**: File IDs are replaced with complete file objects
+3. **Metadata**: File objects include path, size, type, tags, and access URLs
+
+#### Auto Tag Placeholders
+
+Auto tags support placeholder replacement:
+
+| Placeholder | Replacement | Example |
+|-------------|-------------|---------|
+| '{property}' or '{propertyName}' | Property name | 'property-avatar' |
+| '{index}' | Array index (for array properties) | 'file-0', 'file-1' |
+
+#### File Upload Example
+
+```json
+// Input object with file data
+{
+  'name': 'John Doe',
+  'avatar': 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAA...',
+  'documents': [
+    'data:application/pdf;base64,JVBERi0xLjQKJcOkw6k...',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
+  ]
+}
+
+// Stored object with file IDs
+{
+  'name': 'John Doe',
+  'avatar': 12345,
+  'documents': [12346, 12347]
+}
+
+// Rendered object with file objects
+{
+  'name': 'John Doe',
+  'avatar': {
+    'id': '12345',
+    'title': 'avatar_1640995200.jpg',
+    'type': 'image/jpeg',
+    'size': 15420,
+    'accessUrl': 'https://example.com/s/AbCdEfGh',
+    'downloadUrl': 'https://example.com/s/AbCdEfGh/download',
+    'labels': ['profile-image', 'auto-uploaded']
+  },
+  'documents': [
+    {
+      'id': '12346',
+      'title': 'documents_0_1640995200.pdf',
+      'type': 'application/pdf',
+      'size': 245760,
+      'accessUrl': 'https://example.com/s/XyZwVuTs',
+      'labels': ['auto-uploaded', 'property-documents']
+    },
+    {
+      'id': '12347',
+      'title': 'documents_1_1640995200.png',
+      'type': 'image/png',
+      'size': 89123,
+      'accessUrl': 'https://example.com/s/MnOpQrSt',
+      'labels': ['auto-uploaded', 'property-documents']
+    }
+  ]
+}
+```
+
+#### Best Practices
+
+1. **MIME Type Validation**: Always specify 'allowedTypes' to prevent unwanted file uploads
+2. **Size Limits**: Set appropriate 'maxSize' limits to prevent storage abuse
+3. **Auto Tags**: Use descriptive auto tags for better file organization
+4. **Property Names**: Use clear property names that indicate file purpose
+5. **Array Usage**: Use array properties for multiple files of the same type
+
 ## Example Schema
 
 ```json
