@@ -304,7 +304,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $objectData = $this->object ?? [];
 
         // Ensure 'id' is the first field by setting it before merging with object data
-        $objectData = array_merge(array1: ['id' => $this->uuid], array2: $objectData);
+        $objectData = array_merge(['id' => $this->uuid], $objectData);
 
         return $objectData;
 
