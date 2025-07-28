@@ -552,13 +552,11 @@ class RenderObject
             }
 
             // Use FileMapper to get file information directly
-            $fileRecords = $this->fileMapper->getFileById((int) $fileIdStr);
+            $fileRecord = $this->fileMapper->getFile((int) $fileIdStr);
 
-            if (empty($fileRecords)) {
+            if (empty($fileRecord)) {
                 return null;
             }
-
-            $fileRecord = $fileRecords[0];
 
             // Get file tags
             $labels = $this->getFileTags((string) $fileRecord['fileid']);
