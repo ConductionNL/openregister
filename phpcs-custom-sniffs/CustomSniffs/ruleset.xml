@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<ruleset name="CustomSniffs">
+    <description>Custom coding standard for OpenRegister</description>
+    
+    <!-- Include our NamedParameters sniff -->
+    <rule ref="CustomSniffs.Functions.NamedParameters"/>
+</ruleset> 

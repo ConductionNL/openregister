@@ -121,9 +121,9 @@ class ObjectsController extends Controller
     public function page(): TemplateResponse
     {
         return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
+            appName: 'openconnector',
+            templateName: 'index',
+            parameters: []
         );
 
     }//end page()
@@ -283,7 +283,7 @@ class ObjectsController extends Controller
         }
 
         // Add object field filters directly to query
-        $query = array_merge($query, $objectFilters);
+        $query = array_merge(array1: $query, array2: $objectFilters);
 
         // Add IDs if provided
         if ($ids !== null) {
@@ -291,7 +291,7 @@ class ObjectsController extends Controller
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        $query = array_merge($query, $specialParams);
+        $query = array_merge(array1: $query, array2: $specialParams);
 
         return $query;
 
@@ -471,7 +471,7 @@ class ObjectsController extends Controller
             // Render the object with requested extensions and filters.
             return new JSONResponse($object);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Not Found'], 404);
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
 
     }//end show()
@@ -530,10 +530,10 @@ class ObjectsController extends Controller
             }
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
-           return new JSONResponse($exception->getMessage(), 400);
+                       return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors)
-            return new JSONResponse(['error' => $exception->getMessage()], 403);
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }
 
         // Return the created object.
@@ -728,7 +728,7 @@ class ObjectsController extends Controller
 
             // Get the existing object data and merge with patch data
             $existingData = $existingObject->getObject();
-            $mergedData = array_merge($existingData, $patchData);
+            $mergedData = array_merge(array1: $existingData, array2: $patchData);
             $existingObject->setObject($mergedData);
 
         } catch (DoesNotExistException $exception) {
@@ -797,7 +797,7 @@ class ObjectsController extends Controller
 
             // Clone the object to pass as the new state for response
             $newObject = clone $oldObject;
-            $newObject->delete($this->userSession, $this->request->getParam('deletedReason'), $this->request->getParam('retentionPeriod'));
+            $newObject->delete($this->userSession, $this->request->getParam(key: 'deletedReason'), $this->request->getParam(key: 'retentionPeriod'));
 
             // Update the object in the mapper (soft delete)
             $this->objectEntityMapper->update($newObject);
@@ -1100,7 +1100,7 @@ class ObjectsController extends Controller
         // Get filters and type from request
         $filters = $this->request->getParams();
         unset($filters['_route']);
-        $type = $this->request->getParam('type', 'excel');
+        $type = $this->request->getParam(key: 'type', default: 'excel');
 
         // Get register and schema entities
         $registerEntity = $this->registerMapper->find($register);
@@ -1203,7 +1203,7 @@ class ObjectsController extends Controller
                     error_log("[ObjectsController] Processing CSV file");
                     
                     // For CSV, schema can be specified in the request
-                    $schemaId = $this->request->getParam('schema');
+                    $schemaId = $this->request->getParam(key: 'schema');
                     
                     if (!$schemaId) {
                         // If no schema specified, get the first available schema from the register
@@ -1276,8 +1276,8 @@ class ObjectsController extends Controller
         try {
             // Get the publication date from request if provided
             $date = null;
-            if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+            if ($this->request->getParam(key: 'date') !== null) {
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
             // Publish the object
@@ -1317,8 +1317,8 @@ class ObjectsController extends Controller
         try {
             // Get the depublication date from request if provided
             $date = null;
-            if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+            if ($this->request->getParam(key: 'date') !== null) {
+                $date = new \DateTime($this->request->getParam(key: 'date'));
             }
 
             // Depublish the object
@@ -1492,7 +1492,7 @@ class ObjectsController extends Controller
             $fileService = $this->container->get(FileService::class);
 
             // Optional: get custom filename from query parameters
-            $customFilename = $this->request->getParam('filename');
+            $customFilename = $this->request->getParam(key: 'filename');
 
             // Create the ZIP archive
             $zipInfo = $fileService->createObjectFilesZip($object, $customFilename);

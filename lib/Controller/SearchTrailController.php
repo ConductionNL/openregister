@@ -303,8 +303,8 @@ class SearchTrailController extends Controller
             return new JSONResponse($paginatedResult);
         } catch (\Exception $e) {
             return new JSONResponse(
-                ['error' => 'Failed to retrieve search trails: '.$e->getMessage()],
-                500
+                data: ['error' => 'Failed to retrieve search trails: '.$e->getMessage()],
+                statusCode: 500
             );
         }
 
@@ -328,8 +328,8 @@ class SearchTrailController extends Controller
             return new JSONResponse($log);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
-                ['error' => 'Search trail not found'],
-                404
+                data: ['error' => 'Search trail not found'],
+                statusCode: 404
             );
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -431,7 +431,7 @@ class SearchTrailController extends Controller
     {
         // Extract parameters.
         $params   = $this->extractRequestParameters();
-        $interval = $this->request->getParam('interval', 'day');
+        $interval = $this->request->getParam(key: 'interval', default: 'day');
 
         try {
             $result = $this->searchTrailService->getSearchActivity(
@@ -575,7 +575,7 @@ class SearchTrailController extends Controller
     public function cleanup(): JSONResponse
     {
         // Extract date parameter.
-        $before     = $this->request->getParam('before');
+        $before     = $this->request->getParam(key: 'before');
         $beforeDate = null;
 
         if ($before !== null) {
@@ -617,8 +617,8 @@ class SearchTrailController extends Controller
         $params = $this->extractRequestParameters();
 
         // Get export specific parameters.
-        $format          = $this->request->getParam('format', 'csv');
-        $includeMetadata = $this->request->getParam('includeMetadata', false);
+        $format          = $this->request->getParam(key: 'format', default: 'csv');
+        $includeMetadata = $this->request->getParam(key: 'includeMetadata', default: false);
 
         try {
             // Build export configuration.
@@ -746,7 +746,7 @@ class SearchTrailController extends Controller
         $params = $this->extractRequestParameters();
 
         // Get specific parameters for mass deletion.
-        $ids = $this->request->getParam('ids', null);
+        $ids = $this->request->getParam(key: 'ids', default: null);
 
         try {
             // For now, we'll just return a success message since we don't have a delete method in the service.
