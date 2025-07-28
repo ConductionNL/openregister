@@ -349,7 +349,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 																{ id: 'number', label: 'Number' },
 																{ id: 'integer', label: 'Integer' },
 																{ id: 'object', label: 'Object' },
-																{ id: 'boolean', label: 'Boolean' }
+																{ id: 'boolean', label: 'Boolean' },
+																{ id: 'file', label: 'File' }
 															]"
 															input-label="Array Item Type"
 															label="Array Item Type" />
@@ -477,6 +478,39 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 															Cascade Delete
 														</NcActionCheckbox>
 													</template>
+
+													<!-- File Configuration -->
+													<template v-if="property.type === 'file' || (property.type === 'array' && property.items && property.items.type === 'file')">
+														<NcActionSeparator />
+														<NcActionCaption name="File Configuration" />
+														<NcActionInput
+															:value="(property.allowedTypes || []).join(', ')"
+															label="Allowed MIME Types (comma separated)"
+															placeholder="image/png, image/jpeg, application/pdf"
+															@update:value="updateFileProperty(key, 'allowedTypes', $event)" />
+														<NcActionInput
+															:value="property.maxSize || ''"
+															type="number"
+															label="Maximum File Size (bytes)"
+															placeholder="5242880"
+															@update:value="updateFileProperty(key, 'maxSize', $event)" />
+														<NcActionInput
+															:value="getFilePropertyTags(key, 'allowedTags')"
+															type="multiselect"
+															:options="availableTagsOptions"
+															input-label="Allowed Tags"
+															label="Allowed Tags (select from available tags)"
+															multiple
+															@update:value="updateFilePropertyTags(key, 'allowedTags', $event)" />
+														<NcActionInput
+															:value="getFilePropertyTags(key, 'autoTags')"
+															type="multiselect"
+															:options="availableTagsOptions"
+															input-label="Auto Tags"
+															label="Auto Tags (automatically applied to uploaded files)"
+															multiple
+															@update:value="updateFilePropertyTags(key, 'autoTags', $event)" />
+													</template>
 												</NcActions>
 											</td>
 										</tr>
@@ -528,7 +562,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								Allow Files
 							</NcCheckboxRadioSwitch>
 							<NcTextField
-								v-model="allowedTagsInput" 
+								v-model="allowedTagsInput"
 								:disabled="loading"
 								label="Allowed Tags (comma-separated)"
 								placeholder="image, document, audio, video"
@@ -778,6 +812,7 @@ export default {
 			nextPropertyId: 1, // Counter for generating unique IDs
 			enumInputValue: '', // For entering new enum values
 			allowedTagsInput: '', // For entering allowed tags as comma-separated string
+			availableTags: [], // Available tags from the API
 			schemaItem: {
 				title: '',
 				version: '0.0.0',
@@ -894,6 +929,13 @@ export default {
 				label: schema.title || schema.name || schema.id,
 			}))
 		},
+		availableTagsOptions() {
+			// Return available tags for multiselect
+			return this.availableTags.map(tag => ({
+				id: tag,
+				label: tag,
+			}))
+		},
 	},
 	watch: {
 		'schemaItem.properties': {
@@ -966,8 +1008,24 @@ export default {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
 		this.loadUserGroups()
+		this.fetchAvailableTags()
 	},
 	methods: {
+		async fetchAvailableTags() {
+			try {
+				const response = await fetch('/index.php/apps/openregister/api/tags')
+				if (response.ok) {
+					const tags = await response.json()
+					this.availableTags = Array.isArray(tags) ? tags : []
+				} else {
+					console.warn('Failed to fetch available tags:', response.statusText)
+					this.availableTags = []
+				}
+			} catch (error) {
+				console.error('Error fetching available tags:', error)
+				this.availableTags = []
+			}
+		},
 		async loadRegistersAndSchemas() {
 			try {
 				// Load registers if not already loaded
@@ -1373,6 +1431,71 @@ export default {
 				this.$set(this.schemaItem.properties[key], setting, settingValue)
 				// Enforce $ref is always a string after any update
 				this.ensureRefIsString(this.schemaItem.properties, key)
+				this.checkPropertiesModified()
+			}
+		},
+		updateFileProperty(key, setting, value) {
+			if (this.schemaItem.properties[key]) {
+				// Handle array properties (allowedTypes, allowedTags, autoTags)
+				if (['allowedTypes', 'allowedTags', 'autoTags'].includes(setting)) {
+					const arrayValue = value ? value.split(',').map(item => item.trim()).filter(item => item !== '') : []
+					// Apply to both direct file properties and array[file] properties
+					if (this.schemaItem.properties[key].type === 'file') {
+						this.$set(this.schemaItem.properties[key], setting, arrayValue)
+					} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+						if (!this.schemaItem.properties[key].items) {
+							this.$set(this.schemaItem.properties[key], 'items', {})
+						}
+						this.$set(this.schemaItem.properties[key].items, setting, arrayValue)
+					}
+				} else if (setting === 'maxSize') {
+					// Handle maxSize as number
+					const numValue = value ? Number(value) : undefined
+					if (this.schemaItem.properties[key].type === 'file') {
+						this.$set(this.schemaItem.properties[key], setting, numValue)
+					} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+						if (!this.schemaItem.properties[key].items) {
+							this.$set(this.schemaItem.properties[key], 'items', {})
+						}
+						this.$set(this.schemaItem.properties[key].items, setting, numValue)
+					}
+				}
+				this.checkPropertiesModified()
+			}
+		},
+		getFilePropertyTags(key, setting) {
+			// Get tags for multiselect display
+			const property = this.schemaItem.properties[key]
+			if (!property) return []
+			
+			let tags = []
+			if (property.type === 'file') {
+				tags = property[setting] || []
+			} else if (property.type === 'array' && property.items) {
+				tags = property.items[setting] || []
+			}
+			
+			// Convert to multiselect format
+			return tags.map(tag => ({
+				id: tag,
+				label: tag,
+			}))
+		},
+		updateFilePropertyTags(key, setting, selectedOptions) {
+			// Handle multiselect tag updates
+			if (this.schemaItem.properties[key]) {
+				// Extract tag names from selected options
+				const tags = selectedOptions ? selectedOptions.map(option => option.id || option) : []
+				
+				// Apply to both direct file properties and array[file] properties
+				if (this.schemaItem.properties[key].type === 'file') {
+					this.$set(this.schemaItem.properties[key], setting, tags)
+				} else if (this.schemaItem.properties[key].type === 'array' && this.schemaItem.properties[key].items) {
+					if (!this.schemaItem.properties[key].items) {
+						this.$set(this.schemaItem.properties[key], 'items', {})
+					}
+					this.$set(this.schemaItem.properties[key].items, setting, tags)
+				}
 				this.checkPropertiesModified()
 			}
 		},
